@@ -81,10 +81,20 @@ assert.equal(ECMIS.m28Pending().some((c) => c.id === "1490/2568"), false,
 /* ---------------------------------------------------------------------
    G5 — ทางออกของมติ และผู้ลงนามตาม ม.24
    --------------------------------------------------------------------- */
-const codes = ECMIS.RESOLUTIONS.map((r) => r.code);
-assert.ok(codes.includes("FORWARD_NACC"),
-  "ผังแยก 'ส่งเรื่องให้ ป.ป.ช.' เป็นทางออกของตัวเอง ไม่ใช่มติอื่น ๆ");
-assert.equal(codes.includes("FORWARD"), false, "โค้ดเดิมที่กำกวมต้องถูกแทนแล้ว");
+/* แบบฟอร์ม "มติการประชุม ไต่สวนเบื้องต้น.docx" ใน Drive เขียนบรรทัดนี้เป็น
+   ช่องว่างปลายทางเดียว จึงต้องเป็นมติเดียวที่เลือกปลายทางได้ ไม่ใช่มติแยกชนิด */
+const forward = ECMIS.RESOLUTIONS.find((r) => r.code === "FORWARD");
+assert.ok(forward, "ต้องคงมติ FORWARD ไว้ตามแบบฟอร์มจริง");
+assert.equal(forward.needsDestination, true, "มติ FORWARD ต้องบังคับเลือกปลายทาง");
+
+const nacc = ECMIS.forwardTarget("NACC");
+assert.equal(nacc.external, true, "ป.ป.ช. เป็นปลายทางนอกองค์กร");
+assert.equal(nacc.slaDays, 30, "ส่ง ป.ป.ช. มี SLA 30 วันตามผัง");
+assert.equal(nacc.requireSignedScan, true,
+  "ปลายทางนอกองค์กรต้องบังคับอัปโหลดไฟล์สแกนฉบับลงนามกลับ (TOR 7.2.1.5)");
+assert.equal(ECMIS.forwardTarget("SCREENING").external, false,
+  "คณะอนุกลั่นกรองฯ เป็นปลายทางภายใน จึงไม่ต้องอัปโหลดไฟล์สแกน");
+assert.equal(ECMIS.forwardTarget("SCREENING").requireSignedScan, false);
 
 assert.equal(ECMIS.RESOLUTIONS.find((r) => r.code === "ACCEPT_S24P1").signer, "เลขาธิการฯ",
   "ม.24 ว.1 องค์คณะพนักงาน ป.ป.ท. — เลขาธิการฯ เป็นผู้แต่งตั้ง");

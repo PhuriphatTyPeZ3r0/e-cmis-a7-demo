@@ -525,13 +525,29 @@ const RESOLUTIONS = [
   { code:'MORE_INVESTIGATE', group:'มติอื่น ๆ',
     label:'ให้ผู้รับผิดชอบสำนวนไต่สวนเบื้องต้นเพิ่มเติม',
     doc:'บันทึกแจ้งมติให้ไต่สวนเพิ่มเติม', signer:'—' },
-  /* ผัง P2 เส้น G5 ทางที่ 3 — เป็นมติแยกกลุ่มของตัวเอง ไม่ใช่ "มติอื่น ๆ"
-     เพราะมีปลายทางและ SLA เฉพาะ (ส่งมอบสำนวนให้ ป.ป.ช. ภายใน 30 วัน)  */
-  { code:'FORWARD_NACC', group:'ส่งเรื่องให้ ป.ป.ช.',
-    label:'ส่งเรื่องให้สำนักงาน ป.ป.ช. (อยู่นอกอำนาจ ป.ป.ท.)',
-    doc:'หนังสือนำส่งสำนวนถึงสำนักงาน ป.ป.ช.', signer:'เลขาธิการฯ',
-    slaDays:30, note:'ระบบบังคับอัปโหลดไฟล์สแกนฉบับลงนามกลับ (TOR 7.2.1.5)' }
+  /* แบบฟอร์ม "มติการประชุม ไต่สวนเบื้องต้น.docx" เขียนบรรทัดนี้เป็นช่องว่าง
+     "ส่งเรื่องให้ ________ / คณะอนุกลั่นกรองฯ แล้วแต่กรณี" จึงเป็นมติเดียว
+     ที่มีได้หลายปลายทาง ไม่ใช่มติแยกประเภท — ผัง P2 หยิบมาแสดงเฉพาะปลายทาง
+     ป.ป.ช. เพราะเป็นเส้นเดียวที่ออกนอกองค์กรและมี SLA เฉพาะ              */
+  { code:'FORWARD', group:'มติอื่น ๆ',
+    label:'ส่งเรื่องให้หน่วยงาน / คณะอนุกลั่นกรองฯ พิจารณา',
+    doc:'หนังสือนำส่งเรื่อง', signer:'—', needsDestination:true }
 ];
+
+/* ปลายทางของมติ FORWARD — เฉพาะ ป.ป.ช. เท่านั้นที่ออกนอกองค์กร จึงมี SLA
+   และข้อบังคับอัปโหลดไฟล์สแกนฉบับลงนามกลับตาม TOR 7.2.1.5               */
+const FORWARD_TARGETS = [
+  { code:'NACC',      label:'สำนักงาน ป.ป.ช. (นอกอำนาจ ป.ป.ท.)',
+    external:true,  slaDays:30, requireSignedScan:true,
+    doc:'หนังสือนำส่งสำนวนถึงสำนักงาน ป.ป.ช.' },
+  { code:'SCREENING', label:'คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง',
+    external:false, slaDays:15, requireSignedScan:false,
+    doc:'บันทึกส่งเรื่องเข้าคณะอนุกลั่นกรองฯ' },
+  { code:'LEGAL',     label:'กองกฎหมาย (กกม.)',
+    external:false, slaDays:15, requireSignedScan:false,
+    doc:'บันทึกขอความเห็นทางกฎหมาย' }
+];
+function forwardTarget(code){ return FORWARD_TARGETS.find(t => t.code === code) || null; }
 
 /* =========================================================================
    DESIGN DECISIONS — คำตอบ Q1–Q5 ที่นำมาบังคับใช้ในต้นแบบ
@@ -867,7 +883,7 @@ function signDialog(docName, signerName){
 global.ECMIS = {
   ROLES, STATUS, STATUS_STEP, FLOW_STEPS, APPROVAL_CHAIN,
   CASES, RETURN_REASONS, RESOLUTIONS,
-  DOC_TYPES, SIGN_PHASE, secgenSlaLimit,
+  DOC_TYPES, SIGN_PHASE, secgenSlaLimit, FORWARD_TARGETS, forwardTarget,
   OPINION_TYPES, chainDivergence, g1Triggers, M28, m28Pending,
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
   UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase,

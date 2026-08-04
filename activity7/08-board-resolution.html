@@ -132,11 +132,8 @@
 
           <div id="forwardBox" class="mb-3 d-none">
             <label class="form-label field-req">ส่งเรื่องให้</label>
-            <select class="form-select" id="forwardTo">
-              <option value="สำนักงาน ป.ป.ช.">สำนักงาน ป.ป.ช. (นอกอำนาจ ป.ป.ท.)</option>
-              <option value="คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง">คณะอนุกลั่นกรองฯ</option>
-              <option value="กองกฎหมาย">กองกฎหมาย (กกม.)</option>
-            </select>
+            <select class="form-select" id="forwardTo"></select>
+            <div class="mt-2" id="forwardRule"></div>
           </div>
 
           <label class="form-label field-req">ความเห็นที่ประชุม</label>
@@ -347,11 +344,34 @@ function selectedRes(){
   return ECMIS.RESOLUTIONS.find(r => r.code === code);
 }
 
+/* ปลายทางของมติ "ส่งเรื่องให้" มาจากตารางกลาง — ป.ป.ช. เป็นปลายทางเดียว
+   ที่ออกนอกองค์กร จึงมี SLA 30 วันและบังคับอัปโหลดไฟล์สแกนฉบับลงนามกลับ */
+const fwdSel = document.getElementById('forwardTo');
+fwdSel.innerHTML = ECMIS.FORWARD_TARGETS
+  .map(t => `<option value="${t.code}">${t.label}</option>`).join('');
+
+function renderForwardRule(){
+  const t = ECMIS.forwardTarget(fwdSel.value);
+  if(!t) return;
+  document.getElementById('forwardRule').innerHTML = t.external
+    ? `<div class="warn-note">
+         <strong><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>ปลายทางนอกองค์กร</strong><br>
+         เอกสาร: ${t.doc} · SLA <strong>${t.slaDays} วัน</strong><br>
+         <small>เจ้าของสำนวนต้องพิมพ์ ลงนามสด ส่งมอบด้วยตนเอง และ
+         <strong>ระบบบังคับอัปโหลดไฟล์สแกนฉบับลงนามกลับ</strong> (TOR 7.2.1.5)</small>
+       </div>`
+    : `<div class="rule-panel"><div class="rule pass"><i class="fa-solid fa-circle-check"></i>
+         <span>ปลายทางภายใน — เอกสาร: ${t.doc} · SLA ${t.slaDays} วัน
+         · ส่งต่อในระบบได้ทันที ไม่ต้องอัปโหลดไฟล์สแกน</span></div></div>`;
+}
+fwdSel.addEventListener('change', renderForwardRule);
+renderForwardRule();
+
 function toggleBoxes(){
   const code = selectedRes().code;
   document.getElementById('rejectLawBox').classList.toggle('d-none', code !== 'REJECT');
   document.getElementById('moreBox').classList.toggle('d-none', code !== 'MORE_INVESTIGATE');
-  document.getElementById('forwardBox').classList.toggle('d-none', code !== 'FORWARD_NACC');
+  document.getElementById('forwardBox').classList.toggle('d-none', code !== 'FORWARD');
 }
 
 function renderOutcome(){
@@ -381,7 +401,7 @@ function renderOutcome(){
       ['ปลายทาง', 'ส่งกลับเจ้าของสำนวน → รายงานความคืบหน้าเพื่อบรรจุวาระอีกครั้ง (ได้เลขวาระใหม่)'],
       ['SLA', 'ตามกำหนดส่งกลับที่ระบุ — ระบบสร้างงานติดตามใน Work Inbox']
     ],
-    FORWARD_NACC: [
+    FORWARD: [
       ['เอกสารที่ระบบสร้าง', 'หนังสือนำส่งเรื่อง + มติที่ประชุม'],
       ['ปลายทาง', 'ตามหน่วยงานที่เลือก — กรณีส่ง ป.ป.ช. เจ้าของสำนวนต้องทำหนังสือนำส่งเอง'],
       ['ข้อบังคับ', 'ระบบบังคับอัปโหลดไฟล์สแกนฉบับลงนามกลับเข้าระบบ (TOR 7.2.1.5)'],
@@ -421,7 +441,8 @@ function renderDoc(){
     const task = document.getElementById('moreTask').value.trim();
     resText = `ให้ผู้รับผิดชอบสำนวนไต่สวนเบื้องต้นเพิ่มเติม ดังนี้ ${task || '……………………………………'}`;
   } else {
-    resText = `ส่งเรื่องให้ ${document.getElementById('forwardTo').value}`;
+    /* เอกสารมติต้องพิมพ์ชื่อเต็มของปลายทาง ไม่ใช่รหัสที่ใช้ภายในระบบ */
+    resText = `ส่งเรื่องให้ ${ECMIS.forwardTarget(fwdSel.value)?.label || '—'}`;
   }
 
   const s65 = kase.legalBase === 'ม.62'
