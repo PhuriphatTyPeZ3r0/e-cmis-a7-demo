@@ -8,7 +8,9 @@
     {name_th:'นนทบุรี',districts:[{name_th:'เมืองนนทบุรี',sub_districts:[{name_th:'สวนใหญ่',zip_code:11000},{name_th:'ตลาดขวัญ',zip_code:11000},{name_th:'ท่าทราย',zip_code:11000}]},{name_th:'ปากเกร็ด',sub_districts:[{name_th:'ปากเกร็ด',zip_code:11120},{name_th:'บางตลาด',zip_code:11120}]}]},
     {name_th:'ชลบุรี',districts:[{name_th:'เมืองชลบุรี',sub_districts:[{name_th:'บางปลาสร้อย',zip_code:20000},{name_th:'มะขามหย่ง',zip_code:20000}]},{name_th:'ศรีราชา',sub_districts:[{name_th:'ศรีราชา',zip_code:20110},{name_th:'สุรศักดิ์',zip_code:20110}]}]}
   ];
-  const ROLE_LABELS = { admin:'ธุรการ ศรร.', officer:'เจ้าหน้าที่รับเรื่อง', center:'ผอ.ศรร.', division:'ผอ.กบค.', acting:'ผู้รักษาราชการแทนตามคำสั่ง' };
+  const ROLE_LABELS = { admin:'ธุรการ ศรร.', officer:'เจ้าหน้าที่รับเรื่อง', center:'ผอ.ศรร.', division:'ผอ.กบค.', acting:'ผู้รักษาราชการแทนตามคำสั่ง', anonymous:'กล่องบัตรสนเท่ห์', activity7:'กิจกรรมที่ 7' };
+  const ANONYMOUS_CHAIN_STEPS = ['หัวหน้าพนักงานผู้ตรวจเสนอ','หัวหน้าพนักงานผู้ให้ความเห็น','หัวหน้าพนักงานผู้อนุมัติส่งต่อ'];
+  const ACTIVITY7_STORAGE_KEY = 'ecmis-a4-a7-handoffs-v1';
   const OFFICERS = ['คุณสุพจน์ (พี่ฮอต)','คุณนครินทร์','คุณวารี','คุณอาภรณ์','คุณสุธาทิพย์','คุณรัชพล'];
   const REGIONS = ['ส่วนกลาง','เขต 1','เขต 2','เขต 3','เขต 4','เขต 5','เขต 6','เขต 7','เขต 8','เขต 9'];
   const NACC_TRANSFER_REASONS = [
@@ -90,7 +92,7 @@
     });
     input.addEventListener('change',()=>learnContextSuggestion(context,input.value));
   }
-  function initialState(item){return {caseData:{...item},documentData:{decision:'18/1ก',reasons:[],anonymous:Boolean(item.anonymous),officerOpinion:'',proposedRegion:item.region||'',reviewRoute:'center',centerDecision:'',centerOpinion:'',centerAdditionalDetail:'',divisionOpinion:'',divisionAdditionalDetail:'',internalLetterNo:'',internalLetterDate:'',actingOfficer:'',actingOrder:'',assignedOfficer:'',backupOfficer:'',previousOfficer:'',previousBackupOfficer:'',adminNote:'',absenceReasonType:'',absenceNote:'',notAcceptReason:'',naccLetterNo:'',naccLetterDate:'',naccSendMethod:'EMS',naccEms:'',naccSentDate:'',naccBoardNo:'',naccBoardDate:'',naccBoardNote:'',naccProofName:'',naccNotified:true},workflow:{owner:'admin',stage:'admin',status:'รอลงรับและมอบหมาย',complete:false},assignmentHistory:[],decisionHistory:[],documentVersions:[]}}
+  function initialState(item){return {caseData:{...item},documentData:{decision:'18/1ก',reasons:[],anonymous:Boolean(item.anonymous),officerOpinion:'',proposedRegion:item.region||'',reviewRoute:'center',centerDecision:'',centerOpinion:'',centerAdditionalDetail:'',divisionOpinion:'',divisionAdditionalDetail:'',internalLetterNo:'',internalLetterDate:'',actingOfficer:'',actingOrder:'',assignedOfficer:'',backupOfficer:'',previousOfficer:'',previousBackupOfficer:'',adminNote:'',absenceReasonType:'',absenceNote:'',notAcceptReason:'',naccLetterNo:'',naccLetterDate:'',naccSendMethod:'EMS',naccEms:'',naccSentDate:'',naccBoardNo:'',naccBoardDate:'',naccBoardNote:'',naccProofName:'',naccNotified:true},workflow:{owner:'admin',stage:'admin',status:'รอลงรับและมอบหมาย',complete:false},assignmentHistory:[],decisionHistory:[],anonymousHistory:[],documentVersions:[]}}
   function getState(id){
     const store=readStore();
     const state=store[id]||initialState(CASES.find(c=>c.id===id)||CASES[0]);
@@ -99,6 +101,7 @@
       const action=entry.action==='recall'||entry.text?.includes('ดึงงานกลับ')?'ดึงกลับ':entry.action==='reassign'||entry.text?.includes('เปลี่ยนผู้รับผิดชอบ')?'มอบหมายใหม่':'มอบหมาย';
       return {...entry,text:`[${action}] ${entry.text||''}`};
     });
+    state.anonymousHistory=state.anonymousHistory||[];
     return state;
   }
   function saveState(id,state){const intakeChannel=document.getElementById('wiChannel');const intakeRegion=document.getElementById('wiIntakeRegion');const anonymous=document.getElementById('wiAnonymous');if(intakeChannel){state.caseData.channel=intakeChannel.value;const usesIntakeRegion=['Walk-In','จดหมาย'].includes(intakeChannel.value);state.caseData.intakeRegion=usesIntakeRegion?(intakeRegion?.value||''):'';if(usesIntakeRegion&&intakeRegion?.value)state.caseData.region=intakeRegion.value}if(anonymous){state.caseData.anonymous=anonymous.checked;state.documentData.anonymous=anonymous.checked}const store=readStore();store[id]=state;writeStore(store)}
@@ -347,14 +350,21 @@
     const root=$('#staffApp');if(!root)return;const params=new URLSearchParams(location.search);let activeRole=params.get('role')||sessionStorage.getItem('ecmis-a4-role')||'admin';let selectedId=params.get('case')||null;let filters={};
     root.innerHTML=`${header(true)}<main class="ws-container"><section id="caseListView"><div class="ws-page-head"><div><p class="ws-kicker">Activity 4 · งานรับเรื่องร้องเรียน</p><h1>รายการเรื่องร้องเรียน</h1><p>ค้นหาจากทุกช่องทางและพื้นที่เกิดเหตุ ก่อนเปิดโต๊ะทำสำนวน</p></div><a class="ws-button primary" href="complaint-form.html?mode=walkin">เพิ่มเรื่อง Walk-in</a></div><section class="ws-dashboard" aria-label="ภาพรวมเรื่องร้องเรียน"><article class="ws-dashboard-card overview"><span>ภาพรวมทั้งหมด</span><strong id="dashboardTotal">0</strong><p>เรื่องทั้งหมด</p><small>รวมทุกช่องทางรับเรื่อง</small></article><article class="ws-dashboard-card pending"><span>รอดำเนินการ</span><strong id="dashboardPending">0</strong><p>รอลงรับและมอบหมาย</p><small>อยู่ในความรับผิดชอบของธุรการ</small></article><article class="ws-dashboard-card reviewing"><span>กำลังพิจารณา</span><strong id="dashboardReview">0</strong><p>อยู่ระหว่างพิจารณา</p><small>เจ้าหน้าที่หรือผู้มีอำนาจกำลังดำเนินการ</small></article><article class="ws-dashboard-card completed"><span>ผลดำเนินการ</span><strong id="dashboardDone">0</strong><p>ดำเนินการเสร็จสิ้น</p><small>มีผลการพิจารณาเรียบร้อยแล้ว</small></article></section><section class="ws-card ws-filters"><div class="ws-filter-grid"><div class="ws-field"><label>คำค้น</label><input id="filterSearch" placeholder="เลขเรื่อง ผู้ร้อง ชื่อเรื่อง หรือหน่วยงาน"></div><div class="ws-field"><label>ช่องทาง</label><select id="filterChannel"><option value="">ทุกช่องทาง</option>${['Website','Walk-in','สายด่วน 1206','หนังสือราชการ'].map(x=>`<option>${x}</option>`).join('')}</select></div><div class="ws-field"><label>เขตพื้นที่</label><select id="filterRegion"><option value="">ทุกเขต</option>${['ส่วนกลาง','เขต 1','เขต 2','เขต 3','เขต 4','เขต 5','เขต 6','เขต 7','เขต 8','เขต 9'].map(x=>`<option>${x}</option>`).join('')}</select></div><div class="ws-field"><label>จังหวัดเกิดเหตุ</label><select id="filterProvince"><option value="">ทุกจังหวัด</option>${['กรุงเทพมหานคร','ชลบุรี','นครราชสีมา','ขอนแก่น'].map(x=>`<option>${x}</option>`).join('')}</select></div><div class="ws-field"><label>ประเภทเรื่อง</label><select id="filterType"><option value="">ทุกประเภท</option>${['การจัดซื้อจัดจ้าง','ใช้อำนาจโดยมิชอบ','เบิกจ่ายงบประมาณ','เรียกรับผลประโยชน์'].map(x=>`<option>${x}</option>`).join('')}</select></div><div class="ws-field"><label>สถานะ</label><select id="filterStatus"><option value="">ทุกสถานะ</option><option>รอลงรับและมอบหมาย</option><option>รอเจ้าหน้าที่พิจารณา</option><option>รอ ผอ.ศรร.</option><option>รอ ผอ.กบค.</option><option>ดำเนินการเสร็จสิ้น</option></select></div><div class="ws-field"><label>ความเสี่ยงเรื่องซ้ำ</label><select id="filterDuplicate"><option value="">ทั้งหมด</option><option value="high">ควรตรวจสอบ</option><option value="low">ยังไม่พบสัญญาณ</option></select></div><div class="ws-field"><label>วันที่ลงรับ</label><input id="filterDate" type="date"></div></div></section><section class="ws-card"><div class="ws-table-wrap"><table class="ws-table"><thead><tr><th>เลขรับบริการ/วันที่</th><th>ผู้ร้องเรียน</th><th>ชื่อเรื่อง/หน่วยงาน</th><th>สถานที่เกิดเหตุ</th><th>ช่องทาง</th><th>สถานะ</th><th>เรื่องซ้ำ</th></tr></thead><tbody id="caseRows"></tbody></table></div></section></section><section id="caseDetailView" class="ws-hidden"></section></main>`;
     root.querySelector('a[href="complaint-form.html?mode=walkin"]')?.setAttribute('href','staff-intake.html');
+    const roleSelect=$('#wsRole');
+    if(roleSelect&&!roleSelect.querySelector('option[value="anonymous"]'))roleSelect.insertAdjacentHTML('beforeend','<option value="anonymous">กล่องบัตรสนเท่ห์</option>');
+    const pagePrimary=root.querySelector('.ws-page-head .ws-button.primary');
+    pagePrimary?.insertAdjacentHTML('beforebegin','<a class="ws-button secondary" href="staff-workflow.html?role=anonymous&box=anonymous">กล่องบัตรสนเท่ห์</a>');
     const updateAdminTools=()=>$$('.ws-admin-tool').forEach(button=>button.classList.toggle('ws-hidden',activeRole!=='admin'));
-    $('#wsRole').value=activeRole;updateAdminTools();$('#wsRole').onchange=e=>{activeRole=e.target.value;sessionStorage.setItem('ecmis-a4-role',activeRole);updateAdminTools();if(selectedId)renderDetail();renderList()};
+    $('#wsRole').value=activeRole;updateAdminTools();$('#wsRole').onchange=e=>{activeRole=e.target.value;sessionStorage.setItem('ecmis-a4-role',activeRole);updateAdminTools();delete $('#caseListView').dataset.anonymousReady;if(selectedId)renderDetail();renderList()};
     const duplicateObserver=new MutationObserver(()=>{
       enhanceNaccDispatch();
       enhanceNaccTransferReasons();
       enhanceSmartInputs();
       enhanceReviewRoute();
       enhanceActingIdentity();
+      enhanceAnonymousSuboption();
+      enhanceAnonymousList();
+      enhanceAnonymousBox();
       const check=$('#dupCheck');
       if(!check||check.dataset.autoChecked||activeRole!=='admin'||!selectedId?.endsWith('184'))return;
       check.dataset.autoChecked='true';
@@ -391,6 +401,67 @@
       order.placeholder='เลขที่คำสั่งและวันที่';
       order.closest('.ws-field')?.insertAdjacentHTML('beforebegin',`<div class="ws-callout"><strong>ผู้รักษาราชการแทน: ${escapeHtml(d.actingOfficer||'ยังไม่ระบุ')}</strong><br>เหตุที่ผู้มีอำนาจไม่อยู่: ${escapeHtml(d.absenceReasonType||'ยังไม่ระบุ')} ${escapeHtml(d.absenceNote||'')}</div>`);
       order.dataset.identityReady='true';
+    }
+    function enhanceAnonymousSuboption(){
+      if(activeRole!=='officer'||!selectedId)return;
+      const checkbox=$('#anonymous');
+      if(!checkbox||checkbox.dataset.suboptionReady)return;
+      const choice=checkbox.closest('.ws-choice');
+      const description=$('small',choice);
+      if(description)description.textContent='ใช้เฉพาะเมื่อเลือกผล “ไม่รับไว้ดำเนินการ” เพื่อส่งเข้ากล่องบัตรสนเท่ห์';
+      $$('input[name="decision"]').forEach(input=>input.addEventListener('change',()=>{if(input.checked&&input.value!=='not-accept')checkbox.checked=false}));
+      checkbox.dataset.suboptionReady='true';
+    }
+    function enhanceAnonymousList(){
+      const list=$('#caseListView');
+      if(activeRole!=='anonymous'||selectedId||!list||list.dataset.anonymousReady)return;
+      list.dataset.anonymousReady='true';
+      $('.ws-page-head h1',list).textContent='กล่องบัตรสนเท่ห์';
+      $('.ws-page-head p:not(.ws-kicker)',list).textContent='เรื่องไม่รับไว้ดำเนินการที่เป็นบัตรสนเท่ห์ และสถานะการส่งต่อกิจกรรมที่ 7';
+      $$('[data-case]',list).forEach(row=>{
+        const state=getState(row.dataset.case);
+        row.classList.toggle('ws-hidden',!['anonymous-box','activity7'].includes(state.workflow.stage));
+      });
+    }
+    function enhanceAnonymousBox(){
+      if(activeRole!=='anonymous'||!selectedId)return;
+      const body=$('.ws-editor-body'),actions=$('.ws-actions');
+      if(!body||!actions||body.dataset.anonymousBox)return;
+      body.dataset.anonymousBox='true';
+      const state=getState(selectedId),d=state.documentData,history=state.anonymousHistory||[];
+      if(d.decision!=='not-accept'||!d.anonymous){
+        body.innerHTML='<div class="ws-section"><div class="ws-callout">เรื่องนี้ไม่อยู่ในเงื่อนไขกล่องบัตรสนเท่ห์</div></div>';
+        actions.innerHTML='<button class="ws-button ghost" id="anonymousBack">กลับรายการ</button>';
+        $('#anonymousBack').onclick=()=>$('#backList').click();
+        return;
+      }
+      const step=Math.min(history.length,ANONYMOUS_CHAIN_STEPS.length-1);
+      const completed=state.workflow.stage==='activity7';
+      body.innerHTML=`<section class="anonymous-box-hero"><span>กล่องบัตรสนเท่ห์</span><h3>${completed?'ส่งต่อกิจกรรมที่ 7 แล้ว':escapeHtml(ANONYMOUS_CHAIN_STEPS[step])}</h3><p>เหตุผลไม่รับไว้ดำเนินการ: ${escapeHtml(d.notAcceptReason||'ไม่ระบุ')}</p></section><ol class="anonymous-chain">${ANONYMOUS_CHAIN_STEPS.map((label,index)=>`<li class="${completed||index<history.length?'done':index===step?'active':''}"><b>${index+1}</b><span><strong>${escapeHtml(label)}</strong><small>${history[index]?`${escapeHtml(history[index].name)} · ${escapeHtml(history[index].position)}`:index===step&&!completed?'รอดำเนินการ':'รอตามลำดับ'}</small></span></li>`).join('')}<li class="${completed?'done':''}"><b>4</b><span><strong>กิจกรรมที่ 7</strong><small>${completed?'รับข้อมูลจากกิจกรรมที่ 4 แล้ว':'รอผลพิจารณาครบตามลำดับ'}</small></span></li></ol>${completed?'':`<div class="ws-section"><h3>บันทึกความเห็นตามลำดับชั้น</h3><div class="ws-grid-2"><div class="ws-field"><label>ชื่อผู้พิจารณา *</label><input id="anonymousHeadName" placeholder="ระบุชื่อผู้พิจารณา"></div><div class="ws-field"><label>ตำแหน่ง *</label><input id="anonymousHeadPosition" value="${escapeHtml(ANONYMOUS_CHAIN_STEPS[step])}"></div><div class="ws-field ws-field-full"><label>ความเห็นหรือคำสั่ง *</label><textarea id="anonymousHeadOpinion" placeholder="บันทึกความเห็นก่อนส่งตามลำดับชั้น"></textarea></div></div></div>`}<div class="ws-section"><h3>ประวัติการพิจารณา</h3><ul class="ws-history">${history.length?history.map(entry=>`<li>${escapeHtml(entry.position)} · ${escapeHtml(entry.name)}: ${escapeHtml(entry.opinion)}<time>${entry.time}</time></li>`).join(''):'<li>ยังไม่มีประวัติการพิจารณา</li>'}</ul></div>`;
+      actions.innerHTML=completed?'<button class="ws-button ghost" id="anonymousBack">กลับกล่องบัตรสนเท่ห์</button>':`<button class="ws-button ghost" id="anonymousBack">กลับกล่องบัตรสนเท่ห์</button><button class="ws-button primary" id="anonymousAdvance">${step===ANONYMOUS_CHAIN_STEPS.length-1?'อนุมัติและส่งกิจกรรมที่ 7':'รับรองและส่งลำดับถัดไป'}</button>`;
+      $('#anonymousBack').onclick=()=>$('#backList').click();
+      if($('#anonymousAdvance'))$('#anonymousAdvance').onclick=()=>advanceAnonymousFlow();
+    }
+    async function advanceAnonymousFlow(){
+      const state=getState(selectedId),history=state.anonymousHistory||[],step=history.length;
+      const name=$('#anonymousHeadName')?.value.trim()||'',position=$('#anonymousHeadPosition')?.value.trim()||'',opinion=$('#anonymousHeadOpinion')?.value.trim()||'';
+      if(!name||!position||!opinion)return notify('warning','ข้อมูลการพิจารณายังไม่ครบ','กรอกชื่อ ตำแหน่ง และความเห็นก่อนส่งตามลำดับชั้น');
+      const isFinal=step===ANONYMOUS_CHAIN_STEPS.length-1;
+      const confirmed=await confirmDo(isFinal?'ยืนยันส่งกิจกรรมที่ 7':'ยืนยันส่งตามลำดับชั้น',isFinal?'ระบบจะสร้างข้อมูลส่งต่อกิจกรรมที่ 7':'ระบบจะส่งให้หัวหน้าพนักงานลำดับถัดไป',isFinal?'อนุมัติและส่งต่อ':'รับรองและส่งต่อ');
+      if(!confirmed.isConfirmed)return;
+      const entry={name,position,opinion,time:now()};
+      history.push(entry);state.anonymousHistory=history;
+      state.decisionHistory.push({text:`${position} ${name} บันทึกความเห็นบัตรสนเท่ห์: ${opinion}`,time:entry.time});
+      if(isFinal){
+        let queue={schemaVersion:1,records:{}};try{const parsed=JSON.parse(localStorage.getItem(ACTIVITY7_STORAGE_KEY)||'{}');if(parsed.schemaVersion===1&&parsed.records)queue=parsed}catch{}
+        queue.records[state.caseData.id]={handoffId:`activity4:${state.caseData.id}:activity7`,sourceReference:state.caseData.id,title:state.caseData.subject,decision:state.documentData.decision,anonymous:true,notAcceptReason:state.documentData.notAcceptReason,chain:history,transferredAt:new Date().toISOString(),sourceSystem:'Activity4HTMLPrototype'};
+        localStorage.setItem(ACTIVITY7_STORAGE_KEY,JSON.stringify(queue));
+        state.workflow={owner:'activity7',stage:'activity7',status:'ส่งต่อกิจกรรมที่ 7 แล้ว',complete:true};
+        state.decisionHistory.push({text:'ส่งข้อมูลบัตรสนเท่ห์จากกิจกรรมที่ 4 ไปยังกิจกรรมที่ 7 แล้ว',time:now()});
+      }else{
+        state.workflow.owner='anonymous';state.workflow.stage='anonymous-box';state.workflow.status=`รอ ${ANONYMOUS_CHAIN_STEPS[step+1]}`;
+      }
+      saveState(selectedId,state);notify('success',isFinal?'ส่งกิจกรรมที่ 7 แล้ว':'ส่งตามลำดับชั้นแล้ว',`สถานะปัจจุบัน: ${state.workflow.status}`);renderDetail();renderList();
     }
     function enhanceNaccDispatch(){
       if(activeRole!=='officer'||!selectedId)return;
@@ -595,8 +666,14 @@
         if(['18/1ก','18/1ข','18/4'].includes(d.decision)&&(!d.internalLetterNo||!d.internalLetterDate))return notify('warning','ข้อมูลหนังสือยังไม่ครบ','กรอกเลขหนังสือและวันที่หนังสือก่อนอนุมัติรับไว้ดำเนินการ');
         if(activeRole==='acting'){d.actingOrder=$('#actingOrder')?.value?.trim()||d.actingOrder||'';if(!d.actingOrder)return notify('warning','ยังไม่มีคำสั่งแต่งตั้ง','กรอกเลขที่คำสั่งและวันที่แต่งตั้งผู้รักษาราชการแทนก่อนอนุมัติ')}
         const approvalActor=activeRole==='acting'?`${d.actingOfficer||ROLE_LABELS[activeRole]} ตาม ${d.actingOrder}`:ROLE_LABELS[activeRole];
-        w.complete=true;w.status=d.anonymous?'ส่งต่อกิจกรรมที่ 7':'ดำเนินการเสร็จสิ้น';add(`${approvalActor} อนุมัติผลการพิจารณา${d.internalLetterNo?` เลขหนังสือ ${d.internalLetterNo} ลงวันที่ ${d.internalLetterDate}`:''}`);
-        handoffResult=window.ECMISActivity5Handoff?.create(localStorage,state,new Date().toISOString(),activeRole)||null;if(handoffResult?.eligible)w.status='ส่งต่อ Activity 5 แล้ว';
+        const anonymousRejected=d.decision==='not-accept'&&d.anonymous;
+        if(anonymousRejected){
+          w.owner='anonymous';w.stage='anonymous-box';w.status='รอหัวหน้าพนักงานผู้ตรวจเสนอ';w.complete=false;
+          add(`${approvalActor} อนุมัติไม่รับไว้ดำเนินการและส่งเข้ากล่องบัตรสนเท่ห์`);
+        }else{
+          w.complete=true;w.status='ดำเนินการเสร็จสิ้น';add(`${approvalActor} อนุมัติผลการพิจารณา${d.internalLetterNo?` เลขหนังสือ ${d.internalLetterNo} ลงวันที่ ${d.internalLetterDate}`:''}`);
+          handoffResult=window.ECMISActivity5Handoff?.create(localStorage,state,new Date().toISOString(),activeRole)||null;if(handoffResult?.eligible)w.status='ส่งต่อ Activity 5 แล้ว';
+        }
       }
       if(['center-return','center-send'].includes(action)&&d.centerAdditionalDetail)add('ผอ.ศรร. เพิ่มรายละเอียดประกอบการพิจารณา โดยไม่แก้ไขข้อมูลคำร้องเดิม');
       if(['division-center','division-return','approve'].includes(action)&&d.divisionAdditionalDetail)add(`${ROLE_LABELS[activeRole]} เพิ่มรายละเอียดประกอบการพิจารณา โดยไม่แก้ไขข้อมูลคำร้องเดิม`);
