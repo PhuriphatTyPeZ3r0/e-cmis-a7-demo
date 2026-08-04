@@ -1,0 +1,33 @@
+(() => {
+  const province = document.getElementById('province');
+  const district = document.getElementById('district');
+  const districtHint = document.getElementById('districtHint');
+  const form = document.getElementById('memberRegisterForm');
+  const locationUrl = 'https://raw.githubusercontent.com/kongvut/thai-province-data/refs/heads/master/api/latest/province_with_district_and_sub_district.json';
+  const fallback = [
+    {name_th:'กรุงเทพมหานคร',districts:['เขตพระนคร','เขตดุสิต','เขตหนองจอก','เขตบางรัก','เขตบางเขน','เขตบางกะปิ','เขตปทุมวัน','เขตป้อมปราบศัตรูพ่าย','เขตพระโขนง','เขตมีนบุรี','เขตลาดกระบัง','เขตยานนาวา','เขตสัมพันธวงศ์','เขตพญาไท','เขตธนบุรี','เขตบางกอกใหญ่','เขตห้วยขวาง','เขตคลองสาน','เขตตลิ่งชัน','เขตบางกอกน้อย']},
+    {name_th:'นนทบุรี',districts:['เมืองนนทบุรี','บางกรวย','บางใหญ่','บางบัวทอง','ไทรน้อย','ปากเกร็ด']},
+    {name_th:'ชลบุรี',districts:['เมืองชลบุรี','บ้านบึง','หนองใหญ่','บางละมุง','พานทอง','พนัสนิคม','ศรีราชา','เกาะสีชัง','สัตหีบ','บ่อทอง','เกาะจันทร์']},
+    {name_th:'เชียงใหม่',districts:['เมืองเชียงใหม่','จอมทอง','แม่แจ่ม','เชียงดาว','ดอยสะเก็ด','แม่แตง','แม่ริม','สะเมิง','ฝาง','แม่อาย','พร้าว','สันป่าตอง','สันกำแพง','สันทราย','หางดง','ฮอด','ดอยเต่า','อมก๋อย','สารภี','เวียงแหง','ไชยปราการ','แม่วาง','แม่ออน','ดอยหล่อ','กัลยาณิวัฒนา']},
+    {name_th:'ขอนแก่น',districts:['เมืองขอนแก่น','บ้านฝาง','พระยืน','หนองเรือ','ชุมแพ','สีชมพู','น้ำพอง','อุบลรัตน์','กระนวน','บ้านไผ่','เปือยน้อย','พล','แวงใหญ่','แวงน้อย','หนองสองห้อง','ภูเวียง','มัญจาคีรี','ชนบท','เขาสวนกวาง','ภูผาม่าน','ซำสูง','โคกโพธิ์ไชย','หนองนาคำ','บ้านแฮด','โนนศิลา','เวียงเก่า']},
+    {name_th:'สงขลา',districts:['เมืองสงขลา','สทิงพระ','จะนะ','นาทวี','เทพา','สะบ้าย้อย','ระโนด','กระแสสินธุ์','รัตภูมิ','สะเดา','หาดใหญ่','นาหม่อม','ควนเนียง','บางกล่ำ','สิงหนคร','คลองหอยโข่ง']}
+  ];
+  let locations = [];
+  function isValidCitizenId(value){
+    const digits=String(value).replace(/\D/g,'');
+    if(digits.length!==13)return false;
+    const sum=[...digits.slice(0,12)].reduce((total,digit,index)=>total+(Number(digit)*(13-index)),0);
+    return (11-(sum%11))%10===Number(digits[12]);
+  }
+  const normalize = records => records.map(item => ({name_th:item.name_th,districts:(item.districts || item.amphure || []).map(entry => typeof entry === 'string' ? entry : entry.name_th)}));
+  function renderProvinces(){province.innerHTML='<option value="">เลือกจังหวัด</option>'+locations.map(item=>`<option value="${item.name_th}">${item.name_th}</option>`).join('');}
+  function renderDistricts(){const selected=locations.find(item=>item.name_th===province.value);district.innerHTML='<option value="">เลือกอำเภอ/เขต</option>';if(!selected){district.disabled=true;districtHint.textContent='รายการอำเภอ/เขตจะเปลี่ยนตามจังหวัดที่เลือก';return}selected.districts.filter(Boolean).forEach(name=>district.add(new Option(name,name)));district.disabled=false;districtHint.textContent=`พบ ${selected.districts.length} อำเภอ/เขตในจังหวัดที่เลือก`;}
+  fetch(locationUrl).then(response=>{if(!response.ok)throw new Error('location data unavailable');return response.json()}).then(data=>{locations=normalize(data);renderProvinces()}).catch(()=>{locations=normalize(fallback);renderProvinces();districtHint.textContent='ขณะนี้แสดงข้อมูลพื้นที่สำรองสำหรับหน้าจอต้นแบบ'});
+  province.addEventListener('change',renderDistricts);
+  document.getElementById('citizenId').addEventListener('input',event=>{const digits=event.target.value.replace(/\D/g,'').slice(0,13);event.target.value=digits.replace(/(\d)(\d{4})(\d{5})(\d{2})(\d)/,'$1-$2-$3-$4-$5');event.target.setCustomValidity(digits.length===13&&!isValidCitizenId(digits)?'เลขประจำตัวประชาชนไม่ถูกต้อง':'')});
+  document.getElementById('phone').addEventListener('input',event=>{event.target.value=event.target.value.replace(/\D/g,'').slice(0,10)});
+  document.querySelectorAll('[data-font]').forEach(button=>button.addEventListener('click',()=>{const step=Number(button.dataset.font);document.documentElement.style.fontSize=step===0?'16px':`${16+(step*2)}px`}));
+  document.getElementById('contrastButton').addEventListener('click',()=>document.body.classList.toggle('high-contrast'));
+  document.getElementById('languageButton').addEventListener('click',()=>Swal.fire({icon:'info',title:'หน้าจอต้นแบบภาษาไทย',text:'ยังไม่ได้จัดทำข้อความภาษาอังกฤษในขอบเขตนี้',confirmButtonColor:'#0a2647'}));
+  form.addEventListener('submit',event=>{event.preventDefault();const citizen=document.getElementById('citizenId');const citizenDigits=citizen.value.replace(/\D/g,'');const phoneDigits=document.getElementById('phone').value.replace(/\D/g,'');citizen.setCustomValidity(isValidCitizenId(citizenDigits)?'':'เลขประจำตัวประชาชนไม่ถูกต้อง');document.getElementById('phone').setCustomValidity(phoneDigits.length===10?'':'invalid');if(!form.checkValidity()){form.classList.add('was-validated');form.querySelector(':invalid')?.focus();return}Swal.fire({icon:'success',title:'ลงทะเบียนสมาชิกเรียบร้อยแล้ว',confirmButtonText:'กลับหน้าหลัก',confirmButtonColor:'#0a2647'}).then(()=>{window.location.href='index.html'});});
+})();
