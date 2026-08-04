@@ -106,6 +106,22 @@
       {id:'690002',code:'K9P2',subject:'ร้องเรียนการใช้อำนาจโดยมิชอบของเจ้าหน้าที่',agency:'องค์การบริหารส่วนตำบลตัวอย่าง',date:'25 กรกฎาคม 2569',updated:'2 สิงหาคม 2569',status:'ส่งหน่วยงานที่มีอำนาจแล้ว',tone:'forwarded',caseNo:'ไม่ออกเลขสำนวน',letter:'ปป 0012/2569',owner:'สำนักงาน ป.ป.ช.',contact:'เลขหนังสือใช้สำหรับติดตามกับหน่วยงานปลายทาง',detail:'เรื่องอยู่ในอำนาจของสำนักงาน ป.ป.ช. จึงดำเนินการจัดทำหนังสือนำส่งตามขั้นตอน',place:'จังหวัดชลบุรี',files:['คำร้องเรียน.pdf'],timeline:[['รับข้อมูลแล้ว','25 กรกฎาคม 2569','ระบบได้รับเรื่องร้องเรียน'],['พิจารณาอำนาจหน้าที่','29 กรกฎาคม 2569','เจ้าหน้าที่เสนอส่งหน่วยงานที่มีอำนาจ'],['ออกหนังสือนำส่งแล้ว','2 สิงหาคม 2569','ส่งเรื่องไปยังสำนักงาน ป.ป.ช.']]},
       {id:'690003',code:'8DMR',subject:'ขอให้ตรวจสอบการเบิกจ่ายงบประมาณโครงการ',agency:'สำนักงานจังหวัดตัวอย่าง',date:'18 กรกฎาคม 2569',updated:'1 สิงหาคม 2569',status:'รับไว้ดำเนินการแล้ว',tone:'accepted',caseNo:'สส 2569/0017',letter:'—',owner:'นางสาวกานดา วัฒนกิจ',contact:'ศูนย์รับเรื่องร้องเรียน โทร. 1206',detail:'ตรวจพบข้อสังเกตเกี่ยวกับเอกสารการเบิกจ่ายงบประมาณโครงการและรับไว้ดำเนินการตามมาตรา 18/1 (ก)',place:'จังหวัดนครราชสีมา',files:['เอกสารประกอบ.pdf','ตารางเบิกจ่าย.xlsx'],timeline:[['รับข้อมูลแล้ว','18 กรกฎาคม 2569','ระบบได้รับเรื่องร้องเรียน'],['ผอ. ศรร. เห็นชอบ','28 กรกฎาคม 2569','เห็นชอบตามข้อเสนอของเจ้าหน้าที่'],['ผอ. กบค. อนุมัติ','1 สิงหาคม 2569','ออกเลขสำนวนและมอบหมายผู้รับผิดชอบ']]}
     ];
+    try{
+      const workspace=JSON.parse(localStorage.getItem('ecmis-a4-workspace-v3')||'{}');
+      const forwarded=workspace['ECMIS-2569-000184'];
+      if(forwarded?.workflow?.complete&&forwarded?.documentData?.decision==='send-nacc'){
+        const data=forwarded.documentData;
+        cases[0].status='ส่งสำนักงาน ป.ป.ช. แล้ว';
+        cases[0].tone='forwarded';
+        cases[0].updated=data.naccSentDate||'ล่าสุด';
+        cases[0].caseNo='ไม่ออกเลขสำนวน';
+        cases[0].letter=data.naccLetterNo;
+        cases[0].owner='สำนักงาน ป.ป.ช.';
+        cases[0].contact=`เลข EMS: ${data.naccEms||'ไม่ได้ใช้ EMS'} · ${data.naccBoardNo||'ไม่ระบุมติบอร์ด'}`;
+        cases[0].detail=data.naccBoardNote||'สำนักงานได้ส่งเรื่องไปยังสำนักงาน ป.ป.ช. แล้ว';
+        cases[0].timeline.push(['ผอ. กบค. อนุมัติส่ง ป.ป.ช.',data.naccBoardDate||'','อนุมัติตามมติที่บันทึกในระบบ'],['ส่งสำนักงาน ป.ป.ช. แล้ว',data.naccSentDate||'',`เลขหนังสือ ${data.naccLetterNo}${data.naccEms?` · EMS ${data.naccEms}`:''}`]);
+      }
+    }catch{}
     const list=document.getElementById('caseList'),detail=document.getElementById('caseDetail');
     function renderList(){list.innerHTML=cases.map((item,index)=>`<button class="case-row" data-case="${index}" type="button" aria-expanded="false"><div><h3>${item.subject}</h3><p>เลขรับบริการ ${item.id} · ${item.agency}</p></div><div><span class="status ${item.tone}">${item.status}</span><small>อัปเดต ${item.updated}</small></div><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button>`).join('');document.querySelectorAll('[data-case]').forEach(button=>button.addEventListener('click',()=>showCase(Number(button.dataset.case),button)))}
     let openCase=null;
