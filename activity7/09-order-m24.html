@@ -253,24 +253,44 @@ function renderMembers(){
     }));
 }
 
-/* ---------- ม.24 ว.1 composition rules ---------- */
+/* ---------- ม.24 ว.1 composition rules ----------
+   [F-03] กติกาองค์ประกอบองค์คณะย้ายไปอยู่ที่โมเดลกลาง ECMIS.panelComposition()
+   เพื่อให้ตรวจครบทั้ง 3 เงื่อนไขของ ม.24 วรรคหนึ่ง (ขนาด ≥ 2 · มีพนักงาน ป.ป.ท.
+   อย่างน้อย 1 คน · สัดส่วนกึ่งหนึ่งเมื่อใช้ "กรณีจำเป็น" ตั้งเจ้าหน้าที่ ป.ป.ท.
+   เกินสองคน) และทดสอบได้ด้วยเทสหน่วย เดิมหน้านี้ตรวจเองและตกเงื่อนไขไป
+
+   ข้อสำคัญเรื่องขอบเขต: ม.24 **วรรคสาม** (คณะอนุกรรมการไต่สวน) เป็นคนละฐาน
+   อำนาจ ตัวบทไม่มีถ้อยคำเรื่ององค์ประกอบ/สัดส่วนนี้ จึงต้อง **ไม่** เรียก
+   panelComposition() กับเส้นทาง ACCEPT_S24P3                                */
 function renderRules(){
   const officers = members.filter(m => m.type === 'officer').length;
   const staff    = members.filter(m => m.type === 'staff').length;
-  const rules = isSub ? [
-    { ok: members.length >= 3, t:'คณะอนุกรรมการไต่สวนควรมีองค์ประกอบไม่น้อยกว่า 3 คน (ประธาน / อนุกรรมการ / เลขานุการ)' },
-    { ok: members.some(m => m.role.includes('ประธาน')), t:'ระบุประธานอนุกรรมการไต่สวน' },
-    { ok: members.some(m => m.role.includes('เลขานุการ')), t:'ระบุอนุกรรมการและเลขานุการ' },
-    { ok: true, t:'ม.24 ว.3 — แต่งตั้งได้เฉพาะเรื่องสำคัญหรือมีความซับซ้อน ตามข้อเสนอแนะของเลขาธิการฯ' }
-  ] : [
-    { ok: members.length >= 2, t:'องค์คณะไม่น้อยกว่า 2 คน (ม.24 วรรคหนึ่ง)' },
-    { ok: officers >= 1,       t:'มีพนักงาน ป.ป.ท. อย่างน้อย 1 คน' },
-    { ok: staff <= 2 || officers >= Math.ceil(staff / 2),
-      t: staff <= 2
-        ? 'เจ้าหน้าที่ ป.ป.ท. ไม่เกิน 2 คน — เป็นไปตามเกณฑ์ปกติ'
-        : `กรณีเจ้าหน้าที่ ป.ป.ท. เกิน 2 คน ต้องมีพนักงาน ป.ป.ท. ไม่น้อยกว่ากึ่งหนึ่ง (ต้องมี ≥ ${Math.ceil(staff/2)} คน · ปัจจุบัน ${officers})` },
-    { ok: members.some(m => m.role.includes('หัวหน้า')), t:'ระบุหัวหน้าองค์คณะ' }
-  ];
+
+  let rules;
+  if(isSub){
+    /* ม.24 ว.3 — ไม่อยู่ใต้กฎองค์ประกอบของวรรคหนึ่ง */
+    rules = [
+      { ok: members.length >= 3, t:'คณะอนุกรรมการไต่สวนควรมีองค์ประกอบไม่น้อยกว่า 3 คน (ประธาน / อนุกรรมการ / เลขานุการ)' },
+      { ok: members.some(m => m.role.includes('ประธาน')), t:'ระบุประธานอนุกรรมการไต่สวน' },
+      { ok: members.some(m => m.role.includes('เลขานุการ')), t:'ระบุอนุกรรมการและเลขานุการ' },
+      { ok: true, t:'ม.24 ว.3 — แต่งตั้งได้เฉพาะเรื่องสำคัญหรือมีความซับซ้อน ตามข้อเสนอแนะของเลขาธิการฯ' },
+      { ok: true, t:'องค์ประกอบตาม ม.24 ว.1 (พนักงาน ป.ป.ท. / สัดส่วนเจ้าหน้าที่ ป.ป.ท.) ไม่ใช้บังคับกับคณะอนุกรรมการไต่สวนตามวรรคสาม' }
+    ];
+  } else {
+    const comp = ECMIS.panelComposition({ officers, staff });
+    rules = [
+      { ok: comp.minSize,
+        t:`องค์คณะไม่น้อยกว่า ${ECMIS.M24P1_MIN_PANEL} คน (ม.24 วรรคหนึ่ง) · ปัจจุบัน ${comp.total} คน` },
+      { ok: comp.hasOfficer,
+        t:`ประกอบด้วยพนักงาน ป.ป.ท. อย่างน้อย 1 คน (ม.24 วรรคหนึ่ง) · ปัจจุบัน ${comp.officers} คน` },
+      { ok: comp.ratioOk,
+        t: !comp.exceptional
+          ? `เจ้าหน้าที่ ป.ป.ท. ไม่เกิน ${ECMIS.M24P1_STAFF_FREE} คน — เป็นไปตามเกณฑ์ปกติของ ม.24 วรรคหนึ่ง (ปัจจุบัน ${comp.staff} คน)`
+          : `กรณีจำเป็นที่ตั้งเจ้าหน้าที่ ป.ป.ท. เกิน ${ECMIS.M24P1_STAFF_FREE} คน (${comp.staff} คน) ต้องมีพนักงาน ป.ป.ท. ไม่น้อยกว่ากึ่งหนึ่งของจำนวนเจ้าหน้าที่ ป.ป.ท. — ต้องมี ≥ ${comp.officerMin} คน · ปัจจุบัน ${comp.officers} คน` },
+      { ok: members.some(m => m.role.includes('หัวหน้า')), t:'ระบุหัวหน้าองค์คณะ' }
+    ];
+  }
+
   document.getElementById('compRules').innerHTML = rules.map(r =>
     `<div class="rule ${r.ok?'pass':'fail'}">
       <i class="fa-solid ${r.ok?'fa-circle-check':'fa-circle-xmark'}"></i><span>${r.t}</span></div>`).join('');
@@ -350,9 +370,30 @@ function handle(act){
     if(!document.getElementById('orderNo').value.trim()){
       ECMIS.toastWarn('กรุณากรอกเลขที่คำสั่งที่ขอจากงานสารบรรณ'); return;
     }
-    if(!renderRules()){
-      Swal.fire({ icon:'error', title:'องค์ประกอบผู้ไต่สวนไม่เป็นไปตาม ม.24',
-        html: document.getElementById('compRules').innerHTML,
+    /* [F-03] บล็อกการลงนามเมื่อองค์ประกอบไม่ผ่าน — คำสั่งที่องค์ประกอบไม่ครบ
+       ตาม ม.24 วรรคหนึ่ง จะไม่ชอบด้วยกฎหมายตั้งแต่ต้น และทำให้สำนวนที่ไต่สวน
+       โดยองค์คณะนั้นเสียไปทั้งหมด ระบบจึงต้องกันไว้ก่อนลงนาม ไม่ใช่เตือนเฉย ๆ  */
+    const rulesOk = renderRules();
+    const comp = isSub ? null : ECMIS.panelComposition({
+      officers: members.filter(m => m.type === 'officer').length,
+      staff:    members.filter(m => m.type === 'staff').length
+    });
+    const BLOCK_MSG = {
+      M24P1_MIN_PANEL:   'ม.24 วรรคหนึ่ง — "องค์คณะละไม่น้อยกว่าสองคนตามที่เลขาธิการแต่งตั้ง"',
+      M24P1_NO_OFFICER:  'ม.24 วรรคหนึ่ง — องค์คณะต้อง "ประกอบด้วยพนักงาน ป.ป.ท. อย่างน้อยหนึ่งคน"',
+      M24P1_OFFICER_RATIO:'ม.24 วรรคหนึ่ง — กรณีตั้งเจ้าหน้าที่ ป.ป.ท. เกินสองคน "ต้องมีพนักงาน ป.ป.ท. ไม่น้อยกว่ากึ่งหนึ่งของจำนวนเจ้าหน้าที่ ป.ป.ท."'
+    };
+    if(!rulesOk){
+      const cite = comp && comp.blockedBy
+        ? `<div style="background:#fdecea;border-left:4px solid #a5322a;padding:.6rem .8rem;border-radius:0 6px 6px 0;margin-bottom:.6rem">
+             <strong>ฐานที่ระบบใช้บล็อก:</strong><br>${BLOCK_MSG[comp.blockedBy]}
+             <br><small>ปัจจุบัน พนักงาน ป.ป.ท. ${comp.officers} คน · เจ้าหน้าที่ ป.ป.ท. ${comp.staff} คน (รวม ${comp.total} คน)</small>
+           </div>`
+        : `<div class="mb-2">องค์ประกอบยังไม่ครบตามที่กฎหมายและแบบคำสั่งกำหนด</div>`;
+      Swal.fire({ icon:'error',
+        title: isSub ? 'องค์ประกอบคณะอนุกรรมการไต่สวนยังไม่ครบ'
+                     : 'องค์ประกอบองค์คณะไม่เป็นไปตาม ม.24 วรรคหนึ่ง',
+        html: cite + document.getElementById('compRules').innerHTML,
         confirmButtonColor:'#a5322a', customClass:{ popup:'text-start' } });
       return;
     }

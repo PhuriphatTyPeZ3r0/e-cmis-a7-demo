@@ -89,12 +89,21 @@ assert.equal(forward.needsDestination, true, "มติ FORWARD ต้องบ�
 
 const nacc = ECMIS.forwardTarget("NACC");
 assert.equal(nacc.external, true, "ป.ป.ช. เป็นปลายทางนอกองค์กร");
-assert.equal(nacc.slaDays, 30, "ส่ง ป.ป.ช. มี SLA 30 วันตามผัง");
+/* [F-02] นาฬิกาสองเรือน — 15 วันคือกำหนดส่งตามกฎหมาย (ม.18/1) ขยายไม่ได้
+   ส่วน 30 วันคือกรอบกำกับติดตามของกิจกรรมที่ 8 (CHK011) มิใช่กำหนดส่ง */
+assert.equal(nacc.statutorySlaDays, 15,
+  "ม.18/1 (ก)(3)/(ข)(1)/(ข)(3) — ส่งสำนวนให้ ป.ป.ช. ภายใน 15 วัน");
+assert.equal(nacc.trackingSlaDays, 30,
+  "เล่ม 6 กิจกรรมที่ 8 CHK011 — กรอบกำกับติดตาม 30 วันนับแต่วันที่ได้รับมติ");
+assert.equal(nacc.requireArchiveCopy, true,
+  "ม.18/1 บังคับคัดสำเนาสำนวนเก็บรักษาไว้เป็นหลักฐาน");
 assert.equal(nacc.requireSignedScan, true,
   "ปลายทางนอกองค์กรต้องบังคับอัปโหลดไฟล์สแกนฉบับลงนามกลับ (TOR 7.2.1.5)");
 assert.equal(ECMIS.forwardTarget("SCREENING").external, false,
   "คณะอนุกลั่นกรองฯ เป็นปลายทางภายใน จึงไม่ต้องอัปโหลดไฟล์สแกน");
 assert.equal(ECMIS.forwardTarget("SCREENING").requireSignedScan, false);
+assert.equal(ECMIS.forwardTarget("SCREENING").statutorySlaDays, undefined,
+  "ปลายทางภายในไม่อยู่ใต้ ม.18/1 จึงต้องไม่มีกำหนดส่งตามกฎหมาย");
 
 assert.equal(ECMIS.RESOLUTIONS.find((r) => r.code === "ACCEPT_S24P1").signer, "เลขาธิการฯ",
   "ม.24 ว.1 องค์คณะพนักงาน ป.ป.ท. — เลขาธิการฯ เป็นผู้แต่งตั้ง");

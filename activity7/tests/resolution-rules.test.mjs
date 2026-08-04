@@ -193,10 +193,15 @@ T("UT-ST-19", "องค์ประชุมไม่ครบ เหลือ�
 /* =======================================================================
    UT-EP — Equivalence Partitioning: ประเภทผลมติและปลายทาง
    ======================================================================= */
-T("UT-EP-01", "มติครบ 5 ทางออกตามแบบฟอร์มมติไต่สวนเบื้องต้น", () => {
-  const codes = E.RESOLUTIONS.map(r => r.code);
-  ["ACCEPT_S24P1", "ACCEPT_S24P3", "REJECT", "MORE_INVESTIGATE", "FORWARD"]
+/* [F-04] มติ REJECT เดิมถูกแยกเป็น NOT_ACCEPTED (ม.25/ม.26) กับ NO_GROUND (ม.32)
+   และเพิ่ม DISMISS (ม.26 ประกอบ ม.28) — รหัสเดิมต้องไม่หลงเหลืออยู่ */
+T("UT-EP-01", "ทางออกของมติครบตามฐานกฎหมายที่แยกจากกัน", () => {
+  const codes = Array.from(E.RESOLUTIONS, r => r.code);
+  ["ACCEPT_S24P1", "ACCEPT_S24P3", "NOT_ACCEPTED", "DISMISS", "NO_GROUND",
+   "MORE_INVESTIGATE", "FORWARD"]
     .forEach(c => assert.ok(codes.includes(c), `ขาดมติ ${c}`));
+  assert.equal(codes.includes("REJECT"), false,
+    "รหัส REJECT เดิมรวม ม.25/ม.26 เข้ากับ ม.32 จึงต้องถูกเลิกใช้");
 });
 
 T("UT-EP-02", "ผู้ลงนามคำสั่งแยกตามวรรคของ ม.24", () => {
@@ -217,9 +222,12 @@ T("UT-EP-04", "เฉพาะปลายทางนอกองค์กร�
   assert.equal(E.forwardTarget("LEGAL").requireSignedScan, false);
 });
 
-T("UT-EP-05", "SLA ปลายทาง: ป.ป.ช. 30 วัน / ภายใน 15 วัน", () => {
-  assert.equal(E.forwardTarget("NACC").slaDays, 30);
-  assert.equal(E.forwardTarget("SCREENING").slaDays, 15);
+/* [F-02] เดิมเทสนี้ยืนยัน slaDays ค่าเดียว 30 วัน ซึ่งเอากรอบเวลาคนละชนิด
+   มายุบรวมกัน ตอนนี้ตารางแยกเป็นกำหนดส่งตามกฎหมายกับกรอบกำกับติดตาม */
+T("UT-EP-05", "กรอบเวลาปลายทาง: ป.ป.ช. มีทั้งกำหนดส่ง 15 วันและกรอบติดตาม 30 วัน", () => {
+  assert.equal(E.forwardTarget("NACC").statutorySlaDays, 15);
+  assert.equal(E.forwardTarget("NACC").trackingSlaDays, 30);
+  assert.equal(E.forwardTarget("SCREENING").trackingSlaDays, 15);
 });
 
 /* =======================================================================
@@ -246,5 +254,128 @@ T("UT-M28-01", "รอบรายงาน = 15 วัน และเกณฑ
 });
 T("UT-M28-02", "คิว ม.28 มีเฉพาะเรื่องที่ยังไม่ได้รายงานบอร์ด", () =>
   assert.ok(E.m28Pending().every(c => c.m28.reported === false)));
+
+/* =======================================================================
+   UT-M24 — องค์ประกอบองค์คณะ ม.24 วรรคหนึ่ง (BVA บนทุกเงื่อนไขของตัวบท)
+   "องค์คณะละไม่น้อยกว่าสองคน ... ประกอบด้วยพนักงาน ป.ป.ท. อย่างน้อยหนึ่งคน
+    และจะแต่งตั้งเจ้าหน้าที่ ป.ป.ท. ไม่เกินสองคนร่วมเป็นองค์คณะด้วยก็ได้
+    ในกรณีจำเป็นจะแต่งตั้งเจ้าหน้าที่ ป.ป.ท. เกินสองคนก็ได้ แต่ต้องมีพนักงาน
+    ป.ป.ท. ไม่น้อยกว่ากึ่งหนึ่งของจำนวนเจ้าหน้าที่ ป.ป.ท."
+   ======================================================================= */
+const P = (officers, staff) => E.panelComposition({ officers, staff });
+
+T("UT-M24-01", "ขอบของ 'พนักงาน ป.ป.ท. อย่างน้อยหนึ่งคน': 0 ตก / 1 ผ่าน", () => {
+  const none = P(0, 2);
+  assert.equal(none.hasOfficer, false);
+  assert.equal(none.valid, false, "องค์คณะที่ไม่มีพนักงาน ป.ป.ท. เลย ขัด ม.24 ว.1");
+  assert.equal(none.blockedBy, "M24P1_NO_OFFICER");
+  assert.equal(P(1, 1).valid, true, "พนักงาน ป.ป.ท. 1 คน = ขอบล่างที่กฎหมายยอมรับ");
+});
+
+T("UT-M24-02", "ขอบของเจ้าหน้าที่ ป.ป.ท.: 2 คนอยู่ในเกณฑ์ปกติ / 3 คนเข้ากรณีจำเป็น", () => {
+  const normal = P(1, 2);
+  assert.equal(normal.exceptional, false, "ไม่เกินสองคน = เกณฑ์ปกติ ไม่ต้องดูสัดส่วน");
+  assert.equal(normal.ratioOk, true);
+  assert.equal(normal.valid, true);
+  /* เกินสองคนเมื่อใด เงื่อนไขสัดส่วนกึ่งหนึ่งเริ่มมีผลทันที */
+  const exceptional = P(1, 3);
+  assert.equal(exceptional.exceptional, true);
+  assert.equal(exceptional.officerMin, 2, "กึ่งหนึ่งของ 3 ปัดขึ้น = 2");
+  assert.equal(exceptional.valid, false, "พนักงาน ป.ป.ท. 1 คน ไม่ถึงกึ่งหนึ่งของ 3");
+  assert.equal(exceptional.blockedBy, "M24P1_OFFICER_RATIO");
+});
+
+T("UT-M24-03", "ขอบของสัดส่วนกึ่งหนึ่ง: staff 4 + officers 1 ตก / staff 4 + officers 2 ผ่าน", () => {
+  const below = P(1, 4);
+  assert.equal(below.officerMin, 2);
+  assert.equal(below.ratioOk, false);
+  assert.equal(below.valid, false, "1 < กึ่งหนึ่งของ 4");
+  assert.equal(below.blockedBy, "M24P1_OFFICER_RATIO");
+  const atEdge = P(2, 4);
+  assert.equal(atEdge.ratioOk, true, "2 = กึ่งหนึ่งของ 4 พอดี — ตัวบทใช้คำว่า 'ไม่น้อยกว่า'");
+  assert.equal(atEdge.valid, true);
+  assert.equal(atEdge.blockedBy, null);
+});
+
+T("UT-M24-04", "ขอบขนาดองค์คณะ: รวม 1 คนตก / รวม 2 คนผ่าน", () => {
+  const tooSmall = P(1, 0);
+  assert.equal(tooSmall.total, 1);
+  assert.equal(tooSmall.minSize, false);
+  assert.equal(tooSmall.valid, false);
+  assert.equal(tooSmall.blockedBy, "M24P1_MIN_PANEL", "ขนาดต้องถูกตรวจก่อนเงื่อนไขอื่น");
+  assert.equal(P(2, 0).valid, true, "พนักงาน ป.ป.ท. ล้วน 2 คน = องค์คณะที่ชอบด้วยกฎหมาย");
+  /* ไม่ส่งพารามิเตอร์เลยต้องไม่ throw และต้องถือว่าไม่ผ่าน */
+  assert.equal(E.panelComposition().valid, false);
+  assert.equal(E.panelComposition({}).blockedBy, "M24P1_MIN_PANEL");
+});
+
+T("UT-M24-05", "ม.24 ว.3 ไม่อยู่ใต้กฎองค์ประกอบของวรรคหนึ่ง", () => {
+  /* คณะอนุกรรมการไต่สวนตามวรรคสามแต่งตั้งโดยบอร์ด และตัวบทไม่มีถ้อยคำเรื่อง
+     สัดส่วนพนักงาน/เจ้าหน้าที่ ป.ป.ท. — โมเดลจึงต้องไม่ผูกกฎนี้กับมติ ACCEPT_S24P3 */
+  const s24p3 = E.RESOLUTIONS.find(r => r.code === "ACCEPT_S24P3");
+  assert.equal(s24p3.signer, "ประธานกรรมการ ป.ป.ท.");
+  assert.equal(s24p3.panelRule, undefined,
+    "มติ ว.3 ต้องไม่ประกาศกฎองค์ประกอบของ ว.1 ไว้กับตัวเอง");
+});
+
+/* =======================================================================
+   UT-M32 — ม.32 ต้องผูกกับ "ข้อกล่าวหาไม่มีมูล" เท่านั้น
+   ======================================================================= */
+T("UT-M32-01", "NO_GROUND (ม.32) ต้องมีกรอบแจ้งผู้ถูกกล่าวหา 15 วัน", () => {
+  const r = E.RESOLUTIONS.find(x => x.code === "NO_GROUND");
+  assert.ok(r, "ต้องมีมติ 'ข้อกล่าวหาไม่มีมูล' แยกออกมา");
+  assert.equal(r.noticeDays, 15,
+    "ม.32 — แจ้งผู้ถูกกล่าวหาไม่ช้ากว่า 15 วันนับแต่วันที่บอร์ดมีมติ");
+  assert.ok(String(r.legalBasis).includes("32"));
+});
+
+T("UT-M32-02", "NOT_ACCEPTED (ม.25/ม.26) ต้องไม่มีกรอบ 15 วันของ ม.32", () => {
+  const r = E.RESOLUTIONS.find(x => x.code === "NOT_ACCEPTED");
+  assert.ok(r, "ต้องมีมติ 'ไม่รับเรื่องไว้พิจารณา' แยกออกมา");
+  assert.equal(r.noticeDays, undefined,
+    "การไม่รับเรื่องไว้พิจารณาเป็นคนละสถานะกับข้อกล่าวหาไม่มีมูล จึงไม่มีกรอบ ม.32");
+  assert.equal(r.needsLawRef, true, "ต้องบังคับอ้างมาตราตาม ม.25/ม.26");
+  /* ม.28 ให้เลขาธิการฯ สั่งได้ 3 ทาง — สั่งจำหน่ายเรื่องก็ไม่อยู่ใต้ ม.32 เช่นกัน */
+  const dismiss = E.RESOLUTIONS.find(x => x.code === "DISMISS");
+  assert.ok(dismiss, "ต้องมีมติ 'สั่งจำหน่ายเรื่อง (ม.26)'");
+  assert.equal(dismiss.noticeDays, undefined);
+});
+
+/* =======================================================================
+   UT-M18 — ม.18/1 ส่งเรื่องให้ ป.ป.ช.
+   ตัวเลข 15 กับ 30 เป็นนาฬิกาคนละเรือน ต้องแยกฟิลด์กันเสมอ
+   ======================================================================= */
+T("UT-M18-01", "ปลายทาง ป.ป.ช.: กำหนดส่งตามกฎหมาย 15 วัน + คัดสำเนาเก็บไว้", () => {
+  const nacc = E.forwardTarget("NACC");
+  assert.equal(nacc.statutorySlaDays, 15,
+    "ม.18/1 (ก)(3)/(ข)(1)/(ข)(3) กำหนด 15 วันทั้งสามกรณี");
+  assert.equal(nacc.requireArchiveCopy, true,
+    "ม.18/1 — ต้องคัดสำเนาสำนวนเก็บรักษาไว้เป็นหลักฐานด้วย");
+  assert.equal(nacc.trackingSlaDays, 30,
+    "กรอบกำกับติดตาม 30 วัน (เล่ม 6 กจ.8 CHK011) เป็นคนละเรือน ต้องไม่ทับกำหนดส่ง");
+  assert.notEqual(nacc.statutorySlaDays, nacc.trackingSlaDays,
+    "ห้ามยุบสองเรือนให้เป็นค่าเดียว");
+});
+
+T("UT-M18-02", "ปลายทางภายในต้องไม่มีกำหนดส่งตามกฎหมาย", () => {
+  ["SCREENING", "LEGAL"].forEach(code => {
+    const t = E.forwardTarget(code);
+    assert.equal(t.statutorySlaDays, undefined,
+      `${code} ไม่อยู่ใต้ ม.18/1 กฎหมายจึงไม่ได้กำหนดเส้นตายไว้`);
+    assert.equal(t.requireArchiveCopy, false);
+    assert.equal(typeof t.trackingSlaDays, "number", "แต่ยังต้องมีกรอบกำกับติดตามเชิงบริหาร");
+  });
+});
+
+T("UT-M18-03", "ปิดสำนวนที่ส่ง ป.ป.ช. ไม่ได้ถ้ายังไม่คัดสำเนาสำนวนเก็บไว้", () => {
+  const base = { actorRoleId: "owner", forwardTo: "NACC", signedScanUploaded: true };
+  assert.equal(E.canTransition("DISPATCHING", "CLOSED", { ...base, archiveCopyKept: false }).ok,
+    false, "มีไฟล์สแกนอย่างเดียวยังไม่พอ — ม.18/1 บังคับเก็บสำเนาสำนวนด้วย");
+  assert.equal(E.canTransition("DISPATCHING", "CLOSED", { ...base, archiveCopyKept: true }).ok,
+    true);
+  /* ปลายทางภายในไม่มีข้อบังคับนี้ จึงต้องไม่ถูกกันด้วยเงื่อนไขสำเนาสำนวน */
+  assert.equal(E.canTransition("DISPATCHING", "CLOSED",
+    { actorRoleId: "owner", forwardTo: "SCREENING", signedScanUploaded: true }).ok, true);
+});
 
 console.log(`resolution-rules: ${count} assertions groups passed`);
