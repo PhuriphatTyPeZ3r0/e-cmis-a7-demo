@@ -115,6 +115,35 @@ const ROLES = [
     perms:['view.all','download','admin.sla','admin.users','admin.reassign','audit.view'] }
 ];
 
+/* --------------------------------------------------- DOCUMENT TYPE + SLA
+   ผัง P2 โหนด t5 (★ S1) กำหนด SLA ของชั้นเลขาธิการฯ ไว้เป็น 2 ระยะ และ
+   แยกค่าตามชนิดรายงานที่เสนอเข้ามา:
+     รายงาน 213 — รอลงนาม 5 วัน / ลงนามเสร็จ 3 วัน
+     รายงาน 644 — เสนอ 15 วัน   / ลงนาม 15 วัน
+   ค่าทั้งหมดตั้งให้ Admin แก้ได้ (TOR 7.2.1.3)                            */
+const DOC_TYPES = {
+  '213': {
+    code:'213', label:'รายงานการไต่สวนเบื้องต้น (แบบ ปปท. ๒-๑๓)', short:'รายงาน 213',
+    sla:{ waitSign:5, completeSign:3 }
+  },
+  '644': {
+    code:'644', label:'รายงานการไต่สวนข้อเท็จจริง (แบบ ปปท. ๖-๔๔)', short:'รายงาน 644',
+    sla:{ waitSign:15, completeSign:15 }
+  }
+};
+/* ระยะที่สำนวนกำลังอยู่ในชั้นเลขาธิการฯ — ใช้เลือกเพดาน SLA ที่ถูกต้อง */
+const SIGN_PHASE = {
+  WAIT:     { key:'WAIT',     label:'รอเลขาธิการฯ ลงนาม',       slaKey:'waitSign' },
+  COMPLETE: { key:'COMPLETE', label:'ลงนามแล้ว รอส่งต่อให้ครบ', slaKey:'completeSign' }
+};
+
+/* เพดาน SLA ของสำนวนในชั้นเลขาธิการฯ — แทนการ hard-code slaLimit ต่อสำนวน */
+function secgenSlaLimit(kase){
+  const dt = DOC_TYPES[kase.docType] || DOC_TYPES['213'];
+  const ph = SIGN_PHASE[kase.signPhase] || SIGN_PHASE.WAIT;
+  return dt.sla[ph.slaKey];
+}
+
 /* ---- นิยามสิทธิ์ที่ระบบบังคับใช้ (ใช้แสดงในหน้าจอบริหารสิทธิ์) ---- */
 const PERM_DEFS = [
   { k:'view.all',      cat:'การเข้าถึง', label:'ดูสำนวนได้ทุกเรื่องในกิจกรรมที่ 7' },
@@ -245,6 +274,55 @@ const STATUS_STEP = {
 function isUpstreamRole(roleId){ const r = getRole(roleId); return r.scope === 'UPSTREAM'; }
 function isUpstreamCase(kase){ const s = STATUS[kase.status]; return !!(s && s.scope === 'UPSTREAM'); }
 
+/* ------------------------------------------------- G1 — เงื่อนไขที่ 2
+   ผัง P2 โหนด g1 อ่านว่า "เป็นเรื่องยุ่งยากซับซ้อน **หรือความเห็นใน
+   สายบังคับบัญชาไม่ตรงกัน**" — เงื่อนไขหลังเป็นข้อเท็จจริงที่ระบบรู้เองได้
+   จากความเห็นที่แต่ละชั้นบันทึกไว้ตอนเสนอขึ้นมา จึงคำนวณให้อัตโนมัติ
+   แทนที่จะให้เลขาธิการฯ ตอบเอง                                          */
+const OPINION_TYPES = {
+  ACCEPT:  { code:'ACCEPT',  label:'เห็นควรรับไว้ไต่สวน' },
+  REJECT:  { code:'REJECT',  label:'เห็นควรไม่รับไว้ไต่สวน / ยุติเรื่อง' },
+  MORE:    { code:'MORE',    label:'เห็นควรแสวงหาข้อเท็จจริงเพิ่มเติม' },
+  FORWARD: { code:'FORWARD', label:'เห็นควรส่งเรื่องให้ ป.ป.ช.' }
+};
+
+/* คืนผลวิเคราะห์ความเห็นตามลำดับชั้นของสำนวน (ต้นทาง กจ.5 → เลขาธิการฯ) */
+function chainDivergence(kase){
+  const ops = kase.chainOpinions || [];
+  const kinds = [...new Set(ops.map(o => o.type))];
+  const diverged = kinds.length > 1;
+  let split = null;
+  if(diverged){
+    /* ชั้นแรกที่ความเห็นเริ่มต่างจากชั้นก่อนหน้า — ใช้ชี้จุดที่ต้องอ่านซ้ำ */
+    for(let i = 1; i < ops.length; i++){
+      if(ops[i].type !== ops[i-1].type){ split = { from: ops[i-1], to: ops[i] }; break; }
+    }
+  }
+  return { opinions: ops, diverged, kinds, split };
+}
+
+/* G1 ต้องเข้าคณะอนุสนับสนุนฯ หรือไม่ — รวมทั้ง 2 เงื่อนไขตามผัง */
+function g1Triggers(kase){
+  const d = chainDivergence(kase);
+  return {
+    complex:   !!kase.complex,          /* เงื่อนไข 1 — ดุลพินิจเลขาธิการฯ */
+    diverged:  d.diverged,              /* เงื่อนไข 2 — ระบบตรวจให้ */
+    divergence: d,
+    required:  !!kase.complex || d.diverged
+  };
+}
+
+/* ------------------------------------------------------------ ม.28
+   เลขาธิการฯ สั่งรับ/ไม่รับเบื้องต้น แล้วต้องรายงานคณะกรรมการ ป.ป.ท.
+   ทุก 15 วัน — หากบอร์ดไม่มีมติเป็นอย่างอื่นภายใน 15 วัน ให้ถือว่า
+   บอร์ดมีมติตามคำสั่งของเลขาธิการฯ                                      */
+const M28 = { cycleDays: 15, boardSilenceDays: 15 };
+
+/* สำนวนที่เลขาธิการฯ สั่งการแล้วและต้องเข้ารายงานรอบ ม.28 ถัดไป */
+function m28Pending(){
+  return CASES.filter(c => c.m28 && c.m28.reported === false);
+}
+
 /* --------------------------------------------------- MOCK CASE DATASET */
 const CASES = [
   {
@@ -263,8 +341,21 @@ const CASES = [
     receivedDate:'2568-11-14', deadline60:'2569-01-13', deadline2y:'2570-11-14', prescription:'2571-03-20',
     docRef:'ปป 0020/1028 ลงวันที่ 7 พฤษภาคม 2569',
     urgent:false, complex:false, dupWarning:true,
+    docType:'213', signPhase:'WAIT',
     slaDays:3, slaLimit:5, subCommittee:null,
-    meetingNo:null, agendaNo:null
+    meetingNo:null, agendaNo:null,
+    /* ความเห็นตามลำดับชั้น — ชั้น ผอ.เขต เห็นต่างจากนักสืบและหัวหน้ากลุ่มงาน
+       ระบบจึงตรวจพบ G1 เงื่อนไขที่ 2 ให้เองโดยเลขาธิการฯ ไม่ต้องกาเอง     */
+    chainOpinions:[
+      { roleId:'owner',        type:'ACCEPT', date:'2568-11-28',
+        note:'พยานหลักฐานเพียงพอที่จะสนับสนุนข้อกล่าวหาว่ามีมูลความผิด เห็นควรรับไว้ไต่สวน' },
+      { roleId:'section_head', type:'ACCEPT', date:'2568-12-02',
+        note:'เห็นพ้องกับผู้รับผิดชอบสำนวน' },
+      { roleId:'director',     type:'MORE',   date:'2568-12-09',
+        note:'ราคากลางที่ใช้เปรียบเทียบยังไม่ได้มาจากหน่วยงานกลาง เห็นควรแสวงหาข้อเท็จจริงเพิ่มเติมก่อน' },
+      { roleId:'deputy',       type:'ACCEPT', date:'2568-12-16',
+        note:'ข้อบกพร่องที่ ผอ.เขต ตั้งข้อสังเกตสามารถแก้ในชั้นไต่สวนได้ เห็นควรรับไว้ไต่สวน' }
+    ]
   },
   {
     id:'1602/2568', pcms:'PCMS-68-001602',
@@ -366,6 +457,50 @@ const CASES = [
   }
 ];
 
+/* เพิ่มสำนวนตัวอย่างชนิด 644 ที่ความเห็นตลอดสายตรงกัน — ใช้เทียบกับ 1547/2568
+   ให้เห็นว่า G1 ไม่ถูกจุดชนวน และเพดาน SLA เปลี่ยนตามชนิดรายงาน            */
+CASES.push({
+  id:'1615/2568', pcms:'PCMS-68-001615',
+  subject:'กล่าวหาเจ้าหน้าที่สำนักงานเขตแห่งหนึ่ง ละเว้นการบังคับใช้กฎหมายควบคุมอาคาร',
+  legalBase:'ม.18/4',
+  status:'PENDING_SECGEN',
+  owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 2',
+  complainant:'นายธีรพงษ์ รักษ์เมือง (ผู้ร้อง)',
+  accused:[ { no:1, name:'นายฉัตรชัย ตรวจการ', pos:'นายช่างโยธาอาวุโส', idcard:'3-1502-0xxxx-xx-x', agency:'สำนักงานเขตแห่งหนึ่ง' } ],
+  allegation:'ละเว้นไม่ดำเนินการตามอำนาจหน้าที่กับอาคารที่ก่อสร้างผิดแบบแปลนที่ได้รับอนุญาต รวม 6 หลัง ต่อเนื่องกว่า 2 ปี',
+  receivedDate:'2568-12-08', deadline60:'2569-02-06', deadline2y:'2570-12-08', prescription:'2572-05-30',
+  docRef:'ปป 0021/1131 ลงวันที่ 26 พฤษภาคม 2569',
+  urgent:false, complex:false, dupWarning:false,
+  docType:'644', signPhase:'WAIT',
+  slaDays:11, slaLimit:15, subCommittee:null,
+  meetingNo:null, agendaNo:null,
+  chainOpinions:[
+    { roleId:'owner',        type:'ACCEPT', date:'2568-12-18', note:'พฤติการณ์ละเว้นชัดเจน มีเอกสารตรวจสอบรองรับ เห็นควรรับไว้ไต่สวน' },
+    { roleId:'section_head', type:'ACCEPT', date:'2568-12-24', note:'เห็นพ้องตามที่เสนอ' },
+    { roleId:'director',     type:'ACCEPT', date:'2569-01-06', note:'เห็นชอบตามลำดับชั้น' },
+    { roleId:'deputy',       type:'ACCEPT', date:'2569-01-14', note:'เห็นควรเสนอเลขาธิการฯ ลงนาม' }
+  ]
+});
+
+/* ค่าเริ่มต้นของฟิลด์ที่เพิ่มภายหลัง — กันหน้าจอพังกับสำนวนที่ยังไม่มีข้อมูลชุดใหม่ */
+CASES.forEach(c => {
+  if(!c.docType)       c.docType = '213';
+  if(!c.signPhase)     c.signPhase = 'WAIT';
+  if(!c.chainOpinions) c.chainOpinions = [];
+});
+
+/* ---- รอบรายงาน ม.28 ของคำสั่งที่เลขาธิการฯ สั่งไปแล้ว ----
+   orderType = คำสั่งเบื้องต้นของเลขาธิการฯ | reported = เข้ารอบรายงานบอร์ดแล้วหรือยัง
+   dueDate   = วันครบกำหนดรายงานรอบ 15 วัน                                 */
+const M28_LOG = {
+  '1602/2568': { orderType:'ACCEPT', orderedDate:'2569-05-22', reported:false, dueDate:'2569-06-06' },
+  '1588/2568': { orderType:'ACCEPT', orderedDate:'2569-05-26', reported:false, dueDate:'2569-06-10' },
+  '1490/2568': { orderType:'ACCEPT', orderedDate:'2569-04-30', reported:true,  dueDate:'2569-05-15',
+                 boardOutcome:'บอร์ดไม่มีมติเป็นอย่างอื่นภายใน 15 วัน — ถือว่ามีมติตามคำสั่งเลขาธิการฯ' },
+  '1523/2568': { orderType:'REJECT', orderedDate:'2569-05-28', reported:false, dueDate:'2569-06-12' }
+};
+CASES.forEach(c => { if(M28_LOG[c.id]) c.m28 = M28_LOG[c.id]; });
+
 /* Reason Code สำหรับการตีกลับ (EX-01 — TOR 7.2.1.2) */
 const RETURN_REASONS = [
   { code:'DOC_INCOMPLETE', label:'เอกสาร/พยานหลักฐานไม่ครบถ้วน' },
@@ -390,9 +525,12 @@ const RESOLUTIONS = [
   { code:'MORE_INVESTIGATE', group:'มติอื่น ๆ',
     label:'ให้ผู้รับผิดชอบสำนวนไต่สวนเบื้องต้นเพิ่มเติม',
     doc:'บันทึกแจ้งมติให้ไต่สวนเพิ่มเติม', signer:'—' },
-  { code:'FORWARD', group:'มติอื่น ๆ',
-    label:'ส่งเรื่องให้หน่วยงาน / คณะอนุกลั่นกรองฯ พิจารณา',
-    doc:'หนังสือนำส่งเรื่อง', signer:'—' }
+  /* ผัง P2 เส้น G5 ทางที่ 3 — เป็นมติแยกกลุ่มของตัวเอง ไม่ใช่ "มติอื่น ๆ"
+     เพราะมีปลายทางและ SLA เฉพาะ (ส่งมอบสำนวนให้ ป.ป.ช. ภายใน 30 วัน)  */
+  { code:'FORWARD_NACC', group:'ส่งเรื่องให้ ป.ป.ช.',
+    label:'ส่งเรื่องให้สำนักงาน ป.ป.ช. (อยู่นอกอำนาจ ป.ป.ท.)',
+    doc:'หนังสือนำส่งสำนวนถึงสำนักงาน ป.ป.ช.', signer:'เลขาธิการฯ',
+    slaDays:30, note:'ระบบบังคับอัปโหลดไฟล์สแกนฉบับลงนามกลับ (TOR 7.2.1.5)' }
 ];
 
 /* =========================================================================
@@ -491,6 +629,7 @@ const NAV = [
   { section:'ภาพรวม' },
   { href:'01-work-inbox.html',            icon:'fa-inbox',            label:'Work Inbox', badge:true },
   { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน 7.1' },
+  { href:'11-secgen-desk.html',           icon:'fa-gavel',            label:'โต๊ะสั่งการเลขาธิการฯ', ref:'L3 · S1–S11' },
   { section:'ต้นทาง — นอกขอบเขตกิจกรรมที่ 7' },
   { href:'03-report-213.html',            icon:'fa-file-import',      label:'รายงาน 213 ที่รับเข้า (อ่านอย่างเดียว)', ref:'กจ.5', muted:true },
   { section:'กระบวนงานไต่สวนเบื้องต้น (7.1)' },
@@ -605,9 +744,16 @@ function statusBadge(statusKey){
   return s ? `<span class="st ${s.cls}">${s.label}</span>` : '';
 }
 
+/* เพดาน SLA ที่ใช้จริงกับสำนวน — ชั้นเลขาธิการฯ ใช้ตารางตามชนิดรายงาน/ระยะ
+   (ผัง P2 โหนด t5) ส่วนชั้นอื่นยังใช้ค่าที่ติดมากับสำนวน                  */
+function effectiveSlaLimit(kase){
+  return kase.status === 'PENDING_SECGEN' ? secgenSlaLimit(kase) : kase.slaLimit;
+}
+
 function slaBadge(kase){
-  return `<span class="sla ${slaClass(kase.slaDays, kase.slaLimit)}">
-    <i class="fa-regular fa-clock me-1"></i>${slaLabel(kase.slaDays, kase.slaLimit)}</span>`;
+  const lim = effectiveSlaLimit(kase);
+  return `<span class="sla ${slaClass(kase.slaDays, lim)}">
+    <i class="fa-regular fa-clock me-1"></i>${slaLabel(kase.slaDays, lim)}</span>`;
 }
 
 /* Action bar — ปุ่มเปลี่ยนตามบทบาท (ข้อกำหนดหลักของ Step 3) */
@@ -721,10 +867,12 @@ function signDialog(docName, signerName){
 global.ECMIS = {
   ROLES, STATUS, STATUS_STEP, FLOW_STEPS, APPROVAL_CHAIN,
   CASES, RETURN_REASONS, RESOLUTIONS,
+  DOC_TYPES, SIGN_PHASE, secgenSlaLimit,
+  OPINION_TYPES, chainDivergence, g1Triggers, M28, m28Pending,
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
   UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase,
   PERM_DEFS, can, canEditMaster, canViewCase,
-  thaiDate, slaClass, slaLabel, getCase, getRole,
+  thaiDate, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   renderShell, stepperHtml, statusBadge, slaBadge, actionBar,
   mergeField, confirmAction, toastOk, toastWarn, signDialog

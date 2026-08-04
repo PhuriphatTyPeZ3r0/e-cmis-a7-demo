@@ -117,7 +117,7 @@ if(ECMIS.isUpstreamRole(role.id)){
 }
 
 /* ---------- KPI ---------- */
-const late  = all.filter(c => c.slaDays > c.slaLimit).length;
+const late  = all.filter(c => c.slaDays > ECMIS.effectiveSlaLimit(c)).length;
 const urgent= all.filter(c => c.urgent).length;
 const kpis = [
   { n: mine.length, l:'งานรอฉันดำเนินการ', i:'fa-inbox',   c:'#0a2647' },
@@ -181,15 +181,15 @@ document.getElementById('watchQueue').innerHTML = watch.length
   : `<tr><td colspan="5" class="text-center text-muted py-3">— ไม่มีรายการ —</td></tr>`;
 
 /* ---------- SLA alerts ---------- */
-const alerts = all.filter(c => c.slaDays >= c.slaLimit - 2)
-  .sort((a,b) => (b.slaDays-b.slaLimit) - (a.slaDays-a.slaLimit));
+const alerts = all.filter(c => c.slaDays >= ECMIS.effectiveSlaLimit(c) - 2)
+  .sort((a,b) => (b.slaDays-ECMIS.effectiveSlaLimit(b)) - (a.slaDays-ECMIS.effectiveSlaLimit(a)));
 document.getElementById('alertBox').innerHTML = alerts.length ? alerts.map(c => {
-  const over = c.slaDays > c.slaLimit;
+  const over = c.slaDays > ECMIS.effectiveSlaLimit(c);
   return `<div class="d-flex gap-2 align-items-start mb-2 pb-2 border-bottom">
     <i class="fa-solid ${over?'fa-circle-exclamation':'fa-triangle-exclamation'} mt-1"
        style="color:${over?'#a5322a':'#b4690e'}"></i>
     <div style="font-size:.82rem">
-      <strong>${c.id}</strong> ${ECMIS.slaLabel(c.slaDays, c.slaLimit)}<br>
+      <strong>${c.id}</strong> ${ECMIS.slaLabel(c.slaDays, ECMIS.effectiveSlaLimit(c))}<br>
       <span class="text-muted">ค้างที่: ${ECMIS.STATUS[c.status].label}</span>
       ${over?'<br><span style="color:#a5322a;font-size:.75rem">Escalate ขึ้นผู้บังคับบัญชา 1 ระดับแล้ว</span>':''}
     </div>
