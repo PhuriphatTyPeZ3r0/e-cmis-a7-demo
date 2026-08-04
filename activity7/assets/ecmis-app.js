@@ -237,9 +237,127 @@ const STATUS = {
   PENDING_CHAIRMAN: { label:'รอประธานฯ สั่งการ',           cls:'st-pending',  owner:'chairman' },
   IN_SCREENING:     { label:'อยู่อนุกลั่นกรองฯ',           cls:'st-review',   owner:'subcommittee' },
   AGENDA_SET:       { label:'บรรจุวาระแล้ว',              cls:'st-agenda',   owner:'board_sec' },
+  /* ---- ช่วงพิจารณามติ: เดิมกระโดดจาก AGENDA_SET ไป RESOLVED ตรง ๆ ทำให้
+     ไม่มีสถานะรองรับ "อยู่ในห้องประชุม" และ "มีมติแล้วแต่ยังไม่ล็อก PDF"
+     ซึ่งเป็นสองจุดที่ EX-03 (เลื่อน/ถอนวาระ) และ EX-04 (องค์ประชุม) แตกออก */
+  IN_MEETING:       { label:'อยู่ระหว่างประชุมบอร์ด',      cls:'st-review',   owner:'board_sec' },
+  DEFERRED:         { label:'เลื่อน/ถอนวาระ — รอเลขวาระใหม่', cls:'st-returned', owner:'affairs' },
+  RESOLVED_PENDING: { label:'มีมติแล้ว รอล็อก PDF/ลงนาม',  cls:'st-pending',  owner:'board_sec' },
   RESOLVED:         { label:'มีมติแล้ว',                  cls:'st-done',     owner:'board_sec' },
+  DISPATCHING:      { label:'ส่งมติออกแล้ว รอไฟล์ลงนามกลับ', cls:'st-pending',  owner:'owner' },
   CLOSED:           { label:'ปิดสำนวน',                   cls:'st-closed',   owner:null }
 };
+
+/* =========================================================================
+   STATE MACHINE — ตารางทรานซิชันของกระบวนงานมติไต่สวนเบื้องต้น
+   เดิมการเปลี่ยนสถานะถูกเขียนฝังอยู่ใน handler ของแต่ละหน้าจอ จึงไม่มี
+   ที่เดียวที่บอกได้ว่า "จาก A ไป B ได้หรือไม่" และทดสอบ Invalid Transition
+   ไม่ได้เลย ตารางนี้ทำให้กติกาทั้งหมดอยู่ในที่เดียวและตรวจสอบได้
+   guard = เงื่อนไขที่ต้องเป็นจริง (ประเมินจากตัวสำนวน)
+   ========================================================================= */
+const TRANSITIONS = [
+  /* ── S1 · G1 · G3 — ชั้นเลขาธิการฯ ─────────────────────────────────── */
+  { from:'PENDING_SECGEN', to:'IN_SUPPORT_SUB', event:'SIGN_COMPLEX', actor:'secgen',
+    ref:'S1→G1→T6', guard:k => g1Triggers(k).required,
+    note:'G1 = ใช่ (ซับซ้อน หรือความเห็นในสายบังคับบัญชาไม่ตรงกัน)' },
+  { from:'PENDING_SECGEN', to:'PENDING_URGENT', event:'SIGN_URGENT', actor:'secgen',
+    ref:'S1→G1→G3→T7', guard:k => !g1Triggers(k).required && !!k.urgent,
+    note:'G1 = ไม่ใช่ และ G3 = มีใบด่วน' },
+  { from:'PENDING_SECGEN', to:'PENDING_CHAIR_OF', event:'SIGN_NORMAL', actor:'secgen',
+    ref:'S1→G1→G3→T8', guard:k => !g1Triggers(k).required && !k.urgent,
+    note:'G1 = ไม่ใช่ และ G3 = ไม่มีใบด่วน' },
+  { from:'PENDING_SECGEN', to:'RETURNED', event:'RETURN_TO_SOURCE', actor:'secgen',
+    ref:'EX-01', note:'ส่งคืนออกนอกกิจกรรมที่ 7 กลับสายงานต้นทาง (กจ.5)' },
+
+  /* ── G2 — คณะอนุสนับสนุนฯ ──────────────────────────────────────────── */
+  { from:'IN_SUPPORT_SUB', to:'PENDING_CHAIR_OF', event:'SUPPORT_ALIGNED', actor:'support_sub',
+    ref:'T6→G2→T8', note:'ความเห็นสอดคล้อง → Bypass ข้ามอนุกลั่นกรองฯ 1-8' },
+  { from:'IN_SUPPORT_SUB', to:'PENDING_URGENT', event:'SUPPORT_DIVERGED_URGENT', actor:'support_sub',
+    ref:'T6→G2→G3→T7', guard:k => !!k.urgent,
+    note:'ไม่สอดคล้อง → กลับเข้าเส้นทางปกติที่ G3 และมีใบด่วน' },
+  { from:'IN_SUPPORT_SUB', to:'PENDING_CHAIR_OF', event:'SUPPORT_DIVERGED', actor:'support_sub',
+    ref:'T6→G2→G3→T8', guard:k => !k.urgent, note:'ไม่สอดคล้อง และไม่มีใบด่วน' },
+
+  /* ── T7 — ผอ.กบค. รับรองใบด่วน (จุดควบคุม Bypass) ──────────────────── */
+  { from:'PENDING_URGENT', to:'PENDING_CHAIR_OF', event:'URGENT_CERTIFY', actor:'dir_case',
+    ref:'T7→T8', note:'ผอ.กบค. ลงนามรับรองเหตุผลเร่งด่วน' },
+  { from:'PENDING_URGENT', to:'IN_SCREENING', event:'URGENT_REJECT', actor:'dir_case',
+    ref:'EX-09 A', note:'ไม่รับรองใบด่วน → ตัดสิทธิ์ Bypass บังคับกลับเส้นทางปกติที่ T9' },
+
+  /* ── T8 · G4 — หน้าห้องประธานฯ และคำสั่งประธานฯ ────────────────────── */
+  { from:'PENDING_CHAIR_OF', to:'PENDING_CHAIRMAN', event:'INTAKE_SCREEN', actor:'chair_office',
+    ref:'T8→G4' },
+  { from:'PENDING_CHAIRMAN', to:'IN_SCREENING', event:'ORDER_SCREENING', actor:'chairman',
+    ref:'G4→T9', note:'สั่งส่งกลั่นกรองตามปกติ' },
+  { from:'PENDING_CHAIRMAN', to:'AGENDA_SET', event:'ORDER_AGENDA_URGENT', actor:'chairman',
+    ref:'G4→T11', guard:k => !!k.urgentCertified,
+    note:'สั่งบรรจุวาระด่วน — ต้องมีลายเซ็นรับรองของ ผอ.กบค. ก่อนเท่านั้น' },
+
+  /* ── T10 · T11 · T12 — อนุกลั่นกรองฯ → บรรจุวาระ ───────────────────── */
+  { from:'IN_SCREENING', to:'AGENDA_SET', event:'SCREENING_RESOLVED', actor:'subcommittee',
+    ref:'T10→T11→T12' },
+
+  /* ── T13 · T14 · G5 — ประชุมและบันทึกมติ ───────────────────────────── */
+  { from:'AGENDA_SET', to:'IN_MEETING', event:'OPEN_AGENDA', actor:'board_sec',
+    ref:'T13' },
+  { from:'IN_MEETING', to:'RESOLVED_PENDING', event:'RECORD_RESOLUTION', actor:'board_sec',
+    ref:'T14→G5', guard:k => !!k.quorumOk,
+    note:'EX-04 — องค์ประชุมไม่ครบ ระบบต้องบล็อกการบันทึกมติ' },
+  { from:'IN_MEETING', to:'DEFERRED', event:'DEFER_AGENDA', actor:'board_sec',
+    ref:'EX-03 X3.2', note:'เลื่อน/ถอนวาระ — ต้องปิดเลขวาระเดิม' },
+  { from:'DEFERRED', to:'AGENDA_SET', event:'REAGENDA', actor:'affairs',
+    ref:'EX-03→T12', guard:k => !!k.newAgendaNo,
+    note:'กลับเข้าประชุมต้องได้เลขวาระใหม่เสมอ' },
+
+  /* ── หลังมติ — ล็อกไฟล์และส่งต่อ ───────────────────────────────────── */
+  { from:'RESOLVED_PENDING', to:'RESOLVED', event:'LOCK_PDF', actor:'board_sec',
+    ref:'T14', guard:k => can('EDIT.MASTER', k.actorRoleId) || !k.actorRoleId,
+    note:'ล็อกไฟล์ PDF — แก้ไขได้เฉพาะ 7 คนที่มีสิทธิ์ EDIT.MASTER' },
+  { from:'RESOLVED', to:'DISPATCHING', event:'DISPATCH_EXTERNAL', actor:'owner',
+    ref:'G5 มติ 3', guard:k => k.resolution === 'FORWARD' && !!k.forwardTo &&
+                               (forwardTarget(k.forwardTo) || {}).external === true,
+    note:'ปลายทางนอกองค์กรเท่านั้นที่ต้องรอไฟล์สแกนฉบับลงนามกลับ' },
+  { from:'DISPATCHING', to:'CLOSED', event:'UPLOAD_SIGNED_SCAN', actor:'owner',
+    ref:'TOR 7.2.1.5', guard:k => !!k.signedScanUploaded,
+    note:'ระบบบังคับอัปโหลดไฟล์สแกนฉบับลงนามก่อนปิดสำนวน' },
+  { from:'RESOLVED', to:'CLOSED', event:'CLOSE_CASE', actor:'owner',
+    ref:'G5 มติ 1/2', note:'รับไว้ไต่สวน (ยิงกลับ กจ.5) หรือไม่รับไว้ไต่สวน (ปิดสำนวน)' },
+  { from:'RESOLVED', to:'AGENDA_SET', event:'REVISE_RESOLUTION', actor:'affairs',
+    ref:'EX-03 X3.3', guard:k => !!k.newAgendaNo,
+    note:'ขอแก้ไข/ทบทวนมติ — มติเดิมไม่ถูกลบ ผูกคู่กับมติใหม่' }
+];
+
+/* ทรานซิชันที่ตรงกับ from→to (อาจมีหลายรายการต่างกันที่ guard) */
+function transitionsBetween(from, to){
+  return TRANSITIONS.filter(t => t.from === from && t.to === to);
+}
+
+/* ตรวจว่าเปลี่ยนสถานะได้หรือไม่ — คืนเหตุผลเสมอเพื่อให้เทสต์อ่านได้
+   kase อาจแนบ actorRoleId เพื่อให้ guard ตรวจสิทธิ์ได้ด้วย                */
+function canTransition(from, to, kase){
+  if(!STATUS[from]) return { ok:false, reason:'UNKNOWN_FROM_STATE' };
+  if(!STATUS[to])   return { ok:false, reason:'UNKNOWN_TO_STATE' };
+  const cands = transitionsBetween(from, to);
+  if(!cands.length) return { ok:false, reason:'NO_SUCH_TRANSITION' };
+
+  const k = kase || {};
+  if(k.actorRoleId){
+    const byActor = cands.filter(t => t.actor === k.actorRoleId);
+    if(!byActor.length) return { ok:false, reason:'WRONG_ACTOR', expected:cands.map(t => t.actor) };
+  }
+  const pool = k.actorRoleId ? cands.filter(t => t.actor === k.actorRoleId) : cands;
+  const passed = pool.find(t => !t.guard || t.guard(k) === true);
+  return passed
+    ? { ok:true, transition:passed, event:passed.event, ref:passed.ref }
+    : { ok:false, reason:'GUARD_FAILED', guards:pool.map(t => t.note || t.ref) };
+}
+
+/* สถานะถัดไปที่เป็นไปได้จากสถานะปัจจุบัน */
+function nextStates(from, kase){
+  return TRANSITIONS.filter(t => t.from === from)
+    .filter(t => !t.guard || !kase || t.guard(kase) === true)
+    .map(t => ({ to:t.to, event:t.event, actor:t.actor, ref:t.ref }));
+}
 
 /* สายการเสนอตามลำดับชั้น "ภายในกอง/เขต" — นอกขอบเขต กจ.7 แสดงเป็นประวัติอ่านอย่างเดียว */
 const UPSTREAM_CHAIN = ['owner','section_head','director','deputy'];
@@ -309,6 +427,35 @@ function g1Triggers(kase){
     diverged:  d.diverged,              /* เงื่อนไข 2 — ระบบตรวจให้ */
     divergence: d,
     required:  !!kase.complex || d.diverged
+  };
+}
+
+/* ------------------------------------------------- องค์ประชุมและการลงมติ
+   ม.10 คณะกรรมการทำหน้าที่ต่อไปได้ด้วยกรรมการเท่าที่เหลืออยู่ แต่ต้องไม่
+        น้อยกว่า 5 คน — เป็นเงื่อนไข "ก่อน" นับองค์ประชุม
+   ม.12 องค์ประชุม = ไม่น้อยกว่ากึ่งหนึ่งของกรรมการทั้งหมดเท่าที่มีอยู่
+   ม.15 มติ = เสียงข้างมากของกรรมการทั้งหมดเท่าที่มีอยู่ (ไม่ใช่ของผู้เข้าประชุม)
+        คะแนนเท่ากัน ประธานในที่ประชุมออกเสียงชี้ขาดเพิ่มอีกหนึ่งเสียง
+   ม.20 ผู้มีส่วนได้เสียถูก "กันออกโดยมติบอร์ด" — ยังนับเป็นกรรมการที่มีอยู่
+        แต่ถูกกันสิทธิ์ลงมติในวาระนั้น                                     */
+const BOARD_MIN_IN_OFFICE = 5;
+
+function boardQuorum({ inOffice, present, forV = 0, againstV = 0, abstainV = 0, chairBreaksTie = false }){
+  const boardValid  = inOffice >= BOARD_MIN_IN_OFFICE;          /* ม.10 */
+  const quorumMin   = Math.ceil(inOffice / 2);                  /* ม.12 */
+  const quorumOk    = boardValid && present >= quorumMin;
+  const majorityMin = Math.floor(inOffice / 2) + 1;             /* ม.15 */
+  const tie         = forV === againstV && forV > 0;
+  const effectiveFor= tie && chairBreaksTie ? forV + 1 : forV;
+  const majorityOk  = effectiveFor >= majorityMin;
+  return {
+    boardValid, quorumMin, quorumOk, majorityMin, majorityOk, tie,
+    effectiveFor, forV, againstV, abstainV, present, inOffice,
+    /* บันทึกมติได้ก็ต่อเมื่อผ่านทั้ง ม.10 ม.12 และ ม.15 */
+    canRecord: boardValid && quorumOk && majorityOk,
+    blockedBy: !boardValid ? 'M10_BOARD_INCOMPLETE'
+             : !quorumOk   ? 'M12_NO_QUORUM'
+             : !majorityOk ? 'M15_NO_MAJORITY' : null
   };
 }
 
@@ -885,6 +1032,8 @@ global.ECMIS = {
   CASES, RETURN_REASONS, RESOLUTIONS,
   DOC_TYPES, SIGN_PHASE, secgenSlaLimit, FORWARD_TARGETS, forwardTarget,
   OPINION_TYPES, chainDivergence, g1Triggers, M28, m28Pending,
+  TRANSITIONS, canTransition, nextStates, transitionsBetween,
+  BOARD_MIN_IN_OFFICE, boardQuorum,
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
   UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase,
   PERM_DEFS, can, canEditMaster, canViewCase,

@@ -273,13 +273,16 @@ function tally(){
 
 function renderQuorum(){
   const t = tally();
-  const quorumMin = Math.ceil(TOTAL / 2);
-  const majorityMin = Math.floor(TOTAL / 2) + 1;      /* เสียงข้างมากของกรรมการทั้งหมดเท่าที่มีอยู่ */
-  const quorumOk = t.present >= quorumMin;
-  const majorityOk = t.forV >= majorityMin;
-  const tie = t.forV === t.againstV && t.forV > 0;
+  /* กติกาองค์ประชุมย้ายไปอยู่ในโมเดลกลางแล้ว (ม.10 + ม.12 + ม.15)
+     เดิมหน้านี้คำนวณเอง และตกเงื่อนไข ม.10 (กรรมการเหลือไม่ต่ำกว่า 5 คน) ไป */
+  const q = ECMIS.boardQuorum({ inOffice: TOTAL, present: t.present,
+    forV: t.forV, againstV: t.againstV, abstainV: t.abstainV });
+  const { quorumMin, quorumOk, majorityMin, majorityOk, tie, boardValid } = q;
 
   document.getElementById('quorumBox').innerHTML = `
+    ${!boardValid ? `<div class="rule fail"><i class="fa-solid fa-circle-xmark"></i>
+      <span><strong>ม.10:</strong> กรรมการเท่าที่มีอยู่ ${TOTAL} คน — น้อยกว่าขั้นต่ำ
+      ${ECMIS.BOARD_MIN_IN_OFFICE} คน คณะกรรมการยังทำหน้าที่ต่อไม่ได้</span></div>` : ''}
     <div class="rule ${quorumOk?'pass':'fail'}">
       <i class="fa-solid ${quorumOk?'fa-circle-check':'fa-circle-xmark'}"></i>
       <span><strong>องค์ประชุม (ม.12):</strong> เข้าประชุม ${t.present} จาก ${TOTAL} ท่าน
@@ -301,7 +304,7 @@ function renderQuorum(){
         ? 'มีความเห็นแย้ง — ระบบบังคับบันทึกความเห็นแย้งพร้อมเหตุผลลงรายงานการประชุม'
         : 'มติเป็นเอกฉันท์ ไม่มีความเห็นแย้งที่ต้องบันทึก'}</span>
     </div>`;
-  return { quorumOk, majorityOk, ...t };
+  return { ...t, ...q };
 }
 
 document.getElementById('boardTb').addEventListener('change', () => { renderQuorum(); renderDoc(); });
