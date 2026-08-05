@@ -188,11 +188,82 @@ document.getElementById('signQueue').innerHTML = signQueue.length ? signQueue.ma
     <td>${g1Cell}</td>
     <td>${ECMIS.slaBadge(c)}</td>
     <td class="text-end">
-      <a href="04-approval-review.html?case=${encodeURIComponent(c.id)}"
-         class="btn btn-sm ${acting?'btn-gold':'btn-outline-secondary'}">
-        <i class="fa-solid ${acting?'fa-signature':'fa-eye'} me-1"></i>${acting?'พิจารณา / ลงนาม':'ดู'}</a>
+      <div class="btn-group btn-group-sm" role="group">
+        <a href="04-approval-review.html?case=${encodeURIComponent(c.id)}"
+           class="btn ${acting?'btn-gold':'btn-outline-secondary'}"
+           title="${acting?'เห็นชอบ / ลงนาม':'ดูรายละเอียด'}">
+          <i class="fa-solid ${acting?'fa-signature':'fa-eye'} me-1"></i>${acting?'เห็นชอบ':'ดู'}</a>
+        ${acting ? `
+        <button type="button" class="btn btn-outline-primary" data-assign="${c.id}" title="มอบหมายเข้าคณะอนุสนับสนุนฯ">
+          <i class="fa-solid fa-people-arrows"></i></button>
+        <button type="button" class="btn btn-outline-danger" data-return="${c.id}" title="ส่งคืนสายงานต้นทาง">
+          <i class="fa-solid fa-arrow-left-long"></i></button>` : ''}
+      </div>
     </td></tr>`;
 }).join('') : `<tr><td colspan="6" class="text-center text-muted py-4">— ไม่มีรายงานค้างลงนาม —</td></tr>`;
+
+/* ---------- Inbox quick actions: มอบหมาย / ส่งคืน (ไม่ต้องเปิดหน้าพิจารณาเต็ม) ----------
+   เลขาธิการฯ ใช้จุดนี้เมื่อจะตัดสินใจปลายทางของสำนวนเร็ว ๆ จากคิวรวมโดยตรง
+   การลงนามจริงและการบันทึกความเห็นประกอบยังต้องทำที่หน้า "เห็นชอบ / ลงนาม"
+   (04-approval-review.html) เสมอ — ปุ่มเหล่านี้จึงเป็นการ "ตั้งใจล่วงหน้า"
+   ก่อนเข้าไปยืนยันด้วยลายมือชื่อดิจิทัลอีกครั้ง ไม่ใช่การข้ามขั้นตอนกฎหมาย   */
+document.getElementById('signQueue').addEventListener('click', e => {
+  const assignBtn = e.target.closest('[data-assign]');
+  const returnBtn = e.target.closest('[data-return]');
+
+  if(assignBtn){
+    const c = ECMIS.getCase(assignBtn.dataset.assign);
+    ECMIS.confirmAction({
+      title:'มอบหมายสำนวนให้คณะอนุกรรมการสนับสนุนเลขาธิการฯ',
+      html:`<p>สำนวน <strong>${c.id}</strong> — ${c.subject}</p>
+            <div class="law-note">ระบบจะเปิดหน้า "เห็นชอบ / ลงนาม" พร้อมตั้งค่า G1 = ใช่ (มอบหมายเข้า T6)
+            ไว้ล่วงหน้าให้ — เลขาธิการฯ ยังต้องบันทึกความเห็นและลงนามดิจิทัลเพื่อยืนยันอีกครั้ง</div>`,
+      confirmText:'ไปหน้าลงนามเพื่อมอบหมาย'
+    }).then(r => {
+      if(r.isConfirmed)
+        location.href = `04-approval-review.html?case=${encodeURIComponent(c.id)}&assign=1`;
+    });
+    return;
+  }
+
+  if(returnBtn){
+    const c = ECMIS.getCase(returnBtn.dataset.return);
+    const opts = ECMIS.RETURN_REASONS.map(r => `<option value="${r.code}">${r.label}</option>`).join('');
+    const scopeOpts = ECMIS.RETURN_SCOPES.map((s,i) => `
+      <label class="list-group-item d-flex gap-2 align-items-start" style="font-size:.84rem">
+        <input class="form-check-input mt-1" type="radio" name="swal-scope" value="${s.code}" ${i===0?'checked':''}>
+        <span><strong>${s.label}</strong><br><small class="text-muted">${s.note}</small></span>
+      </label>`).join('');
+
+    Swal.fire({
+      title:'ส่งคืนสายงานต้นทาง (ออกจากกิจกรรมที่ 7)',
+      html:`<div class="text-start" style="font-size:.9rem">
+        <p class="mb-2">สำนวน <strong>${c.id}</strong> — ${c.subject}</p>
+        <label class="form-label">ส่งคืนไปยังชั้นใดของสายงานต้นทาง <span style="color:#a5322a">*</span></label>
+        <div class="list-group mb-2">${scopeOpts}</div>
+        <label class="form-label">เหตุผลการตีกลับ (Reason Code) <span style="color:#a5322a">*</span></label>
+        <select id="swal-reason" class="form-select mb-2"><option value="">— เลือกเหตุผล —</option>${opts}</select>
+        <label class="form-label">รายละเอียดเพิ่มเติม <span style="color:#a5322a">*</span></label>
+        <textarea id="swal-note" class="form-control" rows="3" placeholder="ระบุสิ่งที่ต้องแก้ไขให้ชัดเจน"></textarea>
+      </div>`,
+      showCancelButton:true, confirmButtonText:'ยืนยันส่งคืน', cancelButtonText:'ยกเลิก',
+      confirmButtonColor:'#a5322a', cancelButtonColor:'#6b7280', reverseButtons:true, width:600,
+      preConfirm(){
+        const r = document.getElementById('swal-reason').value;
+        const n = document.getElementById('swal-note').value.trim();
+        const s = document.querySelector('input[name="swal-scope"]:checked').value;
+        if(!r){ Swal.showValidationMessage('กรุณาเลือกเหตุผลการส่งคืน'); return false; }
+        if(n.length < 10){ Swal.showValidationMessage('กรุณาระบุรายละเอียดอย่างน้อย 10 ตัวอักษร'); return false; }
+        return { r, n, s };
+      }
+    }).then(res => {
+      if(res.isConfirmed){
+        const dest = res.value.s === 'TO_OWNER' ? 'เจ้าของสำนวน' : 'ผอ.กอง / ผอ.สนง. ป.ป.ท. เขต';
+        ECMIS.toastOk(`ตีกลับเรียบร้อย — ส่งคืน${dest} และ Pause SLA แล้ว`);
+      }
+    });
+  }
+});
 
 /* ---------- ม.28 ---------- */
 document.getElementById('m28Count').textContent = m28Open.length;

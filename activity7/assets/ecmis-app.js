@@ -1143,6 +1143,60 @@ function signDialog(docName, signerName){
   });
 }
 
+/* ------------------------------------------- Sequential e-signature
+   บางเอกสารต้องผ่านผู้ลงนามมากกว่า 1 คนตามลำดับที่ผังกำหนด เช่น G3
+   (เลขาธิการฯ ลงนามก่อน แล้ว ผอ.กบค. ต้องลงนามรับรองเหตุผลเร่งด่วนใน
+   ขั้นถัดไปของผัง จึงจะ Bypass ได้) หรือ ม.24 ว.3 กรณีมอบหมายลงนามแทน
+   (ประธานฯ → เลขาธิการฯ ปฏิบัติราชการแทน) ฟังก์ชันนี้แสดง "ลำดับผู้ลงนาม"
+   ทั้งชุดในกล่องเดียว แต่รับ OTP ได้เฉพาะผู้ลงนามคนปัจจุบัน (คนแรกที่ยัง
+   ไม่ลงนาม) — ผู้ลงนามลำดับถัดไปจะขึ้นสถานะ "รอดำเนินการในขั้นตอนถัดไป
+   ของผัง" ให้เห็นทั้งชุด โดยไม่ปลอมว่าลงนามแทนกันได้ในหน้าจอเดียว
+   signers: [{ name, title, note? }] เรียงตามลำดับที่ต้องลงนาม            */
+function sequentialSignDialog(docName, signers){
+  const cur = signers[0];
+  const rest = signers.slice(1);
+  const stepList = signers.map((s,i) => `
+    <div class="d-flex align-items-start gap-2 mb-2" style="font-size:.82rem">
+      <span class="st ${i===0?'st-pending':'st-draft'}" style="min-width:26px;text-align:center">${i+1}</span>
+      <div>
+        <strong>${s.name}</strong> — ${s.title}
+        ${i===0
+          ? '<div class="text-muted" style="font-size:.74rem"><i class="fa-solid fa-signature me-1"></i>ลงนามในขั้นตอนนี้</div>'
+          : `<div class="text-muted" style="font-size:.74rem"><i class="fa-regular fa-clock me-1"></i>${s.note || 'รอดำเนินการในขั้นตอนถัดไปของผัง'}</div>`}
+      </div>
+    </div>`).join('');
+
+  return Swal.fire({
+    title:'ลงลายมือชื่อดิจิทัลตามลำดับ (Sequential e-Signature)',
+    html:`<div class="text-start" style="font-size:.9rem">
+      <p class="mb-2">เอกสาร: <strong>${docName}</strong></p>
+      <div class="mb-3" style="background:#f4f8f4;border:1px solid #cfe3d4;border-radius:8px;padding:10px 12px">
+        <div class="mb-1" style="font-size:.72rem;font-weight:600;color:var(--ecmis-muted,#6b7280)">
+          ลำดับผู้ลงนามของเอกสารนี้ (${signers.length} ลำดับ)</div>
+        ${stepList}
+      </div>
+      <div class="mb-2" style="background:#fdf7e8;border-left:4px solid #c9a227;padding:.6rem .8rem;border-radius:0 6px 6px 0">
+        กำลังลงนามในฐานะ <strong>${cur.name}</strong> — ระบบจะแปลงเอกสารเป็น PDF และผนึก
+        ลายมือชื่ออิเล็กทรอนิกส์ตาม พ.ร.บ. ว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ฯ (TOR 14.6)
+        ${rest.length ? `<br><small>เมื่อลงนามลำดับนี้แล้ว เอกสารจะส่งต่อให้ <strong>${rest[0].name}</strong>
+          ลงนามลำดับถัดไปในขั้นตอนของผัง — ไม่ใช่ลงนามแทนกันในหน้าจอเดียว</small>` : ''}
+      </div>
+      <label class="form-label mt-2">รหัส OTP ที่ส่งไปยังโทรศัพท์ที่ลงทะเบียนของ ${cur.name}</label>
+      <input id="swal-otp" class="form-control" maxlength="6" inputmode="numeric" placeholder="กรอก 6 หลัก (ทดสอบ: 123456)">
+      <div class="mt-2" style="font-size:.75rem;color:#6b7280">
+        <i class="fa-solid fa-circle-info me-1"></i>ผู้ให้บริการ CA (ThaiD Sign / CA หน่วยงาน) ยังรอ ป.ป.ท. ยืนยัน
+      </div>
+    </div>`,
+    showCancelButton:true, confirmButtonText:'ยืนยันลงนามลำดับนี้', cancelButtonText:'ยกเลิก',
+    confirmButtonColor:'#0a2647', cancelButtonColor:'#6b7280', reverseButtons:true, width:560,
+    preConfirm(){
+      const v = document.getElementById('swal-otp').value.trim();
+      if(v.length !== 6){ Swal.showValidationMessage('กรุณากรอก OTP ให้ครบ 6 หลัก'); return false; }
+      return { otp:v, signer:cur, next:rest[0] || null };
+    }
+  });
+}
+
 /* ------------------------------------------------------------ EXPORT */
 global.ECMIS = {
   ROLES, STATUS, STATUS_STEP, FLOW_STEPS, APPROVAL_CHAIN,
@@ -1158,7 +1212,7 @@ global.ECMIS = {
   thaiDate, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   renderShell, stepperHtml, statusBadge, slaBadge, actionBar,
-  mergeField, confirmAction, toastOk, toastWarn, signDialog
+  mergeField, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog
 };
 
 })(window);

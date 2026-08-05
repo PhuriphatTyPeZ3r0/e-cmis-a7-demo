@@ -125,6 +125,36 @@
         </div>
       </div>
 
+      <!-- ม.28: คำสั่งเบื้องต้นของเลขาธิการฯ — เฉพาะเลขาธิการฯ -->
+      <div class="card card-ecmis mb-3 d-none" id="m28Card">
+        <div class="card-header"><i class="fa-solid fa-gavel"></i> คำสั่งเบื้องต้นของเลขาธิการฯ ตามมาตรา 28</div>
+        <div class="card-body">
+          <div class="law-note mb-2">
+            <strong>มาตรา 28</strong> — เลขาธิการฯ พิจารณาเบื้องต้นแล้วสั่งได้ 3 ทาง
+            แล้ว<strong>รายงานคณะกรรมการ ป.ป.ท. ทุก 15 วัน</strong>
+            หากบอร์ดไม่มีมติเป็นอย่างอื่นภายใน 15 วัน ให้ถือว่าบอร์ดมีมติตามคำสั่งของเลขาธิการฯ
+          </div>
+          <div class="list-group mb-2" id="m28List"></div>
+          <div id="m28RejectLaw" class="d-none mt-2">
+            <label class="form-label field-req">มาตราที่ใช้อ้างอิงประกอบคำสั่ง</label>
+            <select class="form-select" id="m28Law">
+              <option value="">— เลือกมาตรา —</option>
+              <option value="25(1)">ม.25(1) ป.ป.ช. รับไว้พิจารณา/วินิจฉัยเสร็จเด็ดขาดแล้ว</option>
+              <option value="25(2)">ม.25(2) บอร์ดวินิจฉัยเสร็จเด็ดขาดแล้ว ไม่มีพยานหลักฐานใหม่</option>
+              <option value="25(3)">ม.25(3) ศาลประทับฟ้อง/พิพากษาเสร็จเด็ดขาดแล้ว</option>
+              <option value="25(4)">ม.25(4) ผู้ถูกร้อง/ผู้ถูกกล่าวหาตาย</option>
+              <option value="25(5)">ม.25(5) พ้นจากเจ้าหน้าที่ของรัฐก่อนถูกกล่าวหาเกิน 5 ปี</option>
+              <option value="26(1)">ม.26(1) ไม่ระบุพยานหลักฐาน/พฤติการณ์ชัดเจนเพียงพอ</option>
+              <option value="26(2)">ม.26(2) ล่วงเลยเกิน 5 ปีนับแต่วันเกิดเหตุ</option>
+              <option value="26(3)">ม.26(3) ไม่ใช่ความผิดวินัยอย่างร้ายแรง</option>
+              <option value="26(4)">ม.26(4) ประพฤติมิชอบที่ไม่เสียหายแก่ราชการอย่างร้ายแรง</option>
+              <option value="26(5)">ม.26(5) องค์กรบริหารงานบุคคลกำลังพิจารณา/ยุติแล้ว</option>
+            </select>
+            <div class="val-msg val-err" data-for="m28Law">กรุณาเลือกมาตราที่ใช้อ้างอิง</div>
+          </div>
+        </div>
+      </div>
+
       <!-- ลายมือชื่อดิจิทัล: เฉพาะเลขาธิการฯ -->
       <div class="card card-ecmis mb-3 d-none" id="signCard">
         <div class="card-header"><i class="fa-solid fa-signature"></i> ลายมือชื่อดิจิทัลบนรายงาน 213</div>
@@ -257,11 +287,42 @@ document.getElementById('sOpinion').innerHTML = ownerOp
 
 /* ---------- gateway boxes ---------- */
 if(role.id === 'secgen'){
+  document.getElementById('m28Card').classList.remove('d-none');
   document.getElementById('g1Box').classList.remove('d-none');
   document.getElementById('g3Box').classList.remove('d-none');
   document.getElementById('signCard').classList.remove('d-none');
 }
 if(role.id === 'support_sub') document.getElementById('g2Box').classList.remove('d-none');
+
+/* ---------- ม.28 — คำสั่งเบื้องต้นของเลขาธิการฯ (3 ทาง) ----------
+   G1/G3 เป็นเกตที่ตัดสิน "เส้นทางการเสนอ" ของสำนวนที่ถูก "รับไว้พิจารณา"
+   เท่านั้น — ถ้าเลขาธิการฯ สั่ง "ไม่รับ" หรือ "จำหน่ายเรื่อง" ตาม ม.28
+   สำนวนจะไม่เดินเข้า G1/G3 อีกต่อไป จึงต้องซ่อนสองกล่องนั้นเมื่อเลือก
+   ทางที่ไม่ใช่ ACCEPT และสลับข้อความ/ปุ่มลงนามให้ตรงกับคำสั่งที่เลือก */
+document.getElementById('m28List').innerHTML = ECMIS.M28_ORDERS.map((o,i) => `
+  <label class="list-group-item d-flex gap-2 align-items-start">
+    <input class="form-check-input mt-1" type="radio" name="m28order" value="${o.code}" ${i===0?'checked':''}>
+    <span><strong>${o.label}</strong>
+      <br><small class="text-muted">อ้างอิง ${o.lawRef}</small></span>
+  </label>`).join('');
+
+function m28Selected(){
+  const el = document.querySelector('input[name="m28order"]:checked');
+  return el ? el.value : 'ACCEPT';
+}
+function applyM28(){
+  const accept = m28Selected() === 'ACCEPT';
+  document.getElementById('m28RejectLaw').classList.toggle('d-none', accept);
+  /* ทางที่ไม่ใช่ ACCEPT ไม่เดินเข้า G1/G3 ตามผัง — ซ่อนไว้ไม่ให้สับสน */
+  document.getElementById('g1Box').classList.toggle('d-none', !accept);
+  document.getElementById('g3Box').classList.toggle('d-none', !accept);
+  renderActionButtons();
+}
+if(document.getElementById('m28Card')){
+  document.querySelectorAll('input[name="m28order"]').forEach(r =>
+    r.addEventListener('change', applyM28));
+}
+document.getElementById('m28RejectLaw').classList.toggle('d-none', m28Selected() === 'ACCEPT');
 
 /* ---- G1 เงื่อนไขที่ 2: ระบบสรุปผลการตรวจความเห็นตามลำดับชั้นให้ ---- */
 document.getElementById('g1AutoBox').innerHTML = g1.diverged
@@ -335,6 +396,14 @@ document.querySelectorAll('[name="g1"]').forEach(r => r.addEventListener('change
   renderG1Outcome(); renderG3();
 }));
 renderG1Outcome(); renderG3();
+
+/* ถ้ามาจากปุ่ม "มอบหมาย" ที่โต๊ะสั่งการ (11-secgen-desk.html) ให้ตั้งค่า G1 = ใช่ ล่วงหน้า
+   — เลขาธิการฯ ยังต้องตรวจสอบ บันทึกความเห็น และลงนามดิจิทัลเพื่อยืนยันเองอีกครั้ง */
+if(params.get('assign') === '1' && role.id === 'secgen' && document.getElementById('g1yes')){
+  document.getElementById('g1yes').checked = true;
+  document.getElementById('g1reasonBox').classList.remove('d-none');
+  renderG1Outcome(); renderG3();
+}
 
 /* ---------- SLA ของชั้นเลขาธิการฯ (2 ระยะ · ต่างกันตามชนิดรายงาน) ---------- */
 const slaNoteEl = document.getElementById('slaNote');
@@ -425,15 +494,30 @@ function nextRoleTitle(){
 function buildButtons(){
   const b = [{ act:'return', label:'ส่งคืนสายงานต้นทาง (กจ.5)', icon:'fa-arrow-left-long', cls:'btn-outline-danger' }];
   if(role.id === 'secgen'){
-    b.push({ act:'sign', label:'ลงนามดิจิทัลและส่งต่อ', icon:'fa-signature', cls:'btn-gold' });
+    const m28 = m28Selected();
+    if(m28 === 'ACCEPT'){
+      /* มอบหมาย = สั่งรับเรื่องไว้พิจารณา + มอบหมายเข้าเส้นทางที่ผังกำหนด
+         (คณะอนุสนับสนุนฯ เมื่อซับซ้อน/ความเห็นไม่ตรงกัน มิฉะนั้นเข้า G3 ตามปกติ)
+         แยกจาก "ลงนามดิจิทัลและส่งต่อ" เพื่อให้เห็นทั้งสองแอ็กชันหลักของ
+         เลขาธิการฯ บนแถบเดียวกันตามที่หน้าจอโต๊ะสั่งการอ้างถึง                */
+      b.push({ act:'assign', label:'มอบหมายเข้าคณะอนุสนับสนุนฯ', icon:'fa-people-arrows',
+        cls:'btn-outline-primary' });
+      b.push({ act:'sign', label:'ลงนามดิจิทัลและส่งต่อ', icon:'fa-signature', cls:'btn-gold' });
+    } else {
+      b.push({ act:'sign', label: m28 === 'DISMISS' ? 'ลงนามคำสั่งจำหน่ายเรื่อง' : 'ลงนามคำสั่งไม่รับเรื่องไว้พิจารณา',
+        icon:'fa-signature', cls:'btn-gold' });
+    }
   } else {
     b.push({ act:'approve', label:`เห็นชอบ — เสนอ${nextRoleTitle()}`, icon:'fa-check', cls:'btn-navy' });
   }
   return b;
 }
-document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons());
-document.querySelectorAll('.action-bar [data-act]').forEach(b =>
-  b.addEventListener('click', () => handle(b.dataset.act)));
+function renderActionButtons(){
+  document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons());
+  document.querySelectorAll('.action-bar [data-act]').forEach(b =>
+    b.addEventListener('click', () => handle(b.dataset.act)));
+}
+renderActionButtons();
 
 function requireOpinion(){
   const el = document.getElementById('myOpinion');
@@ -524,17 +608,100 @@ function handle(act){
     return;
   }
 
+  /* มอบหมาย = ลัดขั้นตอน "ระบุ G1 ว่าซับซ้อน" ให้อัตโนมัติ แล้วพาไปสู่ขั้น
+     ลงนามทันที เพราะโดเมนนี้กำหนดว่าสำนวนต้องผ่านการลงนามของเลขาธิการฯ
+     ก่อนจึงจะส่งต่อได้เสมอ ไม่ว่าจะส่งเข้าคณะอนุสนับสนุนฯ หรือเส้นทางปกติ  */
+  if(act === 'assign'){
+    if(!requireOpinion()) return;
+    ECMIS.confirmAction({
+      title:'มอบหมายสำนวนให้คณะอนุกรรมการสนับสนุนเลขาธิการฯ',
+      html:`<p>สำนวน <strong>${kase.id}</strong> จะถูกมอบหมายเข้า
+            <strong>คณะอนุกรรมการสนับสนุนเลขาธิการฯ (T6)</strong> เพื่อพิจารณาก่อนเสนอต่อ
+            <strong>หน้าห้องประธานกรรมการ ป.ป.ท. (G2)</strong></p>
+            <div class="law-note">ระบบจะตั้งค่า G1 = ใช่ (ดุลพินิจเลขาธิการฯ) ให้อัตโนมัติ —
+            ขั้นตอนถัดไปต้องลงนามดิจิทัลเพื่อยืนยันการมอบหมาย</div>`,
+      confirmText:'ยืนยันมอบหมายและไปลงนาม'
+    }).then(r => {
+      if(!r.isConfirmed) return;
+      document.getElementById('g1yes').checked = true;
+      document.getElementById('g1reasonBox').classList.remove('d-none');
+      const gr = document.getElementById('g1reason');
+      if(!gr.value.trim()) gr.value = 'เลขาธิการฯ พิจารณาแล้วเห็นควรมอบหมายให้คณะอนุกรรมการสนับสนุนฯ ตรวจสอบก่อน';
+      renderG1Outcome(); renderG3();
+      handle('sign');
+    });
+    return;
+  }
+
   if(act === 'sign'){
     if(!requireOpinion()) return;
+
+    /* ---- ม.28: ทางที่ไม่ใช่ "รับเรื่องไว้พิจารณา" — จบกระบวนงาน 7.1 ตรงนี้ ---- */
+    const m28 = m28Selected();
+    if(m28 !== 'ACCEPT'){
+      const lawSel = document.getElementById('m28Law');
+      if(!lawSel.value){
+        lawSel.classList.add('is-invalid-ecmis');
+        document.querySelector('.val-msg[data-for="m28Law"]').classList.add('show');
+        ECMIS.toastWarn('กรุณาเลือกมาตราที่ใช้อ้างอิงก่อนลงนามคำสั่ง'); return;
+      }
+      const order = ECMIS.m28Order(m28);
+      ECMIS.signDialog(`คำสั่งเลขาธิการฯ ตาม ${order.lawRef} เรื่องที่ ${kase.id}`,
+                       'นายอภิชาติ สุจริตกุล — เลขาธิการคณะกรรมการ ป.ป.ท.')
+        .then(res => {
+          if(!res.isConfirmed) return;
+          signed = true;
+          const now = new Date();
+          document.getElementById('sigBox').className = 'sig-box signed';
+          document.getElementById('sigBox').innerHTML = `
+            <i class="fa-solid fa-circle-check fa-2x mb-2" style="color:#1b7f5a"></i>
+            <div class="sig-name">นายอภิชาติ สุจริตกุล</div>
+            <div class="sig-meta">เลขาธิการคณะกรรมการ ป.ป.ท.</div>
+            <div class="sig-meta">ลงนามเมื่อ ${now.toLocaleString('th-TH')}</div>
+            <div class="sig-cert mt-2"><i class="fa-solid fa-shield-halved me-1"></i>
+              ลายมือชื่ออิเล็กทรอนิกส์ผ่านการตรวจสอบ · SHA-256 · เอกสารถูกล็อกเป็น PDF</div>`;
+          ECMIS.toastOk('ลงนามคำสั่งเรียบร้อย');
+          setTimeout(() => Swal.fire({
+            icon:'success', title:`${order.label}เรียบร้อย`,
+            html:`<div class="text-start">สำนวน <strong>${kase.id}</strong> —
+                  ${order.label} (${order.lawRef} มาตรา ${lawSel.value})<br>
+                  <div style="font-size:.82rem;color:#6b7280;margin-top:.6rem">
+                    ระบบจะแจ้งกลับกิจกรรมที่ 5 และปิดสำนวนในกิจกรรมที่ 7.1</div>
+                  <div style="background:#fdf7e8;border-left:4px solid #c9a227;padding:.55rem .8rem;border-radius:0 6px 6px 0;margin-top:.7rem;font-size:.8rem">
+                    <strong>ม.28</strong> — คำสั่งของเลขาธิการฯ ถูกบรรจุเข้ารอบรายงานคณะกรรมการ ป.ป.ท.
+                    รอบถัดไปโดยอัตโนมัติ (ทุก ${ECMIS.M28.cycleDays} วัน) หากบอร์ดไม่มีมติเป็นอย่างอื่นภายใน
+                    ${ECMIS.M28.boardSilenceDays} วัน ถือว่าบอร์ดมีมติตามคำสั่งของเลขาธิการฯ
+                  </div></div>`,
+            confirmButtonColor:'#0a2647', width:560
+          }).then(() => location.href = '01-work-inbox.html'), 800);
+        });
+      return;
+    }
+
+    /* ---- ม.28 = ACCEPT (รับเรื่องไว้พิจารณา) — เดินตาม G1/G3 ตามเดิม ---- */
     const complex = g1Yes();
     /* บังคับเหตุผลเฉพาะกรณีที่เลขาธิการฯ ใช้ดุลพินิจเอง — ถ้าระบบตรวจพบความเห็น
        ไม่ตรงกัน เหตุผลมาจากข้อเท็จจริงในสำนวนอยู่แล้ว จึงไม่ต้องให้พิมพ์ซ้ำ   */
     if(complex && !g1.diverged && !document.getElementById('g1reason').value.trim()){
       ECMIS.toastWarn('กรุณาระบุเหตุผลที่ถือเป็นเรื่องยุ่งยากซับซ้อน'); return;
     }
-    ECMIS.signDialog(`${docType.label} เรื่องที่ ${kase.id}`,
-                     'นายอภิชาติ สุจริตกุล — เลขาธิการคณะกรรมการ ป.ป.ท.')
-      .then(res => {
+
+    const SEC = { name:'นายอภิชาติ สุจริตกุล', title:'เลขาธิการคณะกรรมการ ป.ป.ท.' };
+    /* G3 ใบด่วน + ไม่ซับซ้อน = ต้องมีลายเซ็นรับรองของ ผอ.กบค. ก่อนจึง Bypass ได้
+       จำลองเป็น e-Signature แบบ Sequential — เห็นลำดับผู้ลงนามทั้งชุดในกล่อง
+       เดียว แต่รับ OTP ได้เฉพาะคนปัจจุบัน (เลขาธิการฯ) ส่วน ผอ.กบค. ลงนาม
+       รับรองจริงในขั้นตอนถัดไปของผัง (T7)                                     */
+    const needsSequential = !complex && !!kase.urgent;
+    const signers = needsSequential
+      ? [SEC, { name:'นางสาวณพัสตร์ ศรีสมเกียรติ',
+                title:'ผู้อำนวยการกองบริหารคดี (รับรองเหตุผลเร่งด่วน — T7)',
+                note:'รอรับรองเหตุผลเร่งด่วนในขั้นตอนถัดไปของผัง (T7) ก่อนจึง Bypass ได้' }]
+      : [SEC];
+    const signPromise = needsSequential
+      ? ECMIS.sequentialSignDialog(`${docType.label} เรื่องที่ ${kase.id}`, signers)
+      : ECMIS.signDialog(`${docType.label} เรื่องที่ ${kase.id}`, `${SEC.name} — ${SEC.title}`);
+
+    signPromise.then(res => {
         if(!res.isConfirmed) return;
         signed = true;
         const now = new Date();
@@ -544,6 +711,8 @@ function handle(act){
           <div class="sig-name">นายอภิชาติ สุจริตกุล</div>
           <div class="sig-meta">เลขาธิการคณะกรรมการ ป.ป.ท.</div>
           <div class="sig-meta">ลงนามเมื่อ ${now.toLocaleString('th-TH')}</div>
+          ${needsSequential ? `<div class="sig-meta"><i class="fa-regular fa-clock me-1"></i>
+            รอ ${signers[1].name} ลงนามรับรองลำดับถัดไปที่ T7</div>` : ''}
           <div class="sig-cert mt-2"><i class="fa-solid fa-shield-halved me-1"></i>
             ลายมือชื่ออิเล็กทรอนิกส์ผ่านการตรวจสอบ · SHA-256 · เอกสารถูกล็อกเป็น PDF</div>`;
         document.getElementById('docSign').innerHTML = `
@@ -560,7 +729,7 @@ function handle(act){
             : 'G1 = ใช่ (ดุลพินิจเลขาธิการฯ — เรื่องยุ่งยากซับซ้อน) → T6 → G2';
         } else if(kase.urgent){
           dest = 'ผู้อำนวยการกองบริหารคดี (T7) เพื่อรับรองเหตุผลเร่งด่วน';
-          path = 'G1 = ไม่ใช่ → G3 = มีใบด่วน → T7 → T8';
+          path = 'G1 = ไม่ใช่ → G3 = มีใบด่วน → T7 (ลำดับที่ 2 ของ Sequential e-Signature) → T8';
         } else {
           dest = 'หน้าห้องประธานกรรมการ ป.ป.ท. (T8)';
           path = 'G1 = ไม่ใช่ → G3 = ไม่มีใบด่วน → T8';
