@@ -224,28 +224,47 @@
     ];
 
     function renderMembers() {
-      document.getElementById('memberTb').innerHTML = members.map((m, i) => `
+      document.getElementById('memberTb').innerHTML = members.map((m, i) => {
+        const nameEmpty = !m.name || !m.name.trim();
+        const posEmpty = !m.pos || !m.pos.trim();
+        const roleEmpty = !m.role || !m.role.trim();
+
+        return `
     <tr>
       <td>${i + 1}</td>
-      <td><input class="form-control form-control-sm" data-f="name" data-i="${i}" value="${m.name}"></td>
-      <td><input class="form-control form-control-sm" data-f="pos" data-i="${i}" value="${m.pos}"></td>
       <td>
-        <select class="form-select form-select-sm" data-f="type" data-i="${i}">
+        <input class="form-control form-control-sm ${nameEmpty ? 'is-invalid' : ''}" data-f="name" data-i="${i}" value="${m.name || ''}" placeholder="ชื่อ-นามสกุล (ห้ามว่าง)">
+      </td>
+      <td>
+        <input class="form-control form-control-sm ${posEmpty ? 'is-invalid' : ''}" data-f="pos" data-i="${i}" value="${m.pos || ''}" placeholder="ตำแหน่ง (ห้ามว่าง)">
+      </td>
+      <td>
+        <select class="form-select form-select-sm mb-1" data-f="type" data-i="${i}">
           <option value="officer" ${m.type === 'officer' ? 'selected' : ''}>พนักงาน ป.ป.ท.</option>
           <option value="staff"   ${m.type === 'staff' ? 'selected' : ''}>เจ้าหน้าที่ ป.ป.ท.</option>
           <option value="other"   ${m.type === 'other' ? 'selected' : ''}>ผู้ทรงคุณวุฒิ/อื่น ๆ</option>
         </select>
-        <input class="form-control form-control-sm mt-1" data-f="role" data-i="${i}" value="${m.role}">
+        <input class="form-control form-control-sm ${roleEmpty ? 'is-invalid' : ''}" data-f="role" data-i="${i}" value="${m.role || ''}" placeholder="ฐานะในคณะ (ห้ามว่าง)">
       </td>
-      <td><button class="btn btn-sm btn-link text-danger p-0" data-del="${i}">
+      <td><button class="btn btn-sm btn-link text-danger p-0" data-del="${i}" title="ลบรายชื่อ">
         <i class="fa-solid fa-trash"></i></button></td>
-    </tr>`).join('');
+    </tr>`;
+      }).join('');
 
-      document.querySelectorAll('#memberTb [data-f]').forEach(el =>
-        el.addEventListener('input', e => {
-          members[+e.target.dataset.i][e.target.dataset.f] = e.target.value;
+      document.querySelectorAll('#memberTb [data-f]').forEach(el => {
+        const updateVal = e => {
+          const idx = +e.target.dataset.i;
+          const f = e.target.dataset.f;
+          members[idx][f] = e.target.value;
+          if (f === 'name' || f === 'pos' || f === 'role') {
+            e.target.classList.toggle('is-invalid', !e.target.value.trim());
+          }
           renderRules(); renderDoc();
-        }));
+        };
+        el.addEventListener('input', updateVal);
+        el.addEventListener('change', updateVal);
+      });
+
       document.querySelectorAll('#memberTb [data-del]').forEach(el =>
         el.addEventListener('click', () => {
           members.splice(+el.dataset.del, 1); renderMembers(); renderRules(); renderDoc();
@@ -264,11 +283,17 @@
     function renderRules() {
       const officers = members.filter(m => m.type === 'officer').length;
       const staff = members.filter(m => m.type === 'staff').length;
+      const allFilled = members.length > 0 && members.every(m =>
+        m.name && m.name.trim() !== '' &&
+        m.pos && m.pos.trim() !== '' &&
+        m.role && m.role.trim() !== ''
+      );
 
       let rules;
       if (isSub) {
         /* ม.24 ว.3 — ไม่อยู่ใต้กฎองค์ประกอบของวรรคหนึ่ง */
         rules = [
+          { ok: allFilled, t: 'ระบุชื่อ-สกุล ตำแหน่ง และฐานะในคณะของผู้ไต่สวนทุกคน (ห้ามเว้นว่าง)' },
           { ok: members.length >= 3, t: 'คณะอนุกรรมการไต่สวนควรมีองค์ประกอบไม่น้อยกว่า 3 คน (ประธาน / อนุกรรมการ / เลขานุการ)' },
           { ok: members.some(m => m.role.includes('ประธาน')), t: 'ระบุประธานอนุกรรมการไต่สวน' },
           { ok: members.some(m => m.role.includes('เลขานุการ')), t: 'ระบุอนุกรรมการและเลขานุการ' },
@@ -278,6 +303,7 @@
       } else {
         const comp = ECMIS.panelComposition({ officers, staff });
         rules = [
+          { ok: allFilled, t: 'ระบุชื่อ-สกุล ตำแหน่ง และฐานะในคณะของผู้ไต่สวนทุกคน (ห้ามเว้นว่าง)' },
           {
             ok: comp.minSize,
             t: `องค์คณะไม่น้อยกว่า ${ECMIS.M24P1_MIN_PANEL} คน (ม.24 วรรคหนึ่ง) · ปัจจุบัน ${comp.total} คน`

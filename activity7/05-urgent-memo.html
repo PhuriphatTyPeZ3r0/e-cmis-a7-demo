@@ -300,10 +300,17 @@ function handle(act){
   }
 
   if(act === 'certify'){
+    const reason = document.getElementById('urgentReason');
+    if (reason && reason.value.trim().length < 10) {
+      reason.dataset.touched = '1'; reason.classList.add('is-invalid-ecmis');
+      document.querySelector('.val-msg[data-for="urgentReason"]')?.classList.add('show');
+      ECMIS.toastWarn('กรุณาระบุรายละเอียดเหตุผลอย่างน้อย 10 ตัวอักษร');
+      return;
+    }
     const op = document.getElementById('dirCaseOpinion');
     if(op.value.trim().length < 10){
       op.dataset.touched = '1'; op.classList.add('is-invalid-ecmis');
-      document.querySelector('.val-msg[data-for="dirCaseOpinion"]').classList.add('show');
+      document.querySelector('.val-msg[data-for="dirCaseOpinion"]')?.classList.add('show');
       ECMIS.toastWarn('กรุณาระบุความเห็นกำกับก่อนลงนามรับรอง');
       return;
     }

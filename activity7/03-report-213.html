@@ -149,9 +149,7 @@
             <span class="badge bg-secondary rounded-pill ms-2" id="fileCount">0</span>
           </div>
           <div class="card-body">
-            <div class="rule-panel mb-3" id="docRules"></div>
-            <input type="file" class="form-control" id="f_files" multiple>
-            <div class="mt-2" id="fileList"></div>
+            <div id="docRules"></div>
           </div>
         </div>
 
@@ -261,22 +259,108 @@
       { k: 'statement', label: 'บันทึกถ้อยคำผู้ร้อง / พยานบุคคล', required: true },
       { k: 'order', label: 'สำเนาคำสั่งมอบหมายผู้รับผิดชอบสำนวน', required: false }
     ];
-    let uploaded = new Set(kase.status === 'DRAFT' ? [] : ['report', 'evidence']);
+
+    const filesMap = {};
+    if (kase.status !== 'DRAFT') {
+      filesMap['report'] = { name: 'รายงานการแสวงหาข้อเท็จจริง_213_ฉบับเต็ม.pdf', size: '2.4 MB' };
+      filesMap['evidence'] = { name: 'พยานเอกสารประกอบข้อกล่าวหา_ชุดที่1.pdf', size: '4.8 MB' };
+    }
 
     function renderDocRules() {
-      document.getElementById('docRules').innerHTML = REQ_DOCS.map(d => {
-        const ok = uploaded.has(d.k);
-        return `<div class="rule ${ok ? 'pass' : (d.required ? 'fail' : '')}">
-      <i class="fa-solid ${ok ? 'fa-circle-check' : (d.required ? 'fa-circle-xmark' : 'fa-circle-minus')}"></i>
-      <span>${d.label} ${d.required ? '<strong>(บังคับ)</strong>' : '<span class="text-muted">(ไม่บังคับ)</span>'}</span>
-      ${!ok ? `<button class="btn btn-sm btn-link p-0 ms-auto" data-up="${d.k}">แนบไฟล์</button>` : '<span class="ms-auto text-success"><i class="fa-solid fa-check"></i></span>'}
-    </div>`;
+      const container = document.getElementById('docRules');
+      if (!container) return;
+
+      const totalReq = REQ_DOCS.filter(x => x.required).length;
+
+      container.innerHTML = REQ_DOCS.map((d, index) => {
+        const file = filesMap[d.k];
+        const ok = !!file;
+        const isLast = index === REQ_DOCS.length - 1;
+
+        const statusIcon = ok
+          ? '<i class="fa-solid fa-circle-check text-success" style="font-size: 1.1rem"></i>'
+          : '<i class="fa-solid fa-circle-minus text-muted" style="font-size: 1.1rem; opacity: 0.6"></i>';
+
+        return `
+        <div class="attachment-item-card d-flex align-items-center justify-content-between p-2.5 ${isLast ? 'mb-0' : 'mb-2'} rounded-2" 
+             style="border: 1px solid var(--ecmis-line); background: ${ok ? '#f2fbf5' : '#f8f9fa'}; transition: all 0.2s ease; min-height: 56px;">
+          
+          <div class="d-flex align-items-center gap-2.5 flex-grow-1" style="min-width: 0;">
+            <div style="flex: 0 0 24px; text-align: center;">
+              ${statusIcon}
+            </div>
+            <div style="min-width: 0; flex-grow: 1;">
+              <div class="d-flex align-items-center flex-wrap gap-1.5">
+                <span class="fw-semibold text-dark text-truncate" style="font-size: 0.88rem;">${d.label}</span>
+                ${d.required
+            ? '<span class="badge bg-danger-subtle text-danger border border-danger-subtle py-0.5 px-1.5" style="font-size: 0.68rem; font-weight: 500;">บังคับ</span>'
+            : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-0.5 px-1.5" style="font-size: 0.68rem; font-weight: 400;">ไม่บังคับ</span>'}
+              </div>
+              ${file ? `
+                <div class="small text-muted mt-1 d-flex align-items-center gap-1 text-truncate" style="font-size: 0.78rem;">
+                  <i class="fa-regular fa-file-pdf text-danger me-0.5"></i>
+                  <span class="text-dark fw-medium text-truncate" style="max-width: 280px;">${file.name}</span>
+                  <span class="text-muted">(${file.size})</span>
+                </div>
+              ` : `
+                <div class="small text-muted mt-0.5" style="font-size: 0.74rem;">ยังไม่ได้แนบไฟล์</div>
+              `}
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center gap-1.5 ms-2 flex-shrink-0">
+            ${ok ? `
+              <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2.5 btn-edit-file" data-up="${d.k}" title="แก้ไข/เปลี่ยนไฟล์" style="font-size: 0.78rem; border-radius: 6px;">
+                <i class="fa-solid fa-pen-to-square me-1"></i>แก้ไข
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2.5 btn-del-file" data-del="${d.k}" title="ลบไฟล์แนบ" style="font-size: 0.78rem; border-radius: 6px;">
+                <i class="fa-solid fa-trash-can me-1"></i>ลบ
+              </button>
+            ` : `
+              <button type="button" class="btn btn-sm btn-outline-primary py-1 px-3 btn-attach-file" data-up="${d.k}" style="font-size: 0.8rem; font-weight: 500; border-radius: 6px; min-width: 88px;">
+                <i class="fa-solid fa-paperclip me-1"></i>แนบไฟล์
+              </button>
+            `}
+          </div>
+        </div>`;
       }).join('');
-      document.getElementById('fileCount').textContent = uploaded.size;
-      document.querySelectorAll('[data-up]').forEach(b => b.addEventListener('click', () => {
-        uploaded.add(b.dataset.up); renderDocRules(); validate();
-        ECMIS.toastOk('แนบไฟล์เรียบร้อย');
-      }));
+
+      const reqUploadedCount = REQ_DOCS.filter(x => x.required && !!filesMap[x.k]).length;
+      document.getElementById('fileCount').textContent = `${reqUploadedCount}/${totalReq}`;
+
+      document.querySelectorAll('[data-up]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const docKey = btn.dataset.up;
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = '.pdf,.doc,.docx,.jpg,.png';
+          input.onchange = (e) => {
+            const selectedFile = e.target.files[0];
+            if (selectedFile) {
+              const szMB = (selectedFile.size / (1024 * 1024)).toFixed(1);
+              filesMap[docKey] = {
+                name: selectedFile.name,
+                size: szMB > 0 ? `${szMB} MB` : `${Math.round(selectedFile.size / 1024)} KB`
+              };
+              renderDocRules();
+              validate();
+              ECMIS.toastOk(`แนบไฟล์ "${selectedFile.name}" สำเร็จ`);
+            }
+          };
+          input.click();
+        });
+      });
+
+      document.querySelectorAll('[data-del]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const docKey = btn.dataset.del;
+          const fileName = filesMap[docKey]?.name || '';
+          delete filesMap[docKey];
+          renderDocRules();
+          validate();
+          ECMIS.toastOk(`ลบไฟล์ "${fileName}" เรียบร้อยแล้ว`);
+        });
+      });
     }
 
     /* ---------- Q1: ตรวจว่ามีการแก้ไข "สาระสำคัญ" หรือไม่ ---------- */
@@ -335,7 +419,7 @@
         { ok: !!opinionType, t: 'เลือกความเห็นของผู้รับผิดชอบสำนวน' },
         { ok: v('f_opinion').length >= 20, t: 'ระบุเหตุผลประกอบความเห็น' },
         { ok: opinionType !== 'REJECT' || !!v('f_rejectLaw'), t: 'ระบุมาตราอ้างอิง กรณีเห็นควรไม่รับไว้ไต่สวน (ม.25/ม.26)' },
-        { ok: REQ_DOCS.filter(d => d.required).every(d => uploaded.has(d.k)), t: 'แนบเอกสารบังคับครบถ้วน' },
+        { ok: REQ_DOCS.filter(d => d.required).every(d => !!filesMap[d.k]), t: 'แนบเอกสารบังคับครบถ้วน' },
         { ok: true, t: 'อยู่ในกรอบเวลา ม.23 — ต้องเริ่มไต่สวนภายใน ' + ECMIS.thaiDate(kase.deadline60) }
       ];
     }
@@ -520,11 +604,6 @@
       if (!el) return;
       el.addEventListener('input', () => { el.dataset.touched = '1'; validate(); renderDoc(); renderReRoute(); });
       el.addEventListener('change', () => { el.dataset.touched = '1'; validate(); renderDoc(); renderReRoute(); });
-    });
-    document.getElementById('f_files').addEventListener('change', e => {
-      document.getElementById('fileList').innerHTML = Array.from(e.target.files).map(f =>
-        `<div class="chip me-1 mb-1"><i class="fa-regular fa-file"></i> ${f.name}
-      <span class="text-muted">(${(f.size / 1024).toFixed(0)} KB)</span></div>`).join('');
     });
     document.getElementById('btnDocx')?.addEventListener('click', () =>
       ECMIS.toastOk('ดาวน์โหลด .docx สำหรับแก้ไขใน Word — อัปโหลดกลับเพื่อแปลงเป็น PDF ล็อกลายมือชื่อ'));
