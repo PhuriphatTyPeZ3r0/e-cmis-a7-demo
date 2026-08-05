@@ -1,6 +1,6 @@
 # Activity 7 Multi-Agent Pipeline Prompts
 
-Reference prompts for orchestrating a 4-stage sub-agent pipeline covering
+Reference prompts for orchestrating a 5-stage sub-agent pipeline covering
 Activity 7 (กระบวนงานพิจารณาและดำเนินการตามมติคณะกรรมการ ป.ป.ท. — เริ่มจากเลขาธิการ ป.ป.ท.).
 Saved 2026-08-05 as reference material; not yet executed.
 
@@ -11,6 +11,7 @@ Saved 2026-08-05 as reference material; not yet executed.
 | 2 | [02-flow-architect.md](02-flow-architect.md) | Process & Flow Architect | AS-IS/TO-BE mapping, BPMN breakdown, Draw.io XML patch |
 | 3 | [03-qa-test-engineer.md](03-qa-test-engineer.md) | QA & Test Scenario Engineer | Unit Test Matrix (EP/BVA/State Transition), E2E Scenarios |
 | 4 | [04-mockup-developer.md](04-mockup-developer.md) | Frontend & Mockup Developer | UI code merged into git branch `Mock-up-7` |
+| 5 | [05-content-cleansing.md](05-content-cleansing.md) | Content Cleansing & Text Humanizer | Sanitized production Thai copy + UI Strings/Label Matrix |
 
 ## Key references used across prompts
 

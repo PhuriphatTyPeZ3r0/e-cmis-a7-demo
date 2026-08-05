@@ -16,6 +16,7 @@ Control and execute the multi-agent pipeline for "กิจกรรมที่
 2. Sub-Agent 2 (Flow Specialist) -> Re-architect `กิจกรรมที่ 7-V2.0.drawio` based on Sub-Agent 1 output
 3. Sub-Agent 3 (QA Engineer) -> Design Unit Tests (EP, BVA, State Transition) & E2E Scenarios based on Sub-Agent 1 & 2
 4. Sub-Agent 4 (Mockup Developer) -> Fetch Figma MCP, build UI code, merge into Git Branch `Mock-up-7`
+5. Sub-Agent 5 (Content Cleansing Specialist) -> Sanitize/humanize all text, UI strings, and document content from Sub-Agents 1-4 into production-ready official Thai
 
 # QUALITY GATE RULE
 - Validate that each Sub-Agent returns strict Markdown tables before passing data to the next agent.
