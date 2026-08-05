@@ -13,6 +13,11 @@ Saved 2026-08-05 as reference material; not yet executed.
 | 4 | [04-mockup-developer.md](04-mockup-developer.md) | Frontend & Mockup Developer | UI code merged into git branch `Mock-up-7` |
 | 5 | [05-content-cleansing.md](05-content-cleansing.md) | Content Cleansing & Text Humanizer | Sanitized production Thai copy + UI Strings/Label Matrix |
 
+See [06-parallel-execution.md](06-parallel-execution.md) for running Stages
+1-5 as a 3-wave parallel pipeline (Sub-Agents 1+4, then 2+3, then 5), with
+runnable scripts at [`../../scripts/run_pipeline_parallel.sh`](../../scripts/run_pipeline_parallel.sh)
+and [`../../scripts/run_pipeline_parallel.py`](../../scripts/run_pipeline_parallel.py).
+
 ## Key references used across prompts
 
 - Law source: `C:\6_Working\PMO1-03-08-2026\E-CMIS\diagram\Activity 7\law_pacc_68.pdf`
