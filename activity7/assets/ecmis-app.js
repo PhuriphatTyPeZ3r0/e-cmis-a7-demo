@@ -704,6 +704,25 @@ const M28_LOG = {
 };
 CASES.forEach(c => { if(M28_LOG[c.id]) c.m28 = M28_LOG[c.id]; });
 
+/* ---- LOCAL STORAGE / SESSION STORAGE STATE FOR CASES ---- */
+if (typeof sessionStorage !== 'undefined') {
+  const savedCases = sessionStorage.getItem('ecmis_cases');
+  if (savedCases) {
+    try {
+      const parsed = JSON.parse(savedCases);
+      CASES.length = 0;
+      parsed.forEach(c => CASES.push(c));
+    } catch (e) {
+      console.error('Failed to load CASES from sessionStorage:', e);
+    }
+  }
+}
+function saveCases() {
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem('ecmis_cases', JSON.stringify(CASES));
+  }
+}
+
 /* Reason Code สำหรับการตีกลับ (EX-01 — TOR 7.2.1.2) */
 const RETURN_REASONS = [
   { code:'DOC_INCOMPLETE', label:'เอกสาร/พยานหลักฐานไม่ครบถ้วน' },
@@ -927,8 +946,27 @@ function renderShell(activeHref){
   const role = currentRole();
   const inboxCount = inboxFor(role.id).length;
 
+  /* ---- notification center ---- */
+  const notifications = [
+    { title: 'เสนอเรื่องใหม่', body: 'สำนวน 1547/2568 รอเลขาธิการฯ พิจารณา/ลงนาม', time: '10 นาทีที่แล้ว', icon: 'fa-user-check', cls: 'bg-primary text-white' },
+    { title: 'มติบอร์ดเสร็จสิ้น', body: 'บันทึกมติที่ประชุมบอร์ด สำนวน 1588/2568 แล้ว', time: '1 ชม. ที่แล้ว', icon: 'fa-scale-balanced', cls: 'bg-success text-white' },
+    { title: 'คำร้องขอใบด่วน', body: 'ผอ.กบค. ส่งใบด่วนขอวาระด่วน สำนวน 1602/2568', time: '2 ชม. ที่แล้ว', icon: 'fa-bolt', cls: 'bg-warning text-dark' }
+  ];
+  const notifItems = notifications.map(n => `
+    <li class="p-2 border-bottom" style="font-size:0.78rem">
+      <div class="d-flex gap-2">
+        <span class="rounded-circle d-flex align-items-center justify-content-center ${n.cls}" style="width:28px;height:28px;flex:0 0 auto">
+          <i class="fa-solid ${n.icon}" style="font-size:0.75rem"></i>
+        </span>
+        <div>
+          <strong class="d-block text-dark dark-text-light" style="font-size:0.8rem">${n.title}</strong>
+          <span class="text-muted d-block" style="font-size:0.74rem">${n.body}</span>
+          <small class="text-muted" style="font-size:0.66rem">${n.time}</small>
+        </div>
+      </div>
+    </li>`).join('');
+
   /* ---- topbar ---- */
-  /* จัดกลุ่มตาม "กลุ่มงาน" ให้ตรงกับ Google Sheet tab กลุ่มผู้ใช้งานระบบ */
   const groups = [];
   ROLES.forEach(r => {
     let g = groups.find(x => x.name === r.group);
@@ -949,7 +987,7 @@ function renderShell(activeHref){
     }).join('')).join('<li><hr class="dropdown-divider"></li>');
 
   const topbar = `
-  <header class="app-topbar">
+  <header class="app-topbar no-print">
     <button class="btn btn-sm text-white d-lg-none border-0" id="sbToggle" aria-label="เปิด/ปิดเมนู">
       <i class="fa-solid fa-bars"></i>
     </button>
@@ -959,11 +997,32 @@ function renderShell(activeHref){
         <small>กิจกรรมที่ 7.1 การไต่สวนเบื้องต้น</small>
       </span>
     </a>
+    
     <div class="ms-auto d-flex align-items-center gap-2">
-      <a href="01-work-inbox.html" class="btn btn-sm text-white position-relative border-0" title="งานค้างของฉัน">
-        <i class="fa-regular fa-bell"></i>
-        ${inboxCount ? `<span class="position-absolute top-50 start-100 translate-middle-y badge rounded-pill bg-danger" style="font-size:.6rem">${inboxCount}</span>` : ''}
-      </a>
+      <!-- Global Search Trigger -->
+      <button class="btn btn-sm text-white border-0" onclick="document.dispatchEvent(new KeyboardEvent('keydown', {key: 'k', ctrlKey: true}))" title="ค้นหาด่วน (Ctrl+K)">
+        <i class="fa-solid fa-magnifying-glass"></i>
+      </button>
+
+      <!-- Accessibility Toolbar controls -->
+      <button class="btn btn-sm text-white border-0" onclick="ECMIS.changeFont(-1)" title="อักษรเล็กลง" style="font-size: 0.8rem">A-</button>
+      <button class="btn btn-sm text-white border-0" onclick="ECMIS.changeFont(1)" title="อักษรใหญ่ขึ้น" style="font-size: 0.8rem">A+</button>
+      <button class="btn btn-sm text-white border-0" onclick="ECMIS.toggleDarkMode()" title="สลับโหมดมืด"><i class="fa-regular fa-moon"></i></button>
+      <button class="btn btn-sm text-white border-0" onclick="ECMIS.toggleHighContrast()" title="ปรับสีคอนทราสต์สูง"><i class="fa-solid fa-circle-half-stroke"></i></button>
+      
+      <!-- Notification bell dropdown -->
+      <div class="dropdown">
+        <button class="btn btn-sm text-white position-relative border-0" data-bs-toggle="dropdown" aria-expanded="false" title="การแจ้งเตือน">
+          <i class="fa-regular fa-bell"></i>
+          <span class="position-absolute top-50 start-100 translate-middle-y badge rounded-pill bg-danger" style="font-size:.58rem; transform: translate(-30%, -85%) !important">3</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end p-0" style="width:290px; max-height:360px; overflow-y:auto">
+          <li><h6 class="dropdown-header border-bottom p-2 text-dark dark-text-light" style="font-size: 0.82rem">การแจ้งเตือนล่าสุด</h6></li>
+          ${notifItems}
+          <li class="text-center p-2"><a href="#" style="font-size:0.75rem; text-decoration:none; color:var(--ecmis-navy)">ดูการแจ้งเตือนทั้งหมด</a></li>
+        </ul>
+      </div>
+
       <div class="dropdown role-switcher">
         <button class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="fa-regular fa-user me-1"></i>${role.name}
@@ -985,12 +1044,12 @@ function renderShell(activeHref){
     const badge = n.badge && inboxCount ? `<span class="badge bg-danger rounded-pill">${inboxCount}</span>` : '';
     const step  = n.step ? `<span class="step-no">${n.step}</span>` : `<i class="fa-solid ${n.icon}"></i>`;
     return `<a class="nav-link ${active?'active':''}" href="${n.href}" ${n.muted?'style="opacity:.7"':''}>
-      ${step}<span>${n.label}${n.ref?`<br><small class="text-muted" style="font-size:.68rem">${n.muted?'':'ผัง '}${n.ref}</small>`:''}</span>${badge}
+      ${step}<span>${n.label}</span>${badge}
     </a>`;
   }).join('');
 
   const sidebar = `
-  <nav class="app-sidebar" id="appSidebar">
+  <nav class="app-sidebar no-print" id="appSidebar">
     ${navHtml}
     <div class="nav-section">อ้างอิง</div>
     <a class="nav-link" href="index.html"><i class="fa-solid fa-globe"></i><span>กลับเว็บสาธารณะ</span></a>
@@ -1003,6 +1062,76 @@ function renderShell(activeHref){
   });
   const tog = document.getElementById('sbToggle');
   if(tog) tog.addEventListener('click', () => document.getElementById('appSidebar').classList.toggle('open'));
+
+  // Initialize features
+  initA11yAndPref();
+  initCommandPalette();
+  initVoiceInput();
+  initSyncIndicator();
+  initCharCounterAndCopy();
+  initDocPaneToggle();
+
+  // Auto-wire Real-time Validation on every form
+  document.querySelectorAll('form[id], main form').forEach(f => {
+    if (f.id) initRealTimeValidation(f);
+  });
+
+  // Auto-wire AutoSave on forms with data-autosave attribute
+  document.querySelectorAll('form[data-autosave]').forEach(f => {
+    const key = f.dataset.autosave || ('draft_' + f.id);
+    initAutoSave(f.id, key, 'คุณยังมีข้อมูลที่ไม่ได้บันทึก — ออกจากหน้านี้?');
+  });
+
+  // Skeleton loading: replace empty tables with shimmer, then resolve when JS fills them
+  document.querySelectorAll('table tbody:empty, table tbody').forEach(tbody => {
+    if (!tbody.children.length) {
+      const cols = tbody.closest('table')?.querySelectorAll('thead th').length || 4;
+      tbody.innerHTML = Array.from({length:3}, () =>
+        `<tr class="skeleton-row">${Array.from({length:cols}, () =>
+          `<td><div class="skeleton-box" style="height:14px;border-radius:4px;background:#e2e8f0;width:${60+Math.random()*30|0}%"></div></td>`
+        ).join('')}</tr>`
+      ).join('');
+    }
+  });
+
+  // Empty State: show friendly message when no data after load
+  setTimeout(() => {
+    document.querySelectorAll('table tbody').forEach(tbody => {
+      const rows = tbody.querySelectorAll('tr:not(.skeleton-row)');
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="99" class="ecmis-empty-state">
+          <div style="text-align:center;padding:32px 16px;color:var(--ecmis-muted)">
+            <i class="fa-solid fa-inbox fa-2x mb-3" style="opacity:.4"></i>
+            <div style="font-size:.92rem;font-weight:600">ไม่พบข้อมูล</div>
+            <div style="font-size:.8rem;margin-top:4px">ไม่มีรายการที่ตรงกับเงื่อนไข หรือยังไม่มีข้อมูลในระบบ</div>
+          </div>
+        </td></tr>`;
+      }
+    });
+  }, 800);
+
+
+  // Add Breadcrumb Trail
+  const activeNav = NAV.find(n => n.href === activeHref);
+  if (activeNav) {
+    let parentSection = 'ภาพรวม';
+    for (let i = 0; i < NAV.length; i++) {
+      if (NAV[i].section) parentSection = NAV[i].section;
+      if (NAV[i].href === activeHref) break;
+    }
+    const breadcrumbHtml = `
+      <nav aria-label="breadcrumb" class="no-print mb-2">
+        <ol class="breadcrumb" style="font-size:0.75rem; margin:0 0 12px 0; padding:0; list-style:none; display:flex; gap:6px">
+          <li class="breadcrumb-item"><a href="01-work-inbox.html" style="text-decoration:none; color:var(--ecmis-navy)"><i class="fa-solid fa-house me-1"></i>Home</a></li>
+          <li class="breadcrumb-item text-muted" style="display:flex; gap:6px"><span style="margin:0 4px">/</span>${parentSection}</li>
+          <li class="breadcrumb-item active" style="display:flex; gap:6px" aria-current="page"><span style="margin:0 4px">/</span>${activeNav.label}</li>
+        </ol>
+      </nav>`;
+    const appMain = document.querySelector('.app-main');
+    if (appMain) {
+      appMain.insertAdjacentHTML('afterbegin', breadcrumbHtml);
+    }
+  }
 }
 
 /* -------------------------------------------------------- UI BUILDERS */
@@ -1014,14 +1143,14 @@ function stepperHtml(statusKey){
     const mark = i < idx ? '<i class="fa-solid fa-check"></i>' : (i+1);
     return `<div class="fstep ${cls}">
       <div class="dot">${mark}</div>
-      <div class="lbl">${s.label}<br><span style="font-size:.66rem;opacity:.75">${s.ref}</span></div>
+      <div class="lbl">${s.label}</div>
     </div>`;
   }).join('') + `</div>`;
 }
 
 function statusBadge(statusKey){
   const s = STATUS[statusKey];
-  return s ? `<span class="st ${s.cls}">${s.label}</span>` : '';
+  return s ? `<span class="st ${s.cls}"><i class="fa-solid fa-circle-dot me-1" style="font-size: 0.65rem"></i>${s.label}</span>` : '';
 }
 
 /* เพดาน SLA ที่ใช้จริงกับสำนวน — ชั้นเลขาธิการฯ ใช้ตารางตามชนิดรายงาน/ระยะ
@@ -1068,14 +1197,14 @@ function actionBar(kase, roleId, buttons){
 
   const scopeTag = role.scope === 'UPSTREAM'
     ? `<span class="st st-draft ms-1">นอกขอบเขต กจ.7</span>`
-    : `<span class="chip ms-1">ผัง ${role.lane} · ${role.flow}</span>`;
+    : '';
   const editTag = canEditMaster(roleId)
-    ? `<span class="st st-urgent ms-1" title="ชีตแถว 15 — มีเพียง 7 คนที่แก้ไขมติ/คำสั่ง/รายงานได้">
+    ? `<span class="st st-done ms-1" title="ชีตแถว 15 — มีเพียง 7 คนที่แก้ไขมติ/คำสั่ง/รายงานได้">
          <i class="fa-solid fa-pen-to-square"></i> แก้ไขมติได้</span>`
     : `<span class="st st-closed ms-1" title="ชีตแถว 15/17 — บทบาทนี้แก้ไขมติ/คำสั่ง/รายงานไม่ได้">
          <i class="fa-solid fa-lock"></i> แก้ไขมติไม่ได้</span>`;
 
-  return `<div class="action-bar">
+  return `<div class="action-bar" id="caseActionBar">
     <div class="role-hint">
       <i class="fa-regular fa-user me-1"></i>กำลังดำเนินการในบทบาท:
       <strong>${role.title}</strong> ${scopeTag} ${editTag}
@@ -1119,10 +1248,21 @@ function toastWarn(msg){
 /* --------------------------------- Digital Signature simulation dialog */
 function signDialog(docName, signerName){
   return Swal.fire({
-    title:'ลงลายมือชื่อดิจิทัล',
+    title:'ลงลายมือชื่อดิจิทัล (e-Signature)',
     html:`<div class="text-start" style="font-size:.9rem">
       <p class="mb-2">เอกสาร: <strong>${docName}</strong></p>
       <p class="mb-2">ผู้ลงนาม: <strong>${signerName}</strong></p>
+      
+      <!-- Canvas Signature Pad -->
+      <label class="form-label mt-2">วาดลายมือชื่อด้วยเมาส์หรือสัมผัส (Digital Signature Pad)</label>
+      <div class="sig-canvas-wrapper mb-2">
+        <canvas id="swal-sig-canvas" class="sig-canvas" width="500" height="150"></canvas>
+      </div>
+      <div class="text-end mb-2">
+        <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2" style="font-size:0.75rem" id="swal-sig-clear">ล้างรูปวาด</button>
+      </div>
+      <input type="hidden" id="swal-sig-input">
+      
       <div class="mb-2" style="background:#fdf7e8;border-left:4px solid #c9a227;padding:.6rem .8rem;border-radius:0 6px 6px 0">
         ระบบจะแปลงเอกสารเป็น PDF และผนึกลายมือชื่ออิเล็กทรอนิกส์
         ตาม พ.ร.บ. ว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ฯ (TOR 14.6)
@@ -1135,23 +1275,19 @@ function signDialog(docName, signerName){
     </div>`,
     showCancelButton:true, confirmButtonText:'ยืนยันลงนาม', cancelButtonText:'ยกเลิก',
     confirmButtonColor:'#0a2647', cancelButtonColor:'#6b7280', reverseButtons:true,
+    didOpen() {
+      initSignaturePad('swal-sig-canvas', 'swal-sig-clear', 'swal-sig-input');
+    },
     preConfirm(){
       const v = document.getElementById('swal-otp').value.trim();
+      const sigData = document.getElementById('swal-sig-input').value;
       if(v.length !== 6){ Swal.showValidationMessage('กรุณากรอก OTP ให้ครบ 6 หลัก'); return false; }
-      return v;
+      return { otp: v, sig: sigData };
     }
   });
 }
 
-/* ------------------------------------------- Sequential e-signature
-   บางเอกสารต้องผ่านผู้ลงนามมากกว่า 1 คนตามลำดับที่ผังกำหนด เช่น G3
-   (เลขาธิการฯ ลงนามก่อน แล้ว ผอ.กบค. ต้องลงนามรับรองเหตุผลเร่งด่วนใน
-   ขั้นถัดไปของผัง จึงจะ Bypass ได้) หรือ ม.24 ว.3 กรณีมอบหมายลงนามแทน
-   (ประธานฯ → เลขาธิการฯ ปฏิบัติราชการแทน) ฟังก์ชันนี้แสดง "ลำดับผู้ลงนาม"
-   ทั้งชุดในกล่องเดียว แต่รับ OTP ได้เฉพาะผู้ลงนามคนปัจจุบัน (คนแรกที่ยัง
-   ไม่ลงนาม) — ผู้ลงนามลำดับถัดไปจะขึ้นสถานะ "รอดำเนินการในขั้นตอนถัดไป
-   ของผัง" ให้เห็นทั้งชุด โดยไม่ปลอมว่าลงนามแทนกันได้ในหน้าจอเดียว
-   signers: [{ name, title, note? }] เรียงตามลำดับที่ต้องลงนาม            */
+/* ------------------------------------------- Sequential e-signature */
 function sequentialSignDialog(docName, signers){
   const cur = signers[0];
   const rest = signers.slice(1);
@@ -1175,6 +1311,17 @@ function sequentialSignDialog(docName, signers){
           ลำดับผู้ลงนามของเอกสารนี้ (${signers.length} ลำดับ)</div>
         ${stepList}
       </div>
+      
+      <!-- Canvas Signature Pad -->
+      <label class="form-label mt-2">วาดลายมือชื่อด้วยเมาส์หรือสัมผัส (Digital Signature Pad)</label>
+      <div class="sig-canvas-wrapper mb-2">
+        <canvas id="swal-sig-canvas" class="sig-canvas" width="500" height="150"></canvas>
+      </div>
+      <div class="text-end mb-2">
+        <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2" style="font-size:0.75rem" id="swal-sig-clear">ล้างรูปวาด</button>
+      </div>
+      <input type="hidden" id="swal-sig-input">
+
       <div class="mb-2" style="background:#fdf7e8;border-left:4px solid #c9a227;padding:.6rem .8rem;border-radius:0 6px 6px 0">
         กำลังลงนามในฐานะ <strong>${cur.name}</strong> — ระบบจะแปลงเอกสารเป็น PDF และผนึก
         ลายมือชื่ออิเล็กทรอนิกส์ตาม พ.ร.บ. ว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ฯ (TOR 14.6)
@@ -1189,15 +1336,860 @@ function sequentialSignDialog(docName, signers){
     </div>`,
     showCancelButton:true, confirmButtonText:'ยืนยันลงนามลำดับนี้', cancelButtonText:'ยกเลิก',
     confirmButtonColor:'#0a2647', cancelButtonColor:'#6b7280', reverseButtons:true, width:560,
+    didOpen() {
+      initSignaturePad('swal-sig-canvas', 'swal-sig-clear', 'swal-sig-input');
+    },
     preConfirm(){
       const v = document.getElementById('swal-otp').value.trim();
+      const sigData = document.getElementById('swal-sig-input').value;
       if(v.length !== 6){ Swal.showValidationMessage('กรุณากรอก OTP ให้ครบ 6 หลัก'); return false; }
-      return { otp:v, signer:cur, next:rest[0] || null };
+      return { otp:v, signer:cur, next:rest[0] || null, sig: sigData };
     }
   });
 }
 
+/* ==========================================================================
+   UI/UX ENHANCEMENT HANDLERS (Step 2 Implementation)
+   ========================================================================== */
+
+function toggleDarkMode() {
+  const isDark = document.body.classList.toggle('dark-mode');
+  localStorage.setItem('ecmis_dark_mode', isDark);
+  toastOk(isDark ? 'เปิดโหมดมืด (Dark Mode)' : 'ปิดโหมดมืด (Light Mode)');
+}
+
+function toggleHighContrast() {
+  const isHC = document.body.classList.toggle('high-contrast');
+  localStorage.setItem('ecmis_high_contrast', isHC);
+  toastOk(isHC ? 'เปิดโหมดสีคอนทราสต์สูง' : 'ปิดโหมดสีคอนทราสต์สูง');
+}
+
+let fontStep = 0;
+function changeFont(dir) {
+  if (dir === 0) fontStep = 0;
+  else fontStep = Math.max(-2, Math.min(3, fontStep + dir));
+  const baseSize = 14.5 + fontStep * 2;
+  document.documentElement.style.fontSize = baseSize + 'px';
+  localStorage.setItem('ecmis_font_step', fontStep);
+  toastOk(`ปรับขนาดตัวอักษรเป็น: ${dir > 0 ? 'ใหญ่ขึ้น' : dir < 0 ? 'เล็กลง' : 'ปกติ'}`);
+}
+
+function initA11yAndPref() {
+  if (typeof document === 'undefined') return;
+
+  const fontStepVal = parseInt(localStorage.getItem('ecmis_font_step') || '0', 10);
+  const baseSize = 14.5 + fontStepVal * 2;
+  document.documentElement.style.fontSize = baseSize + 'px';
+
+  let isDark = localStorage.getItem('ecmis_dark_mode');
+  if (isDark === null) {
+    isDark = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'true' : 'false';
+  }
+  if (isDark === 'true') {
+    document.body.classList.add('dark-mode');
+  }
+
+  const isHC = localStorage.getItem('ecmis_high_contrast') === 'true';
+  if (isHC) {
+    document.body.classList.add('high-contrast');
+  }
+
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.body.classList.add('reduced-motion');
+  }
+}
+
+function initCommandPalette() {
+  if (typeof document === 'undefined') return;
+
+  const html = `
+  <div class="cmd-palette-backdrop no-print" id="cmdPalette">
+    <div class="cmd-palette-box">
+      <div class="cmd-palette-search-wrapper">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" class="cmd-palette-input" id="cmdPaletteInput" placeholder="พิมพ์ชื่อเมนู หรือ เลขสำนวนคดี (เช่น 1547/2568)..." autocomplete="off">
+      </div>
+      <div class="cmd-palette-results" id="cmdPaletteResults"></div>
+      <div class="cmd-palette-hint">
+        <span><kbd>↑↓</kbd> เลือก &nbsp; <kbd>Enter</kbd> เปิดหน้าจอ &nbsp; <kbd>Esc</kbd> ปิด</span>
+        <span>Command Palette <kbd>Ctrl + K</kbd></span>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+
+  const backdrop = document.getElementById('cmdPalette');
+  const input = document.getElementById('cmdPaletteInput');
+  const results = document.getElementById('cmdPaletteResults');
+
+  window.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      backdrop.classList.toggle('show');
+      if (backdrop.classList.contains('show')) {
+        input.value = '';
+        renderResults('');
+        setTimeout(() => input.focus(), 100);
+      }
+    }
+    if (e.key === 'Escape' && backdrop.classList.contains('show')) {
+      backdrop.classList.remove('show');
+    }
+  });
+
+  backdrop.addEventListener('click', e => {
+    if (e.target === backdrop) backdrop.classList.remove('show');
+  });
+
+  input.addEventListener('input', e => {
+    renderResults(e.target.value);
+  });
+
+  input.addEventListener('keydown', e => {
+    const items = results.querySelectorAll('.cmd-palette-item');
+    if (!items.length) return;
+    let activeIdx = Array.from(items).findIndex(el => el.classList.contains('active'));
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (activeIdx !== -1) items[activeIdx].classList.remove('active');
+      activeIdx = (activeIdx + 1) % items.length;
+      items[activeIdx].classList.add('active');
+      items[activeIdx].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (activeIdx !== -1) items[activeIdx].classList.remove('active');
+      activeIdx = (activeIdx - 1 + items.length) % items.length;
+      items[activeIdx].classList.add('active');
+      items[activeIdx].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIdx !== -1) {
+        items[activeIdx].click();
+      } else {
+        items[0].click();
+      }
+    }
+  });
+
+  function renderResults(q) {
+    results.innerHTML = '';
+    const query = q.toLowerCase().trim();
+
+    const menus = [
+      { label: 'Work Inbox (งานค้างของฉัน)', href: '01-work-inbox.html', icon: 'fa-inbox', cat: 'Menu' },
+      { label: 'ทะเบียนสำนวน 7.1', href: '02-case-register.html', icon: 'fa-folder-open', cat: 'Menu' },
+      { label: 'โต๊ะสั่งการเลขาธิการฯ', href: '11-secgen-desk.html', icon: 'fa-gavel', cat: 'Menu' },
+      { label: 'เลขาธิการฯ พิจารณา / ลงนาม (ขั้นตอน 1)', href: '04-approval-review.html', icon: 'fa-user-check', cat: 'Menu' },
+      { label: 'ใบด่วนขอบรรจุวาระ (ขั้นตอน 2)', href: '05-urgent-memo.html', icon: 'fa-bolt', cat: 'Menu' },
+      { label: 'ประธานฯ สั่งการ / บรรจุวาระ (ขั้นตอน 3)', href: '06-chairman-agenda.html', icon: 'fa-gavel', cat: 'Menu' },
+      { label: 'อนุกลั่นกรองฯ คณะ 1–8 (ขั้นตอน 4)', href: '07-subcommittee-screening.html', icon: 'fa-users-viewfinder', cat: 'Menu' },
+      { label: 'บันทึกมติที่ประชุมบอร์ด (ขั้นตอน 5)', href: '08-board-resolution.html', icon: 'fa-scale-balanced', cat: 'Menu' },
+      { label: 'ออกคำสั่งแต่งตั้งคณะไต่สวน ม.24 (ขั้นตอน 6)', href: '09-order-m24.html', icon: 'fa-stamp', cat: 'Menu' },
+      { label: 'กลุ่มผู้ใช้งานและสิทธิ์ (RBAC)', href: '10-user-permissions.html', icon: 'fa-users-gear', cat: 'Menu' }
+    ];
+
+    const matchedMenus = menus.filter(m => m.label.toLowerCase().includes(query));
+    const matchedCases = CASES.filter(c => 
+      c.id.toLowerCase().includes(query) || 
+      c.pcms.toLowerCase().includes(query) || 
+      c.subject.toLowerCase().includes(query)
+    );
+
+    let html = '';
+
+    if (matchedMenus.length) {
+      html += `<div style="font-size:0.75rem;font-weight:600;color:var(--ecmis-muted);padding:6px 12px">เมนูการนำทาง</div>`;
+      matchedMenus.forEach((m, idx) => {
+        html += `
+        <a class="cmd-palette-item ${idx===0&&!query?'active':''}" href="${m.href}">
+          <i class="fa-solid ${m.icon}"></i>
+          <span>${m.label}</span>
+          <span class="cmd-palette-item-meta">${m.cat}</span>
+        </a>`;
+      });
+    }
+
+    if (matchedCases.length) {
+      html += `<div style="font-size:0.75rem;font-weight:600;color:var(--ecmis-muted);padding:12px 12px 6px">สำนวนคดี</div>`;
+      matchedCases.forEach((c, idx) => {
+        const activeClass = !matchedMenus.length && idx === 0 ? 'active' : '';
+        const roleId = currentRoleId();
+        const PAGE_FOR = {
+          owner:'03-report-213.html', section_head:'03-report-213.html',
+          director:'03-report-213.html', deputy:'03-report-213.html',
+          secgen:'04-approval-review.html', support_sub:'04-approval-review.html',
+          dir_case:'05-urgent-memo.html', chair_office:'06-chairman-agenda.html',
+          chairman:'06-chairman-agenda.html', subcommittee:'07-subcommittee-screening.html',
+          board_sec:'08-board-resolution.html', board:'08-board-resolution.html'
+        };
+        const targetPage = PAGE_FOR[roleId] || '02-case-register.html';
+        html += `
+        <a class="cmd-palette-item ${activeClass}" href="${targetPage}?case=${encodeURIComponent(c.id)}">
+          <i class="fa-solid fa-folder-closed"></i>
+          <span><strong>เลขสำนวน: ${c.id}</strong> — ${c.subject.substring(0, 50)}...</span>
+          <span class="cmd-palette-item-meta">สถานะ: ${STATUS[c.status]?.label || c.status}</span>
+        </a>`;
+      });
+    }
+
+    if (!matchedMenus.length && !matchedCases.length) {
+      html = `<div style="padding:20px;text-align:center;color:var(--ecmis-muted);font-size:0.9rem">
+        <i class="fa-solid fa-circle-question fa-lg mb-2"></i><br>ไม่พบรายการที่ตรงกับคำค้นหา
+      </div>`;
+    }
+
+    results.innerHTML = html;
+  }
+}
+
+
+
+function initSmartCombobox(selectEl) {
+  if (!selectEl || selectEl.nextElementSibling?.classList.contains('smart-combo-container')) return;
+
+  const options = Array.from(selectEl.options);
+  const container = document.createElement('div');
+  container.className = 'smart-combo-container';
+
+  const toggleBtn = document.createElement('div');
+  toggleBtn.className = 'form-select';
+  toggleBtn.style.cursor = 'pointer';
+  toggleBtn.textContent = selectEl.options[selectEl.selectedIndex]?.text || '— เลือกรายการ —';
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'smart-combo-dropdown';
+
+  const searchBox = document.createElement('div');
+  searchBox.className = 'smart-combo-search';
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.className = 'form-control form-control-sm';
+  searchInput.placeholder = 'ค้นหารายการ...';
+  searchBox.appendChild(searchInput);
+
+  const itemsContainer = document.createElement('div');
+  itemsContainer.className = 'smart-combo-items';
+
+  function renderItems(filterText) {
+    itemsContainer.innerHTML = '';
+    const q = filterText.toLowerCase();
+    const filtered = options.filter(o => o.text.toLowerCase().includes(q) && o.value !== "");
+
+    if (!filtered.length) {
+      itemsContainer.innerHTML = `<div class="text-muted text-center py-2" style="font-size:0.8rem">ไม่พบรายการ</div>`;
+      return;
+    }
+
+    filtered.forEach(o => {
+      const item = document.createElement('div');
+      item.className = 'smart-combo-item';
+      if (selectEl.value === o.value) item.classList.add('active');
+      item.textContent = o.text;
+      item.addEventListener('click', () => {
+        selectEl.value = o.value;
+        toggleBtn.textContent = o.text;
+        dropdown.style.display = 'none';
+        selectEl.dispatchEvent(new Event('change'));
+      });
+      itemsContainer.appendChild(item);
+    });
+  }
+
+  dropdown.appendChild(searchBox);
+  dropdown.appendChild(itemsContainer);
+  container.appendChild(toggleBtn);
+  container.appendChild(dropdown);
+
+  selectEl.style.display = 'none';
+  selectEl.parentNode.insertBefore(container, selectEl.nextSibling);
+
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = dropdown.style.display === 'flex';
+    document.querySelectorAll('.smart-combo-dropdown').forEach(d => d.style.display = 'none');
+    dropdown.style.display = open ? 'none' : 'flex';
+    if (!open) {
+      searchInput.value = '';
+      renderItems('');
+      setTimeout(() => searchInput.focus(), 100);
+    }
+  });
+
+  searchInput.addEventListener('input', (e) => {
+    renderItems(e.target.value);
+  });
+  searchInput.addEventListener('click', e => e.stopPropagation());
+
+  document.addEventListener('click', () => {
+    dropdown.style.display = 'none';
+  });
+}
+
+function initRealTimeValidation(formEl) {
+  if (!formEl) return;
+  const inputs = formEl.querySelectorAll('input, select, textarea');
+  inputs.forEach(el => {
+    el.addEventListener('input', () => validateField(el));
+    el.addEventListener('change', () => validateField(el));
+  });
+
+  function validateField(el) {
+    if (el.hasAttribute('required') && !el.value.trim()) {
+      el.classList.add('is-invalid-ecmis');
+      el.classList.remove('is-valid-ecmis');
+      const err = el.parentNode.querySelector('.val-msg');
+      if (err) {
+        err.classList.add('show');
+        err.classList.add('val-err');
+        err.textContent = 'กรุณากรอกข้อมูลในช่องนี้';
+      }
+    } else {
+      el.classList.remove('is-invalid-ecmis');
+      el.classList.add('is-valid-ecmis');
+      const err = el.parentNode.querySelector('.val-msg');
+      if (err) {
+        err.classList.remove('show');
+      }
+    }
+  }
+}
+
+let speechRecognitions = {};
+
+function toggleVoiceRecognition(textareaId) {
+  if (typeof window === 'undefined') return;
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    toastWarn('เบราว์เซอร์ของคุณไม่รองรับการพิมพ์ด้วยเสียง (Speech Recognition)');
+    return;
+  }
+
+  const ta = document.getElementById(textareaId);
+  const btn = document.getElementById('voiceBtn-' + textareaId);
+  const indicator = document.getElementById('voiceIndicator-' + textareaId);
+  if (!ta) return;
+
+  if (ta.disabled || ta.readOnly || ta.hasAttribute('disabled') || ta.hasAttribute('readonly') || ta.hasAttribute('data-no-voice')) {
+    toastWarn('ช่องนี้ไม่สามารถกรอกข้อมูลหรือพิมพ์ด้วยเสียงได้');
+    return;
+  }
+
+  if (speechRecognitions[textareaId]) {
+    speechRecognitions[textareaId].stop();
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'th-TH';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    speechRecognitions[textareaId] = recognition;
+    if (btn) {
+      btn.classList.add('btn-danger', 'pulse');
+      btn.innerHTML = '<i class="fa-solid fa-microphone-slash"></i>';
+    }
+    if (indicator) indicator.style.display = 'inline-flex';
+    toastOk('เริ่มต้นพิมพ์ด้วยเสียง... พูดได้เลยครับ/ค่ะ');
+  };
+
+  recognition.onerror = (e) => {
+    console.error('Speech recognition error:', e.error);
+    toastWarn('การพิมพ์ด้วยเสียงขัดข้อง: ' + e.error);
+    cleanupVoice(textareaId);
+  };
+
+  recognition.onend = () => {
+    cleanupVoice(textareaId);
+  };
+
+  recognition.onresult = (event) => {
+    if (ta.disabled || ta.readOnly || ta.hasAttribute('disabled') || ta.hasAttribute('readonly')) return;
+    const text = event.results[0][0].transcript;
+    if (text) {
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      const currentText = ta.value;
+      ta.value = currentText.substring(0, start) + text + currentText.substring(end);
+      ta.selectionStart = ta.selectionEnd = start + text.length;
+      ta.dispatchEvent(new Event('input'));
+      ta.dispatchEvent(new Event('change'));
+      toastOk('เพิ่มข้อความจากการพูดแล้ว');
+    }
+  };
+
+  recognition.start();
+}
+
+function cleanupVoice(textareaId) {
+  const btn = document.getElementById('voiceBtn-' + textareaId);
+  const indicator = document.getElementById('voiceIndicator-' + textareaId);
+  if (btn) {
+    btn.classList.remove('btn-danger', 'pulse');
+    btn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+  }
+  if (indicator) indicator.style.display = 'none';
+  delete speechRecognitions[textareaId];
+}
+
+function initVoiceInput() {
+  if (typeof document === 'undefined') return;
+  const textareas = document.querySelectorAll('textarea');
+  textareas.forEach(ta => {
+    if (ta.hasAttribute('data-no-voice')) return;
+    if (ta.id && !document.getElementById('voiceBtn-' + ta.id)) {
+      const buttonHtml = `
+        <button type="button" class="btn btn-sm btn-outline-secondary voice-btn ms-2" id="voiceBtn-${ta.id}" title="พิมพ์ด้วยเสียง" style="border-radius: 50%; width: 28px; height: 28px; padding:0; display: inline-flex; align-items: center; justify-content: center;">
+          <i class="fa-solid fa-microphone"></i>
+        </button>
+        <span class="voice-indicator ms-2" id="voiceIndicator-${ta.id}" style="font-size:0.75rem; color: var(--ecmis-red); display:none;">
+          <span class="voice-dot"></span>กำลังฟัง...
+        </span>`;
+
+      const counter = document.getElementById(ta.id + 'Counter');
+      if (counter) {
+        counter.parentNode.insertBefore(document.createRange().createContextualFragment(buttonHtml), counter);
+      } else {
+        const label = ta.previousElementSibling;
+        if (label && label.classList.contains('form-label')) {
+          label.appendChild(document.createRange().createContextualFragment(buttonHtml));
+        }
+      }
+
+      const btn = document.getElementById('voiceBtn-' + ta.id);
+      const indicator = document.getElementById('voiceIndicator-' + ta.id);
+      if (btn) {
+        btn.addEventListener('click', () => { toggleVoiceRecognition(ta.id); });
+      }
+
+      function syncVoiceBtnState() {
+        const isOff = ta.disabled || ta.readOnly || ta.hasAttribute('disabled') || ta.hasAttribute('readonly') || ta.hasAttribute('data-no-voice');
+        if (btn) {
+          btn.disabled = isOff;
+          btn.style.display = isOff ? 'none' : 'inline-flex';
+          if (indicator && isOff) indicator.style.display = 'none';
+          if (isOff && speechRecognitions[ta.id]) {
+            speechRecognitions[ta.id].stop();
+            cleanupVoice(ta.id);
+          }
+        }
+      }
+
+      syncVoiceBtnState();
+      ta.addEventListener('change', syncVoiceBtnState);
+      ta.addEventListener('input', syncVoiceBtnState);
+      setInterval(syncVoiceBtnState, 300);
+    }
+  });
+}
+
+function initSignaturePad(canvasId, clearBtnId, inputId) {
+  const canvas = document.getElementById(canvasId);
+  const clearBtn = document.getElementById(clearBtnId);
+  const input = document.getElementById(inputId);
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#0a2647';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+
+  let drawing = false;
+  let lastX = 0;
+  let lastY = 0;
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    if (e.touches && e.touches.length) {
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top
+      };
+    }
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  }
+
+  function startDraw(e) {
+    drawing = true;
+    const pos = getPos(e);
+    lastX = pos.x;
+    lastY = pos.y;
+  }
+
+  function draw(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const pos = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    lastX = pos.x;
+    lastY = pos.y;
+    saveSig();
+  }
+
+  function stopDraw() { drawing = false; }
+
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mousemove', draw);
+  canvas.addEventListener('mouseup', stopDraw);
+  canvas.addEventListener('mouseleave', stopDraw);
+
+  canvas.addEventListener('touchstart', startDraw);
+  canvas.addEventListener('touchmove', draw);
+  canvas.addEventListener('touchend', stopDraw);
+
+  clearBtn.addEventListener('click', () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (input) input.value = '';
+  });
+
+  function saveSig() {
+    if (input) input.value = canvas.toDataURL();
+  }
+}
+
+function initSyncIndicator() {
+  const main = document.querySelector('.app-main');
+  if (main) {
+    const time = new Date().toLocaleTimeString('th-TH');
+    const syncHtml = `
+      <div class="text-end text-muted mb-2 no-print" style="font-size: 0.72rem; letter-spacing:0.2px">
+        <i class="fa-solid fa-arrows-rotate me-1 text-success"></i>อัปเดตข้อมูลล่าสุดเมื่อ ${time} | ดึงข้อมูลแบบ Real-time Sync
+      </div>`;
+    main.insertAdjacentHTML('beforeend', syncHtml);
+  }
+}
+
+function initAutoSave(formId, draftKey, warningText) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+
+  // Restore draft if exists
+  const draft = sessionStorage.getItem(draftKey);
+  if (draft) {
+    try {
+      const data = JSON.parse(draft);
+      Object.keys(data).forEach(key => {
+        const el = form.querySelector(`[name="${key}"], #${key}`);
+        if (el) {
+          if (el.type === 'checkbox') el.checked = data[key];
+          else if (el.type === 'radio') {
+            const rad = form.querySelector(`[name="${key}"][value="${data[key]}"]`);
+            if (rad) rad.checked = true;
+          }
+          else el.value = data[key];
+          el.dispatchEvent(new Event('input'));
+        }
+      });
+      toastOk('ดึงร่างข้อมูลที่บันทึกไว้อัตโนมัติแล้ว');
+    } catch(e){}
+  }
+
+  // Periodic Auto-save
+  let modified = false;
+  form.addEventListener('input', () => { modified = true; });
+  form.addEventListener('change', () => { modified = true; });
+
+  setInterval(() => {
+    if (!modified) return;
+    const data = {};
+    form.querySelectorAll('input, select, textarea').forEach(el => {
+      const name = el.name || el.id;
+      if (name) {
+        if (el.type === 'checkbox') data[name] = el.checked;
+        else if (el.type === 'radio') {
+          if (el.checked) data[name] = el.value;
+        }
+        else data[name] = el.value;
+      }
+    });
+    sessionStorage.setItem(draftKey, JSON.stringify(data));
+    modified = false;
+    const time = new Date().toLocaleTimeString('th-TH');
+    toastOk(`บันทึกร่างข้อมูลอัตโนมัติแล้วเมื่อ ${time}`);
+  }, 10000);
+
+  // Unsaved Warning before navigating away
+  window.addEventListener('beforeunload', (e) => {
+    if (modified) {
+      e.preventDefault();
+      e.returnValue = warningText || 'คุณยังมีข้อมูลที่ไม่ได้บันทึก';
+      return e.returnValue;
+    }
+  });
+
+  // Attach submit clear
+  form.addEventListener('submit', () => {
+    modified = false;
+    sessionStorage.removeItem(draftKey);
+  });
+}
+
+function initCharCounterAndCopy() {
+  if (typeof document === 'undefined') return;
+  const textareas = document.querySelectorAll('textarea');
+  textareas.forEach(ta => {
+    if (ta.hasAttribute('readonly') || ta.hasAttribute('disabled')) return;
+    if (ta.nextElementSibling?.classList.contains('textarea-helper-bar')) return;
+    
+    const bar = document.createElement('div');
+    bar.className = 'textarea-helper-bar d-flex justify-content-between align-items-center mt-1 px-1';
+    bar.style.fontSize = '0.72rem';
+    bar.style.color = 'var(--ecmis-muted)';
+    
+    const counterSpan = document.createElement('span');
+    counterSpan.className = 'char-counter';
+    const maxLength = ta.getAttribute('maxlength') || '500';
+    counterSpan.textContent = `ตัวอักษร: ${ta.value.length}/${maxLength}`;
+    
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'btn btn-xs btn-outline-secondary py-0 px-2';
+    copyBtn.style.fontSize = '0.7rem';
+    copyBtn.innerHTML = '<i class="fa-regular fa-copy me-1"></i>คัดลอก';
+    copyBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      navigator.clipboard.writeText(ta.value).then(() => {
+        toastOk('คัดลอกข้อความลงคลิปบอร์ดแล้ว');
+      });
+    });
+    
+    bar.appendChild(counterSpan);
+    bar.appendChild(copyBtn);
+    
+    ta.parentNode.insertBefore(bar, ta.nextSibling);
+    
+    ta.addEventListener('input', () => {
+      counterSpan.textContent = `ตัวอักษร: ${ta.value.length}/${maxLength}`;
+    });
+  });
+}
+
 /* ------------------------------------------------------------ EXPORT */
+/* ---- 5.7 Audit Trail & Activity History ---- */
+function initAuditTrail(containerId, events) {
+  /* events = [{ actor, role, action, detail, date }] */
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!events || !events.length) {
+    el.innerHTML = `<div class="text-muted text-center py-3" style="font-size:.82rem">
+      <i class="fa-solid fa-clock-rotate-left me-1"></i>ยังไม่มีประวัติการดำเนินการ</div>`;
+    return;
+  }
+  el.innerHTML = `<ul class="list-unstyled mb-0">` + events.map((e, i) => `
+    <li class="d-flex gap-3 py-2 ${i < events.length-1 ? 'border-bottom' : ''}">
+      <div style="flex:0 0 32px;height:32px;border-radius:50%;background:var(--ecmis-navy);
+           color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;margin-top:2px">
+        ${(e.actor||'?')[0]}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.85rem"><strong>${e.actor||'ระบบ'}</strong>
+          <span class="text-muted" style="font-size:.75rem"> · ${e.role||''}</span>
+        </div>
+        <div style="font-size:.82rem;margin:.1rem 0">${e.action||''}</div>
+        ${e.detail ? `<div style="font-size:.76rem;color:var(--ecmis-muted)">${e.detail}</div>` : ''}
+        <div style="font-size:.72rem;color:var(--ecmis-muted);margin-top:.15rem">
+          <i class="fa-regular fa-clock me-1"></i>${e.date||''}
+        </div>
+      </div>
+    </li>`).join('') + `</ul>`;
+}
+
+/* ---- 5.4 Checklist with Gatekeeper ---- */
+function initChecklistGatekeeper(checklistId, nextBtnId) {
+  const checklist = document.getElementById(checklistId);
+  const nextBtn   = document.getElementById(nextBtnId);
+  if (!checklist || !nextBtn) return;
+
+  function updateGate() {
+    const boxes  = checklist.querySelectorAll('input[type="checkbox"]');
+    const allDone = Array.from(boxes).every(cb => cb.checked);
+    nextBtn.disabled = !allDone;
+    nextBtn.title = allDone ? '' : 'กรุณาติ๊กรายการตรวจสอบให้ครบก่อน';
+    if (allDone) nextBtn.classList.add('btn-save-pulse');
+    else nextBtn.classList.remove('btn-save-pulse');
+  }
+
+  checklist.addEventListener('change', updateGate);
+  updateGate();
+}
+
+/* ---- 3.3 Bulk Actions ---- */
+function initBulkActions(tableId, toolbarId, onAction) {
+  const table   = document.getElementById(tableId);
+  const toolbar = document.getElementById(toolbarId);
+  if (!table || !toolbar) return;
+
+  function getChecked() {
+    return Array.from(table.querySelectorAll('tbody input[type="checkbox"]:checked'));
+  }
+  function refreshToolbar() {
+    const checked = getChecked();
+    toolbar.classList.toggle('show', checked.length > 0);
+    const countEl = toolbar.querySelector('.bulk-count');
+    if (countEl) countEl.textContent = `เลือก ${checked.length} รายการ`;
+  }
+
+  table.addEventListener('change', e => {
+    if (e.target.type === 'checkbox') refreshToolbar();
+  });
+  const selectAll = table.querySelector('thead input[type="checkbox"]');
+  if (selectAll) {
+    selectAll.addEventListener('change', () => {
+      table.querySelectorAll('tbody input[type="checkbox"]').forEach(cb => {
+        cb.checked = selectAll.checked;
+      });
+      refreshToolbar();
+    });
+  }
+  toolbar.querySelectorAll('[data-bulk-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.bulkAction;
+      const rows   = getChecked().map(cb => cb.closest('tr'));
+      if (typeof onAction === 'function') onAction(action, rows);
+    });
+  });
+}
+
+/* ---- 4.1 Drag & Drop Upload ---- */
+function initDragDropUpload(zoneId, fileListId, allowedTypes, maxMB) {
+  const zone     = document.getElementById(zoneId);
+  const fileList = document.getElementById(fileListId);
+  if (!zone || !fileList) return;
+  const MB = (maxMB || 10) * 1024 * 1024;
+
+  function renderFile(file) {
+    const row = document.createElement('div');
+    row.className = 'd-flex align-items-center gap-2 p-2 border rounded mb-2';
+    row.style.fontSize = '0.82rem';
+    row.innerHTML = `
+      <i class="fa-regular fa-file-lines text-muted"></i>
+      <span class="flex-grow-1">${file.name} <span class="text-muted">(${(file.size/1024).toFixed(0)} KB)</span></span>
+      <div class="upload-progress-bar flex-grow-1" style="max-width:120px">
+        <div class="upload-progress-fill" style="width:0%"></div>
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 remove-file-btn">
+        <i class="fa-solid fa-xmark"></i>
+      </button>`;
+    fileList.appendChild(row);
+    row.querySelector('.remove-file-btn').addEventListener('click', () => row.remove());
+    /* Simulate progress */
+    const fill = row.querySelector('.upload-progress-fill');
+    let pct = 0;
+    const iv = setInterval(() => {
+      pct = Math.min(pct + 10 + Math.random() * 15, 100);
+      fill.style.width = pct + '%';
+      if (pct >= 100) { clearInterval(iv); fill.style.background = 'var(--ecmis-ok)'; }
+    }, 120);
+  }
+
+  function handleFiles(files) {
+    Array.from(files).forEach(f => {
+      if (f.size > MB) { toastWarn(`ไฟล์ "${f.name}" มีขนาดเกิน ${maxMB || 10} MB`); return; }
+      if (allowedTypes && !allowedTypes.some(t => f.name.toLowerCase().endsWith(t))) {
+        toastWarn(`ไฟล์ "${f.name}" ไม่ใช่ประเภทที่รองรับ`); return;
+      }
+      renderFile(f);
+    });
+    toastOk(`เพิ่มไฟล์ ${files.length} รายการแล้ว`);
+  }
+
+  zone.addEventListener('click', () => {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.multiple = true;
+    inp.onchange = () => handleFiles(inp.files);
+    inp.click();
+  });
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    handleFiles(e.dataTransfer.files);
+  });
+}
+
+/* ---- Doc Pane Layout Toggle (Show/Hide Document Split View) ---- */
+function initDocPaneToggle() {
+  if (typeof document === 'undefined') return;
+
+  const runToggleInit = () => {
+    const docPane = document.querySelector('.doc-pane');
+    if (!docPane) return;
+
+    const docCol = docPane.closest('[class*="col-xl-"], [class*="col-lg-"], [class*="col-md-"]');
+    if (!docCol) return;
+
+    const formCol = docCol.previousElementSibling;
+    if (!formCol) return;
+
+    if (formCol.dataset.toggleInited === '1') return;
+    formCol.dataset.toggleInited = '1';
+
+    const origClass = formCol.className;
+    formCol.dataset.origClass = origClass;
+
+    let isHidden = false;
+
+    function setDocVisibility(hide) {
+      isHidden = hide;
+      if (isHidden) {
+        docCol.classList.add('d-none');
+        formCol.className = origClass.replace(/col-(xl|lg|md)-\d+/g, 'col-12 col-xl-12 col-lg-12');
+      } else {
+        docCol.classList.remove('d-none');
+        formCol.className = origClass;
+      }
+      updateButtons();
+    }
+
+    function updateButtons() {
+      document.querySelectorAll('.btn-doc-toggle').forEach(btn => {
+        if (isHidden) {
+          btn.innerHTML = '<i class="fa-solid fa-eye me-1"></i>แสดงเอกสาร';
+          btn.classList.remove('btn-outline-secondary', 'btn-light');
+          btn.classList.add('btn-navy');
+        } else {
+          btn.innerHTML = '<i class="fa-solid fa-eye-slash me-1"></i>ซ่อนเอกสาร';
+          btn.classList.remove('btn-navy');
+          if (btn.classList.contains('btn-doc-toggle-toolbar')) {
+            btn.classList.add('btn-light');
+          } else {
+            btn.classList.add('btn-outline-secondary');
+          }
+        }
+      });
+    }
+
+    // Inject button into page-head only
+    const pageHeadTarget = document.querySelector('.page-head .ms-auto') || document.querySelector('.page-head');
+    if (pageHeadTarget && !document.querySelector('.btn-doc-toggle-header')) {
+      const headBtn = document.createElement('button');
+      headBtn.type = 'button';
+      headBtn.className = 'btn btn-sm btn-outline-secondary btn-doc-toggle btn-doc-toggle-header ms-2 no-print';
+      headBtn.title = 'ซ่อน/แสดง เลย์เอาต์เอกสารฝั่งขวา';
+      headBtn.innerHTML = '<i class="fa-solid fa-eye-slash me-1"></i>ซ่อนเอกสาร';
+      headBtn.addEventListener('click', () => setDocVisibility(!isHidden));
+      pageHeadTarget.appendChild(headBtn);
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', runToggleInit);
+  } else {
+    runToggleInit();
+  }
+  setTimeout(runToggleInit, 100);
+}
+
 global.ECMIS = {
   ROLES, STATUS, STATUS_STEP, FLOW_STEPS, APPROVAL_CHAIN,
   CASES, RETURN_REASONS, RESOLUTIONS,
@@ -1212,7 +2204,18 @@ global.ECMIS = {
   thaiDate, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   renderShell, stepperHtml, statusBadge, slaBadge, actionBar,
-  mergeField, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog
+  mergeField, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
+
+  // Custom helpers
+  saveCases, toggleDarkMode, toggleHighContrast, changeFont,
+  initSmartCombobox, initRealTimeValidation, initVoiceInput, initSignaturePad,
+  initAutoSave, initCharCounterAndCopy,
+
+  // New UX helpers
+  initAuditTrail, initChecklistGatekeeper, initBulkActions, initDragDropUpload,
+  initDocPaneToggle
 };
 
 })(window);
+
+

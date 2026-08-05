@@ -34,14 +34,6 @@
       <div class="card-body pb-1" id="stepper"></div>
     </div>
 
-    <div class="warn-note mb-3">
-      <strong><i class="fa-solid fa-circle-info me-1"></i>หน้านี้อยู่นอกขอบเขตกิจกรรมที่ 7</strong><br>
-      การจัดทำรายงาน 213 และการเสนอตามลำดับชั้น (เจ้าของสำนวน → หัวหน้ากลุ่มงาน → ผอ.กอง/ผอ.เขต →
-      ผู้ช่วย/รองเลขาธิการฯ) เป็น<strong>กระบวนงานภายในกอง / สำนักงาน ป.ป.ท. เขต</strong>
-      ซึ่งอยู่ใน <strong>กิจกรรมที่ 5 (ไต่สวนข้อเท็จจริง)</strong><br>
-      แสดงที่นี่เพื่อให้<strong>ติดตามที่มาของสำนวนและตรวจสอบย้อนหลัง</strong>ได้เท่านั้น —
-      <strong>กิจกรรมที่ 7 เริ่มนับเมื่อรายงานมาถึงเลขาธิการคณะกรรมการ ป.ป.ท.</strong>
-    </div>
 
     <!-- แจ้งเตือนกรณีถูกตีกลับ -->
     <div id="returnBanner"></div>
@@ -58,11 +50,6 @@
             <span class="autofill-tag ms-2">Auto-fill จาก กจ.5</span>
           </div>
           <div class="card-body">
-            <div class="integration-note mb-3">
-              <i class="fa-solid fa-arrow-right-arrow-left me-1"></i>
-              ข้อมูลชุดนี้ถูกดึงอัตโนมัติจาก <strong>กิจกรรมที่ 5 (ไต่สวนข้อเท็จจริง)</strong> และฐานข้อมูลกลาง E-CMIS
-              — <strong>แก้ไขที่นี่ไม่ได้</strong> หากไม่ถูกต้องต้องแก้ที่ต้นทาง
-            </div>
             <div class="row g-2">
               <div class="col-6"><label class="form-label">เลขเรื่อง</label>
                 <input class="form-control autofilled" id="f_caseId" readonly>
@@ -114,7 +101,7 @@
           <div class="card-body">
             <div class="mb-3">
               <label class="form-label field-req">ข้อกล่าวหา</label>
-              <textarea class="form-control" id="f_allegation" rows="3" data-req
+              <textarea class="form-control" id="f_allegation" rows="3" data-req data-no-voice
                 placeholder="ระบุพฤติการณ์และข้อกล่าวหาโดยละเอียด"></textarea>
               <div class="val-msg val-err" data-for="f_allegation">กรุณาระบุข้อกล่าวหา (อย่างน้อย 30 ตัวอักษร)</div>
             </div>
@@ -175,12 +162,6 @@
           </div>
         </div>
 
-        <div class="card card-ecmis mb-3">
-          <div class="card-header"><i class="fa-solid fa-shield-halved"></i> Validation Rules ก่อนเสนอ</div>
-          <div class="card-body">
-            <div class="rule-panel" id="ruleBox"></div>
-          </div>
-        </div>
 
         <div class="card card-ecmis">
           <div class="card-header"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติการดำเนินการ</div>
@@ -202,11 +183,11 @@
               <button class="btn btn-sm btn-light" id="btnDocx"><i class="fa-solid fa-download me-1"></i>.docx</button>
             </div>
             <div class="doc-paper" id="docPaper"></div>
-          </div>
-          <div class="law-note mt-2">
-            <strong>ที่มาของเทมเพลต:</strong> โครงสร้างฟิลด์อ้างอิงจาก
-            <code>มติการประชุม ไต่สวนเบื้องต้น.docx</code> (คลังเอกสาร Google Drive → เอกสารมติ)
-            ระบบอนุญาตให้ดาวน์โหลดแก้ไขใน Word แล้วอัปโหลดกลับ ก่อนแปลงเป็น PDF ล็อกลายมือชื่อ (TOR 7.1.3.6)
+            <div class="law-note mt-3">
+              <strong>ที่มาของเทมเพลต:</strong> โครงสร้างฟิลด์อ้างอิงจาก
+              <code>มติการประชุม ไต่สวนเบื้องต้น.docx</code> (คลังเอกสาร Google Drive → เอกสารมติ)
+              ระบบอนุญาตให้ดาวน์โหลดแก้ไขใน Word แล้วอัปโหลดกลับ ก่อนแปลงเป็น PDF ล็อกลายมือชื่อ (TOR 7.1.3.6)
+            </div>
           </div>
         </div>
       </div>
@@ -345,10 +326,10 @@
     }
 
     /* ---------- validation ---------- */
-    function validate() {
+    function getRules() {
       const v = id => (document.getElementById(id)?.value || '').trim();
       const opinionType = v('f_opinionType');
-      const rules = [
+      return [
         { ok: v('f_allegation').length >= 30, t: 'ระบุข้อกล่าวหาครบถ้วน (≥ 30 ตัวอักษร)' },
         { ok: v('f_finding').length >= 50, t: 'ระบุผลการแสวงหาข้อเท็จจริง (≥ 50 ตัวอักษร)' },
         { ok: !!opinionType, t: 'เลือกความเห็นของผู้รับผิดชอบสำนวน' },
@@ -357,9 +338,22 @@
         { ok: REQ_DOCS.filter(d => d.required).every(d => uploaded.has(d.k)), t: 'แนบเอกสารบังคับครบถ้วน' },
         { ok: true, t: 'อยู่ในกรอบเวลา ม.23 — ต้องเริ่มไต่สวนภายใน ' + ECMIS.thaiDate(kase.deadline60) }
       ];
-      document.getElementById('ruleBox').innerHTML = rules.map(r =>
+    }
+
+    function renderRulesHtml() {
+      return getRules().map(r =>
         `<div class="rule ${r.ok ? 'pass' : 'fail'}">
       <i class="fa-solid ${r.ok ? 'fa-circle-check' : 'fa-circle-xmark'}"></i><span>${r.t}</span></div>`).join('');
+    }
+
+    function validate() {
+      const v = id => (document.getElementById(id)?.value || '').trim();
+      const opinionType = v('f_opinionType');
+      const rules = getRules();
+      const ruleBox = document.getElementById('ruleBox');
+      if (ruleBox) {
+        ruleBox.innerHTML = renderRulesHtml();
+      }
 
       document.querySelectorAll('[data-req]').forEach(el => {
         const msg = document.querySelector(`.val-msg[data-for="${el.id}"]`);
@@ -463,7 +457,7 @@
         Swal.fire({
           icon: ok ? 'success' : 'error',
           title: ok ? 'ข้อมูลครบถ้วน พร้อมเสนอ' : 'ยังมีข้อมูลไม่ครบถ้วน',
-          html: document.getElementById('ruleBox').innerHTML,
+          html: renderRulesHtml(),
           confirmButtonColor: '#0a2647', customClass: { popup: 'text-start' }
         });
         return;
@@ -486,7 +480,7 @@
           ECMIS.toastWarn('ยังกรอกข้อมูลไม่ครบถ้วน — ระบบไม่อนุญาตให้เสนอ');
           Swal.fire({
             icon: 'error', title: 'ไม่ผ่าน Validation Rules',
-            html: document.getElementById('ruleBox').innerHTML,
+            html: renderRulesHtml(),
             confirmButtonColor: '#a5322a', customClass: { popup: 'text-start' }
           });
           return;
