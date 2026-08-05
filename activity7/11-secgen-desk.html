@@ -125,7 +125,8 @@ const all  = ECMIS.CASES;
 
 document.getElementById('m28Law').innerHTML = `
   <strong><i class="fa-solid fa-scale-balanced me-1"></i>มาตรา 28</strong> —
-  เลขาธิการฯ สั่งรับ/ไม่รับเรื่องไว้พิจารณาเบื้องต้นได้ แล้ว<strong>รายงานคณะกรรมการ ป.ป.ท.
+  เลขาธิการฯ สั่งได้ 3 ทางเป็นเบื้องต้น (${ECMIS.M28_ORDERS.map(o => o.label).join(' · ')})
+  แล้ว<strong>รายงานคณะกรรมการ ป.ป.ท.
   ทุก ${ECMIS.M28.cycleDays} วัน</strong> หากบอร์ด<strong>ไม่มีมติเป็นอย่างอื่นภายใน
   ${ECMIS.M28.boardSilenceDays} วัน</strong> ให้ถือว่าคณะกรรมการ ป.ป.ท. มีมติตามคำสั่งของเลขาธิการฯ`;
 
@@ -195,7 +196,8 @@ document.getElementById('signQueue').innerHTML = signQueue.length ? signQueue.ma
 
 /* ---------- ม.28 ---------- */
 document.getElementById('m28Count').textContent = m28Open.length;
-const ORDER_LABEL = { ACCEPT:'สั่งรับไว้พิจารณาเบื้องต้น', REJECT:'สั่งไม่รับไว้พิจารณา' };
+/* ป้ายคำสั่งมาจากตารางกลาง เพื่อให้ครบ 3 ทางตาม ม.28 และไม่หลุดกันระหว่างหน้า */
+const ORDER_LABEL = Object.fromEntries(ECMIS.M28_ORDERS.map(o => [o.code, o.label]));
 document.getElementById('m28Queue').innerHTML = m28Queue.length ? m28Queue.map(c => {
   const m = c.m28;
   const left = ECMIS.daysUntil(m.dueDate);

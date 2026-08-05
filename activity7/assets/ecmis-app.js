@@ -511,6 +511,16 @@ function panelComposition({ officers = 0, staff = 0 } = {}){
    บอร์ดมีมติตามคำสั่งของเลขาธิการฯ                                      */
 const M28 = { cycleDays: 15, boardSilenceDays: 15 };
 
+/* ม.28 ให้เลขาธิการฯ สั่งได้ 3 ทาง — ตัวบทเขียนว่า "รับหรือไม่รับเรื่องไว้
+   พิจารณา หรือสั่งจำหน่ายเรื่องเป็นเบื้องต้น" เดิมโมเดลฝั่งเลขาธิการฯ มีเพียง
+   2 ทาง ทั้งที่ฝั่งมติบอร์ดแยกครบแล้ว (NOT_ACCEPTED / DISMISS / NO_GROUND)  */
+const M28_ORDERS = [
+  { code:'ACCEPT',  label:'สั่งรับเรื่องไว้พิจารณา',      lawRef:'ม.28' },
+  { code:'REJECT',  label:'สั่งไม่รับเรื่องไว้พิจารณา',   lawRef:'ม.28 ประกอบ ม.25 / ม.26' },
+  { code:'DISMISS', label:'สั่งจำหน่ายเรื่อง',            lawRef:'ม.28 ประกอบ ม.26' }
+];
+function m28Order(code){ return M28_ORDERS.find(o => o.code === code) || null; }
+
 /* สำนวนที่เลขาธิการฯ สั่งการแล้วและต้องเข้ารายงานรอบ ม.28 ถัดไป */
 function m28Pending(){
   return CASES.filter(c => c.m28 && c.m28.reported === false);
@@ -1138,7 +1148,7 @@ global.ECMIS = {
   ROLES, STATUS, STATUS_STEP, FLOW_STEPS, APPROVAL_CHAIN,
   CASES, RETURN_REASONS, RESOLUTIONS,
   DOC_TYPES, SIGN_PHASE, secgenSlaLimit, FORWARD_TARGETS, forwardTarget,
-  OPINION_TYPES, chainDivergence, g1Triggers, M28, m28Pending,
+  OPINION_TYPES, chainDivergence, g1Triggers, M28, M28_ORDERS, m28Order, m28Pending,
   TRANSITIONS, canTransition, nextStates, transitionsBetween,
   BOARD_MIN_IN_OFFICE, boardQuorum,
   M24P1_MIN_PANEL, M24P1_STAFF_FREE, panelComposition,

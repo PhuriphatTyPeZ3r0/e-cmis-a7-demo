@@ -252,6 +252,17 @@ T("UT-M28-01", "รอบรายงาน = 15 วัน และเกณฑ
   assert.equal(E.M28.cycleDays, 15);
   assert.equal(E.M28.boardSilenceDays, 15);
 });
+T("UT-M28-03", "ม.28 ให้เลขาธิการฯ สั่งได้ 3 ทาง ไม่ใช่ 2", () => {
+  /* ตัวบท: "รับหรือไม่รับเรื่องไว้พิจารณา หรือสั่งจำหน่ายเรื่องเป็นเบื้องต้น"
+     ฝั่งมติบอร์ดแยกครบแล้ว ฝั่งคำสั่งเลขาธิการฯ ต้องครบเช่นกัน */
+  const codes = Array.from(E.M28_ORDERS, o => o.code).sort();
+  assert.deepEqual(codes, ["ACCEPT", "DISMISS", "REJECT"]);
+  assert.ok(E.m28Order("DISMISS"), "ต้องรู้จักคำสั่งจำหน่ายเรื่อง");
+  assert.equal(E.m28Order("UNKNOWN"), null, "รหัสที่ไม่รู้จักต้องคืน null ไม่ throw");
+  Array.from(E.M28_ORDERS).forEach(o =>
+    assert.ok(o.lawRef && o.label, `คำสั่ง ${o.code} ต้องมีทั้งป้ายและมาตราอ้างอิง`));
+});
+
 T("UT-M28-02", "คิว ม.28 มีเฉพาะเรื่องที่ยังไม่ได้รายงานบอร์ด", () =>
   assert.ok(E.m28Pending().every(c => c.m28.reported === false)));
 
