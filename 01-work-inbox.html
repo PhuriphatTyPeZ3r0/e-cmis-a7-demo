@@ -188,8 +188,9 @@ let sortOrder = 'asc';
 
 function row(c, actionable){
   const target = `${PAGE_FOR[role.id] || '02-case-register.html'}?case=${encodeURIComponent(c.id)}`;
-  const holder = ECMIS.STATUS[c.status] ? ECMIS.getRole(ECMIS.STATUS[c.status].owner) : null;
   const signedBadge = c.signedBySecgen ? `<div class="mt-1"><span class="st st-done" style="font-size:0.7rem"><i class="fa-solid fa-signature me-1"></i>เลขาลงนามแล้ว</span></div>` : '';
+  const statusDisplay = ECMIS.statusBadge(c.status);
+
   return `<tr>
     <td class="text-center">
       ${actionable ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem"></i>'}
@@ -199,7 +200,7 @@ function row(c, actionable){
       <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
       <small class="text-muted d-block" style="font-size:0.75rem">${c.ownerOrg}</small>
     </td>
-    <td>${actionable ? ECMIS.statusBadge(c.status) : (holder ? `<span class="chip">${holder.title}</span>` : '—')}${signedBadge}</td>
+    <td>${statusDisplay}${signedBadge}</td>
     <td>${ECMIS.slaBadge(c)}</td>
     <td class="text-end">
       <a href="${target}" class="btn btn-sm ${actionable?'btn-navy':'btn-outline-secondary'}">

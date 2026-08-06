@@ -399,7 +399,7 @@
 
     document.querySelectorAll('[name="g1"]').forEach(r => r.addEventListener('change', () => {
       onG1Change();
-      renderG1Outcome(); renderG3();
+      renderG1Outcome(); renderG3(); renderActionButtons();
     }));
     document.getElementById('supportSubSelect')?.addEventListener('change', () => {
       document.getElementById('supportSubSelect').classList.remove('is-invalid-ecmis');
@@ -408,8 +408,7 @@
     onG1Change();
     renderG1Outcome(); renderG3();
 
-    /* ถ้ามาจากปุ่ม "มอบหมาย" ที่โต๊ะสั่งการ (11-secgen-desk.html) ให้ตั้งค่า G1 = ใช่ ล่วงหน้า
-       — เลขาธิการฯ ยังต้องตรวจสอบ บันทึกความเห็น และลงนามดิจิทัลเพื่อยืนยันเองอีกครั้ง */
+    /* ถ้ามาจากปุ่ม "มอบหมาย" ที่โต๊ะสั่งการ (11-secgen-desk.html) ให้ตั้งค่า G1 = ใช่ ล่วงหน้า */
     if (params.get('assign') === '1' && role.id === 'secgen' && document.getElementById('g1yes')) {
       document.getElementById('g1yes').checked = true;
       onG1Change();
@@ -570,15 +569,17 @@
         }
         const m28 = m28Selected();
         if (m28 === 'ACCEPT') {
-          /* มอบหมาย = สั่งรับเรื่องไว้พิจารณา + มอบหมายเข้าเส้นทางที่ผังกำหนด
-             (คณะอนุสนับสนุนฯ เมื่อซับซ้อน/ความเห็นไม่ตรงกัน มิฉะนั้นเข้า G3 ตามปกติ)
-             แยกจาก "ลงนามดิจิทัลและส่งต่อ" เพื่อให้เห็นทั้งสองแอ็กชันหลักของ
-             เลขาธิการฯ บนแถบเดียวกันตามที่หน้าจอโต๊ะสั่งการอ้างถึง                */
-          b.push({
-            act: 'assign', label: 'มอบหมายเข้าคณะอนุสนับสนุนฯ', icon: 'fa-people-arrows',
-            cls: 'btn-outline-primary'
-          });
-          b.push({ act: 'sign', label: 'ลงนามดิจิทัลและส่งต่อ', icon: 'fa-signature', cls: 'btn-gold' });
+          const complex = g1Yes();
+          if (complex) {
+            /* หากเลือก ซับซ้อน (G1 = ใช่) -> ไม่แสดงปุ่มลงนามดิจิทัลและส่งต่อ, แสดงปุ่มมอบหมายเข้าคณะอนุสนับสนุนฯ */
+            b.push({
+              act: 'assign', label: 'มอบหมายเข้าคณะอนุสนับสนุนฯ', icon: 'fa-people-arrows',
+              cls: 'btn-outline-primary'
+            });
+          } else {
+            /* หากเลือก ไม่ซับซ้อน (G1 = ไม่ใช่) -> ไม่แสดงปุ่มมอบหมายเข้าคณะอนุสนับสนุนฯ, แสดงปุ่มลงนามดิจิทัลและส่งต่อ */
+            b.push({ act: 'sign', label: 'ลงนามดิจิทัลและส่งต่อ', icon: 'fa-signature', cls: 'btn-gold' });
+          }
         } else {
           b.push({
             act: 'sign', label: m28 === 'DISMISS' ? 'ลงนามคำสั่งจำหน่ายเรื่อง' : 'ลงนามคำสั่งไม่รับเรื่องไว้พิจารณา',
