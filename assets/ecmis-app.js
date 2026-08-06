@@ -1063,20 +1063,7 @@ function canRecall(kase, roleId){
 const NAV = [
   { section:'ภาพรวม' },
   { href:'01-work-inbox.html',            icon:'fa-inbox',            label:'รายการพิจารณา/ลงนาม', badge:true },
-  { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' },
-  { section:'กระบวนงานไต่สวนเบื้องต้น (7.1)' },
-  { href:'04-approval-review.html',       icon:'fa-user-check',       label:'เลขาธิการฯ พิจารณา / ลงนาม', step:1, ref:'S1–G1',
-    visible: role => role.id === 'secgen' || role.id === 'support_sub' },
-  { href:'06-chairman-agenda.html',       icon:'fa-gavel',            label:'ประธานฯ สั่งการ / บรรจุวาระ', step:3, ref:'S4–S8',
-    visible: role => role.id === 'chair_office' || role.id === 'chairman' },
-  { href:'07-subcommittee-screening.html',icon:'fa-users-viewfinder', label:'อนุกลั่นกรองฯ คณะ 1–8', step:4, ref:'S5–S6',
-    visible: role => role.flow.includes('S6') || role.id === 'dir_case' },
-  { href:'10-agenda-set.html',            icon:'fa-calendar-check',   label:'บรรจุระเบียบวาระการประชุม', step:5, ref:'T10–T12',
-    visible: role => role.id === 'affairs' },
-  { href:'08-board-resolution.html',      icon:'fa-scale-balanced',   label:'บันทึกมติที่ประชุมบอร์ด', step:6, ref:'S9–G5',
-    visible: role => role.id === 'board_sec' },
-  { href:'09-order-m24.html',             icon:'fa-stamp',            label:'ออกคำสั่งแต่งตั้งคณะไต่สวน ม.24', step:7, ref:'S11',
-    visible: role => role.id === 'chairman' || role.id === 'secgen' }
+  { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' }
 ];
 
 /* คืนเฉพาะรายการเมนูที่บทบาทนี้เห็น พร้อมตัด section header ที่ไม่มีรายการ
@@ -1200,7 +1187,7 @@ function renderShell(activeHref){
     <a class="brand text-decoration-none" href="01-work-inbox.html">
       <img src="pacc_logo.png" alt="ตราสำนักงาน ป.ป.ท.">
       <span>E-CMIS
-        <small>กิจกรรมที่ 7.1 การไต่สวนเบื้องต้น</small>
+        <small>สำนักงาน ป.ป.ท.</small>
       </span>
     </a>
     <div class="sidebar-nav-scroll">${navHtml}</div>
