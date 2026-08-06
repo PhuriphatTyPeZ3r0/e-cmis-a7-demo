@@ -146,17 +146,17 @@ function renderKPICards() {
   const currentSt = document.getElementById('statusFilter')?.value || 'ALL';
   const pendingCount = allCasesCombined.filter(c => c.status === 'PENDING_SECGEN' && !c.signedBySecgen).length;
   const signedCount = allCasesCombined.filter(c => c.signedBySecgen || c.status === 'RESOLVED' || c.status === 'CLOSED').length;
-  const notSignedCount = allCasesCombined.filter(c => c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS').length;
+  const returnedCount = allCasesCombined.filter(c => c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS').length;
 
   const kpis = [
     { id:'ALL', n: allCasesCombined.length, l:'รายการทั้งหมด', i:'fa-folder-open', c:'#0F2A62' },
-    { id:'PENDING', n: pendingCount, l:'รอพิจารณาลงนาม', i:'fa-hourglass-half', c:'#D0A830' },
+    { id:'PENDING_SECGEN', n: pendingCount, l:'รอพิจารณาลงนาม', i:'fa-hourglass-half', c:'#D0A830' },
     { id:'SIGNED', n: signedCount, l:'ลงนามแล้ว', i:'fa-circle-check', c:'#16A34A' },
-    { id:'REJECTED', n: notSignedCount, l:'ไม่ลงนาม', i:'fa-circle-xmark', c:'#DB2626' }
+    { id:'RETURNED', n: returnedCount, l:'ไม่ลงนาม', i:'fa-circle-xmark', c:'#DB2626' }
   ];
 
   document.getElementById('kpiRow').innerHTML = kpis.map(k => {
-    const isActive = currentSt === k.id;
+    const isActive = (currentSt === k.id) || (k.id === 'PENDING_SECGEN' && currentSt === 'PENDING');
     return `
     <div class="col-6 col-xl-3">
       <div class="card card-ecmis kpi-card h-100 ${isActive ? 'border-2 shadow-sm' : ''}"
@@ -193,14 +193,9 @@ const PAGE_FOR = {
 };
 
 // --- Single Merged Dataset ---
-const watchBase = upstreamMine.concat(
-  all.filter(c => !ECMIS.canAct(c, role.id) && !ECMIS.isUpstreamCase(c) &&
-    ['owner','board_sec','dir_case','secgen'].includes(role.id)));
-
-// Deduplicate cases
 const allCasesCombinedMap = new Map();
 mine.forEach(c => allCasesCombinedMap.set(c.id, { caseData: c, isActionable: true }));
-watchBase.forEach(c => {
+all.forEach(c => {
   if (!allCasesCombinedMap.has(c.id)) {
     allCasesCombinedMap.set(c.id, { caseData: c, isActionable: false });
   }
@@ -208,7 +203,6 @@ watchBase.forEach(c => {
 
 const allCasesCombined = Array.from(allCasesCombinedMap.values()).map(item => {
   const c = item.caseData;
-  // Check if case is currently pending for action
   const isPendingAction = (c.status === 'PENDING_SECGEN' && !c.signedBySecgen);
   return { ...c, isActionable: item.isActionable || isPendingAction };
 });
@@ -450,18 +444,18 @@ function populateStatusFilter() {
   const statusMap = new Map();
   statusMap.set('ALL', { label: 'ทั้งหมด (ทุกสถานะ)', count: allCasesCombined.length });
 
+  const pendingCount = allCasesCombined.filter(c => c.status === 'PENDING_SECGEN' && !c.signedBySecgen).length;
+  const signedCount = allCasesCombined.filter(c => c.signedBySecgen || c.status === 'RESOLVED' || c.status === 'CLOSED').length;
+  const returnedCount = allCasesCombined.filter(c => c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS').length;
+
+  statusMap.set('PENDING_SECGEN', { label: 'รอพิจารณาลงนาม', count: pendingCount });
+  statusMap.set('SIGNED', { label: 'ลงนามแล้ว', count: signedCount });
+  statusMap.set('RETURNED', { label: 'ไม่ลงนาม / ส่งคืน', count: returnedCount });
+
   allCasesCombined.forEach(c => {
-    let key, label;
-    if (c.signedBySecgen) {
-      key = 'SIGNED';
-      label = 'ลงนามแล้ว';
-    } else if (c.status === 'PENDING_SECGEN') {
-      key = 'PENDING_SECGEN';
-      label = 'รอพิจารณาลงนาม';
-    } else {
-      key = c.status;
-      label = ECMIS.STATUS[c.status]?.label || c.status;
-    }
+    if (c.signedBySecgen || c.status === 'PENDING_SECGEN' || c.status === 'RETURNED') return;
+    const key = c.status;
+    const label = ECMIS.STATUS[c.status]?.label || c.status;
 
     if (!statusMap.has(key)) {
       statusMap.set(key, { label, count: 0 });
@@ -471,11 +465,12 @@ function populateStatusFilter() {
 
   let optionsHtml = '';
   statusMap.forEach((val, key) => {
-    const isSelected = currentVal === key ? 'selected' : '';
+    const isSelected = (currentVal === key || (key === 'PENDING_SECGEN' && currentVal === 'PENDING')) ? 'selected' : '';
     optionsHtml += `<option value="${key}" ${isSelected}>${val.label} (${val.count})</option>`;
   });
 
   select.innerHTML = optionsHtml;
+  select.value = currentVal;
 }
 
 function applyFilters() {
@@ -490,7 +485,7 @@ function applyFilters() {
         matchSt = c.status === 'PENDING_SECGEN' && !c.signedBySecgen;
       } else if (st === 'SIGNED') {
         matchSt = !!c.signedBySecgen || c.status === 'RESOLVED' || c.status === 'CLOSED';
-      } else if (st === 'REJECTED') {
+      } else if (st === 'RETURNED' || st === 'REJECTED') {
         matchSt = c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS';
       } else {
         matchSt = c.status === st;
