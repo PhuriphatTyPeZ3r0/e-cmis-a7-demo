@@ -441,7 +441,43 @@ document.getElementById('btnBulkApprove')?.addEventListener('click', () => {
   });
 });
 
-/* ---------- Client-side Filter Logic ---------- */
+/* ---------- Client-side Dynamic Status & Filter Logic ---------- */
+function populateStatusFilter() {
+  const select = document.getElementById('statusFilter');
+  if (!select) return;
+
+  const currentVal = select.value || 'ALL';
+  const statusMap = new Map();
+  statusMap.set('ALL', { label: 'ทั้งหมด (ทุกสถานะ)', count: allCasesCombined.length });
+
+  allCasesCombined.forEach(c => {
+    let key, label;
+    if (c.signedBySecgen) {
+      key = 'SIGNED';
+      label = 'ลงนามแล้ว';
+    } else if (c.status === 'PENDING_SECGEN') {
+      key = 'PENDING_SECGEN';
+      label = 'รอพิจารณาลงนาม';
+    } else {
+      key = c.status;
+      label = ECMIS.STATUS[c.status]?.label || c.status;
+    }
+
+    if (!statusMap.has(key)) {
+      statusMap.set(key, { label, count: 0 });
+    }
+    statusMap.get(key).count++;
+  });
+
+  let optionsHtml = '';
+  statusMap.forEach((val, key) => {
+    const isSelected = currentVal === key ? 'selected' : '';
+    optionsHtml += `<option value="${key}" ${isSelected}>${val.label} (${val.count})</option>`;
+  });
+
+  select.innerHTML = optionsHtml;
+}
+
 function applyFilters() {
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   const st = document.getElementById('statusFilter').value;
@@ -449,9 +485,17 @@ function applyFilters() {
   filteredCombined = allCasesCombined.filter(c => {
     const matchQ = !q || c.id.toLowerCase().includes(q) || (c.subject && c.subject.toLowerCase().includes(q)) || (c.ownerOrg && c.ownerOrg.toLowerCase().includes(q));
     let matchSt = true;
-    if (st === 'PENDING') matchSt = c.status === 'PENDING_SECGEN' && !c.signedBySecgen;
-    else if (st === 'SIGNED') matchSt = !!c.signedBySecgen || c.status === 'RESOLVED' || c.status === 'CLOSED';
-    else if (st === 'REJECTED') matchSt = c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS';
+    if (st !== 'ALL') {
+      if (st === 'PENDING_SECGEN' || st === 'PENDING') {
+        matchSt = c.status === 'PENDING_SECGEN' && !c.signedBySecgen;
+      } else if (st === 'SIGNED') {
+        matchSt = !!c.signedBySecgen || c.status === 'RESOLVED' || c.status === 'CLOSED';
+      } else if (st === 'REJECTED') {
+        matchSt = c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS';
+      } else {
+        matchSt = c.status === st;
+      }
+    }
     return matchQ && matchSt;
   });
 
@@ -472,6 +516,7 @@ document.getElementById('btnClearFilter').addEventListener('click', () => {
 });
 
 // Initial load
+populateStatusFilter();
 applyFilters();
 
 </script>
