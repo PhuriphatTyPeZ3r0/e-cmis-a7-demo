@@ -521,6 +521,11 @@
     function buildButtons() {
       const b = [{ act: 'return', label: 'ส่งคืนสายงานต้นทาง (กจ.5)', icon: 'fa-arrow-left-long', cls: 'btn-outline-danger' }];
       if (role.id === 'secgen') {
+        if (signed && !alreadySigned) {
+          return [
+            { act: 'save_status', label: 'บันทึกเพื่อเปลี่ยนสถานะ (เลขาลงนามแล้ว)', icon: 'fa-floppy-disk', cls: 'btn-success' }
+          ];
+        }
         const m28 = m28Selected();
         if (m28 === 'ACCEPT') {
           /* มอบหมาย = สั่งรับเรื่องไว้พิจารณา + มอบหมายเข้าเส้นทางที่ผังกำหนด
@@ -676,6 +681,60 @@
         return;
       }
 
+      if (act === 'save_status') {
+        const m28 = m28Selected();
+        const complex = g1Yes();
+        let dest, path, targetStatus;
+
+        if (m28 !== 'ACCEPT') {
+          const lawSel = document.getElementById('m28Law');
+          const order = ECMIS.m28Order(m28);
+          targetStatus = 'CLOSED';
+          dest = order.label;
+          path = `ม.28 — ${order.label} (${order.lawRef} มาตรา ${lawSel ? lawSel.value : ''})`;
+        } else if (complex) {
+          targetStatus = 'IN_SUPPORT_SUB';
+          dest = 'คณะอนุกรรมการสนับสนุนเลขาธิการฯ (T6)';
+          path = g1.diverged
+            ? 'G1 = ใช่ (ระบบตรวจพบความเห็นในสายบังคับบัญชาไม่ตรงกัน) → T6 → G2'
+            : 'G1 = ใช่ (ดุลพินิจเลขาธิการฯ — เรื่องยุ่งยากซับซ้อน) → T6 → G2';
+        } else if (kase.urgent) {
+          targetStatus = 'PENDING_URGENT';
+          dest = 'ผู้อำนวยการกองบริหารคดี (T7) เพื่อรับรองเหตุผลเร่งด่วน';
+          path = 'G1 = ไม่ใช่ → G3 = มีใบด่วน → T7 → T8';
+        } else {
+          targetStatus = 'PENDING_CHAIR_OF';
+          dest = 'หน้าห้องประธานกรรมการ ป.ป.ท. (T8)';
+          path = 'G1 = ไม่ใช่ → G3 = ไม่มีใบด่วน → T8';
+        }
+
+        // Update case in memory
+        kase.status = targetStatus;
+        kase.signedBySecgen = true;
+        kase.secgenSignedAt = new Date().toLocaleString('th-TH');
+        ECMIS.saveCases();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'บันทึกและเปลี่ยนสถานะเรียบร้อย',
+          html: `<div class="text-start">
+            สำนวน <strong>${kase.id}</strong> ถูกบันทึกสถานะเป็น 
+            <span class="st st-done" style="font-size:0.85rem"><i class="fa-solid fa-signature me-1"></i>เลขาลงนามแล้ว</span><br>
+            และส่งต่อไปยัง <strong>${dest}</strong> เรียบร้อยแล้ว
+            <div style="font-size:.82rem;color:#7C8CA3;margin-top:.6rem">เส้นทางตามผัง: ${path}</div>
+            <div style="background:#fdf7e8;border-left:4px solid #D0A830;padding:.55rem .8rem;border-radius:0 6px 6px 0;margin-top:.7rem;font-size:.8rem">
+              <strong>ม.28</strong> — คำสั่งของเลขาธิการฯ ถูกบรรจุเข้ารอบรายงานคณะกรรมการ ป.ป.ท. รอบถัดไปโดยอัตโนมัติ
+            </div>
+          </div>`,
+          confirmButtonColor: '#0F2A62',
+          confirmButtonText: 'ตกลง (ไปที่ Work Inbox)',
+          width: 560
+        }).then(() => {
+          location.href = '01-work-inbox.html';
+        });
+        return;
+      }
+
       if (act === 'sign') {
         if (!requireOpinion()) return;
 
@@ -708,20 +767,8 @@
             ลงชื่อ <span class="doc-dots"></span><br>
             (นายอภิชาติ สุจริตกุล)<br>เลขาธิการคณะกรรมการ ป.ป.ท.<br>
             <span style="font-size:11px;color:#666">${now.toLocaleString('th-TH')}</span>`;
-              ECMIS.toastOk('ลงนามคำสั่งเรียบร้อย');
-              setTimeout(() => Swal.fire({
-                icon: 'success', title: `${order.label}เรียบร้อย`,
-                html: `<div class="text-start">สำนวน <strong>${kase.id}</strong> —
-                  ${order.label} (${order.lawRef} มาตรา ${lawSel.value})<br>
-                  <div style="font-size:.82rem;color:#7C8CA3;margin-top:.6rem">
-                    ระบบจะแจ้งกลับกิจกรรมที่ 5 และปิดสำนวนในกิจกรรมที่ 7.1</div>
-                  <div style="background:#fdf7e8;border-left:4px solid #D0A830;padding:.55rem .8rem;border-radius:0 6px 6px 0;margin-top:.7rem;font-size:.8rem">
-                    <strong>ม.28</strong> — คำสั่งของเลขาธิการฯ ถูกบรรจุเข้ารอบรายงานคณะกรรมการ ป.ป.ท.
-                    รอบถัดไปโดยอัตโนมัติ (ทุก ${ECMIS.M28.cycleDays} วัน) หากบอร์ดไม่มีมติเป็นอย่างอื่นภายใน
-                    ${ECMIS.M28.boardSilenceDays} วัน ถือว่าบอร์ดมีมติตามคำสั่งของเลขาธิการฯ
-                  </div></div>`,
-                confirmButtonColor: '#0F2A62', width: 560
-              }).then(() => location.href = '01-work-inbox.html'), 800);
+              renderActionButtons();
+              ECMIS.toastOk('ลงนามคำสั่งเรียบร้อยแล้ว กรุณากดปุ่ม "บันทึกเพื่อเปลี่ยนสถานะ"');
             });
           return;
         }
@@ -771,38 +818,8 @@
           (นายอภิชาติ สุจริตกุล)<br>เลขาธิการคณะกรรมการ ป.ป.ท.<br>
           <span style="font-size:11px;color:#666">${now.toLocaleString('th-TH')}</span>`;
 
-          /* ปลายทางจริงต้องผ่านทั้ง G1 และ G3 ตามผัง ไม่ใช่ G1 อย่างเดียว */
-          let dest, path;
-          if (complex) {
-            dest = 'คณะอนุกรรมการสนับสนุนเลขาธิการฯ (T6)';
-            path = g1.diverged
-              ? 'G1 = ใช่ (ระบบตรวจพบความเห็นในสายบังคับบัญชาไม่ตรงกัน) → T6 → G2'
-              : 'G1 = ใช่ (ดุลพินิจเลขาธิการฯ — เรื่องยุ่งยากซับซ้อน) → T6 → G2';
-          } else if (kase.urgent) {
-            dest = 'ผู้อำนวยการกองบริหารคดี (T7) เพื่อรับรองเหตุผลเร่งด่วน';
-            path = 'G1 = ไม่ใช่ → G3 = มีใบด่วน → T7 (ลำดับที่ 2 ของ Sequential e-Signature) → T8';
-          } else {
-            dest = 'หน้าห้องประธานกรรมการ ป.ป.ท. (T8)';
-            path = 'G1 = ไม่ใช่ → G3 = ไม่มีใบด่วน → T8';
-          }
-          ECMIS.toastOk('ลงนามดิจิทัลเรียบร้อย');
-          setTimeout(() => Swal.fire({
-            icon: 'success', title: 'ลงนามและส่งต่อเรียบร้อย',
-            html: `<div class="text-start">สำนวน <strong>${kase.id}</strong> ถูกส่งต่อไปยัง<br>
-                <strong>${dest}</strong>
-                <div style="font-size:.82rem;color:#7C8CA3;margin-top:.6rem">เส้นทางตามผัง: ${path}</div>
-                <div style="background:#fdf7e8;border-left:4px solid #D0A830;padding:.55rem .8rem;border-radius:0 6px 6px 0;margin-top:.7rem;font-size:.8rem">
-                  <strong>ม.28</strong> — คำสั่งของเลขาธิการฯ ถูกบรรจุเข้ารอบรายงานคณะกรรมการ ป.ป.ท.
-                  รอบถัดไปโดยอัตโนมัติ (ทุก ${ECMIS.M28.cycleDays} วัน)
-                  หากบอร์ดไม่มีมติเป็นอย่างอื่นภายใน ${ECMIS.M28.boardSilenceDays} วัน
-                  ถือว่าบอร์ดมีมติตามคำสั่งของเลขาธิการฯ
-                </div>
-                <div style="font-size:.8rem;color:#7C8CA3;margin-top:.6rem">
-                  กำหนดเวลาเปลี่ยนเป็นระยะที่ 2 — ลงนามเสร็จ/ส่งต่อภายใน
-                  <strong>${docType.sla.completeSign} วัน</strong>
-                </div></div>`,
-            confirmButtonColor: '#0F2A62', width: 560
-          }).then(() => location.href = '01-work-inbox.html'), 800);
+          renderActionButtons();
+          ECMIS.toastOk('ลงนามดิจิทัลเรียบร้อยแล้ว กรุณากดปุ่ม "บันทึกเพื่อเปลี่ยนสถานะ"');
         });
       }
     }

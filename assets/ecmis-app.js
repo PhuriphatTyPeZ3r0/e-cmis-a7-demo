@@ -1295,43 +1295,152 @@ function toastWarn(msg){
 }
 
 /* --------------------------------- Digital Signature simulation dialog */
+/* --------------------------------- Digital Signature simulation dialog */
 function signDialog(docName, signerName){
+  let selectedMode = 'hand'; // 'hand' or 'cert'
+
   return Swal.fire({
-    title:'ลงลายมือชื่อดิจิทัล (e-Signature)',
-    html:`<div class="text-start" style="font-size:.9rem">
-      <p class="mb-2">เอกสาร: <strong>${docName}</strong></p>
-      <p class="mb-2">ผู้ลงนาม: <strong>${signerName}</strong></p>
-      
-      <!-- Canvas Signature Pad -->
-      <label class="form-label mt-2">วาดลายมือชื่อด้วยเมาส์หรือสัมผัส (Digital Signature Pad)</label>
-      <div class="sig-canvas-wrapper mb-2">
-        <canvas id="swal-sig-canvas" class="sig-canvas" width="500" height="150"></canvas>
+    width: 720,
+    padding: '1.25rem',
+    showCloseButton: true,
+    showCancelButton: true,
+    confirmButtonText: '<i class="fa-solid fa-pen me-1"></i> ลงนาม',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#16A34A',
+    cancelButtonColor: '#7C8CA3',
+    reverseButtons: true,
+    html: `<div class="text-start" style="font-size:0.9rem;">
+      <!-- Title & Header -->
+      <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+        <i class="fa-solid fa-pen-nib text-primary fa-lg"></i>
+        <h5 class="m-0 fw-bold" style="color:#0F2A62;">ลงนาม${docName || 'เอกสาร'}</h5>
       </div>
-      <div class="text-end mb-2">
-        <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2" style="font-size:0.75rem" id="swal-sig-clear">ล้างรูปวาด</button>
+
+      <!-- Info Banner -->
+      <div class="p-3 mb-3 rounded-3 d-flex align-items-center gap-2" style="background:#EFF6FF; border:1px solid #DBEAFE; color:#1E40AF; font-size:0.85rem;">
+        <i class="fa-solid fa-user me-1"></i>
+        <span>ผู้ลงนามคือ <strong>${signerName || 'เจ้าหน้าที่ผู้จัดทำเอกสาร'}</strong> จึงมีเฉพาะการลงนามและไม่มีปุ่มไม่เห็นชอบ/ตีกลับ</span>
+      </div>
+
+      <!-- Selection Header -->
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <div>
+          <div class="fw-bold" style="font-size:0.9rem; color:#1F2937;">เลือกวิธีลงนาม <span class="text-danger">*</span></div>
+          <div class="text-muted" style="font-size:0.78rem;">เลือกได้เพียง 1 วิธีต่อการอนุมัติหนึ่งครั้ง</div>
+        </div>
+        <div id="swal-sig-mode-badge" class="badge rounded-pill bg-light text-primary border px-2 py-1" style="font-size:0.78rem;">
+          <i class="fa-solid fa-check me-1"></i> เซ็นมือ
+        </div>
+      </div>
+
+      <!-- Method Cards -->
+      <div class="row g-3 mb-3">
+        <div class="col-6">
+          <div id="swal-card-hand" class="p-3 rounded-3 border d-flex gap-3 align-items-start" style="cursor:pointer; background:#F0F6FF; border-color:#2563EB !important; transition:all 0.2s;">
+            <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width:38px; height:38px; background:#DBEAFE; color:#2563EB;">
+              <i class="fa-solid fa-pen fa-lg"></i>
+            </div>
+            <div>
+              <div class="fw-bold text-dark" style="font-size:0.88rem;">1. เซ็นมือ</div>
+              <div class="text-muted" style="font-size:0.75rem; line-height:1.35;">ใช้เมาส์หรือทัชแพดลากลายเซ็น <span class="text-primary">(หากผู้ใช้มี Digital Signature จะประทับลงในเอกสารพร้อมภาพลายเซ็นอัตโนมัติ)</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div id="swal-card-cert" class="p-3 rounded-3 border d-flex gap-3 align-items-start" style="cursor:pointer; background:#FFFFFF; border-color:#E5E7EB !important; transition:all 0.2s;">
+            <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width:38px; height:38px; background:#F1F5F9; color:#64748B;">
+              <i class="fa-solid fa-shield-halved fa-lg"></i>
+            </div>
+            <div>
+              <div class="fw-bold text-dark" style="font-size:0.88rem;">2. ลายเซ็น</div>
+              <div class="text-muted" style="font-size:0.75rem; line-height:1.35;">หากผู้ใช้มี Digital Signature จะประทับลงในเอกสารพร้อมภาพลายเซ็นอัตโนมัติ</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Canvas Area (Option 1) -->
+      <div id="swal-box-canvas" class="border rounded-3 p-3 mb-3 bg-white">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div>
+            <div class="fw-bold" style="font-size:0.9rem; color:#0F172A;">เซ็นชื่อในกรอบด้านล่าง</div>
+            <div class="text-muted" style="font-size:0.76rem;">กดเมาส์ค้างแล้วลาก หรือใช้นิ้วบนอุปกรณ์ระบบสัมผัส</div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary border px-2 py-1 rounded-2" id="swal-sig-clear" style="font-size:0.78rem;">
+            <i class="fa-solid fa-eraser me-1"></i> ล้างลายเซ็น
+          </button>
+        </div>
+        <div class="sig-canvas-wrapper" style="border: 1px dashed #94A3B8; border-radius: 8px; background:#FAFBFD;">
+          <canvas id="swal-sig-canvas" width="640" height="170" style="width:100%; height:170px; touch-action:none;"></canvas>
+        </div>
+      </div>
+
+      <!-- Certificate Box -->
+      <div class="p-3 rounded-3" style="background-color: #ECFDF5; border: 1px solid #A7F3D0; color: #065F46; font-size: 0.82rem;">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <i class="fa-solid fa-circle-check text-success fa-lg"></i>
+          <strong>Certificate: PACC-OFFICER-2569-001</strong>
+        </div>
+        <div>ผู้ถือใบรับรอง: <strong>${signerName || 'เจ้าหน้าที่'}</strong></div>
+        <div class="mt-1 text-success" style="font-size:0.78rem;">หากผู้ใช้มี Digital Signature จะประทับลงในเอกสารพร้อมภาพลายเซ็นอัตโนมัติ</div>
       </div>
       <input type="hidden" id="swal-sig-input">
-      
-      <div class="mb-2" style="background:#fdf7e8;border-left:4px solid #c9a227;padding:.6rem .8rem;border-radius:0 6px 6px 0">
-        ระบบจะแปลงเอกสารเป็น PDF และผนึกลายมือชื่ออิเล็กทรอนิกส์
-        ตาม พ.ร.บ. ว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ฯ (TOR 14.6)
-      </div>
-      <label class="form-label mt-2">รหัส OTP ที่ส่งไปยังโทรศัพท์ที่ลงทะเบียน</label>
-      <input id="swal-otp" class="form-control" maxlength="6" inputmode="numeric" placeholder="กรอก 6 หลัก (ทดสอบ: 123456)">
-      <div class="mt-2" style="font-size:.75rem;color:#6b7280">
-        <i class="fa-solid fa-circle-info me-1"></i>ผู้ให้บริการ CA (ThaiD Sign / CA หน่วยงาน) ยังรอ ป.ป.ท. ยืนยัน
-      </div>
     </div>`,
-    showCancelButton:true, confirmButtonText:'ยืนยันลงนาม', cancelButtonText:'ยกเลิก',
-    confirmButtonColor:'#0a2647', cancelButtonColor:'#6b7280', reverseButtons:true,
     didOpen() {
+      const cardHand = document.getElementById('swal-card-hand');
+      const cardCert = document.getElementById('swal-card-cert');
+      const boxCanvas = document.getElementById('swal-box-canvas');
+      const badge = document.getElementById('swal-sig-mode-badge');
+
+      function setMode(mode) {
+        selectedMode = mode;
+        if (mode === 'hand') {
+          cardHand.style.background = '#F0F6FF';
+          cardHand.style.borderColor = '#2563EB';
+          cardHand.querySelector('div:first-child').style.background = '#DBEAFE';
+          cardHand.querySelector('div:first-child').style.color = '#2563EB';
+
+          cardCert.style.background = '#FFFFFF';
+          cardCert.style.borderColor = '#E5E7EB';
+          cardCert.querySelector('div:first-child').style.background = '#F1F5F9';
+          cardCert.querySelector('div:first-child').style.color = '#64748B';
+
+          boxCanvas.style.display = 'block';
+          badge.className = 'badge rounded-pill bg-light text-primary border px-2 py-1';
+          badge.innerHTML = '<i class="fa-solid fa-check me-1"></i> เซ็นมือ';
+          
+          initSignaturePad('swal-sig-canvas', 'swal-sig-clear', 'swal-sig-input');
+        } else {
+          cardCert.style.background = '#F0F6FF';
+          cardCert.style.borderColor = '#2563EB';
+          cardCert.querySelector('div:first-child').style.background = '#DBEAFE';
+          cardCert.querySelector('div:first-child').style.color = '#2563EB';
+
+          cardHand.style.background = '#FFFFFF';
+          cardHand.style.borderColor = '#E5E7EB';
+          cardHand.querySelector('div:first-child').style.background = '#F1F5F9';
+          cardHand.querySelector('div:first-child').style.color = '#64748B';
+
+          boxCanvas.style.display = 'none';
+          badge.className = 'badge rounded-pill bg-light text-primary border px-2 py-1';
+          badge.innerHTML = '<i class="fa-solid fa-shield-halved me-1"></i> Digital Signature';
+        }
+      }
+
+      cardHand.addEventListener('click', () => setMode('hand'));
+      cardCert.addEventListener('click', () => setMode('cert'));
+
       initSignaturePad('swal-sig-canvas', 'swal-sig-clear', 'swal-sig-input');
     },
     preConfirm(){
-      const v = document.getElementById('swal-otp').value.trim();
-      const sigData = document.getElementById('swal-sig-input').value;
-      if(v.length !== 6){ Swal.showValidationMessage('กรุณากรอก OTP ให้ครบ 6 หลัก'); return false; }
-      return { otp: v, sig: sigData };
+      let sigData = '';
+      if (selectedMode === 'hand') {
+        sigData = document.getElementById('swal-sig-input')?.value;
+        if (!sigData && window.ecmis && window.ecmis.signaturePad) {
+          sigData = window.ecmis.signaturePad.getDataUrl('swal-sig-canvas');
+        }
+      }
+      return { mode: selectedMode, sig: sigData };
     }
   });
 }
@@ -1340,6 +1449,8 @@ function signDialog(docName, signerName){
 function sequentialSignDialog(docName, signers){
   const cur = signers[0];
   const rest = signers.slice(1);
+  let selectedMode = 'hand';
+
   const stepList = signers.map((s,i) => `
     <div class="d-flex align-items-start gap-2 mb-2" style="font-size:.82rem">
       <span class="st ${i===0?'st-pending':'st-draft'}" style="min-width:26px;text-align:center">${i+1}</span>
@@ -1352,47 +1463,153 @@ function sequentialSignDialog(docName, signers){
     </div>`).join('');
 
   return Swal.fire({
-    title:'ลงลายมือชื่อดิจิทัลตามลำดับ (Sequential e-Signature)',
-    html:`<div class="text-start" style="font-size:.9rem">
-      <p class="mb-2">เอกสาร: <strong>${docName}</strong></p>
+    width: 720,
+    padding: '1.25rem',
+    showCloseButton: true,
+    showCancelButton: true,
+    confirmButtonText: '<i class="fa-solid fa-pen me-1"></i> ลงนาม',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#16A34A',
+    cancelButtonColor: '#7C8CA3',
+    reverseButtons: true,
+    html: `<div class="text-start" style="font-size:0.9rem;">
+      <!-- Title & Header -->
+      <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+        <i class="fa-solid fa-pen-nib text-primary fa-lg"></i>
+        <h5 class="m-0 fw-bold" style="color:#0F2A62;">ลงนาม${docName || 'เอกสาร'}</h5>
+      </div>
+
+      <!-- Info Banner -->
+      <div class="p-3 mb-3 rounded-3 d-flex align-items-center gap-2" style="background:#EFF6FF; border:1px solid #DBEAFE; color:#1E40AF; font-size:0.85rem;">
+        <i class="fa-solid fa-user me-1"></i>
+        <span>ผู้ลงนามคือ <strong>${cur.name}</strong> (${cur.title}) จึงมีเฉพาะการลงนามและไม่มีปุ่มไม่เห็นชอบ/ตีกลับ</span>
+      </div>
+
       <div class="mb-3" style="background:#f4f8f4;border:1px solid #cfe3d4;border-radius:8px;padding:10px 12px">
         <div class="mb-1" style="font-size:.72rem;font-weight:600;color:var(--ecmis-muted,#6b7280)">
           ลำดับผู้ลงนามของเอกสารนี้ (${signers.length} ลำดับ)</div>
         ${stepList}
       </div>
-      
-      <!-- Canvas Signature Pad -->
-      <label class="form-label mt-2">วาดลายมือชื่อด้วยเมาส์หรือสัมผัส (Digital Signature Pad)</label>
-      <div class="sig-canvas-wrapper mb-2">
-        <canvas id="swal-sig-canvas" class="sig-canvas" width="500" height="150"></canvas>
+
+      <!-- Selection Header -->
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <div>
+          <div class="fw-bold" style="font-size:0.9rem; color:#1F2937;">เลือกวิธีลงนาม <span class="text-danger">*</span></div>
+          <div class="text-muted" style="font-size:0.78rem;">เลือกได้เพียง 1 วิธีต่อการอนุมัติหนึ่งครั้ง</div>
+        </div>
+        <div id="swal-sig-mode-badge" class="badge rounded-pill bg-light text-primary border px-2 py-1" style="font-size:0.78rem;">
+          <i class="fa-solid fa-check me-1"></i> เซ็นมือ
+        </div>
       </div>
-      <div class="text-end mb-2">
-        <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2" style="font-size:0.75rem" id="swal-sig-clear">ล้างรูปวาด</button>
+
+      <!-- Method Cards -->
+      <div class="row g-3 mb-3">
+        <div class="col-6">
+          <div id="swal-card-hand" class="p-3 rounded-3 border d-flex gap-3 align-items-start" style="cursor:pointer; background:#F0F6FF; border-color:#2563EB !important; transition:all 0.2s;">
+            <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width:38px; height:38px; background:#DBEAFE; color:#2563EB;">
+              <i class="fa-solid fa-pen fa-lg"></i>
+            </div>
+            <div>
+              <div class="fw-bold text-dark" style="font-size:0.88rem;">1. เซ็นมือ</div>
+              <div class="text-muted" style="font-size:0.75rem; line-height:1.35;">ใช้เมาส์หรือทัชแพดลากลายเซ็น <span class="text-primary">(หากผู้ใช้มี Digital Signature จะประทับลงในเอกสารพร้อมภาพลายเซ็นอัตโนมัติ)</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div id="swal-card-cert" class="p-3 rounded-3 border d-flex gap-3 align-items-start" style="cursor:pointer; background:#FFFFFF; border-color:#E5E7EB !important; transition:all 0.2s;">
+            <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width:38px; height:38px; background:#F1F5F9; color:#64748B;">
+              <i class="fa-solid fa-shield-halved fa-lg"></i>
+            </div>
+            <div>
+              <div class="fw-bold text-dark" style="font-size:0.88rem;">2. ลายเซ็น</div>
+              <div class="text-muted" style="font-size:0.75rem; line-height:1.35;">หากผู้ใช้มี Digital Signature จะประทับลงในเอกสารพร้อมภาพลายเซ็นอัตโนมัติ</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Canvas Area (Option 1) -->
+      <div id="swal-box-canvas" class="border rounded-3 p-3 mb-3 bg-white">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div>
+            <div class="fw-bold" style="font-size:0.9rem; color:#0F172A;">เซ็นชื่อในกรอบด้านล่าง</div>
+            <div class="text-muted" style="font-size:0.76rem;">กดเมาส์ค้างแล้วลาก หรือใช้นิ้วบนอุปกรณ์ระบบสัมผัส</div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary border px-2 py-1 rounded-2" id="swal-sig-clear" style="font-size:0.78rem;">
+            <i class="fa-solid fa-eraser me-1"></i> ล้างลายเซ็น
+          </button>
+        </div>
+        <div class="sig-canvas-wrapper" style="border: 1px dashed #94A3B8; border-radius: 8px; background:#FAFBFD;">
+          <canvas id="swal-sig-canvas" width="640" height="170" style="width:100%; height:170px; touch-action:none;"></canvas>
+        </div>
+      </div>
+
+      <!-- Certificate Box -->
+      <div class="p-3 rounded-3" style="background-color: #ECFDF5; border: 1px solid #A7F3D0; color: #065F46; font-size: 0.82rem;">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <i class="fa-solid fa-circle-check text-success fa-lg"></i>
+          <strong>Certificate: PACC-OFFICER-2569-001</strong>
+        </div>
+        <div>ผู้ถือใบรับรอง: <strong>${cur.name} (${cur.title})</strong></div>
+        <div class="mt-1 text-success" style="font-size:0.78rem;">หากผู้ใช้มี Digital Signature จะประทับลงในเอกสารพร้อมภาพลายเซ็นอัตโนมัติ</div>
       </div>
       <input type="hidden" id="swal-sig-input">
-
-      <div class="mb-2" style="background:#fdf7e8;border-left:4px solid #c9a227;padding:.6rem .8rem;border-radius:0 6px 6px 0">
-        กำลังลงนามในฐานะ <strong>${cur.name}</strong> — ระบบจะแปลงเอกสารเป็น PDF และผนึก
-        ลายมือชื่ออิเล็กทรอนิกส์ตาม พ.ร.บ. ว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ฯ (TOR 14.6)
-        ${rest.length ? `<br><small>เมื่อลงนามลำดับนี้แล้ว เอกสารจะส่งต่อให้ <strong>${rest[0].name}</strong>
-          ลงนามลำดับถัดไปในขั้นตอนของผัง — ไม่ใช่ลงนามแทนกันในหน้าจอเดียว</small>` : ''}
-      </div>
-      <label class="form-label mt-2">รหัส OTP ที่ส่งไปยังโทรศัพท์ที่ลงทะเบียนของ ${cur.name}</label>
-      <input id="swal-otp" class="form-control" maxlength="6" inputmode="numeric" placeholder="กรอก 6 หลัก (ทดสอบ: 123456)">
-      <div class="mt-2" style="font-size:.75rem;color:#6b7280">
-        <i class="fa-solid fa-circle-info me-1"></i>ผู้ให้บริการ CA (ThaiD Sign / CA หน่วยงาน) ยังรอ ป.ป.ท. ยืนยัน
-      </div>
     </div>`,
-    showCancelButton:true, confirmButtonText:'ยืนยันลงนามลำดับนี้', cancelButtonText:'ยกเลิก',
-    confirmButtonColor:'#0a2647', cancelButtonColor:'#6b7280', reverseButtons:true, width:560,
     didOpen() {
+      const cardHand = document.getElementById('swal-card-hand');
+      const cardCert = document.getElementById('swal-card-cert');
+      const boxCanvas = document.getElementById('swal-box-canvas');
+      const badge = document.getElementById('swal-sig-mode-badge');
+
+      function setMode(mode) {
+        selectedMode = mode;
+        if (mode === 'hand') {
+          cardHand.style.background = '#F0F6FF';
+          cardHand.style.borderColor = '#2563EB';
+          cardHand.querySelector('div:first-child').style.background = '#DBEAFE';
+          cardHand.querySelector('div:first-child').style.color = '#2563EB';
+
+          cardCert.style.background = '#FFFFFF';
+          cardCert.style.borderColor = '#E5E7EB';
+          cardCert.querySelector('div:first-child').style.background = '#F1F5F9';
+          cardCert.querySelector('div:first-child').style.color = '#64748B';
+
+          boxCanvas.style.display = 'block';
+          badge.className = 'badge rounded-pill bg-light text-primary border px-2 py-1';
+          badge.innerHTML = '<i class="fa-solid fa-check me-1"></i> เซ็นมือ';
+          
+          initSignaturePad('swal-sig-canvas', 'swal-sig-clear', 'swal-sig-input');
+        } else {
+          cardCert.style.background = '#F0F6FF';
+          cardCert.style.borderColor = '#2563EB';
+          cardCert.querySelector('div:first-child').style.background = '#DBEAFE';
+          cardCert.querySelector('div:first-child').style.color = '#2563EB';
+
+          cardHand.style.background = '#FFFFFF';
+          cardHand.style.borderColor = '#E5E7EB';
+          cardHand.querySelector('div:first-child').style.background = '#F1F5F9';
+          cardHand.querySelector('div:first-child').style.color = '#64748B';
+
+          boxCanvas.style.display = 'none';
+          badge.className = 'badge rounded-pill bg-light text-primary border px-2 py-1';
+          badge.innerHTML = '<i class="fa-solid fa-shield-halved me-1"></i> Digital Signature';
+        }
+      }
+
+      cardHand.addEventListener('click', () => setMode('hand'));
+      cardCert.addEventListener('click', () => setMode('cert'));
+
       initSignaturePad('swal-sig-canvas', 'swal-sig-clear', 'swal-sig-input');
     },
     preConfirm(){
-      const v = document.getElementById('swal-otp').value.trim();
-      const sigData = document.getElementById('swal-sig-input').value;
-      if(v.length !== 6){ Swal.showValidationMessage('กรุณากรอก OTP ให้ครบ 6 หลัก'); return false; }
-      return { otp:v, signer:cur, next:rest[0] || null, sig: sigData };
+      let sigData = '';
+      if (selectedMode === 'hand') {
+        sigData = document.getElementById('swal-sig-input')?.value;
+        if (!sigData && window.ecmis && window.ecmis.signaturePad) {
+          sigData = window.ecmis.signaturePad.getDataUrl('swal-sig-canvas');
+        }
+      }
+      return { mode: selectedMode, signer: cur, next: rest[0] || null, sig: sigData };
     }
   });
 }
@@ -1838,73 +2055,109 @@ function initVoiceInput() {
   });
 }
 
+/* --------------------------------- Signature Pad Module */
+window.ecmis = window.ecmis || {};
+window.ecmis.signaturePad = (function () {
+    const pads = new Map();
+
+    function point(canvas, event) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: (event.clientX - rect.left) * (canvas.width / rect.width),
+            y: (event.clientY - rect.top) * (canvas.height / rect.height)
+        };
+    }
+
+    function init(canvasId) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const existing = pads.get(canvasId);
+        if (existing && existing.canvas === canvas) return;
+        pads.delete(canvasId);
+
+        const context = canvas.getContext("2d");
+        const state = { canvas: canvas, drawing: false, hasInk: false };
+        pads.set(canvasId, state);
+
+        context.strokeStyle = "#173f91"; // สีหมึกปากกาลงนาม
+        context.lineWidth = 3;
+        context.lineCap = "round";
+        context.lineJoin = "round";
+
+        canvas.addEventListener("pointerdown", function (event) {
+            event.preventDefault();
+            state.drawing = true;
+            canvas.setPointerCapture(event.pointerId);
+            const pos = point(canvas, event);
+            context.beginPath();
+            context.moveTo(pos.x, pos.y);
+        });
+
+        canvas.addEventListener("pointermove", function (event) {
+            if (!state.drawing) return;
+            event.preventDefault();
+            const pos = point(canvas, event);
+            context.lineTo(pos.x, pos.y);
+            context.stroke();
+            state.hasInk = true;
+        });
+
+        function stop(event) {
+            if (!state.drawing) return;
+            state.drawing = false;
+            try { canvas.releasePointerCapture(event.pointerId); } catch (_) { }
+        }
+
+        canvas.addEventListener("pointerup", stop);
+        canvas.addEventListener("pointercancel", stop);
+        canvas.addEventListener("pointerleave", stop);
+    }
+
+    function clear(canvasId) {
+        const canvas = document.getElementById(canvasId);
+        const state = pads.get(canvasId);
+        if (!canvas || !state) return;
+        canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+        state.hasInk = false;
+    }
+
+    function getDataUrl(canvasId) {
+        const canvas = document.getElementById(canvasId);
+        const state = pads.get(canvasId);
+        return canvas && state && state.hasInk ? canvas.toDataURL("image/png") : "";
+    }
+
+    return { init, clear, getDataUrl };
+})();
+
 function initSignaturePad(canvasId, clearBtnId, inputId) {
   const canvas = document.getElementById(canvasId);
   const clearBtn = document.getElementById(clearBtnId);
   const input = document.getElementById(inputId);
   if (!canvas) return;
 
-  const ctx = canvas.getContext('2d');
-  ctx.strokeStyle = '#0a2647';
-  ctx.lineWidth = 3;
-  ctx.lineCap = 'round';
+  if (window.ecmis && window.ecmis.signaturePad) {
+    window.ecmis.signaturePad.init(canvasId);
+  }
 
-  let drawing = false;
-  let lastX = 0;
-  let lastY = 0;
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      if (window.ecmis && window.ecmis.signaturePad) {
+        window.ecmis.signaturePad.clear(canvasId);
+      }
+      if (input) input.value = '';
+    });
+  }
 
-  function getPos(e) {
-    const rect = canvas.getBoundingClientRect();
-    if (e.touches && e.touches.length) {
-      return {
-        x: e.touches[0].clientX - rect.left,
-        y: e.touches[0].clientY - rect.top
-      };
-    }
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
+  if (canvas && input) {
+    const syncInput = () => {
+      if (window.ecmis && window.ecmis.signaturePad) {
+        input.value = window.ecmis.signaturePad.getDataUrl(canvasId);
+      }
     };
-  }
-
-  function startDraw(e) {
-    drawing = true;
-    const pos = getPos(e);
-    lastX = pos.x;
-    lastY = pos.y;
-  }
-
-  function draw(e) {
-    if (!drawing) return;
-    e.preventDefault();
-    const pos = getPos(e);
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-    lastX = pos.x;
-    lastY = pos.y;
-    saveSig();
-  }
-
-  function stopDraw() { drawing = false; }
-
-  canvas.addEventListener('mousedown', startDraw);
-  canvas.addEventListener('mousemove', draw);
-  canvas.addEventListener('mouseup', stopDraw);
-  canvas.addEventListener('mouseleave', stopDraw);
-
-  canvas.addEventListener('touchstart', startDraw);
-  canvas.addEventListener('touchmove', draw);
-  canvas.addEventListener('touchend', stopDraw);
-
-  clearBtn.addEventListener('click', () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (input) input.value = '';
-  });
-
-  function saveSig() {
-    if (input) input.value = canvas.toDataURL();
+    canvas.addEventListener('pointerup', syncInput);
+    canvas.addEventListener('pointerleave', syncInput);
+    canvas.addEventListener('pointercancel', syncInput);
   }
 }
 
@@ -2251,6 +2504,7 @@ global.ECMIS = {
   // Custom helpers
   saveCases, toggleDarkMode, toggleHighContrast, toggleSidebarCollapse, changeFont,
   initSmartCombobox, initRealTimeValidation, initVoiceInput, initSignaturePad,
+  signaturePad: (window.ecmis && window.ecmis.signaturePad),
   initAutoSave, initCharCounterAndCopy,
 
   // New UX helpers
