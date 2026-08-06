@@ -181,6 +181,7 @@ let sortOrder = 'asc';
 function row(c, actionable){
   const target = `${PAGE_FOR[role.id] || '02-case-register.html'}?case=${encodeURIComponent(c.id)}`;
   const holder = ECMIS.STATUS[c.status] ? ECMIS.getRole(ECMIS.STATUS[c.status].owner) : null;
+  const signedBadge = c.signedBySecgen ? `<div class="mt-1"><span class="st st-done" style="font-size:0.7rem"><i class="fa-solid fa-signature me-1"></i>เลขาลงนามแล้ว</span></div>` : '';
   return `<tr>
     <td>
       ${actionable ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '—'}
@@ -188,7 +189,7 @@ function row(c, actionable){
     <td class="case-no">${c.id}${c.urgent?' <span class="st st-urgent">ด่วน</span>':''}</td>
     <td style="max-width:340px"><div class="text-truncate" title="${c.subject}">${c.subject}</div>
         <small class="text-muted">${c.ownerOrg}</small></td>
-    <td>${actionable ? ECMIS.statusBadge(c.status) : (holder ? holder.title : '—')}</td>
+    <td>${actionable ? ECMIS.statusBadge(c.status) : (holder ? holder.title : '—')}${signedBadge}</td>
     <td>${ECMIS.slaBadge(c)}</td>
     <td class="text-end">
       <a href="${target}" class="btn btn-sm ${actionable?'btn-navy':'btn-outline-secondary'}">
@@ -389,7 +390,7 @@ renderMyQueue(true);
 /* สำนวนที่บทบาทนี้เป็นเจ้าของเรื่องแต่ค้างที่ชั้นอื่น (สิทธิ์อ่านอย่างเดียว) */
 const watch = upstreamMine.concat(
   all.filter(c => !ECMIS.canAct(c, role.id) && !ECMIS.isUpstreamCase(c) &&
-    ['owner','board_sec','dir_case'].includes(role.id)));
+    ['owner','board_sec','dir_case','secgen'].includes(role.id)));
 document.getElementById('watchQueue').innerHTML = watch.length
   ? watch.map(c => row(c, false)).join('')
   : `<tr><td colspan="5" class="text-center text-muted py-3">— ไม่มีรายการ —</td></tr>`;
