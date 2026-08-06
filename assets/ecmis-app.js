@@ -838,10 +838,15 @@ const M28_LOG = {
 };
 CASES.forEach(c => { if(M28_LOG[c.id]) c.m28 = M28_LOG[c.id]; });
 
-/* ---- LOCAL STORAGE / SESSION STORAGE STATE FOR CASES ---- */
+/* ---- LOCAL STORAGE / SESSION STORAGE STATE FOR CASES ----
+   CASES_VERSION กัน sessionStorage เก่าทับข้อมูล mock ชุดใหม่เวลาแก้ไข CASES
+   ในซอร์ส (เช่นเปลี่ยนรูปแบบเลขสำนวน) — ถ้าเวอร์ชันที่บันทึกไว้ไม่ตรง
+   ให้ทิ้งแคชเก่าและใช้ CASES สดจากซอร์สแทน                                */
+const CASES_VERSION = '2026-08-06-เลขสำนวน';
 if (typeof sessionStorage !== 'undefined') {
+  const savedVersion = sessionStorage.getItem('ecmis_cases_version');
   const savedCases = sessionStorage.getItem('ecmis_cases');
-  if (savedCases) {
+  if (savedCases && savedVersion === CASES_VERSION) {
     try {
       const parsed = JSON.parse(savedCases);
       CASES.length = 0;
@@ -849,11 +854,14 @@ if (typeof sessionStorage !== 'undefined') {
     } catch (e) {
       console.error('Failed to load CASES from sessionStorage:', e);
     }
+  } else if (savedCases) {
+    sessionStorage.removeItem('ecmis_cases');
   }
 }
 function saveCases() {
   if (typeof sessionStorage !== 'undefined') {
     sessionStorage.setItem('ecmis_cases', JSON.stringify(CASES));
+    sessionStorage.setItem('ecmis_cases_version', CASES_VERSION);
   }
 }
 
