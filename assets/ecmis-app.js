@@ -231,7 +231,7 @@ const STATUS = {
 
   /* ---- จุดเริ่มกิจกรรมที่ 7 ---- */
   PENDING_SECGEN:   { label:'รอเลขาธิการฯ ลงนาม',         cls:'st-pending',  owner:'secgen' },
-  IN_SUPPORT_SUB:   { label:'อยู่คณะอนุสนับสนุนฯ',         cls:'st-review',   owner:'support_sub' },
+  IN_SUPPORT_SUB:   { label:'ส่งให้คณะอนุสนับสนุนฯ พิจารณาแล้ว', cls:'st-review', owner:'support_sub' },
   PENDING_URGENT:   { label:'รอ ผอ.กบค. รับรองใบด่วน',     cls:'st-urgent',   owner:'dir_case' },
   PENDING_CHAIR_OF: { label:'รอหน้าห้องประธานฯ คัดกรอง',   cls:'st-pending',  owner:'chair_office' },
   PENDING_CHAIRMAN: { label:'รอประธานฯ สั่งการ',           cls:'st-pending',  owner:'chairman' },

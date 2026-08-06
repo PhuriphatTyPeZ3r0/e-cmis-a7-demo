@@ -484,15 +484,55 @@
     (นายอภิชาติ สุจริตกุล)<br>เลขาธิการคณะกรรมการ ป.ป.ท.
   </div>`;
 
+    function updateSigBoxUI(isSigned, sigImg, timestampStr) {
+      const nowStr = timestampStr || new Date().toLocaleString('th-TH');
+      const sigBoxEl = document.getElementById('sigBox');
+      const docSignEl = document.getElementById('docSign');
+      
+      if (isSigned) {
+        if (sigBoxEl) {
+          sigBoxEl.className = 'sig-box signed';
+          sigBoxEl.innerHTML = `
+            <i class="fa-solid fa-circle-check fa-2x mb-2" style="color:#166434"></i>
+            <div class="sig-name">นายอภิชาติ สุจริตกุล</div>
+            <div class="sig-meta">เลขาธิการคณะกรรมการ ป.ป.ท.</div>
+            <div class="sig-meta">ลงนามเมื่อ ${nowStr}</div>
+            <div class="sig-cert mt-2"><i class="fa-solid fa-shield-halved me-1"></i>
+              ลายมือชื่ออิเล็กทรอนิกส์ผ่านการตรวจสอบ · SHA-256 · เอกสารถูกล็อกเป็น PDF</div>
+            <div class="mt-3 pt-2 border-top d-flex gap-2 justify-content-center">
+              <button type="button" class="btn btn-xs btn-outline-warning text-dark py-1 px-2" style="font-size:0.78rem" onclick="handle('edit_sign')">
+                <i class="fa-solid fa-pen-to-square me-1"></i>แก้ไข / ลงนามใหม่
+              </button>
+              <button type="button" class="btn btn-xs btn-outline-danger py-1 px-2" style="font-size:0.78rem" onclick="handle('clear_sign')">
+                <i class="fa-solid fa-trash-can me-1"></i>ลบลายเซ็น
+              </button>
+            </div>`;
+        }
+        if (docSignEl) {
+          docSignEl.innerHTML = `
+            ${sigImg ? `<img class="doc-sig-img" src="${sigImg}" alt="ลายมือชื่อ">` : `<img class="doc-sig-img" src="${SECGEN_SIG_IMG}" alt="ลายมือชื่อ">`}
+            <span style="color:#166434"><i class="fa-solid fa-signature"></i> ลงนามดิจิทัลแล้ว</span><br>
+            (นายอภิชาติ สุจริตกุล)<br>เลขาธิการคณะกรรมการ ป.ป.ท.<br>
+            <span style="font-size:11px;color:#666">${nowStr}</span>`;
+        }
+      } else {
+        if (sigBoxEl) {
+          sigBoxEl.className = 'sig-box';
+          sigBoxEl.innerHTML = `
+            <i class="fa-solid fa-file-signature fa-2x mb-2" style="color:#7C8CA3"></i>
+            <div class="sig-name">ยังไม่ได้ลงนาม</div>
+            <div class="sig-meta">กดปุ่ม "ลงนามดิจิทัลและส่งต่อ" ที่แถบด้านล่าง</div>`;
+        }
+        if (docSignEl) {
+          docSignEl.innerHTML = `
+            ลงชื่อ <span class="doc-dots"></span><br>
+            (นายอภิชาติ สุจริตกุล)<br>เลขาธิการคณะกรรมการ ป.ป.ท.`;
+        }
+      }
+    }
+
     if (alreadySigned) {
-      document.getElementById('sigBox').className = 'sig-box signed';
-      document.getElementById('sigBox').innerHTML = `
-      <i class="fa-solid fa-circle-check fa-2x mb-2" style="color:#166434"></i>
-      <div class="sig-name">นายอภิชาติ สุจริตกุล</div>
-      <div class="sig-meta">เลขาธิการคณะกรรมการ ป.ป.ท.</div>
-      <div class="sig-meta">ลงนามแล้ว — สำนวนถูกส่งต่อในขั้นตอนถัดไป</div>
-      <div class="sig-cert mt-2"><i class="fa-solid fa-shield-halved me-1"></i>
-        ลายมือชื่ออิเล็กทรอนิกส์ผ่านการตรวจสอบ · SHA-256 · เอกสารถูกล็อกเป็น PDF</div>`;
+      updateSigBoxUI(true);
     }
 
     function renderDocOpinions() {
@@ -521,8 +561,10 @@
     function buildButtons() {
       const b = [{ act: 'return', label: 'ส่งคืนสายงานต้นทาง (กจ.5)', icon: 'fa-arrow-left-long', cls: 'btn-outline-danger' }];
       if (role.id === 'secgen') {
-        if (signed && !alreadySigned) {
+        if (signed) {
           return [
+            { act: 'edit_sign', label: 'แก้ไข / ลงนามใหม่', icon: 'fa-pen-to-square', cls: 'btn-outline-warning' },
+            { act: 'clear_sign', label: 'ลบลายเซ็น', icon: 'fa-trash-can', cls: 'btn-outline-danger' },
             { act: 'save_status', label: 'บันทึกเพื่อเปลี่ยนสถานะ (เลขาลงนามแล้ว)', icon: 'fa-floppy-disk', cls: 'btn-success' }
           ];
         }
@@ -580,6 +622,29 @@
     }
 
     function handle(act) {
+      if (act === 'edit_sign') {
+        handle('sign');
+        return;
+      }
+
+      if (act === 'clear_sign') {
+        ECMIS.confirmAction({
+          title: 'ยืนยันการลบลายเซ็น',
+          html: '<p>คุณต้องการยกเลิกลายเซ็นบนเอกสารนี้ใช่หรือไม่?</p>',
+          confirmText: 'ยืนยันลบลายเซ็น',
+          danger: true
+        }).then(r => {
+          if (r.isConfirmed) {
+            signed = false;
+            kase._pendingSig = null;
+            updateSigBoxUI(false);
+            renderActionButtons();
+            ECMIS.toastOk('ลบลายเซ็นเรียบร้อยแล้ว');
+          }
+        });
+        return;
+      }
+
       if (act === 'return') {
         const opts = ECMIS.RETURN_REASONS.map(r =>
           `<option value="${r.code}">${r.label}</option>`).join('');
@@ -656,9 +721,7 @@
         return;
       }
 
-      /* มอบหมาย = ลัดขั้นตอน "ระบุ G1 ว่าซับซ้อน" ให้อัตโนมัติ แล้วพาไปสู่ขั้น
-         ลงนามทันที เพราะโดเมนนี้กำหนดว่าสำนวนต้องผ่านการลงนามของเลขาธิการฯ
-         ก่อนจึงจะส่งต่อได้เสมอ ไม่ว่าจะส่งเข้าคณะอนุสนับสนุนฯ หรือเส้นทางปกติ  */
+      /* มอบหมาย = ส่งต่อเข้าคณะอนุกรรมการสนับสนุนฯ ทันที โดยไม่ต้องลงนามดิจิทัล */
       if (act === 'assign') {
         if (!requireOpinion()) return;
         ECMIS.confirmAction({
@@ -666,17 +729,35 @@
           html: `<p>สำนวน <strong>${kase.id}</strong> จะถูกมอบหมายเข้า
             <strong>คณะอนุกรรมการสนับสนุนเลขาธิการฯ (T6)</strong> เพื่อพิจารณาก่อนเสนอต่อ
             <strong>หน้าห้องประธานกรรมการ ป.ป.ท. (G2)</strong></p>
-            <div class="law-note">ระบบจะตั้งค่า G1 = ใช่ (ดุลพินิจเลขาธิการฯ) ให้อัตโนมัติ —
-            ขั้นตอนถัดไปต้องลงนามดิจิทัลเพื่อยืนยันการมอบหมาย</div>`,
-          confirmText: 'ยืนยันมอบหมายและไปลงนาม'
+            <div class="law-note">ระบบจะบันทึกสถานะและส่งต่อสำนวนทันที (โดยไม่ต้องลงนามดิจิทัล)</div>`,
+          confirmText: 'ยืนยันมอบหมาย'
         }).then(r => {
           if (!r.isConfirmed) return;
-          document.getElementById('g1yes').checked = true;
-          document.getElementById('g1reasonBox').classList.remove('d-none');
+          const g1yes = document.getElementById('g1yes');
+          if (g1yes) g1yes.checked = true;
+          const grBox = document.getElementById('g1reasonBox');
+          if (grBox) grBox.classList.remove('d-none');
           const gr = document.getElementById('g1reason');
-          if (!gr.value.trim()) gr.value = 'เลขาธิการฯ พิจารณาแล้วเห็นควรมอบหมายให้คณะอนุกรรมการสนับสนุนฯ ตรวจสอบก่อน';
-          renderG1Outcome(); renderG3();
-          handle('sign');
+          if (gr && !gr.value.trim()) gr.value = 'เลขาธิการฯ พิจารณาแล้วเห็นควรมอบหมายให้คณะอนุกรรมการสนับสนุนฯ ตรวจสอบก่อน';
+          
+          // Change status to IN_SUPPORT_SUB directly without signing
+          kase.status = 'IN_SUPPORT_SUB';
+          ECMIS.saveCases();
+
+          Swal.fire({
+            icon: 'success',
+            title: 'มอบหมายสำนวนเรียบร้อย',
+            html: `<div class="text-start">
+              สำนวน <strong>${kase.id}</strong> ถูกส่งต่อไปยัง 
+              <strong>คณะอนุกรรมการสนับสนุนเลขาธิการฯ (T6)</strong> เรียบร้อยแล้ว<br>
+              <div style="font-size:.82rem;color:#7C8CA3;margin-top:.6rem">เส้นทางตามผัง: G1 = ใช่ (ดุลพินิจเลขาธิการฯ — เรื่องยุ่งยากซับซ้อน) → T6 → G2</div>
+            </div>`,
+            confirmButtonColor: '#0F2A62',
+            confirmButtonText: 'ตกลง (ไปที่ Work Inbox)',
+            width: 540
+          }).then(() => {
+            location.href = '01-work-inbox.html';
+          });
         });
         return;
       }
@@ -754,19 +835,8 @@
               if (!res.isConfirmed) return;
               signed = true;
               const now = new Date();
-              document.getElementById('sigBox').className = 'sig-box signed';
-              document.getElementById('sigBox').innerHTML = `
-            <i class="fa-solid fa-circle-check fa-2x mb-2" style="color:#166434"></i>
-            <div class="sig-name">นายอภิชาติ สุจริตกุล</div>
-            <div class="sig-meta">เลขาธิการคณะกรรมการ ป.ป.ท.</div>
-            <div class="sig-meta">ลงนามเมื่อ ${now.toLocaleString('th-TH')}</div>
-            <div class="sig-cert mt-2"><i class="fa-solid fa-shield-halved me-1"></i>
-              ลายมือชื่ออิเล็กทรอนิกส์ผ่านการตรวจสอบ · SHA-256 · เอกสารถูกล็อกเป็น PDF</div>`;
-              document.getElementById('docSign').innerHTML = `
-            ${res.value.sig ? `<img class="doc-sig-img" src="${res.value.sig}" alt="ลายมือชื่อ">` : ''}
-            ลงชื่อ <span class="doc-dots"></span><br>
-            (นายอภิชาติ สุจริตกุล)<br>เลขาธิการคณะกรรมการ ป.ป.ท.<br>
-            <span style="font-size:11px;color:#666">${now.toLocaleString('th-TH')}</span>`;
+              kase._pendingSig = res.value.sig;
+              updateSigBoxUI(true, res.value.sig, now.toLocaleString('th-TH'));
               renderActionButtons();
               ECMIS.toastOk('ลงนามคำสั่งเรียบร้อยแล้ว กรุณากดปุ่ม "บันทึกเพื่อเปลี่ยนสถานะ"');
             });
@@ -775,17 +845,11 @@
 
         /* ---- ม.28 = ACCEPT (รับเรื่องไว้พิจารณา) — เดินตาม G1/G3 ตามเดิม ---- */
         const complex = g1Yes();
-        /* บังคับเหตุผลเฉพาะกรณีที่เลขาธิการฯ ใช้ดุลพินิจเอง — ถ้าระบบตรวจพบความเห็น
-           ไม่ตรงกัน เหตุผลมาจากข้อเท็จจริงในสำนวนอยู่แล้ว จึงไม่ต้องให้พิมพ์ซ้ำ   */
         if (complex && !g1.diverged && !document.getElementById('g1reason').value.trim()) {
           ECMIS.toastWarn('กรุณาระบุเหตุผลที่ถือเป็นเรื่องยุ่งยากซับซ้อน'); return;
         }
 
         const SEC = { name: 'นายอภิชาติ สุจริตกุล', title: 'เลขาธิการคณะกรรมการ ป.ป.ท.' };
-        /* G3 ใบด่วน + ไม่ซับซ้อน = ต้องมีลายเซ็นรับรองของ ผอ.กบค. ก่อนจึง Bypass ได้
-           จำลองเป็น e-Signature แบบ Sequential — เห็นลำดับผู้ลงนามทั้งชุดในกล่อง
-           เดียว แต่รับ OTP ได้เฉพาะคนปัจจุบัน (เลขาธิการฯ) ส่วน ผอ.กบค. ลงนาม
-           รับรองจริงในขั้นตอนถัดไปของผัง (T7)                                     */
         const needsSequential = !complex && !!kase.urgent;
         const signers = needsSequential
           ? [SEC, {
@@ -802,22 +866,8 @@
           if (!res.isConfirmed) return;
           signed = true;
           const now = new Date();
-          document.getElementById('sigBox').className = 'sig-box signed';
-          document.getElementById('sigBox').innerHTML = `
-          <i class="fa-solid fa-circle-check fa-2x mb-2" style="color:#166434"></i>
-          <div class="sig-name">นายอภิชาติ สุจริตกุล</div>
-          <div class="sig-meta">เลขาธิการคณะกรรมการ ป.ป.ท.</div>
-          <div class="sig-meta">ลงนามเมื่อ ${now.toLocaleString('th-TH')}</div>
-          ${needsSequential ? `<div class="sig-meta"><i class="fa-regular fa-clock me-1"></i>
-            รอ ${signers[1].name} ลงนามรับรองลำดับถัดไปที่ T7</div>` : ''}
-          <div class="sig-cert mt-2"><i class="fa-solid fa-shield-halved me-1"></i>
-            ลายมือชื่ออิเล็กทรอนิกส์ผ่านการตรวจสอบ · SHA-256 · เอกสารถูกล็อกเป็น PDF</div>`;
-          document.getElementById('docSign').innerHTML = `
-          ${res.value.sig ? `<img class="doc-sig-img" src="${res.value.sig}" alt="ลายมือชื่อ">` : ''}
-          <span style="color:#166434"><i class="fa-solid fa-signature"></i> ลงนามดิจิทัลแล้ว</span><br>
-          (นายอภิชาติ สุจริตกุล)<br>เลขาธิการคณะกรรมการ ป.ป.ท.<br>
-          <span style="font-size:11px;color:#666">${now.toLocaleString('th-TH')}</span>`;
-
+          kase._pendingSig = res.value.sig;
+          updateSigBoxUI(true, res.value.sig, now.toLocaleString('th-TH'));
           renderActionButtons();
           ECMIS.toastOk('ลงนามดิจิทัลเรียบร้อยแล้ว กรุณากดปุ่ม "บันทึกเพื่อเปลี่ยนสถานะ"');
         });
