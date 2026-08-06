@@ -911,6 +911,17 @@ function currentRoleId(){ return sessionStorage.getItem('ecmis_role') || 'owner'
 function setRole(id){ sessionStorage.setItem('ecmis_role', id); location.reload(); }
 function currentRole(){ return getRole(currentRoleId()); }
 
+/* สถานะการเข้าสู่ระบบ — ต้อง login.html เซ็ต ecmis_authed ก่อนถึงจะเข้าหน้าในระบบได้
+   (ตัวสลับบทบาทในเมนู DEMO ยังคงใช้ต่อได้ตามปกติหลัง login แล้ว) */
+function isAuthed(){ return sessionStorage.getItem('ecmis_authed') === '1'; }
+function currentUsername(){ return sessionStorage.getItem('ecmis_username') || ''; }
+function logout(){
+  sessionStorage.removeItem('ecmis_authed');
+  sessionStorage.removeItem('ecmis_role');
+  sessionStorage.removeItem('ecmis_username');
+  location.href = 'login.html';
+}
+
 /* งานที่ค้างอยู่ที่บทบาทนี้ (Work Inbox count) */
 function inboxFor(roleId){
   return CASES.filter(c => STATUS[c.status] && STATUS[c.status].owner === roleId);
@@ -970,6 +981,7 @@ function visibleNavFor(role){
 }
 
 function renderShell(activeHref){
+  if(!isAuthed()){ location.href = 'login.html'; return; }
   const role = currentRole();
   const inboxCount = inboxFor(role.id).length;
 
@@ -994,25 +1006,6 @@ function renderShell(activeHref){
     </li>`).join('');
 
   /* ---- topbar ---- */
-  const groups = [];
-  ROLES.forEach(r => {
-    let g = groups.find(x => x.name === r.group);
-    if(!g){ g = { name:r.group, items:[] }; groups.push(g); }
-    g.items.push(r);
-  });
-  const roleItems = groups.map(g => `
-    <li><h6 class="dropdown-header text-uppercase" style="font-size:.66rem;letter-spacing:.4px">${g.name}</h6></li>` +
-    g.items.map(r => {
-      const up = r.scope === 'UPSTREAM';
-      const edit = r.perms.includes('EDIT.MASTER')
-        ? '<span class="st st-urgent ms-1" style="font-size:.6rem">แก้ไขได้</span>' : '';
-      return `<li><a class="dropdown-item ${r.id===role.id?'active':''}" href="#" data-role="${r.id}" ${up?'style="opacity:.72"':''}>
-        <strong>${r.row}. ${r.title}</strong>${edit}
-        ${up?'<span class="st st-draft ms-1" style="font-size:.6rem">นอกขอบเขต กจ.7</span>':''}
-        <small>${r.name} · ${r.org} · กิจกรรม ${r.act}</small>
-      </a></li>`;
-    }).join('')).join('<li><hr class="dropdown-divider"></li>');
-
   const topbar = `
   <header class="app-topbar no-print">
     <button class="btn btn-sm text-white d-lg-none border-0" id="sbToggle" aria-label="เปิด/ปิดเมนู">
@@ -1047,14 +1040,14 @@ function renderShell(activeHref){
       </div>
 
       <div class="dropdown role-switcher">
-        <button class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+        <button class="btn btn-sm dropdown-toggle user-pill" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="fa-regular fa-user me-1"></i>${role.name}
           <span class="d-none d-md-inline"> — ${role.title}</span>
-          <span class="role-badge-demo">DEMO</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
-          <li><h6 class="dropdown-header">สลับบทบาทผู้ใช้ (จำลอง — ยังไม่มี RBAC จริง)</h6></li>
-          ${roleItems}
+          <li><h6 class="dropdown-header">${role.name} — ${role.title}</h6></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item text-danger" href="#" id="btnLogout"><i class="fa-solid fa-right-from-bracket me-2"></i>ออกจากระบบ</a></li>
         </ul>
       </div>
     </div>
@@ -1071,8 +1064,7 @@ function renderShell(activeHref){
     </a>`;
   }).join('');
 
-  /* Sidebar-bottom user chip (Master Screen Layout Desktop.pdf) — read-only
-     mirror of the header role-switcher; opens the same dropdown menu. */
+  /* Sidebar-bottom user chip — แสดงเฉพาะผู้ใช้ที่ login เข้ามาจริง (ไม่ใช่ตัวสลับบทบาท) */
   const userChip = `
   <div class="dropdown sidebar-user-chip">
     <button class="sidebar-user-chip-btn" data-bs-toggle="dropdown" aria-expanded="false" title="${role.name} — ${role.title}">
@@ -1083,8 +1075,9 @@ function renderShell(activeHref){
       </span>
     </button>
     <ul class="dropdown-menu">
-      <li><h6 class="dropdown-header">สลับบทบาทผู้ใช้ (จำลอง — ยังไม่มี RBAC จริง)</h6></li>
-      ${roleItems}
+      <li><h6 class="dropdown-header">${role.name} — ${role.title}</h6></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><a class="dropdown-item text-danger" href="#" id="btnLogoutSidebar"><i class="fa-solid fa-right-from-bracket me-2"></i>ออกจากระบบ</a></li>
     </ul>
   </div>`;
 
@@ -1102,8 +1095,9 @@ function renderShell(activeHref){
 
   document.body.insertAdjacentHTML('afterbegin', topbar + sidebar);
 
-  document.querySelectorAll('[data-role]').forEach(el => {
-    el.addEventListener('click', e => { e.preventDefault(); setRole(el.dataset.role); });
+  ['btnLogout', 'btnLogoutSidebar'].forEach(id => {
+    const btn = document.getElementById(id);
+    if(btn) btn.addEventListener('click', e => { e.preventDefault(); logout(); });
   });
   const tog = document.getElementById('sbToggle');
   if(tog) tog.addEventListener('click', () => document.getElementById('appSidebar').classList.toggle('open'));
@@ -2250,6 +2244,7 @@ global.ECMIS = {
   PERM_DEFS, can, canEditMaster, canViewCase,
   thaiDate, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole, roleIdForLogin,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
+  isAuthed, currentUsername, logout,
   renderShell, stepperHtml, statusBadge, slaBadge, actionBar,
   mergeField, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
 

@@ -502,14 +502,23 @@ function handleLogin(event){
   });
   setTimeout(() => {
     const roleId = ECMIS.roleIdForLogin(username);
-    if(roleId) sessionStorage.setItem('ecmis_role', roleId);
-    const role = ECMIS.getRole(roleId || sessionStorage.getItem('ecmis_role'));
+    if(!roleId){
+      Swal.fire({
+        icon:'error',
+        title:'ไม่พบผู้ใช้งานนี้ในระบบ',
+        text:'กรุณาตรวจสอบชื่อผู้ใช้งาน หรือติดต่อผู้ดูแลระบบ',
+        confirmButtonColor:'#0b2e59'
+      });
+      return;
+    }
+    const role = ECMIS.getRole(roleId);
+    sessionStorage.setItem('ecmis_role', roleId);
+    sessionStorage.setItem('ecmis_username', username);
+    sessionStorage.setItem('ecmis_authed', '1');
     Swal.fire({
       icon:'success',
       title:'เข้าสู่ระบบสำเร็จ',
-      text: roleId
-        ? `ยินดีต้อนรับ ${role.title} (${role.name})`
-        : 'ยินดีต้อนรับเข้าสู่ระบบ E-CMIS',
+      text:`ยินดีต้อนรับ ${role.title} (${role.name})`,
       confirmButtonColor:'#0b2e59',
       confirmButtonText:'ไปที่หน้าหลัก'
     }).then(() => { window.location.href = '01-work-inbox.html'; });
@@ -593,6 +602,8 @@ function simulateThaidScan(){
   });
   setTimeout(() => {
     clearInterval(thaidTimer);
+    sessionStorage.setItem('ecmis_authed', '1');
+    if(!sessionStorage.getItem('ecmis_role')) sessionStorage.setItem('ecmis_role', 'owner');
     Swal.fire({
       icon:'success',
       title:'เข้าสู่ระบบด้วย ThaID สำเร็จ',
