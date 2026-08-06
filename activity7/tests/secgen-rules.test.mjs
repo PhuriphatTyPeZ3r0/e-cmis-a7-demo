@@ -21,21 +21,21 @@ const ECMIS = window.ECMIS;
    G1 — ผังเขียนว่า "เป็นเรื่องยุ่งยากซับซ้อน *หรือ* ความเห็นในสาย
    บังคับบัญชาไม่ตรงกัน" เงื่อนไขหลังเป็นข้อเท็จจริงที่ระบบตรวจได้เอง
    --------------------------------------------------------------------- */
-const diverged = ECMIS.g1Triggers(ECMIS.getCase("1547/2568"));
-assert.equal(diverged.diverged, true, "1547/2568 มีความเห็นต่างกันในสายบังคับบัญชา");
+const diverged = ECMIS.g1Triggers(ECMIS.getCase("681547"));
+assert.equal(diverged.diverged, true, "681547 มีความเห็นต่างกันในสายบังคับบัญชา");
 assert.equal(diverged.complex, false, "เคสนี้ไม่ได้ถูกตั้ง complex ไว้ล่วงหน้า");
 assert.equal(diverged.required, true, "เงื่อนไขที่ 2 เพียงข้อเดียวต้องพาเข้าคณะอนุสนับสนุนฯ ได้");
 
-const split = ECMIS.chainDivergence(ECMIS.getCase("1547/2568")).split;
+const split = ECMIS.chainDivergence(ECMIS.getCase("681547")).split;
 assert.equal(split.from.roleId, "section_head");
 assert.equal(split.to.roleId, "director", "ต้องชี้ชั้นแรกที่ความเห็นเริ่มแตกได้ถูกต้อง");
 
-const aligned = ECMIS.g1Triggers(ECMIS.getCase("1615/2568"));
-assert.equal(aligned.diverged, false, "1615/2568 ความเห็นตรงกันทุกชั้น");
+const aligned = ECMIS.g1Triggers(ECMIS.getCase("681615"));
+assert.equal(aligned.diverged, false, "681615 ความเห็นตรงกันทุกชั้น");
 assert.equal(aligned.required, false, "ความเห็นตรงกัน + ไม่ซับซ้อน ต้องไม่เข้า G1");
 
 assert.equal(
-  ECMIS.g1Triggers({ ...ECMIS.getCase("1615/2568"), complex: true }).required, true,
+  ECMIS.g1Triggers({ ...ECMIS.getCase("681615"), complex: true }).required, true,
   "ดุลพินิจ 'ซับซ้อน' ของเลขาธิการฯ ต้องบังคับ G1 ได้ แม้ความเห็นตรงกัน");
 
 assert.equal(
@@ -50,20 +50,20 @@ assert.equal(
 assert.deepEqual({ ...ECMIS.DOC_TYPES["213"].sla }, { waitSign: 5, completeSign: 3 });
 assert.deepEqual({ ...ECMIS.DOC_TYPES["644"].sla }, { waitSign: 15, completeSign: 15 });
 
-assert.equal(ECMIS.effectiveSlaLimit(ECMIS.getCase("1547/2568")), 5,
+assert.equal(ECMIS.effectiveSlaLimit(ECMIS.getCase("681547")), 5,
   "รายงาน 213 ที่รอลงนาม ต้องใช้เพดาน 5 วัน");
-assert.equal(ECMIS.effectiveSlaLimit(ECMIS.getCase("1615/2568")), 15,
+assert.equal(ECMIS.effectiveSlaLimit(ECMIS.getCase("681615")), 15,
   "รายงาน 644 ที่รอลงนาม ต้องใช้เพดาน 15 วัน");
 
 /* เพดานของชั้นเลขาธิการฯ ต้องไม่ไปทับ SLA ของขั้นตอนอื่น */
-const screening = ECMIS.getCase("1588/2568");
+const screening = ECMIS.getCase("681588");
 assert.equal(ECMIS.effectiveSlaLimit(screening), screening.slaLimit,
   "สำนวนที่อยู่ชั้นอนุกลั่นกรองฯ ต้องยังใช้ SLA เดิมของขั้นนั้น");
 
 /* กันการถดถอย: 644 ที่ใช้ไป 11 วันต้องไม่ถูกตีว่าเกินกำหนดด้วยเพดาน 213 */
 assert.notEqual(
   ECMIS.slaClass(screening.slaDays, ECMIS.effectiveSlaLimit(screening)), "sla-late");
-const r644 = ECMIS.getCase("1615/2568");
+const r644 = ECMIS.getCase("681615");
 assert.notEqual(ECMIS.slaClass(r644.slaDays, ECMIS.effectiveSlaLimit(r644)), "sla-late",
   "644 ใช้ไป 11 จาก 15 วัน ยังไม่เกินกำหนด");
 
@@ -75,7 +75,7 @@ assert.equal(ECMIS.M28.boardSilenceDays, 15);
 assert.ok(ECMIS.m28Pending().length > 0, "ต้องมีสำนวนรอเข้ารอบรายงานให้เห็นในต้นแบบ");
 assert.ok(ECMIS.m28Pending().every((c) => c.m28.reported === false),
   "คิว ม.28 ต้องมีเฉพาะเรื่องที่ยังไม่ได้รายงานบอร์ด");
-assert.equal(ECMIS.m28Pending().some((c) => c.id === "1490/2568"), false,
+assert.equal(ECMIS.m28Pending().some((c) => c.id === "681490"), false,
   "เรื่องที่รายงานบอร์ดไปแล้วต้องหลุดออกจากคิว");
 
 /* ---------------------------------------------------------------------
@@ -117,9 +117,9 @@ assert.equal(ECMIS.isUpstreamRole("secgen"), false, "เลขาธิการ
 assert.equal(ECMIS.isUpstreamRole("deputy_sg"), true, "รองเลขาธิการฯ ยังอยู่ในกิจกรรมที่ 5");
 assert.equal(ECMIS.isUpstreamRole("deputy"), true, "ผู้ช่วยเลขาธิการฯ ยังอยู่ในกิจกรรมที่ 5");
 
-assert.equal(ECMIS.canAct(ECMIS.getCase("1610/2568"), "secgen"), false,
+assert.equal(ECMIS.canAct(ECMIS.getCase("681610"), "secgen"), false,
   "สำนวนที่ยังร่างอยู่ในกอง/เขต เลขาธิการฯ ต้องยังสั่งการไม่ได้");
-assert.equal(ECMIS.canAct(ECMIS.getCase("1547/2568"), "secgen"), true,
+assert.equal(ECMIS.canAct(ECMIS.getCase("681547"), "secgen"), true,
   "สำนวนที่เสนอถึงเลขาธิการฯ แล้ว ต้องสั่งการได้");
 
 console.log("secgen-rules: all assertions passed");

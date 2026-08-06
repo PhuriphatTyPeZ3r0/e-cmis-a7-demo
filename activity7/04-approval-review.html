@@ -196,9 +196,17 @@
     ECMIS.renderShell('04-approval-review.html');
 
     const params = new URLSearchParams(location.search);
-    const kase = ECMIS.getCase(params.get('case') || '1547/2568');
+    const kase = ECMIS.getCase(params.get('case') || '681547');
     const role = ECMIS.currentRole();
-    let signed = false;
+    /* สำนวนที่สถานะเลยพ้น PENDING_SECGEN ไปแล้ว (และไม่ใช่ RETURNED ที่ออกนอกขอบเขต)
+       แปลว่าเลขาธิการฯ ลงนามไปแล้วจริงตาม State Machine — หน้านี้จึงต้องแสดงเอกสาร
+       เป็น "ลงนามแล้ว" ตั้งแต่โหลดหน้า ไม่ใช่ว่างเปล่ารอเซ็นใหม่ทุกครั้ง            */
+    const alreadySigned = kase.status !== 'PENDING_SECGEN' && !ECMIS.isUpstreamCase(kase);
+    let signed = alreadySigned;
+    const SECGEN_SIG_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 70">' +
+      '<path d="M8 50 C 30 10, 55 10, 70 40 S 110 65, 130 30 S 165 5, 185 35 S 205 55, 212 40" ' +
+      'fill="none" stroke="#0a2647" stroke-width="4" stroke-linecap="round"/></svg>');
 
     const docType = ECMIS.DOC_TYPES[kase.docType];
     const phase = ECMIS.SIGN_PHASE[kase.signPhase];
@@ -267,7 +275,7 @@
 
     /* ---------- สรุปสำนวน ---------- */
     document.getElementById('summary').innerHTML = [
-      ['เลขเรื่อง', kase.id], ['เลข PCMS', kase.pcms],
+      ['เลขเรื่อง', kase.id],
       ['ฐานการรับเรื่อง', kase.legalBase], ['เจ้าของสำนวน', kase.owner],
       ['หน่วยงาน', kase.ownerOrg], ['วันที่รับเรื่อง', ECMIS.thaiDate(kase.receivedDate)],
       ['ต้องเริ่มไต่สวนภายใน (ม.23)', ECMIS.thaiDate(kase.deadline60)],
@@ -417,7 +425,7 @@
         { k: 'completeSign', lbl: 'ระยะที่ 2 — ลงนามเสร็จ / ส่งต่อ' }
       ];
       slaNoteEl.innerHTML = `
-    <strong>SLA ชั้นเลขาธิการฯ — ${docType.label}</strong>
+    <strong>กำหนดเวลาชั้นเลขาธิการฯ — ${docType.label}</strong>
     <span class="src-tag">ผัง P2 · โหนด T5</span>
     <table class="table table-sm mb-2 mt-2" style="font-size:.8rem">
       <tbody>${rows.map(r => {
@@ -470,9 +478,22 @@
   <div class="doc-h">ความเห็นตามลำดับชั้น</div>
   <div class="doc-indent" id="docOpinions"></div>
   <div class="doc-sign" id="docSign">
-    ลงชื่อ <span class="doc-dots"></span><br>
+    ${alreadySigned ? `<img class="doc-sig-img" src="${SECGEN_SIG_IMG}" alt="ลายมือชื่อ">
+    <span style="color:#166434"><i class="fa-solid fa-signature"></i> ลงนามดิจิทัลแล้ว</span>`
+      : 'ลงชื่อ <span class="doc-dots"></span>'}<br>
     (นายอภิชาติ สุจริตกุล)<br>เลขาธิการคณะกรรมการ ป.ป.ท.
   </div>`;
+
+    if (alreadySigned) {
+      document.getElementById('sigBox').className = 'sig-box signed';
+      document.getElementById('sigBox').innerHTML = `
+      <i class="fa-solid fa-circle-check fa-2x mb-2" style="color:#166434"></i>
+      <div class="sig-name">นายอภิชาติ สุจริตกุล</div>
+      <div class="sig-meta">เลขาธิการคณะกรรมการ ป.ป.ท.</div>
+      <div class="sig-meta">ลงนามแล้ว — สำนวนถูกส่งต่อในขั้นตอนถัดไป</div>
+      <div class="sig-cert mt-2"><i class="fa-solid fa-shield-halved me-1"></i>
+        ลายมือชื่ออิเล็กทรอนิกส์ผ่านการตรวจสอบ · SHA-256 · เอกสารถูกล็อกเป็น PDF</div>`;
+    }
 
     function renderDocOpinions() {
       const mine = document.getElementById('myOpinion').value.trim();
@@ -480,7 +501,7 @@
       const prior = (kase.chainOpinions || []).map(o => {
         const r = ECMIS.getRole(o.roleId);
         return `<div>${r.title}: ${ECMIS.OPINION_TYPES[o.type].label} — ${o.note}
-            <span style="font-size:11px;color:#666">(${ECMIS.thaiDate(o.date)})</span></div>`;
+            <span style="font-size:11px;color:#666">(${ECMIS.toThaiDigits(ECMIS.thaiDate(o.date))})</span></div>`;
       }).join('');
       document.getElementById('docOpinions').innerHTML =
         prior + `<div>${role.title}: ${M(mine, '……………………………………')}</div>`;
@@ -591,7 +612,7 @@
           • แก้ไข<strong>สาระสำคัญ</strong> (ข้อกล่าวหา / ผลการแสวงหาข้อเท็จจริง / ความเห็น) →
             ระบบ<strong>บังคับเสนอใหม่ตามลำดับชั้นภายในกอง/เขตทั้งสาย</strong> เพราะความเห็นของผู้พิจารณาเดิม
             ตั้งอยู่บนเนื้อหาที่เปลี่ยนไปแล้ว<br>
-          • SLA ถูก <strong>Pause</strong> ระหว่างแก้ไข และ Resume เมื่อส่งกลับ
+          • กำหนดเวลาถูก <strong>Pause</strong> ระหว่างแก้ไข และ Resume เมื่อส่งกลับ
         </div>
       </div>`,
           showCancelButton: true, confirmButtonText: 'ยืนยันส่งคืน', cancelButtonText: 'ยกเลิก',
@@ -607,7 +628,7 @@
         }).then(res => {
           if (res.isConfirmed) {
             const dest = res.value.s === 'TO_OWNER' ? 'เจ้าของสำนวน' : 'ผอ.กอง / ผอ.สนง. ป.ป.ท. เขต';
-            ECMIS.toastOk(`ตีกลับเรียบร้อย — ส่งคืน${dest} และ Pause SLA แล้ว`);
+            ECMIS.toastOk(`ตีกลับเรียบร้อย — ส่งคืน${dest} และ Pause กำหนดเวลาแล้ว`);
             setTimeout(() => location.href = '01-work-inbox.html', 1600);
           }
         });
@@ -682,6 +703,11 @@
             <div class="sig-meta">ลงนามเมื่อ ${now.toLocaleString('th-TH')}</div>
             <div class="sig-cert mt-2"><i class="fa-solid fa-shield-halved me-1"></i>
               ลายมือชื่ออิเล็กทรอนิกส์ผ่านการตรวจสอบ · SHA-256 · เอกสารถูกล็อกเป็น PDF</div>`;
+              document.getElementById('docSign').innerHTML = `
+            ${res.value.sig ? `<img class="doc-sig-img" src="${res.value.sig}" alt="ลายมือชื่อ">` : ''}
+            ลงชื่อ <span class="doc-dots"></span><br>
+            (นายอภิชาติ สุจริตกุล)<br>เลขาธิการคณะกรรมการ ป.ป.ท.<br>
+            <span style="font-size:11px;color:#666">${now.toLocaleString('th-TH')}</span>`;
               ECMIS.toastOk('ลงนามคำสั่งเรียบร้อย');
               setTimeout(() => Swal.fire({
                 icon: 'success', title: `${order.label}เรียบร้อย`,
@@ -740,6 +766,7 @@
           <div class="sig-cert mt-2"><i class="fa-solid fa-shield-halved me-1"></i>
             ลายมือชื่ออิเล็กทรอนิกส์ผ่านการตรวจสอบ · SHA-256 · เอกสารถูกล็อกเป็น PDF</div>`;
           document.getElementById('docSign').innerHTML = `
+          ${res.value.sig ? `<img class="doc-sig-img" src="${res.value.sig}" alt="ลายมือชื่อ">` : ''}
           <span style="color:#166434"><i class="fa-solid fa-signature"></i> ลงนามดิจิทัลแล้ว</span><br>
           (นายอภิชาติ สุจริตกุล)<br>เลขาธิการคณะกรรมการ ป.ป.ท.<br>
           <span style="font-size:11px;color:#666">${now.toLocaleString('th-TH')}</span>`;
@@ -771,7 +798,7 @@
                   ถือว่าบอร์ดมีมติตามคำสั่งของเลขาธิการฯ
                 </div>
                 <div style="font-size:.8rem;color:#7C8CA3;margin-top:.6rem">
-                  SLA เปลี่ยนเป็นระยะที่ 2 — ลงนามเสร็จ/ส่งต่อภายใน
+                  กำหนดเวลาเปลี่ยนเป็นระยะที่ 2 — ลงนามเสร็จ/ส่งต่อภายใน
                   <strong>${docType.sla.completeSign} วัน</strong>
                 </div></div>`,
             confirmButtonColor: '#0F2A62', width: 560

@@ -32,8 +32,8 @@
       <div class="card-body">
         <div class="row g-2">
           <div class="col-md-4">
-            <label class="form-label">คำค้น (เรื่องกล่าวหา / เลขเรื่อง / เลข PCMS)</label>
-            <input class="form-control" id="q" placeholder="เช่น 1547/2568 หรือ จัดซื้อจัดจ้าง">
+            <label class="form-label">คำค้น (เรื่องกล่าวหา / เลขเรื่อง)</label>
+            <input class="form-control" id="q" placeholder="เช่น 681547 หรือ จัดซื้อจัดจ้าง">
           </div>
           <div class="col-md-3">
             <label class="form-label">ชื่อผู้ถูกกล่าวหา</label>
@@ -59,7 +59,7 @@
         </div>
         <div class="mt-2 d-flex gap-2 flex-wrap">
           <button class="btn btn-sm btn-outline-secondary filter-chip" data-f="all">ทั้งหมด</button>
-          <button class="btn btn-sm btn-outline-danger filter-chip" data-f="late">เกินกำหนด SLA</button>
+          <button class="btn btn-sm btn-outline-danger filter-chip" data-f="late">เกินกำหนดเวลา</button>
           <button class="btn btn-sm btn-outline-warning filter-chip" data-f="urgent">เรื่องเร่งด่วน</button>
           <button class="btn btn-sm btn-outline-primary filter-chip" data-f="mine">คิวของฉัน</button>
           <button class="btn btn-sm btn-outline-dark filter-chip" data-f="dup">เตือนสำนวนซ้ำ</button>
@@ -86,7 +86,7 @@
                 <th>ฐานรับเรื่อง</th>
                 <th>สถานะ</th>
                 <th>ค้างที่</th>
-                <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">SLA <i
+                <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i
                     class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                 <th>อายุความ (ม.23)</th>
                 <th class="text-end"></th>
@@ -130,7 +130,7 @@
       const qs = document.getElementById('qStatus').value;
       const qb = document.getElementById('qBase').value;
 
-      if (q && !(c.id.includes(q) || c.pcms.includes(q) || c.subject.includes(q))) return false;
+      if (q && !(c.id.includes(q) || c.subject.includes(q))) return false;
       if (qa && !c.accused.some(a => a.name.includes(qa))) return false;
       if (qs && c.status !== qs) return false;
       if (qb && c.legalBase !== qb) return false;
@@ -208,7 +208,6 @@
         <span class="case-no">${c.id}</span>
         ${c.urgent ? '<span class="st st-urgent ms-1">ด่วน</span>' : ''}
         ${c.dupWarning ? '<span class="st st-returned ms-1" title="ระบบตรวจพบสำนวนที่อาจซ้ำซ้อน"><i class="fa-solid fa-clone"></i> ซ้ำ?</span>' : ''}
-        <br><small class="text-muted">${c.pcms}</small>
       </td>
       <td style="max-width:280px" class="editable-subject clickable-row" data-id="${c.id}" title="ดับเบิ้ลคลิกเพื่อแก้ไขด่วน">
         <div class="text-truncate fw-semibold text-primary" id="subject-text-${c.id}">${c.subject}</div>
@@ -357,7 +356,7 @@
 
       // Generate CSV payload
       let csv = '\uFEFF'; // UTF-8 BOM
-      csv += 'เลขเรื่อง,เลข PCMS,เรื่องกล่าวหา,เจ้าของสำนวน,ผู้ถูกกล่าวหา,ฐานรับเรื่อง,สถานะ,SLA\n';
+      csv += 'เลขเรื่อง,เรื่องกล่าวหา,เจ้าของสำนวน,ผู้ถูกกล่าวหา,ฐานรับเรื่อง,สถานะ,กำหนดเวลา\n';
 
       filtered.forEach(c => {
         const accusedStr = c.accused.map(a => `${a.name} (${a.pos})`).join('; ');
@@ -365,7 +364,6 @@
 
         // Clean string fields of double quotes and commas
         const id = `"${c.id.replace(/"/g, '""')}"`;
-        const pcms = `"${c.pcms.replace(/"/g, '""')}"`;
         const subject = `"${c.subject.replace(/"/g, '""')}"`;
         const owner = `"${c.owner.replace(/"/g, '""')}"`;
         const accused = `"${accusedStr.replace(/"/g, '""')}"`;
@@ -373,7 +371,7 @@
         const status = `"${statusText.replace(/"/g, '""')}"`;
         const sla = `"${c.slaDays} วัน"`;
 
-        csv += `${id},${pcms},${subject},${owner},${accused},${base},${status},${sla}\n`;
+        csv += `${id},${subject},${owner},${accused},${base},${status},${sla}\n`;
       });
 
       // Download Blob

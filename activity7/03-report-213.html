@@ -51,11 +51,8 @@
           </div>
           <div class="card-body">
             <div class="row g-2">
-              <div class="col-6"><label class="form-label">เลขเรื่อง</label>
+              <div class="col-12"><label class="form-label">เลขเรื่อง</label>
                 <input class="form-control autofilled" id="f_caseId" readonly>
-              </div>
-              <div class="col-6"><label class="form-label">เลข PCMS</label>
-                <input class="form-control autofilled" id="f_pcms" readonly>
               </div>
               <div class="col-12"><label class="form-label">เรื่องกล่าวหา</label>
                 <textarea class="form-control autofilled" id="f_subject" rows="2" readonly></textarea>
@@ -202,7 +199,7 @@
     ECMIS.renderShell('03-report-213.html');
 
     const params = new URLSearchParams(location.search);
-    const kase = ECMIS.getCase(params.get('case') || '1610/2568');
+    const kase = ECMIS.getCase(params.get('case') || '681610');
     const role = ECMIS.currentRole();
 
     /* ---------- header ---------- */
@@ -220,7 +217,7 @@
       ผู้ตีกลับ: <strong>${kase.returnedByName}</strong> ·
       เหตุผล (Reason Code): <strong>${r ? r.label : kase.returnReason}</strong><br>
       รายละเอียด: ${kase.returnNote}<br>
-      <small>เมื่อแก้ไขเสร็จ ระบบจะส่งกลับ <strong>ตรงไปยังผู้ที่กดตีกลับ</strong> (Fast Re-route) โดยไม่ต้องไล่ทุกชั้นใหม่ และ SLA ถูก Pause ระหว่างแก้ไข</small>
+      <small>เมื่อแก้ไขเสร็จ ระบบจะส่งกลับ <strong>ตรงไปยังผู้ที่กดตีกลับ</strong> (Fast Re-route) โดยไม่ต้องไล่ทุกชั้นใหม่ และกำหนดเวลาถูก Pause ระหว่างแก้ไข</small>
     </div>`;
     }
     if (kase.dupWarning) {
@@ -229,7 +226,7 @@
       <i class="fa-solid fa-clone mt-1"></i>
       <div class="flex-grow-1">
         <strong>De-duplication Check — ตรวจพบสำนวนที่อาจซ้ำซ้อน</strong><br>
-        จับคู่จาก [เลขบัตรประชาชนผู้ถูกกล่าวหา + พฤติการณ์] พบเรื่อง <strong>1499/2568</strong> ที่มีผู้ถูกกล่าวหารายเดียวกัน
+        จับคู่จาก [เลขบัตรประชาชนผู้ถูกกล่าวหา + พฤติการณ์] พบเรื่อง <strong>681499</strong> ที่มีผู้ถูกกล่าวหารายเดียวกัน
         <div class="mt-2">
           <button class="btn btn-sm btn-outline-dark" id="btnMerge"><i class="fa-solid fa-object-group me-1"></i>เสนอรวมสำนวน</button>
           <button class="btn btn-sm btn-outline-secondary" id="btnSeparate"><i class="fa-solid fa-object-ungroup me-1"></i>ยืนยันดำเนินการแยก</button>
@@ -241,7 +238,6 @@
     /* ---------- autofill ---------- */
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
     set('f_caseId', kase.id);
-    set('f_pcms', kase.pcms);
     set('f_subject', kase.subject);
     set('f_complainant', kase.complainant);
     set('f_base', kase.legalBase === 'ม.62' ? 'ม.62 พรป. ป.ป.ช. (ป.ป.ช. มอบหมาย)' : 'ม.18/4 พรบ.มาตรการฯ (ประพฤติมิชอบ)');
@@ -402,7 +398,7 @@
       ยังไม่มีการแก้ไขสาระสำคัญ ระบบจะส่งกลับตรงไปยัง <strong>${returner}</strong>
       โดยไม่ต้องไล่ทุกชั้นใหม่ และคงความเห็นเดิมของชั้นก่อนหน้าไว้
       <div class="mt-2" style="font-size:.79rem;color:#7C8CA3">
-        <i class="fa-regular fa-clock me-1"></i>SLA อยู่ในสถานะ <strong>Pause</strong> ระหว่างแก้ไข
+        <i class="fa-regular fa-clock me-1"></i>กำหนดเวลาอยู่ในสถานะ <strong>Pause</strong> ระหว่างแก้ไข
         — จะ Resume เมื่อกดเสนอกลับ
       </div>
     </div>`;
@@ -509,7 +505,7 @@
       ];
       if (kase.status === 'RETURNED') {
         items.push({ cls: 'rej', t: 'ตีกลับให้แก้ไข (Return)', m: `${kase.returnedByName}` });
-        items.push({ cls: 'now', t: 'อยู่ระหว่างแก้ไขโดยเจ้าของสำนวน', m: 'SLA ถูก Pause ระหว่างแก้ไข' });
+        items.push({ cls: 'now', t: 'อยู่ระหว่างแก้ไขโดยเจ้าของสำนวน', m: 'กำหนดเวลาถูก Pause ระหว่างแก้ไข' });
       } else if (kase.status === 'DRAFT') {
         items.push({ cls: 'now', t: 'อยู่ระหว่างจัดทำรายงาน 213', m: 'ยังไม่เสนอเข้าสายบังคับบัญชา' });
       } else {
@@ -552,7 +548,7 @@
           title: 'ดึงเรื่องกลับ (Recall)', danger: true, icon: 'warning',
           html: `<p>ดึงสำนวน <strong>${kase.id}</strong> กลับมาแก้ไข</p>
             <div class="law-note">ทำได้เฉพาะกรณีผู้บริหารขั้นถัดไป <strong>ยังไม่ลงนามอนุมัติ</strong> (TOR 7.2.1.2)<br>
-            SLA จะถูก Pause และสถานะกลับเป็น "ร่างรายงาน 213"</div>`,
+            กำหนดเวลาจะถูก Pause และสถานะกลับเป็น "ร่างรายงาน 213"</div>`,
           confirmText: 'ยืนยันดึงเรื่องกลับ'
         }).then(r => { if (r.isConfirmed) ECMIS.toastOk('ดึงเรื่องกลับเรียบร้อย — สำนวนกลับสู่สถานะร่าง'); });
         return;
@@ -584,7 +580,7 @@
           title: isReturned ? 'เสนอกลับหลังแก้ไข' : 'เสนอรายงานตามลำดับชั้น',
           html: `<p>เสนอสำนวน <strong>${kase.id}</strong> ไปยัง <strong>${dest}</strong></p>
             ${routeNote}
-            <div class="law-note mb-2">ระบบจะ Resume การจับ SLA ของขั้นถัดไปทันที
+            <div class="law-note mb-2">ระบบจะ Resume การจับกำหนดเวลาของขั้นถัดไปทันที
               และแจ้งเตือนล่วงหน้า 3 วัน / 1 วัน</div>
             <label class="form-label mt-1">หมายเหตุถึงผู้พิจารณา (ไม่บังคับ)</label>
             <textarea id="swal-note" class="form-control" rows="2"></textarea>`,
@@ -610,7 +606,7 @@
     document.getElementById('btnMerge')?.addEventListener('click', () =>
       ECMIS.confirmAction({
         title: 'เสนอรวมสำนวน',
-        html: 'การรวม/แยกสำนวนหลังออกเลข PCMS แล้ว <strong>ต้องผ่านมติคณะกรรมการ ป.ป.ท.</strong> ระบบจะสร้างเรื่องเสนอเข้าโมดูลมติเรื่องทั่วไป (7.3)'
+        html: 'การรวม/แยกสำนวนหลังลงเลขเรื่องแล้ว <strong>ต้องผ่านมติคณะกรรมการ ป.ป.ท.</strong> ระบบจะสร้างเรื่องเสนอเข้าโมดูลมติเรื่องทั่วไป (7.3)'
       })
         .then(r => { if (r.isConfirmed) ECMIS.toastOk('สร้างเรื่องขอรวมสำนวนเข้าโมดูล 7.3 แล้ว'); }));
     document.getElementById('btnSeparate')?.addEventListener('click', () =>

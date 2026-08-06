@@ -332,7 +332,8 @@ body.high-contrast .auth-tab.active{ background:#fff !important; color:#000 !imp
           <label class="field-label">ชื่อผู้ใช้งานหรืออีเมล</label>
           <div class="input-icon-group">
             <i class="fa-solid fa-user"></i>
-            <input type="text" id="loginUsername" placeholder="กรอกชื่อผู้ใช้งานหรืออีเมล" required>
+            <input type="text" id="loginUsername" placeholder="เช่น Apichat.S" list="loginUsernameHints" required>
+            <datalist id="loginUsernameHints"></datalist>
           </div>
         </div>
         <div class="mb-2">
@@ -450,8 +451,13 @@ body.high-contrast .auth-tab.active{ background:#fff !important; color:#000 !imp
 <!-- ============ Scripts ============ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="assets/ecmis-app.js"></script>
 
 <script>
+// --- ตัวช่วยกรอก username: แสดงรายชื่อผู้ใช้ตัวอย่างของแต่ละบทบาท (จำลอง — ยังไม่มี auth จริง) ---
+document.getElementById('loginUsernameHints').innerHTML = ECMIS.ROLES
+  .map(r => `<option value="${r.login}">${r.title} — ${r.name}</option>`).join('');
+
 // --- accessibility bar helpers (same behaviour as the rest of the site) ---
 let fontStep = 0;
 function changeFontSize(dir){
@@ -495,13 +501,18 @@ function handleLogin(event){
     didOpen:() => Swal.showLoading()
   });
   setTimeout(() => {
+    const roleId = ECMIS.roleIdForLogin(username);
+    if(roleId) sessionStorage.setItem('ecmis_role', roleId);
+    const role = ECMIS.getRole(roleId || sessionStorage.getItem('ecmis_role'));
     Swal.fire({
       icon:'success',
       title:'เข้าสู่ระบบสำเร็จ',
-      text:'ยินดีต้อนรับเข้าสู่ระบบ E-CMIS',
+      text: roleId
+        ? `ยินดีต้อนรับ ${role.title} (${role.name})`
+        : 'ยินดีต้อนรับเข้าสู่ระบบ E-CMIS',
       confirmButtonColor:'#0b2e59',
       confirmButtonText:'ไปที่หน้าหลัก'
-    }).then(() => { window.location.href = 'index.html'; });
+    }).then(() => { window.location.href = '01-work-inbox.html'; });
   }, 1100);
 }
 
@@ -588,7 +599,7 @@ function simulateThaidScan(){
       text:'ยืนยันตัวตนเรียบร้อยแล้ว กำลังนำท่านเข้าสู่ระบบ',
       confirmButtonColor:'#0b2e59',
       confirmButtonText:'ไปที่หน้าหลัก'
-    }).then(() => { window.location.href = 'index.html'; });
+    }).then(() => { window.location.href = '01-work-inbox.html'; });
   }, 1300);
 }
 

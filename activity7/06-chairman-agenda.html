@@ -90,7 +90,7 @@
                             <strong>ม.18 ว.3</strong> ประธานฯ จะมอบหมายให้เลขาธิการลงนามในเอกสารแทนก็ได้
                         </div>
                         <div class="warn-note mt-2" style="font-size:.78rem">
-                            <strong>รอ ป.ป.ท. ยืนยัน:</strong> ยังไม่มี SLA ของขั้นตอนนี้เพราะถือเป็นดุลพินิจของประธานฯ
+                            <strong>รอ ป.ป.ท. ยืนยัน:</strong> ยังไม่มีกำหนดเวลาของขั้นตอนนี้เพราะถือเป็นดุลพินิจของประธานฯ
                             ต้นแบบตั้งค่านับเวลาไว้แต่ยังไม่บังคับแจ้งเตือน
                         </div>
                     </div>
@@ -170,7 +170,7 @@
         ECMIS.renderShell('06-chairman-agenda.html');
 
         const params = new URLSearchParams(location.search);
-        const kase = ECMIS.getCase(params.get('case') || '1602/2568');
+        const kase = ECMIS.getCase(params.get('case') || '681602');
         const role = ECMIS.currentRole();
         let docTab = 'agenda';
 
@@ -377,6 +377,10 @@
                     'นายวิชัย ยุติธรรม — ประธานกรรมการ ป.ป.ท.')
                     .then(res => {
                         if (!res.isConfirmed) return;
+                        if (res.value.sig) {
+                            const sigEl = document.querySelector('.doc-sign');
+                            if (sigEl) sigEl.insertAdjacentHTML('afterbegin', `<img class="doc-sig-img" src="${res.value.sig}" alt="ลายมือชื่อ">`);
+                        }
                         ECMIS.toastOk('ลงนามสั่งการเรียบร้อย');
                         setTimeout(() => Swal.fire({
                             icon: 'success', title: 'ลงนามสั่งการเรียบร้อย',

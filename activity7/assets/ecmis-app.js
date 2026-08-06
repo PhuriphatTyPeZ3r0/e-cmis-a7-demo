@@ -16,101 +16,101 @@
    perms = ชุดสิทธิ์ที่ระบบบังคับใช้จริง (ดูตาราง PERM_DEFS ด้านล่าง)          */
 const ROLES = [
   /* ── 1. คณะกรรมการ ป.ป.ท. ─────────────────────────────────────────── */
-  { id:'chairman', row:1, group:'คณะกรรมการ ป.ป.ท.', title:'ประธานกรรมการ ป.ป.ท.',
+  { id:'chairman', login:'Wichai.Y', row:1, group:'คณะกรรมการ ป.ป.ท.', title:'ประธานกรรมการ ป.ป.ท.',
     name:'นายวิชัย ยุติธรรม', org:'คณะกรรมการ ป.ป.ท.', lane:'L5', flow:'G4 / S7', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','order.agenda','sign.agenda','sign.order24p3','sign.ruling','vote','bypass.approve','return'] },
-  { id:'board', row:2, group:'คณะกรรมการ ป.ป.ท.', title:'กรรมการ ป.ป.ท.',
+  { id:'board', login:'Somboon.T', row:2, group:'คณะกรรมการ ป.ป.ท.', title:'กรรมการ ป.ป.ท.',
     name:'นายสมบูรณ์ ธรรมรัฐ', org:'คณะกรรมการ ป.ป.ท.', lane:'L8', flow:'S9 / G5', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','vote','read.agenda.advance'] },
-  { id:'board_ex', row:3, group:'คณะกรรมการ ป.ป.ท.', title:'กรรมการ ป.ป.ท. โดยตำแหน่ง',
+  { id:'board_ex', login:'BoardEx.Demo', row:3, group:'คณะกรรมการ ป.ป.ท.', title:'กรรมการ ป.ป.ท. โดยตำแหน่ง',
     name:'เลขาธิการคณะกรรมการ ป.ป.ท.', org:'คณะกรรมการ ป.ป.ท.', lane:'L8', flow:'S9 / G5', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','vote','read.agenda.advance'] },
 
   /* ── 2. คณะอนุสนับสนุนเลขาธิการฯ (2 คณะ) ──────────────────────────── */
-  { id:'sup_chair', row:4, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'ประธานคณะอนุสนับสนุนฯ',
+  { id:'sup_chair', login:'Kitti.P', row:4, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'ประธานคณะอนุสนับสนุนฯ',
     name:'นายกิตติ ปรีชาญาณ', org:'ส่วนกลาง (2 คณะ)', lane:'L2', flow:'S2 / G2', act:'7.1, 7.2',
     perms:['view.assigned','download','support.opinion','support.certify'] },
-  { id:'support_sub', row:5, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'อนุกรรมการสนับสนุนเลขาธิการฯ',
+  { id:'support_sub', login:'Jiraporn.N', row:5, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'อนุกรรมการสนับสนุนเลขาธิการฯ',
     name:'นางสาวจิราพร นิติกิจ', org:'ส่วนกลาง (2 คณะ)', lane:'L2', flow:'S2 / G2', act:'7.1, 7.2',
     perms:['view.assigned','download','support.opinion'] },
-  { id:'sup_sec', row:6, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'อนุกรรมการและเลขานุการ (อนุสนับสนุนฯ)',
+  { id:'sup_sec', login:'Pongsakorn.T', row:6, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'อนุกรรมการและเลขานุการ (อนุสนับสนุนฯ)',
     name:'นายพงศกร ธรรมสาร', org:'ส่วนกลาง (2 คณะ)', lane:'L2', flow:'S2', act:'7.1, 7.2',
     perms:['view.assigned','download','support.opinion','support.minutes','doc.generate'] },
-  { id:'sup_asst', row:7, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'อนุกรรมการและผู้ช่วยเลขานุการ (อนุสนับสนุนฯ)',
+  { id:'sup_asst', login:'Benjamas.J', row:7, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'อนุกรรมการและผู้ช่วยเลขานุการ (อนุสนับสนุนฯ)',
     name:'นางสาวเบญจมาศ ใจดี', org:'ส่วนกลาง (2 คณะ)', lane:'L2', flow:'S2', act:'7.1, 7.2',
     perms:['view.assigned','download','request.moreinfo'] },
 
   /* ── 3. คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง (คณะ 1-8) ───────────── */
-  { id:'scr_chair', row:8, group:'คณะอนุกลั่นกรองฯ (คณะ 1-8)', title:'ประธานคณะอนุกลั่นกรองฯ',
+  { id:'scr_chair', login:'Sumet.N', row:8, group:'คณะอนุกลั่นกรองฯ (คณะ 1-8)', title:'ประธานคณะอนุกลั่นกรองฯ',
     name:'นายสุเมธ นิติธรรม', org:'ส่วนกลาง (คณะ 1-8)', lane:'L6', flow:'S6', act:'7.1, 7.2',
     perms:['view.assigned','download','screen.vote'] },
-  { id:'subcommittee', row:9, group:'คณะอนุกลั่นกรองฯ (คณะ 1-8)', title:'อนุกรรมการกลั่นกรองฯ',
+  { id:'subcommittee', login:'Pranee.Y', row:9, group:'คณะอนุกลั่นกรองฯ (คณะ 1-8)', title:'อนุกรรมการกลั่นกรองฯ',
     name:'นางปราณี ยุติธรรม', org:'ส่วนกลาง (คณะ 1-8)', lane:'L6', flow:'S6', act:'7.1, 7.2',
     perms:['view.assigned','download','screen.vote'] },
-  { id:'scr_sec', row:10, group:'คณะอนุกลั่นกรองฯ (คณะ 1-8)', title:'อนุกรรมการและเลขานุการ (อนุกลั่นกรองฯ)',
+  { id:'scr_sec', login:'Worawut.N', row:10, group:'คณะอนุกลั่นกรองฯ (คณะ 1-8)', title:'อนุกรรมการและเลขานุการ (อนุกลั่นกรองฯ)',
     name:'นายวรวุฒิ นิติกร', org:'นิติกร กบค.', lane:'L6', flow:'S6', act:'7.1, 7.2',
     perms:['view.assigned','download','screen.minutes','doc.generate','present.board'] },
-  { id:'scr_asst', row:11, group:'คณะอนุกลั่นกรองฯ (คณะ 1-8)', title:'อนุกรรมการและผู้ช่วยเลขานุการ (อนุกลั่นกรองฯ)',
+  { id:'scr_asst', login:'Araya.S', row:11, group:'คณะอนุกลั่นกรองฯ (คณะ 1-8)', title:'อนุกรรมการและผู้ช่วยเลขานุการ (อนุกลั่นกรองฯ)',
     name:'นางสาวอารยา สุจริต', org:'นิติกร กบค.', lane:'L6', flow:'S6', act:'7.1, 7.2',
     perms:['view.assigned','download','doc.generate'] },
 
   /* ── 4. คณะผู้บริหาร ───────────────────────────────────────────────── */
-  { id:'secgen', row:12, group:'คณะผู้บริหาร', title:'เลขาธิการคณะกรรมการ ป.ป.ท.',
+  { id:'secgen', login:'Apichat.S', row:12, group:'คณะผู้บริหาร', title:'เลขาธิการคณะกรรมการ ป.ป.ท.',
     name:'นายอภิชาติ สุจริตกุล', org:'สำนักงาน ป.ป.ท.', lane:'L1', flow:'S1 / G1 — จุดเริ่ม กจ.7', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','sign.report213','decide.complex','sign.order24p1','approve.general','return'] },
-  { id:'deputy_sg', row:13, group:'คณะผู้บริหาร', title:'รองเลขาธิการคณะกรรมการ ป.ป.ท.',
+  { id:'deputy_sg', login:'Surapong.W', row:13, group:'คณะผู้บริหาร', title:'รองเลขาธิการคณะกรรมการ ป.ป.ท.',
     name:'นายสุรพงษ์ วัฒนา', org:'สำนักงาน ป.ป.ท.', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2, 7.3', scope:'UPSTREAM',
     perms:['view.all','download','sign.report213','return'] },
-  { id:'deputy', row:14, group:'คณะผู้บริหาร', title:'ผู้ช่วยเลขาธิการคณะกรรมการ ป.ป.ท.',
+  { id:'deputy', login:'Pimjai.R', row:14, group:'คณะผู้บริหาร', title:'ผู้ช่วยเลขาธิการคณะกรรมการ ป.ป.ท.',
     name:'นางสาวพิมพ์ใจ รัตนกุล', org:'สำนักงาน ป.ป.ท.', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2, 7.3', scope:'UPSTREAM',
     perms:['view.all','download'] },
 
   /* ── 5. กองบริหารคดี (กบค.) ────────────────────────────────────────── */
-  { id:'affairs', row:15, group:'กองบริหารคดี (กบค.)', title:'เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ',
+  { id:'affairs', login:'Siriporn.K', row:15, group:'กองบริหารคดี (กบค.)', title:'เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ',
     name:'นางสาวศิริพร กิจการ', org:'กองบริหารคดี', lane:'L7', flow:'S7 / S11', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','EDIT.MASTER','create.agenda','create.invite','doc.generate','order24.draft','secrecy.set'] },
-  { id:'board_sec', row:16, group:'กองบริหารคดี (กบค.)', title:'เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ',
+  { id:'board_sec', login:'Thanakrit.B', row:16, group:'กองบริหารคดี (กบค.)', title:'เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ',
     name:'นายธนกฤต บุญมี', org:'กองบริหารคดี', lane:'L7', flow:'S8 / S10', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','record.minutes','lock.pdf','compile.minutes','doc.generate','dispatch.resolution'] },
-  { id:'dir_case', row:20, group:'กองบริหารคดี (กบค.)', title:'ผู้อำนวยการกองบริหารคดี (ผอ.กบค.)',
+  { id:'dir_case', login:'Napat.S', row:20, group:'กองบริหารคดี (กบค.)', title:'ผู้อำนวยการกองบริหารคดี (ผอ.กบค.)',
     name:'นางสาวณพัสตร์ ศรีสมเกียรติ', org:'กองบริหารคดี', lane:'L3', flow:'S3 / S5', act:'7.1, 7.2',
     perms:['view.all','download','EDIT.MASTER','certify.urgent','assign.subcommittee','sign.general'] },
-  { id:'track', row:21, group:'กองบริหารคดี (กบค.)', title:'กลุ่มงานบริหารติดตามคดี (กบต.)',
+  { id:'track', login:'Chaiwat.T', row:21, group:'กองบริหารคดี (กบค.)', title:'กลุ่มงานบริหารติดตามคดี (กบต.)',
     name:'นายชัยวัฒน์ ติดตาม', org:'กองบริหารคดี', lane:'—', flow:'เชื่อม กจ.8', act:'7.2',
     perms:['view.all','download','track.discipline'] },
-  { id:'admin_gen', row:22, group:'กองบริหารคดี (กบค.)', title:'กลุ่มงานบริหารคดีและบริหารทั่วไป',
+  { id:'admin_gen', login:'Wilai.T', row:22, group:'กองบริหารคดี (กบค.)', title:'กลุ่มงานบริหารคดีและบริหารทั่วไป',
     name:'นางวิไล ธุรการ', org:'กองบริหารคดี', lane:'L3', flow:'S5', act:'7.1',
     perms:['view.all','download','intake.route'] },
 
   /* ── 6. กอง / สำนักงาน ป.ป.ท. เขต (ต้นสังกัดสำนวน) ─────────────────── */
-  { id:'owner', row:17, group:'กอง / สนง. ป.ป.ท. เขต', title:'ผู้รับผิดชอบสำนวน / พนักงาน ป.ป.ท. (นักสืบ)',
+  { id:'owner', login:'Somchai.J', row:17, group:'กอง / สนง. ป.ป.ท. เขต', title:'ผู้รับผิดชอบสำนวน / พนักงาน ป.ป.ท. (นักสืบ)',
     name:'นายสมชาย ใจซื่อ', org:'สนง. ป.ป.ท. เขต 1', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2, 7.3', scope:'UPSTREAM',
     perms:['view.own','download.own','ack.resolution','urgent.request','present.board.ruling','dispatch.nacc'] },
-  { id:'section_head', row:18, group:'กอง / สนง. ป.ป.ท. เขต', title:'หัวหน้ากลุ่มงาน (นสส. / ชพ.)',
+  { id:'section_head', login:'Kanjana.W', row:18, group:'กอง / สนง. ป.ป.ท. เขต', title:'หัวหน้ากลุ่มงาน (นสส. / ชพ.)',
     name:'นางกาญจนา วงศ์ธรรม', org:'สนง. ป.ป.ท. เขต 1', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2', scope:'UPSTREAM',
     perms:['view.own','download.own'] },
-  { id:'director', row:19, group:'กอง / สนง. ป.ป.ท. เขต', title:'ผอ.กอง / ผอ.สนง. ป.ป.ท. เขต',
+  { id:'director', login:'Prasert.M', row:19, group:'กอง / สนง. ป.ป.ท. เขต', title:'ผอ.กอง / ผอ.สนง. ป.ป.ท. เขต',
     name:'นายประเสริฐ มั่นคง', org:'สนง. ป.ป.ท. เขต 1', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2, 7.3', scope:'UPSTREAM',
     perms:['view.own','download.own','urgent.endorse'] },
 
   /* ── 7-9. สำนักงานเลขาธิการ / สารบรรณ / กองปราบ ────────────────────── */
-  { id:'chair_office', row:23, group:'สำนักงานเลขาธิการ', title:'หน้าห้องประธานกรรมการ ป.ป.ท.',
+  { id:'chair_office', login:'Sunee.T', row:23, group:'สำนักงานเลขาธิการ', title:'หน้าห้องประธานกรรมการ ป.ป.ท.',
     name:'นางสุนีย์ ธำรงชัย', org:'สำนักงานเลขาธิการ', lane:'L4', flow:'S4', act:'7.1, 7.2',
     perms:['view.all','download','intake.screen','route.subcommittee'] },
-  { id:'registry', row:24, group:'สำนักเลขาธิการ', title:'สารบรรณกลางสำนักเลขาธิการ',
+  { id:'registry', login:'Anucha.S', row:24, group:'สำนักเลขาธิการ', title:'สารบรรณกลางสำนักเลขาธิการ',
     name:'นายอนุชา สารบรรณ', org:'สำนักเลขาธิการ', lane:'—', flow:'นอก E-CMIS', act:'7.1',
     perms:['view.all','download','docnumber.issue'] },
-  { id:'suppress', row:25, group:'กองปราบปรามการทุจริตฯ (กปท. 1-5)', title:'เจ้าหน้าที่กองปราบปรามการทุจริตในภาครัฐ',
+  { id:'suppress', login:'Panu.P', row:25, group:'กองปราบปรามการทุจริตฯ (กปท. 1-5)', title:'เจ้าหน้าที่กองปราบปรามการทุจริตในภาครัฐ',
     name:'นายภาณุ ปราบทุจริต', org:'กปท. 1-5', lane:'—', flow:'ต้นทางเอกสาร', act:'7.1, 7.2',
     perms:['view.own','download.own','memo.submit'] },
 
   /* ── 10. กองกฎหมาย (กกม.) ──────────────────────────────────────────── */
-  { id:'legal', row:26, group:'กองกฎหมาย (กกม.)', title:'นิติกร / ผอ.กองกฎหมาย',
+  { id:'legal', login:'Ekapong.W', row:26, group:'กองกฎหมาย (กกม.)', title:'นิติกร / ผอ.กองกฎหมาย',
     name:'นายเอกพงศ์ วินิจฉัย', org:'กองกฎหมาย', lane:'—', flow:'เชื่อม กจ.10', act:'7.3',
     perms:['view.all','download','legal.opinion','doc.generate'] },
 
   /* ── 11. ผู้ดูแลระบบ E-CMIS ────────────────────────────────────────── */
-  { id:'sysadmin', row:27, group:'ผู้ดูแลระบบ E-CMIS', title:'ผู้ดูแลระบบ (System Admin)',
+  { id:'sysadmin', login:'Kritsana.A', row:27, group:'ผู้ดูแลระบบ E-CMIS', title:'ผู้ดูแลระบบ (System Admin)',
     name:'นายกฤษณะ แอดมิน', org:'ศูนย์เทคโนโลยีสารสนเทศ', lane:'—', flow:'ทุกขั้น', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','admin.sla','admin.users','admin.reassign','audit.view'] }
 ];
@@ -529,7 +529,7 @@ function m28Pending(){
 /* --------------------------------------------------- MOCK CASE DATASET */
 const CASES = [
   {
-    id:'1547/2568', pcms:'PCMS-68-001547',
+    id:'681547',
     subject:'กล่าวหาเจ้าหน้าที่องค์การบริหารส่วนตำบลแห่งหนึ่ง จัดซื้อจัดจ้างโครงการก่อสร้างถนน คสล. โดยมิชอบ',
     legalBase:'ม.18/4', /* ม.18/4 พรบ.มาตรการฯ | ม.62 พรป.ปปช. */
     status:'PENDING_SECGEN',
@@ -561,7 +561,7 @@ const CASES = [
     ]
   },
   {
-    id:'1602/2568', pcms:'PCMS-68-001602',
+    id:'681602',
     subject:'กล่าวหาข้าราชการสังกัดกรมหนึ่ง เรียกรับเงินจากผู้ประกอบการเพื่อแลกกับการออกใบอนุญาต',
     legalBase:'ม.62',
     status:'PENDING_URGENT',
@@ -577,7 +577,7 @@ const CASES = [
     meetingNo:null, agendaNo:null
   },
   {
-    id:'1588/2568', pcms:'PCMS-68-001588',
+    id:'681588',
     subject:'กล่าวหาเจ้าหน้าที่โรงพยาบาลรัฐแห่งหนึ่ง เบิกจ่ายค่าตอบแทนล่วงเวลาอันเป็นเท็จ',
     legalBase:'ม.18/4',
     status:'IN_SCREENING',
@@ -595,7 +595,7 @@ const CASES = [
     meetingNo:null, agendaNo:null
   },
   {
-    id:'1490/2568', pcms:'PCMS-68-001490',
+    id:'681490',
     subject:'กล่าวหาผู้บริหารสถานศึกษาแห่งหนึ่ง จัดซื้อครุภัณฑ์คอมพิวเตอร์ราคาสูงเกินจริง',
     legalBase:'ม.18/4',
     status:'AGENDA_SET',
@@ -610,7 +610,7 @@ const CASES = [
     meetingNo:'37/2569', agendaNo:'5.9', meetingDate:'2569-05-19'
   },
   {
-    id:'1455/2568', pcms:'PCMS-68-001455',
+    id:'681455',
     subject:'กล่าวหาเจ้าหน้าที่สำนักงานที่ดินแห่งหนึ่ง ออกโฉนดที่ดินทับที่สาธารณประโยชน์',
     legalBase:'ม.62',
     status:'RESOLVED',
@@ -626,7 +626,7 @@ const CASES = [
     resolution:'ACCEPT_S24P1'
   },
   {
-    id:'1610/2568', pcms:'PCMS-68-001610',
+    id:'681610',
     subject:'กล่าวหาพนักงานรัฐวิสาหกิจแห่งหนึ่ง ทุจริตการเบิกจ่ายค่าน้ำมันเชื้อเพลิง',
     legalBase:'ม.18/4',
     status:'DRAFT',
@@ -641,7 +641,7 @@ const CASES = [
     meetingNo:null, agendaNo:null
   },
   {
-    id:'1523/2568', pcms:'PCMS-68-001523',
+    id:'681523',
     subject:'กล่าวหาเจ้าหน้าที่เทศบาลแห่งหนึ่ง เรียกรับผลประโยชน์จากผู้ขออนุญาตประกอบกิจการ',
     legalBase:'ม.18/4',
     status:'RETURNED',
@@ -660,10 +660,10 @@ const CASES = [
   }
 ];
 
-/* เพิ่มสำนวนตัวอย่างชนิด 644 ที่ความเห็นตลอดสายตรงกัน — ใช้เทียบกับ 1547/2568
+/* เพิ่มสำนวนตัวอย่างชนิด 644 ที่ความเห็นตลอดสายตรงกัน — ใช้เทียบกับ 681547
    ให้เห็นว่า G1 ไม่ถูกจุดชนวน และเพดาน SLA เปลี่ยนตามชนิดรายงาน            */
 CASES.push({
-  id:'1615/2568', pcms:'PCMS-68-001615',
+  id:'681615',
   subject:'กล่าวหาเจ้าหน้าที่สำนักงานเขตแห่งหนึ่ง ละเว้นการบังคับใช้กฎหมายควบคุมอาคาร',
   legalBase:'ม.18/4',
   status:'PENDING_SECGEN',
@@ -696,11 +696,11 @@ CASES.forEach(c => {
    orderType = คำสั่งเบื้องต้นของเลขาธิการฯ | reported = เข้ารอบรายงานบอร์ดแล้วหรือยัง
    dueDate   = วันครบกำหนดรายงานรอบ 15 วัน                                 */
 const M28_LOG = {
-  '1602/2568': { orderType:'ACCEPT', orderedDate:'2569-05-22', reported:false, dueDate:'2569-06-06' },
-  '1588/2568': { orderType:'ACCEPT', orderedDate:'2569-05-26', reported:false, dueDate:'2569-06-10' },
-  '1490/2568': { orderType:'ACCEPT', orderedDate:'2569-04-30', reported:true,  dueDate:'2569-05-15',
+  '681602': { orderType:'ACCEPT', orderedDate:'2569-05-22', reported:false, dueDate:'2569-06-06' },
+  '681588': { orderType:'ACCEPT', orderedDate:'2569-05-26', reported:false, dueDate:'2569-06-10' },
+  '681490': { orderType:'ACCEPT', orderedDate:'2569-04-30', reported:true,  dueDate:'2569-05-15',
                  boardOutcome:'บอร์ดไม่มีมติเป็นอย่างอื่นภายใน 15 วัน — ถือว่ามีมติตามคำสั่งเลขาธิการฯ' },
-  '1523/2568': { orderType:'REJECT', orderedDate:'2569-05-28', reported:false, dueDate:'2569-06-12' }
+  '681523': { orderType:'REJECT', orderedDate:'2569-05-28', reported:false, dueDate:'2569-06-12' }
 };
 CASES.forEach(c => { if(M28_LOG[c.id]) c.m28 = M28_LOG[c.id]; });
 
@@ -897,6 +897,14 @@ function slaLabel(used, limit){
 }
 function getCase(id){ return CASES.find(c => c.id === id) || CASES[0]; }
 function getRole(id){ return ROLES.find(r => r.id === id) || ROLES[0]; }
+/* จับคู่ username ที่กรอกในหน้า login.html (จำลอง — ยังไม่มี auth จริง) กับบทบาท
+   เพื่อให้เข้าสู่ระบบด้วยชื่อผู้ใช้ของแต่ละคนแล้วเห็นเมนู/คิวงานของบทบาทนั้นทันที */
+function roleIdForLogin(username){
+  const u = String(username || '').trim().toLowerCase();
+  if(!u) return null;
+  const r = ROLES.find(r => r.login && r.login.toLowerCase() === u);
+  return r ? r.id : null;
+}
 
 /* current role — เก็บใน sessionStorage เพื่อให้สลับข้ามหน้าได้ */
 function currentRoleId(){ return sessionStorage.getItem('ecmis_role') || 'owner'; }
@@ -967,9 +975,9 @@ function renderShell(activeHref){
 
   /* ---- notification center ---- */
   const notifications = [
-    { title: 'เสนอเรื่องใหม่', body: 'สำนวน 1547/2568 รอเลขาธิการฯ พิจารณา/ลงนาม', time: '10 นาทีที่แล้ว', icon: 'fa-user-check', cls: 'bg-primary text-white' },
-    { title: 'มติบอร์ดเสร็จสิ้น', body: 'บันทึกมติที่ประชุมบอร์ด สำนวน 1588/2568 แล้ว', time: '1 ชม. ที่แล้ว', icon: 'fa-scale-balanced', cls: 'bg-success text-white' },
-    { title: 'คำร้องขอใบด่วน', body: 'ผอ.กบค. ส่งใบด่วนขอวาระด่วน สำนวน 1602/2568', time: '2 ชม. ที่แล้ว', icon: 'fa-bolt', cls: 'bg-warning text-dark' }
+    { title: 'เสนอเรื่องใหม่', body: 'สำนวน 681547 รอเลขาธิการฯ พิจารณา/ลงนาม', time: '10 นาทีที่แล้ว', icon: 'fa-user-check', cls: 'bg-primary text-white' },
+    { title: 'มติบอร์ดเสร็จสิ้น', body: 'บันทึกมติที่ประชุมบอร์ด สำนวน 681588 แล้ว', time: '1 ชม. ที่แล้ว', icon: 'fa-scale-balanced', cls: 'bg-success text-white' },
+    { title: 'คำร้องขอใบด่วน', body: 'ผอ.กบค. ส่งใบด่วนขอวาระด่วน สำนวน 681602', time: '2 ชม. ที่แล้ว', icon: 'fa-bolt', cls: 'bg-warning text-dark' }
   ];
   const notifItems = notifications.map(n => `
     <li class="p-2 border-bottom" style="font-size:0.78rem">
@@ -1250,13 +1258,22 @@ function actionBar(kase, roleId, buttons){
   </div>`;
 }
 
+/* เลขไทย — เอกสารราชการที่พิมพ์ออกใช้เลขไทย ต่างจากฟิลด์กรอกข้อมูลในฟอร์ม
+   ซึ่งยังคงเป็นเลขอารบิกเพื่อความสะดวกในการพิมพ์/ค้นหา                    */
+const THAI_DIGITS = ['๐','๑','๒','๓','๔','๕','๖','๗','๘','๙'];
+function toThaiDigits(input){
+  if(input === undefined || input === null) return input;
+  return String(input).replace(/[0-9]/g, d => THAI_DIGITS[d]);
+}
+
 /* -------------------------------------------- MAIL-MERGE (Document) */
-/* แทนค่าฟิลด์ลงเทมเพลต — จำลอง Mail-Merge Template Engine (TOR 7.1.3.6) */
+/* แทนค่าฟิลด์ลงเทมเพลต — จำลอง Mail-Merge Template Engine (TOR 7.1.3.6)
+   ทุกค่าที่ผ่านฟังก์ชันนี้ถือว่ากำลังลงเอกสารจริง จึงแปลงเป็นเลขไทยเสมอ    */
 function mergeField(value, placeholder){
   if(value === undefined || value === null || String(value).trim() === ''){
     return `<span class="mergefield empty" title="ยังไม่มีข้อมูล — ต้องกรอกในฟอร์มด้านซ้าย">${placeholder||'……………'}</span>`;
   }
-  return `<span class="mergefield filled" title="Auto-fill จากฟอร์ม/ฐานข้อมูลกลาง E-CMIS">${value}</span>`;
+  return `<span class="mergefield filled" title="Auto-fill จากฟอร์ม/ฐานข้อมูลกลาง E-CMIS">${toThaiDigits(value)}</span>`;
 }
 
 /* ---------------------------------------------------------- DIALOGS */
@@ -1457,7 +1474,7 @@ function initCommandPalette() {
     <div class="cmd-palette-box">
       <div class="cmd-palette-search-wrapper">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" class="cmd-palette-input" id="cmdPaletteInput" placeholder="พิมพ์ชื่อเมนู หรือ เลขสำนวนคดี (เช่น 1547/2568)..." autocomplete="off">
+        <input type="text" class="cmd-palette-input" id="cmdPaletteInput" placeholder="พิมพ์ชื่อเมนู หรือ เลขสำนวนคดี (เช่น 681547)..." autocomplete="off">
       </div>
       <div class="cmd-palette-results" id="cmdPaletteResults"></div>
       <div class="cmd-palette-hint">
@@ -1535,7 +1552,6 @@ function initCommandPalette() {
     const matchedMenus = menus.filter(m => m.label.toLowerCase().includes(query));
     const matchedCases = CASES.filter(c => 
       c.id.toLowerCase().includes(query) || 
-      c.pcms.toLowerCase().includes(query) || 
       c.subject.toLowerCase().includes(query)
     );
 
@@ -2232,7 +2248,7 @@ global.ECMIS = {
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
   UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase,
   PERM_DEFS, can, canEditMaster, canViewCase,
-  thaiDate, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole,
+  thaiDate, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole, roleIdForLogin,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   renderShell, stepperHtml, statusBadge, slaBadge, actionBar,
   mergeField, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,

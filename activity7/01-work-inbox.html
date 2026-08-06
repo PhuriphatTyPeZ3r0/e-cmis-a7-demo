@@ -29,8 +29,7 @@
   <div class="row g-3 mb-4" id="kpiRow"></div>
 
   <div class="row g-3 align-items-start">
-    <!-- ===== ซ้าย: ตารางคิวงาน ===== -->
-    <div class="col-lg-8">
+    <div class="col-12">
       <div class="card card-ecmis mb-3">
         <div class="card-header d-flex align-items-center flex-wrap gap-2">
           <i class="fa-solid fa-list-check"></i>
@@ -55,7 +54,7 @@
                   <th class="sortable-header" data-sort="id" style="cursor:pointer">เลขเรื่อง <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                   <th>เรื่องกล่าวหา</th>
                   <th>สถานะ</th>
-                  <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">SLA <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
+                  <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                   <th class="text-end">ดำเนินการ</th>
                 </tr>
               </thead>
@@ -97,7 +96,7 @@
                   <th>เลขเรื่อง</th>
                   <th>เรื่องกล่าวหา</th>
                   <th>ค้างอยู่ที่</th>
-                  <th>SLA</th>
+                  <th>กำหนดเวลา</th>
                   <th class="text-end">ดำเนินการ</th>
                 </tr>
               </thead>
@@ -105,21 +104,6 @@
             </table>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- ===== ขวา: Sidebar ===== -->
-    <div class="col-lg-4">
-      <div style="position:sticky;top:calc(var(--topbar-h) + 14px);display:flex;flex-direction:column;gap:16px">
-
-        <!-- SLA Alert Card -->
-        <div class="card card-ecmis">
-          <div class="card-header">
-            <i class="fa-solid fa-triangle-exclamation"></i> การแจ้งเตือน
-          </div>
-          <div class="card-body" id="alertBox" style="max-height:260px;overflow-y:auto"></div>
-        </div>
-
       </div>
     </div>
   </div>
@@ -160,7 +144,7 @@ const urgent= all.filter(c => c.urgent).length;
 const kpis = [
   { n: mine.length, l:'งานรอฉันดำเนินการ', i:'fa-inbox',   c:'#0F2A62' },
   { n: all.filter(c => !ECMIS.isUpstreamCase(c)).length, l:'สำนวนที่อยู่ในขอบเขต กจ.7', i:'fa-folder-open', c:'#0A7295' },
-  { n: late,        l:'เกินกำหนด SLA',      i:'fa-clock',   c:'#DB2626' },
+  { n: late,        l:'เกินกำหนดเวลา',      i:'fa-clock',   c:'#DB2626' },
   { n: all.filter(c => ECMIS.isUpstreamCase(c)).length, l:'ยังไม่เข้า กจ.7 (อยู่ต้นทาง กจ.5)', i:'fa-arrow-right-to-bracket', c:'#7C8CA3' }
 ];
 document.getElementById('kpiRow').innerHTML = kpis.map(k => `
@@ -410,21 +394,6 @@ document.getElementById('watchQueue').innerHTML = watch.length
   ? watch.map(c => row(c, false)).join('')
   : `<tr><td colspan="5" class="text-center text-muted py-3">— ไม่มีรายการ —</td></tr>`;
 
-/* ---------- SLA alerts ---------- */
-const alerts = all.filter(c => c.slaDays >= ECMIS.effectiveSlaLimit(c) - 2)
-  .sort((a,b) => (b.slaDays-ECMIS.effectiveSlaLimit(b)) - (a.slaDays-ECMIS.effectiveSlaLimit(a)));
-document.getElementById('alertBox').innerHTML = alerts.length ? alerts.map(c => {
-  const over = c.slaDays > ECMIS.effectiveSlaLimit(c);
-  return `<div class="d-flex gap-2 align-items-start mb-2 pb-2 border-bottom">
-    <i class="fa-solid ${over?'fa-circle-exclamation':'fa-triangle-exclamation'} mt-1"
-       style="color:${over?'#DB2626':'#854D0E'}"></i>
-    <div style="font-size:.82rem">
-      <strong>${c.id}</strong> ${ECMIS.slaLabel(c.slaDays, ECMIS.effectiveSlaLimit(c))}<br>
-      <span class="text-muted">ค้างที่: ${ECMIS.STATUS[c.status].label}</span>
-      ${over?'<br><span style="color:#DB2626;font-size:.75rem">Escalate ขึ้นผู้บังคับบัญชา 1 ระดับแล้ว</span>':''}
-    </div>
-  </div>`;
-}).join('') : '<div class="text-muted small">ไม่มีรายการใกล้ครบกำหนด</div>';
 </script>
 </body>
 </html>
