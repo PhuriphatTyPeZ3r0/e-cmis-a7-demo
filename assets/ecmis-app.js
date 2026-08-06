@@ -2599,13 +2599,26 @@ function initDocPaneToggle() {
 
 let currentFontStep = 0;
 function changeFont(step) {
-  if (step === 0) currentFontStep = 0;
-  else currentFontStep = Math.max(-2, Math.min(4, currentFontStep + step));
+  if (step === 0) {
+    currentFontStep = 0;
+  } else {
+    currentFontStep = Math.max(-3, Math.min(5, currentFontStep + step));
+  }
   
-  const baseSize = 14.5;
-  const newSize = baseSize + (currentFontStep * 1.5);
-  document.body.style.fontSize = newSize + 'px';
-  toastOk(`ปรับขนาดตัวอักษรเป็น ${newSize}px`);
+  const scalePct = 100 + (currentFontStep * 8);
+  const zoomVal = (scalePct / 100);
+  
+  // Apply global scaling to document
+  document.documentElement.style.zoom = zoomVal;
+  document.body.style.fontSize = (14.5 * zoomVal).toFixed(1) + 'px';
+  
+  if (step === 0) {
+    toastOk('คืนค่าขนาดตัวอักษรเป็นปกติ (100%)');
+  } else if (step > 0) {
+    toastOk(`เพิ่มขนาดตัวอักษร (${scalePct}%)`);
+  } else {
+    toastOk(`ลดขนาดตัวอักษร (${scalePct}%)`);
+  }
 }
 
 function toggleHighContrast() {
