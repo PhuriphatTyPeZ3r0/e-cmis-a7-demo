@@ -923,24 +923,45 @@ function canRecall(kase, roleId){
   return ['PENDING_SECTION','PENDING_DIRECTOR','PENDING_DEPUTY'].includes(kase.status);
 }
 
-/* -------------------------------------------------------- SHELL RENDER */
+/* -------------------------------------------------------- SHELL RENDER
+   เมนู sidebar กรองตามสิทธิ์จริงของแต่ละบทบาท โดยใช้ระดับการมองเห็นสำนวน
+   เดียวกับ canViewCase() เป็นตัวตัดสิน (ไม่ผูกเมนูไว้ตายตัว):
+     view.all      → เห็นทุกหน้ารวมโต๊ะสั่งการเลขาธิการฯ (บทบาทกำกับ/บริหารคดี)
+     view.assigned → เห็นเฉพาะหน้าที่คณะของตนทำงานจริงตาม flow (อนุสนับสนุนฯ = S2,
+                     อนุกลั่นกรองฯ = S6) — ตรงกับที่ 04/07 เช็ค role.id ในหน้าจริง
+     view.own      → เห็นเฉพาะภาพรวม (Work Inbox + ทะเบียนสำนวน) ไม่เห็นหน้า
+                     กระบวนงานภายในกิจกรรมที่ 7 ซึ่งอยู่นอกขอบเขตงานของตน       */
 const NAV = [
   { section:'ภาพรวม' },
   { href:'01-work-inbox.html',            icon:'fa-inbox',            label:'Work Inbox', badge:true },
   { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน 7.1' },
-  { href:'11-secgen-desk.html',           icon:'fa-gavel',            label:'โต๊ะสั่งการเลขาธิการฯ', ref:'L3 · S1–S11' },
-  { section:'ต้นทาง — นอกขอบเขตกิจกรรมที่ 7' },
-  { href:'03-report-213.html',            icon:'fa-file-import',      label:'รายงาน 213 ที่รับเข้า (อ่านอย่างเดียว)', ref:'กจ.5', muted:true },
+  { href:'11-secgen-desk.html',           icon:'fa-gavel',            label:'โต๊ะสั่งการเลขาธิการฯ', ref:'L3 · S1–S11',
+    visible: role => can('view.all', role.id) },
   { section:'กระบวนงานไต่สวนเบื้องต้น (7.1)' },
-  { href:'04-approval-review.html',       icon:'fa-user-check',       label:'เลขาธิการฯ พิจารณา / ลงนาม', step:1, ref:'S1–G1' },
-  { href:'05-urgent-memo.html',           icon:'fa-bolt',             label:'ใบด่วนขอบรรจุวาระ', step:2, ref:'G3–S3' },
-  { href:'06-chairman-agenda.html',       icon:'fa-gavel',            label:'ประธานฯ สั่งการ / บรรจุวาระ', step:3, ref:'S4–S8' },
-  { href:'07-subcommittee-screening.html',icon:'fa-users-viewfinder', label:'อนุกลั่นกรองฯ คณะ 1–8', step:4, ref:'S5–S6' },
-  { href:'08-board-resolution.html',      icon:'fa-scale-balanced',   label:'บันทึกมติที่ประชุมบอร์ด', step:5, ref:'S9–G5' },
-  { href:'09-order-m24.html',             icon:'fa-stamp',            label:'ออกคำสั่งแต่งตั้งคณะไต่สวน ม.24', step:6, ref:'S11' },
-  { section:'บริหารระบบ' },
-  { href:'10-user-permissions.html',      icon:'fa-users-gear',       label:'กลุ่มผู้ใช้งานและสิทธิ์ (RBAC)', ref:'TOR 14.4.3' }
+  { href:'04-approval-review.html',       icon:'fa-user-check',       label:'เลขาธิการฯ พิจารณา / ลงนาม', step:1, ref:'S1–G1',
+    visible: role => can('view.all', role.id) || role.flow.includes('S2') },
+  { href:'05-urgent-memo.html',           icon:'fa-bolt',             label:'ใบด่วนขอบรรจุวาระ', step:2, ref:'G3–S3',
+    visible: role => can('view.all', role.id) },
+  { href:'06-chairman-agenda.html',       icon:'fa-gavel',            label:'ประธานฯ สั่งการ / บรรจุวาระ', step:3, ref:'S4–S8',
+    visible: role => can('view.all', role.id) },
+  { href:'07-subcommittee-screening.html',icon:'fa-users-viewfinder', label:'อนุกลั่นกรองฯ คณะ 1–8', step:4, ref:'S5–S6',
+    visible: role => can('view.all', role.id) || role.flow.includes('S6') },
+  { href:'08-board-resolution.html',      icon:'fa-scale-balanced',   label:'บันทึกมติที่ประชุมบอร์ด', step:5, ref:'S9–G5',
+    visible: role => can('view.all', role.id) },
+  { href:'09-order-m24.html',             icon:'fa-stamp',            label:'ออกคำสั่งแต่งตั้งคณะไต่สวน ม.24', step:6, ref:'S11',
+    visible: role => can('view.all', role.id) }
 ];
+
+/* คืนเฉพาะรายการเมนูที่บทบาทนี้เห็น พร้อมตัด section header ที่ไม่มีรายการ
+   ใต้ตัวเองเหลืออยู่ (orphan header) ออกไปด้วย */
+function visibleNavFor(role){
+  const filtered = NAV.filter(n => !n.visible || n.visible(role));
+  return filtered.filter((n, i) => {
+    if(!n.section) return true;
+    const next = filtered[i + 1];
+    return !!next && !next.section;
+  });
+}
 
 function renderShell(activeHref){
   const role = currentRole();
@@ -991,19 +1012,15 @@ function renderShell(activeHref){
     <button class="btn btn-sm text-white d-lg-none border-0" id="sbToggle" aria-label="เปิด/ปิดเมนู">
       <i class="fa-solid fa-bars"></i>
     </button>
-    <a class="brand text-white text-decoration-none" href="01-work-inbox.html">
-      <img src="pacc_logo.png" alt="ตราสำนักงาน ป.ป.ท.">
-      <span>E-CMIS
-        <small>กิจกรรมที่ 7.1 การไต่สวนเบื้องต้น</small>
-      </span>
-    </a>
-    
-    <div class="ms-auto d-flex align-items-center gap-2">
-      <!-- Global Search Trigger -->
-      <button class="btn btn-sm text-white border-0" onclick="document.dispatchEvent(new KeyboardEvent('keydown', {key: 'k', ctrlKey: true}))" title="ค้นหาด่วน (Ctrl+K)">
-        <i class="fa-solid fa-magnifying-glass"></i>
-      </button>
+    <button class="btn btn-sm text-white d-none d-lg-inline-flex border-0" id="sbCollapseToggle" aria-label="ย่อ/ขยายเมนูด้านข้าง" title="ย่อ/ขยายเมนูด้านข้าง">
+      <i class="fa-solid fa-bars"></i>
+    </button>
 
+    <button class="btn btn-sm text-white border-0" onclick="document.dispatchEvent(new KeyboardEvent('keydown', {key: 'k', ctrlKey: true}))" title="ค้นหาด่วน (Ctrl+K)">
+      <i class="fa-solid fa-magnifying-glass"></i>
+    </button>
+
+    <div class="ms-auto d-flex align-items-center gap-2">
       <!-- Accessibility Toolbar controls -->
       <button class="btn btn-sm text-white border-0" onclick="ECMIS.changeFont(-1)" title="อักษรเล็กลง" style="font-size: 0.8rem">A-</button>
       <button class="btn btn-sm text-white border-0" onclick="ECMIS.changeFont(1)" title="อักษรใหญ่ขึ้น" style="font-size: 0.8rem">A+</button>
@@ -1038,21 +1055,43 @@ function renderShell(activeHref){
   </header>`;
 
   /* ---- sidebar ---- */
-  const navHtml = NAV.map(n => {
+  const navHtml = visibleNavFor(role).map(n => {
     if(n.section) return `<div class="nav-section">${n.section}</div>`;
     const active = n.href === activeHref;
     const badge = n.badge && inboxCount ? `<span class="badge bg-danger rounded-pill">${inboxCount}</span>` : '';
     const step  = n.step ? `<span class="step-no">${n.step}</span>` : `<i class="fa-solid ${n.icon}"></i>`;
-    return `<a class="nav-link ${active?'active':''}" href="${n.href}" ${n.muted?'style="opacity:.7"':''}>
+    return `<a class="nav-link ${active?'active':''}" href="${n.href}" title="${n.label}" ${n.muted?'style="opacity:.7"':''}>
       ${step}<span>${n.label}</span>${badge}
     </a>`;
   }).join('');
 
+  /* Sidebar-bottom user chip (Master Screen Layout Desktop.pdf) — read-only
+     mirror of the header role-switcher; opens the same dropdown menu. */
+  const userChip = `
+  <div class="dropdown sidebar-user-chip">
+    <button class="sidebar-user-chip-btn" data-bs-toggle="dropdown" aria-expanded="false" title="${role.name} — ${role.title}">
+      <span class="sidebar-user-chip-avatar">${role.name.charAt(0)}</span>
+      <span class="sidebar-user-chip-text">
+        <strong>${role.name}</strong>
+        <small>${role.title}</small>
+      </span>
+    </button>
+    <ul class="dropdown-menu">
+      <li><h6 class="dropdown-header">สลับบทบาทผู้ใช้ (จำลอง — ยังไม่มี RBAC จริง)</h6></li>
+      ${roleItems}
+    </ul>
+  </div>`;
+
   const sidebar = `
   <nav class="app-sidebar no-print" id="appSidebar">
-    ${navHtml}
-    <div class="nav-section">อ้างอิง</div>
-    <a class="nav-link" href="index.html"><i class="fa-solid fa-globe"></i><span>กลับเว็บสาธารณะ</span></a>
+    <a class="brand text-decoration-none" href="01-work-inbox.html">
+      <img src="pacc_logo.png" alt="ตราสำนักงาน ป.ป.ท.">
+      <span>E-CMIS
+        <small>กิจกรรมที่ 7.1 การไต่สวนเบื้องต้น</small>
+      </span>
+    </a>
+    <div class="sidebar-nav-scroll">${navHtml}</div>
+    ${userChip}
   </nav>`;
 
   document.body.insertAdjacentHTML('afterbegin', topbar + sidebar);
@@ -1062,6 +1101,8 @@ function renderShell(activeHref){
   });
   const tog = document.getElementById('sbToggle');
   if(tog) tog.addEventListener('click', () => document.getElementById('appSidebar').classList.toggle('open'));
+  const collapseTog = document.getElementById('sbCollapseToggle');
+  if(collapseTog) collapseTog.addEventListener('click', () => toggleSidebarCollapse());
 
   // Initialize features
   initA11yAndPref();
@@ -1364,6 +1405,13 @@ function toggleHighContrast() {
   toastOk(isHC ? 'เปิดโหมดสีคอนทราสต์สูง' : 'ปิดโหมดสีคอนทราสต์สูง');
 }
 
+/* Desktop sidebar collapse (Master Screen Layout Desktop.pdf: 260px <-> 68px).
+   Separate from #sbToggle, which stays mobile-only slide-open/close. */
+function toggleSidebarCollapse() {
+  const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+  localStorage.setItem('ecmis_sidebar_collapsed', isCollapsed);
+}
+
 let fontStep = 0;
 function changeFont(dir) {
   if (dir === 0) fontStep = 0;
@@ -1392,6 +1440,11 @@ function initA11yAndPref() {
   const isHC = localStorage.getItem('ecmis_high_contrast') === 'true';
   if (isHC) {
     document.body.classList.add('high-contrast');
+  }
+
+  const isCollapsed = localStorage.getItem('ecmis_sidebar_collapsed') === 'true';
+  if (isCollapsed) {
+    document.body.classList.add('sidebar-collapsed');
   }
 
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -1476,18 +1529,11 @@ function initCommandPalette() {
     results.innerHTML = '';
     const query = q.toLowerCase().trim();
 
-    const menus = [
-      { label: 'Work Inbox (งานค้างของฉัน)', href: '01-work-inbox.html', icon: 'fa-inbox', cat: 'Menu' },
-      { label: 'ทะเบียนสำนวน 7.1', href: '02-case-register.html', icon: 'fa-folder-open', cat: 'Menu' },
-      { label: 'โต๊ะสั่งการเลขาธิการฯ', href: '11-secgen-desk.html', icon: 'fa-gavel', cat: 'Menu' },
-      { label: 'เลขาธิการฯ พิจารณา / ลงนาม (ขั้นตอน 1)', href: '04-approval-review.html', icon: 'fa-user-check', cat: 'Menu' },
-      { label: 'ใบด่วนขอบรรจุวาระ (ขั้นตอน 2)', href: '05-urgent-memo.html', icon: 'fa-bolt', cat: 'Menu' },
-      { label: 'ประธานฯ สั่งการ / บรรจุวาระ (ขั้นตอน 3)', href: '06-chairman-agenda.html', icon: 'fa-gavel', cat: 'Menu' },
-      { label: 'อนุกลั่นกรองฯ คณะ 1–8 (ขั้นตอน 4)', href: '07-subcommittee-screening.html', icon: 'fa-users-viewfinder', cat: 'Menu' },
-      { label: 'บันทึกมติที่ประชุมบอร์ด (ขั้นตอน 5)', href: '08-board-resolution.html', icon: 'fa-scale-balanced', cat: 'Menu' },
-      { label: 'ออกคำสั่งแต่งตั้งคณะไต่สวน ม.24 (ขั้นตอน 6)', href: '09-order-m24.html', icon: 'fa-stamp', cat: 'Menu' },
-      { label: 'กลุ่มผู้ใช้งานและสิทธิ์ (RBAC)', href: '10-user-permissions.html', icon: 'fa-users-gear', cat: 'Menu' }
-    ];
+    /* ใช้เมนูชุดเดียวกับ sidebar (กรองตามสิทธิ์บทบาทปัจจุบันแล้ว) แทนรายการ
+       ตายตัว เพื่อไม่ให้ Command Palette พาไปหน้าที่เมนูข้าง ๆ ซ่อนไว้ */
+    const menus = visibleNavFor(currentRole())
+      .filter(n => n.href)
+      .map(n => ({ label: n.step ? `${n.label} (ขั้นตอน ${n.step})` : n.label, href: n.href, icon: n.icon, cat: 'Menu' }));
 
     const matchedMenus = menus.filter(m => m.label.toLowerCase().includes(query));
     const matchedCases = CASES.filter(c => 
@@ -2207,7 +2253,7 @@ global.ECMIS = {
   mergeField, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
 
   // Custom helpers
-  saveCases, toggleDarkMode, toggleHighContrast, changeFont,
+  saveCases, toggleDarkMode, toggleHighContrast, toggleSidebarCollapse, changeFont,
   initSmartCombobox, initRealTimeValidation, initVoiceInput, initSignaturePad,
   initAutoSave, initCharCounterAndCopy,
 
