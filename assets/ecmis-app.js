@@ -792,6 +792,30 @@ CASES.push(
     receivedDate:'2568-11-15', deadline60:'2569-01-14', deadline2y:'2570-11-15', prescription:'2572-11-20',
     docRef:'ปป 0029/0940 ลงวันที่ 20 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
     docType:'213', signPhase:'COMPLETE', slaDays:1, slaLimit:5
+  },
+  {
+    id:'681645',
+    subject:'กล่าวหาเจ้าหน้าที่ฝ่ายจัดซื้อจัดจ้าง กำหนดสเปกพัดลมอุตสาหกรรมเอื้อประโยชน์ให้แก่ผู้เสนอราคา',
+    legalBase:'ม.18/4', status:'RETURNED',
+    owner:'นายประเสริฐ มั่นคง', ownerOrg:'สนง. ป.ป.ท. เขต 1',
+    complainant:'ผู้ร่วมเสนอราคา',
+    accused:[ { no:1, name:'นายสมพงษ์ จัดซื้อ', pos:'นักจัดการงานทั่วไปชำนาญการ', idcard:'3-1002-0xxxx-xx-x', agency:'เทศบาลเมืองแห่งหนึ่ง' } ],
+    allegation:'กำหนดรายละเอียดคุณลักษณะเฉพาะของพัดลมอุตสาหกรรมตรงตามสินค้าของบริษัทตนเองเพียงรายเดียว',
+    receivedDate:'2568-11-20', deadline60:'2569-01-19', deadline2y:'2570-11-20', prescription:'2572-12-10',
+    docRef:'ปป 0021/1045 ลงวันที่ 22 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
+    docType:'213', signPhase:'WAIT', slaDays:8, slaLimit:5
+  },
+  {
+    id:'681650',
+    subject:'กล่าวหาเจ้าหน้าที่บริหารงานคลัง ยักยอกเงินค่าธรรมเนียมการเก็บขยะมูลฝากเข้าบัญชีส่วนตัว',
+    legalBase:'ม.18/4', status:'RETURNED',
+    owner:'นายวิศรุต สุขเกษม', ownerOrg:'สนง. ป.ป.ท. เขต 6',
+    complainant:'ผลการตรวจสอบภายใน',
+    accused:[ { no:1, name:'นางสาวสิรินธร คลังทอง', pos:'เจ้าพนักงานการเงินและบัญชีชำนาญงาน', idcard:'3-6004-0xxxx-xx-x', agency:'องค์การบริหารส่วนตำบล' } ],
+    allegation:'ไม่นำส่งเงินค่าธรรมเนียมจัดเก็บขยะเข้าบัญชี อบต. แต่โอนเข้าบัญชีส่วนตัวต่อเนื่องกว่า 1 ปี',
+    receivedDate:'2568-11-25', deadline60:'2569-01-24', deadline2y:'2570-11-25', prescription:'2572-12-25',
+    docRef:'ปป 0026/1150 ลงวันที่ 25 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
+    docType:'213', signPhase:'WAIT', slaDays:6, slaLimit:5
   }
 );
 
