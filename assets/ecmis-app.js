@@ -662,28 +662,138 @@ const CASES = [
 
 /* เพิ่มสำนวนตัวอย่างชนิด 644 ที่ความเห็นตลอดสายตรงกัน — ใช้เทียบกับ 681547
    ให้เห็นว่า G1 ไม่ถูกจุดชนวน และเพดาน SLA เปลี่ยนตามชนิดรายงาน            */
-CASES.push({
-  id:'681615',
-  subject:'กล่าวหาเจ้าหน้าที่สำนักงานเขตแห่งหนึ่ง ละเว้นการบังคับใช้กฎหมายควบคุมอาคาร',
-  legalBase:'ม.18/4',
-  status:'PENDING_SECGEN',
-  owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 2',
-  complainant:'นายธีรพงษ์ รักษ์เมือง (ผู้ร้อง)',
-  accused:[ { no:1, name:'นายฉัตรชัย ตรวจการ', pos:'นายช่างโยธาอาวุโส', idcard:'3-1502-0xxxx-xx-x', agency:'สำนักงานเขตแห่งหนึ่ง' } ],
-  allegation:'ละเว้นไม่ดำเนินการตามอำนาจหน้าที่กับอาคารที่ก่อสร้างผิดแบบแปลนที่ได้รับอนุญาต รวม 6 หลัง ต่อเนื่องกว่า 2 ปี',
-  receivedDate:'2568-12-08', deadline60:'2569-02-06', deadline2y:'2570-12-08', prescription:'2572-05-30',
-  docRef:'ปป 0021/1131 ลงวันที่ 26 พฤษภาคม 2569',
-  urgent:false, complex:false, dupWarning:false,
-  docType:'644', signPhase:'WAIT',
-  slaDays:11, slaLimit:15, subCommittee:null,
-  meetingNo:null, agendaNo:null,
-  chainOpinions:[
-    { roleId:'owner',        type:'ACCEPT', date:'2568-12-18', note:'พฤติการณ์ละเว้นชัดเจน มีเอกสารตรวจสอบรองรับ เห็นควรรับไว้ไต่สวน' },
-    { roleId:'section_head', type:'ACCEPT', date:'2568-12-24', note:'เห็นพ้องตามที่เสนอ' },
-    { roleId:'director',     type:'ACCEPT', date:'2569-01-06', note:'เห็นชอบตามลำดับชั้น' },
-    { roleId:'deputy',       type:'ACCEPT', date:'2569-01-14', note:'เห็นควรเสนอเลขาธิการฯ ลงนาม' }
-  ]
-});
+CASES.push(
+  {
+    id:'681615',
+    subject:'กล่าวหาเจ้าหน้าที่สำนักงานเขตแห่งหนึ่ง ละเว้นการบังคับใช้กฎหมายควบคุมอาคาร',
+    legalBase:'ม.18/4',
+    status:'PENDING_SECGEN',
+    owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 2',
+    complainant:'นายธีรพงษ์ รักษ์เมือง (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายฉัตรชัย ตรวจการ', pos:'นายช่างโยธาอาวุโส', idcard:'3-1502-0xxxx-xx-x', agency:'สำนักงานเขตแห่งหนึ่ง' } ],
+    allegation:'ละเว้นไม่ดำเนินการตามอำนาจหน้าที่กับอาคารที่ก่อสร้างผิดแบบแปลนที่ได้รับอนุญาต รวม 6 หลัง ต่อเนื่องกว่า 2 ปี',
+    receivedDate:'2568-12-08', deadline60:'2569-02-06', deadline2y:'2570-12-08', prescription:'2572-05-30',
+    docRef:'ปป 0021/1131 ลงวันที่ 26 พฤษภาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    docType:'644', signPhase:'WAIT',
+    slaDays:11, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    chainOpinions:[
+      { roleId:'owner',        type:'ACCEPT', date:'2568-12-18', note:'พฤติการณ์ละเว้นชัดเจน มีเอกสารตรวจสอบรองรับ เห็นควรรับไว้ไต่สวน' },
+      { roleId:'section_head', type:'ACCEPT', date:'2568-12-24', note:'เห็นพ้องตามที่เสนอ' },
+      { roleId:'director',     type:'ACCEPT', date:'2569-01-06', note:'เห็นชอบตามลำดับชั้น' },
+      { roleId:'deputy',       type:'ACCEPT', date:'2569-01-14', note:'เห็นควรเสนอเลขาธิการฯ ลงนาม' }
+    ]
+  },
+  {
+    id:'681618',
+    subject:'กล่าวหาผู้บริหาร อบจ.แห่งหนึ่ง ปรับปรุงภูมิทัศน์สวนสาธารณะราคาสูงเกินจริง',
+    legalBase:'ม.18/4', status:'PENDING_SECGEN',
+    owner:'นายประเสริฐ มั่นคง', ownerOrg:'สนง. ป.ป.ท. เขต 3',
+    complainant:'ชมรมตรวจสอบทุจริต',
+    accused:[ { no:1, name:'นายสมศักดิ์ รุ่งเรือง', pos:'นายก อบจ.', idcard:'3-3001-0xxxx-xx-x', agency:'อบจ.แห่งหนึ่ง' } ],
+    allegation:'อนุมัติโครงการปรับปรุงสวนสาธารณะงบประมาณ 12 ล้านบาท สูงกว่าราคากลางกว่า 30%',
+    receivedDate:'2568-12-10', deadline60:'2569-02-08', deadline2y:'2570-12-10', prescription:'2572-06-15',
+    docRef:'ปป 0023/0118 ลงวันที่ 1 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
+    docType:'213', signPhase:'WAIT', slaDays:4, slaLimit:5
+  },
+  {
+    id:'681620',
+    subject:'กล่าวหาเจ้าพนักงานป่าไม้ ออกหนังสือรับรองทำกินในเขตป่าสงวนโดยมิชอบ',
+    legalBase:'ม.62', status:'PENDING_SECGEN',
+    owner:'นายอำนาจ ยุติธรรม', ownerOrg:'สนง. ป.ป.ท. เขต 5',
+    complainant:'กรมป่าไม้',
+    accused:[ { no:1, name:'นายสุวรรณ ป่าไม้', pos:'เจ้าพนักงานป่าไม้ชำนาญงาน', idcard:'3-5002-0xxxx-xx-x', agency:'สำนักบริหารพื้นที่อนุรักษ์' } ],
+    allegation:'ออกหนังสือ สทก. ทับพื้นที่ป่าสงวนแห่งชาติให้นายทุนเอกชนจำนวน 120 ไร่',
+    receivedDate:'2568-12-12', deadline60:'2569-02-10', deadline2y:'2570-12-12', prescription:'2572-07-20',
+    docRef:'ปป 0025/0220 ลงวันที่ 3 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
+    docType:'213', signPhase:'WAIT', slaDays:2, slaLimit:5
+  },
+  {
+    id:'681622',
+    subject:'กล่าวหาผู้อำนวยการวิทยาลัยเทคนิคแห่งหนึ่ง ยักยอกเงินทุนการศึกษาของนักเรียน',
+    legalBase:'ม.18/4', status:'PENDING_SECGEN',
+    owner:'นายอนุรักษ์ ปราบทุจริต', ownerOrg:'สนง. ป.ป.ท. เขต 2',
+    complainant:'คณะครูและผู้ปกครอง',
+    accused:[ { no:1, name:'ดร.วิชาญ การศึกษา', pos:'ผู้อำนวยการวิทยาลัยเทคนิค', idcard:'3-2005-0xxxx-xx-x', agency:'วิทยาลัยเทคนิค' } ],
+    allegation:'ถอนเงินบัญชีทุนการศึกษาเพื่อนักเรียนยากจนนำไปใช้ประโยชน์ส่วนตัว รวมเป็นเงิน 650,000 บาท',
+    receivedDate:'2568-12-15', deadline60:'2569-02-13', deadline2y:'2570-12-15', prescription:'2571-11-05',
+    docRef:'ปป 0022/0322 ลงวันที่ 5 มิถุนายน 2569', urgent:true, urgentReason:'ผู้ถูกร้องมีพฤติการณ์ยักย้ายยักยอกพยานหลักฐานทางการเงิน',
+    docType:'213', signPhase:'WAIT', slaDays:5, slaLimit:5
+  },
+  {
+    id:'681625',
+    subject:'กล่าวหาเจ้าหน้าที่แขวงทางหลวง เบิกจ่ายงบประมาณซ่อมแซมทางหลวงอันเป็นเท็จ',
+    legalBase:'ม.18/4', status:'PENDING_SECGEN',
+    owner:'นายชูเกียรติ สุจริต', ownerOrg:'สนง. ป.ป.ท. เขต 4',
+    complainant:'บัตรสนเท่ห์',
+    accused:[ { no:1, name:'นายเกรียงไกร ทางหลวง', pos:'วิศวกรโยธาชำนาญการ', idcard:'3-4008-0xxxx-xx-x', agency:'แขวงทางหลวง' } ],
+    allegation:'เบิกจ่ายงบประมาณซ่อมบำรุงผิวจราจร 3 โครงการ ทั้งที่ไม่ได้มีการปฏิบัติงานจริง',
+    receivedDate:'2568-12-18', deadline60:'2569-02-16', deadline2y:'2570-12-18', prescription:'2572-08-10',
+    docRef:'ปป 0024/0425 ลงวันที่ 8 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
+    docType:'644', signPhase:'WAIT', slaDays:1, slaLimit:15
+  },
+  {
+    id:'681628',
+    subject:'กล่าวหาคณะกรรมการตรวจรับงานจ้างซ่อมบำรุงระบบประปาหมู่บ้าน ตรวจรับงานเท็จ',
+    legalBase:'ม.18/4', status:'PENDING_SECGEN',
+    owner:'นายสมเกียรติ พัฒนา', ownerOrg:'สนง. ป.ป.ท. เขต 7',
+    complainant:'ชาวบ้านผู้ใช้ประปา',
+    accused:[ { no:1, name:'นายดนัย ประปาดี', pos:'ประธานกรรมการตรวจรับ', idcard:'3-7001-0xxxx-xx-x', agency:'เทศบาลตำบล' } ],
+    allegation:'ลงนามตรวจรับงานระบบกรองน้ำประปาหมู่บ้านทั้งที่ระบบยังใช้งานไม่ได้ น้ำยังขุ่นข้นไม่ได้มาตรฐาน',
+    receivedDate:'2568-12-20', deadline60:'2569-02-18', deadline2y:'2570-12-20', prescription:'2572-09-01',
+    docRef:'ปป 0027/0528 ลงวันที่ 10 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
+    docType:'213', signPhase:'WAIT', slaDays:3, slaLimit:5
+  },
+  {
+    id:'681630',
+    subject:'กล่าวหาเจ้าหน้าที่กรมการปกครอง ทุจริตการทำบัตรประจำตัวประชาชนให้ต่างด้าว',
+    legalBase:'ม.62', status:'PENDING_SECGEN',
+    owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 1',
+    complainant:'กรมการปกครอง',
+    accused:[ { no:1, name:'นายมนัส ทะเบียนทอง', pos:'เจ้าพนักงานปกครองชำนาญการ', idcard:'3-1001-0xxxx-xx-x', agency:'สถิติทะเบียนราษฎร์' } ],
+    allegation:'เพิ่มชื่อและออกบัตรประชาชนสวมตัวให้สัญชาติอื่นโดยผิดกฎหมาย รายละ 120,000 บาท รวม 8 ราย',
+    receivedDate:'2568-12-22', deadline60:'2569-02-20', deadline2y:'2570-12-22', prescription:'2570-04-12',
+    docRef:'ปป 0021/0630 ลงวันที่ 12 มิถุนายน 2569', urgent:true, urgentReason:'กระทบต่อความมั่นคงแห่งชาติ และเป็นคดีสำคัญ',
+    docType:'213', signPhase:'WAIT', slaDays:7, slaLimit:5
+  },
+  {
+    id:'681633',
+    subject:'กล่าวหาบุคลากรทางการแพทย์ เบิกจ่ายยาและเวชภัณฑ์ออกนอกระบบโรงพยาบาล',
+    legalBase:'ม.18/4', status:'PENDING_SECGEN',
+    owner:'นายวิศรุต สุขเกษม', ownerOrg:'สนง. ป.ป.ท. เขต 6',
+    complainant:'ผู้อำนวยการโรงพยาบาล',
+    accused:[ { no:1, name:'ภก.พิสิษฐ์ ยาดี', pos:'เภสัชกรชำนาญการ', idcard:'3-6003-0xxxx-xx-x', agency:'โรงพยาบาลประจำจังหวัด' } ],
+    allegation:'ปลอมลายเซ็นแพทย์เพื่อตัดจ่ายยาควบคุมและวัคซีนมูลค่าสูง ออกขายคลินิกเอกชน',
+    receivedDate:'2568-12-25', deadline60:'2569-02-23', deadline2y:'2570-12-25', prescription:'2572-10-15',
+    docRef:'ปป 0026/0733 ลงวันที่ 15 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
+    docType:'213', signPhase:'WAIT', slaDays:4, slaLimit:5
+  },
+  {
+    id:'681635',
+    subject:'กล่าวหาเจ้าหน้าที่ประมง ละเว้นการจับกุมเรือประมงผิดกฎหมาย',
+    legalBase:'ม.62', status:'RESOLVED', signedBySecgen: true, secgenSignedAt:'05 ส.ค. 2569',
+    owner:'นายณัฐพงษ์ ทะเลไทย', ownerOrg:'สนง. ป.ป.ท. เขต 8',
+    complainant:'สมาคมประมงพื้นบ้าน',
+    accused:[ { no:1, name:'นายสมศักดิ์ วารี', pos:'เจ้าพนักงานประมงชำนาญงาน', idcard:'3-8004-0xxxx-xx-x', agency:'สำนักงานประมงจังหวัด' } ],
+    allegation:'เรียกรับผลประโยชน์รายเดือนจากเรือประมงอวนลากรวดในเขตทะเลชายฝั่ง',
+    receivedDate:'2568-11-10', deadline60:'2569-01-09', deadline2y:'2570-11-10', prescription:'2571-12-01',
+    docRef:'ปป 0028/0835 ลงวันที่ 18 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
+    docType:'213', signPhase:'COMPLETE', slaDays:2, slaLimit:5
+  },
+  {
+    id:'681640',
+    subject:'กล่าวหาเจ้าหน้าที่สรรพากร คืนภาษีมูลค่าเพิ่มให้แก่บริษัทนอมินีโดยมิชอบ',
+    legalBase:'ม.18/4', status:'RESOLVED', signedBySecgen: true, secgenSignedAt:'06 ส.ค. 2569',
+    owner:'นายกิตติศักดิ์ ภาษีงาม', ownerOrg:'สนง. ป.ป.ท. เขต 9',
+    complainant:'กรมสรรพากร',
+    accused:[ { no:1, name:'นายชูชาติ ภาษีดี', pos:'นักตรวจสอบภาษีชำนาญการ', idcard:'3-9005-0xxxx-xx-x', agency:'สำนักงานสรรพากรพื้นที่' } ],
+    allegation:'อนุมัติคืนภาษี VAT ให้แก่บริษัทออกใบกำกับภาษีปลอม รวมมูลค่าความเสียหาย 4.5 ล้านบาท',
+    receivedDate:'2568-11-15', deadline60:'2569-01-14', deadline2y:'2570-11-15', prescription:'2572-11-20',
+    docRef:'ปป 0029/0940 ลงวันที่ 20 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
+    docType:'213', signPhase:'COMPLETE', slaDays:1, slaLimit:5
+  }
+);
 
 /* ค่าเริ่มต้นของฟิลด์ที่เพิ่มภายหลัง — กันหน้าจอพังกับสำนวนที่ยังไม่มีข้อมูลชุดใหม่ */
 CASES.forEach(c => {
@@ -1008,29 +1118,32 @@ function renderShell(activeHref){
   /* ---- topbar ---- */
   const topbar = `
   <header class="app-topbar no-print">
-    <button class="btn btn-sm text-white d-lg-none border-0" id="sbToggle" aria-label="เปิด/ปิดเมนู">
+    <button class="btn btn-sm text-secondary d-lg-none border-0" id="sbToggle" aria-label="เปิด/ปิดเมนู">
       <i class="fa-solid fa-bars"></i>
     </button>
-    <button class="btn btn-sm text-white d-none d-lg-inline-flex border-0" id="sbCollapseToggle" aria-label="ย่อ/ขยายเมนูด้านข้าง" title="ย่อ/ขยายเมนูด้านข้าง">
+    <button class="btn btn-sm text-secondary d-none d-lg-inline-flex border-0" id="sbCollapseToggle" aria-label="ย่อ/ขยายเมนูด้านข้าง" title="ย่อ/ขยายเมนูด้านข้าง">
       <i class="fa-solid fa-bars"></i>
-    </button>
-
-    <button class="btn btn-sm text-white border-0" onclick="document.dispatchEvent(new KeyboardEvent('keydown', {key: 'k', ctrlKey: true}))" title="ค้นหาด่วน (Ctrl+K)">
-      <i class="fa-solid fa-magnifying-glass"></i>
     </button>
 
     <div class="ms-auto d-flex align-items-center gap-2">
-      <!-- Accessibility Toolbar controls -->
-      <button class="btn btn-sm text-white border-0" onclick="ECMIS.changeFont(-1)" title="อักษรเล็กลง" style="font-size: 0.8rem">A-</button>
-      <button class="btn btn-sm text-white border-0" onclick="ECMIS.changeFont(1)" title="อักษรใหญ่ขึ้น" style="font-size: 0.8rem">A+</button>
-      <button class="btn btn-sm text-white border-0" onclick="ECMIS.toggleDarkMode()" title="สลับโหมดมืด"><i class="fa-regular fa-moon"></i></button>
-      <button class="btn btn-sm text-white border-0" onclick="ECMIS.toggleHighContrast()" title="ปรับสีคอนทราสต์สูง"><i class="fa-solid fa-circle-half-stroke"></i></button>
-      
-      <!-- Notification bell dropdown -->
+      <!-- Font Size Controls -->
+      <span class="text-muted small d-none d-sm-inline ms-2" style="font-size:0.8rem">ขนาดตัวอักษร:</span>
+      <div class="btn-group btn-group-sm border rounded-pill overflow-hidden bg-light" role="group" aria-label="ขนาดตัวอักษร">
+        <button type="button" class="btn btn-sm btn-light border-end px-2 py-0 text-secondary" onclick="ECMIS.changeFont(-1)" title="อักษรเล็กลง" style="font-size:0.78rem">A-</button>
+        <button type="button" class="btn btn-sm btn-light border-end px-2 py-0 text-secondary" onclick="ECMIS.changeFont(0)" title="ขนาดปกติ" style="font-size:0.78rem">A</button>
+        <button type="button" class="btn btn-sm btn-light px-2 py-0 text-secondary" onclick="ECMIS.changeFont(1)" title="อักษรใหญ่ขึ้น" style="font-size:0.78rem">A+</button>
+      </div>
+
+      <!-- Color / Contrast adjustment -->
+      <button class="btn btn-sm btn-light border rounded-pill px-3 py-1 text-secondary d-inline-flex align-items-center gap-1" onclick="ECMIS.toggleHighContrast()" title="ปรับสี" style="font-size:0.8rem">
+        <i class="fa-solid fa-circle-half-stroke"></i> <span>ปรับสี</span>
+      </button>
+
+      <!-- Notification Bell -->
       <div class="dropdown">
-        <button class="btn btn-sm text-white position-relative border-0" data-bs-toggle="dropdown" aria-expanded="false" title="การแจ้งเตือน">
-          <i class="fa-regular fa-bell"></i>
-          <span class="position-absolute top-50 start-100 translate-middle-y badge rounded-pill bg-danger" style="font-size:.58rem; transform: translate(-30%, -85%) !important">3</span>
+        <button class="btn btn-sm btn-light border-0 rounded-circle position-relative p-2 ms-1" data-bs-toggle="dropdown" aria-expanded="false" title="การแจ้งเตือน" style="width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center">
+          <i class="fa-regular fa-bell text-secondary"></i>
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-circle bg-danger" style="font-size:.58rem; width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; padding:0">2</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end p-0" style="width:290px; max-height:360px; overflow-y:auto">
           <li><h6 class="dropdown-header border-bottom p-2 text-dark dark-text-light" style="font-size: 0.82rem">การแจ้งเตือนล่าสุด</h6></li>
@@ -1039,10 +1152,11 @@ function renderShell(activeHref){
         </ul>
       </div>
 
-      <div class="dropdown role-switcher">
-        <button class="btn btn-sm dropdown-toggle user-pill" data-bs-toggle="dropdown" aria-expanded="false">
-          <i class="fa-regular fa-user me-1"></i>${role.name}
-          <span class="d-none d-md-inline"> — ${role.title}</span>
+      <!-- User Role Dropdown Pill -->
+      <div class="dropdown role-switcher ms-1">
+        <button class="btn btn-sm btn-light border rounded-pill px-3 py-1 dropdown-toggle user-pill text-secondary d-inline-flex align-items-center gap-1" data-bs-toggle="dropdown" aria-expanded="false" style="font-size:0.82rem">
+          <i class="fa-regular fa-user"></i>
+          <span>${role.name} — ${role.title}</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
           <li><h6 class="dropdown-header">${role.name} — ${role.title}</h6></li>
@@ -2481,6 +2595,33 @@ function initDocPaneToggle() {
     runToggleInit();
   }
   setTimeout(runToggleInit, 100);
+}
+
+let currentFontStep = 0;
+function changeFont(step) {
+  if (step === 0) currentFontStep = 0;
+  else currentFontStep = Math.max(-2, Math.min(4, currentFontStep + step));
+  
+  const baseSize = 14.5;
+  const newSize = baseSize + (currentFontStep * 1.5);
+  document.body.style.fontSize = newSize + 'px';
+  toastOk(`ปรับขนาดตัวอักษรเป็น ${newSize}px`);
+}
+
+function toggleHighContrast() {
+  document.body.classList.toggle('high-contrast');
+  const active = document.body.classList.contains('high-contrast');
+  toastOk(active ? 'เปิดโหมดปรับสี (High Contrast)' : 'ปิดโหมดปรับสี');
+}
+
+function toggleDarkMode() {
+  document.body.classList.toggle('dark-mode');
+  const active = document.body.classList.contains('dark-mode');
+  toastOk(active ? 'เปิดโหมดมืด (Dark Mode)' : 'ปิดโหมดมืด');
+}
+
+function toggleSidebarCollapse() {
+  document.body.classList.toggle('sidebar-collapsed');
 }
 
 global.ECMIS = {

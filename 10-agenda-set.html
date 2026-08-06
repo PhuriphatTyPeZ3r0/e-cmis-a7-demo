@@ -36,14 +36,6 @@
         <div class="row g-3">
             <div class="col-xl-6">
 
-                <!-- ที่มาของสำนวน -->
-                <div class="card card-ecmis mb-3">
-                    <div class="card-header"><i class="fa-solid fa-diagram-project"></i> ที่มาของสำนวน</div>
-                    <div class="card-body">
-                        <div class="rule-panel" id="sourceRules"></div>
-                    </div>
-                </div>
-
                 <!-- T11-T12: บรรจุวาระ -->
                 <div class="card card-ecmis mb-3" id="agendaCard">
                     <div class="card-header"><i class="fa-solid fa-calendar-check"></i>
@@ -73,8 +65,6 @@
                                 หนังสือเชิญที่แนบระเบียบวาระเต็มจึงเป็น<strong>ชั้นความลับทันที</strong>
                             </div>
                         </div>
-
-                        <div class="rule-panel" id="meetRules"></div>
                     </div>
                 </div>
             </div>
@@ -126,30 +116,6 @@
         document.getElementById('subLine').innerHTML = `เลขเรื่อง <strong>${kase.id}</strong> · ${kase.subject}`;
         document.getElementById('stBadge').innerHTML = ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
         document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status);
-
-        /* ---------- ที่มาของสำนวน ---------- */
-        document.getElementById('sourceRules').innerHTML = [
-            { ok: true, t: kase.subCommittee ? `ผ่านมติคณะอนุกลั่นกรองฯ ${kase.subCommittee} เห็นควรบรรจุวาระ (T10)` : 'ประธานฯ สั่งบรรจุวาระโดยตรง (Bypass ใบด่วน)' },
-            { ok: true, t: 'เอกสารประกอบวาระครบถ้วนจากฝ่ายเจ้าของสำนวน' },
-            { ok: true, t: 'อยู่ในกรอบเวลา ม.23 (ครบกำหนด ' + ECMIS.thaiDate(kase.deadline2y) + ')' }
-        ].map(r => `<div class="rule ${r.ok ? 'pass' : 'fail'}">
-  <i class="fa-solid ${r.ok ? 'fa-circle-check' : 'fa-circle-xmark'}"></i><span>${r.t}</span></div>`).join('');
-
-        /* ---------- meeting rules ---------- */
-        function renderMeetRules() {
-            const secrecy = document.getElementById('secrecy').value;
-            document.getElementById('meetRules').innerHTML = [
-                { ok: true, t: 'แจ้งนัดประชุมเป็นหนังสือล่วงหน้าไม่น้อยกว่า 3 วัน (ม.13 วรรคสอง)' },
-                { ok: true, t: 'ระบบแจ้งเตือนกรรมการอ่านระเบียบวาระล่วงหน้า 3 วันก่อนประชุม' },
-                {
-                    ok: secrecy === 'SECRET', t: secrecy === 'SECRET'
-                        ? 'ตั้งชั้นความลับ "ลับ" ถูกต้องตาม ม.19/1 (แนบวาระเต็ม)'
-                        : 'เลือก "ปกติ" — ระบบจะไม่แนบระเบียบวาระเต็มไปกับหนังสือเชิญ'
-                },
-                { ok: true, t: 'ระบบตรวจองค์ประชุมขั้นต่ำ ม.12 (ไม่น้อยกว่ากึ่งหนึ่งของกรรมการเท่าที่มีอยู่) ก่อนเปิดวาระ' }
-            ].map(r => `<div class="rule ${r.ok ? 'pass' : ''}">
-    <i class="fa-solid ${r.ok ? 'fa-circle-check' : 'fa-circle-info'}"></i><span>${r.t}</span></div>`).join('');
-        }
 
         /* ---------- documents ---------- */
         function renderDoc() {
@@ -227,7 +193,7 @@
         }));
         ['meetNo', 'meetDate', 'agendaNo'].forEach(id =>
             document.getElementById(id).addEventListener('input', renderDoc));
-        document.getElementById('secrecy').addEventListener('change', () => { renderDoc(); renderMeetRules(); });
+        document.getElementById('secrecy').addEventListener('change', renderDoc);
 
         /* ---------- actions — เฉพาะ role.id === 'affairs' (สิทธิ์ create.agenda / create.invite) ---------- */
         function renderActions() {
@@ -276,7 +242,7 @@
             }
         }
 
-        renderMeetRules(); renderDoc(); renderActions();
+        renderDoc(); renderActions();
     </script>
 </body>
 
