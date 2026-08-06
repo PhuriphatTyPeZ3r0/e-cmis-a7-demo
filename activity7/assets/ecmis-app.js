@@ -934,7 +934,7 @@ function canRecall(kase, roleId){
 const NAV = [
   { section:'ภาพรวม' },
   { href:'01-work-inbox.html',            icon:'fa-inbox',            label:'Work Inbox', badge:true },
-  { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน 7.1' },
+  { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' },
   { href:'11-secgen-desk.html',           icon:'fa-gavel',            label:'โต๊ะสั่งการเลขาธิการฯ', ref:'L3 · S1–S11',
     visible: role => can('view.all', role.id) },
   { section:'กระบวนงานไต่สวนเบื้องต้น (7.1)' },
@@ -1106,7 +1106,6 @@ function renderShell(activeHref){
   initA11yAndPref();
   initCommandPalette();
   initVoiceInput();
-  initSyncIndicator();
   initCharCounterAndCopy();
   initDocPaneToggle();
 
@@ -1896,18 +1895,6 @@ function initSignaturePad(canvasId, clearBtnId, inputId) {
 
   function saveSig() {
     if (input) input.value = canvas.toDataURL();
-  }
-}
-
-function initSyncIndicator() {
-  const main = document.querySelector('.app-main');
-  if (main) {
-    const time = new Date().toLocaleTimeString('th-TH');
-    const syncHtml = `
-      <div class="text-end text-muted mb-2 no-print" style="font-size: 0.72rem; letter-spacing:0.2px">
-        <i class="fa-solid fa-arrows-rotate me-1 text-success"></i>อัปเดตข้อมูลล่าสุดเมื่อ ${time} | ดึงข้อมูลแบบ Real-time Sync
-      </div>`;
-    main.insertAdjacentHTML('beforeend', syncHtml);
   }
 }
 
