@@ -954,8 +954,6 @@ const NAV = [
   { section:'ภาพรวม' },
   { href:'01-work-inbox.html',            icon:'fa-inbox',            label:'Work Inbox', badge:true },
   { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' },
-  { href:'11-secgen-desk.html',           icon:'fa-gavel',            label:'โต๊ะสั่งการเลขาธิการฯ', ref:'L3 · S1–S11',
-    visible: role => can('view.all', role.id) },
   { section:'กระบวนงานไต่สวนเบื้องต้น (7.1)' },
   { href:'04-approval-review.html',       icon:'fa-user-check',       label:'เลขาธิการฯ พิจารณา / ลงนาม', step:1, ref:'S1–G1',
     visible: role => can('view.all', role.id) || role.flow.includes('S2') },
