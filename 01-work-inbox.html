@@ -63,12 +63,12 @@
   <div class="row g-3 align-items-start">
     <div class="col-12">
 
-      <!-- Table 1: คิวงานพิจารณาลงนาม -->
+      <!-- Single Merged Table: รายการสำนวนพิจารณา/ลงนาม -->
       <div class="card card-ecmis mb-4">
         <div class="card-header d-flex align-items-center flex-wrap gap-2">
           <i class="fa-solid fa-list-check text-primary"></i>
-          <span class="fw-bold">คิวงานพิจารณาลงนาม (งานที่รอฉันดำเนินการ)</span>
-          <span class="badge bg-danger rounded-pill ms-1" id="myCount">0</span>
+          <span class="fw-bold">รายการสำนวนพิจารณา/ลงนาม</span>
+          <span class="badge bg-primary rounded-pill ms-1" id="totalCount">0</span>
           <span class="ms-auto small text-muted" id="myRoleLabel"></span>
         </div>
         <div class="card-body p-0">
@@ -80,7 +80,7 @@
                 <col>
                 <col style="width:200px">
                 <col style="width:120px">
-                <col style="width:130px">
+                <col style="width:140px">
               </colgroup>
               <thead>
                 <tr>
@@ -110,41 +110,6 @@
         </div>
       </div>
 
-      <!-- Table 2: สำนวนที่ติดตามได้ / ลงนามแล้ว -->
-      <div class="card card-ecmis">
-        <div class="card-header d-flex align-items-center flex-wrap gap-2">
-          <i class="fa-solid fa-eye text-secondary"></i>
-          <span class="fw-bold">รายการสำนวนที่ติดตามได้ / ลงนามแล้ว</span>
-          <span class="badge bg-secondary rounded-pill ms-1" id="watchCount">0</span>
-          <span class="text-muted small ms-auto">(อ่านอย่างเดียว)</span>
-        </div>
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-hover tbl-ecmis mb-0 align-middle">
-              <colgroup>
-                <col style="width:40px">
-                <col style="width:130px">
-                <col>
-                <col style="width:200px">
-                <col style="width:120px">
-                <col style="width:130px">
-              </colgroup>
-              <thead>
-                <tr>
-                  <th class="text-center" style="width:40px">#</th>
-                  <th>เลขสำนวน</th>
-                  <th>เรื่องกล่าวหา</th>
-                  <th>สถานะ</th>
-                  <th>กำหนดเวลา</th>
-                  <th class="text-end">ดำเนินการ</th>
-                </tr>
-              </thead>
-              <tbody id="watchQueue"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
     </div>
   </div>
 
@@ -161,7 +126,6 @@ const role  = ECMIS.currentRole();
 const all   = ECMIS.CASES;
 /* คิวงานจริงของ กจ.7 = ต้องเป็นสำนวนที่เข้าขอบเขตแล้วเท่านั้น */
 let mine    = ECMIS.inboxFor(role.id).filter(c => !ECMIS.isUpstreamCase(c));
-/* สำนวนที่บทบาทต้นทางถืออยู่ — แสดงเพื่อติดตาม */
 let upstreamMine = ECMIS.inboxFor(role.id).filter(c => ECMIS.isUpstreamCase(c));
 
 document.getElementById('myRoleLabel').textContent = `บทบาท: ${role.title}`;
@@ -180,12 +144,12 @@ if(ECMIS.isUpstreamRole(role.id)){
 /* ---------- KPI & Filter Linking ---------- */
 function renderKPICards() {
   const currentSt = document.getElementById('statusFilter')?.value || 'ALL';
-  const pendingCount = mine.filter(c => c.status === 'PENDING_SECGEN' && !c.signedBySecgen).length;
-  const signedCount = all.filter(c => c.signedBySecgen || c.status === 'RESOLVED' || c.status === 'CLOSED').length;
-  const notSignedCount = all.filter(c => c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS').length;
+  const pendingCount = allCasesCombined.filter(c => c.status === 'PENDING_SECGEN' && !c.signedBySecgen).length;
+  const signedCount = allCasesCombined.filter(c => c.signedBySecgen || c.status === 'RESOLVED' || c.status === 'CLOSED').length;
+  const notSignedCount = allCasesCombined.filter(c => c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS').length;
 
   const kpis = [
-    { id:'ALL', n: mine.length, l:'รายการทั้งหมด', i:'fa-folder-open', c:'#0F2A62' },
+    { id:'ALL', n: allCasesCombined.length, l:'รายการทั้งหมด', i:'fa-folder-open', c:'#0F2A62' },
     { id:'PENDING', n: pendingCount, l:'รอพิจารณาลงนาม', i:'fa-hourglass-half', c:'#D0A830' },
     { id:'SIGNED', n: signedCount, l:'ลงนามแล้ว', i:'fa-circle-check', c:'#16A34A' },
     { id:'REJECTED', n: notSignedCount, l:'ไม่ลงนาม', i:'fa-circle-xmark', c:'#DB2626' }
@@ -228,21 +192,43 @@ const PAGE_FOR = {
   board_sec:'08-board-resolution.html', board:'08-board-resolution.html'
 };
 
+// --- Single Merged Dataset ---
+const watchBase = upstreamMine.concat(
+  all.filter(c => !ECMIS.canAct(c, role.id) && !ECMIS.isUpstreamCase(c) &&
+    ['owner','board_sec','dir_case','secgen'].includes(role.id)));
+
+// Deduplicate cases
+const allCasesCombinedMap = new Map();
+mine.forEach(c => allCasesCombinedMap.set(c.id, { caseData: c, isActionable: true }));
+watchBase.forEach(c => {
+  if (!allCasesCombinedMap.has(c.id)) {
+    allCasesCombinedMap.set(c.id, { caseData: c, isActionable: false });
+  }
+});
+
+const allCasesCombined = Array.from(allCasesCombinedMap.values()).map(item => {
+  const c = item.caseData;
+  // Check if case is currently pending for action
+  const isPendingAction = (c.status === 'PENDING_SECGEN' && !c.signedBySecgen);
+  return { ...c, isActionable: item.isActionable || isPendingAction };
+});
+
 // --- Pagination & Sorting State ---
 let currentPage = 1;
-const pageSize = 5;
+const pageSize = 10;
 let sortField = 'id';
 let sortOrder = 'asc';
 
-function row(c, actionable){
+function row(c){
   const target = `${PAGE_FOR[role.id] || '02-case-register.html'}?case=${encodeURIComponent(c.id)}`;
+  const isPendingAction = (c.status === 'PENDING_SECGEN' && !c.signedBySecgen);
   
   let statusBadgeHtml = '';
   if (c.signedBySecgen) {
     const signDate = c.secgenSignedAt || '04 ส.ค. 2569';
     statusBadgeHtml = `<span class="st st-done"><i class="fa-solid fa-check me-1"></i>ลงนามแล้ว</span>
       <small class="text-muted d-block mt-1" style="font-size:0.73rem;">ลงนามเมื่อ ${signDate}</small>`;
-  } else if (c.status === 'PENDING_SECGEN') {
+  } else if (isPendingAction) {
     statusBadgeHtml = `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>รอพิจารณาลงนาม</span>`;
   } else {
     statusBadgeHtml = ECMIS.statusBadge(c.status);
@@ -250,7 +236,7 @@ function row(c, actionable){
 
   return `<tr>
     <td class="text-center">
-      ${actionable ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem"></i>'}
+      ${isPendingAction ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem"></i>'}
     </td>
     <td class="case-no">${c.id}${c.urgent?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
     <td style="max-width:340px">
@@ -260,19 +246,27 @@ function row(c, actionable){
     <td>${statusBadgeHtml}</td>
     <td>${ECMIS.slaBadge(c)}</td>
     <td class="text-end">
-      <a href="${target}" class="btn btn-sm ${actionable ? 'btn-navy' : 'btn-outline-secondary'}">
-        ${actionable ? '<i class="fa-solid fa-pen-to-square me-1"></i>ดูรายละเอียด' : '<i class="fa-regular fa-eye me-1"></i>ดูรายละเอียด'}
-      </a>
+      ${isPendingAction ? `
+        <a href="${target}" class="btn btn-sm btn-navy px-3">
+          <i class="fa-solid fa-pen-to-square me-1"></i>ดำเนินการ
+        </a>
+      ` : `
+        <a href="${target}" class="btn btn-sm btn-outline-secondary px-3">
+          <i class="fa-regular fa-eye me-1"></i>ดูรายละเอียด
+        </a>
+      `}
     </td>
   </tr>`;
 }
+
+let filteredCombined = [...allCasesCombined];
 
 function renderMyQueue(loading = false) {
   const tbody = document.getElementById('myQueue');
   
   if (loading) {
     let skeletons = '';
-    for(let i=0; i<Math.min(pageSize, filteredMine.length || 3); i++) {
+    for(let i=0; i<Math.min(pageSize, filteredCombined.length || 3); i++) {
       skeletons += `
         <tr class="skeleton-row">
           <td><div class="skeleton-box" style="width:20px"></div></td>
@@ -291,11 +285,20 @@ function renderMyQueue(loading = false) {
     
     setTimeout(() => {
       renderMyQueue(false);
-    }, 350);
+    }, 250);
     return;
   }
 
-  const sorted = [...filteredMine].sort((a, b) => {
+  const sorted = [...filteredCombined].sort((a, b) => {
+    // Primary sort: Priority to pending actions (รอพิจารณาลงนาม)
+    const isPendingA = (a.status === 'PENDING_SECGEN' && !a.signedBySecgen) ? 1 : 0;
+    const isPendingB = (b.status === 'PENDING_SECGEN' && !b.signedBySecgen) ? 1 : 0;
+
+    if (isPendingA !== isPendingB) {
+      return isPendingB - isPendingA; // Pending actions come first
+    }
+
+    // Secondary sort: Selected sort field
     let valA = a[sortField];
     let valB = b[sortField];
     if (sortField === 'slaDays') {
@@ -314,14 +317,14 @@ function renderMyQueue(loading = false) {
   const paginated = sorted.slice(startIdx, startIdx + pageSize);
 
   tbody.innerHTML = paginated.length
-    ? paginated.map(c => row(c, true)).join('')
+    ? paginated.map(c => row(c)).join('')
     : `<tr><td colspan="6" class="text-center text-muted py-4">
          <i class="fa-regular fa-face-smile fa-lg mb-2 d-block"></i>
-         ไม่มีรายการในเงื่อนไขการค้นหา<br>
+         ไม่มีรายการสำนวนในเงื่อนไขการค้นหา<br>
          <small>ลองเปลี่ยนข้อความค้นหาหรือตัวกรองสถานะ</small></td></tr>`;
 
-  const myCountEl = document.getElementById('myCount');
-  if (myCountEl) myCountEl.textContent = filteredMine.length;
+  const totalCountEl = document.getElementById('totalCount');
+  if (totalCountEl) totalCountEl.textContent = filteredCombined.length;
 
   const paginUl = document.getElementById('queuePagination');
   let paginHtml = `
@@ -439,27 +442,11 @@ document.getElementById('btnBulkApprove')?.addEventListener('click', () => {
 });
 
 /* ---------- Client-side Filter Logic ---------- */
-let filteredMine = [...mine];
-let filteredWatch = [];
-
 function applyFilters() {
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   const st = document.getElementById('statusFilter').value;
 
-  filteredMine = mine.filter(c => {
-    const matchQ = !q || c.id.toLowerCase().includes(q) || (c.subject && c.subject.toLowerCase().includes(q)) || (c.ownerOrg && c.ownerOrg.toLowerCase().includes(q));
-    let matchSt = true;
-    if (st === 'PENDING') matchSt = c.status === 'PENDING_SECGEN' && !c.signedBySecgen;
-    else if (st === 'SIGNED') matchSt = !!c.signedBySecgen || c.status === 'RESOLVED' || c.status === 'CLOSED';
-    else if (st === 'REJECTED') matchSt = c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS';
-    return matchQ && matchSt;
-  });
-
-  const watchBase = upstreamMine.concat(
-    all.filter(c => !ECMIS.canAct(c, role.id) && !ECMIS.isUpstreamCase(c) &&
-      ['owner','board_sec','dir_case','secgen'].includes(role.id)));
-
-  filteredWatch = watchBase.filter(c => {
+  filteredCombined = allCasesCombined.filter(c => {
     const matchQ = !q || c.id.toLowerCase().includes(q) || (c.subject && c.subject.toLowerCase().includes(q)) || (c.ownerOrg && c.ownerOrg.toLowerCase().includes(q));
     let matchSt = true;
     if (st === 'PENDING') matchSt = c.status === 'PENDING_SECGEN' && !c.signedBySecgen;
@@ -471,15 +458,6 @@ function applyFilters() {
   currentPage = 1;
   renderKPICards();
   renderMyQueue(true);
-
-  const watchCountEl = document.getElementById('watchCount');
-  if (watchCountEl) watchCountEl.textContent = filteredWatch.length;
-
-  document.getElementById('watchQueue').innerHTML = filteredWatch.length
-    ? filteredWatch.map(c => row(c, false)).join('')
-    : `<tr><td colspan="6" class="text-center text-muted py-4">
-         <i class="fa-regular fa-folder-open fa-lg mb-2 d-block text-secondary opacity-50"></i>
-         ไม่มีรายการสำนวนที่ตรงตามเงื่อนไข</td></tr>`;
 }
 
 document.getElementById('btnApplyFilter').addEventListener('click', applyFilters);
