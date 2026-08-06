@@ -940,8 +940,6 @@ const NAV = [
   { section:'กระบวนงานไต่สวนเบื้องต้น (7.1)' },
   { href:'04-approval-review.html',       icon:'fa-user-check',       label:'เลขาธิการฯ พิจารณา / ลงนาม', step:1, ref:'S1–G1',
     visible: role => can('view.all', role.id) || role.flow.includes('S2') },
-  { href:'05-urgent-memo.html',           icon:'fa-bolt',             label:'ใบด่วนขอบรรจุวาระ', step:2, ref:'G3–S3',
-    visible: role => can('view.all', role.id) },
   { href:'06-chairman-agenda.html',       icon:'fa-gavel',            label:'ประธานฯ สั่งการ / บรรจุวาระ', step:3, ref:'S4–S8',
     visible: role => can('view.all', role.id) },
   { href:'07-subcommittee-screening.html',icon:'fa-users-viewfinder', label:'อนุกลั่นกรองฯ คณะ 1–8', step:4, ref:'S5–S6',
@@ -1565,7 +1563,7 @@ function initCommandPalette() {
           owner:'03-report-213.html', section_head:'03-report-213.html',
           director:'03-report-213.html', deputy:'03-report-213.html',
           secgen:'04-approval-review.html', support_sub:'04-approval-review.html',
-          dir_case:'05-urgent-memo.html', chair_office:'06-chairman-agenda.html',
+          chair_office:'06-chairman-agenda.html',
           chairman:'06-chairman-agenda.html', subcommittee:'07-subcommittee-screening.html',
           board_sec:'08-board-resolution.html', board:'08-board-resolution.html'
         };
