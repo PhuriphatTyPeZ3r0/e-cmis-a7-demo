@@ -529,7 +529,7 @@ function m28Pending(){
 /* --------------------------------------------------- MOCK CASE DATASET */
 const CASES = [
   {
-    id:'681547',
+    id:'1547/2568',
     subject:'กล่าวหาเจ้าหน้าที่องค์การบริหารส่วนตำบลแห่งหนึ่ง จัดซื้อจัดจ้างโครงการก่อสร้างถนน คสล. โดยมิชอบ',
     legalBase:'ม.18/4', /* ม.18/4 พรบ.มาตรการฯ | ม.62 พรป.ปปช. */
     status:'PENDING_SECGEN',
@@ -561,7 +561,7 @@ const CASES = [
     ]
   },
   {
-    id:'681602',
+    id:'1396/2564',
     subject:'กล่าวหาข้าราชการสังกัดกรมหนึ่ง เรียกรับเงินจากผู้ประกอบการเพื่อแลกกับการออกใบอนุญาต',
     legalBase:'ม.62',
     status:'PENDING_URGENT',
@@ -577,7 +577,7 @@ const CASES = [
     meetingNo:null, agendaNo:null
   },
   {
-    id:'681588',
+    id:'1119/2565',
     subject:'กล่าวหาเจ้าหน้าที่โรงพยาบาลรัฐแห่งหนึ่ง เบิกจ่ายค่าตอบแทนล่วงเวลาอันเป็นเท็จ',
     legalBase:'ม.18/4',
     status:'IN_SCREENING',
@@ -595,7 +595,7 @@ const CASES = [
     meetingNo:null, agendaNo:null
   },
   {
-    id:'681490',
+    id:'1525/2558',
     subject:'กล่าวหาผู้บริหารสถานศึกษาแห่งหนึ่ง จัดซื้อครุภัณฑ์คอมพิวเตอร์ราคาสูงเกินจริง',
     legalBase:'ม.18/4',
     status:'AGENDA_SET',
@@ -610,7 +610,7 @@ const CASES = [
     meetingNo:'37/2569', agendaNo:'5.9', meetingDate:'2569-05-19'
   },
   {
-    id:'681455',
+    id:'1189/2569',
     subject:'กล่าวหาเจ้าหน้าที่สำนักงานที่ดินแห่งหนึ่ง ออกโฉนดที่ดินทับที่สาธารณประโยชน์',
     legalBase:'ม.62',
     status:'RESOLVED',
@@ -626,7 +626,7 @@ const CASES = [
     resolution:'ACCEPT_S24P1'
   },
   {
-    id:'681610',
+    id:'1609/2568',
     subject:'กล่าวหาพนักงานรัฐวิสาหกิจแห่งหนึ่ง ทุจริตการเบิกจ่ายค่าน้ำมันเชื้อเพลิง',
     legalBase:'ม.18/4',
     status:'DRAFT',
@@ -641,7 +641,7 @@ const CASES = [
     meetingNo:null, agendaNo:null
   },
   {
-    id:'681523',
+    id:'1015/2568',
     subject:'กล่าวหาเจ้าหน้าที่เทศบาลแห่งหนึ่ง เรียกรับผลประโยชน์จากผู้ขออนุญาตประกอบกิจการ',
     legalBase:'ม.18/4',
     status:'RETURNED',
@@ -660,11 +660,11 @@ const CASES = [
   }
 ];
 
-/* เพิ่มสำนวนตัวอย่างชนิด 644 ที่ความเห็นตลอดสายตรงกัน — ใช้เทียบกับ 681547
+/* เพิ่มสำนวนตัวอย่างชนิด 644 ที่ความเห็นตลอดสายตรงกัน — ใช้เทียบกับ 1547/2568
    ให้เห็นว่า G1 ไม่ถูกจุดชนวน และเพดาน SLA เปลี่ยนตามชนิดรายงาน            */
 CASES.push(
   {
-    id:'681615',
+    id:'0012/2565',
     subject:'กล่าวหาเจ้าหน้าที่สำนักงานเขตแห่งหนึ่ง ละเว้นการบังคับใช้กฎหมายควบคุมอาคาร',
     legalBase:'ม.18/4',
     status:'PENDING_SECGEN',
@@ -686,7 +686,7 @@ CASES.push(
     ]
   },
   {
-    id:'681618',
+    id:'0719/2568',
     subject:'กล่าวหาผู้บริหาร อบจ.แห่งหนึ่ง ปรับปรุงภูมิทัศน์สวนสาธารณะราคาสูงเกินจริง',
     legalBase:'ม.18/4', status:'PENDING_SECGEN',
     owner:'นายประเสริฐ มั่นคง', ownerOrg:'สนง. ป.ป.ท. เขต 3',
@@ -698,7 +698,7 @@ CASES.push(
     docType:'213', signPhase:'WAIT', slaDays:4, slaLimit:5
   },
   {
-    id:'681620',
+    id:'1378/2566',
     subject:'กล่าวหาเจ้าพนักงานป่าไม้ ออกหนังสือรับรองทำกินในเขตป่าสงวนโดยมิชอบ',
     legalBase:'ม.62', status:'PENDING_SECGEN',
     owner:'นายอำนาจ ยุติธรรม', ownerOrg:'สนง. ป.ป.ท. เขต 5',
@@ -710,7 +710,7 @@ CASES.push(
     docType:'213', signPhase:'WAIT', slaDays:2, slaLimit:5
   },
   {
-    id:'681622',
+    id:'3648/2558',
     subject:'กล่าวหาผู้อำนวยการวิทยาลัยเทคนิคแห่งหนึ่ง ยักยอกเงินทุนการศึกษาของนักเรียน',
     legalBase:'ม.18/4', status:'PENDING_SECGEN',
     owner:'นายอนุรักษ์ ปราบทุจริต', ownerOrg:'สนง. ป.ป.ท. เขต 2',
@@ -722,7 +722,7 @@ CASES.push(
     docType:'213', signPhase:'WAIT', slaDays:5, slaLimit:5
   },
   {
-    id:'681625',
+    id:'0818/2568',
     subject:'กล่าวหาเจ้าหน้าที่แขวงทางหลวง เบิกจ่ายงบประมาณซ่อมแซมทางหลวงอันเป็นเท็จ',
     legalBase:'ม.18/4', status:'PENDING_SECGEN',
     owner:'นายชูเกียรติ สุจริต', ownerOrg:'สนง. ป.ป.ท. เขต 4',
@@ -734,7 +734,7 @@ CASES.push(
     docType:'644', signPhase:'WAIT', slaDays:1, slaLimit:15
   },
   {
-    id:'681628',
+    id:'1083/2568',
     subject:'กล่าวหาคณะกรรมการตรวจรับงานจ้างซ่อมบำรุงระบบประปาหมู่บ้าน ตรวจรับงานเท็จ',
     legalBase:'ม.18/4', status:'PENDING_SECGEN',
     owner:'นายสมเกียรติ พัฒนา', ownerOrg:'สนง. ป.ป.ท. เขต 7',
@@ -746,7 +746,7 @@ CASES.push(
     docType:'213', signPhase:'WAIT', slaDays:3, slaLimit:5
   },
   {
-    id:'681630',
+    id:'0674/2568',
     subject:'กล่าวหาเจ้าหน้าที่กรมการปกครอง ทุจริตการทำบัตรประจำตัวประชาชนให้ต่างด้าว',
     legalBase:'ม.62', status:'PENDING_SECGEN',
     owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 1',
@@ -758,7 +758,7 @@ CASES.push(
     docType:'213', signPhase:'WAIT', slaDays:7, slaLimit:5
   },
   {
-    id:'681633',
+    id:'0773/2568',
     subject:'กล่าวหาบุคลากรทางการแพทย์ เบิกจ่ายยาและเวชภัณฑ์ออกนอกระบบโรงพยาบาล',
     legalBase:'ม.18/4', status:'PENDING_SECGEN',
     owner:'นายวิศรุต สุขเกษม', ownerOrg:'สนง. ป.ป.ท. เขต 6',
@@ -770,7 +770,7 @@ CASES.push(
     docType:'213', signPhase:'WAIT', slaDays:4, slaLimit:5
   },
   {
-    id:'681635',
+    id:'1180/2568',
     subject:'กล่าวหาเจ้าหน้าที่ประมง ละเว้นการจับกุมเรือประมงผิดกฎหมาย',
     legalBase:'ม.62', status:'RESOLVED', signedBySecgen: true, secgenSignedAt:'05 ส.ค. 2569',
     owner:'นายณัฐพงษ์ ทะเลไทย', ownerOrg:'สนง. ป.ป.ท. เขต 8',
@@ -782,7 +782,7 @@ CASES.push(
     docType:'213', signPhase:'COMPLETE', slaDays:2, slaLimit:5
   },
   {
-    id:'681640',
+    id:'1478/2568',
     subject:'กล่าวหาเจ้าหน้าที่สรรพากร คืนภาษีมูลค่าเพิ่มให้แก่บริษัทนอมินีโดยมิชอบ',
     legalBase:'ม.18/4', status:'RESOLVED', signedBySecgen: true, secgenSignedAt:'06 ส.ค. 2569',
     owner:'นายกิตติศักดิ์ ภาษีงาม', ownerOrg:'สนง. ป.ป.ท. เขต 9',
@@ -830,11 +830,11 @@ CASES.forEach(c => {
    orderType = คำสั่งเบื้องต้นของเลขาธิการฯ | reported = เข้ารอบรายงานบอร์ดแล้วหรือยัง
    dueDate   = วันครบกำหนดรายงานรอบ 15 วัน                                 */
 const M28_LOG = {
-  '681602': { orderType:'ACCEPT', orderedDate:'2569-05-22', reported:false, dueDate:'2569-06-06' },
-  '681588': { orderType:'ACCEPT', orderedDate:'2569-05-26', reported:false, dueDate:'2569-06-10' },
-  '681490': { orderType:'ACCEPT', orderedDate:'2569-04-30', reported:true,  dueDate:'2569-05-15',
+  '1396/2564': { orderType:'ACCEPT', orderedDate:'2569-05-22', reported:false, dueDate:'2569-06-06' },
+  '1119/2565': { orderType:'ACCEPT', orderedDate:'2569-05-26', reported:false, dueDate:'2569-06-10' },
+  '1525/2558': { orderType:'ACCEPT', orderedDate:'2569-04-30', reported:true,  dueDate:'2569-05-15',
                  boardOutcome:'บอร์ดไม่มีมติเป็นอย่างอื่นภายใน 15 วัน — ถือว่ามีมติตามคำสั่งเลขาธิการฯ' },
-  '681523': { orderType:'REJECT', orderedDate:'2569-05-28', reported:false, dueDate:'2569-06-12' }
+  '1015/2568': { orderType:'REJECT', orderedDate:'2569-05-28', reported:false, dueDate:'2569-06-12' }
 };
 CASES.forEach(c => { if(M28_LOG[c.id]) c.m28 = M28_LOG[c.id]; });
 
@@ -1108,9 +1108,9 @@ function renderShell(activeHref){
 
   /* ---- notification center ---- */
   const notifications = [
-    { title: 'เสนอเรื่องใหม่', body: 'สำนวน 681547 รอเลขาธิการฯ พิจารณา/ลงนาม', time: '10 นาทีที่แล้ว', icon: 'fa-user-check', cls: 'bg-primary text-white' },
-    { title: 'มติบอร์ดเสร็จสิ้น', body: 'บันทึกมติที่ประชุมบอร์ด สำนวน 681588 แล้ว', time: '1 ชม. ที่แล้ว', icon: 'fa-scale-balanced', cls: 'bg-success text-white' },
-    { title: 'คำร้องขอใบด่วน', body: 'ผอ.กบค. ส่งใบด่วนขอวาระด่วน สำนวน 681602', time: '2 ชม. ที่แล้ว', icon: 'fa-bolt', cls: 'bg-warning text-dark' }
+    { title: 'เสนอเรื่องใหม่', body: 'สำนวน 1547/2568 รอเลขาธิการฯ พิจารณา/ลงนาม', time: '10 นาทีที่แล้ว', icon: 'fa-user-check', cls: 'bg-primary text-white' },
+    { title: 'มติบอร์ดเสร็จสิ้น', body: 'บันทึกมติที่ประชุมบอร์ด สำนวน 1119/2565 แล้ว', time: '1 ชม. ที่แล้ว', icon: 'fa-scale-balanced', cls: 'bg-success text-white' },
+    { title: 'คำร้องขอใบด่วน', body: 'ผอ.กบค. ส่งใบด่วนขอวาระด่วน สำนวน 1396/2564', time: '2 ชม. ที่แล้ว', icon: 'fa-bolt', cls: 'bg-warning text-dark' }
   ];
   const notifItems = notifications.map(n => `
     <li class="p-2 border-bottom" style="font-size:0.78rem">
@@ -1809,7 +1809,7 @@ function initCommandPalette() {
     <div class="cmd-palette-box">
       <div class="cmd-palette-search-wrapper">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" class="cmd-palette-input" id="cmdPaletteInput" placeholder="พิมพ์ชื่อเมนู หรือ เลขสำนวนคดี (เช่น 681547)..." autocomplete="off">
+        <input type="text" class="cmd-palette-input" id="cmdPaletteInput" placeholder="พิมพ์ชื่อเมนู หรือ เลขสำนวนคดี (เช่น 1547/2568)..." autocomplete="off">
       </div>
       <div class="cmd-palette-results" id="cmdPaletteResults"></div>
       <div class="cmd-palette-hint">
