@@ -1062,7 +1062,7 @@ function canRecall(kase, roleId){
                      กระบวนงานภายในกิจกรรมที่ 7 ซึ่งอยู่นอกขอบเขตงานของตน       */
 const NAV = [
   { section:'ภาพรวม' },
-  { href:'01-work-inbox.html',            icon:'fa-inbox',            label:'Work Inbox', badge:true },
+  { href:'01-work-inbox.html',            icon:'fa-inbox',            label:'รายการพิจารณา/ลงนาม', badge:true },
   { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' },
   { section:'กระบวนงานไต่สวนเบื้องต้น (7.1)' },
   { href:'04-approval-review.html',       icon:'fa-user-check',       label:'เลขาธิการฯ พิจารณา / ลงนาม', step:1, ref:'S1–G1',
