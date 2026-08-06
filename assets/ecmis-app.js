@@ -961,9 +961,11 @@ const NAV = [
     visible: role => can('view.all', role.id) },
   { href:'07-subcommittee-screening.html',icon:'fa-users-viewfinder', label:'อนุกลั่นกรองฯ คณะ 1–8', step:4, ref:'S5–S6',
     visible: role => can('view.all', role.id) || role.flow.includes('S6') },
-  { href:'08-board-resolution.html',      icon:'fa-scale-balanced',   label:'บันทึกมติที่ประชุมบอร์ด', step:5, ref:'S9–G5',
+  { href:'10-agenda-set.html',            icon:'fa-calendar-check',   label:'บรรจุระเบียบวาระการประชุม', step:5, ref:'T10–T12',
     visible: role => can('view.all', role.id) },
-  { href:'09-order-m24.html',             icon:'fa-stamp',            label:'ออกคำสั่งแต่งตั้งคณะไต่สวน ม.24', step:6, ref:'S11',
+  { href:'08-board-resolution.html',      icon:'fa-scale-balanced',   label:'บันทึกมติที่ประชุมบอร์ด', step:6, ref:'S9–G5',
+    visible: role => can('view.all', role.id) },
+  { href:'09-order-m24.html',             icon:'fa-stamp',            label:'ออกคำสั่งแต่งตั้งคณะไต่สวน ม.24', step:7, ref:'S11',
     visible: role => can('view.all', role.id) }
 ];
 
@@ -1229,7 +1231,6 @@ function actionBar(kase, roleId, buttons){
       <i class="fa-solid fa-lock me-1"></i>
       บทบาท <strong>${role.title}</strong> ไม่มีสิทธิ์ดำเนินการกับสำนวนนี้ในสถานะปัจจุบัน
       ${ownerRole ? ` — ขณะนี้เรื่องอยู่ที่ <strong>${ownerRole.title}</strong>` : ''}
-      <br><small>สลับบทบาทที่มุมขวาบนเพื่อทดสอบสิทธิ์ของผู้ใช้รายอื่น</small>
     </div>`;
   }
 
