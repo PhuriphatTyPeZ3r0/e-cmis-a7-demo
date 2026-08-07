@@ -121,6 +121,19 @@
   --ecmis-ok: var(--feedback-success-text);
   --ecmis-warn: var(--feedback-warning-text);
   --ecmis-info: var(--feedback-info-text);
+
+  /* ---- theme-only tokens (not in the PDF token sheet — local additions so
+     the sidebar identity, the purple "no PDF equivalent" badges, and the
+     skeleton shimmer can each be retuned per theme below instead of staying
+     hardcoded hex that only ever matched the light theme) ---- */
+  --sidebar-grad-start:#081638;
+  --sidebar-grad-mid:#0F2A62;
+  --sidebar-grad-end:#0C2150;
+  --sidebar-border:#081638;
+  --accent-purple-bg:#F3E8FF;
+  --accent-purple-text:#6B3FA0;
+  --accent-purple-border:#9673A6;
+  --skeleton-base:#E2E8F0;
 }
 
 body{
@@ -175,13 +188,27 @@ body.sidebar-collapsed .app-topbar{ left:var(--sidebar-w-collapsed); }
 .role-switcher .btn:hover{ background:var(--bg-surface-hover); color:var(--text-primary); border-color:var(--border-control-hover); }
 .role-switcher .dropdown-menu{ min-width:320px; font-size:.86rem; border-radius:var(--radius-card); border-color:var(--border-divider); }
 .role-switcher .dropdown-item.active,
-.role-switcher .dropdown-item:active{ background:var(--action-primary); }
+.role-switcher .dropdown-item:active{ background:var(--action-primary); color:var(--text-inverse); }
 .role-switcher .dropdown-item small{ display:block; color:var(--text-disabled); font-size:.74rem; }
-.role-switcher .dropdown-item.active small{ color:rgba(255,255,255,.75); }
+.role-switcher .dropdown-item.active small{ color:color-mix(in srgb, var(--text-inverse) 75%, transparent); }
 .role-badge-demo{
   background:var(--accent-gold); color:#1a1204; font-weight:600;
   font-size:.66rem; padding:.1rem .4rem; border-radius:3px; margin-left:6px;
 }
+
+/* Bootstrap dropdowns (topbar bell, sidebar user-chip, role switcher) never
+   had a themed background before this pass — they'd stay a plain white
+   panel regardless of body theme. Generic so every .dropdown-menu in the
+   app picks it up; the more specific .role-switcher rules above still win
+   on the properties they set. */
+.dropdown-menu{
+  background-color:var(--bg-surface); color:var(--text-primary);
+  border-color:var(--border-divider); box-shadow:0 10px 15px -3px rgba(0,0,0,.15);
+}
+.dropdown-item{ color:var(--text-primary); }
+.dropdown-item:hover, .dropdown-item:focus{ background-color:var(--bg-surface-hover); color:var(--text-primary); }
+.dropdown-header{ color:var(--text-disabled); }
+.dropdown-divider{ border-color:var(--border-divider); }
 
 /* ---------------- Sidebar ----------------
    Sidebar.pdf: dark navy gradient, white nav text/icons, GOLD wordmark
@@ -202,8 +229,8 @@ body.sidebar-collapsed .app-sidebar .brand{ justify-content:center; padding:16px
 
 .app-sidebar{
   position:fixed; top:0; bottom:0; left:0; width:var(--sidebar-w);
-  background:linear-gradient(180deg,var(--action-primary-active) 0%,var(--action-primary) 45%,var(--action-primary-hover) 100%);
-  border-right:1px solid var(--action-primary-active);
+  background:linear-gradient(180deg,var(--sidebar-grad-start) 0%,var(--sidebar-grad-mid) 45%,var(--sidebar-grad-end) 100%);
+  border-right:1px solid var(--sidebar-border);
   z-index:1030;
   display:flex; flex-direction:column;
   transition:width .15s ease;
@@ -291,15 +318,20 @@ body.sidebar-collapsed .sidebar-user-chip-text{ display:none; }
    this exact bg/fg pairing per severity). .st-agenda has no PDF equivalent
    (purple is a pre-existing local extension for "in-agenda" status) — kept
    as-is, documented here rather than silently dropped. */
-.st{ font-size:.72rem; font-weight:600; padding:.22rem .55rem; border-radius:var(--radius-pill); white-space:nowrap; display:inline-block; }
-.st-draft   { background:var(--bg-surface-subtle); color:var(--text-body); }
-.st-pending { background:var(--feedback-warning-bg); color:var(--feedback-warning-text); }
-.st-review  { background:var(--feedback-info-bg); color:var(--feedback-info-text); }
-.st-urgent  { background:var(--feedback-danger-bg); color:var(--feedback-danger-text); }
-.st-agenda  { background:#efe7f8; color:#6b3fa0; } /* local extension — no PDF token */
-.st-done    { background:var(--feedback-success-bg); color:var(--feedback-success-text); }
-.st-returned{ background:var(--feedback-danger-bg); color:var(--feedback-danger-text); }
-.st-closed  { background:#e5e7eb; color:#374151; }
+.st{
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:.78rem; font-weight:600; padding:.22rem .65rem; line-height:1.25;
+  border-radius:var(--radius-pill); white-space:nowrap; letter-spacing:.2px;
+  border:1px solid transparent; box-shadow:0 1px 2px rgba(0,0,0,.04);
+}
+.st-draft   { background:var(--bg-surface-subtle); color:var(--text-body); border-color:var(--border-divider); }
+.st-pending { background:var(--feedback-warning-bg); color:var(--feedback-warning-text); border-color:var(--feedback-warning-fill); }
+.st-review  { background:var(--feedback-info-bg); color:var(--feedback-info-text); border-color:var(--feedback-info-fill); }
+.st-urgent  { background:var(--feedback-danger-bg); color:var(--feedback-danger-text); border-color:var(--feedback-danger-fill); font-weight:700; }
+.st-agenda  { background:var(--accent-purple-bg); color:var(--accent-purple-text); border-color:var(--accent-purple-border); } /* local extension — no PDF token */
+.st-done    { background:var(--feedback-success-bg); color:var(--feedback-success-text); border-color:var(--feedback-success-fill); }
+.st-returned{ background:var(--feedback-danger-bg); color:var(--feedback-danger-text); border-color:var(--feedback-danger-fill); }
+.st-closed  { background:var(--bg-surface-subtle); color:var(--text-strong); border-color:var(--border-divider); }
 
 /* SLA pill */
 .sla{ font-size:.72rem; font-weight:600; padding:.18rem .5rem; border-radius:6px; white-space:nowrap; }
@@ -323,8 +355,8 @@ body.sidebar-collapsed .sidebar-user-chip-text{ display:none; }
   display:flex; align-items:center; justify-content:center; margin:0 auto 6px;
   font-size:.76rem; font-weight:600; color:var(--ecmis-muted); position:relative; z-index:1;
 }
-.flow-stepper .fstep.done .dot{ background:var(--ecmis-ok); border-color:var(--ecmis-ok); color:#fff; }
-.flow-stepper .fstep.active .dot{ background:var(--ecmis-navy); border-color:var(--ecmis-gold); color:#fff; box-shadow:0 0 0 4px rgba(208,168,48,.22); }
+.flow-stepper .fstep.done .dot{ background:var(--feedback-success-fill); border-color:var(--feedback-success-fill); color:var(--text-inverse); }
+.flow-stepper .fstep.active .dot{ background:var(--ecmis-navy); border-color:var(--ecmis-gold); color:var(--text-inverse); box-shadow:0 0 0 4px rgba(208,168,48,.22); }
 .flow-stepper .lbl{ font-size:.72rem; line-height:1.25; color:var(--ecmis-muted); }
 .flow-stepper .fstep.active .lbl{ color:var(--ecmis-navy); font-weight:600; }
 .flow-stepper .fstep.done .lbl{ color:var(--ecmis-ink); }
@@ -366,10 +398,22 @@ body.sidebar-collapsed .sidebar-user-chip-text{ display:none; }
    focus ring in its own "10. Micro-interactions" section further down this
    file; that duplicate declaration is fixed to match this cyan token below
    so the two rules agree instead of silently fighting in the cascade) */
-.form-control, .form-select{ font-size:.88rem; border-radius:var(--radius-control); border-color:var(--border-control); }
+/* background/color explicit, not just border — Bootstrap's own .form-control
+   ships a hardcoded white bg + dark text that our tokens never touch
+   otherwise, so dark/high-contrast mode would leave every input a bright
+   white box floating on the dark page. */
+.form-control, .form-select{
+  font-size:.88rem; border-radius:var(--radius-control); border-color:var(--border-control);
+  background-color:var(--bg-surface); color:var(--text-primary);
+}
+.form-control::placeholder{ color:var(--text-disabled); opacity:1; }
 .form-control:hover, .form-select:hover{ border-color:var(--border-control-hover); }
-.form-control:focus, .form-select:focus{ border-color:var(--border-focus) !important; box-shadow:0 0 0 .18rem rgba(22,182,230,.25) !important; }
-.form-check-input{ border-color:var(--border-control); }
+.form-control:focus, .form-select:focus{
+  border-color:var(--border-focus) !important; box-shadow:0 0 0 .18rem rgba(22,182,230,.25) !important;
+  background-color:var(--bg-surface); color:var(--text-primary);
+}
+.form-control:disabled, .form-select:disabled{ background-color:var(--action-disabled-bg); color:var(--action-disabled-text); }
+.form-check-input{ border-color:var(--border-control); background-color:var(--bg-surface); }
 .form-check-input:focus{ border-color:var(--border-focus); box-shadow:0 0 0 .18rem rgba(22,182,230,.25); }
 .form-check-input:checked{ background-color:var(--action-primary); border-color:var(--action-primary); }
 .val-msg{ font-size:.76rem; margin-top:.25rem; display:none; }
@@ -394,7 +438,7 @@ body.sidebar-collapsed .sidebar-user-chip-text{ display:none; }
 }
 /* .src-tag (purple) has no PDF equivalent — local extension, kept as-is */
 .src-tag{
-  font-size:.66rem; background:#efe7f8; color:#6b3fa0;
+  font-size:.66rem; background:var(--accent-purple-bg); color:var(--accent-purple-text);
   padding:.06rem .34rem; border-radius:3px; margin-left:5px; font-weight:600;
 }
 
@@ -431,7 +475,7 @@ body.sidebar-collapsed .sidebar-user-chip-text{ display:none; }
 .doc-paper *, .doc-pane * {
   font-family: 'THSarabun9', 'TH Sarabun PSK', 'TH Sarabun New', 'Sarabun', sans-serif !important;
 }
-.doc-paper .doc-secret{ text-align:right; font-weight:700; color:var(--ecmis-red); letter-spacing:2px; font-size:16px; }
+.doc-paper .doc-secret{ text-align:right; font-weight:700; color:#DB2626; letter-spacing:2px; font-size:16px; }
 .doc-paper .doc-title{ text-align:center; font-weight:700; font-size:20px; line-height:1.6; margin:14px 0 4px; }
 .doc-paper .doc-sub{ text-align:center; font-size:16px; margin-bottom:16px; }
 .doc-paper .doc-row{ display:flex; gap:8px; margin-bottom:3px; font-size:16px; }
@@ -441,9 +485,12 @@ body.sidebar-collapsed .sidebar-user-chip-text{ display:none; }
 .doc-paper .doc-sign{ margin-top:34px; text-align:center; line-height:1.8; font-size:16px; }
 .doc-paper .doc-dots{ border-bottom:1px dotted #333; display:inline-block; min-width:120px; }
 .doc-paper .doc-sig-img{ display:block; height:54px; margin:0 auto -10px; }
-.mergefield{ background:var(--feedback-warning-bg); border-bottom:1px solid var(--feedback-warning-fill); padding:0 2px; }
-.mergefield.filled{ background:var(--feedback-success-bg); border-bottom-color:var(--feedback-success-fill); }
-.mergefield.empty{ background:var(--feedback-danger-bg); border-bottom-color:var(--feedback-danger-fill); color:var(--feedback-danger-text); }
+/* Fixed light-theme hex, not tokens — .doc-paper is always a white page with
+   black ink (see Sec. 2 note above), so these must not shift with the app
+   theme or the highlight becomes dark-on-dark against the white paper. */
+.mergefield{ background:#FDF2C6; border-bottom:1px solid #DD8C0A; padding:0 2px; }
+.mergefield.filled{ background:#DBFBE6; border-bottom-color:#1FB65E; }
+.mergefield.empty{ background:#FDE2E2; border-bottom-color:#DB2626; color:#991A1A; }
 
 .doc-toolbar {
   display: flex;
@@ -503,8 +550,8 @@ table.tbl-ecmis tbody tr.selected{ background:var(--table-row-selected); }
 
 /* ---------------- Misc ---------------- */
 .integration-note{
-  background:#f4f0fa; border-left:4px solid #9673a6; padding:.6rem .85rem;
-  font-size:.8rem; border-radius:0 6px 6px 0;
+  background:var(--accent-purple-bg); border-left:4px solid var(--accent-purple-border); padding:.6rem .85rem;
+  font-size:.8rem; border-radius:0 6px 6px 0; color:var(--accent-purple-text);
 }
 .law-note{
   display: none !important;
@@ -519,63 +566,6 @@ table.tbl-ecmis tbody tr.selected{ background:var(--table-row-selected); }
   display:inline-flex; align-items:center; gap:5px; background:var(--bg-surface-subtle);
   border:1px solid var(--border-divider); border-radius:var(--radius-pill); padding:.18rem .6rem; font-size:.78rem;
   color:var(--text-strong);
-}
-
-/* ---------------- Status Badges (.st, .st-*) ---------------- */
-.st {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 0.22rem 0.65rem;
-  border-radius: 999px;
-  line-height: 1.25;
-  white-space: nowrap;
-  letter-spacing: 0.2px;
-  border: 1px solid transparent;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-.st-draft {
-  background-color: #F3F4F6;
-  color: #374151;
-  border-color: #D1D5DB;
-}
-.st-pending {
-  background-color: #EFF6FF;
-  color: #1D4ED8;
-  border-color: #BFDBFE;
-}
-.st-review {
-  background-color: #F3E8FF;
-  color: #6D28D9;
-  border-color: #E9D5FF;
-}
-.st-urgent {
-  background-color: #FFEDD5;
-  color: #C2410C;
-  border-color: #FDBA74;
-  font-weight: 700;
-}
-.st-agenda {
-  background-color: #E0F2FE;
-  color: #0369A1;
-  border-color: #BAE6FD;
-}
-.st-done {
-  background-color: #D1FAE5;
-  color: #047857;
-  border-color: #A7F3D0;
-}
-.st-returned {
-  background-color: #FEE2E2;
-  color: #B91C1C;
-  border-color: #FCA5A5;
-}
-.st-closed {
-  background-color: #E2E8F0;
-  color: #1E293B;
-  border-color: #CBD5E1;
 }
 
 @media (max-width:991.98px){
@@ -620,113 +610,168 @@ table.tbl-ecmis tbody tr.selected{ background:var(--table-row-selected); }
   background: #fdfaf3 !important;
 }
 
-/* ---------- 2. Dark Mode Styles ---------- */
+/* ---------- 2. Dark Mode Styles ----------
+   Re-themed entirely through the design tokens from :root (Sec. 1) instead
+   of one-off hex per selector. Every component below already renders from
+   a --bg-, --text-, --border-, --action-, --accent-, --feedback- or --table-
+   prefixed token, or a legacy --ecmis- alias that is itself just var(...)
+   onto those same tokens, and CSS custom properties resolve against the
+   cascade — so overriding the base tokens here is enough to re-skin the
+   whole app (sidebar, cards, tables, forms, badges, modals, toasts, command
+   palette, combobox, tooltips, ...) without maintaining a parallel selector
+   list that silently drifts out of sync as new components get added.
+   .doc-pane / .doc-paper intentionally stay their own fixed colors — they
+   simulate an actual printed/signed government document (and .mergefield
+   still needs its warning/success/danger tints to read correctly), so the
+   "page" stays paper-white in every theme rather than inverting to dark. */
 body.dark-mode {
-  --ecmis-bg: #0b1329;
-  --ecmis-ink: #f1f5f9;
-  --ecmis-line: #1e293b;
-  --ecmis-muted: #94a3b8;
+  --bg-surface:#111827;
+  --bg-surface-hover:#1B2537;
+  --bg-page:#0B1220;
+  --bg-surface-subtle:#1A2333;
+  --bg-overlay:#0B1220;
+
+  --text-primary:#E8EEFC;
+  --text-strong:#CBD5E1;
+  --text-body:#98A6BC;
+  --text-disabled:#64748B;
+  --text-link:#5EC8F2;
+
+  --border-control:#334155;
+  --border-control-hover:#475569;
+  --border-control-active:#64748B;
+  --border-focus:#38BDF8;
+  --border-divider:#1E293B;
+
+  --action-primary:#3B6FE0;
+  --action-primary-hover:#5583EA;
+  --action-primary-active:#2C57B8;
+  --action-danger:#F87171;
+  --action-danger-hover:#FCA5A5;
+  --action-danger-active:#EF4444;
+  --action-disabled-bg:#1E293B;
+  --action-disabled-text:#64748B;
+
+  --accent-brand:#22D3EE;
+  --accent-emphasis:#38BDF8;
+  --accent-gold:#E8C468;
+
+  --feedback-success-bg:#0B3B24; --feedback-success-fill:#22C55E; --feedback-success-icon:#4ADE80; --feedback-success-text:#86EFAC;
+  --feedback-warning-bg:#40280A; --feedback-warning-fill:#F59E0B; --feedback-warning-icon:#FBBF24; --feedback-warning-text:#FCD34D;
+  --feedback-danger-bg:#3F1212;  --feedback-danger-fill:#F87171;  --feedback-danger-icon:#FCA5A5;  --feedback-danger-text:#FCA5A5;
+  --feedback-info-bg:#0B2E3A;    --feedback-info-fill:#22D3EE;    --feedback-info-icon:#67E8F9;    --feedback-info-text:#7DD3FC;
+
+  --accent-purple-bg:#241238; --accent-purple-text:#C4A6ED; --accent-purple-border:#7C5CBF;
+  --skeleton-base:#26324A;
+
+  --table-row-bg:#111827; --table-row-hover:#1B2537; --table-header-bg:#0B1220; --table-row-selected:#16233D; --table-border:#1E293B;
+
+  /* Sidebar stays its own near-black navy in every theme — it's the app's
+     fixed brand identity, not a "surface" that should lighten with content. */
+  --sidebar-grad-start:#050B18; --sidebar-grad-mid:#0B1730; --sidebar-grad-end:#111F3D; --sidebar-border:#050B18;
+
+  /* Custom-property substitution resolves (and "freezes") at the element
+     where a var()-chained property is declared, not per inheriting
+     descendant — so since the --ecmis-* legacy aliases are declared only
+     once at :root, overriding the base tokens above does NOT flow through
+     them by itself. Every var(--ecmis-*) consumer across this file (body's
+     own background, tooltips, the flow-stepper/timeline, badges, etc.)
+     needs these re-declared here too, on the same element, so they resolve
+     against dark mode's own base tokens instead of staying stuck on light. */
+  --ecmis-navy: var(--action-primary);
+  --ecmis-navy-2: var(--action-primary-hover);
+  --ecmis-navy-dark: var(--action-primary-active);
+  --ecmis-gold: var(--accent-gold);
+  --ecmis-red: var(--action-danger);
+  --ecmis-bg: var(--bg-page);
+  --ecmis-ink: var(--text-strong);
+  --ecmis-line: var(--border-divider);
+  --ecmis-muted: var(--text-disabled);
+  --ecmis-ok: var(--feedback-success-text);
+  --ecmis-warn: var(--feedback-warning-text);
+  --ecmis-info: var(--feedback-info-text);
+
   background-color: var(--ecmis-bg) !important;
   color: var(--ecmis-ink) !important;
 }
-body.dark-mode .app-sidebar {
-  background-color: #0f172a;
-  border-right-color: var(--ecmis-line);
-}
-body.dark-mode .app-sidebar .nav-link {
-  color: #cbd5e1;
-}
-body.dark-mode .app-sidebar .nav-link:hover {
-  background-color: #1e293b;
-}
-body.dark-mode .app-sidebar .nav-link.active {
-  background-color: #1e293b;
-  color: #fff;
-}
-body.dark-mode .card-ecmis {
-  background-color: #0f172a;
-  border-color: var(--ecmis-line);
-}
-body.dark-mode .card-ecmis > .card-header {
-  background-color: #1e293b;
-  border-bottom-color: var(--ecmis-line);
-  color: #fff;
-}
-body.dark-mode .table {
-  color: var(--ecmis-ink);
-  border-color: var(--ecmis-line);
-}
-body.dark-mode table.tbl-ecmis tbody td {
-  border-color: var(--ecmis-line);
-}
-body.dark-mode table.tbl-ecmis tbody tr:hover {
-  background-color: #1e293b;
-}
-body.dark-mode .form-control, body.dark-mode .form-select {
-  background-color: #1e293b;
-  color: #fff;
-  border-color: #334155;
-}
-body.dark-mode .form-control::placeholder {
-  color: #64748b;
-}
-body.dark-mode .doc-pane {
-  background-color: #020617;
-}
-body.dark-mode .doc-paper {
-  background-color: #1e293b;
-  color: #fff;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-}
-body.dark-mode .doc-paper .doc-dots {
-  border-bottom-color: #64748b;
-}
-body.dark-mode .doc-paper span.mergefield {
-  background-color: #451a03;
-  color: #ffedd5;
-  border-bottom-color: #ea580c;
-}
-body.dark-mode .action-bar {
-  background-color: #0f172a;
-  border-top-color: var(--ecmis-gold);
-}
-body.dark-mode .sig-box {
-  background-color: #1e293b;
-  border-color: #475569;
-}
-body.dark-mode .law-note {
-  background-color: #3f2c00;
-  color: #ffedd5;
-}
-body.dark-mode .warn-note {
-  background-color: #450a0a;
-  color: #fee2e2;
-}
+body.dark-mode .doc-pane{ background-color:#020617; }
 
-/* ---------- 3. High Contrast Mode Styles ---------- */
+/* ---------- 3. High Contrast Mode Styles ----------
+   True black/white/yellow, WCAG-AAA-leaning "high contrast" theme — same
+   token-cascade approach as dark mode above. Because every surface is pure
+   black, boundaries between page/sidebar/card/topbar rely on a 1px white
+   divider (--border-divider / --sidebar-border) rather than tonal shading,
+   which is the standard high-contrast-theme convention (see Windows High
+   Contrast Black). --action-primary (yellow) and --accent-gold (cyan) are
+   deliberately different hues so primary buttons and the sidebar's active-
+   nav/e-signature accent don't collapse into the same color. */
 body.high-contrast {
-  --ecmis-bg: #000;
-  --ecmis-ink: #fff;
-  --ecmis-line: #fff;
-  --ecmis-muted: #fff;
+  --bg-surface:#000000;
+  --bg-surface-hover:#141414;
+  --bg-page:#000000;
+  --bg-surface-subtle:#0D0D0D;
+  --bg-overlay:#000000;
+
+  --text-inverse:#000000;
+  --text-primary:#FFFFFF;
+  --text-strong:#FFFFFF;
+  --text-body:#F2F2F2;
+  --text-disabled:#CCCCCC;
+  --text-link:#00E5FF;
+
+  --border-control:#FFFFFF;
+  --border-control-hover:#FFD400;
+  --border-control-active:#FFD400;
+  --border-focus:#FFD400;
+  --border-divider:#FFFFFF;
+
+  --action-primary:#FFD400;
+  --action-primary-hover:#FFDE47;
+  --action-primary-active:#E6C000;
+  --action-danger:#FF6B6B;
+  --action-danger-hover:#FF8787;
+  --action-danger-active:#FF4040;
+  --action-disabled-bg:#1A1A1A;
+  --action-disabled-text:#888888;
+
+  --accent-brand:#00E5FF;
+  --accent-emphasis:#00E5FF;
+  --accent-gold:#00E5FF;
+
+  --feedback-success-bg:#001A00; --feedback-success-fill:#00FF66; --feedback-success-icon:#00FF66; --feedback-success-text:#00FF66;
+  --feedback-warning-bg:#1A1400; --feedback-warning-fill:#FFD400; --feedback-warning-icon:#FFD400; --feedback-warning-text:#FFD400;
+  --feedback-danger-bg:#1A0000;  --feedback-danger-fill:#FF3333;  --feedback-danger-icon:#FF3333;  --feedback-danger-text:#FF6B6B;
+  --feedback-info-bg:#001A1A;    --feedback-info-fill:#00E5FF;    --feedback-info-icon:#00E5FF;    --feedback-info-text:#00E5FF;
+
+  --accent-purple-bg:#1A001A; --accent-purple-text:#FF66FF; --accent-purple-border:#FF66FF;
+  --skeleton-base:#333333;
+
+  --table-row-bg:#000000; --table-row-hover:#141414; --table-header-bg:#000000; --table-row-selected:#1A1A00; --table-border:#FFFFFF;
+
+  --sidebar-grad-start:#000000; --sidebar-grad-mid:#000000; --sidebar-grad-end:#000000; --sidebar-border:#FFFFFF;
+
+  /* See the matching note in Sec. 2 (dark mode) — the --ecmis-* legacy
+     aliases only resolve their var() chain once, at :root, so they must be
+     re-declared here too or every var(--ecmis-*) consumer stays locked to
+     the light-theme value even though the base tokens above are overridden. */
+  --ecmis-navy: var(--action-primary);
+  --ecmis-navy-2: var(--action-primary-hover);
+  --ecmis-navy-dark: var(--action-primary-active);
+  --ecmis-gold: var(--accent-gold);
+  --ecmis-red: var(--action-danger);
+  --ecmis-bg: var(--bg-page);
+  --ecmis-ink: var(--text-strong);
+  --ecmis-line: var(--border-divider);
+  --ecmis-muted: var(--text-disabled);
+  --ecmis-ok: var(--feedback-success-text);
+  --ecmis-warn: var(--feedback-warning-text);
+  --ecmis-info: var(--feedback-info-text);
+
   background-color: #000 !important;
   color: #fff !important;
 }
-body.high-contrast .app-sidebar,
-body.high-contrast .card-ecmis,
-body.high-contrast .card-ecmis > .card-header,
-body.high-contrast .action-bar,
-body.high-contrast .doc-paper,
-body.high-contrast .sig-box,
-body.high-contrast .form-control,
-body.high-contrast .form-select {
-  background: #000 !important;
-  color: #fff !important;
-  border-color: #fff !important;
-}
-body.high-contrast a {
-  color: #ffd400 !important;
-}
+body.high-contrast .doc-pane{ background-color:#000; }
+body.high-contrast a{ color: var(--text-link) !important; }
 
 /* ---------- 4. Command Palette (Ctrl+K) ---------- */
 .cmd-palette-backdrop {
@@ -747,7 +792,8 @@ body.high-contrast a {
   pointer-events: auto;
 }
 .cmd-palette-box {
-  background: #fff;
+  background: var(--bg-surface);
+  color: var(--text-primary);
   width: 100%;
   max-width: 600px;
   border-radius: 12px;
@@ -758,9 +804,6 @@ body.high-contrast a {
   max-height: 70vh;
   display: flex;
   flex-direction: column;
-}
-body.dark-mode .cmd-palette-box {
-  background: #0f172a;
 }
 .cmd-palette-search-wrapper {
   display: flex;
@@ -798,12 +841,8 @@ body.dark-mode .cmd-palette-box {
   font-size: 0.9rem;
 }
 .cmd-palette-item:hover, .cmd-palette-item.active {
-  background: #f1f5f9;
-  color: var(--ecmis-navy);
-}
-body.dark-mode .cmd-palette-item:hover, body.dark-mode .cmd-palette-item.active {
-  background: #1e293b;
-  color: #fff;
+  background: var(--bg-surface-hover);
+  color: var(--action-primary);
 }
 .cmd-palette-item i {
   color: var(--ecmis-muted);
@@ -817,15 +856,12 @@ body.dark-mode .cmd-palette-item:hover, body.dark-mode .cmd-palette-item.active 
 }
 .cmd-palette-hint {
   padding: 10px 18px;
-  background: #f8fafc;
+  background: var(--bg-surface-subtle);
   border-top: 1px solid var(--ecmis-line);
   font-size: 0.72rem;
   color: var(--ecmis-muted);
   display: flex;
   justify-content: space-between;
-}
-body.dark-mode .cmd-palette-hint {
-  background: #1e293b;
 }
 
 /* ---------- 5. Split-Screen Layout ---------- */
@@ -862,6 +898,9 @@ body.dark-mode .cmd-palette-hint {
 }
 
 /* ---------- 6. Signature Canvas ---------- */
+/* Always white, regardless of theme — signatures are drawn in black ink
+   (initSignaturePad), so the pad must stay a light "paper" surface or the
+   strokes disappear in dark/high-contrast mode. */
 .sig-canvas-wrapper {
   background: #fff;
   border: 1px solid var(--ecmis-line);
@@ -869,9 +908,6 @@ body.dark-mode .cmd-palette-hint {
   position: relative;
   overflow: hidden;
   touch-action: none;
-}
-body.dark-mode .sig-canvas-wrapper {
-  background: #1e293b;
 }
 .sig-canvas {
   width: 100%;
@@ -887,13 +923,10 @@ body.dark-mode .sig-canvas-wrapper {
 }
 .skeleton-box {
   height: 16px;
-  background: #e2e8f0;
+  background: var(--skeleton-base);
   border-radius: 4px;
   position: relative;
   overflow: hidden;
-}
-body.dark-mode .skeleton-box {
-  background: #334155;
 }
 .skeleton-box::after {
   content: "";
@@ -922,7 +955,10 @@ body.dark-mode .skeleton-box {
   animation: floatIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 body.dark-mode .action-bar.floating {
-  background: rgba(15, 23, 42, 0.9) !important;
+  background: rgba(11, 18, 32, 0.92) !important;
+}
+body.high-contrast .action-bar.floating {
+  background: rgba(0, 0, 0, 0.96) !important;
 }
 @media (max-width:991.98px){
   .action-bar.floating { left: 0; }
@@ -941,7 +977,8 @@ body.dark-mode .action-bar.floating {
   top: 100%;
   left: 0;
   right: 0;
-  background: #fff;
+  background: var(--bg-surface);
+  color: var(--text-primary);
   border: 1px solid var(--ecmis-line);
   border-radius: 8px;
   z-index: 1010;
@@ -949,9 +986,6 @@ body.dark-mode .action-bar.floating {
   display: none;
   flex-direction: column;
   max-height: 250px;
-}
-body.dark-mode .smart-combo-dropdown {
-  background: #0f172a;
 }
 .smart-combo-search {
   padding: 8px;
@@ -968,12 +1002,8 @@ body.dark-mode .smart-combo-dropdown {
   font-size: 0.85rem;
 }
 .smart-combo-item:hover, .smart-combo-item.active {
-  background: #f1f5f9;
-  color: var(--ecmis-navy);
-}
-body.dark-mode .smart-combo-item:hover, body.dark-mode .smart-combo-item.active {
-  background: #1e293b;
-  color: #fff;
+  background: var(--bg-surface-hover);
+  color: var(--action-primary);
 }
 
 /* ==========================================================================
@@ -1096,7 +1126,7 @@ tbody tr:hover {
   left: 50%;
   transform: translateX(-50%) scale(0.85);
   background: var(--ecmis-navy);
-  color: #fff;
+  color: var(--text-inverse);
   font-size: 0.72rem;
   padding: 5px 9px;
   border-radius: 6px;
@@ -1135,7 +1165,7 @@ td.editable-cell input {
   gap: 12px;
   padding: 8px 14px;
   background: var(--ecmis-navy);
-  color: #fff;
+  color: var(--text-inverse);
   border-radius: 8px;
   font-size: 0.86rem;
   animation: fadeInUp 0.25s ease both;

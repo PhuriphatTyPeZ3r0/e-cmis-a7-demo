@@ -2653,46 +2653,6 @@ function initDocPaneToggle() {
   setTimeout(runToggleInit, 100);
 }
 
-let currentFontStep = 0;
-function changeFont(step) {
-  if (step === 0) {
-    currentFontStep = 0;
-  } else {
-    currentFontStep = Math.max(-3, Math.min(5, currentFontStep + step));
-  }
-  
-  const scalePct = 100 + (currentFontStep * 8);
-  const zoomVal = (scalePct / 100);
-  
-  // Apply global scaling to document
-  document.documentElement.style.zoom = zoomVal;
-  document.body.style.fontSize = (14.5 * zoomVal).toFixed(1) + 'px';
-  
-  if (step === 0) {
-    toastOk('คืนค่าขนาดตัวอักษรเป็นปกติ (100%)');
-  } else if (step > 0) {
-    toastOk(`เพิ่มขนาดตัวอักษร (${scalePct}%)`);
-  } else {
-    toastOk(`ลดขนาดตัวอักษร (${scalePct}%)`);
-  }
-}
-
-function toggleHighContrast() {
-  document.body.classList.toggle('high-contrast');
-  const active = document.body.classList.contains('high-contrast');
-  toastOk(active ? 'เปิดโหมดปรับสี (High Contrast)' : 'ปิดโหมดปรับสี');
-}
-
-function toggleDarkMode() {
-  document.body.classList.toggle('dark-mode');
-  const active = document.body.classList.contains('dark-mode');
-  toastOk(active ? 'เปิดโหมดมืด (Dark Mode)' : 'ปิดโหมดมืด');
-}
-
-function toggleSidebarCollapse() {
-  document.body.classList.toggle('sidebar-collapsed');
-}
-
 global.ECMIS = {
   ROLES, STATUS, STATUS_STEP, FLOW_STEPS, APPROVAL_CHAIN,
   CASES, RETURN_REASONS, RESOLUTIONS,
