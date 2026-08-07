@@ -234,18 +234,46 @@
     const opByRole = Object.fromEntries((kase.chainOpinions || []).map(o => [o.roleId, o]));
     const divSplit = g1.divergence.split;
 
+    const MOCK_STEP_SLA = {
+      owner: { used: 2, limit: 5 },
+      section_head: { used: 1, limit: 5 },
+      director: { used: 8, limit: 5 }, // Overdue example: used 8/5 days (เกินกำหนด 3 วัน)
+      deputy: { used: 3, limit: 5 }
+    };
+
     document.getElementById('chain').innerHTML = FULL_CHAIN.map((rid, i) => {
       const r = ECMIS.getRole(rid);
       const upstream = r.scope === 'UPSTREAM';
-      let cls = 'ok', note = 'เห็นชอบแล้ว';
-      if (curIdx === -1) { cls = 'ok'; note = 'ผ่านขั้นตอนนี้แล้ว'; }
-      else if (i === curIdx) { cls = 'now'; note = `<strong>อยู่ระหว่างพิจารณา</strong> · ${ECMIS.slaLabel(kase.slaDays, ECMIS.effectiveSlaLimit(kase))}`; }
-      else if (i > curIdx) { cls = ''; note = 'รอคิว'; }
+      const op = opByRole[rid];
+
+      const stepData = (op && op.daysUsed)
+        ? { used: op.daysUsed, limit: op.slaLimit || 5 }
+        : (MOCK_STEP_SLA[rid] || { used: 2, limit: 5 });
+
+      let cls = 'ok', note = '';
+      if (curIdx === -1) {
+        cls = 'ok';
+        note = `ผ่านขั้นตอนนี้แล้ว · <span class="text-success fw-medium"><i class="fa-solid fa-clock me-1"></i>ใช้ไป ${stepData.used}/${stepData.limit} วัน</span>`;
+      } else if (i === curIdx) {
+        cls = 'now';
+        note = `<strong>อยู่ระหว่างพิจารณา</strong> · ${ECMIS.slaLabel(kase.slaDays, ECMIS.effectiveSlaLimit(kase))}`;
+      } else if (i > curIdx) {
+        cls = '';
+        note = 'รอคิว';
+      } else {
+        cls = 'ok';
+        const isOver = stepData.used > stepData.limit;
+        if (isOver) {
+          note = `เห็นชอบแล้ว · <span class="text-danger fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>ใช้ไป ${stepData.used}/${stepData.limit} วัน <span class="badge bg-danger ms-1">เกินกำหนด ${stepData.used - stepData.limit} วัน</span></span>`;
+        } else {
+          note = `เห็นชอบแล้ว · <span class="text-success fw-medium"><i class="fa-solid fa-clock me-1"></i>ใช้ไป ${stepData.used}/${stepData.limit} วัน</span>`;
+        }
+      }
+
       const isMe = rid === role.id;
       const tag = '';
 
       /* ความเห็นของชั้นนี้ + ทำเครื่องหมายชั้นที่ความเห็นเริ่มแตกจากชั้นก่อนหน้า */
-      const op = opByRole[rid];
       let opHtml = '';
       if (op) {
         const isSplit = divSplit && divSplit.to.roleId === rid;
@@ -256,7 +284,7 @@
     </div>`;
       }
 
-      return `<li class="${cls}" ${upstream ? 'style="opacity:.72"' : ''}><span class="tl-dot"></span>
+      return `<li class="${cls}" ${upstream ? 'style="opacity:.85"' : ''}><span class="tl-dot"></span>
     <div class="tl-t">${r.title} ${tag} ${isMe ? '<span class="chip ms-1">คุณ</span>' : ''}</div>
     <div class="tl-m">${r.name} · ${note}</div>${opHtml}</li>`;
     }).join('') + `
@@ -541,7 +569,15 @@
       document.getElementById('docOpinions').innerHTML =
         prior + `<div>${role.title}: ${M(mine, '……………………………………')}</div>`;
     }
-    document.getElementById('myOpinion').addEventListener('input', renderDocOpinions);
+    document.getElementById('myOpinion').addEventListener('input', () => {
+      const el = document.getElementById('myOpinion');
+      const valMsg = document.querySelector('.val-msg[data-for="myOpinion"]');
+      if (el.value.trim().length > 0) {
+        el.classList.remove('is-invalid-ecmis');
+        if (valMsg) valMsg.classList.remove('show');
+      }
+      renderDocOpinions();
+    });
     renderDocOpinions();
 
     /* ---------- actions ---------- */
@@ -608,12 +644,16 @@
       }
 
       const el = document.getElementById('myOpinion');
-      if (el.value.trim().length < 10) {
+      const valMsg = document.querySelector('.val-msg[data-for="myOpinion"]');
+      if (el.value.trim().length === 0) {
         el.dataset.touched = '1';
         el.classList.add('is-invalid-ecmis');
-        document.querySelector('.val-msg[data-for="myOpinion"]').classList.add('show');
+        if (valMsg) valMsg.classList.add('show');
         ECMIS.toastWarn('กรุณาระบุความเห็นก่อนดำเนินการ');
         return false;
+      } else {
+        el.classList.remove('is-invalid-ecmis');
+        if (valMsg) valMsg.classList.remove('show');
       }
       return true;
     }

@@ -45,7 +45,7 @@
             <option value="ALL">ทั้งหมด</option>
             <option value="PENDING">รอพิจารณาลงนาม</option>
             <option value="SIGNED">ลงนามแล้ว</option>
-            <option value="REJECTED">ไม่ลงนาม</option>
+            <option value="RETURNED">ไม่ลงนาม / ส่งคืน</option>
           </select>
         </div>
         <div class="col-md-3 d-flex gap-2">
@@ -63,11 +63,11 @@
   <div class="row g-3 align-items-start">
     <div class="col-12">
 
-      <!-- Single Merged Table: รายการสำนวนพิจารณา/ลงนาม -->
+      <!-- Table 1: รายการสำนวนพิจารณา/ลงนาม (รอพิจารณาลงนาม, ลงนามแล้ว, ไม่ลงนาม) -->
       <div class="card card-ecmis mb-4">
         <div class="card-header d-flex align-items-center flex-wrap gap-2">
           <i class="fa-solid fa-list-check text-primary"></i>
-          <span class="fw-bold">รายการสำนวนพิจารณา/ลงนาม</span>
+          <span class="fw-bold">รายการสำนวนพิจารณา/ลงนาม (รอพิจารณาลงนาม / ลงนามแล้ว / ไม่ลงนาม)</span>
           <span class="badge bg-primary rounded-pill ms-1" id="totalCount">0</span>
           <span class="ms-auto small text-muted" id="myRoleLabel"></span>
         </div>
@@ -106,6 +106,41 @@
             <nav aria-label="Queue navigation" class="ms-auto">
               <ul class="pagination pagination-sm m-0" id="queuePagination"></ul>
             </nav>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table 2: รายการสำนวนที่อยู่ระหว่างขั้นตอนอื่น (แยกออกจาก 3 สถานะหลัก) -->
+      <div class="card card-ecmis mb-4">
+        <div class="card-header d-flex align-items-center flex-wrap gap-2 bg-light">
+          <i class="fa-solid fa-diagram-project text-secondary"></i>
+          <span class="fw-bold">รายการสำนวนที่อยู่ระหว่างขั้นตอนอื่น</span>
+          <span class="badge bg-secondary rounded-pill ms-1" id="otherCount">0</span>
+          <span class="text-muted small ms-auto">(สำนวนที่ส่งเข้าคณะอนุสนับสนุนฯ / อนุกลั่นกรองฯ / บรรจุวาระ ฯลฯ)</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover tbl-ecmis mb-0 align-middle">
+              <colgroup>
+                <col style="width:40px">
+                <col style="width:130px">
+                <col>
+                <col style="width:220px">
+                <col style="width:120px">
+                <col style="width:140px">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th class="text-center">#</th>
+                  <th>เลขสำนวน</th>
+                  <th>เรื่องกล่าวหา</th>
+                  <th>สถานะปัจจุบัน</th>
+                  <th>กำหนดเวลา</th>
+                  <th class="text-end">ดำเนินการ</th>
+                </tr>
+              </thead>
+              <tbody id="otherQueue"></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -207,13 +242,20 @@ const allCasesCombined = Array.from(allCasesCombinedMap.values()).map(item => {
   return { ...c, isActionable: item.isActionable || isPendingAction };
 });
 
+// Helper check for Primary 3 Statuses: (1) รอพิจารณาลงนาม, (2) ลงนามแล้ว, (3) ไม่ลงนาม/ส่งคืน
+function isPrimaryStatus(c) {
+  return (c.status === 'PENDING_SECGEN' && !c.signedBySecgen) ||
+         (c.signedBySecgen || c.status === 'RESOLVED' || c.status === 'CLOSED') ||
+         (c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS');
+}
+
 // --- Pagination & Sorting State ---
 let currentPage = 1;
 const pageSize = 10;
 let sortField = 'id';
 let sortOrder = 'asc';
 
-function row(c){
+function row(c, isPrimaryTable = true){
   const target = `${PAGE_FOR[role.id] || '02-case-register.html'}?case=${encodeURIComponent(c.id)}`;
   const isPendingAction = (c.status === 'PENDING_SECGEN' && !c.signedBySecgen);
   
@@ -230,7 +272,7 @@ function row(c){
 
   return `<tr>
     <td class="text-center">
-      ${isPendingAction ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem"></i>'}
+      ${(isPrimaryTable && isPendingAction) ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem"></i>'}
     </td>
     <td class="case-no">${c.id}${c.urgent?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
     <td style="max-width:340px">
@@ -240,7 +282,7 @@ function row(c){
     <td>${statusBadgeHtml}</td>
     <td>${ECMIS.slaBadge(c)}</td>
     <td class="text-end">
-      ${isPendingAction ? `
+      ${(isPrimaryTable && isPendingAction) ? `
         <a href="${target}" class="btn btn-sm btn-navy px-3">
           <i class="fa-solid fa-pen-to-square me-1"></i>ดำเนินการ
         </a>
@@ -256,11 +298,16 @@ function row(c){
 let filteredCombined = [...allCasesCombined];
 
 function renderMyQueue(loading = false) {
-  const tbody = document.getElementById('myQueue');
+  const tbodyPrimary = document.getElementById('myQueue');
+  const tbodyOther = document.getElementById('otherQueue');
   
+  // Separate into Primary Statuses (Table 1) and Other Statuses (Table 2)
+  const primaryCases = filteredCombined.filter(c => isPrimaryStatus(c));
+  const otherCases = filteredCombined.filter(c => !isPrimaryStatus(c));
+
   if (loading) {
     let skeletons = '';
-    for(let i=0; i<Math.min(pageSize, filteredCombined.length || 3); i++) {
+    for(let i=0; i<Math.min(pageSize, primaryCases.length || 3); i++) {
       skeletons += `
         <tr class="skeleton-row">
           <td><div class="skeleton-box" style="width:20px"></div></td>
@@ -271,7 +318,8 @@ function renderMyQueue(loading = false) {
           <td class="text-end"><div class="skeleton-box ms-auto" style="width:80px"></div></td>
         </tr>`;
     }
-    tbody.innerHTML = skeletons;
+    tbodyPrimary.innerHTML = skeletons;
+    if (tbodyOther) tbodyOther.innerHTML = skeletons;
     
     document.getElementById('bulkActionsBox').className = 'd-none';
     const chkAll = document.getElementById('chkAll');
@@ -283,16 +331,15 @@ function renderMyQueue(loading = false) {
     return;
   }
 
-  const sorted = [...filteredCombined].sort((a, b) => {
-    // Primary sort: Priority to pending actions (รอพิจารณาลงนาม)
+  // Sort Table 1 (Primary Cases)
+  const sortedPrimary = [...primaryCases].sort((a, b) => {
     const isPendingA = (a.status === 'PENDING_SECGEN' && !a.signedBySecgen) ? 1 : 0;
     const isPendingB = (b.status === 'PENDING_SECGEN' && !b.signedBySecgen) ? 1 : 0;
 
     if (isPendingA !== isPendingB) {
-      return isPendingB - isPendingA; // Pending actions come first
+      return isPendingB - isPendingA; // Pending actions first
     }
 
-    // Secondary sort: Selected sort field
     let valA = a[sortField];
     let valB = b[sortField];
     if (sortField === 'slaDays') {
@@ -304,21 +351,22 @@ function renderMyQueue(loading = false) {
     return 0;
   });
 
-  const totalItems = sorted.length;
+  // Render Table 1
+  const totalItems = sortedPrimary.length;
   const totalPages = Math.ceil(totalItems / pageSize) || 1;
   if (currentPage > totalPages) currentPage = totalPages;
   const startIdx = (currentPage - 1) * pageSize;
-  const paginated = sorted.slice(startIdx, startIdx + pageSize);
+  const paginatedPrimary = sortedPrimary.slice(startIdx, startIdx + pageSize);
 
-  tbody.innerHTML = paginated.length
-    ? paginated.map(c => row(c)).join('')
+  tbodyPrimary.innerHTML = paginatedPrimary.length
+    ? paginatedPrimary.map(c => row(c, true)).join('')
     : `<tr><td colspan="6" class="text-center text-muted py-4">
          <i class="fa-regular fa-face-smile fa-lg mb-2 d-block"></i>
-         ไม่มีรายการสำนวนในเงื่อนไขการค้นหา<br>
+         ไม่มีรายการสำนวนในตารางหลักตามเงื่อนไขการค้นหา<br>
          <small>ลองเปลี่ยนข้อความค้นหาหรือตัวกรองสถานะ</small></td></tr>`;
 
   const totalCountEl = document.getElementById('totalCount');
-  if (totalCountEl) totalCountEl.textContent = filteredCombined.length;
+  if (totalCountEl) totalCountEl.textContent = sortedPrimary.length;
 
   const paginUl = document.getElementById('queuePagination');
   let paginHtml = `
@@ -336,6 +384,19 @@ function renderMyQueue(loading = false) {
       <a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">»</a>
     </li>`;
   paginUl.innerHTML = paginHtml;
+
+  // Render Table 2 (Other Statuses Cases)
+  if (tbodyOther) {
+    const sortedOther = [...otherCases].sort((a, b) => (a.id < b.id ? -1 : 1));
+    tbodyOther.innerHTML = sortedOther.length
+      ? sortedOther.map(c => row(c, false)).join('')
+      : `<tr><td colspan="6" class="text-center text-muted py-4">
+           <i class="fa-regular fa-folder-open fa-lg mb-2 d-block text-secondary opacity-50"></i>
+           ไม่มีรายการสำนวนที่อยู่ระหว่างขั้นตอนอื่น</td></tr>`;
+
+    const otherCountEl = document.getElementById('otherCount');
+    if (otherCountEl) otherCountEl.textContent = sortedOther.length;
+  }
 
   initCheckboxHandlers();
 }
