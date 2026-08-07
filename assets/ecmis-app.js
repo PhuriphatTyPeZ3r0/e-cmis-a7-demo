@@ -1417,11 +1417,48 @@ function confirmAction(opts){
     customClass: { popup:'text-start' }
   });
 }
+function showFloatToast(msg, type = 'success') {
+  if (typeof document === 'undefined') return;
+  let el = document.getElementById('ecmis-float-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'ecmis-float-toast';
+    el.style.cssText = 'position:fixed;top:20px;right:20px;z-index:999999;padding:10px 18px;border-radius:8px;font-size:0.86rem;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.22);transition:all 0.3s ease;display:flex;align-items:center;gap:8px;';
+    document.body.appendChild(el);
+  }
+  const isOk = type === 'success';
+  el.style.background = isOk ? '#0F2A62' : '#D0A830';
+  el.style.color = '#FFFFFF';
+  el.innerHTML = `<i class="fa-solid ${isOk ? 'fa-circle-check' : 'fa-triangle-exclamation'}"></i> <span>${msg}</span>`;
+  el.style.opacity = '1';
+  el.style.transform = 'translateY(0)';
+
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-10px)';
+  }, 2400);
+}
+
+function isSwalModalActive() {
+  if (typeof Swal === 'undefined' || !Swal.isVisible()) return false;
+  const container = Swal.getContainer();
+  return container && !container.classList.contains('swal2-toast-shown');
+}
+
 function toastOk(msg){
+  if (isSwalModalActive()) {
+    showFloatToast(msg, 'success');
+    return;
+  }
   Swal.fire({ toast:true, position:'top-end', icon:'success', title:msg,
     showConfirmButton:false, timer:2600, timerProgressBar:true });
 }
 function toastWarn(msg){
+  if (isSwalModalActive()) {
+    showFloatToast(msg, 'warning');
+    return;
+  }
   Swal.fire({ toast:true, position:'top-end', icon:'warning', title:msg,
     showConfirmButton:false, timer:3200, timerProgressBar:true });
 }
@@ -2674,7 +2711,7 @@ global.ECMIS = {
   mergeField, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
 
   // Custom helpers
-  saveCases, toggleDarkMode, toggleHighContrast, toggleSidebarCollapse, changeFont,
+  saveCases, toggleDarkMode, toggleHighContrast, toggleSidebarCollapse, changeFont, toggleVoiceRecognition,
   initSmartCombobox, initRealTimeValidation, initVoiceInput, initSignaturePad,
   signaturePad: (window.ecmis && window.ecmis.signaturePad),
   initAutoSave, initCharCounterAndCopy,
