@@ -35,12 +35,14 @@
           <i class="fa-solid fa-list-check"></i>
           <span>คิวงานของฉันในกิจกรรมที่ 7</span>
           <span class="badge bg-danger rounded-pill ms-1" id="myCount">0</span>
+          <span class="badge bg-success rounded-pill ms-1 d-none" id="myCompletedCount">0</span>
           <span class="ms-auto small text-muted" id="myRoleLabel"></span>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
             <table class="table table-hover tbl-ecmis mb-0">
               <colgroup>
+                <col style="width:36px">
                 <col style="width:40px">
                 <col style="width:120px">
                 <col>
@@ -50,6 +52,7 @@
               </colgroup>
               <thead>
                 <tr>
+                  <th>ลำดับ</th>
                   <th><input type="checkbox" id="chkAll" class="form-check-input"></th>
                   <th class="sortable-header" data-sort="id" style="cursor:pointer">เลขเรื่อง <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                   <th>เรื่องกล่าวหา</th>
@@ -85,6 +88,7 @@
           <div class="table-responsive">
             <table class="table table-hover tbl-ecmis mb-0">
               <colgroup>
+                <col style="width:40px">
                 <col style="width:120px">
                 <col>
                 <col style="width:160px">
@@ -93,6 +97,7 @@
               </colgroup>
               <thead>
                 <tr>
+                  <th>ลำดับ</th>
                   <th>เลขเรื่อง</th>
                   <th>เรื่องกล่าวหา</th>
                   <th>ค้างอยู่ที่</th>
@@ -126,6 +131,24 @@ const upstreamMine = ECMIS.inboxFor(role.id).filter(c => ECMIS.isUpstreamCase(c)
 
 document.getElementById('myRoleLabel').textContent = `บทบาท: ${role.title}`;
 document.getElementById('myCount').textContent = mine.length;
+
+/* นับ "เสร็จแล้ว" ในเซสชันนี้ — จับรายการที่อยู่ในคิวตอนแรกที่เห็นหน้านี้ (baseline)
+   แล้วภายหลังหลุดออกจากคิว (เพราะถูกดำเนินการที่หน้าอื่นแล้วส่งต่อสถานะไป) */
+const queueBaselineKey = `ecmis_queue_baseline_${role.id}`;
+let queueBaselineIds = JSON.parse(sessionStorage.getItem(queueBaselineKey) || 'null');
+const currentIds = mine.map(c => c.id);
+if (!queueBaselineIds) {
+  queueBaselineIds = currentIds;
+  sessionStorage.setItem(queueBaselineKey, JSON.stringify(queueBaselineIds));
+}
+const completedIds = queueBaselineIds.filter(id => !currentIds.includes(id));
+const completedBadge = document.getElementById('myCompletedCount');
+if (completedIds.length) {
+  completedBadge.textContent = `เสร็จแล้ว ${completedIds.length} รายการ (${completedIds.join(', ')})`;
+  completedBadge.classList.remove('d-none');
+} else {
+  completedBadge.classList.add('d-none');
+}
 
 if(ECMIS.isUpstreamRole(role.id)){
   document.getElementById('scopeBanner').innerHTML = `
@@ -168,7 +191,7 @@ const PAGE_FOR = {
   director:'03-report-213.html', deputy:'03-report-213.html',
   secgen:'04-approval-review.html', support_sub:'04-approval-review.html',
   chair_office:'06-chairman-agenda.html',
-  chairman:'06-chairman-agenda.html', subcommittee:'07-subcommittee-screening.html',
+  chairman:'06-chairman-agenda.html',
   board_sec:'08-board-resolution.html', board:'08-board-resolution.html'
 };
 
@@ -178,10 +201,11 @@ const pageSize = 5;
 let sortField = 'id';
 let sortOrder = 'asc';
 
-function row(c, actionable){
+function row(c, actionable, no){
   const target = `${PAGE_FOR[role.id] || '02-case-register.html'}?case=${encodeURIComponent(c.id)}`;
   const holder = ECMIS.STATUS[c.status] ? ECMIS.getRole(ECMIS.STATUS[c.status].owner) : null;
   return `<tr>
+    <td class="text-muted">${no}</td>
     <td>
       ${actionable ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '—'}
     </td>
@@ -207,6 +231,7 @@ function renderMyQueue(loading = false) {
     for(let i=0; i<Math.min(pageSize, mine.length || 3); i++) {
       skeletons += `
         <tr class="skeleton-row">
+          <td><div class="skeleton-box" style="width:16px"></div></td>
           <td><div class="skeleton-box" style="width:20px"></div></td>
           <td><div class="skeleton-box" style="width:80px"></div></td>
           <td><div class="skeleton-box" style="width:220px"></div></td>
@@ -250,8 +275,8 @@ function renderMyQueue(loading = false) {
   const paginated = sorted.slice(startIdx, startIdx + pageSize);
 
   tbody.innerHTML = paginated.length
-    ? paginated.map(c => row(c, true)).join('')
-    : `<tr><td colspan="6" class="text-center text-muted py-4">
+    ? paginated.map((c, i) => row(c, true, startIdx + i + 1)).join('')
+    : `<tr><td colspan="7" class="text-center text-muted py-4">
          <i class="fa-regular fa-face-smile fa-lg mb-2 d-block"></i>
          ไม่มีงานค้างในบทบาท <strong>${role.title}</strong><br>
          <small>ลองสลับบทบาทที่มุมขวาบนเพื่อดูคิวงานของผู้ใช้รายอื่น</small></td></tr>`;
@@ -391,8 +416,8 @@ const watch = upstreamMine.concat(
   all.filter(c => !ECMIS.canAct(c, role.id) && !ECMIS.isUpstreamCase(c) &&
     ['owner','board_sec','dir_case'].includes(role.id)));
 document.getElementById('watchQueue').innerHTML = watch.length
-  ? watch.map(c => row(c, false)).join('')
-  : `<tr><td colspan="5" class="text-center text-muted py-3">— ไม่มีรายการ —</td></tr>`;
+  ? watch.map((c, i) => row(c, false, i + 1)).join('')
+  : `<tr><td colspan="6" class="text-center text-muted py-3">— ไม่มีรายการ —</td></tr>`;
 
 </script>
 </body>

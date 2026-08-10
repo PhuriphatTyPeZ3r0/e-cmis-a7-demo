@@ -911,6 +911,16 @@ function currentRoleId(){ return sessionStorage.getItem('ecmis_role') || 'owner'
 function setRole(id){ sessionStorage.setItem('ecmis_role', id); location.reload(); }
 function currentRole(){ return getRole(currentRoleId()); }
 
+/* เข้าสู่ระบบ/ออกจากระบบ — จำลอง session ด้วย sessionStorage (ยังไม่มี auth จริง)
+   renderShell() ทุกหน้าเช็คค่านี้ก่อนวาดเมนู ถ้ายังไม่ล็อกอินจะเด้งไปหน้า login.html
+   ทันที ทำให้กดลิงก์ตรงเข้าหน้าในระบบโดยไม่ผ่าน login ไม่ได้จริง ๆ                */
+function isAuthed(){ return sessionStorage.getItem('ecmis_authed') === '1'; }
+function logout(){
+  sessionStorage.removeItem('ecmis_authed');
+  sessionStorage.removeItem('ecmis_role');
+  location.href = 'login.html';
+}
+
 /* งานที่ค้างอยู่ที่บทบาทนี้ (Work Inbox count) */
 function inboxFor(roleId){
   return CASES.filter(c => STATUS[c.status] && STATUS[c.status].owner === roleId);
@@ -943,18 +953,12 @@ const NAV = [
   { section:'ภาพรวม' },
   { href:'01-work-inbox.html',            icon:'fa-inbox',            label:'Work Inbox', badge:true },
   { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' },
-  { href:'11-secgen-desk.html',           icon:'fa-gavel',            label:'โต๊ะสั่งการเลขาธิการฯ', ref:'L3 · S1–S11',
-    visible: role => can('view.all', role.id) },
   { section:'กระบวนงานไต่สวนเบื้องต้น (7.1)' },
   { href:'04-approval-review.html',       icon:'fa-user-check',       label:'เลขาธิการฯ พิจารณา / ลงนาม', step:1, ref:'S1–G1',
     visible: role => can('view.all', role.id) || role.flow.includes('S2') },
   { href:'06-chairman-agenda.html',       icon:'fa-gavel',            label:'ประธานฯ สั่งการ / บรรจุวาระ', step:3, ref:'S4–S8',
     visible: role => can('view.all', role.id) },
-  { href:'07-subcommittee-screening.html',icon:'fa-users-viewfinder', label:'อนุกลั่นกรองฯ คณะ 1–8', step:4, ref:'S5–S6',
-    visible: role => can('view.all', role.id) || role.flow.includes('S6') },
   { href:'08-board-resolution.html',      icon:'fa-scale-balanced',   label:'บันทึกมติที่ประชุมบอร์ด', step:5, ref:'S9–G5',
-    visible: role => can('view.all', role.id) },
-  { href:'09-order-m24.html',             icon:'fa-stamp',            label:'ออกคำสั่งแต่งตั้งคณะไต่สวน ม.24', step:6, ref:'S11',
     visible: role => can('view.all', role.id) }
 ];
 
@@ -970,6 +974,10 @@ function visibleNavFor(role){
 }
 
 function renderShell(activeHref){
+  if(!isAuthed()){
+    location.href = 'login.html';
+    return;
+  }
   const role = currentRole();
   const inboxCount = inboxFor(role.id).length;
 
@@ -1011,7 +1019,11 @@ function renderShell(activeHref){
         ${up?'<span class="st st-draft ms-1" style="font-size:.6rem">นอกขอบเขต กจ.7</span>':''}
         <small>${r.name} · ${r.org} · กิจกรรม ${r.act}</small>
       </a></li>`;
-    }).join('')).join('<li><hr class="dropdown-divider"></li>');
+    }).join('')).join('<li><hr class="dropdown-divider"></li>') +
+    `<li><hr class="dropdown-divider"></li>
+     <li><a class="dropdown-item text-danger btn-logout" href="#">
+       <i class="fa-solid fa-right-from-bracket me-1"></i>ออกจากระบบ
+     </a></li>`;
 
   const topbar = `
   <header class="app-topbar no-print">
@@ -1104,6 +1116,9 @@ function renderShell(activeHref){
 
   document.querySelectorAll('[data-role]').forEach(el => {
     el.addEventListener('click', e => { e.preventDefault(); setRole(el.dataset.role); });
+  });
+  document.querySelectorAll('.btn-logout').forEach(el => {
+    el.addEventListener('click', e => { e.preventDefault(); logout(); });
   });
   const tog = document.getElementById('sbToggle');
   if(tog) tog.addEventListener('click', () => document.getElementById('appSidebar').classList.toggle('open'));
@@ -1316,8 +1331,7 @@ function signDialog(docName, signerName){
       <div class="text-end mb-2">
         <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2" style="font-size:0.75rem" id="swal-sig-clear">ล้างรูปวาด</button>
       </div>
-      <input type="hidden" id="swal-sig-input">
-      
+
       <div class="mb-2" style="background:#fdf7e8;border-left:4px solid #c9a227;padding:.6rem .8rem;border-radius:0 6px 6px 0">
         ระบบจะแปลงเอกสารเป็น PDF และผนึกลายมือชื่ออิเล็กทรอนิกส์
         ตาม พ.ร.บ. ว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ฯ (TOR 14.6)
@@ -1331,11 +1345,11 @@ function signDialog(docName, signerName){
     showCancelButton:true, confirmButtonText:'ยืนยันลงนาม', cancelButtonText:'ยกเลิก',
     confirmButtonColor:'#0a2647', cancelButtonColor:'#6b7280', reverseButtons:true,
     didOpen() {
-      initSignaturePad('swal-sig-canvas', 'swal-sig-clear', 'swal-sig-input');
+      initSignaturePad('swal-sig-canvas', 'swal-sig-clear');
     },
     preConfirm(){
       const v = document.getElementById('swal-otp').value.trim();
-      const sigData = document.getElementById('swal-sig-input').value;
+      const sigData = signaturePad.getDataUrl('swal-sig-canvas');
       if(v.length !== 6){ Swal.showValidationMessage('กรุณากรอก OTP ให้ครบ 6 หลัก'); return false; }
       return { otp: v, sig: sigData };
     }
@@ -1375,7 +1389,6 @@ function sequentialSignDialog(docName, signers){
       <div class="text-end mb-2">
         <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2" style="font-size:0.75rem" id="swal-sig-clear">ล้างรูปวาด</button>
       </div>
-      <input type="hidden" id="swal-sig-input">
 
       <div class="mb-2" style="background:#fdf7e8;border-left:4px solid #c9a227;padding:.6rem .8rem;border-radius:0 6px 6px 0">
         กำลังลงนามในฐานะ <strong>${cur.name}</strong> — ระบบจะแปลงเอกสารเป็น PDF และผนึก
@@ -1392,11 +1405,11 @@ function sequentialSignDialog(docName, signers){
     showCancelButton:true, confirmButtonText:'ยืนยันลงนามลำดับนี้', cancelButtonText:'ยกเลิก',
     confirmButtonColor:'#0a2647', cancelButtonColor:'#6b7280', reverseButtons:true, width:560,
     didOpen() {
-      initSignaturePad('swal-sig-canvas', 'swal-sig-clear', 'swal-sig-input');
+      initSignaturePad('swal-sig-canvas', 'swal-sig-clear');
     },
     preConfirm(){
       const v = document.getElementById('swal-otp').value.trim();
-      const sigData = document.getElementById('swal-sig-input').value;
+      const sigData = signaturePad.getDataUrl('swal-sig-canvas');
       if(v.length !== 6){ Swal.showValidationMessage('กรุณากรอก OTP ให้ครบ 6 หลัก'); return false; }
       return { otp:v, signer:cur, next:rest[0] || null, sig: sigData };
     }
@@ -1579,7 +1592,7 @@ function initCommandPalette() {
           director:'03-report-213.html', deputy:'03-report-213.html',
           secgen:'04-approval-review.html', support_sub:'04-approval-review.html',
           chair_office:'06-chairman-agenda.html',
-          chairman:'06-chairman-agenda.html', subcommittee:'07-subcommittee-screening.html',
+          chairman:'06-chairman-agenda.html',
           board_sec:'08-board-resolution.html', board:'08-board-resolution.html'
         };
         const targetPage = PAGE_FOR[roleId] || '02-case-register.html';
@@ -1844,74 +1857,87 @@ function initVoiceInput() {
   });
 }
 
-function initSignaturePad(canvasId, clearBtnId, inputId) {
-  const canvas = document.getElementById(canvasId);
-  const clearBtn = document.getElementById(clearBtnId);
-  const input = document.getElementById(inputId);
-  if (!canvas) return;
+/* ลายมือชื่อดิจิทัล — ใช้ Pointer Events (รองรับเมาส์/สัมผัส/ปากกาในตัวเดียว)
+   และแปลงพิกัดตามอัตราส่วน canvas.width จริง ต่อขนาดที่ render บนจอ เพื่อไม่ให้
+   เส้นเพี้ยนเวลา canvas ถูกบีบ/ขยายด้วย CSS                                    */
+const signaturePad = (function () {
+  const pads = new Map();
 
-  const ctx = canvas.getContext('2d');
-  ctx.strokeStyle = '#0a2647';
-  ctx.lineWidth = 3;
-  ctx.lineCap = 'round';
-
-  let drawing = false;
-  let lastX = 0;
-  let lastY = 0;
-
-  function getPos(e) {
+  function point(canvas, event) {
     const rect = canvas.getBoundingClientRect();
-    if (e.touches && e.touches.length) {
-      return {
-        x: e.touches[0].clientX - rect.left,
-        y: e.touches[0].clientY - rect.top
-      };
-    }
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
+      x: (event.clientX - rect.left) * (canvas.width / rect.width),
+      y: (event.clientY - rect.top) * (canvas.height / rect.height)
     };
   }
 
-  function startDraw(e) {
-    drawing = true;
-    const pos = getPos(e);
-    lastX = pos.x;
-    lastY = pos.y;
+  function init(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const existing = pads.get(canvasId);
+    if (existing && existing.canvas === canvas) return;
+    pads.delete(canvasId);
+
+    const context = canvas.getContext('2d');
+    const state = { canvas: canvas, drawing: false, hasInk: false };
+    pads.set(canvasId, state);
+
+    context.strokeStyle = '#173f91'; // สีหมึกปากกาลงนาม
+    context.lineWidth = 3;
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+
+    canvas.addEventListener('pointerdown', function (event) {
+      event.preventDefault();
+      state.drawing = true;
+      canvas.setPointerCapture(event.pointerId);
+      const pos = point(canvas, event);
+      context.beginPath();
+      context.moveTo(pos.x, pos.y);
+    });
+
+    canvas.addEventListener('pointermove', function (event) {
+      if (!state.drawing) return;
+      event.preventDefault();
+      const pos = point(canvas, event);
+      context.lineTo(pos.x, pos.y);
+      context.stroke();
+      state.hasInk = true;
+    });
+
+    function stop(event) {
+      if (!state.drawing) return;
+      state.drawing = false;
+      try { canvas.releasePointerCapture(event.pointerId); } catch (_) { }
+    }
+
+    canvas.addEventListener('pointerup', stop);
+    canvas.addEventListener('pointercancel', stop);
+    canvas.addEventListener('pointerleave', stop);
   }
 
-  function draw(e) {
-    if (!drawing) return;
-    e.preventDefault();
-    const pos = getPos(e);
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-    lastX = pos.x;
-    lastY = pos.y;
-    saveSig();
+  function clear(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    const state = pads.get(canvasId);
+    if (!canvas || !state) return;
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    state.hasInk = false;
   }
 
-  function stopDraw() { drawing = false; }
-
-  canvas.addEventListener('mousedown', startDraw);
-  canvas.addEventListener('mousemove', draw);
-  canvas.addEventListener('mouseup', stopDraw);
-  canvas.addEventListener('mouseleave', stopDraw);
-
-  canvas.addEventListener('touchstart', startDraw);
-  canvas.addEventListener('touchmove', draw);
-  canvas.addEventListener('touchend', stopDraw);
-
-  clearBtn.addEventListener('click', () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (input) input.value = '';
-  });
-
-  function saveSig() {
-    if (input) input.value = canvas.toDataURL();
+  function getDataUrl(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    const state = pads.get(canvasId);
+    return canvas && state && state.hasInk ? canvas.toDataURL('image/png') : '';
   }
+
+  return { init, clear, getDataUrl };
+})();
+
+/* ตัวห่อสำหรับ dialog ที่ยังเรียกด้วยชื่อเดิม — ผูกปุ่ม "ล้างรูปวาด" ให้ด้วย */
+function initSignaturePad(canvasId, clearBtnId) {
+  signaturePad.init(canvasId);
+  const clearBtn = document.getElementById(clearBtnId);
+  if (clearBtn) clearBtn.addEventListener('click', () => signaturePad.clear(canvasId));
 }
 
 function initAutoSave(formId, draftKey, warningText) {
@@ -2249,13 +2275,14 @@ global.ECMIS = {
   UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase,
   PERM_DEFS, can, canEditMaster, canViewCase,
   thaiDate, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole, roleIdForLogin,
+  isAuthed, logout,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   renderShell, stepperHtml, statusBadge, slaBadge, actionBar,
   mergeField, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
 
   // Custom helpers
   saveCases, toggleDarkMode, toggleHighContrast, toggleSidebarCollapse, changeFont,
-  initSmartCombobox, initRealTimeValidation, initVoiceInput, initSignaturePad,
+  initSmartCombobox, initRealTimeValidation, initVoiceInput, initSignaturePad, signaturePad,
   initAutoSave, initCharCounterAndCopy,
 
   // New UX helpers
