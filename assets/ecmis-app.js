@@ -1153,8 +1153,8 @@ function renderShell(activeHref){
         <button type="button" class="btn btn-sm btn-light px-2 py-0 text-secondary" onclick="ECMIS.changeFont(1)" title="อักษรใหญ่ขึ้น" style="font-size:0.78rem">A+</button>
       </div>
 
-      <!-- Color / Contrast adjustment -->
-      <button class="btn btn-sm btn-light border rounded-pill px-3 py-1 text-secondary d-inline-flex align-items-center gap-1" onclick="ECMIS.toggleHighContrast()" title="ปรับสี" style="font-size:0.8rem">
+      <!-- Color mode: วนสามโหมด ปกติ (Light) → มืด (Dark) → คอนทราสต์สูง (High Contrast) -->
+      <button id="colorModeToggle" class="btn btn-sm btn-light border rounded-pill px-3 py-1 text-secondary d-inline-flex align-items-center gap-1" onclick="ECMIS.toggleColorMode()" title="ปรับสี" style="font-size:0.8rem">
         <i class="fa-solid fa-circle-half-stroke"></i> <span>ปรับสี</span>
       </button>
 
@@ -1787,16 +1787,38 @@ function sequentialSignDialog(docName, signers){
    UI/UX ENHANCEMENT HANDLERS (Step 2 Implementation)
    ========================================================================== */
 
-function toggleDarkMode() {
-  const isDark = document.body.classList.toggle('dark-mode');
-  localStorage.setItem('ecmis_dark_mode', isDark);
-  toastOk(isDark ? 'เปิดโหมดมืด (Dark Mode)' : 'ปิดโหมดมืด (Light Mode)');
+/* ปุ่ม "ปรับสี" วนสามโหมด: ปกติ (light) → มืด (dark) → คอนทราสต์สูง (contrast) → ปกติ
+   เก็บสถานะเดียวใน localStorage แทนสอง flag แยก (เดิม dark/high-contrast เปิดพร้อมกันได้
+   ซึ่งไม่มี UI ใดตั้งใจให้ผสมสองโหมดนี้เข้าด้วยกัน) */
+const COLOR_MODES = ['light', 'dark', 'contrast'];
+const COLOR_MODE_META = {
+  light:    { icon:'fa-sun',                text:'ปกติ',           toast:'เปลี่ยนเป็นโหมดปกติ (Light Mode)',        nextTitle:'สลับเป็นโหมดมืด' },
+  dark:     { icon:'fa-moon',                text:'โหมดมืด',        toast:'เปลี่ยนเป็นโหมดมืด (Dark Mode)',          nextTitle:'สลับเป็นโหมดคอนทราสต์สูง' },
+  contrast: { icon:'fa-circle-half-stroke',  text:'คอนทราสต์สูง',   toast:'เปลี่ยนเป็นโหมดคอนทราสต์สูง (High Contrast)', nextTitle:'สลับเป็นโหมดปกติ' }
+};
+
+function applyColorMode(mode) {
+  document.body.classList.remove('dark-mode', 'high-contrast');
+  if (mode === 'dark') document.body.classList.add('dark-mode');
+  else if (mode === 'contrast') document.body.classList.add('high-contrast');
+
+  const btn = document.getElementById('colorModeToggle');
+  if (btn) {
+    const meta = COLOR_MODE_META[mode];
+    const icon = btn.querySelector('i');
+    const label = btn.querySelector('span');
+    if (icon) icon.className = `fa-solid ${meta.icon}`;
+    if (label) label.textContent = meta.text;
+    btn.title = meta.nextTitle;
+  }
 }
 
-function toggleHighContrast() {
-  const isHC = document.body.classList.toggle('high-contrast');
-  localStorage.setItem('ecmis_high_contrast', isHC);
-  toastOk(isHC ? 'เปิดโหมดสีคอนทราสต์สูง' : 'ปิดโหมดสีคอนทราสต์สูง');
+function toggleColorMode() {
+  const current = localStorage.getItem('ecmis_color_mode') || 'light';
+  const next = COLOR_MODES[(COLOR_MODES.indexOf(current) + 1) % COLOR_MODES.length];
+  localStorage.setItem('ecmis_color_mode', next);
+  applyColorMode(next);
+  toastOk(COLOR_MODE_META[next].toast);
 }
 
 /* Desktop sidebar collapse (Master Screen Layout Desktop.pdf: 260px <-> 68px).
@@ -1823,18 +1845,18 @@ function initA11yAndPref() {
   const baseSize = 14.5 + fontStepVal * 2;
   document.documentElement.style.fontSize = baseSize + 'px';
 
-  let isDark = localStorage.getItem('ecmis_dark_mode');
-  if (isDark === null) {
-    isDark = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'true' : 'false';
+  let colorMode = localStorage.getItem('ecmis_color_mode');
+  if (colorMode === null) {
+    /* ไม่มีค่าใหม่ — ลองอ่าน flag เดิม (dark/high-contrast) เพื่อไม่ให้ผู้ใช้เดิมเสียการตั้งค่า
+       ถ้าไม่มีเลยค่อยตกไปที่ prefers-color-scheme ของเบราว์เซอร์ */
+    if (localStorage.getItem('ecmis_high_contrast') === 'true') colorMode = 'contrast';
+    else if (localStorage.getItem('ecmis_dark_mode') === 'true') colorMode = 'dark';
+    else if (localStorage.getItem('ecmis_dark_mode') === null &&
+             window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) colorMode = 'dark';
+    else colorMode = 'light';
+    localStorage.setItem('ecmis_color_mode', colorMode);
   }
-  if (isDark === 'true') {
-    document.body.classList.add('dark-mode');
-  }
-
-  const isHC = localStorage.getItem('ecmis_high_contrast') === 'true';
-  if (isHC) {
-    document.body.classList.add('high-contrast');
-  }
+  applyColorMode(colorMode);
 
   const isCollapsed = localStorage.getItem('ecmis_sidebar_collapsed') === 'true';
   if (isCollapsed) {
@@ -2671,7 +2693,7 @@ global.ECMIS = {
   mergeField, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
 
   // Custom helpers
-  saveCases, toggleDarkMode, toggleHighContrast, toggleSidebarCollapse, changeFont, toggleVoiceRecognition,
+  saveCases, toggleColorMode, toggleSidebarCollapse, changeFont, toggleVoiceRecognition,
   initSmartCombobox, initRealTimeValidation, initVoiceInput, initSignaturePad,
   signaturePad: (window.ecmis && window.ecmis.signaturePad),
   initAutoSave, initCharCounterAndCopy,
