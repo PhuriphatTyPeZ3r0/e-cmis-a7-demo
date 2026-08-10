@@ -529,6 +529,108 @@ function m28Pending(){
   return CASES.filter(c => c.m28 && c.m28.reported === false);
 }
 
+/* ------------------------------------------------- ACTIVITY 7 STATUSES (14 สถานะ 4 Section) */
+const ACT7_SECTIONS = [
+  { id: 1, name: 'Section 1: ขั้นตอนเสนอกลั่นกรองและบรรจุวาระ', shortName: 'Section 1', badgeCls: 'bg-info text-dark', borderCls: 'border-info' },
+  { id: 2, name: 'Section 2: ขั้นตอนการพิจารณาของคณะกรรมการ ป.ป.ท.', shortName: 'Section 2', badgeCls: 'bg-warning text-dark', borderCls: 'border-warning' },
+  { id: 3, name: 'Section 3: ขั้นตอนหลังบอร์ดมีมติ / คำสั่ง / การดำเนินการ', shortName: 'Section 3', badgeCls: 'bg-purple text-white', borderCls: 'border-purple' },
+  { id: 4, name: 'Section 4: ขั้นตอนส่งออกและเสร็จสิ้น', shortName: 'Section 4', badgeCls: 'bg-success text-white', borderCls: 'border-success' }
+];
+
+const ACT7_STATUSES = [
+  // Section 1
+  { section: 1, name: 'รอเลขาธิการ ป.ป.ท. ลงความเห็น', icon: 'fa-user-pen' },
+  { section: 1, name: 'อยู่ระหว่างกลั่นกรองโดยอนุกรรมการฯ', icon: 'fa-users-gear' },
+  { section: 1, name: 'รอประธานอนุมัติบรรจุวาระ', icon: 'fa-user-tie' },
+  { section: 1, name: 'บรรจุระเบียบวาระการประชุมแล้ว', icon: 'fa-calendar-check' },
+
+  // Section 2
+  { section: 2, name: 'อยู่ระหว่างพิจารณาโดยคณะกรรมการ ป.ป.ท.', icon: 'fa-gavel' },
+  { section: 2, name: 'บอร์ดมีมติแล้ว - รอจัดทำรายงานการประชุม', icon: 'fa-file-signature' },
+
+  // Section 3
+  { section: 3, name: 'บอร์ดมีมติรับไต่สวน - รอจัดทำคำสั่ง ม.24', icon: 'fa-file-shield' },
+  { section: 3, name: 'อยู่ระหว่างเสนอลงนามคำสั่ง ม.24 วรรคแรก', icon: 'fa-file-pen' },
+  { section: 3, name: 'อยู่ระหว่างเสนอลงนามคำสั่ง ม.24 วรรคสาม', icon: 'fa-file-circle-check' },
+  { section: 3, name: 'บอร์ดมีมติไม่รับไต่สวน - รอดำเนินการปิดสำนวน', icon: 'fa-box-archive' },
+  { section: 3, name: 'บอร์ดมีมติส่ง ป.ป.ช.', icon: 'fa-paper-plane' },
+  { section: 3, name: 'บอร์ดมีมติส่งไต่สวนพยานเพิ่มเติม', icon: 'fa-magnifying-glass-plus' },
+  { section: 3, name: 'บอร์ดมีมติอื่นๆ - ส่งแจ้งประสานงานหน่วยงาน', icon: 'fa-share-nodes' },
+
+  // Section 4
+  { section: 4, name: 'ส่งออกผลมติและคำสั่งเรียบร้อย', icon: 'fa-circle-check' }
+];
+
+function getAct7Status(c) {
+  if (c && c.act7Status) return c.act7Status;
+
+  const st = c ? c.status : '';
+  const res = c ? (c.resolution || c.boardResolution || '') : '';
+
+  if (st === 'DISPATCHING' || st === 'CLOSED') {
+    return 'ส่งออกผลมติและคำสั่งเรียบร้อย';
+  }
+  if (st === 'RESOLVED_PENDING') {
+    return 'บอร์ดมีมติแล้ว - รอจัดทำรายงานการประชุม';
+  }
+  if (st === 'IN_MEETING' || st === 'DEFERRED') {
+    return 'อยู่ระหว่างพิจารณาโดยคณะกรรมการ ป.ป.ท.';
+  }
+  if (st === 'AGENDA_SET') {
+    return 'บรรจุระเบียบวาระการประชุมแล้ว';
+  }
+  if (st === 'PENDING_CHAIR_OF' || st === 'PENDING_CHAIRMAN') {
+    return 'รอประธานอนุมัติบรรจุวาระ';
+  }
+  if (st === 'IN_SCREENING') {
+    return 'อยู่ระหว่างกลั่นกรองโดยอนุกรรมการฯ';
+  }
+  if (st === 'RESOLVED') {
+    if (res === 'ACCEPT_S24P1' || res === 'ACCEPT') {
+      if (c.order24Signed) return 'ส่งออกผลมติและคำสั่งเรียบร้อย';
+      if (c.order24Drafted) return 'อยู่ระหว่างเสนอลงนามคำสั่ง ม.24 วรรคแรก';
+      return 'บอร์ดมีมติรับไต่สวน - รอจัดทำคำสั่ง ม.24';
+    }
+    if (res === 'ACCEPT_S24P3') {
+      if (c.order24Signed) return 'ส่งออกผลมติและคำสั่งเรียบร้อย';
+      return 'อยู่ระหว่างเสนอลงนามคำสั่ง ม.24 วรรคสาม';
+    }
+    if (res === 'REJECT' || res === 'DISMISS' || res === 'NO_GROUND') {
+      return 'บอร์ดมีมติไม่รับไต่สวน - รอดำเนินการปิดสำนวน';
+    }
+    if (res === 'FORWARD' || (c.forwardTo && c.forwardTo.includes('NACC'))) {
+      return 'บอร์ดมีมติส่ง ป.ป.ช.';
+    }
+    if (res === 'MORE' || res === 'MORE_INFO') {
+      return 'บอร์ดมีมติส่งไต่สวนพยานเพิ่มเติม';
+    }
+    if (res === 'OTHER' || res === 'FORWARD_OTHER') {
+      return 'บอร์ดมีมติอื่นๆ - ส่งแจ้งประสานงานหน่วยงาน';
+    }
+    return 'บอร์ดมีมติแล้ว - รอจัดทำรายงานการประชุม';
+  }
+
+  return 'รอเลขาธิการ ป.ป.ท. ลงความเห็น';
+}
+
+function act7Badge(statusName) {
+  const item = ACT7_STATUSES.find(s => s.name === statusName);
+  const secId = item ? item.section : 1;
+  const icon = item ? item.icon : 'fa-circle-info';
+
+  const secStyles = {
+    1: 'background:#E0F2FE; color:#0369A1; border:1px solid #BAE6FD;',
+    2: 'background:#FEF3C7; color:#B45309; border:1px solid #FDE68A;',
+    3: 'background:#F3E8FF; color:#6B21A8; border:1px solid #E9D5FF;',
+    4: 'background:#DCFCE7; color:#15803D; border:1px solid #BBF7D0;'
+  };
+
+  const style = secStyles[secId] || secStyles[1];
+  return `<span class="badge rounded-pill fw-medium py-1 px-2 text-wrap text-start d-inline-flex align-items-center gap-1" style="${style} font-size:0.73rem; max-width:260px; line-height:1.2">
+    <i class="fa-solid ${icon}" style="font-size:0.7rem; flex-shrink:0"></i><span>${statusName}</span>
+  </span>`;
+}
+
 /* --------------------------------------------------- MOCK CASE DATASET */
 const CASES = [
   {
@@ -626,7 +728,7 @@ const CASES = [
     urgent:false, complex:false, dupWarning:false,
     slaDays:1, slaLimit:15, subCommittee:'คณะที่ 2',
     meetingNo:'36/2569', agendaNo:'5.4', meetingDate:'2569-05-05',
-    resolution:'ACCEPT_S24P1'
+    resolution:'ACCEPT_S24P1', signedBySecgen: true, secgenSignedAt:'04 ส.ค. 2569'
   },
   {
     id:'1609/2568',
@@ -2854,6 +2956,9 @@ global.ECMIS = {
   isAuthed, currentUsername, logout,
   renderShell, stepperHtml, statusBadge, slaBadge, actionBar,
   mergeField, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
+
+  // Custom Activity 7 Status helpers
+  ACT7_SECTIONS, ACT7_STATUSES, getAct7Status, act7Badge,
 
   // Custom helpers
   saveCases, toggleColorMode, toggleSidebarCollapse, changeFont, toggleVoiceRecognition,
