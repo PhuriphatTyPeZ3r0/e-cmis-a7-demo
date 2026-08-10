@@ -1540,44 +1540,32 @@ function showFloatToast(msg, type = 'success') {
   if (!el) {
     el = document.createElement('div');
     el.id = 'ecmis-float-toast';
-    el.style.cssText = 'position:fixed;top:20px;right:20px;z-index:999999;padding:10px 18px;border-radius:8px;font-size:0.86rem;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.22);transition:all 0.3s ease;display:flex;align-items:center;gap:8px;';
+    el.style.cssText = 'position:fixed;top:18px;right:24px;z-index:999999;padding:8px 20px;border-radius:999px;font-size:0.88rem;font-weight:500;background:#0F2A62;color:#FFFFFF;box-shadow:0 8px 24px rgba(15,42,98,0.35);border:1px solid rgba(255,255,255,0.18);transition:all 0.25s cubic-bezier(0.4,0,0.2,1);display:inline-flex;align-items:center;gap:10px;pointer-events:none;';
     document.body.appendChild(el);
   }
   const isOk = type === 'success';
-  el.style.background = isOk ? '#0F2A62' : '#D0A830';
+  const iconHtml = isOk
+    ? '<i class="fa-solid fa-circle-check text-white" style="font-size:1.1rem"></i>'
+    : '<i class="fa-solid fa-triangle-exclamation text-warning" style="font-size:1.1rem"></i>';
+
+  el.style.background = '#0F2A62';
   el.style.color = '#FFFFFF';
-  el.innerHTML = `<i class="fa-solid ${isOk ? 'fa-circle-check' : 'fa-triangle-exclamation'}"></i> <span>${msg}</span>`;
+  el.innerHTML = `${iconHtml}<span style="color:#FFFFFF;font-weight:500;letter-spacing:0.1px">${msg}</span>`;
   el.style.opacity = '1';
   el.style.transform = 'translateY(0)';
 
   clearTimeout(el._timer);
   el._timer = setTimeout(() => {
     el.style.opacity = '0';
-    el.style.transform = 'translateY(-10px)';
-  }, 2400);
-}
-
-function isSwalModalActive() {
-  if (typeof Swal === 'undefined' || !Swal.isVisible()) return false;
-  const container = Swal.getContainer();
-  return container && !container.classList.contains('swal2-toast-shown');
+    el.style.transform = 'translateY(-12px)';
+  }, 2200);
 }
 
 function toastOk(msg){
-  if (isSwalModalActive()) {
-    showFloatToast(msg, 'success');
-    return;
-  }
-  Swal.fire({ toast:true, position:'top-end', icon:'success', title:msg,
-    showConfirmButton:false, timer:2600, timerProgressBar:true });
+  showFloatToast(msg, 'success');
 }
 function toastWarn(msg){
-  if (isSwalModalActive()) {
-    showFloatToast(msg, 'warning');
-    return;
-  }
-  Swal.fire({ toast:true, position:'top-end', icon:'warning', title:msg,
-    showConfirmButton:false, timer:3200, timerProgressBar:true });
+  showFloatToast(msg, 'warning');
 }
 
 /* --------------------------------- Digital Signature simulation dialog */
@@ -2940,6 +2928,302 @@ function initDocPaneToggle() {
   setTimeout(runToggleInit, 100);
 }
 
+/* --------------------------------------------------- MANAGE SUGGESTIONS MODULE */
+const DEFAULT_SUGGESTIONS = {
+  suggestions: [
+    'เห็นชอบตามความเห็นและข้อเสนอของเจ้าหน้าที่รับเรื่อง',
+    'ส่งกลับให้ตรวจสอบข้อเท็จจริงและเอกสารเพิ่มเติม',
+    'เห็นควรเสนอ ผู้อำนวยการกองบริหารคดี พิจารณาต่อไป',
+    'โปรดตรวจสอบข้อเท็จจริงเพิ่มเติม',
+    'พบข้อมูลที่ควรตรวจสอบความเชื่อมโยง',
+    'เอกสารประกอบยังไม่ครบถ้วน',
+    'เสนอให้ตรวจสอบอำนาจหน้าที่ของหน่วยงาน'
+  ],
+  reasons: [
+    'ข้อเท็จจริงไม่เพียงพอต่อการดำเนินการ',
+    'ไม่อยู่ในอำนาจหน้าที่ของสำนักงาน ป.ป.ท.',
+    'ไม่ปรากฏพฤติการณ์หรือบุคคลที่เกี่ยวข้องชัดเจน',
+    'เรื่องอยู่ระหว่างการพิจารณาของหน่วยงานอื่น',
+    'ผู้ร้องถอนเรื่องหรือไม่ประสงค์ดำเนินการต่อ'
+  ]
+};
+
+function getSuggestionsData() {
+  try {
+    const stored = localStorage.getItem('ecmis_managed_suggestions');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && Array.isArray(parsed.suggestions) && Array.isArray(parsed.reasons)) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to parse managed suggestions:', e);
+  }
+  return JSON.parse(JSON.stringify(DEFAULT_SUGGESTIONS));
+}
+
+function saveSuggestionsData(data) {
+  try {
+    localStorage.setItem('ecmis_managed_suggestions', JSON.stringify(data));
+  } catch (e) {
+    console.error('Failed to save managed suggestions:', e);
+  }
+}
+
+function openSuggestionsModal() {
+  const currentData = getSuggestionsData();
+
+  const modalHtml = `
+    <div class="text-start" style="font-family:var(--font); color:#1E293B">
+      <div class="row g-3">
+        <!-- Col 1: คำแนะนำที่ใช้บ่อย -->
+        <div class="col-md-6">
+          <div class="p-3 rounded-3" style="background:#F8FAFC; border:1px solid #E2E8F0">
+            <h6 class="fw-bold mb-3" style="color:#0F2A62"><i class="fa-solid fa-lightbulb text-warning me-1"></i>คำแนะนำที่ใช้บ่อย</h6>
+            <div class="input-group input-group-sm mb-3">
+              <input type="text" id="swal-new-suggestion" class="form-control form-control-sm" placeholder="เพิ่มข้อความแนะนำ">
+              <button type="button" class="btn btn-navy btn-sm" id="swal-add-suggestion-btn">
+                <i class="fa-solid fa-plus me-1"></i>เพิ่ม
+              </button>
+            </div>
+            <div id="swal-suggestions-list" class="pe-1" style="max-height:260px; overflow-y:auto; font-size:0.85rem"></div>
+          </div>
+        </div>
+
+        <!-- Col 2: เหตุผลไม่รับไว้ดำเนินการ -->
+        <div class="col-md-6">
+          <div class="p-3 rounded-3" style="background:#F8FAFC; border:1px solid #E2E8F0">
+            <h6 class="fw-bold mb-3" style="color:#0F2A62"><i class="fa-solid fa-circle-exclamation text-danger me-1"></i>เหตุผลไม่รับไว้ดำเนินการ</h6>
+            <div class="input-group input-group-sm mb-3">
+              <input type="text" id="swal-new-reason" class="form-control form-control-sm" placeholder="เพิ่มเหตุผล">
+              <button type="button" class="btn btn-navy btn-sm" id="swal-add-reason-btn">
+                <i class="fa-solid fa-plus me-1"></i>เพิ่ม
+              </button>
+            </div>
+            <div id="swal-reasons-list" class="pe-1" style="max-height:260px; overflow-y:auto; font-size:0.85rem"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  let workingData = JSON.parse(JSON.stringify(currentData));
+
+  Swal.fire({
+    title: '<span style="font-family:var(--font); font-weight:700; color:#0F2A62; font-size:1.35rem"><i class="fa-solid fa-sliders text-primary me-2"></i>จัดการคำแนะนำและเหตุผล</span>',
+    html: modalHtml,
+    width: 820,
+    showCancelButton: true,
+    confirmButtonText: '<i class="fa-solid fa-floppy-disk me-1"></i>บันทึกรายการ',
+    cancelButtonText: 'ยกเลิก',
+    customClass: {
+      confirmButton: 'btn btn-navy px-4 py-2 me-2',
+      cancelButton: 'btn btn-outline-secondary px-4 py-2'
+    },
+    buttonsStyling: false,
+    didOpen: () => {
+      function renderLists() {
+        // Render Suggestions List
+        const sugContainer = document.getElementById('swal-suggestions-list');
+        if (sugContainer) {
+          if (!workingData.suggestions.length) {
+            sugContainer.innerHTML = `<div class="text-muted text-center py-3">ยังไม่มีข้อความแนะนำ</div>`;
+          } else {
+            sugContainer.innerHTML = workingData.suggestions.map((item, idx) => `
+              <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-white rounded border shadow-sm">
+                <span class="text-truncate me-2" style="font-size:0.82rem; color:#334155">${item}</span>
+                <button type="button" class="btn btn-danger btn-xs py-1 px-2 text-nowrap" onclick="window._deleteSugItem(${idx})">
+                  <i class="fa-solid fa-trash-can me-1"></i>ลบ
+                </button>
+              </div>
+            `).join('');
+          }
+        }
+
+        // Render Reasons List
+        const reasonContainer = document.getElementById('swal-reasons-list');
+        if (reasonContainer) {
+          if (!workingData.reasons.length) {
+            reasonContainer.innerHTML = `<div class="text-muted text-center py-3">ยังไม่มีรายการเหตุผล</div>`;
+          } else {
+            reasonContainer.innerHTML = workingData.reasons.map((item, idx) => `
+              <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-white rounded border shadow-sm">
+                <span class="text-truncate me-2" style="font-size:0.82rem; color:#334155">${item}</span>
+                <button type="button" class="btn btn-danger btn-xs py-1 px-2 text-nowrap" onclick="window._deleteReasonItem(${idx})">
+                  <i class="fa-solid fa-trash-can me-1"></i>ลบ
+                </button>
+              </div>
+            `).join('');
+          }
+        }
+      }
+
+      window._deleteSugItem = (idx) => {
+        workingData.suggestions.splice(idx, 1);
+        renderLists();
+      };
+      window._deleteReasonItem = (idx) => {
+        workingData.reasons.splice(idx, 1);
+        renderLists();
+      };
+
+      document.getElementById('swal-add-suggestion-btn')?.addEventListener('click', () => {
+        const inp = document.getElementById('swal-new-suggestion');
+        const val = inp?.value.trim();
+        if (val) {
+          workingData.suggestions.push(val);
+          inp.value = '';
+          renderLists();
+        }
+      });
+
+      document.getElementById('swal-add-reason-btn')?.addEventListener('click', () => {
+        const inp = document.getElementById('swal-new-reason');
+        const val = inp?.value.trim();
+        if (val) {
+          workingData.reasons.push(val);
+          inp.value = '';
+          renderLists();
+        }
+      });
+
+      renderLists();
+    },
+    preConfirm: () => {
+      return workingData;
+    }
+  }).then((res) => {
+    if (res.isConfirmed && res.value) {
+      saveSuggestionsData(res.value);
+      toastOk('บันทึกรายการคำแนะนำและเหตุผลเรียบร้อยแล้ว');
+      initWritingSuggestions();
+    }
+  });
+}
+
+function initWritingSuggestions() {
+  if (typeof document === 'undefined') return;
+  const textareas = document.querySelectorAll('textarea');
+  const data = getSuggestionsData();
+
+  textareas.forEach((ta, index) => {
+    if (ta.hasAttribute('data-no-suggestions') || ta.disabled || ta.readOnly) return;
+    if (!ta.id) {
+      ta.id = 'ta-sug-' + index + '-' + Math.random().toString(36).substring(2, 6);
+    }
+
+    let chipContainer = document.getElementById('sugChips-' + ta.id);
+    if (!chipContainer) {
+      chipContainer = document.createElement('div');
+      chipContainer.id = 'sugChips-' + ta.id;
+      chipContainer.className = 'sug-chips-box mt-2 p-2 rounded-3 border bg-light shadow-xs';
+      chipContainer.style.fontSize = '0.8rem';
+      
+      ta.parentNode.insertBefore(chipContainer, ta.nextSibling);
+    }
+
+    // ตรวจสอบบริบทของ Textbox เพื่อคัดเลือกคำแนะนำที่เกี่ยวข้องที่สุด
+    const parentText = (ta.parentNode ? ta.parentNode.innerText : '') + ' ' + (ta.placeholder || '') + ' ' + ta.id;
+    const isReasonBox = /เหตุผล|ส่งคืน|ตีกลับ|ยุติ|ไม่รับ/.test(parentText);
+    
+    // จัดลำดับความเกี่ยวข้อง (เหตุผล vs คำแนะนำการเขียน)
+    const primaryItems = isReasonBox ? data.reasons.concat(data.suggestions) : data.suggestions.concat(data.reasons);
+    const top3 = primaryItems.slice(0, 3);
+
+    if (!top3.length) return;
+
+    // สร้าง HTML ชิปคำแนะนำล่วงหน้า เพื่อคงรายการคำแนะนำให้พร้อมใช้งานเสมอแม้อยู่หลังการคลิกเลือก
+    chipContainer.innerHTML = `
+      <div class="d-flex align-items-center justify-content-between mb-2 text-warning fw-semibold">
+        <div class="d-flex align-items-center gap-1">
+          <i class="fa-solid fa-lightbulb"></i>
+          <span>คำแนะนำการเขียน</span>
+          <span class="badge rounded-pill bg-warning text-dark ms-1" style="font-size:0.7rem">${top3.length} ข้อเสนอ</span>
+        </div>
+        <small class="text-muted" style="font-size:0.72rem"><i class="fa-solid fa-hand-pointer me-1"></i>คลิกเพื่อเลือก</small>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        ${top3.map(s => `
+          <button type="button" class="btn btn-sm btn-outline-secondary bg-white text-dark rounded-pill py-1 px-3 shadow-xs sug-chip-btn"
+                  style="font-size:0.78rem; border-color:#CBD5E1; transition:all 0.18s cubic-bezier(0.4, 0, 0.2, 1);"
+                  data-text="${s.replace(/"/g, '&quot;')}">
+            <i class="fa-solid fa-plus text-primary me-1" style="font-size:0.7rem"></i>${s}
+          </button>
+        `).join('')}
+      </div>
+    `;
+
+    // ผูก event เมื่อผู้ใช้กดปุ่มชิปคำแนะนำ
+    chipContainer.querySelectorAll('.sug-chip-btn').forEach(btn => {
+      btn.addEventListener('mousedown', (e) => {
+        e.preventDefault(); // ป้องกันไม่ให้ Textbox หลุดโฟกัส
+      });
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const textToInsert = btn.getAttribute('data-text');
+        if (textToInsert) {
+          const start = ta.selectionStart || ta.value.length;
+          const end = ta.selectionEnd || ta.value.length;
+          const currentVal = ta.value;
+          const prefix = (start > 0 && !currentVal.endsWith('\n') && !currentVal.endsWith(' ')) ? ' ' : '';
+          
+          ta.value = currentVal.substring(0, start) + prefix + textToInsert + currentVal.substring(end);
+          ta.selectionStart = ta.selectionEnd = start + prefix.length + textToInsert.length;
+          ta.focus();
+          ta.dispatchEvent(new Event('input'));
+          ta.dispatchEvent(new Event('change'));
+          toastOk('แทรกข้อความแนะนำแล้ว');
+        }
+      });
+    });
+
+    const showChips = () => chipContainer.classList.add('active');
+    const hideChips = () => chipContainer.classList.remove('active');
+
+    // แสดงคำแนะนำอย่างนุ่มนวลเมื่อโฟกัสหรือคลิก Textbox
+    ta.addEventListener('focus', showChips);
+    ta.addEventListener('click', showChips);
+
+    // ซ่อนคำแนะนำเมื่อหลุดโฟกัสออกจาก Textbox
+    ta.addEventListener('blur', () => {
+      setTimeout(() => {
+        if (document.activeElement !== ta && !chipContainer.contains(document.activeElement)) {
+          hideChips();
+        }
+      }, 200);
+    });
+  });
+}
+
+function initHeaderSuggestionsButton() {
+  if (typeof document === 'undefined') return;
+  const target = document.querySelector('.page-head .ms-auto') || document.querySelector('.page-head');
+  if (target && !document.querySelector('.btn-manage-sug')) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-sm btn-outline-primary btn-manage-sug rounded-pill px-3 py-1 me-2 no-print';
+    btn.innerHTML = '<i class="fa-solid fa-lightbulb text-warning me-1"></i>จัดการคำแนะนำ';
+    btn.title = 'จัดการข้อความคำแนะนำและเหตุผลมาตรฐาน';
+    btn.addEventListener('click', openSuggestionsModal);
+    target.insertBefore(btn, target.firstChild);
+  }
+}
+
+// Auto init on DOM ready
+if (typeof document !== 'undefined') {
+  const initSug = () => {
+    initHeaderSuggestionsButton();
+    initWritingSuggestions();
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSug);
+  } else {
+    initSug();
+  }
+  setTimeout(initSug, 200);
+}
+
 global.ECMIS = {
   ROLES, STATUS, STATUS_STEP, FLOW_STEPS, APPROVAL_CHAIN,
   CASES, RETURN_REASONS, RESOLUTIONS,
@@ -2968,7 +3252,10 @@ global.ECMIS = {
 
   // New UX helpers
   initAuditTrail, initChecklistGatekeeper, initBulkActions, initDragDropUpload,
-  initDocPaneToggle
+  initDocPaneToggle,
+
+  // Managed Suggestions Module
+  getSuggestionsData, saveSuggestionsData, openSuggestionsModal, initWritingSuggestions
 };
 
 })(window);
