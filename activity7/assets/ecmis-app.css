@@ -531,6 +531,147 @@ table.tbl-ecmis tbody tr.selected{ background:var(--table-row-selected); }
 }
 
 /* ==========================================================================
+   PDF DESIGN SYSTEM — additional component classes
+   These map 1:1 to ModalDialog.pdf / Toast.pdf / InlineAlert.pdf /
+   Pagination.pdf+PageButton.pdf+NextButton.pdf+PrevButton.pdf / Tabs.pdf+
+   TabItem.pdf / Avatar.pdf / Tooltip.pdf / ProgressBar.pdf / Loading
+   Spinner.pdf / NotificationBadge.pdf+NotificationDot.pdf /
+   DropdownTrigger.pdf. Two groups:
+     (a) SweetAlert2 overrides — Swal IS the modal/toast/confirm-dialog
+         mechanism already used on every one of the 11 screens' action
+         bars, so this group is applied everywhere immediately.
+     (b) Standalone utility classes — no current screen in activity7/
+         instantiates a standalone Avatar/Tooltip/ProgressBar/Spinner/
+         Pagination/NotificationBadge, so these are defined and documented
+         for future use rather than forced into markup that has no need
+         for them (per task scope).
+   ========================================================================== */
+
+/* ---- (a) SweetAlert2 — ModalDialog.pdf: white surface, ~20px radius,
+   navy bold title, outline "ยกเลิก" + filled navy "ยืนยัน" pair ---- */
+.swal2-popup{
+  border-radius:var(--radius-modal) !important;
+  font-family:var(--font-sans) !important;
+}
+.swal2-popup .swal2-title{
+  color:var(--text-primary) !important; font-family:var(--serif) !important;
+  font-size:var(--text-h2-size) !important; line-height:var(--text-h2-lh) !important;
+}
+.swal2-popup .swal2-html-container{ color:var(--text-body) !important; font-size:var(--text-body-md-size) !important; }
+.swal2-popup .swal2-actions .swal2-confirm{
+  border-radius:var(--radius-control) !important; font-weight:600 !important;
+  background:var(--action-primary) !important;
+}
+.swal2-popup .swal2-actions .swal2-confirm:hover{ background:var(--action-primary-hover) !important; }
+.swal2-popup .swal2-actions .swal2-deny,
+.swal2-popup .swal2-actions .swal2-cancel{
+  border-radius:var(--radius-control) !important; font-weight:600 !important;
+  background:var(--bg-surface) !important; color:var(--text-primary) !important;
+  border:1px solid var(--border-control) !important; box-shadow:none !important;
+}
+.swal2-popup input.swal2-input, .swal2-popup textarea.swal2-textarea,
+.swal2-popup select.swal2-select{
+  border-radius:var(--radius-control) !important; border-color:var(--border-control) !important;
+}
+.swal2-popup input.swal2-input:focus, .swal2-popup textarea.swal2-textarea:focus{
+  border-color:var(--border-focus) !important; box-shadow:0 0 0 .18rem rgba(22,182,230,.25) !important;
+}
+/* Toast.pdf: pastel full-bg per severity, not a neutral white toast */
+.swal2-toast.swal2-icon-success{ background:var(--feedback-success-bg) !important; }
+.swal2-toast.swal2-icon-success .swal2-title{ color:var(--feedback-success-text) !important; }
+.swal2-toast.swal2-icon-warning{ background:var(--feedback-warning-bg) !important; }
+.swal2-toast.swal2-icon-warning .swal2-title{ color:var(--feedback-warning-text) !important; }
+.swal2-toast.swal2-icon-error{ background:var(--feedback-danger-bg) !important; }
+.swal2-toast.swal2-icon-error .swal2-title{ color:var(--feedback-danger-text) !important; }
+.swal2-toast.swal2-icon-info{ background:var(--feedback-info-bg) !important; }
+.swal2-toast.swal2-icon-info .swal2-title{ color:var(--feedback-info-text) !important; }
+.swal2-toast{ border-radius:var(--radius-card) !important; }
+
+/* ---- (b) Inline alert (InlineAlert.pdf) — pill-radius banner, icon + text + close.
+   No current screen instantiates this (.law-note/.warn-note cover the same
+   need today and are intentionally hidden per the content-cleansing pass —
+   left untouched here); class defined for future use. ---- */
+.inline-alert{
+  display:flex; align-items:center; gap:10px; border-radius:16px; padding:.6rem 1rem; font-size:.88rem;
+}
+.inline-alert .btn-close{ margin-left:auto; }
+.inline-alert-success{ background:var(--feedback-success-bg); color:var(--feedback-success-text); }
+.inline-alert-warning{ background:var(--feedback-warning-bg); color:var(--feedback-warning-text); }
+.inline-alert-danger{ background:var(--feedback-danger-bg); color:var(--feedback-danger-text); }
+.inline-alert-info{ background:var(--feedback-info-bg); color:var(--feedback-info-text); }
+
+/* ---- Avatar.pdf — circular, bg-surface-subtle, border/control icon ---- */
+.avatar-ecmis{
+  display:inline-flex; align-items:center; justify-content:center; border-radius:50%;
+  background:var(--bg-surface-subtle); color:var(--border-control); flex:0 0 auto;
+}
+.avatar-ecmis.sm{ width:32px; height:32px; font-size:.8rem; }
+.avatar-ecmis.md{ width:44px; height:44px; font-size:1rem; }
+.avatar-ecmis.lg{ width:64px; height:64px; font-size:1.4rem; }
+
+/* ---- Tooltip.pdf — dark slate surface (text/strong repurposed), white text ---- */
+.tooltip-ecmis{
+  background:var(--text-strong); color:#fff; border-radius:8px;
+  padding:.35rem .7rem; font-size:.78rem; display:inline-block;
+}
+
+/* ---- ProgressBar.pdf — track bg-surface-subtle, fill action-primary, pill ends ---- */
+.progress-ecmis{ height:8px; border-radius:var(--radius-pill); background:var(--bg-surface-subtle); overflow:hidden; }
+.progress-ecmis .bar{ height:100%; background:var(--action-primary); border-radius:var(--radius-pill); }
+
+/* ---- Loading Spinner.pdf — navy ring ---- */
+.spinner-ecmis{
+  width:22px; height:22px; border-radius:50%;
+  border:3px solid var(--bg-surface-subtle); border-top-color:var(--action-primary);
+  animation:spinner-ecmis-spin .7s linear infinite; display:inline-block;
+}
+@keyframes spinner-ecmis-spin{ to{ transform:rotate(360deg); } }
+
+/* ---- NotificationBadge.pdf / NotificationDot.pdf — danger red ---- */
+.notif-badge{
+  display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:16px;
+  padding:0 4px; border-radius:var(--radius-pill); background:var(--action-danger); color:#fff;
+  font-size:.64rem; font-weight:700; line-height:1;
+}
+.notif-dot{
+  display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--action-danger);
+}
+
+/* ---- Pagination.pdf + PageButton.pdf + NextButton.pdf + PrevButton.pdf ----
+   No screen in activity7/ currently renders a paginated list (all tables
+   show the full row set) — defined and documented, not force-fit into a
+   table that has no paging need yet. */
+.pagination-ecmis{ display:flex; align-items:center; gap:6px; font-size:.85rem; color:var(--text-disabled); }
+.pagination-ecmis .page-btn{
+  min-width:32px; height:32px; padding:0 8px; border-radius:var(--radius-control);
+  display:inline-flex; align-items:center; justify-content:center;
+  color:var(--text-strong); background:transparent; border:0; font-weight:600;
+}
+.pagination-ecmis .page-btn:hover{ background:var(--bg-surface-hover); }
+.pagination-ecmis .page-btn.active{ background:var(--action-primary); color:#fff; }
+.pagination-ecmis .page-btn:disabled{ color:var(--text-disabled); opacity:.5; }
+
+/* ---- Tabs.pdf + TabItem.pdf — pill segmented-control container ---- */
+.tabs-ecmis{
+  display:inline-flex; gap:2px; background:var(--bg-surface-subtle); border-radius:var(--radius-pill); padding:4px;
+}
+.tabs-ecmis .tab-item{
+  border:0; background:transparent; padding:.4rem 1rem; border-radius:var(--radius-pill);
+  font-size:.85rem; font-weight:600; color:var(--text-disabled);
+}
+.tabs-ecmis .tab-item.active{ background:var(--bg-surface); color:var(--text-primary); box-shadow:0 1px 2px rgba(15,42,98,.12); }
+
+/* ---- DropdownTrigger.pdf — identical visual language to .form-select,
+   used where a trigger button (not a native <select>) is needed ---- */
+.dropdown-trigger-ecmis{
+  display:inline-flex; align-items:center; justify-content:space-between; gap:8px;
+  border:1px solid var(--border-control); border-radius:var(--radius-control);
+  padding:.45rem .85rem; font-size:.85rem; color:var(--text-primary); background:var(--bg-surface);
+}
+.dropdown-trigger-ecmis:hover{ border-color:var(--border-control-hover); }
+.dropdown-trigger-ecmis:focus{ border-color:var(--border-focus); box-shadow:0 0 0 .18rem rgba(22,182,230,.25); }
+
+/* ==========================================================================
    UI/UX ENHANCEMENTS — กิจกรรมที่ 7.1
    ========================================================================== */
 
