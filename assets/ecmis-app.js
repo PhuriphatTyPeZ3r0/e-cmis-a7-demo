@@ -1092,11 +1092,22 @@ function canRecall(kase, roleId){
                      อนุกลั่นกรองฯ = S6) — ตรงกับที่ 04/07 เช็ค role.id ในหน้าจริง
      view.own      → เห็นเฉพาะภาพรวม (Work Inbox + ทะเบียนสำนวน) ไม่เห็นหน้า
                      กระบวนงานภายในกิจกรรมที่ 7 ซึ่งอยู่นอกขอบเขตงานของตน       */
+/* label อาจเป็น string ตายตัว หรือ function(role) เมื่อถ้อยคำต้องเปลี่ยนตามงานจริง
+   ของแต่ละบทบาท เช่น 01-work-inbox.html: เลขาธิการฯ ใช้คำว่า "พิจารณา/ลงนาม" ตรง ๆ
+   ตามงานของตน แต่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ (board_sec) ไม่ได้ลงนามสำนวน
+   งานจริงของเขาคือบันทึกมติที่ประชุม จึงต้องใช้คำว่า "บันทึกมติ" แทน */
 const NAV = [
   { section:'ภาพรวม' },
-  { href:'01-work-inbox.html',            icon:'fa-inbox',            label:'รายการพิจารณา/ลงนาม', badge:true },
+  { href:'01-work-inbox.html',            icon:'fa-inbox',
+    label: role => (role && role.id === 'board_sec') ? 'รายการรอบันทึกมติ' : 'รายการพิจารณา/ลงนาม',
+    badge:true },
   { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' }
 ];
+
+/* ถอด label จริงของรายการเมนูออกมาสำหรับบทบาทที่ระบุ (รองรับทั้ง string และ function) */
+function navLabel(navItem, role){
+  return typeof navItem.label === 'function' ? navItem.label(role) : navItem.label;
+}
 
 /* คืนเฉพาะรายการเมนูที่บทบาทนี้เห็น พร้อมตัด section header ที่ไม่มีรายการ
    ใต้ตัวเองเหลืออยู่ (orphan header) ออกไปด้วย */
@@ -1192,8 +1203,9 @@ function renderShell(activeHref){
     const active = n.href === activeHref;
     const badge = n.badge && inboxCount ? `<span class="badge bg-danger rounded-pill">${inboxCount}</span>` : '';
     const step  = n.step ? `<span class="step-no">${n.step}</span>` : `<i class="fa-solid ${n.icon}"></i>`;
-    return `<a class="nav-link ${active?'active':''}" href="${n.href}" title="${n.label}" ${n.muted?'style="opacity:.7"':''}>
-      ${step}<span>${n.label}</span>${badge}
+    const label = navLabel(n, role);
+    return `<a class="nav-link ${active?'active':''}" href="${n.href}" title="${label}" ${n.muted?'style="opacity:.7"':''}>
+      ${step}<span>${label}</span>${badge}
     </a>`;
   }).join('');
 
@@ -1297,7 +1309,7 @@ function renderShell(activeHref){
         <ol class="breadcrumb" style="font-size:0.75rem; margin:0 0 12px 0; padding:0; list-style:none; display:flex; gap:6px">
           <li class="breadcrumb-item"><a href="01-work-inbox.html" style="text-decoration:none; color:var(--ecmis-navy)"><i class="fa-solid fa-house me-1"></i>Home</a></li>
           <li class="breadcrumb-item text-muted" style="display:flex; gap:6px"><span style="margin:0 4px">/</span>${parentSection}</li>
-          <li class="breadcrumb-item active" style="display:flex; gap:6px" aria-current="page"><span style="margin:0 4px">/</span>${activeNav.label}</li>
+          <li class="breadcrumb-item active" style="display:flex; gap:6px" aria-current="page"><span style="margin:0 4px">/</span>${navLabel(activeNav, role)}</li>
         </ol>
       </nav>`;
     const appMain = document.querySelector('.app-main');
@@ -1947,9 +1959,13 @@ function initCommandPalette() {
 
     /* ใช้เมนูชุดเดียวกับ sidebar (กรองตามสิทธิ์บทบาทปัจจุบันแล้ว) แทนรายการ
        ตายตัว เพื่อไม่ให้ Command Palette พาไปหน้าที่เมนูข้าง ๆ ซ่อนไว้ */
-    const menus = visibleNavFor(currentRole())
+    const paletteRole = currentRole();
+    const menus = visibleNavFor(paletteRole)
       .filter(n => n.href)
-      .map(n => ({ label: n.step ? `${n.label} (ขั้นตอน ${n.step})` : n.label, href: n.href, icon: n.icon, cat: 'Menu' }));
+      .map(n => {
+        const lbl = navLabel(n, paletteRole);
+        return { label: n.step ? `${lbl} (ขั้นตอน ${n.step})` : lbl, href: n.href, icon: n.icon, cat: 'Menu' };
+      });
 
     const matchedMenus = menus.filter(m => m.label.toLowerCase().includes(query));
     const matchedCases = CASES.filter(c => 

@@ -18,9 +18,9 @@
   <!-- Header -->
   <div class="page-head">
     <div>
-      <h1><i class="fa-solid fa-file-signature me-2" style="color:#0F2A62"></i>รายการพิจารณา/ลงนาม</h1>
+      <h1><i class="fa-solid fa-file-signature me-2" id="pageTitleIcon" style="color:#0F2A62"></i><span id="pageTitleText">รายการพิจารณา/ลงนาม</span></h1>
     </div>
-    <span class="flow-ref ms-auto">ผัง: TO-BE ไต่สวนเบื้องต้น — ทุก Lane</span>
+    <span class="flow-ref ms-auto" id="flowRefText">ผัง: TO-BE ไต่สวนเบื้องต้น — ทุก Lane</span>
   </div>
 
   <div id="scopeBanner"></div>
@@ -67,7 +67,7 @@
       <div class="card card-ecmis mb-4">
         <div class="card-header d-flex align-items-center flex-wrap gap-2">
           <i class="fa-solid fa-list-check text-primary"></i>
-          <span class="fw-bold">รายการสำนวนพิจารณา/ลงนาม (รอพิจารณาลงนาม / ลงนามแล้ว / ไม่ลงนาม)</span>
+          <span class="fw-bold" id="card1TitleText">รายการสำนวนพิจารณา/ลงนาม (รอพิจารณาลงนาม / ลงนามแล้ว / ไม่ลงนาม)</span>
           <span class="badge bg-primary rounded-pill ms-1" id="totalCount">0</span>
           <span class="ms-auto small text-muted" id="myRoleLabel"></span>
         </div>
@@ -100,7 +100,7 @@
             <div id="bulkActionsBox" class="d-none align-items-center gap-2">
               <span class="small text-muted me-1" id="bulkSelectCount">เลือกแล้ว 0 รายการ</span>
               <button type="button" class="btn btn-xs btn-navy py-1 px-2" style="font-size:0.78rem" id="btnBulkApprove">
-                <i class="fa-solid fa-check-double me-1"></i>อนุมัติรายการที่เลือก (Bulk Action)
+                <i class="fa-solid fa-check-double me-1"></i><span id="bulkBtnText">อนุมัติรายการที่เลือก (Bulk Action)</span>
               </button>
             </div>
             <nav aria-label="Queue navigation" class="ms-auto">
@@ -163,6 +163,50 @@ const all   = ECMIS.CASES;
 let mine    = ECMIS.inboxFor(role.id).filter(c => !ECMIS.isUpstreamCase(c));
 let upstreamMine = ECMIS.inboxFor(role.id).filter(c => ECMIS.isUpstreamCase(c));
 
+/* สำนวนที่ "รอฉันดำเนินการ" ของบทบาทปัจจุบัน — ใช้ inboxFor() ตัวเดียวกับ badge
+   ฝั่ง sidebar (นับตาม STATUS.owner) แทนการเช็ค c.status === 'PENDING_SECGEN' ตรง ๆ
+   ซึ่งเดิมผูกกับคิวของเลขาธิการฯ เท่านั้น ทำให้ KPI/ตารางหลักไม่ตรงกับบทบาทอื่น
+   เช่น เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ ที่คิวจริงคือ AGENDA_SET /
+   IN_MEETING / RESOLVED_PENDING ไม่ใช่ PENDING_SECGEN */
+const mineIds = new Set(mine.map(c => c.id));
+function isMyPending(c){ return mineIds.has(c.id); }
+
+/* ถ้อยคำของหน้านี้อ้างอิง "พิจารณา/ลงนาม" ซึ่งตรงกับงานของเลขาธิการฯ (ผู้ลงนามจริง)
+   แต่เช่นกลุ่มงานคำวินิจฉัยและมติคณะกรรมการ (board_sec) ไม่ได้ลงนามสำนวนเอง —
+   งานจริงคือบันทึกมติที่ประชุม/ล็อกไฟล์ PDF/จัดทำเอกสาร จึงสลับคำตามบทบาท */
+const DEFAULT_COPY = {
+  pageTitle:  'รายการพิจารณา/ลงนาม',
+  pageIcon:   'fa-file-signature',
+  flowRef:    'ผัง: TO-BE ไต่สวนเบื้องต้น — ทุก Lane',
+  card1Title: 'รายการสำนวนพิจารณา/ลงนาม (รอพิจารณาลงนาม / ลงนามแล้ว / ไม่ลงนาม)',
+  kpiPending: 'รอพิจารณาลงนาม', kpiDone: 'ลงนามแล้ว', kpiReturned: 'ไม่ลงนาม',
+  stPending:  'รอพิจารณาลงนาม', stDone:  'ลงนามแล้ว', stReturned:  'ไม่ลงนาม / ส่งคืน',
+  bulkBtn:    'อนุมัติรายการที่เลือก (Bulk Action)',
+  bulkTitle:  n => `ยืนยันดำเนินการกลุ่มจำนวน ${n} รายการ`,
+  bulkBody:   'ระบบจะอนุมัติและเสนอสำนวนที่เลือกทั้งหมดตามบทบาทปัจจุบันของคุณ'
+};
+const ROLE_COPY = {
+  board_sec: {
+    pageTitle:  'รายการรอบันทึกมติ/จัดทำเอกสาร',
+    pageIcon:   'fa-scale-balanced',
+    flowRef:    'ผัง: TO-BE P2 Core Workflow — T13 → T14 (กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ)',
+    card1Title: 'รายการสำนวนที่ต้องบันทึกมติ/จัดทำเอกสาร (รอบันทึกมติ / บันทึกมติแล้ว / ยังไม่บันทึก)',
+    kpiPending: 'รอบันทึกมติ', kpiDone: 'บันทึกมติแล้ว', kpiReturned: 'ยังไม่บันทึก',
+    stPending:  'รอบันทึกมติ', stDone:  'บันทึกมติแล้ว', stReturned:  'ยังไม่บันทึก / ส่งคืน',
+    bulkBtn:    'บันทึกมติรายการที่เลือก (Bulk Action)',
+    bulkTitle:  n => `ยืนยันบันทึกมติกลุ่มจำนวน ${n} รายการ`,
+    bulkBody:   'ระบบจะบันทึกมติและดำเนินการสำนวนที่เลือกทั้งหมดตามขั้นตอนของกลุ่มงานคำวินิจฉัยและมติคณะกรรมการ'
+  }
+};
+const copy = Object.assign({}, DEFAULT_COPY, ROLE_COPY[role.id] || {});
+
+document.title = `${copy.pageTitle} | E-CMIS 7.1 ไต่สวนเบื้องต้น`;
+document.getElementById('pageTitleText').textContent = copy.pageTitle;
+document.getElementById('pageTitleIcon').className = `fa-solid ${copy.pageIcon} me-2`;
+document.getElementById('flowRefText').textContent = copy.flowRef;
+document.getElementById('card1TitleText').textContent = copy.card1Title;
+document.getElementById('bulkBtnText').textContent = copy.bulkBtn;
+
 document.getElementById('myRoleLabel').textContent = `บทบาท: ${role.title}`;
 
 if(ECMIS.isUpstreamRole(role.id)){
@@ -179,19 +223,19 @@ if(ECMIS.isUpstreamRole(role.id)){
 /* ---------- KPI & Filter Linking ---------- */
 function renderKPICards() {
   const currentSt = document.getElementById('statusFilter')?.value || 'ALL';
-  const pendingCount = allCasesCombined.filter(c => c.status === 'PENDING_SECGEN' && !c.signedBySecgen).length;
+  const pendingCount = allCasesCombined.filter(isMyPending).length;
   const signedCount = allCasesCombined.filter(c => c.signedBySecgen || c.status === 'RESOLVED' || c.status === 'CLOSED').length;
   const returnedCount = allCasesCombined.filter(c => c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS').length;
 
   const kpis = [
     { id:'ALL', n: allCasesCombined.length, l:'รายการทั้งหมด', i:'fa-folder-open', c:'#0F2A62' },
-    { id:'PENDING_SECGEN', n: pendingCount, l:'รอพิจารณาลงนาม', i:'fa-hourglass-half', c:'#D0A830' },
-    { id:'SIGNED', n: signedCount, l:'ลงนามแล้ว', i:'fa-circle-check', c:'#16A34A' },
-    { id:'RETURNED', n: returnedCount, l:'ไม่ลงนาม', i:'fa-circle-xmark', c:'#DB2626' }
+    { id:'MINE_PENDING', n: pendingCount, l:copy.kpiPending, i:'fa-hourglass-half', c:'#D0A830' },
+    { id:'SIGNED', n: signedCount, l:copy.kpiDone, i:'fa-circle-check', c:'#16A34A' },
+    { id:'RETURNED', n: returnedCount, l:copy.kpiReturned, i:'fa-circle-xmark', c:'#DB2626' }
   ];
 
   document.getElementById('kpiRow').innerHTML = kpis.map(k => {
-    const isActive = (currentSt === k.id) || (k.id === 'PENDING_SECGEN' && currentSt === 'PENDING');
+    const isActive = (currentSt === k.id) || (k.id === 'MINE_PENDING' && currentSt === 'PENDING');
     return `
     <div class="col-6 col-xl-3">
       <div class="card card-ecmis kpi-card h-100 ${isActive ? 'border-2 shadow-sm' : ''}"
@@ -238,13 +282,12 @@ all.forEach(c => {
 
 const allCasesCombined = Array.from(allCasesCombinedMap.values()).map(item => {
   const c = item.caseData;
-  const isPendingAction = (c.status === 'PENDING_SECGEN' && !c.signedBySecgen);
-  return { ...c, isActionable: item.isActionable || isPendingAction };
+  return { ...c, isActionable: item.isActionable || isMyPending(c) };
 });
 
-// Helper check for Primary 3 Statuses: (1) รอพิจารณาลงนาม, (2) ลงนามแล้ว, (3) ไม่ลงนาม/ส่งคืน
+// Helper check for Primary 3 Statuses: (1) รอดำเนินการ(ของบทบาทนี้), (2) เสร็จแล้ว, (3) ไม่ดำเนินการ/ส่งคืน
 function isPrimaryStatus(c) {
-  return (c.status === 'PENDING_SECGEN' && !c.signedBySecgen) ||
+  return isMyPending(c) ||
          (c.signedBySecgen || c.status === 'RESOLVED' || c.status === 'CLOSED') ||
          (c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS');
 }
@@ -257,15 +300,15 @@ let sortOrder = 'asc';
 
 function row(c, isPrimaryTable = true){
   const target = `${PAGE_FOR[role.id] || '02-case-register.html'}?case=${encodeURIComponent(c.id)}`;
-  const isPendingAction = (c.status === 'PENDING_SECGEN' && !c.signedBySecgen);
-  
+  const isPendingAction = isMyPending(c);
+
   let statusBadgeHtml = '';
   if (c.signedBySecgen) {
     const signDate = c.secgenSignedAt || '04 ส.ค. 2569';
-    statusBadgeHtml = `<span class="st st-done"><i class="fa-solid fa-check me-1"></i>ลงนามแล้ว</span>
+    statusBadgeHtml = `<span class="st st-done"><i class="fa-solid fa-check me-1"></i>${copy.stDone}</span>
       <small class="text-muted d-block mt-1" style="font-size:0.73rem;">ลงนามเมื่อ ${signDate}</small>`;
   } else if (isPendingAction) {
-    statusBadgeHtml = `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>รอพิจารณาลงนาม</span>`;
+    statusBadgeHtml = `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>${copy.stPending}</span>`;
   } else {
     statusBadgeHtml = ECMIS.statusBadge(c.status);
   }
@@ -333,8 +376,8 @@ function renderMyQueue(loading = false) {
 
   // Sort Table 1 (Primary Cases)
   const sortedPrimary = [...primaryCases].sort((a, b) => {
-    const isPendingA = (a.status === 'PENDING_SECGEN' && !a.signedBySecgen) ? 1 : 0;
-    const isPendingB = (b.status === 'PENDING_SECGEN' && !b.signedBySecgen) ? 1 : 0;
+    const isPendingA = isMyPending(a) ? 1 : 0;
+    const isPendingB = isMyPending(b) ? 1 : 0;
 
     if (isPendingA !== isPendingB) {
       return isPendingB - isPendingA; // Pending actions first
@@ -463,8 +506,8 @@ document.getElementById('btnBulkApprove')?.addEventListener('click', () => {
   if (!chks.length) return;
 
   ECMIS.confirmAction({
-    title: `ยืนยันดำเนินการกลุ่มจำนวน ${chks.length} รายการ`,
-    html: `<p>ระบบจะอนุมัติและเสนอสำนวนที่เลือกทั้งหมดตามบทบาทปัจจุบันของคุณ</p>
+    title: copy.bulkTitle(chks.length),
+    html: `<p>${copy.bulkBody}</p>
            <div class="law-note">นี่เป็นการสั่งการแบบกลุ่ม (Bulk Action) ซึ่งจะบันทึกสถานะใหม่ลงในประวัติและ Audit Trail</div>`,
     confirmText: 'ยืนยันสั่งการกลุ่ม'
   }).then(res => {
@@ -505,16 +548,16 @@ function populateStatusFilter() {
   const statusMap = new Map();
   statusMap.set('ALL', { label: 'ทั้งหมด (ทุกสถานะ)', count: allCasesCombined.length });
 
-  const pendingCount = allCasesCombined.filter(c => c.status === 'PENDING_SECGEN' && !c.signedBySecgen).length;
+  const pendingCount = allCasesCombined.filter(isMyPending).length;
   const signedCount = allCasesCombined.filter(c => c.signedBySecgen || c.status === 'RESOLVED' || c.status === 'CLOSED').length;
   const returnedCount = allCasesCombined.filter(c => c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS').length;
 
-  statusMap.set('PENDING_SECGEN', { label: 'รอพิจารณาลงนาม', count: pendingCount });
-  statusMap.set('SIGNED', { label: 'ลงนามแล้ว', count: signedCount });
-  statusMap.set('RETURNED', { label: 'ไม่ลงนาม / ส่งคืน', count: returnedCount });
+  statusMap.set('MINE_PENDING', { label: copy.stPending, count: pendingCount });
+  statusMap.set('SIGNED', { label: copy.stDone, count: signedCount });
+  statusMap.set('RETURNED', { label: copy.stReturned, count: returnedCount });
 
   allCasesCombined.forEach(c => {
-    if (c.signedBySecgen || c.status === 'PENDING_SECGEN' || c.status === 'RETURNED') return;
+    if (c.signedBySecgen || isMyPending(c) || c.status === 'RETURNED') return;
     const key = c.status;
     const label = ECMIS.STATUS[c.status]?.label || c.status;
 
@@ -526,7 +569,7 @@ function populateStatusFilter() {
 
   let optionsHtml = '';
   statusMap.forEach((val, key) => {
-    const isSelected = (currentVal === key || (key === 'PENDING_SECGEN' && currentVal === 'PENDING')) ? 'selected' : '';
+    const isSelected = (currentVal === key || (key === 'MINE_PENDING' && currentVal === 'PENDING')) ? 'selected' : '';
     optionsHtml += `<option value="${key}" ${isSelected}>${val.label} (${val.count})</option>`;
   });
 
@@ -542,8 +585,8 @@ function applyFilters() {
     const matchQ = !q || c.id.toLowerCase().includes(q) || (c.subject && c.subject.toLowerCase().includes(q)) || (c.ownerOrg && c.ownerOrg.toLowerCase().includes(q));
     let matchSt = true;
     if (st !== 'ALL') {
-      if (st === 'PENDING_SECGEN' || st === 'PENDING') {
-        matchSt = c.status === 'PENDING_SECGEN' && !c.signedBySecgen;
+      if (st === 'MINE_PENDING' || st === 'PENDING') {
+        matchSt = isMyPending(c);
       } else if (st === 'SIGNED') {
         matchSt = !!c.signedBySecgen || c.status === 'RESOLVED' || c.status === 'CLOSED';
       } else if (st === 'RETURNED' || st === 'REJECTED') {
