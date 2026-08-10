@@ -156,6 +156,16 @@
                 <strong>เลือกได้มากกว่า 1 คน</strong> และพิมพ์เพิ่มชื่อที่ไม่อยู่ในลิสต์ได้
               </div>
             </div>
+
+            <div class="mt-3">
+              <label class="form-label">การชี้แจงเพิ่มเติม (ถ้ามี)</label>
+              <textarea class="form-control" id="presenterNote" rows="3"
+                placeholder="ผู้ชี้แจงเพิ่มเติมว่า..."></textarea>
+              <div class="law-note mt-2" style="font-size:.78rem">
+                ตามเทมเพลต <code>มติการประชุม ไต่สวนเบื้องต้น.docx</code> — คำชี้แจงเพิ่มเติมของผู้ชี้แจง
+                ต่อที่ประชุม แยกจาก "ความเห็นที่ประชุม" ของคณะกรรมการ ป.ป.ท.
+              </div>
+            </div>
           </div>
         </div>
 
@@ -477,6 +487,7 @@
       const agendaNo = document.getElementById('agendaNo').value.trim();
       const opinion = document.getElementById('boardOpinion').value.trim();
       const presenter = document.getElementById('presenter').value.trim();
+      const presenterNote = document.getElementById('presenterNote').value.trim();
       const r = selectedRes();
       const t = tally();
       const unanimous = t.againstV === 0 && t.abstainV === 0;
@@ -524,29 +535,39 @@
     <div class="doc-row"><span class="k">เอกสารอ้างอิง</span> หนังสือหน่วยงานที่รับผิดชอบตามเอกสาร
       ${M(kase.docRef !== '—' ? kase.docRef : '', 'ที่ ปป …………/……… ลงวันที่ ……………')} และเอกสารประกอบการประชุม</div>
 
-    <div class="doc-indent" style="margin-top:12px">
-      ${M(presenter)} ${M(kase.ownerOrg)} เสนอรายงานการไต่สวนเบื้องต้นที่ผ่านการพิจารณา
-      เลขาธิการคณะกรรมการ ป.ป.ท. ต่อที่ประชุมคณะกรรมการ ป.ป.ท. ดังนี้
+    <div class="doc-body-indent">
+      <div class="doc-indent" style="margin-top:12px">
+        ${M(presenter)} ${M(kase.ownerOrg)} เสนอรายงานการไต่สวนเบื้องต้นที่ผ่านการพิจารณา
+        เลขาธิการคณะกรรมการ ป.ป.ท. ต่อที่ประชุมคณะกรรมการ ป.ป.ท. ดังนี้
+      </div>
+
+      <div style="margin-top:10px">๑. เรื่องที่ ${M(kase.id)}
+        (${M(kase.legalBase === 'ม.62'
+          ? 'รับตามมาตรา ๖๒ พระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑'
+          : 'รับตามมาตรา ๑๘/๔ พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม')})
+      </div>
+
+      <div class="doc-h">ผู้กล่าวหา</div>
+      <div>${M(kase.complainant)}</div>
+
+      <div class="doc-h">ผู้ถูกร้อง</div>
+      ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}
+
+      <div class="doc-h">ข้อกล่าวหา</div>
+      <div class="doc-indent">${M(kase.allegation)}</div>
+
+      <div class="doc-h">การชี้แจงเพิ่มเติม</div>
+      <div class="doc-indent">ผู้ชี้แจง (${M(presenter)}) ชี้แจงเพิ่มเติมว่า
+        ${M(presenterNote, '………………………………………………………………………………………………')}</div>
+
+      <div class="doc-h">ความเห็นที่ประชุม</div>
+      <div class="doc-indent">คณะกรรมการ ป.ป.ท. พิจารณาแล้วเห็นว่า
+        ${M(opinion, '………………………………………………………………………………………………')}</div>
+      ${kase.subCommittee ? `<div class="doc-indent" style="margin-top:6px">
+        เหตุผลในการวินิจฉัยคณะกรรมการ ป.ป.ท. มีความเห็นสอดคล้องกับผู้รับผิดชอบสำนวนและคณะอนุกรรมการกลั่นกรอง
+        เรื่อง รายงานผลการรวบรวมพยานหลักฐานไต่สวนเบื้องต้นและรายงานการไต่สวนเพื่อวินิจฉัยชี้มูล
+        เพื่อเสนอคณะกรรมการ ป.ป.ท. ${M(kase.subCommittee)}</div>` : ''}
     </div>
-
-    <div style="margin-top:10px">๑. เรื่องที่ ${M(kase.id)}
-      (${M(kase.legalBase === 'ม.62'
-        ? 'รับตามมาตรา ๖๒ พระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑'
-        : 'รับตามมาตรา ๑๘/๔ พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม')})
-    </div>
-
-    <div class="doc-h">ผู้กล่าวหา</div>
-    <div>${M(kase.complainant)}</div>
-
-    <div class="doc-h">ผู้ถูกร้อง</div>
-    ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}
-
-    <div class="doc-h">ข้อกล่าวหา</div>
-    <div class="doc-indent">${M(kase.allegation)}</div>
-
-    <div class="doc-h">ความเห็นที่ประชุม</div>
-    <div class="doc-indent">คณะกรรมการ ป.ป.ท. พิจารณาแล้วเห็นว่า
-      ${M(opinion, '………………………………………………………………………………………………')}</div>
 
     <div class="doc-h">มติที่ประชุม</div>
     <div>๑. คณะกรรมการ ป.ป.ท. มีมติ${M(unanimous ? 'เป็นเอกฉันท์' : `ด้วยคะแนนเสียงข้างมาก ${t.forV} ต่อ ${t.againstV} เสียง`)}</div>
@@ -569,7 +590,7 @@
 
     /* ---------- wire ---------- */
     document.getElementById('resList').addEventListener('change', () => { toggleBoxes(); renderOutcome(); renderDoc(); });
-    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'presenter', 'rejectLaw', 'moreTask', 'moreOwner', 'moreDue', 'forwardTo']
+    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'presenter', 'presenterNote', 'rejectLaw', 'moreTask', 'moreOwner', 'moreDue', 'forwardTo']
       .forEach(id => {
         const el = document.getElementById(id); if (el) {
           el.addEventListener('input', renderDoc); el.addEventListener('change', renderDoc);
