@@ -229,35 +229,37 @@ const allCasesCombined = Array.from(allCasesCombinedMap.values()).map(item => {
   return { ...c, isActionable: item.isActionable || isMyPending(c) };
 });
 
-/* ---------- KPI Summary Cards (Fixed Filter Triggering) ---------- */
+/* ---------- KPI Summary Cards (5 Cards) ---------- */
 function renderKPICards() {
   const currentSt = document.getElementById('statusFilter')?.value || 'ALL';
 
-  const pendingCount = allCasesCombined.filter(c => isMyPending(c) || c.status === 'PENDING_SECGEN' || c.status === 'IN_SUPPORT_SUB' || c.status === 'PENDING_URGENT' || c.status === 'DRAFT').length;
+  const pendingCount = allCasesCombined.filter(c => (isMyPending(c) || c.status === 'PENDING_SECGEN' || c.status === 'IN_SUPPORT_SUB' || c.status === 'PENDING_URGENT' || c.status === 'DRAFT') && c.status !== 'IN_SCREENING').length;
   const signedCount = allCasesCombined.filter(c => c.signedBySecgen || c.status === 'AGENDA_SET' || c.status === 'IN_MEETING' || c.status === 'RESOLVED_PENDING' || c.status === 'RESOLVED' || c.status === 'DISPATCHING' || c.status === 'CLOSED' || c.status === 'PENDING_CHAIR_OF' || c.status === 'PENDING_CHAIRMAN').length;
   const returnedCount = allCasesCombined.filter(c => c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS').length;
+  const screeningCount = allCasesCombined.filter(c => c.status === 'IN_SCREENING').length;
 
   const kpis = [
     { id:'ALL', n: allCasesCombined.length, l:'รายการทั้งหมด', i:'fa-folder-open', c:'#0F2A62' },
-    { id:'PENDING', n: pendingCount, l:copy.kpiPending, i:'fa-hourglass-half', c:'#D0A830' },
-    { id:'SIGNED', n: signedCount, l:copy.kpiDone, i:'fa-circle-check', c:'#16A34A' },
-    { id:'RETURNED', n: returnedCount, l:copy.kpiReturned, i:'fa-circle-xmark', c:'#DB2626' }
+    { id:'PENDING', n: pendingCount, l:copy.kpiPending || 'รอเลขาพิจารณาลงนาม', i:'fa-hourglass-half', c:'#D0A830' },
+    { id:'SIGNED', n: signedCount, l:copy.kpiDone || 'ลงนามแล้ว', i:'fa-circle-check', c:'#16A34A' },
+    { id:'RETURNED', n: returnedCount, l:copy.kpiReturned || 'ไม่ลงนาม / ตีกลับ', i:'fa-circle-xmark', c:'#DB2626' },
+    { id:'SCREENING', n: screeningCount, l:'ส่งให้อนุกลั่นกรองพิจารณา', i:'fa-users-gear', c:'#0284C7' }
   ];
 
   document.getElementById('kpiRow').innerHTML = kpis.map(k => {
     const isActive = (currentSt === k.id);
     return `
-    <div class="col-6 col-xl-3">
+    <div class="col-12 col-sm-6 col-md-4 col-xl">
       <div class="card card-ecmis kpi-card h-100 ${isActive ? 'border-2 shadow-sm' : ''}"
            style="min-height:88px; cursor:pointer; ${isActive ? `border-color:${k.c} !important; background:${k.c}0D;` : ''}"
            onclick="filterByKPI('${k.id}')">
-        <div class="card-body d-flex align-items-center gap-3 py-3">
-          <div style="flex:0 0 42px;height:42px;border-radius:10px;background:${k.c}18;display:flex;align-items:center;justify-content:center">
-            <i class="fa-solid ${k.i}" style="color:${k.c};font-size:1.15rem"></i>
+        <div class="card-body d-flex align-items-center gap-2 py-3 px-3">
+          <div style="flex:0 0 38px;height:38px;border-radius:10px;background:${k.c}18;display:flex;align-items:center;justify-content:center">
+            <i class="fa-solid ${k.i}" style="color:${k.c};font-size:1.05rem"></i>
           </div>
           <div style="min-width:0">
-            <div style="font-size:1.65rem;font-weight:700;font-family:var(--serif);color:${k.c};line-height:1.1">${k.n}</div>
-            <div class="text-muted text-truncate" style="font-size:.78rem;margin-top:2px">${k.l}</div>
+            <div style="font-size:1.5rem;font-weight:700;font-family:var(--serif);color:${k.c};line-height:1.1">${k.n}</div>
+            <div class="text-muted text-truncate" style="font-size:.74rem;margin-top:2px" title="${k.l}">${k.l}</div>
           </div>
         </div>
       </div>
