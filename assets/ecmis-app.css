@@ -1,0 +1,1337 @@
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,700&display=swap');
+
+/* THSarabunIT9 — โฮสต์ไฟล์ฟอนต์เองใน assets/fonts/ (ไฟล์จริงจากแพ็กเกจ THSarabunIT9.zip)
+   แทนการพึ่งฟอนต์ที่ติดตั้งไว้ในเครื่องผู้ใช้เพียงอย่างเดียว เพื่อให้เอกสารราชการ (.doc-paper)
+   หน้าตาเหมือนกันทุกเครื่อง ไม่ว่าจะติดตั้งฟอนต์นี้ไว้หรือไม่ก็ตาม */
+@font-face {
+  font-family: 'THSarabunIT9';
+  src: url('fonts/THSarabunIT9.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'THSarabunIT9';
+  src: url('fonts/THSarabunIT9 Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'THSarabunIT9';
+  src: url('fonts/THSarabunIT9 Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'THSarabunIT9';
+  src: url('fonts/THSarabunIT9 BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ==========================================================================
+   E-CMIS Back-Office Shell — กิจกรรมที่ 7.1 การไต่สวนเบื้องต้น
+
+   Design tokens below are sourced from the authoritative Figma export
+   (static PDFs: E-CMIS.pdf + per-component sheets, Aug 2026) — see
+   outputs/payload_04b-design-system.md for the full extraction record and
+   hex-sampling method. Token *names* mirror the PDF's own hierarchy
+   (bg/*, text/*, border/*, action/*, accent/*, feedback/*, table/*) so this
+   file can be diffed against the source of truth later. The legacy
+   --ecmis-* variables are kept as aliases onto the new tokens so existing
+   classes/inline hex references across the 11 screens keep working without
+   a markup rewrite.
+   ========================================================================== */
+:root{
+  /* ---- bg ---- */
+  --bg-surface:#FFFFFF;
+  --bg-surface-hover:#F4F8FD;
+  --bg-page:#EDF2FB;
+  --bg-surface-subtle:#E6EDF6;
+  --bg-overlay:#D2D5D9;
+
+  /* ---- text ---- */
+  --text-inverse:#FFFFFF;
+  --text-primary:#0F2A62;
+  --text-strong:#3D495E;
+  --text-body:#526075;
+  --text-disabled:#7C8CA3;
+  --text-link:#0A7295;
+
+  /* ---- border ---- */
+  --border-control:#7C8CA3;
+  --border-control-hover:#6B7990;
+  --border-control-active:#526075;
+  --border-focus:#0E91BC;
+  --border-divider:#D4DDEB;
+
+  /* ---- action ---- */
+  --action-primary:#0F2A62;
+  --action-primary-hover:#0C2150;
+  --action-primary-active:#081638;
+  --action-danger:#DB2626;
+  --action-danger-hover:#B81C1C;
+  --action-danger-active:#991A1A;
+  --action-disabled-bg:#D4DDEB;
+  --action-disabled-text:#526075;
+
+  /* ---- accent ---- */
+  --accent-brand:#16B6E6;
+  --accent-emphasis:#0E91BC;
+  /* accent/gold does not appear in the PDF's own "Accent" swatch row (that
+     row is brand=cyan / emphasis=teal only) — sampled instead from
+     Sidebar.pdf, where it is used as the sidebar wordmark subtitle +
+     active-nav-item + avatar-ring highlight on the dark navy sidebar. Kept
+     as its own token because it is a real, repeated color in the source
+     files, just not catalogued under "Accent" in the token sheet. */
+  --accent-gold:#D0A830;
+
+  /* ---- feedback ---- */
+  --feedback-success-bg:#DBFBE6;
+  --feedback-success-fill:#1FB65E;
+  --feedback-success-icon:#16994D;
+  --feedback-success-text:#166434;
+  --feedback-warning-bg:#FDF2C6;
+  --feedback-warning-fill:#DD8C0A;
+  --feedback-warning-icon:#B35208;
+  --feedback-warning-text:#854D0E;
+  --feedback-danger-bg:#FDE2E2;
+  --feedback-danger-fill:#DB2626;
+  --feedback-danger-icon:#DB2626;
+  --feedback-danger-text:#991A1A;
+  --feedback-info-bg:#E4F6FD;
+  --feedback-info-fill:#16B6E6;
+  --feedback-info-icon:#0E91BC;
+  --feedback-info-text:#0A7295;
+
+  /* ---- table ---- */
+  --table-row-bg:#FFFFFF;
+  --table-row-hover:#F4F8FD;
+  --table-header-bg:#EDF2FB;
+  --table-row-selected:#E4F0FB;
+  --table-border:#D4DDEB;
+
+  /* ---- typography scale (Noto Sans Thai, per E-CMIS.pdf) ---- */
+  --font-sans:'Noto Sans Thai','Prompt',sans-serif;
+  --text-h1-size:24px; --text-h1-lh:32px;
+  --text-h2-size:20px; --text-h2-lh:28px;
+  --text-body-md-size:14px; --text-body-md-lh:22px;
+  --text-body-sm-size:12px; --text-body-sm-lh:20px;
+  --text-meta-md-size:14px; --text-meta-md-lh:20px;
+  --text-meta-sm-size:12px; --text-meta-sm-lh:16px;
+  --text-table-header-size:12px; --text-table-header-lh:20px;
+
+  /* ---- layout (Master Screen Layout Desktop.pdf) ---- */
+  --sidebar-w:260px;
+  --sidebar-w-collapsed:68px;
+  --topbar-h:64px;
+  --content-max-w:1180px;
+  --radius-control:10px;
+  --radius-card:12px;
+  --radius-modal:20px;
+  --radius-pill:999px;
+
+  /* ---- legacy ป.ป.ท. aliases — now sourced FROM the PDF tokens above
+     instead of hand-picked hex, so every existing .btn-navy / .btn-gold /
+     .st-* / hardcoded var(--ecmis-*) reference across the 11 screens
+     automatically follows the authoritative palette. ---- */
+  --ecmis-navy: var(--action-primary);          /* was #0a2647, now #0F2A62 (near-identical) */
+  --ecmis-navy-2: var(--action-primary-hover);  /* was #123b63, now #0C2150 */
+  --ecmis-navy-dark: var(--action-primary-active); /* was #051425, now #081638 */
+  --ecmis-gold: var(--accent-gold);             /* was #c9a227, now #D0A830 (sampled, not catalogued as a token) */
+  --ecmis-gold-light:#E6C765;
+  --ecmis-red: var(--action-danger);            /* was #a5322a, now #DB2626 — brighter, matches action/danger + feedback/danger */
+  --ecmis-bg: var(--bg-page);                   /* was #f7f6f2 (warm cream), now #EDF2FB (cool blue) */
+  --ecmis-ink: var(--text-strong);              /* was #20262e, now #3D495E */
+  --serif: var(--font-sans);                    /* PDF headings use Noto Sans Thai bold, not a serif face */
+
+  --ecmis-line: var(--border-divider);
+  --ecmis-muted: var(--text-disabled);
+  --ecmis-ok: var(--feedback-success-text);
+  --ecmis-warn: var(--feedback-warning-text);
+  --ecmis-info: var(--feedback-info-text);
+
+  /* ---- theme-only tokens (not in the PDF token sheet — local additions so
+     the sidebar identity, the purple "no PDF equivalent" badges, and the
+     skeleton shimmer can each be retuned per theme below instead of staying
+     hardcoded hex that only ever matched the light theme) ---- */
+  --sidebar-grad-start:#081638;
+  --sidebar-grad-mid:#0F2A62;
+  --sidebar-grad-end:#0C2150;
+  --sidebar-border:#081638;
+  --accent-purple-bg:#F3E8FF;
+  --accent-purple-text:#6B3FA0;
+  --accent-purple-border:#9673A6;
+  --skeleton-base:#E2E8F0;
+}
+
+body{
+  font-family:var(--font-sans);
+  background:var(--ecmis-bg);
+  color:var(--ecmis-ink);
+  letter-spacing:.1px;
+  font-size:14.5px;
+}
+h1,h2,h3,h4,h5,h6{ font-family:var(--serif); font-weight:700; }
+/* เอกสารกระดาษจำลอง (.doc-paper) ใช้ฟอนต์ THSarabunIT9 โดยตั้งใจ (ดู Sec. "Document
+   preview" ด้านล่าง) แยกจาก Type Scale ของ chrome แอป — เพราะเป็นการจำลองเอกสารราชการ
+   ที่พิมพ์จริง ฟอนต์นี้โฮสต์เองผ่าน @font-face ที่หัวไฟล์ (assets/fonts/THSarabunIT9*.ttf)
+   จึงแสดงผลเหมือนกันทุกเครื่องแม้ไม่ได้ติดตั้งฟอนต์นี้ไว้ในเครื่อง — ถ้าไฟล์โหลดไม่สำเร็จ
+   ด้วยเหตุใดก็ตามจะ fallback ไป TH Sarabun New / Sarabun */
+
+/* ---------------- Top bar ----------------
+   Header.pdf / Master Screen Layout Desktop.pdf both show a LIGHT header
+   (bg/surface white, 64px tall, thin divider) — the navy identity in this
+   design system lives in the sidebar, not the topbar. Restyled to match;
+   DOM/structure unchanged (brand link, bell, role-switcher stay as-is). */
+/* Header sits to the RIGHT of the sidebar, not above it — Master Screen
+   Layout Desktop.pdf shows the sidebar spanning the full canvas height
+   (0 to 100%), with the header only covering the main-content column. */
+.app-topbar{
+  height:var(--topbar-h);
+  background:var(--bg-surface);
+  color:var(--text-primary);
+  position:fixed; top:0; left:var(--sidebar-w); right:0; z-index:1040;
+  display:flex; align-items:center; gap:14px; padding:0 16px;
+  border-bottom:1px solid var(--border-divider);
+  box-shadow:0 1px 2px rgba(15,42,98,.04);
+  transition:left .15s ease;
+}
+body.sidebar-collapsed .app-topbar{ left:var(--sidebar-w-collapsed); }
+@media (max-width:991.98px){
+  .app-topbar{ left:0; }
+  body.sidebar-collapsed .app-topbar{ left:0; }
+}
+.app-topbar .btn.text-white,
+.app-topbar a.btn.text-white{
+  color:var(--text-primary) !important; background:var(--bg-surface-subtle);
+  border-radius:var(--radius-control);
+}
+.app-topbar .btn.text-white:hover,
+.app-topbar a.btn.text-white:hover{ background:var(--action-primary); color:var(--text-inverse) !important; }
+.app-topbar .btn.text-white .badge{ color:var(--text-inverse) !important; }
+
+/* Role switcher — ตัวจำลองบทบาท (prototype ยังไม่มี RBAC จริง) */
+.role-switcher .btn{
+  background:var(--bg-surface-subtle); color:var(--text-primary);
+  border:1px solid var(--border-control);
+  font-size:.85rem; padding:.35rem .75rem; border-radius:var(--radius-control);
+}
+.role-switcher .btn:hover{ background:var(--bg-surface-hover); color:var(--text-primary); border-color:var(--border-control-hover); }
+.role-switcher .dropdown-menu{ min-width:320px; font-size:.86rem; border-radius:var(--radius-card); border-color:var(--border-divider); }
+.role-switcher .dropdown-item.active,
+.role-switcher .dropdown-item:active{ background:var(--action-primary); color:var(--text-inverse); }
+.role-switcher .dropdown-item small{ display:block; color:var(--text-disabled); font-size:.74rem; }
+.role-switcher .dropdown-item.active small{ color:color-mix(in srgb, var(--text-inverse) 75%, transparent); }
+.role-badge-demo{
+  background:var(--accent-gold); color:#1a1204; font-weight:600;
+  font-size:.66rem; padding:.1rem .4rem; border-radius:3px; margin-left:6px;
+}
+
+/* Bootstrap dropdowns (topbar bell, sidebar user-chip, role switcher) never
+   had a themed background before this pass — they'd stay a plain white
+   panel regardless of body theme. Generic so every .dropdown-menu in the
+   app picks it up; the more specific .role-switcher rules above still win
+   on the properties they set. */
+.dropdown-menu{
+  background-color:var(--bg-surface); color:var(--text-primary);
+  border-color:var(--border-divider); box-shadow:0 10px 15px -3px rgba(0,0,0,.15);
+}
+.dropdown-item{ color:var(--text-primary); }
+.dropdown-item:hover, .dropdown-item:focus{ background-color:var(--bg-surface-hover); color:var(--text-primary); }
+.dropdown-header{ color:var(--text-disabled); }
+.dropdown-divider{ border-color:var(--border-divider); }
+
+/* ---------------- Sidebar ----------------
+   Sidebar.pdf: dark navy gradient, white nav text/icons, GOLD wordmark
+   subtitle + active-item highlight (accent-gold — sampled, see token note). */
+.app-sidebar .brand{
+  display:flex; align-items:center; gap:10px; font-family:var(--serif); font-weight:700;
+  color:#fff; padding:16px 18px; flex:0 0 auto;
+  border-bottom:1px solid rgba(255,255,255,.14);
+}
+.app-sidebar .brand img{ height:34px; width:auto; flex:0 0 auto; }
+.app-sidebar .brand small{ display:block; font-family:var(--font-sans); font-weight:400; font-size:.68rem; color:rgba(255,255,255,.7); letter-spacing:.2px; }
+body.sidebar-collapsed .app-sidebar .brand span{ display:none; }
+body.sidebar-collapsed .app-sidebar .brand{ justify-content:center; padding:16px 0; }
+@media (max-width:991.98px){
+  body.sidebar-collapsed .app-sidebar .brand span{ display:revert; }
+  body.sidebar-collapsed .app-sidebar .brand{ justify-content:flex-start; padding:16px 18px; }
+}
+
+.app-sidebar{
+  position:fixed; top:0; bottom:0; left:0; width:var(--sidebar-w);
+  background:linear-gradient(180deg,var(--sidebar-grad-start) 0%,var(--sidebar-grad-mid) 45%,var(--sidebar-grad-end) 100%);
+  border-right:1px solid var(--sidebar-border);
+  z-index:1030;
+  display:flex; flex-direction:column;
+  transition:width .15s ease;
+}
+.sidebar-nav-scroll{ flex:1 1 auto; overflow-y:auto; padding:14px 0; }
+.app-sidebar .nav-section{
+  font-size:.7rem; font-weight:600; letter-spacing:.6px; text-transform:uppercase;
+  color:rgba(255,255,255,.55); padding:14px 18px 6px;
+}
+.app-sidebar .nav-link{
+  color:rgba(255,255,255,.92); border-radius:0; padding:.55rem 18px;
+  display:flex; align-items:center; gap:10px; font-size:.88rem;
+  border-left:3px solid transparent;
+}
+.app-sidebar .nav-link i{ width:18px; text-align:center; color:rgba(255,255,255,.65); }
+.app-sidebar .nav-link:hover{ background:rgba(255,255,255,.08); }
+.app-sidebar .nav-link.active{
+  background:rgba(255,255,255,.1); color:var(--accent-gold); font-weight:600;
+  border-left-color:var(--accent-gold);
+}
+.app-sidebar .nav-link.active i{ color:var(--accent-gold); }
+.app-sidebar .nav-link .badge{ margin-left:auto; font-size:.68rem; }
+.app-sidebar .step-no{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:20px; height:20px; border-radius:50%; background:rgba(255,255,255,.14);
+  font-size:.68rem; font-weight:600; color:#fff; flex:0 0 auto;
+}
+.app-sidebar .nav-link.active .step-no{ background:var(--accent-gold); color:#1a1204; }
+
+/* Sidebar-bottom user chip (Master Screen Layout Desktop.pdf) */
+.sidebar-user-chip{ flex:0 0 auto; border-top:1px solid rgba(255,255,255,.14); padding:10px; }
+.sidebar-user-chip-btn{
+  width:100%; display:flex; align-items:center; gap:10px; padding:.5rem;
+  background:rgba(255,255,255,.06); border:0; border-radius:var(--radius-control);
+  color:#fff; text-align:left;
+}
+.sidebar-user-chip-btn:hover{ background:rgba(255,255,255,.12); }
+.sidebar-user-chip-avatar{
+  display:flex; align-items:center; justify-content:center; flex:0 0 auto;
+  width:32px; height:32px; border-radius:50%; background:var(--accent-gold);
+  color:#1a1204; font-weight:700; font-size:.85rem;
+}
+.sidebar-user-chip-text{ overflow:hidden; }
+.sidebar-user-chip-text strong{ display:block; font-size:.82rem; line-height:1.2; }
+.sidebar-user-chip-text small{ display:block; font-size:.7rem; color:rgba(255,255,255,.65); }
+
+/* ---------------- Desktop sidebar collapse (68px) ---------------- */
+body.sidebar-collapsed .app-sidebar{ width:var(--sidebar-w-collapsed); }
+body.sidebar-collapsed .app-main{ margin-left:var(--sidebar-w-collapsed); }
+body.sidebar-collapsed .app-sidebar .nav-section{ display:none; }
+body.sidebar-collapsed .app-sidebar .nav-link{ justify-content:center; padding:.6rem 0; }
+body.sidebar-collapsed .app-sidebar .nav-link span,
+body.sidebar-collapsed .app-sidebar .nav-link .badge{ display:none; }
+body.sidebar-collapsed .sidebar-user-chip-btn{ justify-content:center; padding:.5rem 0; }
+body.sidebar-collapsed .sidebar-user-chip-text{ display:none; }
+@media (max-width:991.98px){
+  /* Collapse state is desktop-only — mobile keeps its own slide-open drawer */
+  body.sidebar-collapsed .app-sidebar{ width:var(--sidebar-w); }
+  body.sidebar-collapsed .app-main{ margin-left:0; }
+  body.sidebar-collapsed .app-sidebar .nav-section,
+  body.sidebar-collapsed .app-sidebar .nav-link span,
+  body.sidebar-collapsed .app-sidebar .nav-link .badge,
+  body.sidebar-collapsed .sidebar-user-chip-text{ display:revert; }
+}
+
+/* ---------------- Main ---------------- */
+.app-main{ margin-left:var(--sidebar-w); padding:calc(var(--topbar-h) + 18px) 22px 60px; max-width:calc(var(--content-max-w) + var(--sidebar-w)); transition:margin-left .15s ease; }
+.page-head{ display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+.page-head h1{ font-size:var(--text-h1-size); line-height:var(--text-h1-lh); margin:0; color:var(--text-primary); }
+.page-head .sub{ color:var(--text-disabled); font-size:var(--text-body-sm-size); line-height:var(--text-body-sm-lh); margin-top:3px; }
+.flow-ref{
+  display: none !important;
+}
+
+.card-ecmis{ background:var(--bg-surface); border:1px solid var(--border-divider); border-radius:var(--radius-card); }
+.card-ecmis > .card-header{
+  background:var(--bg-page); border-bottom:1px solid var(--border-divider);
+  font-family:var(--serif); font-weight:700; color:var(--text-primary);
+  display:flex; align-items:center; gap:8px; font-size:1rem;
+  border-radius:var(--radius-card) var(--radius-card) 0 0;
+}
+
+/* ---------------- Status badges (State Machine 7.1) ----------------
+   Recolored onto feedback/* tokens (InlineAlert.pdf + Toast.pdf both use
+   this exact bg/fg pairing per severity). .st-agenda has no PDF equivalent
+   (purple is a pre-existing local extension for "in-agenda" status) — kept
+   as-is, documented here rather than silently dropped. */
+.st{
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:.78rem; font-weight:600; padding:.22rem .65rem; line-height:1.25;
+  border-radius:var(--radius-pill); white-space:nowrap; letter-spacing:.2px;
+  border:1px solid transparent; box-shadow:0 1px 2px rgba(0,0,0,.04);
+}
+.st-draft   { background:var(--bg-surface-subtle); color:var(--text-body); border-color:var(--border-divider); }
+.st-pending { background:var(--feedback-warning-bg); color:var(--feedback-warning-text); border-color:var(--feedback-warning-fill); }
+.st-review  { background:var(--feedback-info-bg); color:var(--feedback-info-text); border-color:var(--feedback-info-fill); }
+.st-urgent  { background:var(--feedback-danger-bg); color:var(--feedback-danger-text); border-color:var(--feedback-danger-fill); font-weight:700; }
+.st-agenda  { background:var(--accent-purple-bg); color:var(--accent-purple-text); border-color:var(--accent-purple-border); } /* local extension — no PDF token */
+.st-done    { background:var(--feedback-success-bg); color:var(--feedback-success-text); border-color:var(--feedback-success-fill); }
+.st-returned{ background:var(--feedback-danger-bg); color:var(--feedback-danger-text); border-color:var(--feedback-danger-fill); }
+.st-closed  { background:var(--bg-surface-subtle); color:var(--text-strong); border-color:var(--border-divider); }
+
+/* SLA pill */
+.sla{ font-size:.72rem; font-weight:600; padding:.18rem .5rem; border-radius:6px; white-space:nowrap; }
+.sla-ok  { background:var(--feedback-success-bg); color:var(--feedback-success-text); }
+.sla-warn{ background:var(--feedback-warning-bg); color:var(--feedback-warning-text); }
+.sla-late{ background:var(--feedback-danger-bg); color:var(--feedback-danger-text); }
+
+/* ---------------- Progress stepper (แนวนอน) ---------------- */
+.flow-stepper{ display:flex; overflow-x:auto; gap:0; padding:4px 0 10px; }
+.flow-stepper .fstep{
+  flex:1 0 auto; min-width:118px; text-align:center; position:relative; padding:0 4px;
+}
+.flow-stepper .fstep::before{
+  content:''; position:absolute; top:15px; left:-50%; width:100%; height:2px; background:#ded9cd; z-index:0;
+}
+.flow-stepper .fstep:first-child::before{ display:none; }
+.flow-stepper .fstep.done::before,
+.flow-stepper .fstep.active::before{ background:var(--ecmis-gold); }
+.flow-stepper .dot{
+  width:30px; height:30px; border-radius:50%; background:#fff; border:2px solid #ded9cd;
+  display:flex; align-items:center; justify-content:center; margin:0 auto 6px;
+  font-size:.76rem; font-weight:600; color:var(--ecmis-muted); position:relative; z-index:1;
+}
+.flow-stepper .fstep.done .dot{ background:var(--feedback-success-fill); border-color:var(--feedback-success-fill); color:var(--text-inverse); }
+.flow-stepper .fstep.active .dot{ background:var(--ecmis-navy); border-color:var(--ecmis-gold); color:var(--text-inverse); box-shadow:0 0 0 4px rgba(208,168,48,.22); }
+.flow-stepper .lbl{ font-size:.72rem; line-height:1.25; color:var(--ecmis-muted); }
+.flow-stepper .fstep.active .lbl{ color:var(--ecmis-navy); font-weight:600; }
+.flow-stepper .fstep.done .lbl{ color:var(--ecmis-ink); }
+
+/* ---------------- Action bar (ปุ่มเปลี่ยนตามบทบาท) ---------------- */
+.action-bar{
+  position:sticky; bottom:0; background:var(--bg-surface); border-top:2px solid var(--accent-gold);
+  padding:12px 16px; margin:22px -22px -60px; display:flex; align-items:center;
+  gap:10px; flex-wrap:wrap; box-shadow:0 -4px 14px rgba(15,42,98,.08); z-index:1020;
+}
+.action-bar .role-hint{ font-size:.8rem; color:var(--text-disabled); margin-right:auto; }
+/* Button.pdf: primary = filled navy, radius ~10px, bold label */
+.btn{ border-radius:var(--radius-control); }
+.btn-navy{ background:var(--action-primary); color:var(--text-inverse); border:1px solid var(--action-primary); font-weight:600; }
+.btn-navy:hover{ background:var(--action-primary-hover); color:var(--text-inverse); border-color:var(--action-primary-hover); }
+.btn-navy:active{ background:var(--action-primary-active); border-color:var(--action-primary-active); }
+/* btn-gold has no direct PDF button variant (no gold action token) — kept as
+   the distinct "e-signature" call-to-action color, remapped onto the
+   sampled sidebar accent-gold rather than a hand-picked hex */
+.btn-gold{ background:var(--accent-gold); color:#231a05; border:1px solid #b18f1f; font-weight:600; }
+.btn-gold:hover{ background:var(--ecmis-gold-light); color:#231a05; }
+.btn-outline-danger{ color:var(--action-danger); border-color:var(--action-danger); }
+.btn-outline-danger:hover{ background:var(--action-danger); border-color:var(--action-danger); }
+.btn-outline-primary{ color:var(--action-primary); border-color:var(--action-primary); }
+.btn-outline-primary:hover{ background:var(--action-primary); border-color:var(--action-primary); }
+.btn-outline-secondary{ color:var(--text-body); border-color:var(--border-control); }
+.no-permission{
+  background:var(--bg-surface-subtle); border:1px dashed var(--border-control); color:var(--text-disabled);
+  padding:.65rem .9rem; border-radius:var(--radius-control); font-size:.85rem; width:100%;
+}
+
+/* ---------------- Validation ---------------- */
+.field-req::after{ content:' *'; color:var(--action-danger); font-weight:700; }
+.form-label{ font-size:.85rem; font-weight:500; margin-bottom:.25rem; }
+/* TextInput / Select / SearchInput / Textarea .pdf: generously rounded
+   (~10-14px), muted blue-grey border, CYAN focus ring (not gold, not navy —
+   see "Post-Pull Reconciliation Check" in payload_04b-design-system.md: a
+   later teammate commit had already redefined this same selector to a navy
+   focus ring in its own "10. Micro-interactions" section further down this
+   file; that duplicate declaration is fixed to match this cyan token below
+   so the two rules agree instead of silently fighting in the cascade) */
+/* background/color explicit, not just border — Bootstrap's own .form-control
+   ships a hardcoded white bg + dark text that our tokens never touch
+   otherwise, so dark/high-contrast mode would leave every input a bright
+   white box floating on the dark page. */
+.form-control, .form-select{
+  font-size:.88rem; border-radius:var(--radius-control); border-color:var(--border-control);
+  background-color:var(--bg-surface); color:var(--text-primary);
+}
+.form-control::placeholder{ color:var(--text-disabled); opacity:1; }
+.form-control:hover, .form-select:hover{ border-color:var(--border-control-hover); }
+.form-control:focus, .form-select:focus{
+  border-color:var(--border-focus) !important; box-shadow:0 0 0 .18rem rgba(22,182,230,.25) !important;
+  background-color:var(--bg-surface); color:var(--text-primary);
+}
+.form-control:disabled, .form-select:disabled{ background-color:var(--action-disabled-bg); color:var(--action-disabled-text); }
+.form-check-input{ border-color:var(--border-control); background-color:var(--bg-surface); }
+.form-check-input:focus{ border-color:var(--border-focus); box-shadow:0 0 0 .18rem rgba(22,182,230,.25); }
+.form-check-input:checked{ background-color:var(--action-primary); border-color:var(--action-primary); }
+.val-msg{ font-size:.76rem; margin-top:.25rem; display:none; }
+.val-msg.show{ display:block; }
+.val-err{ color:var(--action-danger); }
+.val-ok{ color:var(--feedback-success-text); }
+.is-invalid-ecmis{ border-color:var(--action-danger) !important; background:var(--feedback-danger-bg); }
+.is-valid-ecmis{ border-color:var(--feedback-success-fill) !important; }
+
+.rule-panel{ background:var(--feedback-success-bg); border:1px solid var(--feedback-success-fill); border-radius:var(--radius-card); padding:12px 14px; font-size:.82rem; }
+.rule-panel .rule{ display:flex; gap:8px; align-items:flex-start; padding:.22rem 0; }
+.rule-panel .rule i{ margin-top:2px; }
+.rule.pass i{ color:var(--feedback-success-text); }
+.rule.fail i{ color:var(--action-danger); }
+.rule.fail{ color:var(--action-danger); }
+
+/* ---------------- Auto-fill highlight ---------------- */
+.autofilled{ background:var(--feedback-success-bg) !important; border-color:var(--feedback-success-fill) !important; }
+.autofill-tag{
+  font-size:.66rem; background:var(--feedback-success-bg); color:var(--feedback-success-text);
+  padding:.06rem .34rem; border-radius:3px; margin-left:5px; font-weight:600;
+}
+/* .src-tag (purple) has no PDF equivalent — local extension, kept as-is */
+.src-tag{
+  font-size:.66rem; background:var(--accent-purple-bg); color:var(--accent-purple-text);
+  padding:.06rem .34rem; border-radius:3px; margin-left:5px; font-weight:600;
+}
+
+/* ---------------- Document preview (กระดาษ A4) ---------------- */
+.doc-pane {
+  background: #5c6470;
+  border-radius: 8px;
+  padding: 16px;
+  height: calc(100vh - var(--topbar-h) - 28px);
+  max-height: calc(100vh - var(--topbar-h) - 28px);
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+.nav-tabs + .doc-pane,
+#docTabs + .doc-pane {
+  height: calc(100vh - var(--topbar-h) - 72px);
+  max-height: calc(100vh - var(--topbar-h) - 72px);
+}
+.doc-paper {
+  background: #fff;
+  width: 100%;
+  max-width: 210mm;
+  /* กระดาษ A4 จริง (210 x 297mm) — เดิม min-height ผูกกับความสูง container ทำให้
+     สัดส่วนไม่ตรง A4 เปลี่ยนมาใช้ aspect-ratio แทน เพื่อให้หน้าที่เนื้อหาสั้นแสดงเป็น
+     A4 จริง ส่วนเอกสารที่เนื้อหายาวเกินหนึ่งหน้าจะขยายสูงเกิน aspect-ratio ได้ตามธรรมชาติ
+     (ระบบยังไม่มี pagination จริงที่ตัดขึ้นหน้าใหม่) */
+  aspect-ratio: 210 / 297;
+  margin: 0 auto;
+  padding: 52px 62px;
+  box-shadow: 0 3px 18px rgba(0,0,0,.32);
+  font-family: 'THSarabunIT9', 'TH Sarabun New', 'Sarabun', sans-serif !important;
+  font-size: 16px;
+  line-height: 1.65;
+  color: #000;
+  box-sizing: border-box;
+}
+.doc-paper *, .doc-pane * {
+  font-family: 'THSarabunIT9', 'TH Sarabun New', 'Sarabun', sans-serif !important;
+}
+.doc-paper .doc-secret{ text-align:right; font-weight:700; color:#DB2626; letter-spacing:2px; font-size:16px; }
+.doc-paper .doc-title{ text-align:center; font-weight:700; font-size:20px; line-height:1.6; margin:14px 0 4px; }
+.doc-paper .doc-sub{ text-align:center; font-size:16px; margin-bottom:16px; }
+.doc-paper .doc-row{ display:flex; gap:8px; margin-bottom:3px; font-size:16px; }
+.doc-paper .doc-row .k{ flex:0 0 auto; font-weight:600; }
+.doc-paper .doc-h{ font-weight:700; font-size:17px; margin:14px 0 2px; }
+.doc-paper .doc-indent{ text-indent:2.5em; text-align:justify; font-size:16px; }
+.doc-paper .doc-sign{ margin-top:34px; text-align:center; line-height:1.8; font-size:16px; }
+.doc-paper .doc-dots{ border-bottom:1px dotted #333; display:inline-block; min-width:120px; }
+.doc-paper .doc-sig-img{ display:block; height:54px; margin:0 auto -10px; }
+/* Fixed light-theme hex, not tokens — .doc-paper is always a white page with
+   black ink (see Sec. 2 note above), so these must not shift with the app
+   theme or the highlight becomes dark-on-dark against the white paper. */
+.mergefield{ background:#FDF2C6; border-bottom:1px solid #DD8C0A; padding:0 2px; }
+.mergefield.filled{ background:#DBFBE6; border-bottom-color:#1FB65E; }
+
+/* ---------------- เอกสารมติการประชุม — ขนาดอักษรตามที่กำหนด
+   (อ้างอิง: สำเนาเอกสารมติหน้า1-2-ขนาดอักษร.pdf / ขนาดอักษรในเอกสารมติ.xlsx)
+   ขอบเขต: เฉพาะเอกสาร "มติการประชุม" (07-subcommittee-screening.html,
+   08-board-resolution.html) ผ่าน .doc-paper.doc-resolution — ไม่แตะเอกสารประเภทอื่น
+   (ระเบียบวาระ/หนังสือเชิญ/รายงาน 213/คำสั่ง ม.24 ฯลฯ) ที่ใช้คลาส .doc-title/.doc-sub/
+   .doc-h/.doc-sign ร่วมกันอยู่ ใช้หน่วย pt ตรงตามสเปกเอกสารราชการ (ไม่ใช่ px) */
+.doc-paper.doc-resolution{ font-size:16pt; font-weight:400; }
+/* ต้นฉบับจัด "ลับ" กึ่งกลางทั้งหัวและท้ายกระดาษ — ต่างจาก .doc-secret ฐาน (ชิดขวา)
+   ที่ใช้กับเอกสารประเภทอื่น จึง override เฉพาะ scope นี้เช่นกัน */
+.doc-paper.doc-resolution .doc-secret{ font-size:22pt; text-align:center; }
+.doc-paper.doc-resolution .doc-title{ font-size:16pt; margin:14px 0 4px; }
+.doc-paper.doc-resolution .doc-title .doc-title-l1{ font-size:28pt; font-weight:700; }
+.doc-paper.doc-resolution .doc-title .doc-title-l2{ font-size:26pt; font-weight:700; }
+/* ในไฟล์ .docx ต้นฉบับ บรรทัด "ครั้งที่/วันที่/วาระที่" ชิดซ้าย (align=None) — จัดกึ่งกลาง
+   เฉพาะสองบรรทัดหัวเรื่อง (มติการประชุม / ชื่อคณะกรรมการ) เท่านั้น ต่างจาก .doc-sub
+   ของเอกสารประเภทอื่นที่จัดกึ่งกลางทั้งหมด จึง override เฉพาะ scope นี้ */
+.doc-paper.doc-resolution .doc-sub{ font-size:16pt; font-weight:700; text-align:left; margin-bottom:10px; }
+.doc-paper.doc-resolution .doc-row{ font-size:16pt; }
+.doc-paper.doc-resolution .doc-row .k{ font-weight:700; }
+.doc-paper.doc-resolution .doc-h{ font-size:16pt; font-weight:700; }
+.doc-paper.doc-resolution .doc-indent{ font-size:16pt; font-weight:400; }
+.doc-paper.doc-resolution .doc-sign{ font-size:11pt; font-weight:400; }
+.doc-paper.doc-resolution .doc-secret-foot{ text-align:center; font-weight:700; color:#DB2626;
+  letter-spacing:2px; font-size:22pt; margin-top:24px; }
+/* เนื้อหาตั้งแต่ "๑. เรื่องที่..." จนถึงก่อนหัวข้อ "มติที่ประชุม" อยู่ในบล็อกที่เยื้องซ้าย
+   ในต้นฉบับ (ขึ้นต้นด้วย tab) — ส่วน "มติที่ประชุม" (คำวินิจฉัยสุดท้าย) ชิดซ้ายตามเดิม
+   ไม่อยู่ในบล็อกนี้ เป็นความตั้งใจของเทมเพลตต้นฉบับ ไม่ใช่ความผิดพลาด */
+.doc-paper.doc-resolution .doc-body-indent{ padding-left: 1.6em; }
+.mergefield.empty{ background:#FDE2E2; border-bottom-color:#DB2626; color:#991A1A; }
+
+.doc-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  background: #3c434d;
+  border-radius: 8px 8px 0 0;
+  padding: 10px 14px;
+  margin: -16px -16px 14px -16px;
+  position: sticky;
+  top: -16px;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+.doc-toolbar .name{ color:#fff; font-size:.82rem; margin-right:auto; display:flex; align-items:center; gap:7px; }
+.doc-toolbar .badge-tpl{ background:var(--ecmis-gold); color:#231a05; font-size:.66rem; font-weight:600; padding:.12rem .4rem; border-radius:3px; }
+
+/* ---------------- Signature block ---------------- */
+.sig-box{
+  border:2px dashed var(--border-control); border-radius:var(--radius-card); padding:16px; text-align:center;
+  background:var(--bg-surface-subtle);
+}
+.sig-box.signed{ border:2px solid var(--feedback-success-fill); background:var(--feedback-success-bg); border-style:solid; }
+.sig-box .sig-name{ font-family:var(--serif); font-weight:700; font-size:1.05rem; color:var(--text-primary); }
+.sig-box .sig-meta{ font-size:.74rem; color:var(--text-disabled); }
+.sig-cert{ font-size:.72rem; background:var(--feedback-success-bg); color:var(--feedback-success-text); padding:.3rem .6rem; border-radius:6px; display:inline-block; }
+
+/* ---------------- Timeline ---------------- */
+.tl{ list-style:none; padding-left:0; margin:0; }
+.tl li{ position:relative; padding:0 0 16px 26px; border-left:2px solid #e3ded1; }
+.tl li:last-child{ border-left-color:transparent; padding-bottom:0; }
+.tl li .tl-dot{
+  position:absolute; left:-7px; top:2px; width:12px; height:12px; border-radius:50%;
+  background:#fff; border:2px solid var(--ecmis-muted);
+}
+.tl li.ok .tl-dot{ background:var(--ecmis-ok); border-color:var(--ecmis-ok); }
+.tl li.now .tl-dot{ background:var(--ecmis-navy); border-color:var(--ecmis-gold); box-shadow:0 0 0 3px rgba(208,168,48,.25); }
+.tl li.rej .tl-dot{ background:var(--ecmis-red); border-color:var(--ecmis-red); }
+.tl .tl-t{ font-weight:600; font-size:.86rem; }
+.tl .tl-m{ font-size:.78rem; color:var(--ecmis-muted); }
+
+/* ---------------- Table ----------------
+   DataGridContainer.pdf: LIGHT header (table/header-bg), bold dark text —
+   not a navy-filled header. Row hover/border/selected all map 1:1 to the
+   PDF's "Table" token row. */
+table.tbl-ecmis{ font-size:.85rem; width:100%; }
+table.tbl-ecmis thead th{
+  background:var(--table-header-bg); color:var(--text-strong); font-family:var(--font-sans); font-weight:700;
+  font-size:var(--text-table-header-size); line-height:var(--text-table-header-lh);
+  vertical-align:middle; border:0; border-bottom:1px solid var(--table-border); white-space:nowrap;
+}
+table.tbl-ecmis tbody td{ vertical-align:middle; border-color:var(--table-border); }
+table.tbl-ecmis tbody tr:hover{ background:var(--table-row-hover); }
+table.tbl-ecmis tbody tr.selected{ background:var(--table-row-selected); }
+.case-no{ font-weight:600; color:var(--text-primary); }
+
+/* ---------------- Misc ---------------- */
+.integration-note{
+  background:var(--accent-purple-bg); border-left:4px solid var(--accent-purple-border); padding:.6rem .85rem;
+  font-size:.8rem; border-radius:0 6px 6px 0; color:var(--accent-purple-text);
+}
+.law-note{
+  display: none !important;
+}
+.warn-note{
+  display: none !important;
+}
+.kv{ font-size:.85rem; }
+.kv .k{ color:var(--ecmis-muted); }
+.kv .v{ font-weight:500; }
+.chip{
+  display:inline-flex; align-items:center; gap:5px; background:var(--bg-surface-subtle);
+  border:1px solid var(--border-divider); border-radius:var(--radius-pill); padding:.18rem .6rem; font-size:.78rem;
+  color:var(--text-strong);
+}
+
+@media (max-width:991.98px){
+  .app-sidebar{ transform:translateX(-100%); transition:transform .2s; }
+  .app-sidebar.open{ transform:none; }
+  .app-main{ margin-left:0; }
+  .action-bar{ margin:22px -22px -60px; }
+}
+
+@page{ size: A4; margin: 20mm; }
+@media print{
+  .app-topbar,.app-sidebar,.action-bar,.doc-toolbar,.no-print{ display:none !important; }
+  .app-main{ margin:0; padding:0; }
+  .doc-pane{ background:#fff; padding:0; max-height:none; }
+  .doc-paper{ box-shadow:none; padding:0; max-width:none; aspect-ratio:auto; }
+}
+
+/* ==========================================================================
+   UI/UX ENHANCEMENTS — กิจกรรมที่ 7.1
+   ========================================================================== */
+
+/* ---------- 1. Micro-interactions ---------- */
+.card-ecmis, .app-sidebar .nav-link, .btn, .st, .sla, .role-switcher .btn {
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-ecmis:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15, 35, 65, 0.12) !important;
+}
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+.btn:active {
+  transform: translateY(1px);
+  filter: brightness(0.95);
+}
+.clickable-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.clickable-row:hover {
+  background: #fdfaf3 !important;
+}
+
+/* ---------- 2. Dark Mode Styles ----------
+   Re-themed entirely through the design tokens from :root (Sec. 1) instead
+   of one-off hex per selector. Every component below already renders from
+   a --bg-, --text-, --border-, --action-, --accent-, --feedback- or --table-
+   prefixed token, or a legacy --ecmis- alias that is itself just var(...)
+   onto those same tokens, and CSS custom properties resolve against the
+   cascade — so overriding the base tokens here is enough to re-skin the
+   whole app (sidebar, cards, tables, forms, badges, modals, toasts, command
+   palette, combobox, tooltips, ...) without maintaining a parallel selector
+   list that silently drifts out of sync as new components get added.
+   .doc-pane / .doc-paper intentionally stay their own fixed colors — they
+   simulate an actual printed/signed government document (and .mergefield
+   still needs its warning/success/danger tints to read correctly), so the
+   "page" stays paper-white in every theme rather than inverting to dark. */
+body.dark-mode {
+  --bg-surface:#111827;
+  --bg-surface-hover:#1B2537;
+  --bg-page:#0B1220;
+  --bg-surface-subtle:#1A2333;
+  --bg-overlay:#0B1220;
+
+  --text-primary:#E8EEFC;
+  --text-strong:#CBD5E1;
+  --text-body:#98A6BC;
+  --text-disabled:#64748B;
+  --text-link:#5EC8F2;
+
+  --border-control:#334155;
+  --border-control-hover:#475569;
+  --border-control-active:#64748B;
+  --border-focus:#38BDF8;
+  --border-divider:#1E293B;
+
+  --action-primary:#3B6FE0;
+  --action-primary-hover:#5583EA;
+  --action-primary-active:#2C57B8;
+  --action-danger:#F87171;
+  --action-danger-hover:#FCA5A5;
+  --action-danger-active:#EF4444;
+  --action-disabled-bg:#1E293B;
+  --action-disabled-text:#64748B;
+
+  --accent-brand:#22D3EE;
+  --accent-emphasis:#38BDF8;
+  --accent-gold:#E8C468;
+
+  --feedback-success-bg:#0B3B24; --feedback-success-fill:#22C55E; --feedback-success-icon:#4ADE80; --feedback-success-text:#86EFAC;
+  --feedback-warning-bg:#40280A; --feedback-warning-fill:#F59E0B; --feedback-warning-icon:#FBBF24; --feedback-warning-text:#FCD34D;
+  --feedback-danger-bg:#3F1212;  --feedback-danger-fill:#F87171;  --feedback-danger-icon:#FCA5A5;  --feedback-danger-text:#FCA5A5;
+  --feedback-info-bg:#0B2E3A;    --feedback-info-fill:#22D3EE;    --feedback-info-icon:#67E8F9;    --feedback-info-text:#7DD3FC;
+
+  --accent-purple-bg:#241238; --accent-purple-text:#C4A6ED; --accent-purple-border:#7C5CBF;
+  --skeleton-base:#26324A;
+
+  --table-row-bg:#111827; --table-row-hover:#1B2537; --table-header-bg:#0B1220; --table-row-selected:#16233D; --table-border:#1E293B;
+
+  /* Sidebar stays its own near-black navy in every theme — it's the app's
+     fixed brand identity, not a "surface" that should lighten with content. */
+  --sidebar-grad-start:#050B18; --sidebar-grad-mid:#0B1730; --sidebar-grad-end:#111F3D; --sidebar-border:#050B18;
+
+  /* Custom-property substitution resolves (and "freezes") at the element
+     where a var()-chained property is declared, not per inheriting
+     descendant — so since the --ecmis-* legacy aliases are declared only
+     once at :root, overriding the base tokens above does NOT flow through
+     them by itself. Every var(--ecmis-*) consumer across this file (body's
+     own background, tooltips, the flow-stepper/timeline, badges, etc.)
+     needs these re-declared here too, on the same element, so they resolve
+     against dark mode's own base tokens instead of staying stuck on light. */
+  --ecmis-navy: var(--action-primary);
+  --ecmis-navy-2: var(--action-primary-hover);
+  --ecmis-navy-dark: var(--action-primary-active);
+  --ecmis-gold: var(--accent-gold);
+  --ecmis-red: var(--action-danger);
+  --ecmis-bg: var(--bg-page);
+  --ecmis-ink: var(--text-strong);
+  --ecmis-line: var(--border-divider);
+  --ecmis-muted: var(--text-disabled);
+  --ecmis-ok: var(--feedback-success-text);
+  --ecmis-warn: var(--feedback-warning-text);
+  --ecmis-info: var(--feedback-info-text);
+
+  background-color: var(--ecmis-bg) !important;
+  color: var(--ecmis-ink) !important;
+}
+body.dark-mode .doc-pane{ background-color:#020617; }
+
+/* ---------- 3. High Contrast Mode Styles ----------
+   True black/white/yellow, WCAG-AAA-leaning "high contrast" theme — same
+   token-cascade approach as dark mode above. Because every surface is pure
+   black, boundaries between page/sidebar/card/topbar rely on a 1px white
+   divider (--border-divider / --sidebar-border) rather than tonal shading,
+   which is the standard high-contrast-theme convention (see Windows High
+   Contrast Black). --action-primary (yellow) and --accent-gold (cyan) are
+   deliberately different hues so primary buttons and the sidebar's active-
+   nav/e-signature accent don't collapse into the same color. */
+body.high-contrast {
+  --bg-surface:#000000;
+  --bg-surface-hover:#141414;
+  --bg-page:#000000;
+  --bg-surface-subtle:#0D0D0D;
+  --bg-overlay:#000000;
+
+  --text-inverse:#000000;
+  --text-primary:#FFFFFF;
+  --text-strong:#FFFFFF;
+  --text-body:#F2F2F2;
+  --text-disabled:#CCCCCC;
+  --text-link:#00E5FF;
+
+  --border-control:#FFFFFF;
+  --border-control-hover:#FFD400;
+  --border-control-active:#FFD400;
+  --border-focus:#FFD400;
+  --border-divider:#FFFFFF;
+
+  --action-primary:#FFD400;
+  --action-primary-hover:#FFDE47;
+  --action-primary-active:#E6C000;
+  --action-danger:#FF6B6B;
+  --action-danger-hover:#FF8787;
+  --action-danger-active:#FF4040;
+  --action-disabled-bg:#1A1A1A;
+  --action-disabled-text:#888888;
+
+  --accent-brand:#00E5FF;
+  --accent-emphasis:#00E5FF;
+  --accent-gold:#00E5FF;
+
+  --feedback-success-bg:#001A00; --feedback-success-fill:#00FF66; --feedback-success-icon:#00FF66; --feedback-success-text:#00FF66;
+  --feedback-warning-bg:#1A1400; --feedback-warning-fill:#FFD400; --feedback-warning-icon:#FFD400; --feedback-warning-text:#FFD400;
+  --feedback-danger-bg:#1A0000;  --feedback-danger-fill:#FF3333;  --feedback-danger-icon:#FF3333;  --feedback-danger-text:#FF6B6B;
+  --feedback-info-bg:#001A1A;    --feedback-info-fill:#00E5FF;    --feedback-info-icon:#00E5FF;    --feedback-info-text:#00E5FF;
+
+  --accent-purple-bg:#1A001A; --accent-purple-text:#FF66FF; --accent-purple-border:#FF66FF;
+  --skeleton-base:#333333;
+
+  --table-row-bg:#000000; --table-row-hover:#141414; --table-header-bg:#000000; --table-row-selected:#1A1A00; --table-border:#FFFFFF;
+
+  --sidebar-grad-start:#000000; --sidebar-grad-mid:#000000; --sidebar-grad-end:#000000; --sidebar-border:#FFFFFF;
+
+  /* See the matching note in Sec. 2 (dark mode) — the --ecmis-* legacy
+     aliases only resolve their var() chain once, at :root, so they must be
+     re-declared here too or every var(--ecmis-*) consumer stays locked to
+     the light-theme value even though the base tokens above are overridden. */
+  --ecmis-navy: var(--action-primary);
+  --ecmis-navy-2: var(--action-primary-hover);
+  --ecmis-navy-dark: var(--action-primary-active);
+  --ecmis-gold: var(--accent-gold);
+  --ecmis-red: var(--action-danger);
+  --ecmis-bg: var(--bg-page);
+  --ecmis-ink: var(--text-strong);
+  --ecmis-line: var(--border-divider);
+  --ecmis-muted: var(--text-disabled);
+  --ecmis-ok: var(--feedback-success-text);
+  --ecmis-warn: var(--feedback-warning-text);
+  --ecmis-info: var(--feedback-info-text);
+
+  background-color: #000 !important;
+  color: #fff !important;
+}
+body.high-contrast .doc-pane{ background-color:#000; }
+body.high-contrast a{ color: var(--text-link) !important; }
+
+/* ---------- 4. Command Palette (Ctrl+K) ---------- */
+.cmd-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  padding-top: 10vh;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.cmd-palette-backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.cmd-palette-box {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  width: 100%;
+  max-width: 600px;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--ecmis-line);
+  overflow: hidden;
+  height: fit-content;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+}
+.cmd-palette-search-wrapper {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--ecmis-line);
+  gap: 12px;
+}
+.cmd-palette-search-wrapper i {
+  color: var(--ecmis-muted);
+  font-size: 1.15rem;
+}
+.cmd-palette-input {
+  border: 0;
+  outline: 0;
+  width: 100%;
+  font-size: 1.05rem;
+  background: transparent;
+  color: inherit;
+}
+.cmd-palette-results {
+  overflow-y: auto;
+  max-height: 50vh;
+  padding: 8px;
+}
+.cmd-palette-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.cmd-palette-item:hover, .cmd-palette-item.active {
+  background: var(--bg-surface-hover);
+  color: var(--action-primary);
+}
+.cmd-palette-item i {
+  color: var(--ecmis-muted);
+  width: 20px;
+  text-align: center;
+}
+.cmd-palette-item-meta {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--ecmis-muted);
+}
+.cmd-palette-hint {
+  padding: 10px 18px;
+  background: var(--bg-surface-subtle);
+  border-top: 1px solid var(--ecmis-line);
+  font-size: 0.72rem;
+  color: var(--ecmis-muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* ---------- 5. Split-Screen Layout ---------- */
+.split-container {
+  display: flex;
+  gap: 20px;
+  height: calc(100vh - var(--topbar-h) - 80px);
+}
+.split-left {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+.split-right {
+  width: 50%;
+  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.split-right .doc-pane {
+  flex: 1;
+  max-height: 100%;
+}
+@media (max-width: 1200px) {
+  .split-container {
+    flex-direction: column;
+    height: auto;
+  }
+  .split-right {
+    width: 100%;
+    height: 600px;
+  }
+}
+
+/* ---------- 6. Signature Canvas ---------- */
+/* Always white, regardless of theme — signatures are drawn in black ink
+   (initSignaturePad), so the pad must stay a light "paper" surface or the
+   strokes disappear in dark/high-contrast mode. */
+.sig-canvas-wrapper {
+  background: #fff;
+  border: 1px solid var(--ecmis-line);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+}
+.sig-canvas {
+  width: 100%;
+  height: 180px;
+  display: block;
+  cursor: crosshair;
+}
+
+/* ---------- 7. Skeleton Loading Shimmer ---------- */
+.skeleton-row td {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-box {
+  height: 16px;
+  background: var(--skeleton-base);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-box::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+/* ---------- 8. Floating Action Bar ---------- */
+.action-bar.floating {
+  position: fixed !important;
+  bottom: 0;
+  left: var(--sidebar-w);
+  right: 0;
+  margin: 0 !important;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  box-shadow: 0 -8px 24px rgba(0,0,0,0.08);
+  animation: floatIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+body.dark-mode .action-bar.floating {
+  background: rgba(11, 18, 32, 0.92) !important;
+}
+body.high-contrast .action-bar.floating {
+  background: rgba(0, 0, 0, 0.96) !important;
+}
+@media (max-width:991.98px){
+  .action-bar.floating { left: 0; }
+}
+@keyframes floatIn {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* ---------- 9. Smart Combobox ---------- */
+.smart-combo-container {
+  position: relative;
+}
+.smart-combo-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--ecmis-line);
+  border-radius: 8px;
+  z-index: 1010;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+  display: none;
+  flex-direction: column;
+  max-height: 250px;
+}
+.smart-combo-search {
+  padding: 8px;
+  border-bottom: 1px solid var(--ecmis-line);
+}
+.smart-combo-items {
+  overflow-y: auto;
+  padding: 4px;
+}
+.smart-combo-item {
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.smart-combo-item:hover, .smart-combo-item.active {
+  background: var(--bg-surface-hover);
+  color: var(--action-primary);
+}
+.smart-combo-item-add { color: var(--action-primary); font-weight: 600; }
+/* Multi-select variant (initMultiSelectCombo) — toggle shows selected picks as
+   removable tag pills instead of a single text summary. */
+.smart-combo-toggle {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  min-height: calc(1.5em + .75rem + 2px);
+}
+.smart-combo-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg-surface-hover); color: var(--text-primary);
+  border: 1px solid var(--ecmis-line); border-radius: 999px;
+  padding: 3px 8px 3px 10px; font-size: .8rem; line-height: 1.3;
+}
+.smart-combo-tag i { cursor: pointer; opacity: .55; font-size: .7rem; }
+.smart-combo-tag i:hover { opacity: 1; color: var(--action-danger); }
+
+/* ==========================================================================
+   10. Micro-interactions — Hover / Click / Focus animations
+   ========================================================================== */
+
+/* Card lift on hover */
+.card-ecmis {
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+.card-ecmis:hover {
+  box-shadow: 0 8px 24px rgba(10,38,71,0.10);
+  transform: translateY(-1px);
+}
+
+/* Button press feedback */
+.btn {
+  transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.btn:active {
+  transform: scale(0.96);
+}
+
+/* Nav link slide indicator */
+.app-sidebar .nav-link {
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.app-sidebar .nav-link:hover {
+  border-left-color: var(--ecmis-gold);
+}
+
+/* Table row hover highlight */
+tbody tr {
+  transition: background 0.12s ease;
+}
+tbody tr:hover {
+  background: rgba(201,162,39,0.07);
+}
+
+/* Form control focus ring animation */
+.form-control,
+.form-select {
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+/* NOTE: this redeclares border-color/box-shadow for the same selector the
+   "Validation" section above already sets (design-token cyan focus ring,
+   ~line 300). That earlier rule now carries !important specifically so it
+   wins over this one — the PDF export (Sidebar/TextInput/Select/Checkbox/
+   Radio/SearchInput/DatePicker) consistently shows a CYAN focus/selected
+   state, never navy or gold. Left this block's declaration here unchanged
+   (for the transition timing + as a record of what was here before) rather
+   than deleting it, to avoid touching a section tied to newer JS hooks. */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--ecmis-navy);
+  box-shadow: 0 0 0 3px rgba(10,38,71,0.12);
+}
+
+/* Status badge pulse for "in-progress" states */
+.st-progress .fa-circle-dot {
+  animation: statusPulse 2s ease-in-out infinite;
+}
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+/* Toast slide-in animation */
+.ecmis-toast {
+  animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes toastSlideIn {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* Save-success pulse ring */
+@keyframes savePulse {
+  0%   { box-shadow: 0 0 0 0   rgba(27,127,90,0.4); }
+  70%  { box-shadow: 0 0 0 8px rgba(27,127,90,0);   }
+  100% { box-shadow: 0 0 0 0   rgba(27,127,90,0);   }
+}
+.btn-save-pulse { animation: savePulse 0.6s ease; }
+
+/* Upload drag-over zone */
+.upload-zone {
+  border: 2px dashed var(--ecmis-line);
+  border-radius: 10px;
+  padding: 24px;
+  text-align: center;
+  transition: border-color 0.2s, background 0.2s;
+  cursor: pointer;
+}
+.upload-zone.drag-over,
+.upload-zone:hover {
+  border-color: var(--ecmis-navy);
+  background: rgba(10,38,71,0.04);
+}
+
+/* ==========================================================================
+   11. Empty State
+   ========================================================================== */
+.ecmis-empty-state { padding: 0 !important; }
+.ecmis-empty-state > div {
+  animation: fadeInUp 0.4s ease both;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* ==========================================================================
+   12. Tooltip Helpers (data-ecmis-tip)
+   ========================================================================== */
+[data-ecmis-tip] { position: relative; cursor: help; }
+[data-ecmis-tip]::after {
+  content: attr(data-ecmis-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) scale(0.85);
+  background: var(--ecmis-navy);
+  color: var(--text-inverse);
+  font-size: 0.72rem;
+  padding: 5px 9px;
+  border-radius: 6px;
+  white-space: normal;
+  max-width: 260px;
+  z-index: 2010;
+  opacity: 0;
+  pointer-events: none;
+  line-height: 1.4;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+[data-ecmis-tip]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+/* ==========================================================================
+   13. Inline Editing
+   ========================================================================== */
+td.editable-cell { cursor: pointer; transition: background 0.15s; }
+td.editable-cell:hover { background: rgba(201,162,39,0.1); }
+td.editable-cell input {
+  border: 1px solid var(--ecmis-gold);
+  border-radius: 4px;
+  padding: 2px 6px;
+  width: 100%;
+  font-size: inherit;
+}
+
+/* ==========================================================================
+   14. Bulk Action Toolbar
+   ========================================================================== */
+.bulk-toolbar {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--ecmis-navy);
+  color: var(--text-inverse);
+  border-radius: 8px;
+  font-size: 0.86rem;
+  animation: fadeInUp 0.25s ease both;
+}
+.bulk-toolbar.show { display: flex; }
+.bulk-toolbar .btn { font-size: 0.8rem; padding: 3px 10px; }
+
+/* ==========================================================================
+   15. File Upload Progress
+   ========================================================================== */
+.upload-progress-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--ecmis-line);
+  overflow: hidden;
+  margin-top: 6px;
+}
+.upload-progress-fill {
+  height: 100%;
+  background: var(--ecmis-navy);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* ==========================================================================
+   16. Doc Pane Layout Toggle (Show/Hide Document Split View)
+   ========================================================================== */
+.btn-doc-toggle {
+  transition: all 0.2s ease-in-out;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+.btn-doc-toggle-header {
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.btn-doc-toggle-toolbar {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* ==========================================================================
+   PDF DESIGN SYSTEM — ModalDialog.pdf / Toast.pdf mapping
+   SweetAlert2 is the app's only modal/toast/confirm mechanism, used on
+   every screen's action bar, so this is in active use everywhere.
+   (Component classes for Avatar/Tooltip/ProgressBar/Spinner/Pagination/
+   Tabs/DropdownTrigger/InlineAlert were dropped — no screen in activity7/
+   uses them; out of scope for this activity until an actual consumer
+   exists.)
+   ========================================================================== */
+.swal2-popup{ border-radius:var(--radius-modal) !important; font-family:var(--font-sans) !important; }
+.swal2-popup .swal2-title{
+  color:var(--text-primary) !important; font-family:var(--serif) !important;
+  font-size:var(--text-h2-size) !important; line-height:var(--text-h2-lh) !important;
+}
+.swal2-popup .swal2-html-container{ color:var(--text-body) !important; font-size:var(--text-body-md-size) !important; }
+.swal2-popup .swal2-actions .swal2-confirm{
+  border-radius:var(--radius-control) !important; font-weight:600 !important;
+  background:var(--action-primary) !important;
+}
+.swal2-popup .swal2-actions .swal2-confirm:hover{ background:var(--action-primary-hover) !important; }
+.swal2-popup .swal2-actions .swal2-deny,
+.swal2-popup .swal2-actions .swal2-cancel{
+  border-radius:var(--radius-control) !important; font-weight:600 !important;
+  background:var(--bg-surface) !important; color:var(--text-primary) !important;
+  border:1px solid var(--border-control) !important; box-shadow:none !important;
+}
+.swal2-popup input.swal2-input, .swal2-popup textarea.swal2-textarea,
+.swal2-popup select.swal2-select{
+  border-radius:var(--radius-control) !important; border-color:var(--border-control) !important;
+}
+.swal2-popup input.swal2-input:focus, .swal2-popup textarea.swal2-textarea:focus{
+  border-color:var(--border-focus) !important; box-shadow:0 0 0 .18rem rgba(22,182,230,.25) !important;
+}
+.swal2-toast.swal2-icon-success{ background:var(--feedback-success-bg) !important; }
+.swal2-toast.swal2-icon-success .swal2-title{ color:var(--feedback-success-text) !important; }
+.swal2-toast.swal2-icon-warning{ background:var(--feedback-warning-bg) !important; }
+.swal2-toast.swal2-icon-warning .swal2-title{ color:var(--feedback-warning-text) !important; }
+.swal2-toast.swal2-icon-error{ background:var(--feedback-danger-bg) !important; }
+.swal2-toast.swal2-icon-error .swal2-title{ color:var(--feedback-danger-text) !important; }
+.swal2-toast.swal2-icon-info{ background:var(--feedback-info-bg) !important; }
+.swal2-toast.swal2-icon-info .swal2-title{ color:var(--feedback-info-text) !important; }
+.swal2-toast{ border-radius:var(--radius-card) !important; }
+
