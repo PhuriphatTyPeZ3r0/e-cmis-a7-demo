@@ -152,7 +152,8 @@
               <input class="form-control" id="presenter" value="ฝ่ายเลขานุการคณะอนุกลั่นกรองฯ (นิติกร กบค.)">
               <div class="law-note mt-2" style="font-size:.78rem">
                 ในชั้น<strong>ไต่สวนเบื้องต้น</strong> ผู้ชี้แจงคือฝ่ายเลขานุการคณะอนุกลั่นกรองฯ
-                (ต่างจากชั้นวินิจฉัยชี้มูลที่ผู้รับผิดชอบสำนวนต้องชี้แจงด้วยตนเอง)
+                (ต่างจากชั้นวินิจฉัยชี้มูลที่ผู้รับผิดชอบสำนวนต้องชี้แจงด้วยตนเอง) —
+                <strong>เลือกได้มากกว่า 1 คน</strong> และพิมพ์เพิ่มชื่อที่ไม่อยู่ในลิสต์ได้
               </div>
             </div>
           </div>
@@ -171,7 +172,7 @@
               <button class="btn btn-sm btn-light" onclick="window.print()"><i class="fa-solid fa-print"></i></button>
               <button class="btn btn-sm btn-light" id="btnDocx"><i class="fa-solid fa-download me-1"></i>.docx</button>
             </div>
-            <div class="doc-paper" id="docPaper"></div>
+            <div class="doc-paper doc-resolution" id="docPaper"></div>
             <div class="law-note mt-3">
               <strong>ที่มาของเทมเพลต (Google Drive → เอกสารมติ):</strong>
               <code>มติการประชุม ไต่สวนเบื้องต้น.docx</code> — โครงสร้างและถ้อยคำในเอกสารด้านบน
@@ -201,6 +202,17 @@
     if (kase.meetingNo) document.getElementById('meetNo').value = kase.meetingNo;
     if (kase.agendaNo) document.getElementById('agendaNo').value = kase.agendaNo;
     if (kase.meetingDate) document.getElementById('meetDate').value = kase.meetingDate;
+
+    /* ผู้ชี้แจงต่อที่ประชุมมีได้มากกว่า 1 คน — ใช้ search-select แบบเลือกหลายรายการ
+       เก็บค่าไว้ใน #presenter เดิม (comma-joined) ไม่ต้องแก้ renderDoc()/wiring ด้านล่าง */
+    ECMIS.initMultiSelectCombo(document.getElementById('presenter'), [
+      'ฝ่ายเลขานุการคณะอนุกลั่นกรองฯ (นิติกร กบค.)',
+      `${kase.owner} (ผู้รับผิดชอบสำนวน)`,
+      `${ECMIS.getRole('scr_sec').name} (อนุกรรมการและเลขานุการ คณะอนุกลั่นกรองฯ)`,
+      `${ECMIS.getRole('scr_asst').name} (อนุกรรมการและผู้ช่วยเลขานุการ คณะอนุกลั่นกรองฯ)`,
+      `${ECMIS.getRole('board_sec').name} (เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ)`,
+      `${ECMIS.getRole('dir_case').name} (ผู้อำนวยการกองบริหารคดี)`
+    ]);
 
     /* ---------- Q: สิทธิ์แก้ไขมติ (ชีตแถว 15) ---------- */
     const mayEdit = ECMIS.canEditMaster(role.id) || ECMIS.can('record.minutes', role.id);
@@ -499,7 +511,10 @@
 
       document.getElementById('docPaper').innerHTML = `
     <div class="doc-secret">ลับ</div>
-    <div class="doc-title">มติการประชุม<br>คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
+    <div class="doc-title">
+      <div class="doc-title-l1">มติการประชุม</div>
+      <div class="doc-title-l2">คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
+    </div>
     <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}<br>วาระที่ ${M(agendaNo)}</div>
 
     <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
@@ -548,7 +563,8 @@
       <span class="doc-dots"></span><br>
       (นางสาวณพัสตร์ ศรีสมเกียรติ)<br>
       ผู้อำนวยการกองบริหารคดี ปฏิบัติหน้าที่เลขานุการคณะกรรมการ ป.ป.ท.
-    </div>`;
+    </div>
+    <div class="doc-secret-foot">ลับ</div>`;
     }
 
     /* ---------- wire ---------- */

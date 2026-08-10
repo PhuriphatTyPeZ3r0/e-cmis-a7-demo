@@ -68,10 +68,13 @@ const ROLES = [
   /* ── 5. กองบริหารคดี (กบค.) ────────────────────────────────────────── */
   { id:'affairs', login:'Siriporn.K', row:15, group:'กองบริหารคดี (กบค.)', title:'เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ',
     name:'นางสาวศิริพร กิจการ', org:'กองบริหารคดี', lane:'L7', flow:'S7 / S11', act:'7.1, 7.2, 7.3',
-    perms:['view.all','download','EDIT.MASTER','create.agenda','create.invite','doc.generate','order24.draft','secrecy.set'] },
+    perms:['view.all','download','EDIT.MASTER','doc.generate','order24.draft','secrecy.set'] },
+  /* จัดทำระเบียบวาระ/หนังสือเชิญประชุม (create.agenda, create.invite) เป็นสิทธิ์ของกลุ่มงานนี้
+     ตามผัง AS-IS กิจกรรมที่ 7 (V3.0) ยืนยันแล้วทั้ง 3 หน้า (7.1/7.2/7.3) — เดิมเคยผูกกับ
+     'affairs' ซึ่งขัดกับ TRANSITIONS ที่ระบุ actor ของ OPEN_AGENDA เป็น board_sec อยู่แล้ว */
   { id:'board_sec', login:'Thanakrit.B', row:16, group:'กองบริหารคดี (กบค.)', title:'เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ',
     name:'นายธนกฤต บุญมี', org:'กองบริหารคดี', lane:'L7', flow:'S8 / S10', act:'7.1, 7.2, 7.3',
-    perms:['view.all','download','record.minutes','lock.pdf','compile.minutes','doc.generate','dispatch.resolution'] },
+    perms:['view.all','download','create.agenda','create.invite','record.minutes','lock.pdf','compile.minutes','doc.generate','dispatch.resolution'] },
   { id:'dir_case', login:'Napat.S', row:20, group:'กองบริหารคดี (กบค.)', title:'ผู้อำนวยการกองบริหารคดี (ผอ.กบค.)',
     name:'นางสาวณพัสตร์ ศรีสมเกียรติ', org:'กองบริหารคดี', lane:'L3', flow:'S3 / S5', act:'7.1, 7.2',
     perms:['view.all','download','EDIT.MASTER','certify.urgent','assign.subcommittee','sign.general'] },
@@ -2103,6 +2106,150 @@ function initSmartCombobox(selectEl) {
   });
 }
 
+/* Search-select แบบเลือกได้หลายรายการ (multi-select) — ใช้กับฟิลด์อย่าง
+   "ผู้ชี้แจงต่อที่ประชุม" ที่มีได้มากกว่า 1 คน โดยยังเก็บค่าไว้ใน <input> เดิม
+   เป็น string คั่นด้วยจุลภาค (comma-joined) เพื่อไม่ต้องแก้โค้ดที่อ่านค่าฟิลด์นี้
+   ทุกจุด — แค่ initMultiSelectCombo(inputEl, candidates) แล้ว .value/'input' event
+   ยังทำงานเหมือนเดิมทุกประการ รองรับพิมพ์ชื่อที่ไม่มีในลิสต์เพื่อเพิ่มเองด้วย
+   (ผู้ชี้แจงจริงอาจไม่ได้อยู่ในบัญชีตำแหน่งมาตรฐานเสมอไป) */
+function initMultiSelectCombo(inputEl, candidates) {
+  if (!inputEl || inputEl.nextElementSibling?.classList.contains('smart-combo-container')) return;
+
+  let selected = inputEl.value.split(',').map(s => s.trim()).filter(Boolean);
+
+  const container = document.createElement('div');
+  container.className = 'smart-combo-container smart-combo-multi';
+
+  const toggleBtn = document.createElement('div');
+  toggleBtn.className = 'form-control smart-combo-toggle';
+  toggleBtn.style.cursor = 'pointer';
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'smart-combo-dropdown';
+
+  const searchBox = document.createElement('div');
+  searchBox.className = 'smart-combo-search';
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.className = 'form-control form-control-sm';
+  searchInput.placeholder = 'ค้นหาหรือพิมพ์ชื่อผู้ชี้แจงเพิ่ม แล้วกด Enter...';
+  searchBox.appendChild(searchInput);
+
+  const itemsContainer = document.createElement('div');
+  itemsContainer.className = 'smart-combo-items';
+
+  function commit() {
+    inputEl.value = selected.join(', ');
+    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+    renderToggle();
+  }
+
+  function renderToggle() {
+    toggleBtn.innerHTML = '';
+    if (!selected.length) {
+      const ph = document.createElement('span');
+      ph.className = 'text-muted';
+      ph.textContent = '— เลือกผู้ชี้แจง (เลือกได้มากกว่า 1 คน) —';
+      toggleBtn.appendChild(ph);
+      return;
+    }
+    selected.forEach(name => {
+      const tag = document.createElement('span');
+      tag.className = 'smart-combo-tag';
+      tag.textContent = name;
+      const rm = document.createElement('i');
+      rm.className = 'fa-solid fa-xmark';
+      rm.title = 'เอาออก';
+      rm.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selected = selected.filter(s => s !== name);
+        commit();
+        renderItems(searchInput.value);
+      });
+      tag.appendChild(rm);
+      toggleBtn.appendChild(tag);
+    });
+  }
+
+  function renderItems(filterText) {
+    itemsContainer.innerHTML = '';
+    const q = filterText.trim().toLowerCase();
+    const filtered = candidates.filter(c => c.toLowerCase().includes(q));
+
+    filtered.forEach(name => {
+      const item = document.createElement('div');
+      item.className = 'smart-combo-item';
+      const isSel = selected.includes(name);
+      if (isSel) item.classList.add('active');
+      item.innerHTML = `<i class="fa-${isSel ? 'solid fa-square-check' : 'regular fa-square'} me-2"></i>${name}`;
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selected = isSel ? selected.filter(s => s !== name) : [...selected, name];
+        commit();
+        renderItems(searchInput.value);
+      });
+      itemsContainer.appendChild(item);
+    });
+
+    const q2 = filterText.trim();
+    if (q2 && !candidates.some(c => c.toLowerCase() === q2.toLowerCase()) && !selected.includes(q2)) {
+      const addItem = document.createElement('div');
+      addItem.className = 'smart-combo-item smart-combo-item-add';
+      addItem.innerHTML = `<i class="fa-solid fa-plus me-2"></i>เพิ่ม "${q2}"`;
+      addItem.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selected = [...selected, q2];
+        commit();
+        searchInput.value = '';
+        renderItems('');
+      });
+      itemsContainer.appendChild(addItem);
+    }
+
+    if (!filtered.length && !q2) {
+      itemsContainer.innerHTML = `<div class="text-muted text-center py-2" style="font-size:0.8rem">ไม่พบรายการ — พิมพ์เพื่อเพิ่มชื่อใหม่</div>`;
+    }
+  }
+
+  dropdown.appendChild(searchBox);
+  dropdown.appendChild(itemsContainer);
+  container.appendChild(toggleBtn);
+  container.appendChild(dropdown);
+
+  inputEl.style.display = 'none';
+  inputEl.parentNode.insertBefore(container, inputEl.nextSibling);
+
+  renderToggle();
+
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = dropdown.style.display === 'flex';
+    document.querySelectorAll('.smart-combo-dropdown').forEach(d => d.style.display = 'none');
+    dropdown.style.display = open ? 'none' : 'flex';
+    if (!open) {
+      searchInput.value = '';
+      renderItems('');
+      setTimeout(() => searchInput.focus(), 100);
+    }
+  });
+
+  searchInput.addEventListener('input', e => renderItems(e.target.value));
+  searchInput.addEventListener('click', e => e.stopPropagation());
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const val = searchInput.value.trim();
+    if (val && !selected.includes(val)) {
+      selected = [...selected, val];
+      commit();
+      searchInput.value = '';
+      renderItems('');
+    }
+  });
+
+  document.addEventListener('click', () => { dropdown.style.display = 'none'; });
+}
+
 function initRealTimeValidation(formEl) {
   if (!formEl) return;
   const inputs = formEl.querySelectorAll('input, select, textarea');
@@ -2710,7 +2857,7 @@ global.ECMIS = {
 
   // Custom helpers
   saveCases, toggleColorMode, toggleSidebarCollapse, changeFont, toggleVoiceRecognition,
-  initSmartCombobox, initRealTimeValidation, initVoiceInput, initSignaturePad,
+  initSmartCombobox, initMultiSelectCombo, initRealTimeValidation, initVoiceInput, initSignaturePad,
   signaturePad: (window.ecmis && window.ecmis.signaturePad),
   initAutoSave, initCharCounterAndCopy,
 

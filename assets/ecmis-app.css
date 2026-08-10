@@ -144,8 +144,10 @@ body{
   font-size:14.5px;
 }
 h1,h2,h3,h4,h5,h6{ font-family:var(--serif); font-weight:700; }
-/* เอกสารกระดาษจำลอง (.doc-paper) ยังคงใช้ Noto Serif Thai โดยตั้งใจ — เป็น
-   การจำลองเอกสารราชการที่พิมพ์จริง ไม่ใช่ chrome ของแอปที่ Type Scale นี้ควบคุม */
+/* เอกสารกระดาษจำลอง (.doc-paper) ใช้ฟอนต์ TH Sarabun IT9 โดยตั้งใจ (ดู Sec. "Document
+   preview" ด้านล่าง) แยกจาก Type Scale ของ chrome แอป — เพราะเป็นการจำลองเอกสารราชการ
+   ที่พิมพ์จริง ต้องพึ่งฟอนต์ TH Sarabun IT9 ที่ติดตั้งไว้ในเครื่อง (ไม่มี @font-face โหลดจากเว็บ
+   เนื่องจากเป็นฟอนต์ลิขสิทธิ์ราชการ) ถ้าเครื่องไม่มีฟอนต์นี้จะ fallback ไป TH Sarabun New / Sarabun */
 
 /* ---------------- Top bar ----------------
    Header.pdf / Master Screen Layout Desktop.pdf both show a LIGHT header
@@ -465,7 +467,7 @@ body.sidebar-collapsed .sidebar-user-chip-text{ display:none; }
   margin: 0 auto;
   padding: 52px 62px;
   box-shadow: 0 3px 18px rgba(0,0,0,.32);
-  font-family: 'THSarabun9', 'TH Sarabun PSK', 'TH Sarabun New', 'Sarabun', sans-serif !important;
+  font-family: 'TH Sarabun IT9', 'TH SarabunIT๙', 'TH Sarabun New', 'Sarabun', sans-serif !important;
   font-size: 16px;
   line-height: 1.65;
   color: #000;
@@ -473,7 +475,7 @@ body.sidebar-collapsed .sidebar-user-chip-text{ display:none; }
   box-sizing: border-box;
 }
 .doc-paper *, .doc-pane * {
-  font-family: 'THSarabun9', 'TH Sarabun PSK', 'TH Sarabun New', 'Sarabun', sans-serif !important;
+  font-family: 'TH Sarabun IT9', 'TH SarabunIT๙', 'TH Sarabun New', 'Sarabun', sans-serif !important;
 }
 .doc-paper .doc-secret{ text-align:right; font-weight:700; color:#DB2626; letter-spacing:2px; font-size:16px; }
 .doc-paper .doc-title{ text-align:center; font-weight:700; font-size:20px; line-height:1.6; margin:14px 0 4px; }
@@ -490,6 +492,26 @@ body.sidebar-collapsed .sidebar-user-chip-text{ display:none; }
    theme or the highlight becomes dark-on-dark against the white paper. */
 .mergefield{ background:#FDF2C6; border-bottom:1px solid #DD8C0A; padding:0 2px; }
 .mergefield.filled{ background:#DBFBE6; border-bottom-color:#1FB65E; }
+
+/* ---------------- เอกสารมติการประชุม — ขนาดอักษรตามที่กำหนด
+   (อ้างอิง: สำเนาเอกสารมติหน้า1-2-ขนาดอักษร.pdf / ขนาดอักษรในเอกสารมติ.xlsx)
+   ขอบเขต: เฉพาะเอกสาร "มติการประชุม" (07-subcommittee-screening.html,
+   08-board-resolution.html) ผ่าน .doc-paper.doc-resolution — ไม่แตะเอกสารประเภทอื่น
+   (ระเบียบวาระ/หนังสือเชิญ/รายงาน 213/คำสั่ง ม.24 ฯลฯ) ที่ใช้คลาส .doc-title/.doc-sub/
+   .doc-h/.doc-sign ร่วมกันอยู่ ใช้หน่วย pt ตรงตามสเปกเอกสารราชการ (ไม่ใช่ px) */
+.doc-paper.doc-resolution{ font-size:16pt; font-weight:400; }
+.doc-paper.doc-resolution .doc-secret{ font-size:22pt; }
+.doc-paper.doc-resolution .doc-title{ font-size:16pt; margin:14px 0 4px; }
+.doc-paper.doc-resolution .doc-title .doc-title-l1{ font-size:28pt; font-weight:700; }
+.doc-paper.doc-resolution .doc-title .doc-title-l2{ font-size:26pt; font-weight:700; }
+.doc-paper.doc-resolution .doc-sub{ font-size:16pt; font-weight:700; }
+.doc-paper.doc-resolution .doc-row{ font-size:16pt; }
+.doc-paper.doc-resolution .doc-row .k{ font-weight:700; }
+.doc-paper.doc-resolution .doc-h{ font-size:16pt; font-weight:700; }
+.doc-paper.doc-resolution .doc-indent{ font-size:16pt; font-weight:400; }
+.doc-paper.doc-resolution .doc-sign{ font-size:11pt; font-weight:400; }
+.doc-paper.doc-resolution .doc-secret-foot{ text-align:center; font-weight:700; color:#DB2626;
+  letter-spacing:2px; font-size:22pt; margin-top:24px; }
 .mergefield.empty{ background:#FDE2E2; border-bottom-color:#DB2626; color:#991A1A; }
 
 .doc-toolbar {
@@ -1005,6 +1027,21 @@ body.high-contrast .action-bar.floating {
   background: var(--bg-surface-hover);
   color: var(--action-primary);
 }
+.smart-combo-item-add { color: var(--action-primary); font-weight: 600; }
+/* Multi-select variant (initMultiSelectCombo) — toggle shows selected picks as
+   removable tag pills instead of a single text summary. */
+.smart-combo-toggle {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  min-height: calc(1.5em + .75rem + 2px);
+}
+.smart-combo-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg-surface-hover); color: var(--text-primary);
+  border: 1px solid var(--ecmis-line); border-radius: 999px;
+  padding: 3px 8px 3px 10px; font-size: .8rem; line-height: 1.3;
+}
+.smart-combo-tag i { cursor: pointer; opacity: .55; font-size: .7rem; }
+.smart-combo-tag i:hover { opacity: 1; color: var(--action-danger); }
 
 /* ==========================================================================
    10. Micro-interactions — Hover / Click / Focus animations

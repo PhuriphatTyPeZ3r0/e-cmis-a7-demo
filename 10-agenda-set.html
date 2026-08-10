@@ -108,9 +108,10 @@
         const role = ECMIS.currentRole();
         let docTab = 'agenda';
 
-        /* หน้านี้เป็นสิทธิ์เฉพาะของเจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ (perm: create.agenda / create.invite)
-           บทบาทอื่นที่มองเห็นเมนูนี้ได้ (view.all) เข้ามาดูได้ แต่กดบรรจุวาระแทนไม่ได้ */
-        const CAN_ACT_ROLE = 'affairs';
+        /* หน้านี้เป็นสิทธิ์เฉพาะของเจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ (perm: create.agenda / create.invite)
+           ตามผัง AS-IS กิจกรรมที่ 7 (V3.0) — บทบาทอื่นที่มองเห็นเมนูนี้ได้ (view.all) เข้ามาดูได้
+           แต่กดบรรจุวาระแทนไม่ได้ */
+        const CAN_ACT_ROLE = 'board_sec';
 
         document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
         document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status);
@@ -179,8 +180,8 @@
       </div>
       <div class="doc-indent" style="margin-top:8px">จึงเรียนมาเพื่อโปรดทราบและเข้าร่วมประชุม</div>
       <div class="doc-sign">
-        <span class="doc-dots"></span><br>(นางสาวศิริพร กิจการ)<br>
-        เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ กองบริหารคดี
+        <span class="doc-dots"></span><br>(นายธนกฤต บุญมี)<br>
+        เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ กองบริหารคดี
       </div>`;
             }
         }
@@ -193,7 +194,7 @@
             document.getElementById(id).addEventListener('input', renderDoc));
         document.getElementById('secrecy').addEventListener('change', renderDoc);
 
-        /* ---------- actions — เฉพาะ role.id === 'affairs' (สิทธิ์ create.agenda / create.invite) ---------- */
+        /* ---------- actions — เฉพาะ role.id === 'board_sec' (สิทธิ์ create.agenda / create.invite) ---------- */
         function renderActions() {
             const slot = document.getElementById('actionBarSlot');
             if (role.id !== CAN_ACT_ROLE) {
