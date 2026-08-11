@@ -50,7 +50,7 @@
                 <input class="form-control" id="meetNo" value="38/2569">
               </div>
               <div class="col-md-4"><label class="form-label field-req">วันที่ประชุม</label>
-                <input class="form-control" id="meetDate" value="2569-06-02">
+                <input class="form-control" id="meetDate" type="date" value="2569-06-02">
               </div>
               <div class="col-md-4"><label class="form-label field-req">วาระที่</label>
                 <input class="form-control" id="agendaNo" value="5.12">
@@ -71,12 +71,7 @@
 
             <div class="rule-panel" id="quorumBox"></div>
 
-            <div class="law-note mt-2" style="font-size:.79rem">
-              <strong>ม.12</strong> องค์ประชุม = ไม่น้อยกว่า<strong>กึ่งหนึ่ง</strong>ของกรรมการทั้งหมดเท่าที่มีอยู่ ·
-              <strong>ม.15</strong> มติ = <strong>เสียงข้างมากของกรรมการทั้งหมดเท่าที่มีอยู่</strong>
-              (ไม่ใช่เสียงข้างมากของผู้เข้าประชุม) คะแนนเท่ากันประธานในที่ประชุมออกเสียงชี้ขาดอีกหนึ่งเสียง ·
-              <strong>ม.20</strong> การกันผู้มีส่วนได้เสียออกต้องมี<strong>มติของบอร์ด</strong> ไม่ใช่การถอนตัวเอง
-            </div>
+
           </div>
         </div>
 
@@ -109,14 +104,7 @@
 
             <!-- [F-04] ม.32 ใช้เฉพาะกรณีบอร์ดมีมติว่า "ข้อกล่าวหาไม่มีมูล" -->
             <div id="noGroundBox" class="mb-3 d-none">
-              <div class="law-note" style="font-size:.79rem">
-                <strong>ม.32</strong> — เมื่อคณะกรรมการ ป.ป.ท. มีมติว่า<strong>ข้อกล่าวหาใดไม่มีมูล</strong>
-                ให้ข้อกล่าวหานั้นเป็นอันตกไป และต้อง<strong>แจ้งผู้ถูกกล่าวหาทราบไม่ช้ากว่า 15 วัน
-                  นับแต่วันที่คณะกรรมการ ป.ป.ท. มีมติ</strong><br>
-                <small>กรอบ 15 วันนี้ใช้กับมตินี้เท่านั้น — <strong>ไม่ใช้</strong>กับมติ
-                  "ไม่รับเรื่องไว้พิจารณา" (ม.25/ม.26) หรือ "จำหน่ายเรื่อง" (ม.26)
-                  ซึ่งเป็นคนละสถานะทางกฎหมาย</small>
-              </div>
+              
             </div>
 
             <div id="moreBox" class="mb-3 d-none">
@@ -150,21 +138,12 @@
             <div class="mt-3">
               <label class="form-label">ผู้ชี้แจงต่อที่ประชุม</label>
               <input class="form-control" id="presenter" value="ฝ่ายเลขานุการคณะอนุกลั่นกรองฯ (นิติกร กบค.)">
-              <div class="law-note mt-2" style="font-size:.78rem">
-                ในชั้น<strong>ไต่สวนเบื้องต้น</strong> ผู้ชี้แจงคือฝ่ายเลขานุการคณะอนุกลั่นกรองฯ
-                (ต่างจากชั้นวินิจฉัยชี้มูลที่ผู้รับผิดชอบสำนวนต้องชี้แจงด้วยตนเอง) —
-                <strong>เลือกได้มากกว่า 1 คน</strong> และพิมพ์เพิ่มชื่อที่ไม่อยู่ในลิสต์ได้
-              </div>
             </div>
 
             <div class="mt-3">
               <label class="form-label">การชี้แจงเพิ่มเติม (ถ้ามี)</label>
               <textarea class="form-control" id="presenterNote" rows="3"
                 placeholder="ผู้ชี้แจงเพิ่มเติมว่า..."></textarea>
-              <div class="law-note mt-2" style="font-size:.78rem">
-                ตามเทมเพลต <code>มติการประชุม ไต่สวนเบื้องต้น.docx</code> — คำชี้แจงเพิ่มเติมของผู้ชี้แจง
-                ต่อที่ประชุม แยกจาก "ความเห็นที่ประชุม" ของคณะกรรมการ ป.ป.ท.
-              </div>
             </div>
           </div>
         </div>
@@ -183,11 +162,6 @@
               <button class="btn btn-sm btn-light" id="btnDocx"><i class="fa-solid fa-download me-1"></i>.docx</button>
             </div>
             <div class="doc-paper doc-resolution" id="docPaper"></div>
-            <div class="law-note mt-3">
-              <strong>ที่มาของเทมเพลต (Google Drive → เอกสารมติ):</strong>
-              <code>มติการประชุม ไต่สวนเบื้องต้น.docx</code> — โครงสร้างและถ้อยคำในเอกสารด้านบน
-              ถอดมาจากไฟล์นี้ทั้งฉบับ รวมถึงบล็อกผู้ลงนาม ผอ.กบค.
-            </div>
           </div>
         </div>
       </div>
@@ -207,11 +181,27 @@
     const kase = ECMIS.getCase(params.get('case') || '1547/2568');
     const role = ECMIS.currentRole();
 
+    function normalizeDateInputValue(value) {
+      const v = String(value || '').trim();
+      if (!v) return '';
+      const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+      if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+      const thai = /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/.exec(v);
+      if (thai) return `${thai[3]}-${String(thai[2]).padStart(2, '0')}-${String(thai[1]).padStart(2, '0')}`;
+      return v;
+    }
+
+    function setDateInputValue(id, value) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.value = normalizeDateInputValue(value);
+    }
+
     document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
     document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status);
     if (kase.meetingNo) document.getElementById('meetNo').value = kase.meetingNo;
     if (kase.agendaNo) document.getElementById('agendaNo').value = kase.agendaNo;
-    if (kase.meetingDate) document.getElementById('meetDate').value = kase.meetingDate;
+    if (kase.meetingDate) setDateInputValue('meetDate', kase.meetingDate);
 
     /* ผู้ชี้แจงต่อที่ประชุมมีได้มากกว่า 1 คน — ใช้ search-select แบบเลือกหลายรายการ
        เก็บค่าไว้ใน #presenter เดิม (comma-joined) ไม่ต้องแก้ renderDoc()/wiring ด้านล่าง */
@@ -483,7 +473,8 @@
     function renderDoc() {
       const M = ECMIS.mergeField;
       const meetNo = document.getElementById('meetNo').value.trim();
-      const meetDate = ECMIS.thaiDate(document.getElementById('meetDate').value.trim());
+      const meetDateValue = normalizeDateInputValue(document.getElementById('meetDate').value.trim());
+      const meetDate = ECMIS.thaiDate(meetDateValue);
       const agendaNo = document.getElementById('agendaNo').value.trim();
       const opinion = document.getElementById('boardOpinion').value.trim();
       const presenter = document.getElementById('presenter').value.trim();
@@ -618,7 +609,7 @@
         const q = renderQuorum();
         const r = selectedRes();
         const meetNoVal = document.getElementById('meetNo').value.trim();
-        const meetDateVal = document.getElementById('meetDate').value.trim();
+        const meetDateVal = normalizeDateInputValue(document.getElementById('meetDate').value.trim());
         const agendaNoVal = document.getElementById('agendaNo').value.trim();
         if (!meetNoVal || !meetDateVal || !agendaNoVal) {
           ECMIS.toastWarn('กรุณาระบุ ครั้งที่ประชุม, วันที่ประชุม และ วาระที่');
