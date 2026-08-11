@@ -517,6 +517,36 @@ const STATUS_STEP = {
 function isUpstreamRole(roleId){ const r = getRole(roleId); return r.scope === 'UPSTREAM'; }
 function isUpstreamCase(kase){ const s = STATUS[kase.status]; return !!(s && s.scope === 'UPSTREAM'); }
 
+/* ---- สำนวนกิจกรรมที่ 7.2 (วินิจฉัยชี้มูล) หรือไม่ — ใช้ docType เป็นเกณฑ์เดียว
+   เพราะ CASES ทุกรายการถูกเติม docType ให้ครบแล้ว (ค่าเริ่มต้น '213') และ
+   เป็นฟิลด์เดียวที่แยก 213/644 (7.1) ออกจาก RULING (7.2) ได้ตรงที่สุด        */
+function isCase72(kase){ return !!kase && kase.docType === 'RULING'; }
+
+/* หน้าจอปลายทางตามสถานะของสำนวนกิจกรรมที่ 7.2 — ใช้ค้นแทน role-based PAGE_FOR
+   ของ 7.1 เพราะบทบาทเดียวกัน (เช่น section_head) ต้องไปคนละหน้าตามชนิดสำนวน
+   ที่ค้างอยู่ (source 213/644 ของ 7.1 → 03-report-213.html แบบอ่านอย่างเดียว
+   แต่ RULING ของ 7.2 → 04-approval-review.html ที่ต้องดำเนินการจริง)
+   72-04/72-05/72-08 ยังคงแยกหน้าเดิม (ดูผลวิเคราะห์การยุบรวมหน้าจอ 7.1/7.2)
+   ส่วน 72-09/72-10/72-11 ยังไม่ได้สร้าง จึงชี้ไปทะเบียนสำนวน (อ่านอย่างเดียว)
+   ไปพลางก่อน — TODO: แก้เมื่อสร้างหน้าจอเหล่านั้นแล้ว                        */
+const PAGE_FOR_72 = {
+  PENDING_SECTION_72:'04-approval-review.html', PENDING_DIRECTOR_72:'04-approval-review.html',
+  PENDING_DEPUTY_72:'04-approval-review.html', RETURNED_72:'04-approval-review.html',
+  PENDING_SECGEN_72:'04-approval-review.html',
+  IN_SUPPORT_SUB_72:'72-04-support-subcommittee.html',
+  PENDING_URGENT_72:'72-05-urgent-agenda.html', PENDING_CHAIRMAN_URGENT_72:'72-05-urgent-agenda.html',
+  IN_SCREENING_72:'07-subcommittee-screening.html',
+  PENDING_INVITE_72:'10-agenda-set.html',
+  IN_MEETING_72:'72-08-board-resolution.html',
+  RESOLVED_PENDING_72:'02-case-register.html',    /* TODO: 72-09 ยังไม่ได้สร้าง */
+  PENDING_SIGN_RULING_72:'02-case-register.html', /* TODO: 72-09 ยังไม่ได้สร้าง */
+  PENDING_AREA_NOTICE_72:'02-case-register.html', /* TODO: 72-10 ยังไม่ได้สร้าง */
+  DISPATCHING_NACC_72:'02-case-register.html',    /* TODO: 72-11 ยังไม่ได้สร้าง */
+  PENDING_DISPATCH_GUILTY_72:'02-case-register.html', /* TODO: 72-11 ยังไม่ได้สร้าง */
+  CLOSED_72:'02-case-register.html'
+};
+function pageForCase72(kase){ return PAGE_FOR_72[kase.status] || '02-case-register.html'; }
+
 /* ------------------------------------------------- G1 — เงื่อนไขที่ 2
    ผัง P2 โหนด g1 อ่านว่า "เป็นเรื่องยุ่งยากซับซ้อน **หรือความเห็นใน
    สายบังคับบัญชาไม่ตรงกัน**" — เงื่อนไขหลังเป็นข้อเท็จจริงที่ระบบรู้เองได้
@@ -728,8 +758,37 @@ function getAct7Status(c) {
   return 'รอเลขาธิการ ป.ป.ท. ลงความเห็น';
 }
 
-function act7Badge(statusName) {
-  const item = ACT7_STATUSES.find(s => s.name === statusName);
+/* คู่ขนานของ ACT7_STATUSES/getAct7Status สำหรับกิจกรรมที่ 7.2 (วินิจฉัยชี้มูล)
+   ใช้ 4 Section เดิม (เสนอกลั่นกรอง/บรรจุวาระ → พิจารณาโดยบอร์ด → หลังมติ →
+   ส่งออก/เสร็จสิ้น) แต่แยกตารางข้อความเพราะสถานะ (STATUS keys) คนละชุดกับ
+   7.1 โดยสิ้นเชิง — เขียนแยกจาก getAct7Status(7.1) เพื่อไม่ให้กระทบพฤติกรรม
+   เดิมของ 7.1 เลย ไม่ใช่การรวมโค้ดแบบเสี่ยง                                */
+const ACT7_STATUSES_72 = [
+  { section: 1, name: 'อยู่ระหว่างสายอนุมัติ/เลขาธิการฯ พิจารณา (วินิจฉัยชี้มูล)', icon: 'fa-user-pen' },
+  { section: 1, name: 'อยู่ระหว่างกลั่นกรอง/เตรียมวาระ (วินิจฉัยชี้มูล)', icon: 'fa-users-gear' },
+  { section: 2, name: 'อยู่ระหว่างพิจารณาโดยคณะกรรมการ ป.ป.ท. (วินิจฉัยชี้มูล)', icon: 'fa-gavel' },
+  { section: 2, name: 'บอร์ดมีมติแล้ว - รอจัดทำรายงานวินิจฉัยชี้มูล', icon: 'fa-file-signature' },
+  { section: 3, name: 'รอส่งดำเนินการ/แจ้งผลตามมติวินิจฉัยชี้มูล', icon: 'fa-share-nodes' },
+  { section: 4, name: 'ปิดสำนวน (กิจกรรมที่ 7.2)', icon: 'fa-circle-check' }
+];
+const ACT7_STAGE_72 = {
+  PENDING_SECTION_72:0, PENDING_DIRECTOR_72:0, PENDING_DEPUTY_72:0, RETURNED_72:0, PENDING_SECGEN_72:0,
+  IN_SUPPORT_SUB_72:1, PENDING_URGENT_72:1, PENDING_CHAIRMAN_URGENT_72:1, IN_SCREENING_72:1, PENDING_INVITE_72:1,
+  IN_MEETING_72:2,
+  RESOLVED_PENDING_72:3, PENDING_SIGN_RULING_72:3,
+  PENDING_AREA_NOTICE_72:4, DISPATCHING_NACC_72:4, PENDING_DISPATCH_GUILTY_72:4,
+  CLOSED_72:5
+};
+function getAct7Status72(c) {
+  if (c && c.act7Status72) return c.act7Status72;
+  const idx = ACT7_STAGE_72[c && c.status];
+  return ACT7_STATUSES_72[idx !== undefined ? idx : 0].name;
+}
+
+/* list เป็น optional — ไม่ใส่ = ค้นใน ACT7_STATUSES (7.1) เหมือนเดิมทุกประการ
+   ใส่ ACT7_STATUSES_72 = ใช้กับสถานะกิจกรรมที่ 7.2 แทน (สีตาม Section เดียวกัน) */
+function act7Badge(statusName, list) {
+  const item = (list || ACT7_STATUSES).find(s => s.name === statusName);
   const secId = item ? item.section : 1;
   const icon = item ? item.icon : 'fa-circle-info';
 
@@ -3492,7 +3551,7 @@ global.ECMIS = {
   BOARD_MIN_IN_OFFICE, boardQuorum,
   M24P1_MIN_PANEL, M24P1_STAFF_FREE, panelComposition,
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
-  UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase,
+  UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72,
   PERM_DEFS, can, canEditMaster, canViewCase,
   thaiDate, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole, roleIdForLogin,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
@@ -3502,6 +3561,7 @@ global.ECMIS = {
 
   // Custom Activity 7 Status helpers
   ACT7_SECTIONS, ACT7_STATUSES, getAct7Status, act7Badge,
+  ACT7_STATUSES_72, getAct7Status72,
 
   // Custom helpers
   saveCases, toggleColorMode, toggleSidebarCollapse, changeFont, toggleVoiceRecognition,
