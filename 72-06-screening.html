@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง พิจารณา | E-CMIS 7.2</title>
+  <link rel="icon" type="image/png" href="pacc_logo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="assets/ecmis-app.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <main class="app-main">
+    <div class="page-head">
+      <div>
+        <h1><i class="fa-solid fa-users-viewfinder me-2"></i>คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง พิจารณา</h1>
+      </div>
+      <div class="ms-auto text-end">
+        <span class="flow-ref">ผัง 7.2: 7.2-06 (คณะอนุกลั่นกรองฯ พิจารณา) → 7.2-07</span>
+        <div class="mt-1" id="stBadge"></div>
+      </div>
+    </div>
+
+    <div class="card card-ecmis mb-3">
+      <div class="card-body pb-1" id="stepper"></div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-xl-6">
+        <div class="card card-ecmis mb-3">
+          <div class="card-header"><i class="fa-solid fa-clipboard-check"></i> การพิจารณาของคณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง</div>
+          <div class="card-body">
+            <div class="row g-2 mb-3">
+              <div class="col-md-6"><label class="form-label field-req">ครั้งที่ประชุมคณะอนุฯ</label>
+                <input class="form-control" id="scrMeetNo" value="14/2569">
+              </div>
+              <div class="col-md-6"><label class="form-label field-req">วันที่ประชุม</label>
+                <input class="form-control" id="scrMeetDate" value="2569-06-05">
+              </div>
+            </div>
+
+            <div class="law-note mb-3" style="font-size:.8rem">
+              คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริงพิจารณารายงานการไต่สวนวินิจฉัยชี้มูลเพื่อกลั่นกรองก่อนเสนอ
+              คณะกรรมการ ป.ป.ท. บรรจุระเบียบวาระ — ผลการพิจารณาเป็น <strong>"ความเห็น"</strong> ไม่ใช่คำชี้ขาด
+              อำนาจวินิจฉัยชี้ขาดเป็นของคณะกรรมการ ป.ป.ท. ตาม ม.17(3)(4)
+            </div>
+
+            <label class="form-label field-req">ความเห็นกลั่นกรอง</label>
+            <textarea class="form-control" id="screenOpinion" rows="5"
+              placeholder="คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริงพิจารณารายงานแล้วเห็นว่า..."></textarea>
+            <div class="val-msg val-err" data-for="screenOpinion">กรุณาระบุความเห็นกลั่นกรองก่อนบันทึก</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-6">
+        <div style="position:sticky;top:calc(var(--topbar-h) + 14px)">
+          <div class="doc-pane">
+            <div class="doc-toolbar">
+              <span class="name"><i class="fa-solid fa-file-word"></i> รายงานความเห็นคณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง
+                <span class="badge-tpl">Mail-Merge</span></span>
+              <button class="btn btn-sm btn-light" onclick="window.print()"><i class="fa-solid fa-print"></i></button>
+            </div>
+            <div class="doc-paper doc-resolution" id="docPaper"></div>
+            <div class="law-note mt-3">
+              <strong>ฐานอำนาจ:</strong> ม.17(3)(4) — อำนาจไต่สวน/วินิจฉัยชี้มูลเป็นของคณะกรรมการ ป.ป.ท.
+              คณะอนุกลั่นกรองฯ ทำหน้าที่กลั่นกรองก่อนเสนอบรรจุวาระ
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="actionBarSlot"></div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="assets/ecmis-app.js"></script>
+  <script>
+    ECMIS.renderShell('72-06-screening.html');
+
+    const params = new URLSearchParams(location.search);
+    const kase = ECMIS.getCase(params.get('case') || '2015/2569');
+    const role = ECMIS.currentRole();
+
+    document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
+    document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72);
+
+    if (kase.screeningOpinion72) document.getElementById('screenOpinion').value = kase.screeningOpinion72;
+
+    /* ---------- document ---------- */
+    function renderDoc() {
+      const M = ECMIS.mergeField;
+      const meetNo = document.getElementById('scrMeetNo').value.trim();
+      const meetDate = ECMIS.thaiDate(document.getElementById('scrMeetDate').value.trim());
+      const opinion = document.getElementById('screenOpinion').value.trim();
+
+      document.getElementById('docPaper').innerHTML = `
+    <div class="doc-secret">ลับ</div>
+    <div class="doc-title">
+      <div class="doc-title-l1">รายงานความเห็น</div>
+      <div class="doc-title-l2">คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง</div>
+    </div>
+    <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}</div>
+
+    <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
+    <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+    <div class="doc-row"><span class="k">ผู้รับผิดชอบสำนวน</span> ${M(kase.owner)}</div>
+    <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
+
+    <div class="doc-body-indent">
+      <div class="doc-h">ผู้ถูกกล่าวหา</div>
+      ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}
+
+      <div class="doc-h">ข้อกล่าวหา</div>
+      <div class="doc-indent">${M(kase.allegation)}</div>
+
+      <div class="doc-h">ความเห็นของคณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง</div>
+      <div class="doc-indent">${M(opinion, '……………………………………………………………………………………')}</div>
+    </div>
+
+    <div class="doc-sign">
+      ลงชื่อ <span class="doc-dots"></span><br>
+      (${M('', 'ชื่อ-สกุล')})<br>
+      อนุกรรมการและเลขานุการ<br>
+      คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง
+    </div>
+    <div class="doc-secret-foot">ลับ</div>`;
+    }
+    ['scrMeetNo', 'scrMeetDate', 'screenOpinion'].forEach(id =>
+      document.getElementById(id).addEventListener('input', renderDoc));
+
+    /* ---------- actions ---------- */
+    function buildButtons() {
+      return [
+        { act: 'more', label: 'ขอข้อมูลเพิ่มเติม', icon: 'fa-circle-question', cls: 'btn-outline-secondary' },
+        { act: 'done', label: 'เห็นควรบรรจุวาระ', icon: 'fa-check', cls: 'btn-navy' }
+      ];
+    }
+    document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons());
+    document.querySelectorAll('.action-bar [data-act]').forEach(b =>
+      b.addEventListener('click', () => handle(b.dataset.act)));
+
+    function validateOpinion() {
+      const op = document.getElementById('screenOpinion');
+      if (!op.value.trim()) {
+        op.classList.add('is-invalid-ecmis');
+        document.querySelector('.val-msg[data-for="screenOpinion"]').classList.add('show');
+        ECMIS.toastWarn('กรุณาระบุความเห็นกลั่นกรองก่อนบันทึก');
+        return false;
+      }
+      op.classList.remove('is-invalid-ecmis');
+      document.querySelector('.val-msg[data-for="screenOpinion"]').classList.remove('show');
+      return true;
+    }
+
+    function handle(act) {
+      if (!validateOpinion()) return;
+      const opinion = document.getElementById('screenOpinion').value.trim();
+      const meetNo = document.getElementById('scrMeetNo').value.trim();
+      const meetDate = document.getElementById('scrMeetDate').value.trim();
+
+      if (act === 'more') {
+        ECMIS.confirmAction({
+          title: 'ขอข้อมูลเพิ่มเติม',
+          html: `<p>สำนวน <strong>${kase.id}</strong> — คณะอนุกลั่นกรองฯ ขอข้อมูล/เอกสารเพิ่มเติมจากผู้รับผิดชอบสำนวน</p>
+            <div class="law-note">สำนวนยังค้างอยู่ที่คณะอนุกลั่นกรองฯ เช่นเดิม ระบบจะบันทึกประเด็นที่ขอเพิ่มเติมและแจ้งเตือนเจ้าของสำนวน</div>`,
+          confirmText: 'ยืนยันขอข้อมูลเพิ่มเติม'
+        }).then(res => {
+          if (!res.isConfirmed) return;
+          kase.screeningOpinion72 = opinion;
+          kase.moreInfoRequested72 = { date: new Date().toISOString().slice(0, 10), note: opinion };
+          ECMIS.saveCases();
+          ECMIS.toastOk('บันทึกคำขอข้อมูลเพิ่มเติม และแจ้งเตือนผู้รับผิดชอบสำนวนแล้ว');
+        });
+        return;
+      }
+
+      if (act === 'done') {
+        ECMIS.confirmAction({
+          title: 'เห็นควรบรรจุวาระ',
+          html: `<p>สำนวน <strong>${kase.id}</strong> — คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริงเห็นควรเสนอบรรจุระเบียบวาระ</p>
+            <div class="law-note">ระบบจะส่งสำนวนไปยัง <strong>7.2-07 จัดทำหนังสือเชิญประชุมบอร์ด</strong></div>`,
+          confirmText: 'ยืนยันเห็นควรบรรจุวาระ'
+        }).then(res => {
+          if (!res.isConfirmed) return;
+          kase.screeningOpinion72 = opinion;
+          kase.screeningMeetNo72 = meetNo;
+          kase.screeningMeetDate72 = meetDate;
+          kase.status = 'PENDING_INVITE_72';
+          ECMIS.saveCases();
+          ECMIS.toastOk('บันทึกความเห็นและส่งบรรจุวาระเรียบร้อย');
+          setTimeout(() => location.href = '72-07-meeting-invite.html?case=' + encodeURIComponent(kase.id), 1400);
+        });
+      }
+    }
+
+    renderDoc();
+  </script>
+</body>
+
+</html>

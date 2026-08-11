@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เลขาธิการฯ พิจารณา/ลงนาม/ชี้สำนวนซับซ้อน | E-CMIS 7.2</title>
+  <link rel="icon" type="image/png" href="pacc_logo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="assets/ecmis-app.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <main class="app-main">
+    <div class="page-head">
+      <div>
+        <h1><i class="fa-solid fa-signature me-2"></i>เลขาธิการฯ พิจารณา/ลงนาม/ชี้สำนวนซับซ้อน</h1>
+      </div>
+      <div class="ms-auto text-end">
+        <span class="flow-ref">ผัง 7.2: 7.2-03 — Cb-60 (ซับซ้อน/เร่งด่วนหรือไม่)</span>
+        <div class="mt-1" id="stBadge"></div>
+      </div>
+    </div>
+
+    <div class="card card-ecmis mb-3">
+      <div class="card-body pb-1" id="stepper"></div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-xl-6">
+
+        <!-- สรุปสำนวน -->
+        <div class="card card-ecmis mb-3">
+          <div class="card-header"><i class="fa-solid fa-circle-info"></i> สรุปสำนวนสำหรับผู้พิจารณา</div>
+          <div class="card-body">
+            <div class="row g-2 kv" id="summary"></div>
+            <hr>
+            <div class="mb-2"><span class="k text-muted">ข้อกล่าวหา</span>
+              <div class="v" id="sAllegation"></div>
+            </div>
+            <div><span class="k text-muted">ความเห็นตามสายอนุมัติ 3 ชั้น</span>
+              <div class="v" id="sOpinions"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- การพิจารณาของเลขาธิการฯ -->
+        <div class="card card-ecmis mb-3">
+          <div class="card-header"><i class="fa-solid fa-scale-unbalanced"></i> การพิจารณาของเลขาธิการฯ</div>
+          <div class="card-body">
+
+            <label class="form-label field-req">สำนวนนี้มีประเด็นซับซ้อนยุ่งยากหรือไม่?</label>
+            <div class="d-flex gap-3 flex-wrap mb-2">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="complex72" id="complexNo" value="no" checked>
+                <label class="form-check-label" for="complexNo">ไม่ซับซ้อน</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="complex72" id="complexYes" value="yes">
+                <label class="form-check-label" for="complexYes">ซับซ้อน — ส่งคณะอนุกรรมการสนับสนุนเลขาธิการฯ (7.2-04)</label>
+              </div>
+            </div>
+            <div id="complexReasonBox" class="mb-3 d-none">
+              <label class="form-label field-req">เหตุผลที่ถือเป็นเรื่องยุ่งยากซับซ้อน</label>
+              <textarea class="form-control" id="complexReason" rows="2"
+                placeholder="ระบุเหตุผลที่ถือว่าสำนวนนี้มีประเด็นซับซ้อนยุ่งยาก"></textarea>
+              <div class="val-msg val-err" data-for="complexReason">กรุณาระบุเหตุผล</div>
+            </div>
+
+            <hr>
+
+            <label class="form-label field-req">เป็นกรณีเร่งด่วนหรือไม่?</label>
+            <div class="d-flex gap-3 flex-wrap mb-2">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="urgent72" id="urgentNo" value="no" checked>
+                <label class="form-check-label" for="urgentNo">ไม่เร่งด่วน</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="urgent72" id="urgentYes" value="yes">
+                <label class="form-check-label" for="urgentYes">เร่งด่วน — ขอรับรองบรรจุวาระด่วน (7.2-05)</label>
+              </div>
+            </div>
+            <div id="urgentReasonBox" class="mb-1 d-none">
+              <label class="form-label field-req">เหตุผลที่ถือเป็นกรณีเร่งด่วน</label>
+              <textarea class="form-control" id="urgentReason" rows="2"
+                placeholder="ระบุเหตุผลที่ถือว่าสำนวนนี้เป็นกรณีเร่งด่วน"></textarea>
+              <div class="val-msg val-err" data-for="urgentReason">กรุณาระบุเหตุผล</div>
+            </div>
+
+            <div class="law-note mt-2" id="routeOutcome" style="font-size:.8rem"></div>
+          </div>
+        </div>
+
+        <!-- ลายมือชื่อดิจิทัล -->
+        <div class="card card-ecmis mb-3">
+          <div class="card-header"><i class="fa-solid fa-file-signature"></i> ลายมือชื่อดิจิทัลบนรายงานการไต่สวนวินิจฉัยชี้มูล</div>
+          <div class="card-body">
+            <div class="sig-box" id="sigBox">
+              <i class="fa-solid fa-file-signature fa-2x mb-2" style="color:#7C8CA3"></i>
+              <div class="sig-name">ยังไม่ได้ลงนาม</div>
+              <div class="sig-meta">กดปุ่ม "ลงนามดิจิทัล" ที่แถบด้านล่าง</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ขวา -->
+      <div class="col-xl-6">
+        <div style="position:sticky;top:calc(var(--topbar-h) + 14px)">
+          <div class="doc-pane">
+            <div class="doc-toolbar">
+              <span class="name"><i class="fa-solid fa-file-lines"></i> รายงานการไต่สวนวินิจฉัยชี้มูล</span>
+              <button class="btn btn-sm btn-light" onclick="window.print()"><i class="fa-solid fa-print"></i></button>
+            </div>
+            <div class="doc-paper" id="docPaper"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="actionBarSlot"></div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="assets/ecmis-app.js"></script>
+  <script>
+    ECMIS.renderShell('72-03-secgen-sign.html');
+
+    const params = new URLSearchParams(location.search);
+    const kase = ECMIS.getCase(params.get('case') || '2201/2569');
+    const role = ECMIS.currentRole();
+    const M = ECMIS.mergeField;
+    const docType = ECMIS.DOC_TYPES.RULING;
+    const SEC = ECMIS.getRole('secgen');
+
+    const SEC_SIG_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 70">' +
+      '<path d="M8 50 C 30 10, 55 10, 70 40 S 110 65, 130 30 S 165 5, 185 35 S 205 55, 212 40" ' +
+      'fill="none" stroke="#0a2647" stroke-width="4" stroke-linecap="round"/></svg>');
+
+    document.getElementById('stBadge').innerHTML =
+      `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` +
+      `<span class="chip me-1">${docType.short}</span>` +
+      ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
+    document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72);
+
+    /* ---------- สรุปสำนวน ---------- */
+    document.getElementById('summary').innerHTML = [
+      ['เลขสำนวน', kase.id],
+      ['ฐานการรับเรื่อง', kase.legalBase], ['ผู้รับผิดชอบสำนวน', kase.owner],
+      ['หน่วยงาน', kase.ownerOrg], ['วันที่รับเรื่อง', ECMIS.thaiDate(kase.receivedDate)]
+    ].map(([k, v]) => `<div class="col-md-6"><span class="k">${k}:</span> <span class="v">${v}</span></div>`).join('');
+    document.getElementById('sAllegation').textContent = kase.allegation;
+    document.getElementById('sOpinions').innerHTML = (kase.chainOpinions || []).length
+      ? (kase.chainOpinions || []).map(o => `<div><span class="chip" style="font-size:.7rem">${ECMIS.getRole(o.roleId).title}</span> ${o.note}</div>`).join('')
+      : '<span class="text-muted">— ไม่มีข้อมูล —</span>';
+
+    /* ---------- toggles ---------- */
+    function complexYes(){ return document.getElementById('complexYes').checked; }
+    function urgentYes(){ return document.getElementById('urgentYes').checked; }
+
+    function renderRouteOutcome(){
+      let outcome;
+      if (complexYes()) outcome = 'ซับซ้อน → ส่งคณะอนุกรรมการสนับสนุนเลขาธิการฯ (7.2-04) ก่อน — หากเป็นกรณีเร่งด่วนด้วย จะพิจารณาความเร่งด่วนต่อหลังผ่านคณะอนุสนับสนุนฯ แล้ว';
+      else if (urgentYes()) outcome = 'ไม่ซับซ้อน + เร่งด่วน → ขอรับรองเหตุผลเร่งด่วนจาก ผอ.กบค. (7.2-05) — ข้ามคณะอนุกลั่นกรองฯ';
+      else outcome = 'ไม่ซับซ้อน + ไม่เร่งด่วน → เข้าคณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง (7.2-06) ตามเส้นทางปกติ';
+      document.getElementById('routeOutcome').innerHTML = `<strong>เส้นทางที่จะเกิดขึ้น:</strong> ${outcome}`;
+    }
+
+    document.querySelectorAll('[name="complex72"]').forEach(r => r.addEventListener('change', () => {
+      document.getElementById('complexReasonBox').classList.toggle('d-none', !complexYes());
+      renderRouteOutcome(); renderDoc();
+    }));
+    document.querySelectorAll('[name="urgent72"]').forEach(r => r.addEventListener('change', () => {
+      document.getElementById('urgentReasonBox').classList.toggle('d-none', !urgentYes());
+      renderRouteOutcome(); renderDoc();
+    }));
+    renderRouteOutcome();
+
+    /* ---------- เอกสาร ---------- */
+    let signed = false;
+    function renderDoc(){
+      const priorOpinions = (kase.chainOpinions || []).map(o =>
+        `<div>${ECMIS.getRole(o.roleId).title}: เห็นชอบ — ${M(o.note)}
+          <span style="font-size:11px;color:#666">(${ECMIS.toThaiDigits(ECMIS.thaiDate(o.date))})</span></div>`).join('');
+
+      document.getElementById('docPaper').innerHTML = `
+        <div class="doc-secret">ลับ</div>
+        <div class="doc-title">${docType.label}</div>
+        <div class="doc-sub">คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
+        <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
+        <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+        <div class="doc-row"><span class="k">ผู้รับผิดชอบสำนวน</span> ${M(kase.owner)}</div>
+        <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
+        <div class="doc-h">ผู้ถูกกล่าวหา</div>
+        ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}
+        <div class="doc-h">ข้อกล่าวหา</div>
+        <div class="doc-indent">${M(kase.allegation)}</div>
+        <div class="doc-h">ความเห็นตามสายอนุมัติ</div>
+        <div class="doc-indent">${priorOpinions || '<span class="text-muted">— ไม่มีข้อมูล —</span>'}</div>
+        <div class="doc-h">ความเห็นของเลขาธิการฯ</div>
+        <div class="doc-indent">
+          ${complexYes() ? `เห็นว่าสำนวนนี้มีประเด็นซับซ้อนยุ่งยาก — ${M(document.getElementById('complexReason').value.trim(), '……………')}<br>` : ''}
+          ${urgentYes() ? `เห็นว่าเป็นกรณีเร่งด่วน — ${M(document.getElementById('urgentReason').value.trim(), '……………')}` : ''}
+          ${(!complexYes() && !urgentYes()) ? 'เห็นควรพิจารณาตามเส้นทางปกติ ส่งคณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริงต่อไป' : ''}
+        </div>
+        <div class="doc-sign" id="docSign">
+          ${signed ? `<img class="doc-sig-img" src="${SEC_SIG_IMG}" alt="ลายมือชื่อ">
+          <span style="color:#166434"><i class="fa-solid fa-signature"></i> ลงนามดิจิทัลแล้ว</span>`
+            : 'ลงชื่อ <span class="doc-dots"></span>'}<br>
+          (${SEC.name})<br>${SEC.title}
+        </div>`;
+    }
+    renderDoc();
+
+    function updateSigBoxUI(isSigned){
+      const nowStr = new Date().toLocaleString('th-TH');
+      const sigBoxEl = document.getElementById('sigBox');
+      if (isSigned) {
+        sigBoxEl.className = 'sig-box signed';
+        sigBoxEl.innerHTML = `
+          <i class="fa-solid fa-circle-check fa-2x mb-2" style="color:#166434"></i>
+          <div class="sig-name">${SEC.name}</div>
+          <div class="sig-meta">${SEC.title}</div>
+          <div class="sig-meta">ลงนามเมื่อ ${nowStr}</div>
+          <div class="sig-cert mt-2"><i class="fa-solid fa-shield-halved me-1"></i>
+            ลายมือชื่ออิเล็กทรอนิกส์ผ่านการตรวจสอบ · SHA-256 · เอกสารถูกล็อกเป็น PDF</div>`;
+      } else {
+        sigBoxEl.className = 'sig-box';
+        sigBoxEl.innerHTML = `
+          <i class="fa-solid fa-file-signature fa-2x mb-2" style="color:#7C8CA3"></i>
+          <div class="sig-name">ยังไม่ได้ลงนาม</div>
+          <div class="sig-meta">กดปุ่ม "ลงนามดิจิทัล" ที่แถบด้านล่าง</div>`;
+      }
+      renderDoc();
+    }
+
+    /* ---------- actions ---------- */
+    function buildButtons(){
+      const b = [];
+      if (!signed) {
+        b.push({ act:'sign', label:'ลงนามดิจิทัล', icon:'fa-signature', cls:'btn-gold' });
+      } else {
+        b.push({ act:'clear_sign', label:'ลบลายเซ็น', icon:'fa-trash-can', cls:'btn-outline-danger' });
+        b.push({ act:'save', label:'บันทึกและส่งต่อ', icon:'fa-floppy-disk', cls:'btn-success' });
+      }
+      return b;
+    }
+    function renderActionButtons(){
+      document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons());
+      document.querySelectorAll('.action-bar [data-act]').forEach(b => b.addEventListener('click', () => handle(b.dataset.act)));
+    }
+    renderActionButtons();
+
+    const ROUTE_PAGE = {
+      IN_SUPPORT_SUB_72: '72-04-support-subcommittee.html',
+      PENDING_URGENT_72: '72-05-urgent-agenda.html',
+      IN_SCREENING_72: '72-06-screening.html'
+    };
+
+    function handle(act){
+      if (act === 'sign') {
+        ECMIS.signDialog(`${docType.label} เรื่องที่ ${kase.id}`, `${SEC.name} — ${SEC.title}`).then(res => {
+          if (!res.isConfirmed) return;
+          signed = true;
+          kase._pendingSig = res.value.sig;
+          updateSigBoxUI(true);
+          renderActionButtons();
+          ECMIS.toastOk('ลงนามดิจิทัลเรียบร้อยแล้ว กรุณาเลือกประเด็นซับซ้อน/เร่งด่วนแล้วกดปุ่ม "บันทึกและส่งต่อ"');
+        });
+        return;
+      }
+
+      if (act === 'clear_sign') {
+        ECMIS.confirmAction({
+          title: 'ยืนยันการลบลายเซ็น',
+          html: '<p>คุณต้องการยกเลิกลายเซ็นบนเอกสารนี้ใช่หรือไม่?</p>',
+          confirmText: 'ยืนยันลบลายเซ็น', danger: true
+        }).then(r => {
+          if (!r.isConfirmed) return;
+          signed = false;
+          kase._pendingSig = null;
+          updateSigBoxUI(false);
+          renderActionButtons();
+          ECMIS.toastOk('ลบลายเซ็นเรียบร้อยแล้ว');
+        });
+        return;
+      }
+
+      if (act === 'save') {
+        if (!signed) { ECMIS.toastWarn('กรุณาลงนามดิจิทัลก่อนบันทึกและส่งต่อ'); return; }
+
+        if (complexYes() && !document.getElementById('complexReason').value.trim()) {
+          document.querySelector('.val-msg[data-for="complexReason"]').classList.add('show');
+          ECMIS.toastWarn('กรุณาระบุเหตุผลที่ถือเป็นเรื่องยุ่งยากซับซ้อน'); return;
+        }
+        if (urgentYes() && !document.getElementById('urgentReason').value.trim()) {
+          document.querySelector('.val-msg[data-for="urgentReason"]').classList.add('show');
+          ECMIS.toastWarn('กรุณาระบุเหตุผลที่ถือเป็นกรณีเร่งด่วน'); return;
+        }
+
+        kase.complex72 = complexYes();
+        kase.urgent72 = urgentYes();
+        if (kase.complex72) kase.complexReason72 = document.getElementById('complexReason').value.trim();
+        if (kase.urgent72) kase.urgentReason72 = document.getElementById('urgentReason').value.trim();
+
+        const options = ECMIS.nextStates('PENDING_SECGEN_72', kase);
+        if (!options.length) { ECMIS.toastWarn('ไม่พบเส้นทางที่ถูกต้องสำหรับเงื่อนไขนี้'); return; }
+        const next = options[0];
+        const targetPage = ROUTE_PAGE[next.to] || '72-01-work-inbox.html';
+
+        ECMIS.confirmAction({
+          title: 'บันทึกและส่งต่อ',
+          html: `<p>สำนวน <strong>${kase.id}</strong> จะถูกส่งต่อไปยัง <strong>${ECMIS.STATUS[next.to].label}</strong></p>
+                 <div class="law-note">ระบบจะล็อกลายเซ็นดิจิทัลและบันทึกผลการชี้ประเด็นซับซ้อน/เร่งด่วนของเลขาธิการฯ</div>`,
+          confirmText: 'ยืนยันบันทึกและส่งต่อ'
+        }).then(res => {
+          if (!res.isConfirmed) return;
+          kase.status = next.to;
+          kase.signPhase = 'COMPLETE';
+          kase.secgenSignedAt72 = new Date().toLocaleString('th-TH');
+          ECMIS.saveCases();
+          ECMIS.toastOk('บันทึกและส่งต่อเรียบร้อยแล้ว');
+          setTimeout(() => location.href = targetPage + '?case=' + encodeURIComponent(kase.id), 1500);
+        });
+      }
+    }
+  </script>
+</body>
+
+</html>
