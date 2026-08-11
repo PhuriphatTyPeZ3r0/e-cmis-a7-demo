@@ -66,10 +66,37 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 7.2-07: เอกสารประกอบวาระ — เฉพาะกิจกรรมที่ 7.2 (RULING) -->
+                <div class="card card-ecmis mb-3 d-none" id="checklistCard72">
+                    <div class="card-header"><i class="fa-solid fa-list-check"></i> เอกสารประกอบวาระ</div>
+                    <div class="card-body">
+                        <div class="integration-note mb-3">
+                            ต้องเตรียมเอกสารประกอบวาระให้ครบก่อนจึงจะส่งหนังสือเชิญประชุมและเปิดวาระได้
+                        </div>
+                        <div id="checklistBox72"></div>
+                    </div>
+                </div>
+
+                <!-- 7.2-07: สถานะการเชิญประชุมกรรมการ — เฉพาะกิจกรรมที่ 7.2 (RULING) -->
+                <div class="card card-ecmis mb-3 d-none" id="boardInviteCard72">
+                    <div class="card-header"><i class="fa-solid fa-users-rectangle"></i> รายชื่อกรรมการ ป.ป.ท. — สถานะการเชิญประชุม</div>
+                    <div class="card-body">
+                        <table class="table tbl-ecmis mb-0">
+                            <thead>
+                                <tr>
+                                    <th>กรรมการ</th>
+                                    <th style="width:220px">สถานะการเชิญประชุม</th>
+                                </tr>
+                            </thead>
+                            <tbody id="boardTb72"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <!-- ขวา -->
-            <div class="col-xl-6">
+            <div class="col-xl-6" id="docCol">
                 <div style="position:sticky;top:calc(var(--topbar-h) + 14px)">
                     <ul class="nav nav-tabs" id="docTabs">
                         <li class="nav-item"><button class="nav-link active" data-doc="agenda">ระเบียบวาระ</button></li>
@@ -106,15 +133,31 @@
         const params = new URLSearchParams(location.search);
         const kase = ECMIS.getCase(params.get('case') || '1547/2568');
         const role = ECMIS.currentRole();
-        let docTab = 'agenda';
-
         /* หน้านี้เป็นสิทธิ์เฉพาะของเจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ (perm: create.agenda / create.invite)
            ตามผัง AS-IS กิจกรรมที่ 7 (V3.0) — บทบาทอื่นที่มองเห็นเมนูนี้ได้ (view.all) เข้ามาดูได้
-           แต่กดบรรจุวาระแทนไม่ได้ */
+           แต่กดบรรจุวาระแทนไม่ได้ — เจ้าของสิทธิ์เดียวกันทั้ง 7.1 และ 7.2 */
         const CAN_ACT_ROLE = 'board_sec';
+        /* กิจกรรมที่ 7.2 (วินิจฉัยชี้มูล) ใช้จอนี้ร่วมกับ 7.1 — ทำหน้าที่เดียวกันทุก
+           ประการ (นัดประชุม/จัดทำหนังสือเชิญ โดย board_sec) รวมจาก 72-07 เดิม
+           แต่ 7.2 ไม่มีฟิลด์ครั้งที่ประชุม/วาระที่/ชั้นความลับที่นี่ (72-08 มีฟิลด์
+           ของตัวเองอยู่แล้ว) จึงใช้ checklist + สถานะเชิญกรรมการรายคนแทน           */
+        const docType = ECMIS.DOC_TYPES[kase.docType];
+        const isRuling = docType.code === 'RULING';
 
         document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
-        document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status);
+        document.getElementById('stepper').innerHTML = isRuling
+            ? ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72)
+            : ECMIS.stepperHtml(kase.status);
+
+        if (isRuling) { initAgenda72(); } else { initAgenda71(); }
+
+        /* ============================================================
+           7.1 — โค้ดเดิมทั้งหมด ไม่ได้แก้ไขพฤติกรรม (ยกเว้นแก้บั๊กเดิมจุดเดียว
+           ที่ปุ่ม "ยืนยันบรรจุวาระ" ไม่เคยเปลี่ยน kase.status เป็น IN_MEETING
+           ตามที่ TRANSITIONS กำหนดไว้จริง (AGENDA_SET -> IN_MEETING ผ่าน
+           OPEN_AGENDA) — เห็นชัดเพราะกำลังแก้ handler เดียวกันนี้อยู่แล้ว)      */
+        function initAgenda71(){
+        let docTab = 'agenda';
 
         /* ---------- documents ---------- */
         function renderDoc() {
@@ -233,6 +276,7 @@
                 }).then(r => {
                     if (r.isConfirmed) {
                         kase.meetingNo = meetNo; kase.agendaNo = agendaNo;
+                        kase.status = 'IN_MEETING';
                         ECMIS.saveCases();
                         ECMIS.toastOk('บรรจุระเบียบวาระเรียบร้อย');
                         setTimeout(() => location.href = '08-board-resolution.html?case=' + encodeURIComponent(kase.id), 1400);
@@ -242,6 +286,98 @@
         }
 
         renderDoc(); renderActions();
+        } /* end initAgenda71 */
+
+        /* ============================================================
+           กิจกรรมที่ 7.2 — นัดประชุม/จัดทำหนังสือเชิญประชุมบอร์ด
+           รวม 7.2-07 เข้าจอเดียวกับ 7.1 — สิทธิ์เดียวกัน (board_sec) แต่ไม่มี
+           ฟิลด์ครั้งที่ประชุม/วาระที่/ชั้นความลับที่นี่ (72-08 มีฟิลด์ของตัวเอง)
+           ใช้ checklist เอกสารประกอบวาระ + สถานะเชิญกรรมการรายคนแทน ซ่อนคอลัมน์
+           เอกสาร mail-merge ฝั่งขวาทั้งหมดเพราะ 7.2-07 ไม่มีเอกสารที่ต้อง preview */
+        function initAgenda72(){
+            document.getElementById('agendaCard').classList.add('d-none');
+            document.getElementById('docCol').classList.add('d-none');
+            document.getElementById('checklistCard72').classList.remove('d-none');
+            document.getElementById('boardInviteCard72').classList.remove('d-none');
+
+            /* ---------- checklist เอกสารประกอบวาระ ---------- */
+            const CHECKLIST = ['รายงานวินิจฉัยชี้มูล', 'เอกสารประกอบ', 'ระเบียบวาระ'];
+            document.getElementById('checklistBox72').innerHTML = CHECKLIST.map((c, i) => `
+    <div class="form-check mb-1">
+      <input class="form-check-input checklist-item" type="checkbox" id="cl${i}">
+      <label class="form-check-label" for="cl${i}">${c}</label>
+    </div>`).join('');
+            function checklistComplete(){
+                return Array.from(document.querySelectorAll('.checklist-item')).every(el => el.checked);
+            }
+
+            /* ---------- คณะกรรมการ ป.ป.ท. 7 ท่าน — ชุดเดียวกับ 7.2-08 เพราะเป็นบอร์ดเดียวกัน ---------- */
+            const BOARD = [
+                { n: 'นายวิชัย ยุติธรรม', r: 'ประธานกรรมการ ป.ป.ท.', chair: true },
+                { n: 'นายสมบูรณ์ ธรรมรัฐ', r: 'กรรมการ ป.ป.ท.' },
+                { n: 'นางอรุณี พิทักษ์ชน', r: 'กรรมการ ป.ป.ท.' },
+                { n: 'นายเกรียงไกร สุจริต', r: 'กรรมการ ป.ป.ท.' },
+                { n: 'นางสาวรัตนา ยึดมั่น', r: 'กรรมการ ป.ป.ท.' },
+                { n: 'นายถาวร โปร่งใส', r: 'กรรมการ ป.ป.ท.' },
+                { n: 'เลขาธิการคณะกรรมการ ป.ป.ท.', r: 'กรรมการ ป.ป.ท. โดยตำแหน่ง' }
+            ];
+            document.getElementById('boardTb72').innerHTML = BOARD.map((b, i) => `
+    <tr data-i="${i}">
+      <td><strong>${b.n}</strong><br><small class="text-muted">${b.r}</small></td>
+      <td>
+        <select class="form-select form-select-sm invite-status">
+          <option value="NOT_SENT" selected>ยังไม่ส่ง</option>
+          <option value="SENT">ส่งแล้ว</option>
+          <option value="ACK">รับทราบแล้ว</option>
+        </select>
+      </td>
+    </tr>`).join('');
+
+            /* ---------- actions ---------- */
+            function buildButtons(){
+                return [{ act: 'open', label: 'ส่งหนังสือเชิญประชุมและเปิดวาระ', icon: 'fa-paper-plane', cls: 'btn-navy' }];
+            }
+            document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons());
+
+            function syncOpenButtonState(){
+                const btn = document.querySelector('.action-bar [data-act="open"]');
+                if (btn) btn.disabled = !checklistComplete();
+            }
+            document.querySelectorAll('.checklist-item').forEach(el => el.addEventListener('change', syncOpenButtonState));
+            syncOpenButtonState();
+
+            document.querySelectorAll('.action-bar [data-act]').forEach(b =>
+                b.addEventListener('click', () => handle(b.dataset.act)));
+
+            function handle(act){
+                if (act !== 'open') return;
+                if (!checklistComplete()) {
+                    ECMIS.toastWarn('กรุณาเตรียมเอกสารประกอบวาระให้ครบก่อนส่งหนังสือเชิญประชุม');
+                    return;
+                }
+                const inviteStatus = Array.from(document.querySelectorAll('#boardTb72 tr')).map((tr, i) => ({
+                    name: BOARD[i].n,
+                    status: tr.querySelector('.invite-status').value
+                }));
+
+                ECMIS.confirmAction({
+                    title: 'ส่งหนังสือเชิญประชุมและเปิดวาระ',
+                    html: `<p>สำนวน <strong>${kase.id}</strong> — เอกสารประกอบวาระครบถ้วนแล้ว</p>
+            <div class="law-note">ระบบจะส่งหนังสือเชิญประชุมให้กรรมการ ป.ป.ท. ทั้ง ${BOARD.length} ท่าน และเปิดวาระเข้าสู่
+            <strong>7.2-08 บันทึกมติที่ประชุม (วินิจฉัยชี้มูล)</strong></div>`,
+                    confirmText: 'ยืนยันส่งหนังสือเชิญประชุม'
+                }).then(res => {
+                    if (!res.isConfirmed) return;
+                    kase.inviteChecklist72 = CHECKLIST.slice();
+                    kase.inviteStatus72 = inviteStatus;
+                    kase.inviteSentDate72 = new Date().toISOString().slice(0, 10);
+                    kase.status = 'IN_MEETING_72';
+                    ECMIS.saveCases();
+                    ECMIS.toastOk('ส่งหนังสือเชิญประชุมและเปิดวาระเรียบร้อย');
+                    setTimeout(() => location.href = ECMIS.pageForCase72(kase) + '?case=' + encodeURIComponent(kase.id), 1400);
+                });
+            }
+        } /* end initAgenda72 */
     </script>
 </body>
 
