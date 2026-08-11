@@ -20,9 +20,9 @@
   <main class="app-main">
     <div class="page-head">
       <div>
-        <h1><i class="fa-solid fa-folder-open me-2"></i>ทะเบียนสำนวน</h1>
+        <h1><i class="fa-solid fa-folder-open me-2"></i>ทะเบียนสำนวน (กิจกรรมที่ 7.1 / 7.2)</h1>
       </div>
-      <span class="flow-ref ms-auto">ผัง: TO-BE 7.1 · TOR 7.3</span>
+      <span class="flow-ref ms-auto">ผัง: TO-BE 7.1 · TOR 7.3 · 7.2-12 ติดตามสถานะสำนวน</span>
     </div>
 
     <div class="card card-ecmis mb-3">
@@ -86,7 +86,7 @@
                 <th>ค้างที่</th>
                 <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i
                     class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
-                <th>อายุความ (ม.23)</th>
+                <th>อายุความ (ม.23) / รอบไต่สวน</th>
                 <th class="text-end"></th>
               </tr>
             </thead>
@@ -134,7 +134,7 @@
       if (qb && c.legalBase !== qb) return false;
 
       if (filter === 'late' && !(c.slaDays > ECMIS.effectiveSlaLimit(c))) return false;
-      if (filter === 'urgent' && !c.urgent) return false;
+      if (filter === 'urgent' && !(c.urgent || c.urgent72)) return false;
       if (filter === 'mine' && !ECMIS.canAct(c, role.id)) return false;
       if (filter === 'dup' && !c.dupWarning) return false;
       return true;
@@ -201,10 +201,15 @@
       tbody.innerHTML = paginated.length ? paginated.map(c => {
         const holder = ECMIS.STATUS[c.status] ? ECMIS.getRole(ECMIS.STATUS[c.status].owner) : null;
         const actionable = ECMIS.canAct(c, role.id);
+        /* กิจกรรมที่ 7.2 (วินิจฉัยชี้มูล): ไม่มีกรอบ ม.23 (60 วัน/2 ปี) เพราะพ้น
+           ขั้นไต่สวนเบื้องต้นไปแล้ว — แสดงรอบการไต่สวนแทน และต้องส่งไปหน้าจอ
+           ที่ถูกต้องตามสถานะของสำนวนกิจกรรมที่ 7.2 แทนหน้ารายงาน 213 ของ 7.1 */
+        const is72 = ECMIS.isCase72(c);
+        const target = is72 ? ECMIS.pageForCase72(c) : '03-report-213.html';
         return `<tr>
       <td>
         <span class="case-no">${c.id}</span>
-        ${c.urgent ? '<span class="st st-urgent ms-1">ด่วน</span>' : ''}
+        ${(c.urgent || c.urgent72) ? '<span class="st st-urgent ms-1">ด่วน</span>' : ''}
         ${c.dupWarning ? '<span class="st st-returned ms-1" title="ระบบตรวจพบสำนวนที่อาจซ้ำซ้อน"><i class="fa-solid fa-clone"></i> ซ้ำ?</span>' : ''}
       </td>
       <td style="max-width:280px" class="editable-subject clickable-row" data-id="${c.id}" title="ดับเบิ้ลคลิกเพื่อแก้ไขด่วน">
@@ -217,11 +222,13 @@
       <td style="font-size:.8rem">${holder ? holder.title : '—'}</td>
       <td>${ECMIS.slaBadge(c)}</td>
       <td style="font-size:.78rem">
-        <div>เริ่มไต่สวน: ${ECMIS.thaiDate(c.deadline60)}</div>
-        <div class="text-muted">ครบ 2 ปี: ${ECMIS.thaiDate(c.deadline2y)}</div>
+        ${is72
+            ? `<div>รอบการไต่สวน: ครั้งที่ ${c.round72 || 1}</div>`
+            : `<div>เริ่มไต่สวน: ${ECMIS.thaiDate(c.deadline60)}</div>
+               <div class="text-muted">ครบ 2 ปี: ${ECMIS.thaiDate(c.deadline2y)}</div>`}
       </td>
       <td class="text-end">
-        <a href="03-report-213.html?case=${encodeURIComponent(c.id)}"
+        <a href="${target}?case=${encodeURIComponent(c.id)}"
            class="btn btn-sm ${actionable ? 'btn-navy' : 'btn-outline-secondary'}">
           <i class="fa-regular ${actionable ? 'fa-pen-to-square' : 'fa-eye'} me-1"></i>${actionable ? 'ดำเนินการ' : 'ดูรายละเอียด'}
         </a>
