@@ -178,9 +178,34 @@
         const params = new URLSearchParams(location.search);
         const kase = ECMIS.getCase(params.get('case') || '1547/2568');
         const role = ECMIS.currentRole();
+        /* กิจกรรมที่ 7.2 (วินิจฉัยชี้มูล) ใช้จอนี้ร่วมกับ 7.1 — เป็นคณะอนุกรรมการ
+           ชุดเดียวกัน (คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง) เพียงแต่พิจารณา
+           คนละสเตจของสำนวน จึงยังใช้ Round-Robin/โควตา/องค์ประชุมร่วมกันได้เต็มที่
+           ต่างกันแค่ผลการพิจารณา — 7.1 มี 4 ทาง (เห็นพ้อง/เห็นต่าง/ขอข้อมูลเพิ่ม/
+           ไม่รับ) ส่วน 7.2 ตามผังมีเพียงทางเดียวคือ "เห็นควรบรรจุวาระ" (ไม่มี
+           ทรานซิชันสำหรับตีกลับ/ไม่รับที่ชั้นนี้ใน state machine ของ 7.2)         */
+        const docType = ECMIS.DOC_TYPES[kase.docType];
+        const isRuling = docType.code === 'RULING';
 
         document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
-        document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status);
+        document.getElementById('stepper').innerHTML = isRuling
+            ? ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72)
+            : ECMIS.stepperHtml(kase.status);
+
+        if (isRuling) {
+            document.querySelector('.page-head h1').innerHTML =
+                '<i class="fa-solid fa-users-viewfinder me-2"></i>คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง พิจารณา';
+            document.querySelector('.flow-ref').innerHTML = 'ผัง 7.2: 7.2-06 (คณะอนุกลั่นกรองฯ พิจารณา) → 7.2-07';
+        }
+
+        if (isRuling) { initScreening72(); } else { initScreening71(); }
+
+        /* ============================================================
+           7.1 — โค้ดเดิมทั้งหมด ไม่ได้แก้ไขพฤติกรรม (ยกเว้นแก้บั๊กเดิมจุดเดียว
+           ที่ปุ่ม "ส่งมติ" ไม่เคยเปลี่ยน kase.status เป็น AGENDA_SET ตามที่
+           TRANSITIONS ของ ecmis-app.js กำหนดไว้จริง — เห็นชัดเพราะกำลังแก้
+           handler เดียวกันนี้อยู่แล้วเพื่อแยกกิ่ง 7.2 ออกไป)                    */
+        function initScreening71(){
 
         /* ---------- โควตาคณะ 1-8 ---------- */
         const QUOTA = [
@@ -347,6 +372,12 @@
                     confirmText: 'ยืนยันส่งมติ'
                 }).then(r => {
                     if (r.isConfirmed) {
+                        /* T9→T10→T11 ตาม TRANSITIONS: IN_SCREENING -> AGENDA_SET (SCREENING_RESOLVED)
+                           เมื่อเห็นพ้อง/เห็นต่าง — ส่วน MORE/NOT_ACCEPT ยังไม่มี target status ที่ยืนยัน
+                           ชัดเจนใน state machine (ส่งกลับ work inbox แบบ view-only เหมือนเดิม) */
+                        if (res === 'AGREE' || res === 'DIFFER') kase.status = 'AGENDA_SET';
+                        kase.subCommittee = document.getElementById('manualTeam').value || assigned;
+                        ECMIS.saveCases();
                         ECMIS.toastOk('ส่งมติคณะอนุกลั่นกรองฯ เรียบร้อย');
                         setTimeout(() => location.href = next.p + '?case=' + encodeURIComponent(kase.id), 1400);
                     }
@@ -355,6 +386,195 @@
         }
 
         renderSubQuorum(); renderDoc();
+        } /* end initScreening71 */
+
+        /* ============================================================
+           กิจกรรมที่ 7.2 — คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง พิจารณา
+           รวม 7.2-06 เข้าจอเดียวกับ 7.1 — ใช้ quota/quorum UI ร่วมกัน แต่ตัด
+           มติ 4 ทางออก (state machine 7.2 มีทางเดียว) และตัดข้อความ "มติ
+           คณะอนุกรรมการ ... พิจารณาแล้วมีมติ" ในเอกสารออกตามดราฟท์ 7.2-06 เดิม   */
+        function initScreening72(){
+            const M = ECMIS.mergeField;
+
+            /* ---------- โควตาคณะ 1-8 (ร่วมกับ 7.1) ---------- */
+            const QUOTA = [
+                { n: 1, used: 40 }, { n: 2, used: 38 }, { n: 3, used: 22 }, { n: 4, used: 31 },
+                { n: 5, used: 40 }, { n: 6, used: 19 }, { n: 7, used: 27 }, { n: 8, used: 35 }
+            ];
+            const assigned = kase.subCommittee || ('คณะที่ ' + QUOTA.filter(q => q.used < 40).sort((a, b) => a.used - b.used)[0].n);
+
+            document.getElementById('quotaGrid').innerHTML = QUOTA.map(q => {
+                const full = q.used >= 40;
+                const isAssigned = assigned === ('คณะที่ ' + q.n);
+                const pct = Math.round(q.used / 40 * 100);
+                return `<div class="col-6 col-md-3">
+    <div class="card card-ecmis h-100 ${isAssigned ? 'border-2' : ''}"
+         style="${isAssigned ? 'border-color:#D0A830' : ''}">
+      <div class="card-body p-2 text-center">
+        <div style="font-size:.78rem;font-weight:600;color:var(--ecmis-navy)">
+          คณะที่ ${q.n} ${isAssigned ? '<i class="fa-solid fa-star" style="color:#D0A830"></i>' : ''}
+        </div>
+        <div style="font-size:1.05rem;font-weight:700;color:${full ? '#DB2626' : '#166434'}">${q.used}<span style="font-size:.7rem;color:#7C8CA3">/40</span></div>
+        <div class="progress" style="height:5px">
+          <div class="progress-bar ${full ? 'bg-danger' : 'bg-success'}" style="width:${pct}%"></div>
+        </div>
+        ${full ? '<div style="font-size:.66rem;color:#DB2626;margin-top:2px">เต็มโควตา</div>' : ''}
+      </div>
+    </div>
+  </div>`;
+            }).join('');
+
+            document.getElementById('assignedTeam').value = assigned + ' (Round-Robin อัตโนมัติ)';
+            document.getElementById('manualTeam').innerHTML =
+                '<option value="">— ไม่เปลี่ยนแปลง —</option>' +
+                QUOTA.map(q => `<option value="คณะที่ ${q.n}" ${q.used >= 40 ? 'disabled' : ''}>คณะที่ ${q.n}${q.used >= 40 ? ' (เต็มโควตา)' : ''}</option>`).join('');
+            document.getElementById('manualTeam').disabled = role.id !== 'dir_case';
+            document.getElementById('manualTeam').addEventListener('change', e => {
+                document.getElementById('manualReasonBox').classList.toggle('d-none', !e.target.value);
+                renderDoc();
+            });
+
+            /* ---------- องค์ประชุมคณะอนุฯ (ร่วมกับ 7.1) ---------- */
+            document.getElementById('subTotal').value = ECMIS.CONFIG.subMemberCount;
+            function renderSubQuorum(){
+                const total = Math.max(1, +document.getElementById('subTotal').value || ECMIS.CONFIG.subMemberCount);
+                const min = Math.ceil(total * ECMIS.CONFIG.subQuorumRatio);
+                const att = +document.getElementById('subQuorum').value || 0;
+                const ok = att >= min;
+                document.getElementById('subMin').value = `${min} คน (กึ่งหนึ่งของ ${total})`;
+                document.getElementById('subQuorumBox').innerHTML = `
+    <div class="rule ${ok ? 'pass' : 'fail'}">
+      <i class="fa-solid ${ok ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
+      <span><strong>องค์ประชุมคณะอนุกลั่นกรองฯ:</strong> เข้าประชุม ${att} จาก ${total} คน
+        — ต้องไม่น้อยกว่า ${min} คน (กึ่งหนึ่งโดยอนุโลมจาก ม.12)</span>
+    </div>
+    ${!ok ? `<div class="rule fail"><i class="fa-solid fa-ban"></i>
+      <span><strong>ระบบเตือน (ไม่บล็อก)</strong> — เนื่องจากเกณฑ์นี้ยังไม่มีฐานกฎหมายโดยตรง
+      ต่างจากบอร์ดใหญ่ที่ระบบบล็อกตาม ม.12</span></div>` : ''}`;
+            }
+            ['subTotal', 'subQuorum'].forEach(id => document.getElementById(id).addEventListener('input', renderSubQuorum));
+
+            /* ---------- ซ่อนมติ 4 ทาง — 7.2 มีทางเดียว ไม่ต้องเลือก ---------- */
+            const resBoxEl = document.querySelector('input[name="subRes"]').closest('.list-group');
+            if (resBoxEl) resBoxEl.previousElementSibling.classList.add('d-none');
+            if (resBoxEl) resBoxEl.classList.add('d-none');
+            const lawNotes = document.querySelectorAll('.law-note');
+            if (lawNotes[1]) lawNotes[1].innerHTML =
+                'ผลการพิจารณาของคณะอนุกลั่นกรองฯ เป็น <strong>"ความเห็น"</strong> ไม่ใช่คำชี้ขาด — ' +
+                'อำนาจไต่สวน/วินิจฉัยชี้มูลเป็นของคณะกรรมการ ป.ป.ท. ตาม ม.17(3)(4)';
+
+            /* ---------- เอกสาร ---------- */
+            function renderDoc(){
+                const team = document.getElementById('manualTeam').value || assigned;
+                const meetNo = document.getElementById('subMeetNo').value.trim();
+                const meetDate = ECMIS.thaiDate(document.getElementById('subMeetDate').value.trim());
+                const opinion = document.getElementById('subOpinion').value.trim();
+
+                document.getElementById('docPaper').innerHTML = `
+    <div class="doc-secret">ลับ</div>
+    <div class="doc-title">
+      <div class="doc-title-l1">รายงานความเห็น</div>
+      <div class="doc-title-l2">คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}</div>
+    </div>
+    <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}</div>
+
+    <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
+    <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+    <div class="doc-row"><span class="k">ผู้รับผิดชอบสำนวน</span> ${M(kase.owner)}</div>
+    <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
+
+    <div class="doc-body-indent">
+      <div class="doc-h">ผู้ถูกกล่าวหา</div>
+      ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}
+
+      <div class="doc-h">ข้อกล่าวหา</div>
+      <div class="doc-indent">${M(kase.allegation)}</div>
+
+      <div class="doc-h">ความเห็นของคณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง</div>
+      <div class="doc-indent">${M(opinion, '……………………………………………………………………………………')}</div>
+    </div>
+
+    <div class="doc-sign">
+      ลงชื่อ <span class="doc-dots"></span><br>
+      (${M('', 'ชื่อ-สกุล')})<br>
+      อนุกรรมการและเลขานุการ<br>
+      คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}
+    </div>
+    <div class="doc-secret-foot">ลับ</div>`;
+            }
+            ['subMeetNo', 'subMeetDate', 'subOpinion'].forEach(id =>
+                document.getElementById(id).addEventListener('input', renderDoc));
+
+            /* ---------- actions ---------- */
+            function buildButtons(){
+                return [
+                    { act: 'more', label: 'ขอข้อมูลเพิ่มเติม', icon: 'fa-circle-question', cls: 'btn-outline-secondary' },
+                    { act: 'done', label: 'เห็นควรบรรจุวาระ', icon: 'fa-check', cls: 'btn-navy' }
+                ];
+            }
+            document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons());
+            document.querySelectorAll('.action-bar [data-act]').forEach(b =>
+                b.addEventListener('click', () => handle(b.dataset.act)));
+
+            function validateOpinion(){
+                const op = document.getElementById('subOpinion');
+                if (!op.value.trim()) {
+                    op.classList.add('is-invalid-ecmis');
+                    document.querySelector('.val-msg[data-for="subOpinion"]').classList.add('show');
+                    ECMIS.toastWarn('กรุณาระบุความเห็นกลั่นกรองก่อนบันทึก');
+                    return false;
+                }
+                op.classList.remove('is-invalid-ecmis');
+                document.querySelector('.val-msg[data-for="subOpinion"]').classList.remove('show');
+                return true;
+            }
+
+            function handle(act){
+                if (!validateOpinion()) return;
+                const opinion = document.getElementById('subOpinion').value.trim();
+                const meetNo = document.getElementById('subMeetNo').value.trim();
+                const meetDate = document.getElementById('subMeetDate').value.trim();
+                const team = document.getElementById('manualTeam').value || assigned;
+
+                if (act === 'more') {
+                    ECMIS.confirmAction({
+                        title: 'ขอข้อมูลเพิ่มเติม',
+                        html: `<p>สำนวน <strong>${kase.id}</strong> — คณะอนุกลั่นกรองฯ ขอข้อมูล/เอกสารเพิ่มเติมจากผู้รับผิดชอบสำนวน</p>
+              <div class="law-note">สำนวนยังค้างอยู่ที่คณะอนุกลั่นกรองฯ เช่นเดิม ระบบจะบันทึกประเด็นที่ขอเพิ่มเติมและแจ้งเตือนเจ้าของสำนวน</div>`,
+                        confirmText: 'ยืนยันขอข้อมูลเพิ่มเติม'
+                    }).then(res => {
+                        if (!res.isConfirmed) return;
+                        kase.screeningOpinion72 = opinion;
+                        kase.subCommittee = team;
+                        kase.moreInfoRequested72 = { date: new Date().toISOString().slice(0, 10), note: opinion };
+                        ECMIS.saveCases();
+                        ECMIS.toastOk('บันทึกคำขอข้อมูลเพิ่มเติม และแจ้งเตือนผู้รับผิดชอบสำนวนแล้ว');
+                    });
+                    return;
+                }
+
+                if (act === 'done') {
+                    ECMIS.confirmAction({
+                        title: 'เห็นควรบรรจุวาระ',
+                        html: `<p>สำนวน <strong>${kase.id}</strong> — คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริงเห็นควรเสนอบรรจุระเบียบวาระ</p>
+              <div class="law-note">ระบบจะส่งสำนวนไปยัง <strong>ฝ่ายเลขานุการคณะกรรมการ</strong> เพื่อจัดทำหนังสือเชิญประชุมบอร์ด</div>`,
+                        confirmText: 'ยืนยันเห็นควรบรรจุวาระ'
+                    }).then(res => {
+                        if (!res.isConfirmed) return;
+                        kase.screeningOpinion72 = opinion;
+                        kase.screeningMeetNo72 = meetNo;
+                        kase.screeningMeetDate72 = meetDate;
+                        kase.subCommittee = team;
+                        kase.status = 'PENDING_INVITE_72';
+                        ECMIS.saveCases();
+                        ECMIS.toastOk('บันทึกความเห็นและส่งบรรจุวาระเรียบร้อย');
+                        setTimeout(() => location.href = ECMIS.pageForCase72(kase) + '?case=' + encodeURIComponent(kase.id), 1400);
+                    });
+                }
+            }
+
+            renderSubQuorum(); renderDoc();
+        } /* end initScreening72 */
     </script>
 </body>
 
