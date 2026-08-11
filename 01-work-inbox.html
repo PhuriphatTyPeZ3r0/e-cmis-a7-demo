@@ -308,18 +308,25 @@ function getSecgenActionBadge(c) {
 }
 
 function row(c){
-  const target = `${PAGE_FOR[role.id] || '02-case-register.html'}?case=${encodeURIComponent(c.id)}`;
+  /* สำนวนกิจกรรมที่ 7.2 (docType RULING) ต้องหาปลายทางจาก "สถานะของสำนวน"
+     ไม่ใช่จากบทบาทผู้ดูอย่างเดียว เพราะบทบาทเดียวกัน (เช่น section_head)
+     ไปคนละหน้าตามชนิดสำนวนที่ค้างอยู่ — ต่างจาก 7.1 ที่แต่ละบทบาทมีปลายทาง
+     ตายตัวหน้าเดียวเสมอ ดู ECMIS.PAGE_FOR_72 ในไฟล์ ecmis-app.js            */
+  const is72 = ECMIS.isCase72(c);
+  const page = is72 ? ECMIS.pageForCase72(c) : (PAGE_FOR[role.id] || '02-case-register.html');
+  const target = `${page}?case=${encodeURIComponent(c.id)}`;
   const isPendingAction = isMyPending(c);
 
-  const statusBadgeHtml = getSecgenActionBadge(c);
-  const act7St = ECMIS.getAct7Status(c);
-  const act7BadgeHtml = ECMIS.act7Badge(act7St);
+  const statusBadgeHtml = is72 ? ECMIS.statusBadge(c.status) : getSecgenActionBadge(c);
+  const act7BadgeHtml = is72
+    ? ECMIS.act7Badge(ECMIS.getAct7Status72(c), ECMIS.ACT7_STATUSES_72)
+    : ECMIS.act7Badge(ECMIS.getAct7Status(c));
 
   return `<tr>
     <td class="text-center">
       ${isPendingAction ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="ไม่มีสิทธิ์สั่งการกลุ่ม"></i>'}
     </td>
-    <td class="case-no">${c.id}${c.urgent?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
+    <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
     <td style="max-width:300px">
       <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
       <small class="text-muted d-block" style="font-size:0.75rem">${c.ownerOrg}</small>

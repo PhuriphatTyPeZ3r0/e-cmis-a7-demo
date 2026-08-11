@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คณะอนุกรรมการสนับสนุนเลขาธิการฯ กลั่นกรองสำนวนซับซ้อน | E-CMIS 7.2</title>
+  <link rel="icon" type="image/png" href="pacc_logo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="assets/ecmis-app.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <main class="app-main">
+    <div class="page-head">
+      <div>
+        <h1><i class="fa-solid fa-user-tie me-2"></i>คณะอนุกรรมการสนับสนุนเลขาธิการฯ กลั่นกรองสำนวนซับซ้อน</h1>
+      </div>
+      <div class="ms-auto text-end">
+        <span class="flow-ref">ผัง 7.2: 7.2-03 → 7.2-04 → 7.2-05 / 7.2-06</span>
+        <div class="mt-1" id="stBadge"></div>
+      </div>
+    </div>
+
+    <div class="card card-ecmis mb-3">
+      <div class="card-body pb-1" id="stepper"></div>
+    </div>
+
+    <div class="card card-ecmis mb-3">
+      <div class="card-header"><i class="fa-solid fa-people-group"></i> กลั่นกรองสำนวนซับซ้อนโดยคณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
+      <div class="card-body">
+        <div class="integration-note mb-3">
+          <strong>เหตุที่สำนวนมาถึงคณะนี้</strong> — เลขาธิการฯ พิจารณาแล้วเห็นว่าสำนวนมีประเด็นยุ่งยากซับซ้อน
+          (Cb-60) จึงส่งให้คณะอนุกรรมการสนับสนุนเลขาธิการฯ กลั่นกรองก่อนเข้าสู่ขั้นตอนบรรจุวาระ
+          — คณะนี้มี 2 คณะขนานกัน (ส่วนกลาง) เลือกคณะที่รับผิดชอบกลั่นกรองสำนวนนี้ด้านล่าง
+        </div>
+
+        <label class="form-label field-req">คณะอนุกรรมการสนับสนุนเลขาธิการฯ ที่รับผิดชอบกลั่นกรอง</label>
+        <div class="list-group mb-3" id="teamList"></div>
+
+        <label class="form-label field-req">ความเห็นกลั่นกรอง</label>
+        <textarea class="form-control" id="supportOpinion" rows="5"
+          placeholder="คณะอนุกรรมการสนับสนุนเลขาธิการฯ พิจารณาสำนวนแล้วเห็นว่า..."></textarea>
+        <div class="val-msg val-err" data-for="supportOpinion">กรุณาระบุความเห็นกลั่นกรองของคณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
+
+        <div class="law-note mt-3" style="font-size:.8rem">
+          เมื่อบันทึกความเห็นแล้ว ระบบจะส่งสำนวนกลับเข้าสายงานของเลขาธิการฯ ต่อโดยอัตโนมัติ —
+          ถ้าสำนวนนี้เป็นเรื่องเร่งด่วนพร้อมกัน (urgent72) จะไปที่ <strong>7.2-05 คำร้องขอบรรจุวาระด่วน</strong>
+          มิฉะนั้นจะไปที่ <strong>7.2-06 คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง</strong>
+        </div>
+      </div>
+    </div>
+
+    <div id="actionBarSlot"></div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="assets/ecmis-app.js"></script>
+  <script>
+    ECMIS.renderShell('72-04-support-subcommittee.html');
+
+    const params = new URLSearchParams(location.search);
+    const kase = ECMIS.getCase(params.get('case') || '2015/2569');
+    const role = ECMIS.currentRole();
+
+    document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
+    document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72);
+
+    /* ---------- เลือกคณะที่รับผิดชอบ (2 คณะ) ---------- */
+    const chair = ECMIS.getRole('sup_chair');
+    const sec = ECMIS.getRole('sup_sec');
+    const asst = ECMIS.getRole('sup_asst');
+    const memb = ECMIS.getRole('support_sub');
+    const TEAMS = [
+      { code: 'TEAM1', label: 'คณะที่ 1' },
+      { code: 'TEAM2', label: 'คณะที่ 2' }
+    ];
+    const savedTeam = kase.supportTeam72 || 'TEAM1';
+
+    document.getElementById('teamList').innerHTML = TEAMS.map(t => `
+  <label class="list-group-item d-flex gap-2 align-items-start">
+    <input class="form-check-input mt-1" type="radio" name="supportTeam" value="${t.code}" ${t.code === savedTeam ? 'checked' : ''}>
+    <span><strong>${t.label}</strong>
+      <br><small class="text-muted">ประธาน: ${chair.name} (${chair.title}) · เลขานุการ: ${sec.name} (${sec.title})
+      · ผู้ช่วยเลขานุการ: ${asst.name} (${asst.title}) · อนุกรรมการ: ${memb.name} (${memb.title})</small></span>
+  </label>`).join('');
+
+    if (kase.supportOpinion72) document.getElementById('supportOpinion').value = kase.supportOpinion72;
+
+    /* ---------- actions ---------- */
+    function buildButtons() {
+      return [
+        { act: 'save', label: 'บันทึกร่างความเห็น', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' },
+        { act: 'submit', label: 'ส่งกลับเลขาธิการฯ', icon: 'fa-paper-plane', cls: 'btn-navy' }
+      ];
+    }
+    document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons());
+    document.querySelectorAll('.action-bar [data-act]').forEach(b =>
+      b.addEventListener('click', () => handle(b.dataset.act)));
+
+    function selectedTeam() {
+      const el = document.querySelector('input[name="supportTeam"]:checked');
+      return el ? el.value : 'TEAM1';
+    }
+
+    function handle(act) {
+      const team = TEAMS.find(t => t.code === selectedTeam());
+      const op = document.getElementById('supportOpinion');
+
+      if (act === 'save') {
+        kase.supportTeam72 = team.code;
+        kase.supportOpinion72 = op.value.trim();
+        ECMIS.saveCases();
+        ECMIS.toastOk('บันทึกร่างความเห็นเรียบร้อย');
+        return;
+      }
+
+      if (act === 'submit') {
+        if (!op.value.trim()) {
+          op.classList.add('is-invalid-ecmis');
+          document.querySelector('.val-msg[data-for="supportOpinion"]').classList.add('show');
+          ECMIS.toastWarn('กรุณาระบุความเห็นกลั่นกรองก่อนส่งกลับเลขาธิการฯ');
+          return;
+        }
+        op.classList.remove('is-invalid-ecmis');
+        document.querySelector('.val-msg[data-for="supportOpinion"]').classList.remove('show');
+
+        const isUrgent = !!kase.urgent72;
+        const next = isUrgent
+          ? { p: '72-05-urgent-agenda.html', t: 'ส่งต่อคำร้องขอบรรจุวาระด่วน (7.2-05)' }
+          : { p: '07-subcommittee-screening.html', t: 'ส่งต่อคณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง (7.2-06)' };
+
+        ECMIS.confirmAction({
+          title: 'ส่งความเห็นกลับเลขาธิการฯ',
+          html: `<p>สำนวน <strong>${kase.id}</strong> — กลั่นกรองโดย <strong>${team.label}</strong></p>
+            <div class="law-note">${next.t}</div>`,
+          confirmText: 'ยืนยันส่งกลับ'
+        }).then(res => {
+          if (!res.isConfirmed) return;
+          kase.supportTeam72 = team.code;
+          kase.supportOpinion72 = op.value.trim();
+          kase.status = isUrgent ? 'PENDING_URGENT_72' : 'IN_SCREENING_72';
+          ECMIS.saveCases();
+          ECMIS.toastOk('ส่งความเห็นกลับเลขาธิการฯ เรียบร้อย');
+          setTimeout(() => location.href = next.p + '?case=' + encodeURIComponent(kase.id), 1400);
+        });
+      }
+    }
+  </script>
+</body>
+
+</html>

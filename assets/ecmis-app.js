@@ -132,6 +132,13 @@ const DOC_TYPES = {
   '644': {
     code:'644', label:'รายงานการไต่สวนข้อเท็จจริง (แบบ ปปท. ๖-๔๔)', short:'รายงาน 644',
     sla:{ waitSign:15, completeSign:15 }
+  },
+  /* กิจกรรมที่ 7.2 — เอกสารรายงานการไต่สวนวินิจฉัยชี้มูล (ต่างจาก 644 ตรงที่
+     644 คือรายงาน "ไต่สวนข้อเท็จจริง" ต้นทาง ส่วน RULING คือรายงานที่คณะ
+     กรรมการ ป.ป.ท. ให้ความเห็นชอบและวินิจฉัยชี้มูลแล้วตาม ม.24 วรรคท้าย)   */
+  RULING: {
+    code:'RULING', label:'รายงานการไต่สวนวินิจฉัยชี้มูล (ม.24 วรรคท้าย)', short:'รายงานวินิจฉัยชี้มูล',
+    sla:{ waitSign:15, completeSign:15 }
   }
 };
 /* ระยะที่สำนวนกำลังอยู่ในชั้นเลขาธิการฯ — ใช้เลือกเพดาน SLA ที่ถูกต้อง */
@@ -248,7 +255,35 @@ const STATUS = {
   RESOLVED_PENDING: { label:'มีมติแล้ว รอล็อก PDF/ลงนาม',  cls:'st-pending',  owner:'board_sec' },
   RESOLVED:         { label:'มีมติแล้ว',                  cls:'st-done',     owner:'board_sec' },
   DISPATCHING:      { label:'ส่งมติออกแล้ว รอไฟล์ลงนามกลับ', cls:'st-pending',  owner:'owner' },
-  CLOSED:           { label:'ปิดสำนวน',                   cls:'st-closed',   owner:null }
+  CLOSED:           { label:'ปิดสำนวน',                   cls:'st-closed',   owner:null },
+
+  /* =========================================================================
+     กิจกรรมที่ 7.2 — การพิจารณาชั้นไต่สวนวินิจฉัยชี้มูล
+     ต่อเนื่องจากมติรับไว้ไต่สวนข้อเท็จจริงและออกคำสั่ง ม.24 (จบ 7.1 ที่ CLOSED)
+     อ้างอิง As-Is กิจกรรมที่ 7 มติคณะกรรมการ-V3.0.drawio หน้า "AS-IS ไต่สวน"
+     ฐานกฎหมาย: ม.17(3)(4)(5)(6) · ม.19 (ข)(1) · ม.19/2 · ม.24 วรรคท้าย ·
+                ม.32 · ม.38 · ม.44 (law_pacc_68.pdf)
+     บทบาท/สิทธิ์ที่ใช้ล้วนมีอยู่แล้วใน ROLES/PERM_DEFS (act รวม '7.2' และ
+     perms เช่น sign.ruling, present.board.ruling, ack.resolution,
+     dispatch.nacc, track.discipline ถูกเตรียมไว้ล่วงหน้าแล้ว) จึงไม่ต้อง
+     เพิ่มบทบาทใหม่ ========================================================= */
+  PENDING_SECTION_72:  { label:'รอหัวหน้ากลุ่มงาน (รายงานวินิจฉัยชี้มูล)',      cls:'st-pending', owner:'section_head' },
+  PENDING_DIRECTOR_72: { label:'รอ ผอ.กอง / ผอ.เขต (รายงานวินิจฉัยชี้มูล)',      cls:'st-pending', owner:'director' },
+  PENDING_DEPUTY_72:   { label:'รอผู้ช่วย / รองเลขาธิการฯ (รายงานวินิจฉัยชี้มูล)', cls:'st-pending', owner:'deputy' },
+  RETURNED_72:         { label:'ตีกลับเจ้าของสำนวน (รายงานวินิจฉัยชี้มูล)',      cls:'st-returned', owner:'owner' },
+  PENDING_SECGEN_72:   { label:'รอเลขาธิการฯ พิจารณา / ลงนาม (วินิจฉัยชี้มูล)',   cls:'st-pending', owner:'secgen' },
+  IN_SUPPORT_SUB_72:   { label:'ส่งคณะอนุสนับสนุนเลขาธิการฯ พิจารณาแล้ว',        cls:'st-review',  owner:'support_sub' },
+  PENDING_URGENT_72:   { label:'รอ ผอ.กบค. รับรองเหตุผลเร่งด่วน',                cls:'st-urgent',  owner:'dir_case' },
+  PENDING_CHAIRMAN_URGENT_72: { label:'รอประธานฯ ลงนามมอบหมาย / บรรจุวาระด่วน',  cls:'st-pending', owner:'chairman' },
+  IN_SCREENING_72:     { label:'อยู่คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง',      cls:'st-review',  owner:'subcommittee' },
+  PENDING_INVITE_72:   { label:'รอจัดทำหนังสือเชิญประชุม',                       cls:'st-pending', owner:'board_sec' },
+  IN_MEETING_72:       { label:'อยู่ระหว่างประชุมบอร์ด (วินิจฉัยชี้มูล)',         cls:'st-review',  owner:'board_sec' },
+  RESOLVED_PENDING_72: { label:'มีมติแล้ว รอจัดทำรายงานวินิจฉัยชี้มูล',          cls:'st-pending', owner:'affairs' },
+  PENDING_SIGN_RULING_72: { label:'รอประธานฯ ลงนามรายงานวินิจฉัยชี้มูล',         cls:'st-pending', owner:'chairman' },
+  PENDING_AREA_NOTICE_72: { label:'รอพื้นที่บันทึกรับมติ / แจ้งผล (ม.32)',       cls:'st-pending', owner:'owner' },
+  DISPATCHING_NACC_72:    { label:'รอส่งเรื่องให้ ป.ป.ช. (นอกอำนาจ ม.19)',       cls:'st-pending', owner:'owner' },
+  PENDING_DISPATCH_GUILTY_72: { label:'ชี้มูลความผิดแล้ว รอส่งดำเนินคดี',        cls:'st-review',  owner:'affairs' },
+  CLOSED_72: { label:'ปิดสำนวน — จบกระบวนการกิจกรรมที่ 7',                      cls:'st-closed',  owner:null }
 };
 
 /* =========================================================================
@@ -334,7 +369,87 @@ const TRANSITIONS = [
     ref:'G5 มติ 1/2', note:'รับไว้ไต่สวน (ยิงกลับ กจ.5) หรือไม่รับไว้ไต่สวน (ปิดสำนวน)' },
   { from:'RESOLVED', to:'AGENDA_SET', event:'REVISE_RESOLUTION', actor:'affairs',
     ref:'EX-03 X3.3', guard:k => !!k.newAgendaNo,
-    note:'ขอแก้ไข/ทบทวนมติ — มติเดิมไม่ถูกลบ ผูกคู่กับมติใหม่' }
+    note:'ขอแก้ไข/ทบทวนมติ — มติเดิมไม่ถูกลบ ผูกคู่กับมติใหม่' },
+
+  /* =========================================================================
+     กิจกรรมที่ 7.2 — การพิจารณาชั้นไต่สวนวินิจฉัยชี้มูล
+     รับต่อจากสำนวนที่ 7.1 CLOSED ด้วยมติรับไว้ไต่สวน (ออกคำสั่ง ม.24 แล้ว)
+     ความยุ่งยากซับซ้อน (complex72) และเร่งด่วน (urgent72) เป็น 2 แกนอิสระ
+     ที่ตัดกัน — เลขาธิการฯ ชี้ทั้งสองแกนพร้อมกันตอนลงนาม (7.2-03) แล้วระบบ
+     จึงคำนวณเส้นทางถัดไปให้เองจากค่าทั้งสองแกน                              */
+  { from:'CLOSED', to:'PENDING_SECTION_72', event:'SUBMIT_RULING_REPORT', actor:'owner',
+    ref:'7.2-A', guard:k => k.resolution === 'ACCEPT_S24P1' || k.resolution === 'ACCEPT_S24P3',
+    note:'คณะไต่สวน/คณะพนักงานไต่สวนตาม ม.24 เสนอรายงานการไต่สวนวินิจฉัยชี้มูล' },
+
+  /* ── สายอนุมัติ 3 ชั้นก่อนถึงเลขาธิการฯ (บุคคลเดิมกับสายอนุมัติ 7.1 แต่คนละ
+     ขอบเขต — ในนี้อยู่ภายในกิจกรรมที่ 7.2 แล้ว ไม่ใช่ UPSTREAM) ────────── */
+  { from:'PENDING_SECTION_72', to:'PENDING_DIRECTOR_72', event:'PROPOSE_72', actor:'section_head', ref:'7.2-02' },
+  { from:'PENDING_SECTION_72', to:'RETURNED_72', event:'RETURN_72', actor:'section_head', ref:'7.2-02 EX' },
+  { from:'PENDING_DIRECTOR_72', to:'PENDING_DEPUTY_72', event:'PROPOSE_72', actor:'director', ref:'7.2-02' },
+  { from:'PENDING_DIRECTOR_72', to:'RETURNED_72', event:'RETURN_72', actor:'director', ref:'7.2-02 EX' },
+  { from:'PENDING_DEPUTY_72', to:'PENDING_SECGEN_72', event:'PROPOSE_72', actor:'deputy', ref:'7.2-02' },
+  { from:'PENDING_DEPUTY_72', to:'RETURNED_72', event:'RETURN_72', actor:'deputy', ref:'7.2-02 EX' },
+  { from:'RETURNED_72', to:'PENDING_SECTION_72', event:'RESUBMIT_72', actor:'owner', ref:'7.2-02 EX' },
+
+  /* ── เลขาธิการฯ ลงนาม แล้วชี้ 2 แกน: ซับซ้อนหรือไม่ / เร่งด่วนหรือไม่ ──── */
+  { from:'PENDING_SECGEN_72', to:'IN_SUPPORT_SUB_72', event:'SIGN_COMPLEX_72', actor:'secgen',
+    ref:'7.2-03 · Cb-60', guard:k => !!k.complex72,
+    note:'สำนวนมีประเด็นซับซ้อนยุ่งยาก — เข้าคณะอนุกรรมการสนับสนุนเลขาธิการฯ ก่อน' },
+  { from:'PENDING_SECGEN_72', to:'PENDING_URGENT_72', event:'SIGN_URGENT_72', actor:'secgen',
+    ref:'7.2-03→7.2-05', guard:k => !k.complex72 && !!k.urgent72 },
+  { from:'PENDING_SECGEN_72', to:'IN_SCREENING_72', event:'SIGN_NORMAL_72', actor:'secgen',
+    ref:'7.2-03→7.2-06', guard:k => !k.complex72 && !k.urgent72 },
+  { from:'IN_SUPPORT_SUB_72', to:'PENDING_URGENT_72', event:'SUPPORT_DONE_URGENT_72', actor:'support_sub',
+    ref:'7.2-04→7.2-05', guard:k => !!k.urgent72 },
+  { from:'IN_SUPPORT_SUB_72', to:'IN_SCREENING_72', event:'SUPPORT_DONE_72', actor:'support_sub',
+    ref:'7.2-04→7.2-06', guard:k => !k.urgent72 },
+
+  /* ── เส้นทางเร่งด่วน — ข้ามคณะอนุกลั่นกรองข้อเท็จจริง (7.2-06) ─────────── */
+  { from:'PENDING_URGENT_72', to:'PENDING_CHAIRMAN_URGENT_72', event:'URGENT_CERTIFY_72', actor:'dir_case',
+    ref:'7.2-05', note:'ผอ.กบค. รับรองเหตุผลเร่งด่วน' },
+  { from:'PENDING_CHAIRMAN_URGENT_72', to:'PENDING_INVITE_72', event:'AGENDA_URGENT_72', actor:'chairman',
+    ref:'7.2-05→7.2-07', note:'ประธานฯ ลงนามมอบหมาย/บรรจุวาระด่วน — Bypass 7.2-06' },
+
+  /* ── เส้นทางปกติ ─────────────────────────────────────────────────────── */
+  { from:'IN_SCREENING_72', to:'PENDING_INVITE_72', event:'SCREEN_DONE_72', actor:'subcommittee',
+    ref:'7.2-06→7.2-07' },
+
+  /* ── นัดประชุม → ประชุม → บันทึกมติ ─────────────────────────────────── */
+  { from:'PENDING_INVITE_72', to:'IN_MEETING_72', event:'OPEN_MEETING_72', actor:'board_sec', ref:'7.2-07→7.2-08' },
+  { from:'IN_MEETING_72', to:'RESOLVED_PENDING_72', event:'RECORD_RESOLUTION_72', actor:'board_sec',
+    ref:'7.2-08', guard:k => !!k.quorumOk72,
+    note:'องค์ประชุมไม่ครบ ระบบต้องบล็อกการบันทึกมติ (เช่นเดียวกับ 7.1 T14→G5)' },
+
+  /* ── หลังมติ — จัดทำ/ลงนามรายงานวินิจฉัยชี้มูล แล้วแยกตามมติ 4 แขนง ──── */
+  { from:'RESOLVED_PENDING_72', to:'PENDING_SIGN_RULING_72', event:'DRAFT_RULING_72', actor:'affairs', ref:'7.2-09' },
+  { from:'PENDING_SIGN_RULING_72', to:'PENDING_SECTION_72', event:'SIGN_MORE_INVESTIGATE_72', actor:'chairman',
+    ref:'7.2-09 · ม.24 วรรคท้าย', guard:k => k.resolution72 === 'MORE_INVESTIGATE_72',
+    note:'"จะสั่งให้ไต่สวนเพิ่มเติม หรือจะไต่สวนเองใหม่ทั้งหมดหรือบางส่วนก็ได้" — วนกลับเข้าสายอนุมัติใหม่ทั้งสาย (round72++)' },
+  { from:'PENDING_SIGN_RULING_72', to:'PENDING_AREA_NOTICE_72', event:'SIGN_NO_MERIT_72', actor:'chairman',
+    ref:'7.2-09→7.2-10 · ม.32', guard:k => k.resolution72 === 'NO_MERIT_72' },
+  { from:'PENDING_SIGN_RULING_72', to:'DISPATCHING_NACC_72', event:'SIGN_FORWARD_NACC_72', actor:'chairman',
+    ref:'7.2-09→7.2-11 · ม.19(ข)(1)', guard:k => k.resolution72 === 'FORWARD_NACC' },
+  { from:'PENDING_SIGN_RULING_72', to:'PENDING_DISPATCH_GUILTY_72', event:'SIGN_GUILTY_72', actor:'chairman',
+    ref:'7.2-09→7.2-11 · ม.17(3)(4)·ม.38·ม.44', guard:k => k.resolution72 === 'GUILTY_72' },
+
+  /* ── ปิดกระบวนการ 7.2 ────────────────────────────────────────────────
+     ยุติเรื่อง (ม.32) ปิดได้ทันทีเมื่อบันทึกรับมติ/แจ้งผลแล้ว ไม่ต้องรอไฟล์
+     สแกนกลับเพราะเป็นการแจ้งผู้ถูกกล่าวหา ไม่ใช่การส่งสำนวนออกนอกองค์กร   */
+  { from:'PENDING_AREA_NOTICE_72', to:'CLOSED_72', event:'NOTICE_RECORDED_72', actor:'owner',
+    ref:'7.2-10 · ม.32', guard:k => !!k.noticeSentDate72,
+    note:'บันทึกรับมติ + แจ้งผู้ถูกกล่าวหาแล้วไม่ช้ากว่า 15 วันนับแต่วันที่คณะกรรมการ ป.ป.ท. มีมติ' },
+  { from:'DISPATCHING_NACC_72', to:'CLOSED_72', event:'NACC_DISPATCHED_72', actor:'owner',
+    ref:'7.2-11 · ม.19(ข)(1)', guard:k => !!k.signedScanUploaded72,
+    note:'ส่งเรื่องพร้อมสำนวนให้ ป.ป.ช. ภายใน 15 วันนับแต่วันที่ได้รับเรื่อง — ต้องอัปโหลดไฟล์สแกนฉบับนำส่งกลับ' },
+  /* [ออกแบบ] เส้นทางชี้มูลมี 2 สายที่เป็นอิสระต่อกันและอาจเกิดพร้อมกันได้
+     (ผังระบุ "หากมติแยกเฉพาะประเด็นอาญา ส่วนวินัยให้ ป.ป.ท. ดำเนินการต่อ
+     ขนานกันไป") จึงเก็บความคืบหน้าแต่ละสายไว้ที่ kase.criminalTrack72 /
+     kase.disciplinaryTrack72 แยกจาก status หลัก — ปิดสำนวนได้ก็ต่อเมื่อ
+     ทุกสายที่ถูกเลือก (ตาม guiltyCriminal72/guiltyDiscipline72) เสร็จสิ้น
+     ครบถ้วนแล้วเท่านั้น (ดู bothTracksDone72) — TC-057/SC-07                */
+  { from:'PENDING_DISPATCH_GUILTY_72', to:'CLOSED_72', event:'CLOSE_GUILTY_72', actor:'affairs',
+    ref:'7.2-11 · ม.38 · ม.44', guard:k => bothTracksDone72(k),
+    note:'ปิดสำนวนได้เมื่อสายอาญา (ถ้ามี) ส่งอัยการแล้ว และสายวินัย (ถ้ามี) ส่งหน่วยงานต้นสังกัดแล้ว' }
 ];
 
 /* ทรานซิชันที่ตรงกับ from→to (อาจมีหลายรายการต่างกันที่ guard) */
@@ -401,6 +516,36 @@ const STATUS_STEP = {
 /* ---- ตัวช่วยเรื่องขอบเขต ---- */
 function isUpstreamRole(roleId){ const r = getRole(roleId); return r.scope === 'UPSTREAM'; }
 function isUpstreamCase(kase){ const s = STATUS[kase.status]; return !!(s && s.scope === 'UPSTREAM'); }
+
+/* ---- สำนวนกิจกรรมที่ 7.2 (วินิจฉัยชี้มูล) หรือไม่ — ใช้ docType เป็นเกณฑ์เดียว
+   เพราะ CASES ทุกรายการถูกเติม docType ให้ครบแล้ว (ค่าเริ่มต้น '213') และ
+   เป็นฟิลด์เดียวที่แยก 213/644 (7.1) ออกจาก RULING (7.2) ได้ตรงที่สุด        */
+function isCase72(kase){ return !!kase && kase.docType === 'RULING'; }
+
+/* หน้าจอปลายทางตามสถานะของสำนวนกิจกรรมที่ 7.2 — ใช้ค้นแทน role-based PAGE_FOR
+   ของ 7.1 เพราะบทบาทเดียวกัน (เช่น section_head) ต้องไปคนละหน้าตามชนิดสำนวน
+   ที่ค้างอยู่ (source 213/644 ของ 7.1 → 03-report-213.html แบบอ่านอย่างเดียว
+   แต่ RULING ของ 7.2 → 04-approval-review.html ที่ต้องดำเนินการจริง)
+   72-04/72-05/72-08 ยังคงแยกหน้าเดิม (ดูผลวิเคราะห์การยุบรวมหน้าจอ 7.1/7.2)
+   ส่วน 72-09/72-10/72-11 ยังไม่ได้สร้าง จึงชี้ไปทะเบียนสำนวน (อ่านอย่างเดียว)
+   ไปพลางก่อน — TODO: แก้เมื่อสร้างหน้าจอเหล่านั้นแล้ว                        */
+const PAGE_FOR_72 = {
+  PENDING_SECTION_72:'04-approval-review.html', PENDING_DIRECTOR_72:'04-approval-review.html',
+  PENDING_DEPUTY_72:'04-approval-review.html', RETURNED_72:'04-approval-review.html',
+  PENDING_SECGEN_72:'04-approval-review.html',
+  IN_SUPPORT_SUB_72:'72-04-support-subcommittee.html',
+  PENDING_URGENT_72:'72-05-urgent-agenda.html', PENDING_CHAIRMAN_URGENT_72:'72-05-urgent-agenda.html',
+  IN_SCREENING_72:'07-subcommittee-screening.html',
+  PENDING_INVITE_72:'10-agenda-set.html',
+  IN_MEETING_72:'72-08-board-resolution.html',
+  RESOLVED_PENDING_72:'02-case-register.html',    /* TODO: 72-09 ยังไม่ได้สร้าง */
+  PENDING_SIGN_RULING_72:'02-case-register.html', /* TODO: 72-09 ยังไม่ได้สร้าง */
+  PENDING_AREA_NOTICE_72:'02-case-register.html', /* TODO: 72-10 ยังไม่ได้สร้าง */
+  DISPATCHING_NACC_72:'02-case-register.html',    /* TODO: 72-11 ยังไม่ได้สร้าง */
+  PENDING_DISPATCH_GUILTY_72:'02-case-register.html', /* TODO: 72-11 ยังไม่ได้สร้าง */
+  CLOSED_72:'02-case-register.html'
+};
+function pageForCase72(kase){ return PAGE_FOR_72[kase.status] || '02-case-register.html'; }
 
 /* ------------------------------------------------- G1 — เงื่อนไขที่ 2
    ผัง P2 โหนด g1 อ่านว่า "เป็นเรื่องยุ่งยากซับซ้อน **หรือความเห็นใน
@@ -613,8 +758,37 @@ function getAct7Status(c) {
   return 'รอเลขาธิการ ป.ป.ท. ลงความเห็น';
 }
 
-function act7Badge(statusName) {
-  const item = ACT7_STATUSES.find(s => s.name === statusName);
+/* คู่ขนานของ ACT7_STATUSES/getAct7Status สำหรับกิจกรรมที่ 7.2 (วินิจฉัยชี้มูล)
+   ใช้ 4 Section เดิม (เสนอกลั่นกรอง/บรรจุวาระ → พิจารณาโดยบอร์ด → หลังมติ →
+   ส่งออก/เสร็จสิ้น) แต่แยกตารางข้อความเพราะสถานะ (STATUS keys) คนละชุดกับ
+   7.1 โดยสิ้นเชิง — เขียนแยกจาก getAct7Status(7.1) เพื่อไม่ให้กระทบพฤติกรรม
+   เดิมของ 7.1 เลย ไม่ใช่การรวมโค้ดแบบเสี่ยง                                */
+const ACT7_STATUSES_72 = [
+  { section: 1, name: 'อยู่ระหว่างสายอนุมัติ/เลขาธิการฯ พิจารณา (วินิจฉัยชี้มูล)', icon: 'fa-user-pen' },
+  { section: 1, name: 'อยู่ระหว่างกลั่นกรอง/เตรียมวาระ (วินิจฉัยชี้มูล)', icon: 'fa-users-gear' },
+  { section: 2, name: 'อยู่ระหว่างพิจารณาโดยคณะกรรมการ ป.ป.ท. (วินิจฉัยชี้มูล)', icon: 'fa-gavel' },
+  { section: 2, name: 'บอร์ดมีมติแล้ว - รอจัดทำรายงานวินิจฉัยชี้มูล', icon: 'fa-file-signature' },
+  { section: 3, name: 'รอส่งดำเนินการ/แจ้งผลตามมติวินิจฉัยชี้มูล', icon: 'fa-share-nodes' },
+  { section: 4, name: 'ปิดสำนวน (กิจกรรมที่ 7.2)', icon: 'fa-circle-check' }
+];
+const ACT7_STAGE_72 = {
+  PENDING_SECTION_72:0, PENDING_DIRECTOR_72:0, PENDING_DEPUTY_72:0, RETURNED_72:0, PENDING_SECGEN_72:0,
+  IN_SUPPORT_SUB_72:1, PENDING_URGENT_72:1, PENDING_CHAIRMAN_URGENT_72:1, IN_SCREENING_72:1, PENDING_INVITE_72:1,
+  IN_MEETING_72:2,
+  RESOLVED_PENDING_72:3, PENDING_SIGN_RULING_72:3,
+  PENDING_AREA_NOTICE_72:4, DISPATCHING_NACC_72:4, PENDING_DISPATCH_GUILTY_72:4,
+  CLOSED_72:5
+};
+function getAct7Status72(c) {
+  if (c && c.act7Status72) return c.act7Status72;
+  const idx = ACT7_STAGE_72[c && c.status];
+  return ACT7_STATUSES_72[idx !== undefined ? idx : 0].name;
+}
+
+/* list เป็น optional — ไม่ใส่ = ค้นใน ACT7_STATUSES (7.1) เหมือนเดิมทุกประการ
+   ใส่ ACT7_STATUSES_72 = ใช้กับสถานะกิจกรรมที่ 7.2 แทน (สีตาม Section เดียวกัน) */
+function act7Badge(statusName, list) {
+  const item = (list || ACT7_STATUSES).find(s => s.name === statusName);
   const secId = item ? item.section : 1;
   const icon = item ? item.icon : 'fa-circle-info';
 
@@ -924,6 +1098,80 @@ CASES.push(
   }
 );
 
+/* สำนวนตัวอย่างของกิจกรรมที่ 7.2 — ครอบคลุมแต่ละจุดหลักของ flow เพื่อให้
+   หน้าจอ 7.2-01 ถึง 7.2-12 มีข้อมูลสาธิตครบทุกจุด (สายอนุมัติ/ประชุม/
+   มติ 4 แขนง/SLA ใกล้ครบกำหนด/สายดำเนินคดีคู่ขนาน)                        */
+CASES.push(
+  {
+    id:'2201/2569', subject:'กล่าวหาผู้บริหารสหกรณ์การเกษตรแห่งหนึ่ง ทุจริตเงินกู้สมาชิก',
+    legalBase:'ม.18/4', status:'PENDING_SECTION_72',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สนง. ป.ป.ท. เขต 1',
+    complainant:'สมาชิกสหกรณ์ (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายประกิต มั่งมี', pos:'ผู้จัดการสหกรณ์การเกษตร', idcard:'3-1077-0xxxx-xx-x', agency:'สหกรณ์การเกษตรแห่งหนึ่ง' } ],
+    allegation:'อนุมัติเงินกู้ให้สมาชิกปลอมโดยไม่มีตัวตนจริง แล้วเบิกถอนเงินเข้าบัญชีตนเอง 12 รายการ',
+    receivedDate:'2568-06-10', deadline60:null, deadline2y:null, prescription:'2573-06-10',
+    docRef:'ปป 0022/0512 ลงวันที่ 3 มีนาคม 2569',
+    urgent:false, urgent72:false, complex:false, complex72:false, dupWarning:false,
+    docType:'RULING', signPhase:'WAIT', slaDays:2, slaLimit:15, subCommittee:null,
+    round72:1,
+    chainOpinions:[]
+  },
+  {
+    id:'2015/2569', subject:'กล่าวหาเจ้าหน้าที่กรมที่ดินแห่งหนึ่ง ออกโฉนดทับที่สาธารณประโยชน์',
+    legalBase:'ม.18/4', status:'IN_MEETING_72',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สนง. ป.ป.ท. เขต 1',
+    complainant:'องค์การบริหารส่วนตำบล (ผู้แจ้งเบาะแส)',
+    accused:[
+      { no:1, name:'นายวิสูตร รังวัด',  pos:'เจ้าพนักงานที่ดินชำนาญงาน', idcard:'3-1201-0xxxx-xx-x', agency:'สำนักงานที่ดินจังหวัดแห่งหนึ่ง' },
+      { no:2, name:'นายอนันต์ ช่างรังวัด', pos:'นายช่างรังวัดอาวุโส',    idcard:'3-1203-0xxxx-xx-x', agency:'สำนักงานที่ดินจังหวัดแห่งหนึ่ง' }
+    ],
+    allegation:'ร่วมกันออกโฉนดที่ดินทับที่สาธารณประโยชน์ (หนองน้ำสาธารณะ) โดยรู้อยู่แล้วว่าที่ดินดังกล่าวเป็นที่หวงห้าม',
+    receivedDate:'2568-02-18', deadline60:null, deadline2y:null, prescription:'2573-02-18',
+    docRef:'ปป 0018/0244 ลงวันที่ 20 มกราคม 2569',
+    urgent:false, urgent72:false, complex:true, complex72:true, dupWarning:false,
+    docType:'RULING', signPhase:'COMPLETE', slaDays:5, slaLimit:15, subCommittee:'คณะที่ 2',
+    meetingNo:'12/2569', agendaNo:'3.4', round72:1, quorumOk72:true,
+    chainOpinions:[
+      { roleId:'section_head', type:'ACCEPT', date:'2569-04-02', note:'รายงานการไต่สวนมีพยานหลักฐานทางเอกสารครบถ้วน เห็นควรเสนอต่อ' },
+      { roleId:'director',     type:'ACCEPT', date:'2569-04-09', note:'เห็นพ้องตามที่เสนอ' },
+      { roleId:'deputy',       type:'ACCEPT', date:'2569-04-15', note:'เห็นควรเสนอเลขาธิการฯ ลงนาม' }
+    ]
+  },
+  {
+    id:'1988/2568', subject:'กล่าวหาข้าราชการครูแห่งหนึ่ง เรียกรับผลประโยชน์จากผู้ปกครองเพื่อแลกที่นั่งเรียน',
+    legalBase:'ม.18/4', status:'PENDING_AREA_NOTICE_72',
+    owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 2',
+    complainant:'ผู้ปกครองนักเรียน (ผู้ร้อง)',
+    accused:[ { no:1, name:'นางสุพรรณี ครูสอน', pos:'ผู้อำนวยการโรงเรียน', idcard:'3-1330-0xxxx-xx-x', agency:'โรงเรียนสังกัดเขตพื้นที่การศึกษาแห่งหนึ่ง' } ],
+    allegation:'เรียกรับเงินจากผู้ปกครองเพื่อแลกกับการรับนักเรียนเข้าเรียนนอกเขตพื้นที่บริการ',
+    receivedDate:'2567-11-02', deadline60:null, deadline2y:null, prescription:'2572-11-02',
+    docRef:'ปป 0021/1802 ลงวันที่ 30 กรกฎาคม 2568',
+    urgent:false, urgent72:false, complex:false, complex72:false, dupWarning:false,
+    docType:'RULING', signPhase:'COMPLETE', slaDays:14, slaLimit:15, subCommittee:null,
+    meetingNo:'9/2569', agendaNo:'2.1', round72:1, quorumOk72:true,
+    resolution72:'NO_MERIT_72', resolutionDate72:'2569-03-20',
+    chainOpinions:[]
+  },
+  {
+    id:'1750/2568', subject:'กล่าวหาผู้อำนวยการกองช่างเทศบาลแห่งหนึ่ง เรียกรับสินบนผู้รับเหมา',
+    legalBase:'ม.18/4', status:'PENDING_DISPATCH_GUILTY_72',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สนง. ป.ป.ท. เขต 1',
+    complainant:'ผู้รับเหมาก่อสร้าง (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายก้องภพ ทองแท้', pos:'ผู้อำนวยการกองช่าง', idcard:'3-1009-0xxxx-xx-x', agency:'เทศบาลแห่งหนึ่ง' } ],
+    allegation:'เรียกรับเงินร้อยละ 5 ของมูลค่าสัญญาจากผู้รับเหมาทุกรายที่ชนะการประกวดราคาโครงการก่อสร้างถนนและระบบระบายน้ำ',
+    receivedDate:'2567-08-15', deadline60:null, deadline2y:null, prescription:'2572-08-15',
+    docRef:'ปป 0020/1490 ลงวันที่ 12 มิถุนายน 2568',
+    urgent:false, urgent72:false, complex:true, complex72:true, dupWarning:false,
+    docType:'RULING', signPhase:'COMPLETE', slaDays:3, slaLimit:60, subCommittee:'คณะที่ 5',
+    meetingNo:'7/2569', agendaNo:'1.2', round72:1, quorumOk72:true,
+    resolution72:'GUILTY_72', resolutionDate72:'2569-02-10',
+    guiltyCriminal72:true, guiltyDiscipline72:true,
+    criminalTrack72:{ status:'PENDING' },
+    disciplinaryTrack72:{ status:'DISPATCHED', dispatchedDate:'2569-02-18' },
+    chainOpinions:[]
+  }
+);
+
 /* ค่าเริ่มต้นของฟิลด์ที่เพิ่มภายหลัง — กันหน้าจอพังกับสำนวนที่ยังไม่มีข้อมูลชุดใหม่ */
 CASES.forEach(c => {
   if(!c.docType)       c.docType = '213';
@@ -1078,6 +1326,70 @@ const FORWARD_TARGETS = [
     doc:'บันทึกขอความเห็นทางกฎหมาย' }
 ];
 function forwardTarget(code){ return FORWARD_TARGETS.find(t => t.code === code) || null; }
+
+/* =========================================================================
+   กิจกรรมที่ 7.2 — มติที่ประชุมคณะกรรมการ ป.ป.ท. (วินิจฉัยชี้มูล)
+   4 แขนงตามผัง AS-IS หน้า "AS-IS ไต่สวน" — คนละชุดกับ RESOLUTIONS ของ 7.1
+   โดยสิ้นเชิง (รับ/ไม่รับไว้ไต่สวน ≠ วินิจฉัยชี้มูล) นำมาต่อยอดกันไม่ได้
+   ========================================================================= */
+const RESOLUTIONS_72 = [
+  { code:'FORWARD_NACC', group:'ส่ง ป.ป.ช. (นอกอำนาจ)',
+    label:'ส่งเรื่องให้คณะกรรมการ ป.ป.ช. เนื่องจากอยู่ในหน้าที่และอำนาจของ ป.ป.ช.',
+    doc:'หนังสือนำส่งเรื่องถึงสำนักงาน ป.ป.ช.', signer:'ประธานกรรมการ ป.ป.ท.',
+    legalBasis:'ม.19 (ข)(1)',
+    noticeDays:15, noticeBasis:'ม.19 (ข)(1) — ส่งเรื่องพร้อมสำนวนให้คณะกรรมการ ป.ป.ช. ภายใน 15 วันนับแต่วันที่ได้รับเรื่อง' },
+  { code:'MORE_INVESTIGATE_72', group:'ให้ไต่สวนเพิ่มเติม',
+    label:'ให้ไต่สวนเพิ่มเติม หรือไต่สวนเองใหม่ทั้งหมดหรือบางส่วน',
+    doc:'บันทึกแจ้งมติให้ไต่สวนเพิ่มเติม (ระบุเหตุผล)', signer:'—',
+    legalBasis:'ม.24 วรรคท้าย', requiresReason:true,
+    reasonNote:'"ให้ระบุเหตุผลของการดำเนินการดังกล่าวไว้ด้วย" — ม.24 วรรคท้าย บังคับให้มีเหตุผลกำกับเสมอ' },
+  { code:'NO_MERIT_72', group:'ยุติเรื่อง',
+    label:'ข้อกล่าวหาไม่มีมูล — ข้อกล่าวหาเป็นอันตกไป',
+    doc:'หนังสือแจ้งผลผู้ถูกกล่าวหา', signer:'—',
+    legalBasis:'ม.32',
+    noticeDays:15, noticeBasis:'ม.32 — แจ้งให้ผู้ถูกกล่าวหาทราบโดยเร็ว ไม่ช้ากว่า 15 วันนับแต่วันที่คณะกรรมการ ป.ป.ท. มีมติ' },
+  { code:'GUILTY_72', group:'ชี้มูลความผิด',
+    label:'วินิจฉัยชี้มูลความผิด (อาญา และ/หรือ วินัย)',
+    doc:'รายงานการไต่สวนและวินิจฉัยชี้มูล', signer:'ประธานกรรมการ ป.ป.ท.',
+    legalBasis:'ม.17(3)(4) · ม.38 · ม.44', needsGuiltyTrack:true }
+];
+function resolution72(code){ return RESOLUTIONS_72.find(r => r.code === code) || null; }
+
+/* Stepper ของกิจกรรมที่ 7.2 — คู่ขนานกับ FLOW_STEPS/STATUS_STEP ของ 7.1 */
+const FLOW_STEPS_72 = [
+  { key:'chain72',   label:'สายอนุมัติ 3 ชั้น',              ref:'7.2-02' },
+  { key:'secgen72',  label:'เลขาธิการฯ ลงนาม',               ref:'7.2-03' },
+  { key:'agenda72',  label:'กลั่นกรอง / บรรจุวาระ',          ref:'7.2-04 · 7.2-05 · 7.2-06' },
+  { key:'meeting72', label:'ประชุม / บันทึกมติ',             ref:'7.2-07 · 7.2-08' },
+  { key:'ruling72',  label:'จัดทำ / ลงนามรายงานวินิจฉัยชี้มูล', ref:'7.2-09' },
+  { key:'dispatch72',label:'แจ้งผล / ส่งดำเนินการต่อ',        ref:'7.2-10 · 7.2-11' }
+];
+const STATUS_STEP_72 = {
+  PENDING_SECTION_72:'chain72', PENDING_DIRECTOR_72:'chain72', PENDING_DEPUTY_72:'chain72', RETURNED_72:'chain72',
+  PENDING_SECGEN_72:'secgen72',
+  IN_SUPPORT_SUB_72:'agenda72', PENDING_URGENT_72:'agenda72', PENDING_CHAIRMAN_URGENT_72:'agenda72', IN_SCREENING_72:'agenda72',
+  PENDING_INVITE_72:'meeting72', IN_MEETING_72:'meeting72',
+  RESOLVED_PENDING_72:'ruling72', PENDING_SIGN_RULING_72:'ruling72',
+  PENDING_AREA_NOTICE_72:'dispatch72', DISPATCHING_NACC_72:'dispatch72', PENDING_DISPATCH_GUILTY_72:'dispatch72',
+  CLOSED_72:'dispatch72'
+};
+
+/* ── ติดตามสายดำเนินคดีคู่ขนาน (7.2-11) ──────────────────────────────────
+   มติ "ชี้มูลความผิด" อาจแยกได้ทั้งอาญาและวินัยพร้อมกัน (guiltyCriminal72 /
+   guiltyDiscipline72 มาจาก checkbox บน 7.2-08) แต่ละสายดำเนินไปเป็นอิสระ
+   ต่อกันหลังจากนั้น ระบบจึงเก็บสถานะย่อยไว้คนละฟิลด์แทนที่จะพยายามยัดลง
+   status หลักตัวเดียว (ซึ่งรองรับสถานะเดียวในเวลาหนึ่งเท่านั้น)             */
+function trackStatus72(kase, kind){
+  const track = kind === 'criminal' ? kase.criminalTrack72 : kase.disciplinaryTrack72;
+  const active = kind === 'criminal' ? !!kase.guiltyCriminal72 : !!kase.guiltyDiscipline72;
+  if(!active) return 'N/A';
+  return (track && track.status) || 'PENDING';
+}
+function bothTracksDone72(kase){
+  const crimOk = !kase.guiltyCriminal72 || trackStatus72(kase,'criminal') === 'DISPATCHED';
+  const discOk = !kase.guiltyDiscipline72 || trackStatus72(kase,'disciplinary') === 'DISPATCHED';
+  return crimOk && discOk;
+}
 
 /* =========================================================================
    DESIGN DECISIONS — คำตอบ Q1–Q5 ที่นำมาบังคับใช้ในต้นแบบ
@@ -1425,10 +1737,12 @@ function renderShell(activeHref){
 }
 
 /* -------------------------------------------------------- UI BUILDERS */
-function stepperHtml(statusKey){
-  const cur = STATUS_STEP[statusKey] || 'report';
-  const idx = FLOW_STEPS.findIndex(s => s.key === cur);
-  return `<div class="flow-stepper">` + FLOW_STEPS.map((s,i) => {
+function stepperHtml(statusKey, stepsArr, stepMap){
+  stepsArr = stepsArr || FLOW_STEPS;
+  stepMap = stepMap || STATUS_STEP;
+  const cur = stepMap[statusKey] || 'report';
+  const idx = stepsArr.findIndex(s => s.key === cur);
+  return `<div class="flow-stepper">` + stepsArr.map((s,i) => {
     const cls = i < idx ? 'done' : (i === idx ? 'active' : '');
     const mark = i < idx ? '<i class="fa-solid fa-check"></i>' : (i+1);
     return `<div class="fstep ${cls}">
@@ -3228,12 +3542,16 @@ global.ECMIS = {
   ROLES, STATUS, STATUS_STEP, FLOW_STEPS, APPROVAL_CHAIN,
   CASES, RETURN_REASONS, RESOLUTIONS,
   DOC_TYPES, SIGN_PHASE, secgenSlaLimit, FORWARD_TARGETS, forwardTarget,
+
+  // กิจกรรมที่ 7.2
+  RESOLUTIONS_72, resolution72, FLOW_STEPS_72, STATUS_STEP_72,
+  trackStatus72, bothTracksDone72,
   OPINION_TYPES, chainDivergence, g1Triggers, M28, M28_ORDERS, m28Order, m28Pending,
   TRANSITIONS, canTransition, nextStates, transitionsBetween,
   BOARD_MIN_IN_OFFICE, boardQuorum,
   M24P1_MIN_PANEL, M24P1_STAFF_FREE, panelComposition,
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
-  UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase,
+  UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72,
   PERM_DEFS, can, canEditMaster, canViewCase,
   thaiDate, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole, roleIdForLogin,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
@@ -3243,6 +3561,7 @@ global.ECMIS = {
 
   // Custom Activity 7 Status helpers
   ACT7_SECTIONS, ACT7_STATUSES, getAct7Status, act7Badge,
+  ACT7_STATUSES_72, getAct7Status72,
 
   // Custom helpers
   saveCases, toggleColorMode, toggleSidebarCollapse, changeFont, toggleVoiceRecognition,

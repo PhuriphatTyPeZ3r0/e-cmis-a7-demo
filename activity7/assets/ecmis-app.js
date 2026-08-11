@@ -541,7 +541,7 @@ const CASES = [
       { no:3, name:'นายชาญชัย ก่อสร้าง',  pos:'ผู้อำนวยการกองช่าง',          idcard:'3-2001-0xxxx-xx-x', agency:'อบต.บางแสน' }
     ],
     allegation:'ร่วมกันกำหนดคุณลักษณะเฉพาะของงานก่อสร้างเพื่อเอื้อประโยชน์ให้ผู้เสนอราคารายหนึ่งเป็นผู้ชนะการเสนอราคา และตรวจรับงานทั้งที่งานไม่แล้วเสร็จตามสัญญา',
-    receivedDate:'2568-11-14', deadline60:'2569-01-13', deadline2y:'2570-11-14', prescription:'2571-03-20',
+    receivedDate:'14/11/2569', deadline60:'2569-01-13', deadline2y:'2570-11-14', prescription:'2571-03-20',
     docRef:'ปป 0020/1028 ลงวันที่ 7 พฤษภาคม 2569',
     urgent:false, complex:false, dupWarning:true,
     docType:'213', signPhase:'WAIT',
