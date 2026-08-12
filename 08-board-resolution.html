@@ -127,6 +127,11 @@
             <div id="forwardBox" class="mb-3 d-none">
               <label class="form-label field-req">ส่งเรื่องให้</label>
               <select class="form-select" id="forwardTo"></select>
+              <div class="mt-2 d-none" id="forwardOtherBox">
+                <label class="form-label field-req">ระบุปลายทาง</label>
+                <input class="form-control" id="forwardToOther" placeholder="เช่น หน่วยงาน/คณะที่ต้องการส่งเรื่องให้">
+                <div class="val-msg val-err" data-for="forwardToOther">กรุณาระบุปลายทาง</div>
+              </div>
               <div class="mt-2" id="forwardRule"></div>
             </div>
 
@@ -418,10 +423,14 @@
     function renderForwardRule() {
       const t = ECMIS.forwardTarget(fwdSel.value);
       if (!t) return;
+      document.getElementById('forwardOtherBox').classList.toggle('d-none', t.code !== 'OTHER');
+      const destLine = t.code === 'OTHER'
+        ? `<br><strong>ปลายทาง:</strong> ${document.getElementById('forwardToOther').value.trim() || '<span class="text-danger">ยังไม่ได้ระบุ</span>'}`
+        : '';
       document.getElementById('forwardRule').innerHTML = t.external
         ? `<div class="warn-note">
          <strong><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>ปลายทางนอกองค์กร</strong><br>
-         เอกสาร: ${t.doc}
+         เอกสาร: ${t.doc}${destLine}
          <div class="rule-panel mt-2">
            <div class="rule fail"><i class="fa-solid fa-gavel"></i>
              <span><strong>กำหนดส่งตามกฎหมาย: ${t.statutorySlaDays} วัน</strong> —
@@ -440,11 +449,12 @@
        </div>`
         : `<div class="rule-panel"><div class="rule pass"><i class="fa-solid fa-circle-check"></i>
          <span>ปลายทางภายใน — เอกสาร: ${t.doc} · กรอบกำกับติดตาม ${t.trackingSlaDays} วัน
-         · ส่งต่อในระบบได้ทันที ไม่ต้องอัปโหลดไฟล์สแกน
+         · ส่งต่อในระบบได้ทันที ไม่ต้องอัปโหลดไฟล์สแกน${destLine}
          <br><small>ไม่มีกำหนดส่งตามกฎหมาย เพราะ ม.18/1 ใช้เฉพาะเส้นทางที่เกี่ยวกับ ป.ป.ช.</small>
          </span></div></div>`;
     }
     fwdSel.addEventListener('change', renderForwardRule);
+    document.getElementById('forwardToOther').addEventListener('input', renderForwardRule);
     renderForwardRule();
 
     /* [F-04] มติที่ต้องอ้างมาตราตาม ม.25/ม.26 = ไม่รับเรื่องไว้พิจารณา และจำหน่ายเรื่อง
@@ -558,8 +568,13 @@
         const task = document.getElementById('moreTask').value.trim();
         resText = `ให้ผู้รับผิดชอบสำนวนไต่สวนเบื้องต้นเพิ่มเติม ดังนี้ ${task || '……………………………………'}`;
       } else {
-        /* เอกสารมติต้องพิมพ์ชื่อเต็มของปลายทาง ไม่ใช่รหัสที่ใช้ภายในระบบ */
-        resText = `ส่งเรื่องให้ ${ECMIS.forwardTarget(fwdSel.value)?.label || '—'}`;
+        /* เอกสารมติต้องพิมพ์ชื่อเต็มของปลายทาง ไม่ใช่รหัสที่ใช้ภายในระบบ
+           กรณี "อื่นๆ" ใช้ข้อความปลายทางที่ผู้บันทึกพิมพ์เองแทน label มาตรฐาน */
+        const fwd = ECMIS.forwardTarget(fwdSel.value);
+        const fwdLabel = fwd?.code === 'OTHER'
+          ? (document.getElementById('forwardToOther').value.trim() || 'อื่นๆ (ยังไม่ได้ระบุปลายทาง)')
+          : fwd?.label;
+        resText = `ส่งเรื่องให้ ${fwdLabel || '—'}`;
       }
 
       const s65 = kase.legalBase === 'ม.62'
@@ -637,7 +652,7 @@
 
     /* ---------- wire ---------- */
     document.getElementById('resList').addEventListener('change', () => { toggleBoxes(); renderOutcome(); renderDoc(); });
-    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'ownerOrgField', 'presenter', 'presenterNote', 'signerName', 'signerTitle', 'rejectLaw', 'moreTask', 'moreOwner', 'moreDue', 'forwardTo']
+    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'ownerOrgField', 'presenter', 'presenterNote', 'signerName', 'signerTitle', 'rejectLaw', 'moreTask', 'moreOwner', 'moreDue', 'forwardTo', 'forwardToOther']
       .forEach(id => {
         const el = document.getElementById(id); if (el) {
           el.addEventListener('input', renderDoc); el.addEventListener('change', renderDoc);
@@ -705,6 +720,17 @@
           const miss = ['moreTask', 'moreOwner', 'moreDue'].filter(id => !document.getElementById(id).value.trim());
           if (miss.length) {
             ECMIS.toastWarn('ม.24 ว.4 บังคับระบุ: สิ่งที่ต้องดำเนินการ + ผู้รับผิดชอบ + กำหนดส่งกลับ'); return;
+          }
+        }
+        if (r.code === 'FORWARD' && fwdSel.value === 'OTHER') {
+          const otherEl = document.getElementById('forwardToOther');
+          if (!otherEl.value.trim()) {
+            otherEl.classList.add('is-invalid-ecmis');
+            document.querySelector('.val-msg[data-for="forwardToOther"]').classList.add('show');
+            ECMIS.toastWarn('กรุณาระบุปลายทางที่ต้องการส่งเรื่องให้'); return;
+          } else {
+            otherEl.classList.remove('is-invalid-ecmis');
+            document.querySelector('.val-msg[data-for="forwardToOther"]').classList.remove('show');
           }
         }
 

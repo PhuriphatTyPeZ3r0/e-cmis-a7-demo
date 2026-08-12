@@ -1323,7 +1323,12 @@ const FORWARD_TARGETS = [
     external:false, requireSignedScan:false, requireArchiveCopy:false,
     trackingSlaDays:15,
     trackingBasis:'กรอบกำกับติดตามเชิงบริหารภายในสำนักงาน — กฎหมายไม่ได้กำหนดเส้นตายไว้',
-    doc:'บันทึกขอความเห็นทางกฎหมาย' }
+    doc:'บันทึกขอความเห็นทางกฎหมาย' },
+  { code:'OTHER',     label:'อื่นๆ (ระบุปลายทาง)',
+    external:false, requireSignedScan:false, requireArchiveCopy:false,
+    trackingSlaDays:15,
+    trackingBasis:'กรอบกำกับติดตามเชิงบริหารภายในสำนักงาน — ปลายทางนอกรายการมาตรฐาน ผู้บันทึกกำหนดกรอบเองตามความเหมาะสม',
+    doc:'บันทึกส่งเรื่อง (ระบุปลายทางเอง)' }
 ];
 function forwardTarget(code){ return FORWARD_TARGETS.find(t => t.code === code) || null; }
 
