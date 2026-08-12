@@ -582,7 +582,18 @@
         : '';
       const lastNo = kase.legalBase === 'ม.62' ? '๓' : '๒';
 
+      /* หัวกระดาษวิ่ง (ผู้ลงนาม + ครั้งที่/วันที่/วาระที่ + ลับ) ต้องซ้ำทุกหน้าตอนพิมพ์จริง
+         (ขนาดอักษรในเอกสารมติ.xlsx ข้อ 7) — ใส่ใน <thead> เพื่อให้เบราว์เซอร์พิมพ์ซ้ำเอง
+         ทุกหน้าที่ตัดขึ้นใหม่ โดยไม่ต้องคำนวณ pagination เอง (ดูคอมเมนต์ CSS ประกอบ) */
+      const runningHeader = `
+    <div class="doc-run-signer">(${M(signerName)})<br>${M(signerTitle)}</div>
+    <div class="doc-run-title">มติการประชุมคณะกรรมการ ป.ป.ท.<br>
+      ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}<br>วาระที่ ${M(agendaNo)}</div>
+    <div class="doc-secret">ลับ</div>`;
+
       document.getElementById('docPaper').innerHTML = `
+    <table class="doc-res-pages"><thead><tr><td>${runningHeader}</td></tr></thead>
+    <tbody><tr><td>
     <div class="doc-secret">ลับ</div>
     <div class="doc-title">
       <div class="doc-title-l1">มติการประชุม</div>
@@ -647,7 +658,8 @@
       (${M(signerName)})<br>
       ${M(signerTitle)}
     </div>
-    <div class="doc-secret-foot">ลับ</div>`;
+    <div class="doc-secret-foot">ลับ</div>
+    </td></tr></tbody></table>`;
     }
 
     /* ---------- wire ---------- */
