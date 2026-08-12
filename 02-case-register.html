@@ -393,8 +393,20 @@
       ECMIS.toastOk('ส่งออกไฟล์ข้อมูล CSV เรียบร้อยแล้ว');
     });
 
+    /* ค้นหาแบบ real-time ขณะพิมพ์ — debounce 250ms กันเรนเดอร์รัวทุกตัวอักษร และไม่ใช้
+       render(true) (skeleton + delay 500ms จำลอง network) เพราะจะรู้สึกกระตุกตอนพิมพ์ไว
+       ปุ่มค้นหา/Enter ยังคงพฤติกรรมเดิม (แสดง skeleton) ไว้สำหรับกดค้นหาแบบตั้งใจ */
+    let searchDebounceTimer = null;
+    function debouncedSearch() {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => { currentPage = 1; render(false); }, 250);
+    }
     document.getElementById('btnSearch').addEventListener('click', () => { currentPage = 1; render(true); });
-    ['q', 'qAccused'].forEach(id => document.getElementById(id).addEventListener('keyup', e => { if (e.key === 'Enter') { currentPage = 1; render(true); } }));
+    ['q', 'qAccused'].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('keyup', e => { if (e.key === 'Enter') { currentPage = 1; render(true); } });
+      el.addEventListener('input', debouncedSearch);
+    });
     ['qStatus', 'qBase'].forEach(id => document.getElementById(id).addEventListener('change', () => { currentPage = 1; render(true); }));
     document.querySelectorAll('.filter-chip').forEach(b => b.addEventListener('click', () => {
       filter = b.dataset.f;
