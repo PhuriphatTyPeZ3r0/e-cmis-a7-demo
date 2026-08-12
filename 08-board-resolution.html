@@ -150,6 +150,16 @@
               <textarea class="form-control" id="presenterNote" rows="3"
                 placeholder="ผู้ชี้แจงเพิ่มเติมว่า..."></textarea>
             </div>
+
+            <div class="mt-3">
+              <label class="form-label">ผู้ลงนามท้ายเอกสาร</label>
+              <select class="form-select" id="signerName"></select>
+            </div>
+
+            <div class="mt-3">
+              <label class="form-label">ตำแหน่งผู้ลงนาม</label>
+              <input class="form-control" id="signerTitle">
+            </div>
           </div>
         </div>
 
@@ -234,6 +244,28 @@
       `${ECMIS.getRole('board_sec').name} (เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ)`,
       `${ECMIS.getRole('dir_case').name} (ผู้อำนวยการกองบริหารคดี)`
     ]);
+
+    /* ผู้ลงนามท้ายเอกสารเดิม hardcode ชื่อ ผอ.กบค. ไว้ตรงๆ — เปลี่ยนเป็นเลือกจากบทบาท
+       ที่มีสิทธิ์แก้ไขมติได้จริง (ชีตแถว 15) ส่วนตำแหน่งแยกเป็นช่องข้อความอิสระ เพราะ
+       ถ้อยคำตำแหน่งเปลี่ยนได้ตามสถานการณ์จริง (เช่น "รักษาการแทน") ไม่ผูกตายตัวกับชื่อ */
+    const SIGNER_CANDIDATES = [
+      { name: ECMIS.getRole('dir_case').name, title: 'ผู้อำนวยการกองบริหารคดี ปฏิบัติหน้าที่เลขานุการคณะกรรมการ ป.ป.ท.' },
+      { name: ECMIS.getRole('board_sec').name, title: 'เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ ปฏิบัติหน้าที่เลขานุการคณะกรรมการ ป.ป.ท.' },
+      { name: ECMIS.getRole('secgen').name, title: 'เลขาธิการคณะกรรมการ ป.ป.ท.' }
+    ];
+    const signerNameEl = document.getElementById('signerName');
+    SIGNER_CANDIDATES.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.name; opt.textContent = c.name;
+      signerNameEl.appendChild(opt);
+    });
+    signerNameEl.value = SIGNER_CANDIDATES[0].name;
+    document.getElementById('signerTitle').value = SIGNER_CANDIDATES[0].title;
+    signerNameEl.addEventListener('change', () => {
+      const c = SIGNER_CANDIDATES.find(x => x.name === signerNameEl.value);
+      if (c) document.getElementById('signerTitle').value = c.title;
+    });
+    ECMIS.initSmartCombobox(signerNameEl);
 
     /* ---------- Q: สิทธิ์แก้ไขมติ (ชีตแถว 15) ---------- */
     const mayEdit = ECMIS.canEditMaster(role.id) || ECMIS.can('record.minutes', role.id);
@@ -501,6 +533,8 @@
       const ownerOrg = document.getElementById('ownerOrgField').value.trim() || kase.ownerOrg;
       const presenter = document.getElementById('presenter').value.trim();
       const presenterNote = document.getElementById('presenterNote').value.trim();
+      const signerName = document.getElementById('signerName').value.trim();
+      const signerTitle = document.getElementById('signerTitle').value.trim();
       const r = selectedRes();
       const t = tally();
       const unanimous = t.againstV === 0 && t.abstainV === 0;
@@ -595,15 +629,15 @@
 
     <div class="doc-sign">
       <span class="doc-dots"></span><br>
-      (นางสาวณพัสตร์ ศรีสมเกียรติ)<br>
-      ผู้อำนวยการกองบริหารคดี ปฏิบัติหน้าที่เลขานุการคณะกรรมการ ป.ป.ท.
+      (${M(signerName)})<br>
+      ${M(signerTitle)}
     </div>
     <div class="doc-secret-foot">ลับ</div>`;
     }
 
     /* ---------- wire ---------- */
     document.getElementById('resList').addEventListener('change', () => { toggleBoxes(); renderOutcome(); renderDoc(); });
-    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'ownerOrgField', 'presenter', 'presenterNote', 'rejectLaw', 'moreTask', 'moreOwner', 'moreDue', 'forwardTo']
+    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'ownerOrgField', 'presenter', 'presenterNote', 'signerName', 'signerTitle', 'rejectLaw', 'moreTask', 'moreOwner', 'moreDue', 'forwardTo']
       .forEach(id => {
         const el = document.getElementById(id); if (el) {
           el.addEventListener('input', renderDoc); el.addEventListener('change', renderDoc);
