@@ -136,6 +136,11 @@
             <div class="val-msg val-err" data-for="boardOpinion">กรุณาระบุความเห็นที่ประชุม</div>
 
             <div class="mt-3">
+              <label class="form-label">สังกัด</label>
+              <input class="form-control" id="ownerOrgField">
+            </div>
+
+            <div class="mt-3">
               <label class="form-label">ผู้ชี้แจงต่อที่ประชุม</label>
               <input class="form-control" id="presenter" value="ฝ่ายเลขานุการคณะอนุกลั่นกรองฯ (นิติกร กบค.)">
             </div>
@@ -202,6 +207,22 @@
     if (kase.meetingNo) document.getElementById('meetNo').value = kase.meetingNo;
     if (kase.agendaNo) document.getElementById('agendaNo').value = kase.agendaNo;
     if (kase.meetingDate) setDateInputValue('meetDate', kase.meetingDate);
+
+    /* สังกัดอาจมีมากกว่า 1 หน่วยงาน (สำนวนร่วมสอบข้ามเขต) — ใช้ search-select
+       แบบเลือกหลายรายการเดียวกับผู้ชี้แจง ตั้งค่าเริ่มต้นจาก kase.ownerOrg เดิม */
+    document.getElementById('ownerOrgField').value = kase.ownerOrg;
+    ECMIS.initMultiSelectCombo(document.getElementById('ownerOrgField'), [
+      'สนง. ป.ป.ท. เขต 1', 'สนง. ป.ป.ท. เขต 2', 'สนง. ป.ป.ท. เขต 3', 'สนง. ป.ป.ท. เขต 4',
+      'สนง. ป.ป.ท. เขต 5', 'สนง. ป.ป.ท. เขต 6', 'สนง. ป.ป.ท. เขต 7', 'สนง. ป.ป.ท. เขต 8',
+      'สนง. ป.ป.ท. เขต 9',
+      'กองปราบปรามการทุจริตในภาครัฐ 1', 'กองปราบปรามการทุจริตในภาครัฐ 2',
+      'กองปราบปรามการทุจริตในภาครัฐ 3', 'กองปราบปรามการทุจริตในภาครัฐ 4',
+      'กองปราบปรามการทุจริตในภาครัฐ 5'
+    ], {
+      selectAll: true,
+      placeholder: '— เลือกสังกัด (เลือกได้มากกว่า 1) —',
+      searchPlaceholder: 'ค้นหาหรือพิมพ์สังกัดเพิ่ม แล้วกด Enter...'
+    });
 
     /* ผู้ชี้แจงต่อที่ประชุมมีได้มากกว่า 1 คน — ใช้ search-select แบบเลือกหลายรายการ
        เก็บค่าไว้ใน #presenter เดิม (comma-joined) ไม่ต้องแก้ renderDoc()/wiring ด้านล่าง */
@@ -477,6 +498,7 @@
       const meetDate = ECMIS.thaiDate(meetDateValue);
       const agendaNo = document.getElementById('agendaNo').value.trim();
       const opinion = document.getElementById('boardOpinion').value.trim();
+      const ownerOrg = document.getElementById('ownerOrgField').value.trim() || kase.ownerOrg;
       const presenter = document.getElementById('presenter').value.trim();
       const presenterNote = document.getElementById('presenterNote').value.trim();
       const r = selectedRes();
@@ -521,14 +543,14 @@
 
     <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
     <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner)}</div>
-    <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
+    <div class="doc-row"><span class="k">สังกัด</span> ${M(ownerOrg)}</div>
     <div class="doc-row"><span class="k">ผู้ชี้แจง</span> ${M(presenter)}</div>
     <div class="doc-row"><span class="k">เอกสารอ้างอิง</span> หนังสือหน่วยงานที่รับผิดชอบตามเอกสาร
       ${M(kase.docRef !== '—' ? kase.docRef : '', 'ที่ ปป …………/……… ลงวันที่ ……………')} และเอกสารประกอบการประชุม</div>
 
     <div class="doc-body-indent">
       <div class="doc-indent" style="margin-top:12px">
-        ${M(presenter)} ${M(kase.ownerOrg)} เสนอรายงานการไต่สวนเบื้องต้นที่ผ่านการพิจารณา
+        ${M(presenter)} ${M(ownerOrg)} เสนอรายงานการไต่สวนเบื้องต้นที่ผ่านการพิจารณา
         เลขาธิการคณะกรรมการ ป.ป.ท. ต่อที่ประชุมคณะกรรมการ ป.ป.ท. ดังนี้
       </div>
 
@@ -581,7 +603,7 @@
 
     /* ---------- wire ---------- */
     document.getElementById('resList').addEventListener('change', () => { toggleBoxes(); renderOutcome(); renderDoc(); });
-    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'presenter', 'presenterNote', 'rejectLaw', 'moreTask', 'moreOwner', 'moreDue', 'forwardTo']
+    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'ownerOrgField', 'presenter', 'presenterNote', 'rejectLaw', 'moreTask', 'moreOwner', 'moreDue', 'forwardTo']
       .forEach(id => {
         const el = document.getElementById(id); if (el) {
           el.addEventListener('input', renderDoc); el.addEventListener('change', renderDoc);

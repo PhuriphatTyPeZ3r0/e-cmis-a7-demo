@@ -2516,8 +2516,12 @@ function initSmartCombobox(selectEl) {
    ทุกจุด — แค่ initMultiSelectCombo(inputEl, candidates) แล้ว .value/'input' event
    ยังทำงานเหมือนเดิมทุกประการ รองรับพิมพ์ชื่อที่ไม่มีในลิสต์เพื่อเพิ่มเองด้วย
    (ผู้ชี้แจงจริงอาจไม่ได้อยู่ในบัญชีตำแหน่งมาตรฐานเสมอไป) */
-function initMultiSelectCombo(inputEl, candidates) {
+function initMultiSelectCombo(inputEl, candidates, opts) {
   if (!inputEl || inputEl.nextElementSibling?.classList.contains('smart-combo-container')) return;
+  opts = opts || {};
+  const placeholder = opts.placeholder || '— เลือกผู้ชี้แจง (เลือกได้มากกว่า 1 คน) —';
+  const searchPlaceholder = opts.searchPlaceholder || 'ค้นหาหรือพิมพ์ชื่อผู้ชี้แจงเพิ่ม แล้วกด Enter...';
+  const selectAll = !!opts.selectAll;
 
   let selected = inputEl.value.split(',').map(s => s.trim()).filter(Boolean);
 
@@ -2536,7 +2540,7 @@ function initMultiSelectCombo(inputEl, candidates) {
   const searchInput = document.createElement('input');
   searchInput.type = 'text';
   searchInput.className = 'form-control form-control-sm';
-  searchInput.placeholder = 'ค้นหาหรือพิมพ์ชื่อผู้ชี้แจงเพิ่ม แล้วกด Enter...';
+  searchInput.placeholder = searchPlaceholder;
   searchBox.appendChild(searchInput);
 
   const itemsContainer = document.createElement('div');
@@ -2553,7 +2557,7 @@ function initMultiSelectCombo(inputEl, candidates) {
     if (!selected.length) {
       const ph = document.createElement('span');
       ph.className = 'text-muted';
-      ph.textContent = '— เลือกผู้ชี้แจง (เลือกได้มากกว่า 1 คน) —';
+      ph.textContent = placeholder;
       toggleBtn.appendChild(ph);
       return;
     }
@@ -2579,6 +2583,24 @@ function initMultiSelectCombo(inputEl, candidates) {
     itemsContainer.innerHTML = '';
     const q = filterText.trim().toLowerCase();
     const filtered = candidates.filter(c => c.toLowerCase().includes(q));
+
+    /* "เลือกทั้งหมด" ผูกกับรายการทั้งหมด ไม่ใช่แค่ผลกรอง — ซ่อนขณะกำลังพิมพ์ค้นหา
+       เพื่อไม่ให้กดพลาดว่ากำลัง "เลือกทั้งหมดของผลกรอง" */
+    if (selectAll && !q) {
+      const allSelected = candidates.length > 0 && candidates.every(c => selected.includes(c));
+      const allItem = document.createElement('div');
+      allItem.className = 'smart-combo-item smart-combo-item-selectall';
+      allItem.innerHTML = `<i class="fa-${allSelected ? 'solid fa-square-check' : 'regular fa-square'} me-2"></i><strong>${allSelected ? 'ยกเลิกเลือกทั้งหมด' : 'เลือกทั้งหมด'}</strong>`;
+      allItem.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selected = allSelected
+          ? selected.filter(s => !candidates.includes(s))
+          : [...new Set([...selected, ...candidates])];
+        commit();
+        renderItems(searchInput.value);
+      });
+      itemsContainer.appendChild(allItem);
+    }
 
     filtered.forEach(name => {
       const item = document.createElement('div');
