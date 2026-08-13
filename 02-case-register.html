@@ -28,22 +28,52 @@
     <div class="card card-ecmis mb-3">
       <div class="card-header"><i class="fa-solid fa-magnifying-glass"></i> เงื่อนไขการสืบค้น</div>
       <div class="card-body">
-        <div class="row g-2">
-          <div class="col-md-4">
+        <div class="row g-2 align-items-end">
+          <div class="col-lg-3 col-md-6">
             <label class="form-label">คำค้น (เรื่องกล่าวหา / เลขสำนวน)</label>
             <input class="form-control" id="q" placeholder="เช่น 1547/2568 หรือ จัดซื้อจัดจ้าง">
           </div>
-          <div class="col-md-3">
+          <div class="col-lg-3 col-md-6">
             <label class="form-label">ชื่อผู้ถูกกล่าวหา</label>
             <input class="form-control" id="qAccused" placeholder="ระบุชื่อ-นามสกุล">
           </div>
-          <div class="col-md-2">
+          <div class="col-lg-2 col-md-6">
+            <label class="form-label">เลขบัตร ปชช. ผู้ถูกกล่าวหา</label>
+            <input class="form-control" id="qIdCard" placeholder="เช่น 3-1009">
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">ชื่อผู้กล่าวหา / ผู้ร้อง</label>
+            <input class="form-control" id="qComplainant" placeholder="ระบุชื่อผู้ร้อง">
+          </div>
+          <div class="col-lg-1 col-md-12 d-flex justify-content-md-end">
+            <button class="btn btn-navy w-100" id="btnSearch"><i class="fa-solid fa-magnifying-glass"></i></button>
+          </div>
+        </div>
+
+        <div class="row g-2 mt-1 align-items-end">
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">ชื่อคณะอนุกรรมการ / พนักงานไต่สวน</label>
+            <input class="form-control" id="qTeam" placeholder="เช่น คณะที่ 3 หรือ สมชาย">
+          </div>
+          <div class="col-lg-2 col-md-6">
+            <label class="form-label">เลขที่คำสั่ง</label>
+            <input class="form-control" id="qOrderNo" placeholder="เช่น ปป 24/2569">
+          </div>
+          <div class="col-lg-2 col-md-6">
+            <label class="form-label">ครั้งที่ประชุม</label>
+            <input class="form-control" id="qMeetingNo" placeholder="เช่น 38/2569">
+          </div>
+          <div class="col-lg-2 col-md-6">
+            <label class="form-label">วาระที่</label>
+            <input class="form-control" id="qAgendaNo" placeholder="เช่น 5.12">
+          </div>
+          <div class="col-lg-1 col-md-4">
             <label class="form-label">สถานะสำนวน</label>
             <select class="form-select" id="qStatus">
               <option value="">— ทั้งหมด —</option>
             </select>
           </div>
-          <div class="col-md-2">
+          <div class="col-lg-1 col-md-4">
             <label class="form-label">ฐานการรับเรื่อง</label>
             <select class="form-select" id="qBase">
               <option value="">— ทั้งหมด —</option>
@@ -51,8 +81,11 @@
               <option value="ม.62">ม.62 พรป.ปปช.</option>
             </select>
           </div>
-          <div class="col-md-1 d-flex align-items-end">
-            <button class="btn btn-navy w-100" id="btnSearch"><i class="fa-solid fa-magnifying-glass"></i></button>
+          <div class="col-lg-1 col-md-4">
+            <div class="form-check" style="padding-top:8px">
+              <input class="form-check-input" type="checkbox" id="qPastAgenda">
+              <label class="form-check-label small" for="qPastAgenda">เคยบรรจุวาระ</label>
+            </div>
           </div>
         </div>
         <div class="mt-2 d-flex gap-2 flex-wrap">
@@ -69,8 +102,11 @@
       <div class="card-header">
         <i class="fa-solid fa-table-list"></i> ผลการสืบค้น
         <span class="badge bg-secondary rounded-pill ms-2" id="cnt">0</span>
-        <button class="btn btn-sm btn-outline-secondary ms-auto" id="btnExport"><i
-            class="fa-solid fa-file-excel me-1"></i>ส่งออก Excel/CSV</button>
+        <div class="btn-group ms-auto">
+          <button class="btn btn-sm btn-outline-secondary" id="btnExportCsv"><i class="fa-solid fa-file-excel me-1"></i>Excel/CSV</button>
+          <button class="btn btn-sm btn-outline-secondary" id="btnExportWord"><i class="fa-solid fa-file-word me-1"></i>Word</button>
+          <button class="btn btn-sm btn-outline-secondary" id="btnExportPdf"><i class="fa-solid fa-file-pdf me-1"></i>PDF</button>
+        </div>
       </div>
       <div class="card-body p-0">
         <div class="table-responsive">
@@ -124,13 +160,27 @@
     function matches(c) {
       const q = document.getElementById('q').value.trim();
       const qa = document.getElementById('qAccused').value.trim();
+      const qi = document.getElementById('qIdCard').value.trim();
+      const qc = document.getElementById('qComplainant').value.trim();
+      const qt = document.getElementById('qTeam').value.trim();
+      const qo = document.getElementById('qOrderNo').value.trim();
+      const qm = document.getElementById('qMeetingNo').value.trim();
+      const qg = document.getElementById('qAgendaNo').value.trim();
       const qs = document.getElementById('qStatus').value;
       const qb = document.getElementById('qBase').value;
+      const qPastAgenda = document.getElementById('qPastAgenda').checked;
 
       if (q && !(c.id.includes(q) || c.subject.includes(q))) return false;
       if (qa && !c.accused.some(a => a.name.includes(qa))) return false;
+      if (qi && !c.accused.some(a => String(a.idcard || '').includes(qi))) return false;
+      if (qc && !String(c.complainant || '').includes(qc)) return false;
+      if (qt && !String((c.subCommittee || '') + ' ' + (c.owner || '')).includes(qt)) return false;
+      if (qo && !String(c.orderNo || '').includes(qo)) return false;
+      if (qm && !String(c.meetingNo || '').includes(qm)) return false;
+      if (qg && !String(c.agendaNo || '').includes(qg)) return false;
       if (qs && c.status !== qs) return false;
       if (qb && c.legalBase !== qb) return false;
+      if (qPastAgenda && !(c.meetingNo && c.agendaNo)) return false;
 
       if (filter === 'late' && !(c.slaDays > ECMIS.effectiveSlaLimit(c))) return false;
       if (filter === 'urgent' && !(c.urgent || c.urgent72)) return false;
@@ -340,42 +390,122 @@
       });
     }
 
-    document.getElementById('btnExport').addEventListener('click', () => {
+    function collectExportRows() {
       const filtered = ECMIS.CASES.filter(matches);
-      if (!filtered.length) {
-        ECMIS.toastWarn('ไม่มีข้อมูลสืบค้นสำหรับส่งออก');
-        return;
-      }
-
-      let csv = '\uFEFF';
-      csv += 'เลขสำนวน,เรื่องกล่าวหา,เจ้าของสำนวน,ผู้ถูกกล่าวหา,ฐานรับเรื่อง,สถานะ,กำหนดเวลา\n';
-
-      filtered.forEach(c => {
+      if (!filtered.length) return [];
+      return filtered.map(c => {
         const accusedStr = c.accused.map(a => `${a.name} (${a.pos})`).join('; ');
         const statusText = ECMIS.STATUS[c.status]?.label || c.status;
-
-        const id = `"${c.id.replace(/"/g, '""')}"`;
-        const subject = `"${c.subject.replace(/"/g, '""')}"`;
-        const owner = `"${c.owner.replace(/"/g, '""')}"`;
-        const accused = `"${accusedStr.replace(/"/g, '""')}"`;
-        const base = `"${c.legalBase.replace(/"/g, '""')}"`;
-        const status = `"${statusText.replace(/"/g, '""')}"`;
-        const sla = `"${c.slaDays} วัน"`;
-
-        csv += `${id},${subject},${owner},${accused},${base},${status},${sla}\n`;
+        return {
+          id: c.id,
+          subject: c.subject,
+          owner: c.owner,
+          complainant: c.complainant || '—',
+          accused: accusedStr,
+          idCards: c.accused.map(a => a.idcard).join('; '),
+          team: c.subCommittee || c.owner || '—',
+          orderNo: c.orderNo || '—',
+          meetingNo: c.meetingNo || '—',
+          agendaNo: c.agendaNo || '—',
+          base: c.legalBase,
+          status: statusText,
+          sla: `${c.slaDays} วัน`
+        };
       });
+    }
 
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    function ensureRowsForExport() {
+      const rows = collectExportRows();
+      if (!rows.length) {
+        ECMIS.toastWarn('ไม่มีข้อมูลสืบค้นสำหรับส่งออก');
+        return null;
+      }
+      return rows;
+    }
+
+    function downloadBlob(content, type, fileName) {
+      const blob = new Blob([content], { type });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `ecmis_cases_register_${Date.now()}.csv`);
+      link.setAttribute('download', fileName);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
 
+    function escapeHtml(v) {
+      return String(v || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    document.getElementById('btnExportCsv').addEventListener('click', () => {
+      const rows = ensureRowsForExport();
+      if (!rows) return;
+      let csv = '\uFEFF';
+      csv += 'เลขสำนวน,เรื่องกล่าวหา,เจ้าของสำนวน,ผู้กล่าวหา,ผู้ถูกกล่าวหา,เลขบัตร ปชช.,คณะอนุกรรมการ/พนักงานไต่สวน,เลขที่คำสั่ง,ครั้งที่ประชุม,วาระที่,ฐานรับเรื่อง,สถานะ,กำหนดเวลา\n';
+      rows.forEach(r => {
+        const vals = [r.id, r.subject, r.owner, r.complainant, r.accused, r.idCards, r.team, r.orderNo, r.meetingNo, r.agendaNo, r.base, r.status, r.sla]
+          .map(v => `"${String(v).replace(/"/g, '""')}"`)
+          .join(',');
+        csv += `${vals}\n`;
+      });
+      downloadBlob(csv, 'text/csv;charset=utf-8;', `ecmis_cases_register_${Date.now()}.csv`);
       ECMIS.toastOk('ส่งออกไฟล์ข้อมูล CSV เรียบร้อยแล้ว');
+    });
+
+    document.getElementById('btnExportWord').addEventListener('click', () => {
+      const rows = ensureRowsForExport();
+      if (!rows) return;
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ทะเบียนสำนวน</title>
+      <style>
+        body{font-family:'TH Sarabun New',Tahoma,sans-serif;font-size:16px}
+        h1{font-size:24px;margin-bottom:12px}
+        table{border-collapse:collapse;width:100%}
+        th,td{border:1px solid #999;padding:6px;vertical-align:top}
+        th{background:#f3f4f6}
+      </style></head><body>
+      <h1>ทะเบียนสำนวน E-CMIS</h1>
+      <table><thead><tr>
+        <th>เลขสำนวน</th><th>เรื่องกล่าวหา</th><th>ผู้กล่าวหา</th><th>ผู้ถูกกล่าวหา</th><th>เลขคำสั่ง</th><th>ครั้งที่ประชุม</th><th>วาระที่</th><th>สถานะ</th>
+      </tr></thead><tbody>
+      ${rows.map(r => `<tr><td>${escapeHtml(r.id)}</td><td>${escapeHtml(r.subject)}</td><td>${escapeHtml(r.complainant)}</td><td>${escapeHtml(r.accused)}</td><td>${escapeHtml(r.orderNo)}</td><td>${escapeHtml(r.meetingNo)}</td><td>${escapeHtml(r.agendaNo)}</td><td>${escapeHtml(r.status)}</td></tr>`).join('')}
+      </tbody></table></body></html>`;
+      downloadBlob(html, 'application/msword', `ecmis_cases_register_${Date.now()}.doc`);
+      ECMIS.toastOk('ส่งออกไฟล์ Word เรียบร้อยแล้ว');
+    });
+
+    document.getElementById('btnExportPdf').addEventListener('click', () => {
+      const rows = ensureRowsForExport();
+      if (!rows) return;
+      const printWin = window.open('', '_blank');
+      if (!printWin) {
+        ECMIS.toastWarn('เบราว์เซอร์บล็อกหน้าต่างสำหรับพิมพ์ PDF');
+        return;
+      }
+      printWin.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ทะเบียนสำนวน PDF</title>
+      <style>
+        body{font-family:'TH Sarabun New',Tahoma,sans-serif;font-size:15px;padding:18px}
+        h1{font-size:22px;margin-bottom:10px}
+        table{border-collapse:collapse;width:100%}
+        th,td{border:1px solid #999;padding:6px;vertical-align:top}
+        th{background:#f3f4f6}
+      </style></head><body>
+      <h1>ทะเบียนสำนวน E-CMIS</h1>
+      <table><thead><tr>
+        <th>เลขสำนวน</th><th>เรื่องกล่าวหา</th><th>ผู้กล่าวหา</th><th>ผู้ถูกกล่าวหา</th><th>เลขคำสั่ง</th><th>ครั้งที่ประชุม</th><th>วาระที่</th><th>สถานะ</th>
+      </tr></thead><tbody>
+      ${rows.map(r => `<tr><td>${escapeHtml(r.id)}</td><td>${escapeHtml(r.subject)}</td><td>${escapeHtml(r.complainant)}</td><td>${escapeHtml(r.accused)}</td><td>${escapeHtml(r.orderNo)}</td><td>${escapeHtml(r.meetingNo)}</td><td>${escapeHtml(r.agendaNo)}</td><td>${escapeHtml(r.status)}</td></tr>`).join('')}
+      </tbody></table></body></html>`);
+      printWin.document.close();
+      printWin.focus();
+      printWin.print();
+      ECMIS.toastOk('เปิดหน้าพิมพ์ PDF แล้ว');
     });
 
     let searchDebounceTimer = null;
@@ -384,12 +514,12 @@
       searchDebounceTimer = setTimeout(() => { currentPage = 1; render(false); }, 250);
     }
     document.getElementById('btnSearch').addEventListener('click', () => { currentPage = 1; render(true); });
-    ['q', 'qAccused'].forEach(id => {
+    ['q', 'qAccused', 'qIdCard', 'qComplainant', 'qTeam', 'qOrderNo', 'qMeetingNo', 'qAgendaNo'].forEach(id => {
       const el = document.getElementById(id);
       el.addEventListener('keyup', e => { if (e.key === 'Enter') { currentPage = 1; render(true); } });
       el.addEventListener('input', debouncedSearch);
     });
-    ['qStatus', 'qBase'].forEach(id => document.getElementById(id).addEventListener('change', () => { currentPage = 1; render(true); }));
+    ['qStatus', 'qBase', 'qPastAgenda'].forEach(id => document.getElementById(id).addEventListener('change', () => { currentPage = 1; render(true); }));
     document.querySelectorAll('.filter-chip').forEach(b => b.addEventListener('click', () => {
       filter = b.dataset.f;
       document.querySelectorAll('.filter-chip').forEach(x => x.classList.remove('active'));

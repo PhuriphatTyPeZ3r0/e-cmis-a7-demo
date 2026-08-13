@@ -438,11 +438,11 @@ const PAGE_FOR_72 = {
   IN_SCREENING_72:'07-subcommittee-screening.html',
   PENDING_INVITE_72:'10-agenda-set.html',
   IN_MEETING_72:'72-08-board-resolution.html',
-  RESOLVED_PENDING_72:'02-case-register.html',
-  PENDING_SIGN_RULING_72:'02-case-register.html',
-  PENDING_AREA_NOTICE_72:'02-case-register.html',
-  DISPATCHING_NACC_72:'02-case-register.html',
-  PENDING_DISPATCH_GUILTY_72:'02-case-register.html',
+  RESOLVED_PENDING_72:'72-09-ruling-report.html',
+  PENDING_SIGN_RULING_72:'72-09-ruling-report.html',
+  PENDING_AREA_NOTICE_72:'72-09-ruling-report.html',
+  DISPATCHING_NACC_72:'72-09-ruling-report.html',
+  PENDING_DISPATCH_GUILTY_72:'72-09-ruling-report.html',
   CLOSED_72:'02-case-register.html'
 };
 function pageForCase72(kase){ return PAGE_FOR_72[kase.status] || '02-case-register.html'; }
@@ -734,7 +734,8 @@ const CASES = [
     docRef:'ปป 0020/0912 ลงวันที่ 24 เมษายน 2569',
     urgent:false, complex:false, dupWarning:false,
     slaDays:2, slaLimit:15, subCommittee:'คณะที่ 1',
-    meetingNo:'37/2569', agendaNo:'5.9', meetingDate:'2569-05-19'
+    meetingNo:'37/2569', agendaNo:'5.9', meetingDate:'2569-05-19',
+    orderNo:'ปปท 24/2569'
   },
   {
     id:'1189/2569',
@@ -750,6 +751,7 @@ const CASES = [
     urgent:false, complex:false, dupWarning:false,
     slaDays:1, slaLimit:15, subCommittee:'คณะที่ 2',
     meetingNo:'36/2569', agendaNo:'5.4', meetingDate:'2569-05-05',
+    orderNo:'ปปท 31/2569',
     resolution:'ACCEPT_S24P1', signedBySecgen: true, secgenSignedAt:'04 ส.ค. 2569'
   },
   {
@@ -974,6 +976,7 @@ CASES.push(
     urgent:false, urgent72:false, complex:false, complex72:false, dupWarning:false,
     docType:'RULING', signPhase:'WAIT', slaDays:2, slaLimit:15, subCommittee:null,
     round72:1,
+    orderNo:'ปปท วฉ 12/2569',
     chainOpinions:[]
   },
   {
@@ -991,6 +994,7 @@ CASES.push(
     urgent:false, urgent72:false, complex:true, complex72:true, dupWarning:false,
     docType:'RULING', signPhase:'COMPLETE', slaDays:5, slaLimit:15, subCommittee:'คณะที่ 2',
     meetingNo:'12/2569', agendaNo:'3.4', round72:1, quorumOk72:true,
+    orderNo:'ปปท วฉ 19/2569',
     chainOpinions:[
       { roleId:'section_head', type:'ACCEPT', date:'2569-04-02', note:'รายงานการไต่สวนมีพยานหลักฐานทางเอกสารครบถ้วน เห็นควรเสนอต่อ' },
       { roleId:'director',     type:'ACCEPT', date:'2569-04-09', note:'เห็นพ้องตามที่เสนอ' },
@@ -1009,6 +1013,7 @@ CASES.push(
     urgent:false, urgent72:false, complex:false, complex72:false, dupWarning:false,
     docType:'RULING', signPhase:'COMPLETE', slaDays:14, slaLimit:15, subCommittee:null,
     meetingNo:'9/2569', agendaNo:'2.1', round72:1, quorumOk72:true,
+    orderNo:'ปปท วฉ 07/2569',
     resolution72:'NO_MERIT_72', resolutionDate72:'2569-03-20',
     chainOpinions:[]
   },
@@ -1024,6 +1029,7 @@ CASES.push(
     urgent:false, urgent72:false, complex:true, complex72:true, dupWarning:false,
     docType:'RULING', signPhase:'COMPLETE', slaDays:3, slaLimit:60, subCommittee:'คณะที่ 5',
     meetingNo:'7/2569', agendaNo:'1.2', round72:1, quorumOk72:true,
+    orderNo:'ปปท วฉ 03/2569',
     resolution72:'GUILTY_72', resolutionDate72:'2569-02-10',
     guiltyCriminal72:true, guiltyDiscipline72:true,
     criminalTrack72:{ status:'PENDING' },
@@ -1293,7 +1299,9 @@ const NAV = [
       return 'รายการพิจารณา/ลงนาม';
     },
     badge:true },
-  { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' }
+  { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' },
+  { href:'72-09-ruling-report.html',      icon:'fa-file-signature',   label:'รายงานวินิจฉัยชี้มูล (72-09)',
+    visible: role => !!role && (can('doc.generate', role.id) || can('sign.ruling', role.id) || canEditMaster(role.id)) }
 ];
 
 function navLabel(navItem, role){
