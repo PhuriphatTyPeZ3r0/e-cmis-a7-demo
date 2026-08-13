@@ -421,6 +421,10 @@ const STATUS_STEP = {
 };
 
 function isUpstreamRole(roleId){ const r = getRole(roleId); return r.scope === 'UPSTREAM'; }
+/* board_sec has its own dedicated work-inbox (08-resolution-inbox.html) — every other
+   role still shares 01-work-inbox.html. This is the one place that decision lives, so
+   every redirect/nav-link/breadcrumb across the app stays correct if that ever changes. */
+function homeHref(roleId){ return (roleId || currentRoleId()) === 'board_sec' ? '08-resolution-inbox.html' : '01-work-inbox.html'; }
 function isUpstreamCase(kase){ const s = STATUS[kase.status]; return !!(s && s.scope === 'UPSTREAM'); }
 
 function isCase72(kase){ return !!kase && kase.docType === 'RULING'; }
@@ -1280,7 +1284,7 @@ function canRecall(kase, roleId){
 
 const NAV = [
   { section:'ภาพรวม' },
-  { href:'01-work-inbox.html',            icon:'fa-inbox',
+  { href: role => homeHref(role?.id),     icon:'fa-inbox',
 
     label: role => {
       if (!role) return 'รายการพิจารณา/ลงนาม';
@@ -1294,6 +1298,9 @@ const NAV = [
 
 function navLabel(navItem, role){
   return typeof navItem.label === 'function' ? navItem.label(role) : navItem.label;
+}
+function navHref(navItem, role){
+  return typeof navItem.href === 'function' ? navItem.href(role) : navItem.href;
 }
 
 function visibleNavFor(role){
@@ -1384,11 +1391,12 @@ function renderShell(activeHref){
   /* ---- sidebar ---- */
   const navHtml = visibleNavFor(role).map(n => {
     if(n.section) return `<div class="nav-section">${n.section}</div>`;
-    const active = n.href === activeHref;
+    const href = navHref(n, role);
+    const active = href === activeHref;
     const badge = n.badge && inboxCount ? `<span class="badge bg-danger rounded-pill">${inboxCount}</span>` : '';
     const step  = n.step ? `<span class="step-no">${n.step}</span>` : `<i class="fa-solid ${n.icon}"></i>`;
     const label = navLabel(n, role);
-    return `<a class="nav-link ${active?'active':''}" href="${n.href}" title="${label}" ${n.muted?'style="opacity:.7"':''}>
+    return `<a class="nav-link ${active?'active':''}" href="${href}" title="${label}" ${n.muted?'style="opacity:.7"':''}>
       ${step}<span>${label}</span>${badge}
     </a>`;
   }).join('');
@@ -1412,7 +1420,7 @@ function renderShell(activeHref){
 
   const sidebar = `
   <nav class="app-sidebar no-print" id="appSidebar">
-    <a class="brand text-decoration-none" href="01-work-inbox.html">
+    <a class="brand text-decoration-none" href="${homeHref(role.id)}">
       <img src="pacc_logo.png" alt="ตราสำนักงาน ป.ป.ท.">
       <span>E-CMIS
         <small>สำนักงาน ป.ป.ท.</small>
@@ -1475,17 +1483,17 @@ function renderShell(activeHref){
     });
   }, 800);
 
-  const activeNav = NAV.find(n => n.href === activeHref);
+  const activeNav = NAV.find(n => navHref(n, role) === activeHref);
   if (activeNav) {
     let parentSection = 'ภาพรวม';
     for (let i = 0; i < NAV.length; i++) {
       if (NAV[i].section) parentSection = NAV[i].section;
-      if (NAV[i].href === activeHref) break;
+      if (navHref(NAV[i], role) === activeHref) break;
     }
     const breadcrumbHtml = `
       <nav aria-label="breadcrumb" class="no-print mb-2">
         <ol class="breadcrumb" style="font-size:0.75rem; margin:0 0 12px 0; padding:0; list-style:none; display:flex; gap:6px">
-          <li class="breadcrumb-item"><a href="01-work-inbox.html" style="text-decoration:none; color:var(--ecmis-navy)"><i class="fa-solid fa-house me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="${homeHref(role.id)}" style="text-decoration:none; color:var(--ecmis-navy)"><i class="fa-solid fa-house me-1"></i>Home</a></li>
           <li class="breadcrumb-item text-muted" style="display:flex; gap:6px"><span style="margin:0 4px">/</span>${parentSection}</li>
           <li class="breadcrumb-item active" style="display:flex; gap:6px" aria-current="page"><span style="margin:0 4px">/</span>${navLabel(activeNav, role)}</li>
         </ol>
@@ -2188,7 +2196,7 @@ function initCommandPalette() {
       .filter(n => n.href)
       .map(n => {
         const lbl = navLabel(n, paletteRole);
-        return { label: n.step ? `${lbl} (ขั้นตอน ${n.step})` : lbl, href: n.href, icon: n.icon, cat: 'Menu' };
+        return { label: n.step ? `${lbl} (ขั้นตอน ${n.step})` : lbl, href: navHref(n, paletteRole), icon: n.icon, cat: 'Menu' };
       });
 
     const matchedMenus = menus.filter(m => m.label.toLowerCase().includes(query));
@@ -3369,7 +3377,7 @@ global.ECMIS = {
   BOARD_MIN_IN_OFFICE, boardQuorum,
   M24P1_MIN_PANEL, M24P1_STAFF_FREE, panelComposition,
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
-  UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72,
+  UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72, homeHref,
   PERM_DEFS, can, canEditMaster, canViewCase,
   thaiDate, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole, roleIdForLogin,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
