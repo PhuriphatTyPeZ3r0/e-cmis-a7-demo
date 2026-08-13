@@ -556,7 +556,10 @@ function applyFilters() {
     let matchSt = true;
     if (st !== 'ALL') {
       if (st === 'MINE_PENDING' || st === 'PENDING') {
-        matchSt = isMyPending(c) || c.status === 'PENDING_SECGEN' || c.status === 'IN_SUPPORT_SUB' || c.status === 'PENDING_URGENT' || c.status === 'DRAFT';
+        /* ต้องเข้าเงื่อนไขเดียวกับ pendingCount ใน renderKPICards() เป๊ะ ไม่งั้นจำนวนบนการ์ด
+           KPI จะไม่ตรงกับจำนวนแถวจริงในตารางเมื่อกดกรอง (เคสที่ isMyPending แต่สถานะเป็น
+           IN_SCREENING ต้องไม่นับเป็น PENDING เพราะย้ายไปอยู่การ์ด SCREENING แล้ว) */
+        matchSt = (isMyPending(c) || c.status === 'PENDING_SECGEN' || c.status === 'IN_SUPPORT_SUB' || c.status === 'PENDING_URGENT' || c.status === 'DRAFT') && c.status !== 'IN_SCREENING';
       } else if (st === 'SIGNED') {
         matchSt = !!c.signedBySecgen || c.status === 'AGENDA_SET' || c.status === 'IN_MEETING' || c.status === 'RESOLVED_PENDING' || c.status === 'RESOLVED' || c.status === 'DISPATCHING' || c.status === 'CLOSED' || c.status === 'PENDING_CHAIR_OF' || c.status === 'PENDING_CHAIRMAN';
       } else if (st === 'RETURNED' || st === 'REJECTED') {
