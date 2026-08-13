@@ -1061,7 +1061,8 @@ CASES.push(
     allegation:'เรียกรับผลประโยชน์รายเดือนจากเรือประมงอวนลากรวดในเขตทะเลชายฝั่ง',
     receivedDate:'2568-11-10', deadline60:'2569-01-09', deadline2y:'2570-11-10', prescription:'2571-12-01',
     docRef:'ปป 0028/0835 ลงวันที่ 18 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
-    docType:'213', signPhase:'COMPLETE', slaDays:2, slaLimit:5
+    docType:'213', signPhase:'COMPLETE', slaDays:2, slaLimit:5,
+    resolution:'MORE_INVESTIGATE'
   },
   {
     id:'1478/2568',
@@ -1073,7 +1074,8 @@ CASES.push(
     allegation:'อนุมัติคืนภาษี VAT ให้แก่บริษัทออกใบกำกับภาษีปลอม รวมมูลค่าความเสียหาย 4.5 ล้านบาท',
     receivedDate:'2568-11-15', deadline60:'2569-01-14', deadline2y:'2570-11-15', prescription:'2572-11-20',
     docRef:'ปป 0029/0940 ลงวันที่ 20 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
-    docType:'213', signPhase:'COMPLETE', slaDays:1, slaLimit:5
+    docType:'213', signPhase:'COMPLETE', slaDays:1, slaLimit:5,
+    resolution:'NOT_ACCEPTED'
   },
   {
     id:'681645',
@@ -1098,6 +1100,25 @@ CASES.push(
     receivedDate:'2568-11-25', deadline60:'2569-01-24', deadline2y:'2570-11-25', prescription:'2572-12-25',
     docRef:'ปป 0026/1150 ลงวันที่ 25 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
     docType:'213', signPhase:'WAIT', slaDays:6, slaLimit:5
+  },
+  /* บันทึกไว้เพื่อให้หน้าจอ board_sec (01-work-inbox.html คอลัมน์ "หมวดหมู่มติ") มีตัวอย่าง
+     ครบทุกหมวดของ RESOLUTIONS[].group — เดิมมีแค่ 3 สำนวน RESOLVED และมีแค่กลุ่ม
+     "รับไว้ไต่สวน"/"มติอื่น ๆ" (ดูอีก 2 เคสด้านบน) ยังไม่มีตัวอย่างกลุ่ม
+     "ข้อกล่าวหาไม่มีมูล" เลย จึงเพิ่มสำนวนใหม่แทนการไปแก้ทับตัวอย่างเดิมที่ยังต้องใช้
+     สาธิตสถานะอื่น (AGENDA_SET/IN_SCREENING ที่มีตัวอย่างเดียว) */
+  {
+    id:'0592/2568',
+    subject:'กล่าวหาเจ้าหน้าที่องค์การบริหารส่วนตำบลแห่งหนึ่ง เบิกค่าเบี้ยเลี้ยงเดินทางราชการซ้ำซ้อน',
+    legalBase:'ม.18/4', status:'RESOLVED', signedBySecgen: true, secgenSignedAt:'07 ส.ค. 2569',
+    owner:'นายอนุรักษ์ ปราบทุจริต', ownerOrg:'สนง. ป.ป.ท. เขต 2',
+    complainant:'บัตรสนเท่ห์',
+    accused:[ { no:1, name:'นายพิพัฒน์ เดินทางไกล', pos:'นักวิเคราะห์นโยบายและแผนชำนาญการ', idcard:'3-2006-0xxxx-xx-x', agency:'อบต.แห่งหนึ่ง' } ],
+    allegation:'ถูกกล่าวหาเบิกค่าเบี้ยเลี้ยงเดินทางราชการซ้ำซ้อนกับหน่วยงานอื่น แต่จากการไต่สวนพบว่าเป็นการเดินทางไปราชการคนละภารกิจในวันเดียวกันจริง มีหลักฐานการอนุมัติและปฏิบัติงานครบถ้วน',
+    receivedDate:'2568-10-20', deadline60:'2568-12-19', deadline2y:'2570-10-20', prescription:'2571-09-05',
+    docRef:'ปป 0022/0760 ลงวันที่ 14 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
+    slaDays:1, slaLimit:5, subCommittee:'คณะที่ 4',
+    meetingNo:'38/2569', agendaNo:'5.15', meetingDate:'2569-06-02',
+    resolution:'NO_GROUND'
   }
 );
 
