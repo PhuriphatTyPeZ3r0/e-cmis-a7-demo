@@ -121,7 +121,7 @@
                 <tr>
                   <th class="text-center"><input type="checkbox" id="chkAll" class="form-check-input"></th>
                   <th class="sortable-header" data-sort="id" style="cursor:pointer">เรื่องที่ <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
-                  <th>หมวดหมู่มติ</th>
+                  <th id="colResGroupHeader" class="d-none">หมวดหมู่มติ</th>
                   <th>เรื่องกล่าวหา</th>
                   <th id="colStatusHeader">สถานะเสนอ/ลงนาม</th>
                   <th class="sortable-header" data-sort="act7Status" style="cursor:pointer">สถานะติดตาม <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
@@ -230,6 +230,10 @@ document.getElementById('flowRefText').textContent = copy.flowRef;
 document.getElementById('card1TitleText').textContent = copy.card1Title;
 document.getElementById('colStatusFilterLabel').textContent = copy.colStatusHeader;
 document.getElementById('colStatusHeader').textContent = copy.colStatusHeader;
+/* "หมวดหมู่มติ" เกี่ยวกับเจ้าหน้าที่ผู้บันทึกมติ (board_sec) โดยตรงเท่านั้น บทบาทอื่นไม่ต้อง
+   เห็นคอลัมน์นี้ — row() เว้น <td> ไว้เปล่าให้บทบาทอื่นอยู่แล้ว จึงต้องซ่อน <th> คู่กันด้วย
+   ไม่งั้นจำนวนคอลัมน์ระหว่างหัวตารางกับแถวข้อมูลจะไม่ตรงกัน */
+if (role.id === 'board_sec') document.getElementById('colResGroupHeader').classList.remove('d-none');
 /* ตัวกรอง #statusFilter เดิม option text hardcode คำว่า "รอเลขาพิจารณาลงนาม" ตรงๆ ทั้งที่
    copy.stPending/stDone/stReturned มีคำที่เหมาะกับแต่ละบทบาทอยู่แล้ว (เช่น board_sec = "รอบันทึกมติ")
    แต่ไม่เคยถูกใช้จริงกับ dropdown นี้เลย — ผูกเข้าด้วยกันให้ตรงกับ stat card/label ด้านบน */
@@ -409,17 +413,22 @@ function row(c){
     : ECMIS.act7Badge(ECMIS.getAct7Status(c));
   /* "หมวดหมู่มติ" — RESOLUTIONS/RESOLUTIONS_72 มีฟิลด์ group อยู่แล้ว (เช่น "รับไว้ไต่สวน",
      "ไม่รับเรื่องไว้พิจารณา") แต่ไม่เคยถูกดึงมาแสดงในตารางเลย ก่อนบอร์ดมีมติ (c.resolution
-     ยังไม่ถูกเซ็ต) แสดงเป็นค่ากลาง ไม่ใช่ค่าว่างเปล่า เพื่อไม่ให้ดูเหมือนข้อมูลหาย */
+     ยังไม่ถูกเซ็ต) แสดงเป็นค่ากลาง ไม่ใช่ค่าว่างเปล่า เพื่อไม่ให้ดูเหมือนข้อมูลหาย —
+     แสดงคอลัมน์นี้เฉพาะ board_sec (เจ้าหน้าที่ผู้บันทึกมติจริง) บทบาทอื่นไม่เกี่ยวกับ
+     การจัดหมวดมติโดยตรงจึงซ่อนไว้ ไม่ให้ตารางรกเกินจำเป็น */
   const resGroup = c.resolution
     ? (is72 ? ECMIS.resolution72(c.resolution) : ECMIS.resolutionOf(c.resolution))?.group
     : null;
+  const resGroupCellHtml = role.id === 'board_sec'
+    ? `<td>${resGroup ? `<span class="chip">${resGroup}</span>` : '<span class="text-muted" style="font-size:0.78rem">— ยังไม่มีมติ —</span>'}</td>`
+    : '';
 
   return `<tr>
     <td class="text-center">
       ${isPendingAction ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="ไม่มีสิทธิ์สั่งการกลุ่ม"></i>'}
     </td>
     <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
-    <td>${resGroup ? `<span class="chip">${resGroup}</span>` : '<span class="text-muted" style="font-size:0.78rem">— ยังไม่มีมติ —</span>'}</td>
+    ${resGroupCellHtml}
     <td style="max-width:300px">
       <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
       <small class="text-muted d-block" style="font-size:0.75rem">${c.ownerOrg}</small>
@@ -453,7 +462,7 @@ function renderMyQueue(loading = false) {
         <tr class="skeleton-row">
           <td><div class="skeleton-box" style="width:20px"></div></td>
           <td><div class="skeleton-box" style="width:80px"></div></td>
-          <td><div class="skeleton-box" style="width:100px"></div></td>
+          ${role.id === 'board_sec' ? '<td><div class="skeleton-box" style="width:100px"></div></td>' : ''}
           <td><div class="skeleton-box" style="width:200px"></div></td>
           <td><div class="skeleton-box" style="width:110px"></div></td>
           <td><div class="skeleton-box" style="width:180px"></div></td>
@@ -505,7 +514,7 @@ function renderMyQueue(loading = false) {
 
   tbodyPrimary.innerHTML = paginatedCases.length
     ? paginatedCases.map(c => row(c)).join('')
-    : `<tr><td colspan="8" class="text-center text-muted py-4">
+    : `<tr><td colspan="${role.id === 'board_sec' ? 8 : 7}" class="text-center text-muted py-4">
          <i class="fa-regular fa-face-smile fa-lg mb-2 d-block"></i>
          ไม่มีรายการสำนวนตามเงื่อนไขการค้นหา<br>
          <small>ลองเปลี่ยนข้อความค้นหาหรือตัวกรองสถานะติดตาม</small></td></tr>`;
