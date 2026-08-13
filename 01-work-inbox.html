@@ -255,13 +255,34 @@ const allCasesCombined = Array.from(allCasesCombinedMap.values()).map(item => {
   return { ...c, isActionable: item.isActionable || isMyPending(c) };
 });
 
+/* board_sec ไม่ได้อยู่ในสายอนุมัติ 213/644 ที่ pendingCount/signedCount เดิมออกแบบไว้
+   (เดิม hardcode ให้ AGENDA_SET/IN_MEETING/RESOLVED_PENDING/RESOLVED ทั้งชุดเป็น "signed/done"
+   ทั้งที่ IN_MEETING แปลว่า "ยังอยู่ระหว่างประชุม บอร์ดยังไม่มีมติ" ตรงๆ — ขัดกับคอลัมน์
+   "สถานะติดตาม" ที่ getAct7Status() แปลสถานะเดียวกันนี้เป็น "อยู่ระหว่างพิจารณา" ทำให้แถว
+   เดียวกันในตารางแสดงข้อมูลขัดแย้งกันเอง) ต้องแยกนิยาม "รอบันทึกมติ" กับ "บันทึกมติแล้ว"
+   ตามสถานะจริงของ board_sec เอง ไม่ใช้ชุดเดียวกับ secgen */
+const STATUS_BUCKETS = {
+  board_sec: {
+    pending:  ['AGENDA_SET', 'IN_MEETING', 'PENDING_INVITE_72', 'IN_MEETING_72'],
+    done:     ['RESOLVED_PENDING', 'RESOLVED', 'RESOLVED_PENDING_72'],
+    returned: ['DEFERRED']
+  }
+};
+
 /* ---------- KPI Summary Cards (5 Cards) ---------- */
 function renderKPICards() {
   const currentSt = document.getElementById('statusFilter')?.value || 'ALL';
+  const bucket = STATUS_BUCKETS[role.id];
 
-  const pendingCount = allCasesCombined.filter(c => (isMyPending(c) || c.status === 'PENDING_SECGEN' || c.status === 'IN_SUPPORT_SUB' || c.status === 'PENDING_URGENT' || c.status === 'DRAFT') && c.status !== 'IN_SCREENING').length;
-  const signedCount = allCasesCombined.filter(c => c.signedBySecgen || c.status === 'AGENDA_SET' || c.status === 'IN_MEETING' || c.status === 'RESOLVED_PENDING' || c.status === 'RESOLVED' || c.status === 'DISPATCHING' || c.status === 'CLOSED' || c.status === 'PENDING_CHAIR_OF' || c.status === 'PENDING_CHAIRMAN').length;
-  const returnedCount = allCasesCombined.filter(c => c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS').length;
+  const pendingCount = bucket
+    ? allCasesCombined.filter(c => bucket.pending.includes(c.status)).length
+    : allCasesCombined.filter(c => (isMyPending(c) || c.status === 'PENDING_SECGEN' || c.status === 'IN_SUPPORT_SUB' || c.status === 'PENDING_URGENT' || c.status === 'DRAFT') && c.status !== 'IN_SCREENING').length;
+  const signedCount = bucket
+    ? allCasesCombined.filter(c => bucket.done.includes(c.status)).length
+    : allCasesCombined.filter(c => c.signedBySecgen || c.status === 'AGENDA_SET' || c.status === 'IN_MEETING' || c.status === 'RESOLVED_PENDING' || c.status === 'RESOLVED' || c.status === 'DISPATCHING' || c.status === 'CLOSED' || c.status === 'PENDING_CHAIR_OF' || c.status === 'PENDING_CHAIRMAN').length;
+  const returnedCount = bucket
+    ? allCasesCombined.filter(c => bucket.returned.includes(c.status)).length
+    : allCasesCombined.filter(c => c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS').length;
   const screeningCount = allCasesCombined.filter(c => c.status === 'IN_SCREENING').length;
 
   const kpis = [
@@ -581,18 +602,24 @@ function applyFilters() {
       (c.ownerOrg && c.ownerOrg.toLowerCase().includes(q)) ||
       act7St.toLowerCase().includes(q);
 
-    // Sign / Action Status Filter
+    // Sign / Action Status Filter — ต้องเข้าเงื่อนไขเดียวกับ renderKPICards() เป๊ะ
+    // (รวม STATUS_BUCKETS[role.id] สำหรับ board_sec) ไม่งั้นจำนวนบนการ์ด KPI จะไม่ตรงกับ
+    // จำนวนแถวจริงในตารางเมื่อกดกรอง
     let matchSt = true;
+    const bucket = STATUS_BUCKETS[role.id];
     if (st !== 'ALL') {
       if (st === 'MINE_PENDING' || st === 'PENDING') {
-        /* ต้องเข้าเงื่อนไขเดียวกับ pendingCount ใน renderKPICards() เป๊ะ ไม่งั้นจำนวนบนการ์ด
-           KPI จะไม่ตรงกับจำนวนแถวจริงในตารางเมื่อกดกรอง (เคสที่ isMyPending แต่สถานะเป็น
-           IN_SCREENING ต้องไม่นับเป็น PENDING เพราะย้ายไปอยู่การ์ด SCREENING แล้ว) */
-        matchSt = (isMyPending(c) || c.status === 'PENDING_SECGEN' || c.status === 'IN_SUPPORT_SUB' || c.status === 'PENDING_URGENT' || c.status === 'DRAFT') && c.status !== 'IN_SCREENING';
+        matchSt = bucket
+          ? bucket.pending.includes(c.status)
+          : (isMyPending(c) || c.status === 'PENDING_SECGEN' || c.status === 'IN_SUPPORT_SUB' || c.status === 'PENDING_URGENT' || c.status === 'DRAFT') && c.status !== 'IN_SCREENING';
       } else if (st === 'SIGNED') {
-        matchSt = !!c.signedBySecgen || c.status === 'AGENDA_SET' || c.status === 'IN_MEETING' || c.status === 'RESOLVED_PENDING' || c.status === 'RESOLVED' || c.status === 'DISPATCHING' || c.status === 'CLOSED' || c.status === 'PENDING_CHAIR_OF' || c.status === 'PENDING_CHAIRMAN';
+        matchSt = bucket
+          ? bucket.done.includes(c.status)
+          : !!c.signedBySecgen || c.status === 'AGENDA_SET' || c.status === 'IN_MEETING' || c.status === 'RESOLVED_PENDING' || c.status === 'RESOLVED' || c.status === 'DISPATCHING' || c.status === 'CLOSED' || c.status === 'PENDING_CHAIR_OF' || c.status === 'PENDING_CHAIRMAN';
       } else if (st === 'RETURNED' || st === 'REJECTED') {
-        matchSt = (c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS');
+        matchSt = bucket
+          ? bucket.returned.includes(c.status)
+          : (c.status === 'RETURNED' || c.m28 === 'REJECT' || c.m28 === 'DISMISS');
       } else if (st === 'SCREENING') {
         matchSt = (c.status === 'IN_SCREENING');
       } else {
