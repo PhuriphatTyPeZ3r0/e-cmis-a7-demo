@@ -181,7 +181,7 @@
               <button class="btn btn-sm btn-light" onclick="window.print()"><i class="fa-solid fa-print"></i></button>
               <button class="btn btn-sm btn-light" id="btnDocx"><i class="fa-solid fa-download me-1"></i>.docx</button>
             </div>
-            <div class="doc-paper doc-resolution" id="docPaper"></div>
+            <div class="doc-paper-wrap" id="docPaper"></div>
           </div>
         </div>
       </div>
@@ -582,19 +582,18 @@
         : '';
       const lastNo = kase.legalBase === 'ม.62' ? '๓' : '๒';
 
-      /* หัวกระดาษวิ่ง (ครั้งที่/วันที่/วาระที่ + ลับ) ต้องซ้ำทุกหน้าตอนพิมพ์จริง
-         (ขนาดอักษรในเอกสารมติ.xlsx ข้อ 7) — ใส่ใน <thead> เพื่อให้เบราว์เซอร์พิมพ์ซ้ำเอง
-         ทุกหน้าที่ตัดขึ้นใหม่ โดยไม่ต้องคำนวณ pagination เอง (ดูคอมเมนต์ CSS ประกอบ)
-         ไม่ใส่บล็อกผู้ลงนามในหัวกระดาษวิ่ง — ผิด format เอกสารจริง ผู้ลงนามอยู่ท้ายเอกสาร
-         จุดเดียวเท่านั้น (ดู .doc-sign ด้านล่าง) */
-      const runningHeader = `
+      /* หัวกระดาษวิ่ง (ครั้งที่/วันที่/วาระที่ + ลับ + เลขหน้า) ซ้ำทุกหน้าตั้งแต่หน้า 2 เป็นต้นไป
+         ไม่ใส่บล็อกผู้ลงนาม (ผิด format เอกสารจริง ผู้ลงนามอยู่ท้ายเอกสารจุดเดียว — ดู signBlock) */
+      function runningHeaderHtml(pageNo) {
+        return `
     <div class="doc-run-title">มติการประชุมคณะกรรมการ ป.ป.ท.<br>
       ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}<br>วาระที่ ${M(agendaNo)}</div>
-    <div class="doc-secret">ลับ</div>`;
+    <div class="doc-secret">ลับ</div>
+    <div class="doc-run-page">- ${ECMIS.toThaiDigits(pageNo)} -</div>`;
+      }
 
-      document.getElementById('docPaper').innerHTML = `
-    <table class="doc-res-pages"><thead><tr><td>${runningHeader}</td></tr></thead>
-    <tbody><tr><td>
+      /* บล็อกคงที่หน้า 1 (ไม่ไหลข้ามหน้า เพราะเป็นหัวเอกสาร/ข้อมูลอ้างอิงสั้นๆ ที่ควรอยู่ด้วยกัน) */
+      const introBlock = `
     <div class="doc-secret">ลับ</div>
     <div class="doc-title">
       <div class="doc-title-l1">มติการประชุม</div>
@@ -607,60 +606,59 @@
     <div class="doc-row"><span class="k">สังกัด</span> ${M(ownerOrg)}</div>
     <div class="doc-row"><span class="k">ผู้ชี้แจง</span> ${M(presenter)}</div>
     <div class="doc-row"><span class="k">เอกสารอ้างอิง</span> หนังสือหน่วยงานที่รับผิดชอบตามเอกสาร
-      ${M(kase.docRef !== '—' ? kase.docRef : '', 'ที่ ปป …………/……… ลงวันที่ ……………')} และเอกสารประกอบการประชุม</div>
+      ${M(kase.docRef !== '—' ? kase.docRef : '', 'ที่ ปป …………/……… ลงวันที่ ……………')} และเอกสารประกอบการประชุม</div>`;
 
-    <div class="doc-body-indent">
-      <div class="doc-indent" style="margin-top:12px">
-        ${M(presenter)} ${M(ownerOrg)} เสนอรายงานการไต่สวนเบื้องต้นที่ผ่านการพิจารณา
-        เลขาธิการคณะกรรมการ ป.ป.ท. ต่อที่ประชุมคณะกรรมการ ป.ป.ท. ดังนี้
-      </div>
-
-      <div style="margin-top:10px">๑. เรื่องที่ ${M(kase.id)}
-        (${M(kase.legalBase === 'ม.62'
-          ? 'รับตามมาตรา ๖๒ พระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑'
-          : 'รับตามมาตรา ๑๘/๔ พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม')})
-      </div>
-
-      <div class="doc-h">ผู้กล่าวหา</div>
-      <div>${M(kase.complainant)}</div>
-
-      <div class="doc-h">ผู้ถูกร้อง</div>
-      ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}
-
-      <div class="doc-h">ข้อกล่าวหา</div>
-      <div class="doc-indent">${M(kase.allegation)}</div>
-
-      <div class="doc-h">การชี้แจงเพิ่มเติม</div>
-      <div class="doc-indent">ผู้ชี้แจง (${M(presenter)}) ชี้แจงเพิ่มเติมว่า
-        ${M(presenterNote, '………………………………………………………………………………………………')}</div>
-
-      <div class="doc-h">ความเห็นที่ประชุม</div>
-      <div class="doc-indent">คณะกรรมการ ป.ป.ท. พิจารณาแล้วเห็นว่า
-        ${M(opinion, '………………………………………………………………………………………………')}</div>
-      ${kase.subCommittee ? `<div class="doc-indent" style="margin-top:6px">
-        เหตุผลในการวินิจฉัยคณะกรรมการ ป.ป.ท. มีความเห็นสอดคล้องกับผู้รับผิดชอบสำนวนและคณะอนุกรรมการกลั่นกรอง
-        เรื่อง รายงานผลการรวบรวมพยานหลักฐานไต่สวนเบื้องต้นและรายงานการไต่สวนเพื่อวินิจฉัยชี้มูล
-        เพื่อเสนอคณะกรรมการ ป.ป.ท. ${M(kase.subCommittee)}</div>` : ''}
-    </div>
-
-    <div class="doc-h">มติที่ประชุม</div>
-    <div>๑. คณะกรรมการ ป.ป.ท. มีมติ${M(unanimous ? 'เป็นเอกฉันท์' : `ด้วยคะแนนเสียงข้างมาก ${t.forV} ต่อ ${t.againstV} เสียง`)}</div>
-    <div style="padding-left:1.5em">- ${M(resText)}</div>
-    ${t.againstV > 0 ? `<div style="padding-left:1.5em;color:#DB2626">
-      (มีกรรมการเห็นแย้ง ${t.againstV} ท่าน — บันทึกความเห็นแย้งพร้อมเหตุผลไว้ในรายงานการประชุมตาม ม.๑๖)</div>` : ''}
-    ${t.recused > 0 ? `<div style="padding-left:1.5em;color:#6b3fa0">
-      (กรรมการที่ถูกกันออกจากการพิจารณาวาระนี้ตาม ม.๒๐ จำนวน ${t.recused} ท่าน)</div>` : ''}
-    ${s65}
-    <div style="margin-top:6px">${lastNo}. รับรองมติการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)}
-      วันที่ ${M(meetDate)} วาระที่ ${M(agendaNo)}</div>
-
+      /* บล็อกท้ายคงที่ (อยู่หน้าสุดท้ายเท่านั้น) */
+      const signBlock = `
     <div class="doc-sign">
       <span class="doc-dots"></span><br>
       (${M(signerName)})<br>
       ${M(signerTitle)}
     </div>
-    <div class="doc-secret-foot">ลับ</div>
-    </td></tr></tbody></table>`;
+    <div class="doc-secret-foot">ลับ</div>`;
+
+      /* เนื้อหาที่ไหลข้ามหน้าได้ — แต่ละสมาชิกคือหน่วยที่เล็กที่สุดที่ตัดขึ้นหน้าใหม่ระหว่างกลางไม่ได้
+         (ตัดได้แค่ระหว่าง element ไม่ตัดกลางย่อหน้า) ส่วนที่เดิมอยู่ใน .doc-body-indent ผูก class
+         นั้นเข้ากับแต่ละ element เอง แทนการห่อ div เดียวครอบทั้งหมด เพราะแต่ละ element อาจแยกไปคนละหน้า */
+      const bi = html => `<div class="doc-body-indent">${html}</div>`;
+      const flowBlocks = [
+        bi(`<div class="doc-indent" style="margin-top:12px">
+        ${M(presenter)} ${M(ownerOrg)} เสนอรายงานการไต่สวนเบื้องต้นที่ผ่านการพิจารณา
+        เลขาธิการคณะกรรมการ ป.ป.ท. ต่อที่ประชุมคณะกรรมการ ป.ป.ท. ดังนี้
+      </div>`),
+        bi(`<div style="margin-top:10px">๑. เรื่องที่ ${M(kase.id)}
+        (${M(kase.legalBase === 'ม.62'
+          ? 'รับตามมาตรา ๖๒ พระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑'
+          : 'รับตามมาตรา ๑๘/๔ พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม')})
+      </div>`),
+        bi(`<div class="doc-h">ผู้กล่าวหา</div><div>${M(kase.complainant)}</div>`),
+        bi(`<div class="doc-h">ผู้ถูกร้อง</div>`),
+        ...kase.accused.map(a => bi(`<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`)),
+        bi(`<div class="doc-h">ข้อกล่าวหา</div><div class="doc-indent">${M(kase.allegation)}</div>`),
+        bi(`<div class="doc-h">การชี้แจงเพิ่มเติม</div>
+      <div class="doc-indent">ผู้ชี้แจง (${M(presenter)}) ชี้แจงเพิ่มเติมว่า
+        ${M(presenterNote, '………………………………………………………………………………………………')}</div>`),
+        bi(`<div class="doc-h">ความเห็นที่ประชุม</div>
+      <div class="doc-indent">คณะกรรมการ ป.ป.ท. พิจารณาแล้วเห็นว่า
+        ${M(opinion, '………………………………………………………………………………………………')}</div>`),
+        ...(kase.subCommittee ? [bi(`<div class="doc-indent" style="margin-top:6px">
+        เหตุผลในการวินิจฉัยคณะกรรมการ ป.ป.ท. มีความเห็นสอดคล้องกับผู้รับผิดชอบสำนวนและคณะอนุกรรมการกลั่นกรอง
+        เรื่อง รายงานผลการรวบรวมพยานหลักฐานไต่สวนเบื้องต้นและรายงานการไต่สวนเพื่อวินิจฉัยชี้มูล
+        เพื่อเสนอคณะกรรมการ ป.ป.ท. ${M(kase.subCommittee)}</div>`)] : []),
+        `<div class="doc-h">มติที่ประชุม</div>
+    <div>๑. คณะกรรมการ ป.ป.ท. มีมติ${M(unanimous ? 'เป็นเอกฉันท์' : `ด้วยคะแนนเสียงข้างมาก ${t.forV} ต่อ ${t.againstV} เสียง`)}</div>`,
+        `<div style="padding-left:1.5em">- ${M(resText)}</div>`,
+        ...(t.againstV > 0 ? [`<div style="padding-left:1.5em;color:#DB2626">
+      (มีกรรมการเห็นแย้ง ${t.againstV} ท่าน — บันทึกความเห็นแย้งพร้อมเหตุผลไว้ในรายงานการประชุมตาม ม.๑๖)</div>`] : []),
+        ...(t.recused > 0 ? [`<div style="padding-left:1.5em;color:#6b3fa0">
+      (กรรมการที่ถูกกันออกจากการพิจารณาวาระนี้ตาม ม.๒๐ จำนวน ${t.recused} ท่าน)</div>`] : []),
+        ...(s65 ? [s65] : []),
+        `<div style="margin-top:6px">${lastNo}. รับรองมติการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)}
+      วันที่ ${M(meetDate)} วาระที่ ${M(agendaNo)}</div>`
+      ];
+
+      ECMIS.paginateResolutionDoc(document.getElementById('docPaper'),
+        { introBlock, flowBlocks, signBlock, runningHeaderHtml });
     }
 
     /* ---------- wire ---------- */

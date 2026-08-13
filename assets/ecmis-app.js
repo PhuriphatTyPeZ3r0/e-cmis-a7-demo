@@ -1838,6 +1838,80 @@ function mergeField(value, placeholder){
   return `<span class="mergefield filled" title="Auto-fill จากฟอร์ม/ฐานข้อมูลกลาง E-CMIS">${toThaiDigits(value)}</span>`;
 }
 
+/* -------------------------------------------- PAGINATION (มติการประชุม / เอกสาร .doc-resolution)
+   เอกสารมติจริงยาวเกิน 1 หน้าเสมอ (ผู้ถูกร้องหลายคน/ความเห็นยาว) และหน้า 2 เป็นต้นไปต้องมี
+   หัวกระดาษวิ่ง + เลขหน้าซ้ำ (ขนาดอักษรในเอกสารมติ.xlsx ข้อ 7-8) — เดิมใช้เทคนิค <table><thead>
+   ให้เบราว์เซอร์พิมพ์ซ้ำเอง แต่ทำเลขหน้าที่ต้องขึ้นเฉพาะหน้า 2+ (ไม่ขึ้นหน้า 1) ไม่ได้ เพราะ thead
+   ซ้ำเนื้อหาเดิมทุกหน้ารวมหน้าแรกด้วย ฟังก์ชันนี้จึงวัดความสูงเนื้อหาจริงในเบราว์เซอร์ (DOM ที่ซ่อน
+   ไว้ด้วย visibility:hidden ไม่ใช่ display:none จึงยัง layout จริง) แล้วตัดแบ่งเป็นหลาย .doc-paper
+   ซ้อนกันเอง แทนการพึ่ง CSS paged-media (Chrome ยังไม่รองรับ margin-box ที่จำเป็นสำหรับเลขหน้าแบบนี้)
+
+   opts:
+     introBlock   — HTML คงที่ที่อยู่หัวหน้า 1 เท่านั้น ไม่ไหลข้ามหน้า (หัวเรื่อง/ข้อมูลอ้างอิงสั้นๆ)
+     flowBlocks   — array ของ HTML แต่ละชิ้น เป็นหน่วยเล็กสุดที่ตัดขึ้นหน้าใหม่ระหว่างกลางไม่ได้
+     signBlock    — HTML คงที่ที่อยู่ท้ายหน้าสุดท้ายเท่านั้น (ลายเซ็น + ลับท้ายกระดาษ)
+     runningHeaderHtml(pageNo) — คืน HTML หัวกระดาษวิ่งของหน้านั้น (ไม่ใช้กับหน้า 1) */
+function paginateResolutionDoc(containerEl, opts){
+  const { introBlock, flowBlocks, signBlock, runningHeaderHtml } = opts;
+
+  /* probe ใช้วัดความสูงเนื้อหาจริงที่ความกว้างหน้ากระดาษจริง (210mm) — ไม่ใช้ % ของ container
+     เพราะต้องได้ค่าคงที่ไม่ขึ้นกับขนาดจอ ใช้ visibility:hidden (ไม่ใช่ display:none) เพื่อให้ยัง
+     layout จริงและอ่าน scrollHeight ได้ */
+  let probe = document.getElementById('docPaperProbe');
+  if(!probe){
+    probe = document.createElement('div');
+    probe.id = 'docPaperProbe';
+    probe.className = 'doc-paper doc-resolution';
+    probe.style.cssText = 'position:absolute; visibility:hidden; left:-99999px; top:0; width:210mm; height:auto; aspect-ratio:auto;';
+    document.body.appendChild(probe);
+  }
+  const mmProbe = document.createElement('div');
+  mmProbe.style.cssText = 'position:absolute; visibility:hidden; left:-99999px; height:297mm; width:0;';
+  document.body.appendChild(mmProbe);
+  const PAGE_BUDGET = mmProbe.getBoundingClientRect().height;
+  mmProbe.remove();
+
+  function measure(html){ probe.innerHTML = html; return probe.scrollHeight; }
+
+  /* แพ็กแบบ greedy: ใส่บล็อกต่อไปเรื่อยๆ จนกว่าจะเกินงบพื้นที่หน้า ค่อยตัดขึ้นหน้าใหม่ — เลขหน้า
+     จริงคำนวณทีหลังตอน render (ใช้เลขหน้าโดยประมาณระหว่างวัดความสูง เพราะความสูงหัวกระดาษวิ่ง
+     แทบไม่ต่างกันไม่ว่าเลขหน้าจะเป็นเลขอะไร ไม่กระทบผลการตัดหน้า) */
+  const pages = []; // { isFirst, blocks: string[] }
+  let pageBlocks = [introBlock];
+  let isFirst = true;
+
+  function pushPage(){ pages.push({ isFirst, blocks: pageBlocks }); pageBlocks = []; isFirst = false; }
+  function prefixFor(estPageNo){ return isFirst ? '' : runningHeaderHtml(estPageNo); }
+
+  flowBlocks.forEach(block => {
+    const mandatoryOnly = pageBlocks.length === (isFirst ? 1 : 0);
+    const candidate = prefixFor(pages.length + 2) + pageBlocks.join('') + block;
+    if(mandatoryOnly || measure(candidate) <= PAGE_BUDGET){
+      pageBlocks.push(block);
+    } else {
+      pushPage();
+      pageBlocks.push(block);
+    }
+  });
+
+  const withSign = prefixFor(pages.length + 2) + pageBlocks.join('') + signBlock;
+  const mandatoryOnly = pageBlocks.length === (isFirst ? 1 : 0);
+  if(mandatoryOnly || measure(withSign) <= PAGE_BUDGET){
+    pageBlocks.push(signBlock);
+    pushPage();
+  } else {
+    pushPage();
+    pageBlocks = [signBlock];
+    pushPage();
+  }
+
+  containerEl.innerHTML = pages.map((p, i) => {
+    const pageNo = i + 1;
+    const header = p.isFirst ? '' : runningHeaderHtml(pageNo);
+    return `<div class="doc-paper doc-resolution">${header}${p.blocks.join('')}</div>`;
+  }).join('');
+}
+
 /* ---------------------------------------------------------- DIALOGS */
 function confirmAction(opts){
   return Swal.fire({
@@ -3584,7 +3658,7 @@ global.ECMIS = {
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   isAuthed, currentUsername, logout,
   renderShell, stepperHtml, statusBadge, slaBadge, actionBar,
-  mergeField, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
+  mergeField, paginateResolutionDoc, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
 
   // Custom Activity 7 Status helpers
   ACT7_SECTIONS, ACT7_STATUSES, getAct7Status, act7Badge,
