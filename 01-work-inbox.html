@@ -157,9 +157,31 @@ ECMIS.renderShell('01-work-inbox.html');
 
 const role  = ECMIS.currentRole();
 
-const all   = ECMIS.CASES.filter(c => ECMIS.canViewCase(c, role.id));
+const STATUS_BUCKETS = {
+  board_sec: {
+    pending:  ['AGENDA_SET', 'IN_MEETING', 'PENDING_INVITE_72', 'IN_MEETING_72'],
+    done:     ['RESOLVED_PENDING', 'RESOLVED', 'RESOLVED_PENDING_72'],
+    returned: ['DEFERRED']
+  }
+};
 
-let mine    = ECMIS.inboxFor(role.id).filter(c => !ECMIS.isUpstreamCase(c) && ECMIS.canViewCase(c, role.id));
+/* บทบาทที่มี STATUS_BUCKETS = มี "งานของตัวเอง" ที่นิยามชัดเจนตามสถานะ — รายการ/ตัวเลข
+   KPI ของบทบาทนี้จึงต้องเป็นแค่ "งานตัวเอง" (union ของสามชุดสถานะ) ไม่ใช่ทุกสำนวนที่ view.all
+   มองเห็นได้ (สิทธิ์ view.all กว้างกว่ามาก ใช้เปิดดูสำนวนใดก็ได้เป็นรายกรณี ไม่ใช่ scope ของ inbox
+   นี้) — ป้องกันปัญหาเดิมที่ "รายการทั้งหมด" รวมสำนวนที่ยังไม่ถึงมือ/ไม่เกี่ยวกับบทบาทนี้เลย
+   ใช้ union ของสถานะแทนการเทียบ STATUS[status].owner ตรงๆ เพราะบางสถานะ (DEFERRED,
+   RESOLVED_PENDING_72) นับเป็นงานของ board_sec ใน bucket นี้ทั้งที่ owner จริงเป็น 'affairs' */
+const ownScopeStatuses = STATUS_BUCKETS[role.id]
+  ? [...STATUS_BUCKETS[role.id].pending, ...STATUS_BUCKETS[role.id].done, ...STATUS_BUCKETS[role.id].returned]
+  : null;
+
+const all   = ownScopeStatuses
+  ? ECMIS.CASES.filter(c => ownScopeStatuses.includes(c.status) && ECMIS.canViewCase(c, role.id))
+  : ECMIS.CASES.filter(c => ECMIS.canViewCase(c, role.id));
+
+let mine    = ownScopeStatuses
+  ? all.slice()
+  : ECMIS.inboxFor(role.id).filter(c => !ECMIS.isUpstreamCase(c) && ECMIS.canViewCase(c, role.id));
 
 const mineIds = new Set(mine.map(c => c.id));
 function isMyPending(c){ return mineIds.has(c.id); }
@@ -247,14 +269,6 @@ const allCasesCombined = Array.from(allCasesCombinedMap.values()).map(item => {
   const c = item.caseData;
   return { ...c, isActionable: item.isActionable || isMyPending(c) };
 });
-
-const STATUS_BUCKETS = {
-  board_sec: {
-    pending:  ['AGENDA_SET', 'IN_MEETING', 'PENDING_INVITE_72', 'IN_MEETING_72'],
-    done:     ['RESOLVED_PENDING', 'RESOLVED', 'RESOLVED_PENDING_72'],
-    returned: ['DEFERRED']
-  }
-};
 
 /* isMyPending() only reflects STATUS[status].owner === role.id, which stays
    'board_sec' even after RESOLVED — so it can't distinguish "still needs
