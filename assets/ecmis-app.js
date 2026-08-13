@@ -1521,7 +1521,15 @@ function canRecall(kase, roleId){
 const NAV = [
   { section:'ภาพรวม' },
   { href:'01-work-inbox.html',            icon:'fa-inbox',
-    label: role => (role && role.id === 'board_sec') ? 'รายการรอบันทึกมติ' : 'รายการพิจารณา/ลงนาม',
+    /* ต้องสอดคล้องกับ ROLE_COPY/UPSTREAM_COPY ใน 01-work-inbox.html — บทบาท scope:UPSTREAM
+       (owner/section_head/director/deputy_sg/deputy) ลงนามอะไรในโมดูลนี้ไม่ได้เลย (ดู scopeBanner
+       ในหน้านั้น) จึงห้ามใช้คำว่า "พิจารณา/ลงนาม" กับกลุ่มนี้ */
+    label: role => {
+      if (!role) return 'รายการพิจารณา/ลงนาม';
+      if (role.id === 'board_sec') return 'รายการรอบันทึกมติ';
+      if (isUpstreamRole(role.id)) return 'รายการติดตามสถานะสำนวน';
+      return 'รายการพิจารณา/ลงนาม';
+    },
     badge:true },
   { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' }
 ];
