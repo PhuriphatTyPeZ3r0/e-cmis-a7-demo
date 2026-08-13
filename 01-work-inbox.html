@@ -160,9 +160,18 @@
 ECMIS.renderShell('01-work-inbox.html');
 
 const role  = ECMIS.currentRole();
-const all   = ECMIS.CASES;
-/* คิวงานจริงของ กจ.7 = ต้องเป็นสำนวนที่เข้าขอบเขตแล้วเท่านั้น */
-let mine    = ECMIS.inboxFor(role.id).filter(c => !ECMIS.isUpstreamCase(c));
+/* เดิม all = ECMIS.CASES ตรงๆ ไม่กรองสิทธิ์เลย ทำให้บทบาท view.own (เช่น owner)
+   เห็นสำนวนทั้ง 23 เรื่องในระบบ ทั้งที่ตามสิทธิ์จริงควรเห็นเฉพาะสำนวนของหน่วยงานตนเอง
+   — ใช้ canViewCase() ตัวเดียวกับที่หน้าอื่น (เช่น 08-board-resolution.html) ใช้กันสิทธิ์
+   อยู่แล้ว เพื่อให้ตารางนี้แสดงเฉพาะสำนวนที่บทบาทนี้มีสิทธิ์เห็นจริงๆ */
+const all   = ECMIS.CASES.filter(c => ECMIS.canViewCase(c, role.id));
+/* คิวงานจริงของ กจ.7 = ต้องเป็นสำนวนที่เข้าขอบเขตแล้วเท่านั้น
+   inboxFor() จับคู่ตาม "ประเภทบทบาท" ที่เป็นเจ้าของสถานะ (STATUS[...].owner) ไม่ใช่ตาม
+   ตัวบุคคล — สำหรับบทบาทที่มีคนจริงหลายคนพร้อมกัน (เช่น "owner" มีนักสืบหลายเขต แต่ตัวสลับ
+   บทบาทสาธิตเลือกได้ทีละคน) เคสของนักสืบคนอื่นที่สถานะบังเอิญ owner เดียวกัน (เช่น
+   DISPATCHING) จะหลุดเข้ามาด้วยถ้าไม่กรองซ้ำด้วย canViewCase() ให้เหลือเฉพาะสำนวนที่
+   บุคคลนี้จริงๆ มีสิทธิ์เห็น */
+let mine    = ECMIS.inboxFor(role.id).filter(c => !ECMIS.isUpstreamCase(c) && ECMIS.canViewCase(c, role.id));
 
 const mineIds = new Set(mine.map(c => c.id));
 function isMyPending(c){ return mineIds.has(c.id); }
