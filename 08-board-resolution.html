@@ -275,6 +275,23 @@
     /* ---------- Q: สิทธิ์แก้ไขมติ (ชีตแถว 15) ---------- */
     const mayEdit = ECMIS.canEditMaster(role.id) || ECMIS.can('record.minutes', role.id);
     const mayView = ECMIS.canViewCase(kase, role.id);
+    /* เดิมปุ่ม "บันทึกมติและล็อก PDF" ไม่เคยเปลี่ยน kase.status/บันทึกข้อมูลจริงเลย (แค่ toast
+       แล้ว redirect) ทำให้กดบันทึกกี่ครั้งก็ไม่มีอะไรเปลี่ยนจริง และเอกสารฝั่งขวาก็ไม่มีทาง
+       "ดูย้อนหลัง" มติที่บันทึกไปแล้วได้ (renderDoc() สร้างจากค่าฟอร์มปัจจุบันเสมอ ไม่ใช่ค่าที่
+       บันทึกไว้จริง) — isLocked คือสำนวนที่บันทึกมติไปแล้วจริง (ผ่าน handle('lock') ด้านล่าง
+       ซึ่งตอนนี้ set kase.status/kase.resolution/kase.recordedDocHtml + ECMIS.saveCases() แล้ว)
+       renderDoc() จะโชว์ recordedDocHtml ที่บันทึกไว้ตรงๆ แทนการ generate ใหม่จากฟอร์ม
+       (ค่าฟอร์มที่โหลดใหม่จะไม่ตรงกับตอนบันทึกจริงอีกต่อไป) และซ่อนปุ่มบันทึกไม่ให้กดซ้ำ */
+    const isLocked = kase.status === 'RESOLVED' || kase.status === 'RESOLVED_PENDING';
+    if (mayView && isLocked) {
+      document.getElementById('editGate').innerHTML += `
+    <div class="warn-note mb-3" style="background:#EAF7EE;border-color:#16A34A">
+      <strong><i class="fa-solid fa-lock me-1" style="color:#16A34A"></i>มติสำนวนนี้ถูกบันทึกและล็อกแล้ว</strong><br>
+      บันทึกเมื่อ ${kase.resolvedAt ? ECMIS.toThaiDigits(kase.resolvedAt) : '—'} — เอกสารด้านขวาเป็น
+      <strong>preview ของมติที่บันทึกจริง</strong> ไม่ใช่ค่าที่สร้างจากฟอร์มปัจจุบัน
+      <small class="d-block mt-1 text-muted">แก้ไขมติที่ล็อกแล้วต้องผ่านกระบวนการแก้ไขพิเศษ ไม่ใช่กดบันทึกซ้ำจากหน้านี้</small>
+    </div>`;
+    }
 
     if (!mayView) {
       document.getElementById('editGate').innerHTML = `
@@ -534,6 +551,13 @@
 
     /* ---------- document (มติการประชุม ไต่สวนเบื้องต้น) ---------- */
     function renderDoc() {
+      /* สำนวนที่บันทึกมติล็อกแล้ว — โชว์ HTML ที่บันทึกไว้จริงตอนกดล็อก (preview) แทนการ
+         generate จากค่าฟอร์มปัจจุบัน ซึ่งไม่ตรงกับตอนบันทึกจริงอีกต่อไป (ผู้ใช้คนอื่น/โหลด
+         หน้าใหม่ ฟอร์มจะกลับไปเป็นค่าเริ่มต้น ไม่ใช่ค่าที่บันทึกไว้) */
+      if (isLocked && kase.recordedDocHtml) {
+        document.getElementById('docPaper').innerHTML = kase.recordedDocHtml;
+        return;
+      }
       const M = ECMIS.mergeField;
       const meetNo = document.getElementById('meetNo').value.trim();
       const meetDateValue = normalizeDateInputValue(document.getElementById('meetDate').value.trim());
@@ -675,6 +699,7 @@
     /* ---------- actions ---------- */
     function buildButtons() {
       if (!mayEdit) return [];   /* ชีตแถว 15/17 — บทบาทนี้บันทึกมติไม่ได้ */
+      if (isLocked) return [];   /* บันทึกมติไปแล้วจริง ล็อกแล้ว กดซ้ำไม่ได้จากหน้านี้ */
       return [
         { act: 'save', label: 'บันทึกร่างมติ', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' },
         { act: 'lock', label: 'บันทึกมติและล็อก PDF', icon: 'fa-lock', cls: 'btn-gold' }
@@ -759,6 +784,17 @@
           confirmText: 'ยืนยันบันทึกมติ'
         }).then(res => {
           if (!res.isConfirmed) return;
+          /* จริงๆ แล้วเปลี่ยนสถานะ + บันทึกข้อมูลจริง (เดิมกดปุ่มนี้ไม่มีผลอะไรเลยนอกจาก
+             toast + redirect — สถานะ/มติไม่เคยถูกบันทึกจริง) ตาม TRANSITIONS ของ board_sec
+             (IN_MEETING → RESOLVED_PENDING → RESOLVED ผ่าน RECORD_RESOLUTION/LOCK_PDF)
+             แต่ปุ่มนี้รวม 2 ขั้นเป็นปุ่มเดียวตามข้อความยืนยันด้านบน จึงข้ามไป RESOLVED ตรงๆ
+             เก็บ recordedDocHtml ไว้เป็น snapshot ของเอกสารตอนบันทึกจริง เพื่อให้ renderDoc()
+             แสดง preview ย้อนหลังได้ตรงกับตอนบันทึกเป๊ะ ไม่ต้อง generate ใหม่จากฟอร์ม */
+          kase.status = 'RESOLVED';
+          kase.resolution = r.code;
+          kase.resolvedAt = new Date().toLocaleString('th-TH');
+          kase.recordedDocHtml = document.getElementById('docPaper').innerHTML;
+          ECMIS.saveCases();
           ECMIS.toastOk('บันทึกมติและล็อก PDF เรียบร้อย');
           const next = (r.code === 'ACCEPT_S24P1' || r.code === 'ACCEPT_S24P3')
             ? '09-order-m24.html?case=' + encodeURIComponent(kase.id) + '&res=' + r.code
