@@ -256,6 +256,17 @@ const STATUS_BUCKETS = {
   }
 };
 
+/* isMyPending() only reflects STATUS[status].owner === role.id, which stays
+   'board_sec' even after RESOLVED — so it can't distinguish "still needs
+   action" from "done, just still tagged as board_sec's". Roles with a
+   STATUS_BUCKETS entry use that as the single source of truth instead
+   (same one the badge/KPI/filter already use), so the action button,
+   checkbox, and sort order can never disagree with the status badge. */
+function isRowActionable(c) {
+  const bucket = STATUS_BUCKETS[role.id];
+  return bucket ? bucket.pending.includes(c.status) : isMyPending(c);
+}
+
 function renderKPICards() {
   const currentSt = document.getElementById('statusFilter')?.value || 'ALL';
   const bucket = STATUS_BUCKETS[role.id];
@@ -363,7 +374,7 @@ function row(c){
   const is72 = ECMIS.isCase72(c);
   const page = is72 ? ECMIS.pageForCase72(c) : (PAGE_FOR[role.id] || '02-case-register.html');
   const target = `${page}?case=${encodeURIComponent(c.id)}`;
-  const isPendingAction = isMyPending(c);
+  const isPendingAction = isRowActionable(c);
 
   const statusBadgeHtml = getActionBadge(c);
   const act7BadgeHtml = is72
@@ -437,8 +448,8 @@ function renderMyQueue(loading = false) {
   }
 
   const sortedCases = [...filteredCombined].sort((a, b) => {
-    const isPendingA = isMyPending(a) ? 1 : 0;
-    const isPendingB = isMyPending(b) ? 1 : 0;
+    const isPendingA = isRowActionable(a) ? 1 : 0;
+    const isPendingB = isRowActionable(b) ? 1 : 0;
 
     if (isPendingA !== isPendingB) {
       return isPendingB - isPendingA;
