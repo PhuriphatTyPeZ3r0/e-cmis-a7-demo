@@ -44,7 +44,7 @@
           <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="ค้นหาเลขสำนวน เรื่องกล่าวหา หรือหน่วยงาน">
         </div>
         <div class="col-md-3">
-          <label class="form-label fw-semibold text-dark small mb-1"><i class="fa-solid fa-pen-to-square me-1 text-muted"></i>สถานะเสนอ/ลงนาม</label>
+          <label class="form-label fw-semibold text-dark small mb-1"><i class="fa-solid fa-pen-to-square me-1 text-muted"></i><span id="colStatusFilterLabel">สถานะเสนอ/ลงนาม</span></label>
           <select id="statusFilter" class="form-select form-select-sm">
             <option value="ALL">ทั้งหมด (ทุกการเสนอ)</option>
             <option value="PENDING">รอเลขาพิจารณาลงนาม</option>
@@ -122,7 +122,7 @@
                   <th class="text-center"><input type="checkbox" id="chkAll" class="form-check-input"></th>
                   <th class="sortable-header" data-sort="id" style="cursor:pointer">เรื่องที่ <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                   <th>เรื่องกล่าวหา</th>
-                  <th>สถานะเสนอ/ลงนาม</th>
+                  <th id="colStatusHeader">สถานะเสนอ/ลงนาม</th>
                   <th class="sortable-header" data-sort="act7Status" style="cursor:pointer">สถานะติดตาม <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                   <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                   <th class="text-end">ดำเนินการ</th>
@@ -171,6 +171,7 @@ const DEFAULT_COPY = {
   pageIcon:   'fa-file-signature',
   flowRef:    'ผัง: TO-BE ไต่สวนเบื้องต้น — ทุก Lane',
   card1Title: 'รายการสำนวนพิจารณา/ลงนาม และติดตามผลกิจกรรมที่ 7',
+  colStatusHeader: 'สถานะเสนอ/ลงนาม',
   kpiPending: 'รอเลขาพิจารณาลงนาม', kpiDone: 'ลงนามแล้ว', kpiReturned: 'ไม่ลงนาม / ตีกลับ',
   stPending:  'รอเลขาพิจารณาลงนาม', stDone:  'ลงนามแล้ว', stReturned:  'ไม่ลงนาม / ตีกลับ',
   bulkBtn:    'อนุมัติรายการที่เลือก (Bulk Action)',
@@ -187,6 +188,7 @@ const UPSTREAM_COPY = {
   pageIcon:   'fa-magnifying-glass-chart',
   flowRef:    'ติดตามสถานะสำนวนของหน่วยงานตนเอง — บทบาทนี้อยู่นอกขอบเขตกิจกรรมที่ 7 (ดูกิจกรรมที่ 5)',
   card1Title: 'รายการสำนวนของหน่วยงาน และสถานะการพิจารณาในกิจกรรมที่ 7',
+  colStatusHeader: 'สถานะการพิจารณา',
   kpiPending: 'อยู่ระหว่างพิจารณา', kpiDone: 'ลงนามแล้ว', kpiReturned: 'ตีกลับ / ส่งคืน',
   stPending:  'อยู่ระหว่างพิจารณา', stDone:  'ลงนามแล้ว', stReturned:  'ตีกลับ / ส่งคืน',
   bulkBtn:    'ดำเนินการรายการที่เลือก',
@@ -199,6 +201,7 @@ const ROLE_COPY = {
     pageIcon:   'fa-scale-balanced',
     flowRef:    'ผัง: TO-BE P2 Core Workflow — T13 → T14 (กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ)',
     card1Title: 'รายการสำนวนที่ต้องบันทึกมติ/จัดทำเอกสาร และติดตามผลกิจกรรมที่ 7',
+    colStatusHeader: 'สถานะบันทึกมติ',
     kpiPending: 'รอบันทึกมติ', kpiDone: 'บันทึกมติแล้ว', kpiReturned: 'ยังไม่บันทึก',
     stPending:  'รอบันทึกมติ', stDone:  'บันทึกมติแล้ว', stReturned:  'ยังไม่บันทึก / ส่งคืน',
     bulkBtn:    'บันทึกมติรายการที่เลือก (Bulk Action)',
@@ -215,6 +218,8 @@ document.getElementById('pageTitleText').textContent = copy.pageTitle;
 document.getElementById('pageTitleIcon').className = `fa-solid ${copy.pageIcon} me-2`;
 document.getElementById('flowRefText').textContent = copy.flowRef;
 document.getElementById('card1TitleText').textContent = copy.card1Title;
+document.getElementById('colStatusFilterLabel').textContent = copy.colStatusHeader;
+document.getElementById('colStatusHeader').textContent = copy.colStatusHeader;
 document.getElementById('bulkBtnText').textContent = copy.bulkBtn;
 
 document.getElementById('myRoleLabel').textContent = `บทบาท: ${role.title}`;
