@@ -121,6 +121,7 @@
                 <tr>
                   <th class="text-center"><input type="checkbox" id="chkAll" class="form-check-input"></th>
                   <th class="sortable-header" data-sort="id" style="cursor:pointer">เรื่องที่ <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
+                  <th>หมวดหมู่มติ</th>
                   <th>เรื่องกล่าวหา</th>
                   <th id="colStatusHeader">สถานะเสนอ/ลงนาม</th>
                   <th class="sortable-header" data-sort="act7Status" style="cursor:pointer">สถานะติดตาม <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
@@ -371,12 +372,19 @@ function row(c){
   const act7BadgeHtml = is72
     ? ECMIS.act7Badge(ECMIS.getAct7Status72(c), ECMIS.ACT7_STATUSES_72)
     : ECMIS.act7Badge(ECMIS.getAct7Status(c));
+  /* "หมวดหมู่มติ" — RESOLUTIONS/RESOLUTIONS_72 มีฟิลด์ group อยู่แล้ว (เช่น "รับไว้ไต่สวน",
+     "ไม่รับเรื่องไว้พิจารณา") แต่ไม่เคยถูกดึงมาแสดงในตารางเลย ก่อนบอร์ดมีมติ (c.resolution
+     ยังไม่ถูกเซ็ต) แสดงเป็นค่ากลาง ไม่ใช่ค่าว่างเปล่า เพื่อไม่ให้ดูเหมือนข้อมูลหาย */
+  const resGroup = c.resolution
+    ? (is72 ? ECMIS.resolution72(c.resolution) : ECMIS.resolutionOf(c.resolution))?.group
+    : null;
 
   return `<tr>
     <td class="text-center">
       ${isPendingAction ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="ไม่มีสิทธิ์สั่งการกลุ่ม"></i>'}
     </td>
     <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
+    <td>${resGroup ? `<span class="chip">${resGroup}</span>` : '<span class="text-muted" style="font-size:0.78rem">— ยังไม่มีมติ —</span>'}</td>
     <td style="max-width:300px">
       <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
       <small class="text-muted d-block" style="font-size:0.75rem">${c.ownerOrg}</small>
@@ -410,6 +418,7 @@ function renderMyQueue(loading = false) {
         <tr class="skeleton-row">
           <td><div class="skeleton-box" style="width:20px"></div></td>
           <td><div class="skeleton-box" style="width:80px"></div></td>
+          <td><div class="skeleton-box" style="width:100px"></div></td>
           <td><div class="skeleton-box" style="width:200px"></div></td>
           <td><div class="skeleton-box" style="width:110px"></div></td>
           <td><div class="skeleton-box" style="width:180px"></div></td>
@@ -461,7 +470,7 @@ function renderMyQueue(loading = false) {
 
   tbodyPrimary.innerHTML = paginatedCases.length
     ? paginatedCases.map(c => row(c)).join('')
-    : `<tr><td colspan="7" class="text-center text-muted py-4">
+    : `<tr><td colspan="8" class="text-center text-muted py-4">
          <i class="fa-regular fa-face-smile fa-lg mb-2 d-block"></i>
          ไม่มีรายการสำนวนตามเงื่อนไขการค้นหา<br>
          <small>ลองเปลี่ยนข้อความค้นหาหรือตัวกรองสถานะติดตาม</small></td></tr>`;

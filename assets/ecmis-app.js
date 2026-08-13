@@ -1277,6 +1277,8 @@ const RESOLUTIONS = [
     label:'ส่งเรื่องให้หน่วยงาน / คณะอนุกลั่นกรองฯ พิจารณา',
     doc:'หนังสือนำส่งเรื่อง', signer:'—', needsDestination:true }
 ];
+/* หา entry ของ RESOLUTIONS จาก code — คู่ขนานกับ resolution72() ด้านล่าง */
+function resolutionOf(code){ return RESOLUTIONS.find(r => r.code === code) || null; }
 
 /* ปลายทางของมติ FORWARD — เฉพาะ ป.ป.ช. เท่านั้นที่ออกนอกองค์กร จึงมีข้อบังคับ
    อัปโหลดไฟล์สแกนฉบับลงนามกลับตาม TOR 7.2.1.5
@@ -3649,7 +3651,7 @@ if (typeof document !== 'undefined') {
 
 global.ECMIS = {
   ROLES, STATUS, STATUS_STEP, FLOW_STEPS, APPROVAL_CHAIN,
-  CASES, RETURN_REASONS, RESOLUTIONS,
+  CASES, RETURN_REASONS, RESOLUTIONS, resolutionOf,
   DOC_TYPES, SIGN_PHASE, secgenSlaLimit, FORWARD_TARGETS, forwardTarget,
 
   // กิจกรรมที่ 7.2
