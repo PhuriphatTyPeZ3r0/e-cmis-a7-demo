@@ -93,7 +93,7 @@
             <tbody id="tb"></tbody>
           </table>
         </div>
-        <!-- Pagination Footer -->
+
         <div class="p-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2"
           id="registerFooter">
           <div>
@@ -116,7 +116,6 @@
     ECMIS.renderShell('02-case-register.html');
     const role = ECMIS.currentRole();
 
-    /* สถานะ dropdown */
     document.getElementById('qStatus').insertAdjacentHTML('beforeend',
       Object.keys(ECMIS.STATUS).map(k => `<option value="${k}">${ECMIS.STATUS[k].label}</option>`).join(''));
 
@@ -191,7 +190,6 @@
         return 0;
       });
 
-      // Apply Pagination
       const totalItems = sorted.length;
       const totalPages = Math.ceil(totalItems / pageSize) || 1;
       if (currentPage > totalPages) currentPage = totalPages;
@@ -201,9 +199,7 @@
       tbody.innerHTML = paginated.length ? paginated.map(c => {
         const holder = ECMIS.STATUS[c.status] ? ECMIS.getRole(ECMIS.STATUS[c.status].owner) : null;
         const actionable = ECMIS.canAct(c, role.id);
-        /* กิจกรรมที่ 7.2 (วินิจฉัยชี้มูล): ไม่มีกรอบ ม.23 (60 วัน/2 ปี) เพราะพ้น
-           ขั้นไต่สวนเบื้องต้นไปแล้ว — แสดงรอบการไต่สวนแทน และต้องส่งไปหน้าจอ
-           ที่ถูกต้องตามสถานะของสำนวนกิจกรรมที่ 7.2 แทนหน้ารายงาน 213 ของ 7.1 */
+
         const is72 = ECMIS.isCase72(c);
         const target = is72 ? ECMIS.pageForCase72(c) : '03-report-213.html';
         return `<tr>
@@ -261,7 +257,6 @@
     </li>`;
       paginUl.innerHTML = paginHtml;
 
-      // Bind Inline Editing
       bindInlineEditing();
     }
 
@@ -270,7 +265,6 @@
       render(true);
     }
 
-    // Sorting logic
     document.querySelectorAll('.sortable-header').forEach(header => {
       header.addEventListener('click', () => {
         const field = header.dataset.sort;
@@ -281,7 +275,6 @@
           sortOrder = 'asc';
         }
 
-        // Update icons
         document.querySelectorAll('.sortable-header i').forEach(icon => {
           icon.className = 'fa-solid fa-sort text-muted';
         });
@@ -292,7 +285,6 @@
       });
     });
 
-    // Inline Editing Logic (Step 3.2)
     function bindInlineEditing() {
       document.querySelectorAll('.editable-subject').forEach(cell => {
         cell.addEventListener('dblclick', () => {
@@ -321,7 +313,6 @@
           const subInput = cell.querySelector('#edit-sub-input');
           subInput.focus();
 
-          // Save inline edit
           cell.querySelector('#btn-save-inline').addEventListener('click', (e) => {
             e.stopPropagation();
             const newSub = cell.querySelector('#edit-sub-input').value.trim();
@@ -335,13 +326,11 @@
             render(false);
           });
 
-          // Cancel inline edit
           cell.querySelector('#btn-cancel-inline').addEventListener('click', (e) => {
             e.stopPropagation();
             render(false);
           });
 
-          // Escape key to cancel, Enter to save
           cell.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
               render(false);
@@ -351,7 +340,6 @@
       });
     }
 
-    // Excel/CSV Export
     document.getElementById('btnExport').addEventListener('click', () => {
       const filtered = ECMIS.CASES.filter(matches);
       if (!filtered.length) {
@@ -359,15 +347,13 @@
         return;
       }
 
-      // Generate CSV payload
-      let csv = '\uFEFF'; // UTF-8 BOM
+      let csv = '\uFEFF';
       csv += 'เลขสำนวน,เรื่องกล่าวหา,เจ้าของสำนวน,ผู้ถูกกล่าวหา,ฐานรับเรื่อง,สถานะ,กำหนดเวลา\n';
 
       filtered.forEach(c => {
         const accusedStr = c.accused.map(a => `${a.name} (${a.pos})`).join('; ');
         const statusText = ECMIS.STATUS[c.status]?.label || c.status;
 
-        // Clean string fields of double quotes and commas
         const id = `"${c.id.replace(/"/g, '""')}"`;
         const subject = `"${c.subject.replace(/"/g, '""')}"`;
         const owner = `"${c.owner.replace(/"/g, '""')}"`;
@@ -379,7 +365,6 @@
         csv += `${id},${subject},${owner},${accused},${base},${status},${sla}\n`;
       });
 
-      // Download Blob
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -393,9 +378,6 @@
       ECMIS.toastOk('ส่งออกไฟล์ข้อมูล CSV เรียบร้อยแล้ว');
     });
 
-    /* ค้นหาแบบ real-time ขณะพิมพ์ — debounce 250ms กันเรนเดอร์รัวทุกตัวอักษร และไม่ใช้
-       render(true) (skeleton + delay 500ms จำลอง network) เพราะจะรู้สึกกระตุกตอนพิมพ์ไว
-       ปุ่มค้นหา/Enter ยังคงพฤติกรรมเดิม (แสดง skeleton) ไว้สำหรับกดค้นหาแบบตั้งใจ */
     let searchDebounceTimer = null;
     function debouncedSearch() {
       clearTimeout(searchDebounceTimer);

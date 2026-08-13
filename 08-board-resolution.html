@@ -37,9 +37,6 @@
     <div class="row g-3">
       <div class="col-xl-6">
 
-
-
-        <!-- องค์ประชุม + ผู้มีส่วนได้เสีย -->
         <div class="card card-ecmis mb-3">
           <div class="card-header"><i class="fa-solid fa-users-rectangle"></i> องค์ประชุมและการลงคะแนน (ม.12 / ม.15 /
             ม.20)</div>
@@ -71,20 +68,15 @@
 
             <div class="rule-panel" id="quorumBox"></div>
 
-
           </div>
         </div>
 
-        <!-- ผลมติ -->
         <div class="card card-ecmis mb-3">
           <div class="card-header"><i class="fa-solid fa-code-branch"></i> ผลมติของที่ประชุม</div>
           <div class="card-body">
             <label class="form-label field-req">เลือกประเภทผลมติ</label>
             <div class="list-group mb-3" id="resList"></div>
 
-            <!-- [F-04] ช่องเลือกมาตราชุดนี้เป็นฐานของ "ไม่รับเรื่องไว้พิจารณา / จำหน่ายเรื่อง"
-               ตาม ม.25 และ ม.26 เท่านั้น จึงผูกกับมติ NOT_ACCEPTED และ DISMISS
-               ไม่ใช่กับมติ "ข้อกล่าวหาไม่มีมูล" ตาม ม.32 ซึ่งเป็นคนละสถานะ -->
             <div id="rejectLawBox" class="mb-3 d-none">
               <label class="form-label field-req">มาตราที่ใช้อ้างอิงกรณีไม่รับเรื่องไว้พิจารณา / จำหน่ายเรื่อง</label>
               <select class="form-select" id="rejectLaw">
@@ -102,16 +94,11 @@
               </select>
             </div>
 
-            <!-- [F-04] ม.32 ใช้เฉพาะกรณีบอร์ดมีมติว่า "ข้อกล่าวหาไม่มีมูล" -->
             <div id="noGroundBox" class="mb-3 d-none">
-              
+
             </div>
 
             <div id="moreBox" class="mb-3 d-none">
-              <div class="warn-note mb-2" style="font-size:.79rem">
-                <strong>ม.24 วรรคสี่</strong> กำหนดว่าการสั่งให้ไต่สวนเพิ่มเติมหรือไต่สวนเองใหม่
-                <strong>ต้องระบุเหตุผลไว้ด้วย</strong> ระบบจึงบังคับกรอก 3 ฟิลด์ด้านล่าง
-              </div>
               <label class="form-label field-req">สิ่งที่ต้องดำเนินการเพิ่มเติม</label>
               <textarea class="form-control mb-2" id="moreTask" rows="2"></textarea>
               <div class="row g-2">
@@ -168,10 +155,8 @@
           </div>
         </div>
 
-
       </div>
 
-      <!-- ขวา -->
       <div class="col-xl-6">
         <div style="position:sticky;top:calc(var(--topbar-h) + 14px)">
           <div class="doc-pane">
@@ -285,7 +270,7 @@
     const isLocked = kase.status === 'RESOLVED' || kase.status === 'RESOLVED_PENDING';
     if (mayView && isLocked) {
       document.getElementById('editGate').innerHTML += `
-    <div class="warn-note mb-3" style="background:#EAF7EE;border-color:#16A34A">
+    <div class="mb-3" style="background:#EAF7EE;border:1px solid #16A34A;border-radius:8px;padding:.75rem 1rem">
       <strong><i class="fa-solid fa-lock me-1" style="color:#16A34A"></i>มติสำนวนนี้ถูกบันทึกและล็อกแล้ว</strong><br>
       บันทึกเมื่อ ${kase.resolvedAt ? ECMIS.toThaiDigits(kase.resolvedAt) : '—'} — เอกสารด้านขวาเป็น
       <strong>preview ของมติที่บันทึกจริง</strong> ไม่ใช่ค่าที่สร้างจากฟอร์มปัจจุบัน
@@ -295,7 +280,7 @@
 
     if (!mayView) {
       document.getElementById('editGate').innerHTML = `
-    <div class="warn-note mb-3">
+    <div class="mb-3">
       <strong><i class="fa-solid fa-eye-slash me-1"></i>บทบาท "${role.title}" ไม่มีสิทธิ์เข้าถึงสำนวนนี้</strong><br>
       ชีตแถว 17 กำหนดให้ผู้รับผิดชอบสำนวนเห็นได้เฉพาะสำนวนของตนเอง
       และคณะอนุกรรมการเห็นได้เฉพาะสำนวนที่ได้รับมอบหมายให้คณะของตน
@@ -303,7 +288,7 @@
       document.getElementById('content') && (document.getElementById('content').style.display = 'none');
     } else if (!mayEdit) {
       document.getElementById('editGate').innerHTML = `
-    <div class="warn-note mb-3">
+    <div class="mb-3">
       <strong><i class="fa-solid fa-lock me-1"></i>โหมดอ่านอย่างเดียว — บทบาทนี้บันทึก/แก้ไขมติไม่ได้</strong><br>
       ชีตแถว 15 ระบุว่ามีเพียง <strong>เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ 6 คน + ผอ.กบค. 1 คน (รวม 7 คน)</strong>
       ที่มีสิทธิ์แก้ไขมติ/คำสั่ง/รายงาน และกลุ่มงานคำวินิจฉัยและมติฯ เป็นผู้บันทึกมติเข้าระบบ<br>
@@ -413,7 +398,6 @@
       renderQuorum(); renderDoc();
     }
 
-    /* ---------- G5 resolution list ---------- */
     document.getElementById('resList').innerHTML = ECMIS.RESOLUTIONS.map((r, i) => `
   <label class="list-group-item d-flex gap-2 align-items-start">
     <input class="form-check-input mt-1" type="radio" name="res" value="${r.code}" ${i === 0 ? 'checked' : ''}>
@@ -426,13 +410,6 @@
       return ECMIS.RESOLUTIONS.find(r => r.code === code);
     }
 
-    /* ปลายทางของมติ "ส่งเรื่องให้" มาจากตารางกลาง — ป.ป.ช. เป็นปลายทางเดียว
-       ที่ออกนอกองค์กร จึงบังคับอัปโหลดไฟล์สแกนฉบับลงนามกลับ
-    
-       [F-02] หน้าจอต้องแยก "นาฬิกาสองเรือน" ให้ผู้ใช้เห็นชัด ห้ามยุบเป็นเลขเดียว
-         · กำหนดส่งตามกฎหมาย (ม.18/1) 15 วัน — เส้นตาย ขยายไม่ได้
-         · กรอบกำกับติดตาม (เล่ม 6 กจ.8 CHK011) 30 วัน — ใช้ติดตามผล มิใช่กำหนดส่ง
-       และต้องแสดงข้อบังคับ "คัดสำเนาสำนวนเก็บรักษาไว้เป็นหลักฐาน" ตาม ม.18/1 ด้วย */
     const fwdSel = document.getElementById('forwardTo');
     fwdSel.innerHTML = ECMIS.FORWARD_TARGETS
       .map(t => `<option value="${t.code}">${t.label}</option>`).join('');
@@ -445,7 +422,7 @@
         ? `<br><strong>ปลายทาง:</strong> ${document.getElementById('forwardToOther').value.trim() || '<span class="text-danger">ยังไม่ได้ระบุ</span>'}`
         : '';
       document.getElementById('forwardRule').innerHTML = t.external
-        ? `<div class="warn-note">
+        ? `<div>
          <strong><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>ปลายทางนอกองค์กร</strong><br>
          เอกสาร: ${t.doc}${destLine}
          <div class="rule-panel mt-2">
@@ -474,8 +451,6 @@
     document.getElementById('forwardToOther').addEventListener('input', renderForwardRule);
     renderForwardRule();
 
-    /* [F-04] มติที่ต้องอ้างมาตราตาม ม.25/ม.26 = ไม่รับเรื่องไว้พิจารณา และจำหน่ายเรื่อง
-       มติ NO_GROUND (ม.32) ไม่ต้องอ้างมาตราชุดนี้ เพราะฐานอำนาจคนละมาตรา */
     const LAWREF_CODES = ['NOT_ACCEPTED', 'DISMISS'];
 
     function toggleBoxes() {
@@ -503,8 +478,7 @@
           ['ปลายทาง', 'ยิงมติ + คำสั่งกลับ กิจกรรมที่ 5'],
           ['กำหนดเวลา', 'ออกคำสั่ง 5 วันทำการ / ส่งคืนหน่วยงาน 3 วันทำการ']
         ],
-        /* [F-04] ไม่รับเรื่องไว้พิจารณา — ฐาน ม.25/ม.26 ไม่ใช่ ม.32
-           จึงต้องไม่แสดงกรอบ 15 วันของ ม.32 กับมตินี้ */
+
         NOT_ACCEPTED: [
           ['เอกสารที่ระบบสร้าง', 'หนังสือแจ้งผลการพิจารณา (ไม่รับเรื่องไว้พิจารณา)'],
           ['ฐานกฎหมาย', 'ม.25 — ห้ามรับไว้พิจารณาโดยเด็ดขาด / ม.26 — ดุลพินิจไม่รับเรื่องไว้พิจารณา'],
@@ -517,7 +491,7 @@
           ['ปลายทาง', 'กิจกรรมที่ 5 → อัปเดตสถานะเป็น Closed Case'],
           ['กำหนดเวลา', 'ไม่มีกรอบ 15 วันตาม ม.32 — ใช้กำหนดเวลางานสารบรรณตามปกติ']
         ],
-        /* ม.32 ผูกกับมตินี้เท่านั้น */
+
         NO_GROUND: [
           ['เอกสารที่ระบบสร้าง', 'หนังสือแจ้งผลการพิจารณาถึงผู้ถูกกล่าวหา'],
           ['ฐานกฎหมาย', 'ม.32 — บอร์ดมีมติว่าข้อกล่าวหาไม่มีมูล ข้อกล่าวหาเป็นอันตกไป'],
@@ -530,7 +504,7 @@
           ['ปลายทาง', 'ส่งกลับเจ้าของสำนวน → รายงานความคืบหน้าเพื่อบรรจุวาระอีกครั้ง (ได้เลขวาระใหม่)'],
           ['กำหนดเวลา', 'ตามกำหนดส่งกลับที่ระบุ — ระบบสร้างงานติดตามใน Work Inbox']
         ],
-        /* [F-02] แยกนาฬิกาสองเรือน — 15 วันคือเส้นตายตามกฎหมาย ส่วน 30 วันคือกรอบติดตาม */
+
         FORWARD: [
           ['เอกสารที่ระบบสร้าง', 'หนังสือนำส่งเรื่อง + มติที่ประชุม'],
           ['ปลายทาง', 'ตามหน่วยงานที่เลือก — กรณีส่ง ป.ป.ช. เจ้าของสำนวนต้องทำหนังสือนำส่งเอง'],
@@ -542,11 +516,7 @@
       };
       el.innerHTML =
         (MAP[r.code] || []).map(([k, v]) =>
-          `<div class="kv mb-2"><span class="k">${k}:</span> <span class="v">${v}</span></div>`).join('') +
-        `<div class="integration-note mt-2">
-      <i class="fa-solid fa-robot me-1"></i>ทุกประเภทมติจะ <strong>trigger แจ้งกลับกิจกรรมที่ 5 เสมอ</strong>
-      และระบบจะ Auto-compile รายงานการประชุมรวมทุกเรื่องในวันประชุมเดียวกันโดยอัตโนมัติ
-    </div>`;
+          `<div class="kv mb-2"><span class="k">${k}:</span> <span class="v">${v}</span></div>`).join('');
     }
 
     /* ---------- document (มติการประชุม ไต่สวนเบื้องต้น) ---------- */
@@ -572,6 +542,9 @@
       const r = selectedRes();
       const t = tally();
       const unanimous = t.againstV === 0 && t.abstainV === 0;
+      const attendees = Array.from(document.querySelectorAll('#boardTb tr')).map((tr, i) =>
+        ({ ...BOARD[i], recused: tr.querySelector('.attend').value === 'recused' }));
+      const recusedList = attendees.filter(b => b.recused);
 
       let resText = '';
       if (r.code === 'ACCEPT_S24P1') {
@@ -579,21 +552,20 @@
       } else if (r.code === 'ACCEPT_S24P3') {
         resText = 'รับไว้ไต่สวน โดยให้ดำเนินการไต่สวนเป็นคณะอนุกรรมการไต่สวน ตามมาตรา ๒๔ วรรคสาม แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม';
       } else if (r.code === 'NOT_ACCEPTED') {
-        /* [F-04] ถ้อยคำต้องเป็น "ไม่รับเรื่องไว้พิจารณา" ตาม ม.25/ม.26 ไม่ใช่ ม.32 */
+
         const law = document.getElementById('rejectLaw').value;
         resText = `ไม่รับเรื่องไว้พิจารณา เนื่องจาก ${opinion || '……………………'} ตามพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ${law || '…………'}`;
       } else if (r.code === 'DISMISS') {
         const law = document.getElementById('rejectLaw').value;
         resText = `ให้จำหน่ายเรื่องออกจากสารบบ เนื่องจาก ${opinion || '……………………'} ตามพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ${law || '…………'}`;
       } else if (r.code === 'NO_GROUND') {
-        /* [F-04] ม.32 — ข้อกล่าวหาไม่มีมูล ข้อกล่าวหาเป็นอันตกไป และแจ้งภายใน 15 วัน */
+
         resText = `ข้อกล่าวหาไม่มีมูล ให้ข้อกล่าวหานั้นเป็นอันตกไป ตามมาตรา ๓๒ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม และให้แจ้งผู้ถูกกล่าวหาทราบไม่ช้ากว่าสิบห้าวันนับแต่วันที่คณะกรรมการ ป.ป.ท. มีมติ`;
       } else if (r.code === 'MORE_INVESTIGATE') {
         const task = document.getElementById('moreTask').value.trim();
         resText = `ให้ผู้รับผิดชอบสำนวนไต่สวนเบื้องต้นเพิ่มเติม ดังนี้ ${task || '……………………………………'}`;
       } else {
-        /* เอกสารมติต้องพิมพ์ชื่อเต็มของปลายทาง ไม่ใช่รหัสที่ใช้ภายในระบบ
-           กรณี "อื่นๆ" ใช้ข้อความปลายทางที่ผู้บันทึกพิมพ์เองแทน label มาตรฐาน */
+
         const fwd = ECMIS.forwardTarget(fwdSel.value);
         const fwdLabel = fwd?.code === 'OTHER'
           ? (document.getElementById('forwardToOther').value.trim() || 'อื่นๆ (ยังไม่ได้ระบุปลายทาง)')
@@ -606,8 +578,6 @@
         : '';
       const lastNo = kase.legalBase === 'ม.62' ? '๓' : '๒';
 
-      /* หัวกระดาษวิ่ง (ครั้งที่/วันที่/วาระที่ + ลับ + เลขหน้า) ซ้ำทุกหน้าตั้งแต่หน้า 2 เป็นต้นไป
-         ไม่ใส่บล็อกผู้ลงนาม (ผิด format เอกสารจริง ผู้ลงนามอยู่ท้ายเอกสารจุดเดียว — ดู signBlock) */
       function runningHeaderHtml(pageNo) {
         return `
     <div class="doc-run-title">มติการประชุมคณะกรรมการ ป.ป.ท.<br>
@@ -616,7 +586,6 @@
     <div class="doc-run-page">- ${ECMIS.toThaiDigits(pageNo)} -</div>`;
       }
 
-      /* บล็อกคงที่หน้า 1 (ไม่ไหลข้ามหน้า เพราะเป็นหัวเอกสาร/ข้อมูลอ้างอิงสั้นๆ ที่ควรอยู่ด้วยกัน) */
       const introBlock = `
     <div class="doc-secret">ลับ</div>
     <div class="doc-title">
@@ -632,7 +601,6 @@
     <div class="doc-row"><span class="k">เอกสารอ้างอิง</span> หนังสือหน่วยงานที่รับผิดชอบตามเอกสาร
       ${M(kase.docRef !== '—' ? kase.docRef : '', 'ที่ ปป …………/……… ลงวันที่ ……………')} และเอกสารประกอบการประชุม</div>`;
 
-      /* บล็อกท้ายคงที่ (อยู่หน้าสุดท้ายเท่านั้น) */
       const signBlock = `
     <div class="doc-sign">
       <span class="doc-dots"></span><br>
@@ -641,9 +609,6 @@
     </div>
     <div class="doc-secret-foot">ลับ</div>`;
 
-      /* เนื้อหาที่ไหลข้ามหน้าได้ — แต่ละสมาชิกคือหน่วยที่เล็กที่สุดที่ตัดขึ้นหน้าใหม่ระหว่างกลางไม่ได้
-         (ตัดได้แค่ระหว่าง element ไม่ตัดกลางย่อหน้า) ส่วนที่เดิมอยู่ใน .doc-body-indent ผูก class
-         นั้นเข้ากับแต่ละ element เอง แทนการห่อ div เดียวครอบทั้งหมด เพราะแต่ละ element อาจแยกไปคนละหน้า */
       const bi = html => `<div class="doc-body-indent">${html}</div>`;
       const flowBlocks = [
         bi(`<div class="doc-indent" style="margin-top:12px">
@@ -662,6 +627,13 @@
         bi(`<div class="doc-h">การชี้แจงเพิ่มเติม</div>
       <div class="doc-indent">ผู้ชี้แจง (${M(presenter)}) ชี้แจงเพิ่มเติมว่า
         ${M(presenterNote, '………………………………………………………………………………………………')}</div>`),
+        bi(`<div class="doc-indent" style="margin-top:6px">
+        ในการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}
+        คณะกรรมการ ป.ป.ท. ที่มาประชุม จำนวน ${attendees.length} คน ประกอบด้วย</div>
+      <div class="doc-indent">${attendees.map((b, i) => `${i + 1}. ${M(b.n)} ${M(b.r)}`).join('<br>')}</div>
+      ${recusedList.length ? `<div class="doc-indent" style="margin-top:6px">
+        กรรมการ ป.ป.ท. ที่ถอนตัวจากการพิจารณาวาระนี้ตามมาตรา ๒๐ จำนวน ${recusedList.length} คน คือ</div>
+      <div class="doc-indent">${recusedList.map((b, i) => `${i + 1}. ${M(b.n)}`).join('<br>')}</div>` : ''}`),
         bi(`<div class="doc-h">ความเห็นที่ประชุม</div>
       <div class="doc-indent">คณะกรรมการ ป.ป.ท. พิจารณาแล้วเห็นว่า
         ${M(opinion, '………………………………………………………………………………………………')}</div>`),
@@ -685,7 +657,6 @@
         { introBlock, flowBlocks, signBlock, runningHeaderHtml });
     }
 
-    /* ---------- wire ---------- */
     document.getElementById('resList').addEventListener('change', () => { toggleBoxes(); renderOutcome(); renderDoc(); });
     ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'ownerOrgField', 'presenter', 'presenterNote', 'signerName', 'signerTitle', 'rejectLaw', 'moreTask', 'moreOwner', 'moreDue', 'forwardTo', 'forwardToOther']
       .forEach(id => {
@@ -696,10 +667,9 @@
     document.getElementById('btnDocx').addEventListener('click', () =>
       ECMIS.toastOk('ดาวน์โหลด .docx — แก้ไขใน Word แล้วอัปโหลดกลับเพื่อล็อกเป็น PDF'));
 
-    /* ---------- actions ---------- */
     function buildButtons() {
-      if (!mayEdit) return [];   /* ชีตแถว 15/17 — บทบาทนี้บันทึกมติไม่ได้ */
-      if (isLocked) return [];   /* บันทึกมติไปแล้วจริง ล็อกแล้ว กดซ้ำไม่ได้จากหน้านี้ */
+      if (!mayEdit) return [];
+      if (isLocked) return [];
       return [
         { act: 'save', label: 'บันทึกร่างมติ', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' },
         { act: 'lock', label: 'บันทึกมติและล็อก PDF', icon: 'fa-lock', cls: 'btn-gold' }
@@ -748,7 +718,7 @@
           op.classList.remove('is-invalid-ecmis');
           document.querySelector('.val-msg[data-for="boardOpinion"]').classList.remove('show');
         }
-        /* [F-04] บังคับอ้างมาตราเฉพาะมติที่มีฐานจาก ม.25/ม.26 เท่านั้น */
+
         if (LAWREF_CODES.includes(r.code) && !document.getElementById('rejectLaw').value) {
           ECMIS.toastWarn('กรุณาเลือกมาตราอ้างอิงตาม ม.25 / ม.26'); return;
         }
@@ -784,12 +754,7 @@
           confirmText: 'ยืนยันบันทึกมติ'
         }).then(res => {
           if (!res.isConfirmed) return;
-          /* จริงๆ แล้วเปลี่ยนสถานะ + บันทึกข้อมูลจริง (เดิมกดปุ่มนี้ไม่มีผลอะไรเลยนอกจาก
-             toast + redirect — สถานะ/มติไม่เคยถูกบันทึกจริง) ตาม TRANSITIONS ของ board_sec
-             (IN_MEETING → RESOLVED_PENDING → RESOLVED ผ่าน RECORD_RESOLUTION/LOCK_PDF)
-             แต่ปุ่มนี้รวม 2 ขั้นเป็นปุ่มเดียวตามข้อความยืนยันด้านบน จึงข้ามไป RESOLVED ตรงๆ
-             เก็บ recordedDocHtml ไว้เป็น snapshot ของเอกสารตอนบันทึกจริง เพื่อให้ renderDoc()
-             แสดง preview ย้อนหลังได้ตรงกับตอนบันทึกเป๊ะ ไม่ต้อง generate ใหม่จากฟอร์ม */
+
           kase.status = 'RESOLVED';
           kase.resolution = r.code;
           kase.resolvedAt = new Date().toLocaleString('th-TH');

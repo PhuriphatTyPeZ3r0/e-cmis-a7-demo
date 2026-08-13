@@ -35,15 +35,9 @@
         <div class="row g-3">
             <div class="col-xl-6">
 
-                <!-- T9 Auto Routing -->
                 <div class="card card-ecmis mb-3">
                     <div class="card-header"><i class="fa-solid fa-shuffle"></i> การกระจายสำนวนเข้าคณะ (Auto Routing)</div>
                     <div class="card-body">
-                        <div class="integration-note mb-3">
-                            <strong>กติกา Round-Robin</strong> — กระจายเวียน คณะที่ 1 → 8 ตามลำดับ
-                            โดยจำกัด<strong>โควตาไม่เกิน 40 เรื่องต่อคณะ</strong> ระบบข้ามคณะที่เต็มโควตาอัตโนมัติ
-                            และ ผอ.กบค. สามารถกด Manual Assign แทนได้พร้อมบันทึกเหตุผล
-                        </div>
                         <div class="row g-2 mb-3" id="quotaGrid"></div>
                         <div class="row g-2 align-items-end">
                             <div class="col-md-6">
@@ -63,7 +57,6 @@
                     </div>
                 </div>
 
-                <!-- T10 -->
                 <div class="card card-ecmis mb-3">
                     <div class="card-header"><i class="fa-solid fa-clipboard-check"></i> บันทึกมติและข้อสังเกตของคณะอนุกลั่นกรองฯ</div>
                     <div class="card-body">
@@ -80,15 +73,6 @@
                         </div>
 
                         <div class="rule-panel mb-3" id="subQuorumBox"></div>
-
-                        <div class="law-note mb-3" style="font-size:.78rem">
-                            <strong>เกณฑ์ที่ต้นแบบบังคับใช้ (คำตอบ Q3):</strong> ม.12 กำหนดองค์ประชุมเฉพาะบอร์ดใหญ่
-                            และตรวจแล้วไม่พบข้อกำหนดองค์ประชุมของคณะอนุฯ ทั้งใน พ.ร.บ. บันทึกการประชุม และคำสั่งแต่งตั้ง
-                            ต้นแบบจึงใช้ <strong>"กึ่งหนึ่งโดยอนุโลม" จาก ม.12</strong> เป็นค่าตั้งต้น
-                            และเปิดให้ <strong>Admin แก้ไขรายคณะได้</strong> (ไม่ hard-code)
-                            <br><span style="color:#DB2626">ต้องให้ ป.ป.ท. ยืนยันตัวเลขจริงจากคำสั่งแต่งตั้งคณะอนุฯ ก่อน
-                                Go-Live</span>
-                        </div>
 
                         <div class="row g-2 mb-3">
                             <div class="col-md-6">
@@ -131,11 +115,6 @@
                         <textarea class="form-control" id="subOpinion" rows="4"
                             placeholder="ระบุความเห็นและข้อสังเกตประกอบการพิจารณาของบอร์ด"></textarea>
                         <div class="val-msg val-err" data-for="subOpinion">กรุณาระบุความเห็นของคณะอนุกลั่นกรองฯ</div>
-
-                        <div class="law-note mt-3" style="font-size:.8rem">
-                            ผลการพิจารณาของคณะอนุกลั่นกรองฯ เป็น <strong>"มติ + ความเห็น/ข้อสังเกต"</strong>
-                            ไม่ใช่คำชี้ขาด — อำนาจวินิจฉัยชี้ขาดเป็นของคณะกรรมการ ป.ป.ท. ตาม ม.17(3)(4)
-                        </div>
                     </div>
                 </div>
             </div>
@@ -150,16 +129,6 @@
                                     class="fa-solid fa-print"></i></button>
                         </div>
                         <div class="doc-paper doc-resolution" id="docPaper"></div>
-                        <div class="law-note mt-3">
-                            <strong>ที่มาของเทมเพลต (Google Drive → เอกสารมติ):</strong>
-                            <code>มติการประชุม ผ่านอนุกลั่นกรองคณะฯ.docx</code>
-                            <br><small><strong>ผู้ลงนามที่ต้นแบบใช้ (คำตอบ Q3):</strong>
-                                <strong>อนุกรรมการและเลขานุการ</strong> เป็นผู้ลงนามรับรองมติ — อ้างจาก Google Sheet §1.1
-                                ลำดับ 10
-                                ที่ระบุหน้าที่ "บันทึกมติคณะอนุฯ / จัดทำหนังสือนำส่งมติ" ไว้ที่ตำแหน่งนี้
-                                ส่วนประธานอนุฯ ทำหน้าที่ลงมติแต่ไม่ได้ลงนามรับรองเอกสาร
-                                <span style="color:#DB2626">ยังต้องให้ ป.ป.ท. ยืนยัน</span></small>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -178,12 +147,7 @@
         const params = new URLSearchParams(location.search);
         const kase = ECMIS.getCase(params.get('case') || '1547/2568');
         const role = ECMIS.currentRole();
-        /* กิจกรรมที่ 7.2 (วินิจฉัยชี้มูล) ใช้จอนี้ร่วมกับ 7.1 — เป็นคณะอนุกรรมการ
-           ชุดเดียวกัน (คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง) เพียงแต่พิจารณา
-           คนละสเตจของสำนวน จึงยังใช้ Round-Robin/โควตา/องค์ประชุมร่วมกันได้เต็มที่
-           ต่างกันแค่ผลการพิจารณา — 7.1 มี 4 ทาง (เห็นพ้อง/เห็นต่าง/ขอข้อมูลเพิ่ม/
-           ไม่รับ) ส่วน 7.2 ตามผังมีเพียงทางเดียวคือ "เห็นควรบรรจุวาระ" (ไม่มี
-           ทรานซิชันสำหรับตีกลับ/ไม่รับที่ชั้นนี้ใน state machine ของ 7.2)         */
+
         const docType = ECMIS.DOC_TYPES[kase.docType];
         const isRuling = docType.code === 'RULING';
 
@@ -200,14 +164,8 @@
 
         if (isRuling) { initScreening72(); } else { initScreening71(); }
 
-        /* ============================================================
-           7.1 — โค้ดเดิมทั้งหมด ไม่ได้แก้ไขพฤติกรรม (ยกเว้นแก้บั๊กเดิมจุดเดียว
-           ที่ปุ่ม "ส่งมติ" ไม่เคยเปลี่ยน kase.status เป็น AGENDA_SET ตามที่
-           TRANSITIONS ของ ecmis-app.js กำหนดไว้จริง — เห็นชัดเพราะกำลังแก้
-           handler เดียวกันนี้อยู่แล้วเพื่อแยกกิ่ง 7.2 ออกไป)                    */
         function initScreening71(){
 
-        /* ---------- โควตาคณะ 1-8 ---------- */
         const QUOTA = [
             { n: 1, used: 40 }, { n: 2, used: 38 }, { n: 3, used: 22 }, { n: 4, used: 31 },
             { n: 5, used: 40 }, { n: 6, used: 19 }, { n: 7, used: 27 }, { n: 8, used: 35 }
@@ -245,7 +203,6 @@
             renderDoc();
         });
 
-        /* ---------- Q3: องค์ประชุมคณะอนุฯ (ตั้งค่าได้) ---------- */
         document.getElementById('subTotal').value = ECMIS.CONFIG.subMemberCount;
 
         function renderSubQuorum() {
@@ -268,7 +225,6 @@
         ['subTotal', 'subQuorum'].forEach(id =>
             document.getElementById(id).addEventListener('input', renderSubQuorum));
 
-        /* ---------- document ---------- */
         function renderDoc() {
             const M = ECMIS.mergeField;
             const team = document.getElementById('manualTeam').value || assigned;
@@ -325,7 +281,6 @@
         document.querySelectorAll('input[name="subRes"]').forEach(r =>
             r.addEventListener('change', renderDoc));
 
-        /* ---------- actions ---------- */
         function buildButtons() {
             return [
                 { act: 'save', label: 'บันทึกร่างมติ', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' },
@@ -367,14 +322,11 @@
                     : { p: '10-agenda-set.html', t: 'ส่งฝ่ายเจ้าหน้าที่กิจการฯ เพื่อบรรจุระเบียบวาระ' };
                 ECMIS.confirmAction({
                     title: 'ส่งมติคณะอนุกลั่นกรองฯ',
-                    html: `<p>สำนวน <strong>${kase.id}</strong> — ${next.t}</p>
-            <div class="law-note">ระบบจะจัดทำหนังสือนำส่งมติพร้อมสำนวนจาก Template อัตโนมัติ</div>`,
+                    html: `<p>สำนวน <strong>${kase.id}</strong> — ${next.t}</p>`,
                     confirmText: 'ยืนยันส่งมติ'
                 }).then(r => {
                     if (r.isConfirmed) {
-                        /* T9→T10→T11 ตาม TRANSITIONS: IN_SCREENING -> AGENDA_SET (SCREENING_RESOLVED)
-                           เมื่อเห็นพ้อง/เห็นต่าง — ส่วน MORE/NOT_ACCEPT ยังไม่มี target status ที่ยืนยัน
-                           ชัดเจนใน state machine (ส่งกลับ work inbox แบบ view-only เหมือนเดิม) */
+
                         if (res === 'AGREE' || res === 'DIFFER') kase.status = 'AGENDA_SET';
                         kase.subCommittee = document.getElementById('manualTeam').value || assigned;
                         ECMIS.saveCases();
@@ -386,17 +338,11 @@
         }
 
         renderSubQuorum(); renderDoc();
-        } /* end initScreening71 */
+        }
 
-        /* ============================================================
-           กิจกรรมที่ 7.2 — คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง พิจารณา
-           รวม 7.2-06 เข้าจอเดียวกับ 7.1 — ใช้ quota/quorum UI ร่วมกัน แต่ตัด
-           มติ 4 ทางออก (state machine 7.2 มีทางเดียว) และตัดข้อความ "มติ
-           คณะอนุกรรมการ ... พิจารณาแล้วมีมติ" ในเอกสารออกตามดราฟท์ 7.2-06 เดิม   */
         function initScreening72(){
             const M = ECMIS.mergeField;
 
-            /* ---------- โควตาคณะ 1-8 (ร่วมกับ 7.1) ---------- */
             const QUOTA = [
                 { n: 1, used: 40 }, { n: 2, used: 38 }, { n: 3, used: 22 }, { n: 4, used: 31 },
                 { n: 5, used: 40 }, { n: 6, used: 19 }, { n: 7, used: 27 }, { n: 8, used: 35 }
@@ -434,7 +380,6 @@
                 renderDoc();
             });
 
-            /* ---------- องค์ประชุมคณะอนุฯ (ร่วมกับ 7.1) ---------- */
             document.getElementById('subTotal').value = ECMIS.CONFIG.subMemberCount;
             function renderSubQuorum(){
                 const total = Math.max(1, +document.getElementById('subTotal').value || ECMIS.CONFIG.subMemberCount);
@@ -454,16 +399,10 @@
             }
             ['subTotal', 'subQuorum'].forEach(id => document.getElementById(id).addEventListener('input', renderSubQuorum));
 
-            /* ---------- ซ่อนมติ 4 ทาง — 7.2 มีทางเดียว ไม่ต้องเลือก ---------- */
             const resBoxEl = document.querySelector('input[name="subRes"]').closest('.list-group');
             if (resBoxEl) resBoxEl.previousElementSibling.classList.add('d-none');
             if (resBoxEl) resBoxEl.classList.add('d-none');
-            const lawNotes = document.querySelectorAll('.law-note');
-            if (lawNotes[1]) lawNotes[1].innerHTML =
-                'ผลการพิจารณาของคณะอนุกลั่นกรองฯ เป็น <strong>"ความเห็น"</strong> ไม่ใช่คำชี้ขาด — ' +
-                'อำนาจไต่สวน/วินิจฉัยชี้มูลเป็นของคณะกรรมการ ป.ป.ท. ตาม ม.17(3)(4)';
 
-            /* ---------- เอกสาร ---------- */
             function renderDoc(){
                 const team = document.getElementById('manualTeam').value || assigned;
                 const meetNo = document.getElementById('subMeetNo').value.trim();
@@ -505,7 +444,6 @@
             ['subMeetNo', 'subMeetDate', 'subOpinion'].forEach(id =>
                 document.getElementById(id).addEventListener('input', renderDoc));
 
-            /* ---------- actions ---------- */
             function buildButtons(){
                 return [
                     { act: 'more', label: 'ขอข้อมูลเพิ่มเติม', icon: 'fa-circle-question', cls: 'btn-outline-secondary' },
@@ -539,8 +477,7 @@
                 if (act === 'more') {
                     ECMIS.confirmAction({
                         title: 'ขอข้อมูลเพิ่มเติม',
-                        html: `<p>สำนวน <strong>${kase.id}</strong> — คณะอนุกลั่นกรองฯ ขอข้อมูล/เอกสารเพิ่มเติมจากผู้รับผิดชอบสำนวน</p>
-              <div class="law-note">สำนวนยังค้างอยู่ที่คณะอนุกลั่นกรองฯ เช่นเดิม ระบบจะบันทึกประเด็นที่ขอเพิ่มเติมและแจ้งเตือนเจ้าของสำนวน</div>`,
+                        html: `<p>สำนวน <strong>${kase.id}</strong> — คณะอนุกลั่นกรองฯ ขอข้อมูล/เอกสารเพิ่มเติมจากผู้รับผิดชอบสำนวน</p>`,
                         confirmText: 'ยืนยันขอข้อมูลเพิ่มเติม'
                     }).then(res => {
                         if (!res.isConfirmed) return;
@@ -556,8 +493,7 @@
                 if (act === 'done') {
                     ECMIS.confirmAction({
                         title: 'เห็นควรบรรจุวาระ',
-                        html: `<p>สำนวน <strong>${kase.id}</strong> — คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริงเห็นควรเสนอบรรจุระเบียบวาระ</p>
-              <div class="law-note">ระบบจะส่งสำนวนไปยัง <strong>ฝ่ายเลขานุการคณะกรรมการ</strong> เพื่อจัดทำหนังสือเชิญประชุมบอร์ด</div>`,
+                        html: `<p>สำนวน <strong>${kase.id}</strong> — คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริงเห็นควรเสนอบรรจุระเบียบวาระ</p>`,
                         confirmText: 'ยืนยันเห็นควรบรรจุวาระ'
                     }).then(res => {
                         if (!res.isConfirmed) return;
@@ -574,7 +510,7 @@
             }
 
             renderSubQuorum(); renderDoc();
-        } /* end initScreening72 */
+        }
     </script>
 </body>
 

@@ -35,12 +35,6 @@
     <div class="card card-ecmis mb-3">
       <div class="card-header"><i class="fa-solid fa-people-group"></i> กลั่นกรองสำนวนซับซ้อนโดยคณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
       <div class="card-body">
-        <div class="integration-note mb-3">
-          <strong>เหตุที่สำนวนมาถึงคณะนี้</strong> — เลขาธิการฯ พิจารณาแล้วเห็นว่าสำนวนมีประเด็นยุ่งยากซับซ้อน
-          (Cb-60) จึงส่งให้คณะอนุกรรมการสนับสนุนเลขาธิการฯ กลั่นกรองก่อนเข้าสู่ขั้นตอนบรรจุวาระ
-          — คณะนี้มี 2 คณะขนานกัน (ส่วนกลาง) เลือกคณะที่รับผิดชอบกลั่นกรองสำนวนนี้ด้านล่าง
-        </div>
-
         <label class="form-label field-req">คณะอนุกรรมการสนับสนุนเลขาธิการฯ ที่รับผิดชอบกลั่นกรอง</label>
         <div class="list-group mb-3" id="teamList"></div>
 
@@ -48,12 +42,6 @@
         <textarea class="form-control" id="supportOpinion" rows="5"
           placeholder="คณะอนุกรรมการสนับสนุนเลขาธิการฯ พิจารณาสำนวนแล้วเห็นว่า..."></textarea>
         <div class="val-msg val-err" data-for="supportOpinion">กรุณาระบุความเห็นกลั่นกรองของคณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
-
-        <div class="law-note mt-3" style="font-size:.8rem">
-          เมื่อบันทึกความเห็นแล้ว ระบบจะส่งสำนวนกลับเข้าสายงานของเลขาธิการฯ ต่อโดยอัตโนมัติ —
-          ถ้าสำนวนนี้เป็นเรื่องเร่งด่วนพร้อมกัน (urgent72) จะไปที่ <strong>7.2-05 คำร้องขอบรรจุวาระด่วน</strong>
-          มิฉะนั้นจะไปที่ <strong>7.2-06 คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง</strong>
-        </div>
       </div>
     </div>
 
@@ -74,7 +62,6 @@
     document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
     document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72);
 
-    /* ---------- เลือกคณะที่รับผิดชอบ (2 คณะ) ---------- */
     const chair = ECMIS.getRole('sup_chair');
     const sec = ECMIS.getRole('sup_sec');
     const asst = ECMIS.getRole('sup_asst');
@@ -95,7 +82,6 @@
 
     if (kase.supportOpinion72) document.getElementById('supportOpinion').value = kase.supportOpinion72;
 
-    /* ---------- actions ---------- */
     function buildButtons() {
       return [
         { act: 'save', label: 'บันทึกร่างความเห็น', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' },
@@ -140,8 +126,7 @@
 
         ECMIS.confirmAction({
           title: 'ส่งความเห็นกลับเลขาธิการฯ',
-          html: `<p>สำนวน <strong>${kase.id}</strong> — กลั่นกรองโดย <strong>${team.label}</strong></p>
-            <div class="law-note">${next.t}</div>`,
+          html: `<p>สำนวน <strong>${kase.id}</strong> — กลั่นกรองโดย <strong>${team.label}</strong></p>`,
           confirmText: 'ยืนยันส่งกลับ'
         }).then(res => {
           if (!res.isConfirmed) return;

@@ -35,7 +35,6 @@
         <div class="row g-3">
             <div class="col-xl-6">
 
-                <!-- T11-T12: บรรจุวาระ -->
                 <div class="card card-ecmis mb-3" id="agendaCard">
                     <div class="card-header"><i class="fa-solid fa-calendar-check"></i>
                         บรรจุระเบียบวาระและหนังสือเชิญประชุม</div>
@@ -58,27 +57,17 @@
                                 <option value="SECRET" selected>ลับ — แนบระเบียบวาระเต็ม (พาดพิงสำนวนคดี)</option>
                                 <option value="NORMAL">ปกติ — ไม่แนบระเบียบวาระเต็ม</option>
                             </select>
-                            <div class="law-note mt-2" style="font-size:.78rem">
-                                <strong>ม.19/1</strong> ในชั้นก่อนการไต่สวนห้ามเปิดเผยชื่อผู้ถูกร้อง
-                                และห้ามเปิดเผยชื่อผู้กล่าวหา ผู้แจ้งเบาะแส และพยาน —
-                                หนังสือเชิญที่แนบระเบียบวาระเต็มจึงเป็น<strong>ชั้นความลับทันที</strong>
-                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 7.2-07: เอกสารประกอบวาระ — เฉพาะกิจกรรมที่ 7.2 (RULING) -->
                 <div class="card card-ecmis mb-3 d-none" id="checklistCard72">
                     <div class="card-header"><i class="fa-solid fa-list-check"></i> เอกสารประกอบวาระ</div>
                     <div class="card-body">
-                        <div class="integration-note mb-3">
-                            ต้องเตรียมเอกสารประกอบวาระให้ครบก่อนจึงจะส่งหนังสือเชิญประชุมและเปิดวาระได้
-                        </div>
                         <div id="checklistBox72"></div>
                     </div>
                 </div>
 
-                <!-- 7.2-07: สถานะการเชิญประชุมกรรมการ — เฉพาะกิจกรรมที่ 7.2 (RULING) -->
                 <div class="card card-ecmis mb-3 d-none" id="boardInviteCard72">
                     <div class="card-header"><i class="fa-solid fa-users-rectangle"></i> รายชื่อกรรมการ ป.ป.ท. — สถานะการเชิญประชุม</div>
                     <div class="card-body">
@@ -95,7 +84,6 @@
                 </div>
             </div>
 
-            <!-- ขวา -->
             <div class="col-xl-6" id="docCol">
                 <div style="position:sticky;top:calc(var(--topbar-h) + 14px)">
                     <ul class="nav nav-tabs" id="docTabs">
@@ -110,11 +98,6 @@
                                     class="fa-solid fa-print"></i></button>
                         </div>
                         <div class="doc-paper" id="docPaper"></div>
-                        <div class="law-note mt-3">
-                            <strong>ที่มาของเทมเพลต (Google Drive):</strong>
-                            <code>1. กำหนดระเบียบวาระการประชุม (ผ่านเลขาธิการฯ).docx</code> ·
-                            <code>2. บันทึกขอเรียนเชิญประชุม ประธานและกรรมการ.docx</code>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -133,14 +116,9 @@
         const params = new URLSearchParams(location.search);
         const kase = ECMIS.getCase(params.get('case') || '1547/2568');
         const role = ECMIS.currentRole();
-        /* หน้านี้เป็นสิทธิ์เฉพาะของเจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ (perm: create.agenda / create.invite)
-           ตามผัง AS-IS กิจกรรมที่ 7 (V3.0) — บทบาทอื่นที่มองเห็นเมนูนี้ได้ (view.all) เข้ามาดูได้
-           แต่กดบรรจุวาระแทนไม่ได้ — เจ้าของสิทธิ์เดียวกันทั้ง 7.1 และ 7.2 */
+
         const CAN_ACT_ROLE = 'board_sec';
-        /* กิจกรรมที่ 7.2 (วินิจฉัยชี้มูล) ใช้จอนี้ร่วมกับ 7.1 — ทำหน้าที่เดียวกันทุก
-           ประการ (นัดประชุม/จัดทำหนังสือเชิญ โดย board_sec) รวมจาก 72-07 เดิม
-           แต่ 7.2 ไม่มีฟิลด์ครั้งที่ประชุม/วาระที่/ชั้นความลับที่นี่ (72-08 มีฟิลด์
-           ของตัวเองอยู่แล้ว) จึงใช้ checklist + สถานะเชิญกรรมการรายคนแทน           */
+
         const docType = ECMIS.DOC_TYPES[kase.docType];
         const isRuling = docType.code === 'RULING';
 
@@ -151,15 +129,9 @@
 
         if (isRuling) { initAgenda72(); } else { initAgenda71(); }
 
-        /* ============================================================
-           7.1 — โค้ดเดิมทั้งหมด ไม่ได้แก้ไขพฤติกรรม (ยกเว้นแก้บั๊กเดิมจุดเดียว
-           ที่ปุ่ม "ยืนยันบรรจุวาระ" ไม่เคยเปลี่ยน kase.status เป็น IN_MEETING
-           ตามที่ TRANSITIONS กำหนดไว้จริง (AGENDA_SET -> IN_MEETING ผ่าน
-           OPEN_AGENDA) — เห็นชัดเพราะกำลังแก้ handler เดียวกันนี้อยู่แล้ว)      */
         function initAgenda71(){
         let docTab = 'agenda';
 
-        /* ---------- documents ---------- */
         function renderDoc() {
             const M = ECMIS.mergeField;
             const meetNo = document.getElementById('meetNo').value.trim();
@@ -237,7 +209,6 @@
             document.getElementById(id).addEventListener('input', renderDoc));
         document.getElementById('secrecy').addEventListener('change', renderDoc);
 
-        /* ---------- actions — เฉพาะ role.id === 'board_sec' (สิทธิ์ create.agenda / create.invite) ---------- */
         function renderActions() {
             const slot = document.getElementById('actionBarSlot');
             if (role.id !== CAN_ACT_ROLE) {
@@ -270,8 +241,7 @@
                 }
                 ECMIS.confirmAction({
                     title: 'ยืนยันบรรจุระเบียบวาระ',
-                    html: `<p>สำนวน <strong>${kase.id}</strong> จะถูกบรรจุเข้าระเบียบวาระ ครั้งที่ ${meetNo} วาระที่ ${agendaNo}</p>
-            <div class="law-note">ระบบจะจัดส่งระเบียบวาระและหนังสือเชิญประชุมให้ฝ่ายเลขานุการคณะกรรมการดำเนินการต่อ (T13)</div>`,
+                    html: `<p>สำนวน <strong>${kase.id}</strong> จะถูกบรรจุเข้าระเบียบวาระ ครั้งที่ ${meetNo} วาระที่ ${agendaNo}</p>`,
                     confirmText: 'ยืนยันบรรจุวาระ'
                 }).then(r => {
                     if (r.isConfirmed) {
@@ -286,21 +256,14 @@
         }
 
         renderDoc(); renderActions();
-        } /* end initAgenda71 */
+        }
 
-        /* ============================================================
-           กิจกรรมที่ 7.2 — นัดประชุม/จัดทำหนังสือเชิญประชุมบอร์ด
-           รวม 7.2-07 เข้าจอเดียวกับ 7.1 — สิทธิ์เดียวกัน (board_sec) แต่ไม่มี
-           ฟิลด์ครั้งที่ประชุม/วาระที่/ชั้นความลับที่นี่ (72-08 มีฟิลด์ของตัวเอง)
-           ใช้ checklist เอกสารประกอบวาระ + สถานะเชิญกรรมการรายคนแทน ซ่อนคอลัมน์
-           เอกสาร mail-merge ฝั่งขวาทั้งหมดเพราะ 7.2-07 ไม่มีเอกสารที่ต้อง preview */
         function initAgenda72(){
             document.getElementById('agendaCard').classList.add('d-none');
             document.getElementById('docCol').classList.add('d-none');
             document.getElementById('checklistCard72').classList.remove('d-none');
             document.getElementById('boardInviteCard72').classList.remove('d-none');
 
-            /* ---------- checklist เอกสารประกอบวาระ ---------- */
             const CHECKLIST = ['รายงานวินิจฉัยชี้มูล', 'เอกสารประกอบ', 'ระเบียบวาระ'];
             document.getElementById('checklistBox72').innerHTML = CHECKLIST.map((c, i) => `
     <div class="form-check mb-1">
@@ -311,7 +274,6 @@
                 return Array.from(document.querySelectorAll('.checklist-item')).every(el => el.checked);
             }
 
-            /* ---------- คณะกรรมการ ป.ป.ท. 7 ท่าน — ชุดเดียวกับ 7.2-08 เพราะเป็นบอร์ดเดียวกัน ---------- */
             const BOARD = [
                 { n: 'นายวิชัย ยุติธรรม', r: 'ประธานกรรมการ ป.ป.ท.', chair: true },
                 { n: 'นายสมบูรณ์ ธรรมรัฐ', r: 'กรรมการ ป.ป.ท.' },
@@ -362,9 +324,7 @@
 
                 ECMIS.confirmAction({
                     title: 'ส่งหนังสือเชิญประชุมและเปิดวาระ',
-                    html: `<p>สำนวน <strong>${kase.id}</strong> — เอกสารประกอบวาระครบถ้วนแล้ว</p>
-            <div class="law-note">ระบบจะส่งหนังสือเชิญประชุมให้กรรมการ ป.ป.ท. ทั้ง ${BOARD.length} ท่าน และเปิดวาระเข้าสู่
-            <strong>7.2-08 บันทึกมติที่ประชุม (วินิจฉัยชี้มูล)</strong></div>`,
+                    html: `<p>สำนวน <strong>${kase.id}</strong> — เอกสารประกอบวาระครบถ้วนแล้ว</p>`,
                     confirmText: 'ยืนยันส่งหนังสือเชิญประชุม'
                 }).then(res => {
                     if (!res.isConfirmed) return;
@@ -377,7 +337,7 @@
                     setTimeout(() => location.href = ECMIS.pageForCase72(kase) + '?case=' + encodeURIComponent(kase.id), 1400);
                 });
             }
-        } /* end initAgenda72 */
+        }
     </script>
 </body>
 

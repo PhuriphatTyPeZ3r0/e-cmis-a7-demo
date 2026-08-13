@@ -1,21 +1,10 @@
-/* ==========================================================================
-   E-CMIS Back-Office — Shared runtime (กิจกรรมที่ 7.1 การไต่สวนเบื้องต้น)
-   อ้างอิงผัง: กิจกรรมที่ 7-V2.0.drawio  หน้า "TO-BE ไต่สวนเบื้องต้น" และ
-              "TO-BE P2 Core Workflow (Swimlane)"  T1–T14 / G1–G5
-   หมายเหตุ: prototype นี้ยังไม่มี RBAC จริง ใช้ current-user switcher สาธิต
-   ========================================================================== */
+
+
 (function (global) {
 'use strict';
 
-/* ---------------------------------------------------------------- ROLES
-   scope:'UPSTREAM' = อยู่นอกขอบเขตกิจกรรมที่ 7 — เป็นการเสนอตามลำดับชั้น
-                      ภายในกอง / สำนักงาน ป.ป.ท. เขต ซึ่งเป็นของกิจกรรมที่ 5
-   scope:'IN'       = อยู่ในขอบเขตกิจกรรมที่ 7
-   จุดเริ่มต้นของกิจกรรมที่ 7 คือ "เลขาธิการคณะกรรมการ ป.ป.ท."            */
-/* ครบ 27 ตำแหน่ง / 11 กลุ่มงาน ตาม Google Sheet tab "กลุ่มผู้ใช้งานระบบ"
-   perms = ชุดสิทธิ์ที่ระบบบังคับใช้จริง (ดูตาราง PERM_DEFS ด้านล่าง)          */
 const ROLES = [
-  /* ── 1. คณะกรรมการ ป.ป.ท. ─────────────────────────────────────────── */
+
   { id:'chairman', login:'Wichai.Y', row:1, group:'คณะกรรมการ ป.ป.ท.', title:'ประธานกรรมการ ป.ป.ท.',
     name:'นายวิชัย ยุติธรรม', org:'คณะกรรมการ ป.ป.ท.', lane:'L5', flow:'G4 / S7', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','order.agenda','sign.agenda','sign.order24p3','sign.ruling','vote','bypass.approve','return'] },
@@ -26,7 +15,6 @@ const ROLES = [
     name:'เลขาธิการคณะกรรมการ ป.ป.ท.', org:'คณะกรรมการ ป.ป.ท.', lane:'L8', flow:'S9 / G5', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','vote','read.agenda.advance'] },
 
-  /* ── 2. คณะอนุสนับสนุนเลขาธิการฯ (2 คณะ) ──────────────────────────── */
   { id:'sup_chair', login:'Kitti.P', row:4, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'ประธานคณะอนุสนับสนุนฯ',
     name:'นายกิตติ ปรีชาญาณ', org:'ส่วนกลาง (2 คณะ)', lane:'L2', flow:'S2 / G2', act:'7.1, 7.2',
     perms:['view.assigned','download','support.opinion','support.certify'] },
@@ -40,7 +28,6 @@ const ROLES = [
     name:'นางสาวเบญจมาศ ใจดี', org:'ส่วนกลาง (2 คณะ)', lane:'L2', flow:'S2', act:'7.1, 7.2',
     perms:['view.assigned','download','request.moreinfo'] },
 
-  /* ── 3. คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง (คณะ 1-8) ───────────── */
   { id:'scr_chair', login:'Sumet.N', row:8, group:'คณะอนุกลั่นกรองฯ (คณะ 1-8)', title:'ประธานคณะอนุกลั่นกรองฯ',
     name:'นายสุเมธ นิติธรรม', org:'ส่วนกลาง (คณะ 1-8)', lane:'L6', flow:'S6', act:'7.1, 7.2',
     perms:['view.assigned','download','screen.vote'] },
@@ -54,7 +41,6 @@ const ROLES = [
     name:'นางสาวอารยา สุจริต', org:'นิติกร กบค.', lane:'L6', flow:'S6', act:'7.1, 7.2',
     perms:['view.assigned','download','doc.generate'] },
 
-  /* ── 4. คณะผู้บริหาร ───────────────────────────────────────────────── */
   { id:'secgen', login:'Apichat.S', row:12, group:'คณะผู้บริหาร', title:'เลขาธิการคณะกรรมการ ป.ป.ท.',
     name:'นายอภิชาติ สุจริตกุล', org:'สำนักงาน ป.ป.ท.', lane:'L1', flow:'S1 / G1 — จุดเริ่ม กจ.7', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','sign.report213','decide.complex','sign.order24p1','approve.general','return'] },
@@ -65,13 +51,10 @@ const ROLES = [
     name:'นางสาวพิมพ์ใจ รัตนกุล', org:'สำนักงาน ป.ป.ท.', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2, 7.3', scope:'UPSTREAM',
     perms:['view.all','download'] },
 
-  /* ── 5. กองบริหารคดี (กบค.) ────────────────────────────────────────── */
   { id:'affairs', login:'Siriporn.K', row:15, group:'กองบริหารคดี (กบค.)', title:'เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ',
     name:'นางสาวศิริพร กิจการ', org:'กองบริหารคดี', lane:'L7', flow:'S7 / S11', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','EDIT.MASTER','doc.generate','order24.draft','secrecy.set'] },
-  /* จัดทำระเบียบวาระ/หนังสือเชิญประชุม (create.agenda, create.invite) เป็นสิทธิ์ของกลุ่มงานนี้
-     ตามผัง AS-IS กิจกรรมที่ 7 (V3.0) ยืนยันแล้วทั้ง 3 หน้า (7.1/7.2/7.3) — เดิมเคยผูกกับ
-     'affairs' ซึ่งขัดกับ TRANSITIONS ที่ระบุ actor ของ OPEN_AGENDA เป็น board_sec อยู่แล้ว */
+
   { id:'board_sec', login:'Thanakrit.B', row:16, group:'กองบริหารคดี (กบค.)', title:'เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ',
     name:'นายธนกฤต บุญมี', org:'กองบริหารคดี', lane:'L7', flow:'S8 / S10', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','create.agenda','create.invite','record.minutes','lock.pdf','compile.minutes','doc.generate','dispatch.resolution'] },
@@ -85,7 +68,6 @@ const ROLES = [
     name:'นางวิไล ธุรการ', org:'กองบริหารคดี', lane:'L3', flow:'S5', act:'7.1',
     perms:['view.all','download','intake.route'] },
 
-  /* ── 6. กอง / สำนักงาน ป.ป.ท. เขต (ต้นสังกัดสำนวน) ─────────────────── */
   { id:'owner', login:'Somchai.J', row:17, group:'กอง / สนง. ป.ป.ท. เขต', title:'ผู้รับผิดชอบสำนวน / พนักงาน ป.ป.ท. (นักสืบ)',
     name:'นายสมชาย ใจซื่อ', org:'สนง. ป.ป.ท. เขต 1', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2, 7.3', scope:'UPSTREAM',
     perms:['view.own','download.own','ack.resolution','urgent.request','present.board.ruling','dispatch.nacc'] },
@@ -96,7 +78,6 @@ const ROLES = [
     name:'นายประเสริฐ มั่นคง', org:'สนง. ป.ป.ท. เขต 1', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2, 7.3', scope:'UPSTREAM',
     perms:['view.own','download.own','urgent.endorse'] },
 
-  /* ── 7-9. สำนักงานเลขาธิการ / สารบรรณ / กองปราบ ────────────────────── */
   { id:'chair_office', login:'Sunee.T', row:23, group:'สำนักงานเลขาธิการ', title:'หน้าห้องประธานกรรมการ ป.ป.ท.',
     name:'นางสุนีย์ ธำรงชัย', org:'สำนักงานเลขาธิการ', lane:'L4', flow:'S4', act:'7.1, 7.2',
     perms:['view.all','download','intake.screen','route.subcommittee'] },
@@ -107,23 +88,15 @@ const ROLES = [
     name:'นายภาณุ ปราบทุจริต', org:'กปท. 1-5', lane:'—', flow:'ต้นทางเอกสาร', act:'7.1, 7.2',
     perms:['view.own','download.own','memo.submit'] },
 
-  /* ── 10. กองกฎหมาย (กกม.) ──────────────────────────────────────────── */
   { id:'legal', login:'Ekapong.W', row:26, group:'กองกฎหมาย (กกม.)', title:'นิติกร / ผอ.กองกฎหมาย',
     name:'นายเอกพงศ์ วินิจฉัย', org:'กองกฎหมาย', lane:'—', flow:'เชื่อม กจ.10', act:'7.3',
     perms:['view.all','download','legal.opinion','doc.generate'] },
 
-  /* ── 11. ผู้ดูแลระบบ E-CMIS ────────────────────────────────────────── */
   { id:'sysadmin', login:'Kritsana.A', row:27, group:'ผู้ดูแลระบบ E-CMIS', title:'ผู้ดูแลระบบ (System Admin)',
     name:'นายกฤษณะ แอดมิน', org:'ศูนย์เทคโนโลยีสารสนเทศ', lane:'—', flow:'ทุกขั้น', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','admin.sla','admin.users','admin.reassign','audit.view'] }
 ];
 
-/* --------------------------------------------------- DOCUMENT TYPE + SLA
-   ผัง P2 โหนด t5 (★ S1) กำหนด SLA ของชั้นเลขาธิการฯ ไว้เป็น 2 ระยะ และ
-   แยกค่าตามชนิดรายงานที่เสนอเข้ามา:
-     รายงาน 213 — รอลงนาม 5 วัน / ลงนามเสร็จ 3 วัน
-     รายงาน 644 — เสนอ 15 วัน   / ลงนาม 15 วัน
-   ค่าทั้งหมดตั้งให้ Admin แก้ได้ (TOR 7.2.1.3)                            */
 const DOC_TYPES = {
   '213': {
     code:'213', label:'รายงานการไต่สวนเบื้องต้น (แบบ ปปท. ๒-๑๓)', short:'รายงาน 213',
@@ -133,28 +106,24 @@ const DOC_TYPES = {
     code:'644', label:'รายงานการไต่สวนข้อเท็จจริง (แบบ ปปท. ๖-๔๔)', short:'รายงาน 644',
     sla:{ waitSign:15, completeSign:15 }
   },
-  /* กิจกรรมที่ 7.2 — เอกสารรายงานการไต่สวนวินิจฉัยชี้มูล (ต่างจาก 644 ตรงที่
-     644 คือรายงาน "ไต่สวนข้อเท็จจริง" ต้นทาง ส่วน RULING คือรายงานที่คณะ
-     กรรมการ ป.ป.ท. ให้ความเห็นชอบและวินิจฉัยชี้มูลแล้วตาม ม.24 วรรคท้าย)   */
+
   RULING: {
     code:'RULING', label:'รายงานการไต่สวนวินิจฉัยชี้มูล (ม.24 วรรคท้าย)', short:'รายงานวินิจฉัยชี้มูล',
     sla:{ waitSign:15, completeSign:15 }
   }
 };
-/* ระยะที่สำนวนกำลังอยู่ในชั้นเลขาธิการฯ — ใช้เลือกเพดาน SLA ที่ถูกต้อง */
+
 const SIGN_PHASE = {
   WAIT:     { key:'WAIT',     label:'รอเลขาธิการฯ ลงนาม',       slaKey:'waitSign' },
   COMPLETE: { key:'COMPLETE', label:'ลงนามแล้ว รอส่งต่อให้ครบ', slaKey:'completeSign' }
 };
 
-/* เพดาน SLA ของสำนวนในชั้นเลขาธิการฯ — แทนการ hard-code slaLimit ต่อสำนวน */
 function secgenSlaLimit(kase){
   const dt = DOC_TYPES[kase.docType] || DOC_TYPES['213'];
   const ph = SIGN_PHASE[kase.signPhase] || SIGN_PHASE.WAIT;
   return dt.sla[ph.slaKey];
 }
 
-/* ---- นิยามสิทธิ์ที่ระบบบังคับใช้ (ใช้แสดงในหน้าจอบริหารสิทธิ์) ---- */
 const PERM_DEFS = [
   { k:'view.all',      cat:'การเข้าถึง', label:'ดูสำนวนได้ทุกเรื่องในกิจกรรมที่ 7' },
   { k:'view.own',      cat:'การเข้าถึง', label:'ดูได้เฉพาะสำนวนของตนเอง', note:'ชีตแถว 17' },
@@ -212,14 +181,13 @@ const PERM_DEFS = [
   { k:'audit.view',    cat:'ผู้ดูแลระบบ',label:'ดู Audit Log' }
 ];
 
-/* ---- ตรวจสิทธิ์ ---- */
 function can(permKey, roleId){
   const r = getRole(roleId || currentRoleId());
   return !!(r.perms && r.perms.includes(permKey));
 }
-/* ผู้มีสิทธิ์แก้ไขมติ/คำสั่ง/รายงาน — ชีตระบุ 7 คน */
+
 function canEditMaster(roleId){ return can('EDIT.MASTER', roleId); }
-/* ขอบเขตการมองเห็นสำนวน */
+
 function canViewCase(kase, roleId){
   const r = getRole(roleId || currentRoleId());
   if(can('view.all', r.id)) return true;
@@ -228,18 +196,14 @@ function canViewCase(kase, roleId){
   return false;
 }
 
-/* ------------------------------------------------- STATE MACHINE (7.1)
-   สถานะที่มี scope:'UPSTREAM' = สำนวนยังไม่เข้ากิจกรรมที่ 7
-   ระบบยังแสดงให้ติดตามได้ แต่ไม่มี Action ใดในโมดูลนี้                    */
 const STATUS = {
-  /* ---- นอกขอบเขต กจ.7 : การเสนอตามลำดับชั้นภายในกอง/เขต (กจ.5) ---- */
+
   DRAFT:            { label:'ร่างรายงาน 213 (ในกอง/เขต)',   cls:'st-draft',    owner:'owner',        scope:'UPSTREAM' },
   RETURNED:         { label:'ส่งคืน กจ.5 — รอแก้ไข',        cls:'st-returned', owner:'owner',        scope:'UPSTREAM' },
   PENDING_SECTION:  { label:'รอหัวหน้ากลุ่มงาน (ในกอง/เขต)', cls:'st-pending',  owner:'section_head', scope:'UPSTREAM' },
   PENDING_DIRECTOR: { label:'รอ ผอ.กอง / ผอ.เขต',           cls:'st-pending',  owner:'director',     scope:'UPSTREAM' },
   PENDING_DEPUTY:   { label:'รอผู้ช่วย / รองเลขาธิการฯ',     cls:'st-pending',  owner:'deputy',       scope:'UPSTREAM' },
 
-  /* ---- จุดเริ่มกิจกรรมที่ 7 ---- */
   PENDING_SECGEN:   { label:'รอเลขาธิการฯ ลงนาม',         cls:'st-pending',  owner:'secgen' },
   IN_SUPPORT_SUB:   { label:'ส่งให้คณะอนุสนับสนุนฯ พิจารณาแล้ว', cls:'st-review', owner:'support_sub' },
   PENDING_URGENT:   { label:'รอ ผอ.กบค. รับรองใบด่วน',     cls:'st-urgent',   owner:'dir_case' },
@@ -247,9 +211,7 @@ const STATUS = {
   PENDING_CHAIRMAN: { label:'รอประธานฯ สั่งการ',           cls:'st-pending',  owner:'chairman' },
   IN_SCREENING:     { label:'อยู่อนุกลั่นกรองฯ',           cls:'st-review',   owner:'subcommittee' },
   AGENDA_SET:       { label:'บรรจุวาระแล้ว',              cls:'st-agenda',   owner:'board_sec' },
-  /* ---- ช่วงพิจารณามติ: เดิมกระโดดจาก AGENDA_SET ไป RESOLVED ตรง ๆ ทำให้
-     ไม่มีสถานะรองรับ "อยู่ในห้องประชุม" และ "มีมติแล้วแต่ยังไม่ล็อก PDF"
-     ซึ่งเป็นสองจุดที่ EX-03 (เลื่อน/ถอนวาระ) และ EX-04 (องค์ประชุม) แตกออก */
+
   IN_MEETING:       { label:'อยู่ระหว่างประชุมบอร์ด',      cls:'st-review',   owner:'board_sec' },
   DEFERRED:         { label:'เลื่อน/ถอนวาระ — รอเลขวาระใหม่', cls:'st-returned', owner:'affairs' },
   RESOLVED_PENDING: { label:'มีมติแล้ว รอล็อก PDF/ลงนาม',  cls:'st-pending',  owner:'board_sec' },
@@ -257,16 +219,6 @@ const STATUS = {
   DISPATCHING:      { label:'ส่งมติออกแล้ว รอไฟล์ลงนามกลับ', cls:'st-pending',  owner:'owner' },
   CLOSED:           { label:'ปิดสำนวน',                   cls:'st-closed',   owner:null },
 
-  /* =========================================================================
-     กิจกรรมที่ 7.2 — การพิจารณาชั้นไต่สวนวินิจฉัยชี้มูล
-     ต่อเนื่องจากมติรับไว้ไต่สวนข้อเท็จจริงและออกคำสั่ง ม.24 (จบ 7.1 ที่ CLOSED)
-     อ้างอิง As-Is กิจกรรมที่ 7 มติคณะกรรมการ-V3.0.drawio หน้า "AS-IS ไต่สวน"
-     ฐานกฎหมาย: ม.17(3)(4)(5)(6) · ม.19 (ข)(1) · ม.19/2 · ม.24 วรรคท้าย ·
-                ม.32 · ม.38 · ม.44 (law_pacc_68.pdf)
-     บทบาท/สิทธิ์ที่ใช้ล้วนมีอยู่แล้วใน ROLES/PERM_DEFS (act รวม '7.2' และ
-     perms เช่น sign.ruling, present.board.ruling, ack.resolution,
-     dispatch.nacc, track.discipline ถูกเตรียมไว้ล่วงหน้าแล้ว) จึงไม่ต้อง
-     เพิ่มบทบาทใหม่ ========================================================= */
   PENDING_SECTION_72:  { label:'รอหัวหน้ากลุ่มงาน (รายงานวินิจฉัยชี้มูล)',      cls:'st-pending', owner:'section_head' },
   PENDING_DIRECTOR_72: { label:'รอ ผอ.กอง / ผอ.เขต (รายงานวินิจฉัยชี้มูล)',      cls:'st-pending', owner:'director' },
   PENDING_DEPUTY_72:   { label:'รอผู้ช่วย / รองเลขาธิการฯ (รายงานวินิจฉัยชี้มูล)', cls:'st-pending', owner:'deputy' },
@@ -286,15 +238,8 @@ const STATUS = {
   CLOSED_72: { label:'ปิดสำนวน — จบกระบวนการกิจกรรมที่ 7',                      cls:'st-closed',  owner:null }
 };
 
-/* =========================================================================
-   STATE MACHINE — ตารางทรานซิชันของกระบวนงานมติไต่สวนเบื้องต้น
-   เดิมการเปลี่ยนสถานะถูกเขียนฝังอยู่ใน handler ของแต่ละหน้าจอ จึงไม่มี
-   ที่เดียวที่บอกได้ว่า "จาก A ไป B ได้หรือไม่" และทดสอบ Invalid Transition
-   ไม่ได้เลย ตารางนี้ทำให้กติกาทั้งหมดอยู่ในที่เดียวและตรวจสอบได้
-   guard = เงื่อนไขที่ต้องเป็นจริง (ประเมินจากตัวสำนวน)
-   ========================================================================= */
 const TRANSITIONS = [
-  /* ── S1 · G1 · G3 — ชั้นเลขาธิการฯ ─────────────────────────────────── */
+
   { from:'PENDING_SECGEN', to:'IN_SUPPORT_SUB', event:'SIGN_COMPLEX', actor:'secgen',
     ref:'S1→G1→T6', guard:k => g1Triggers(k).required,
     note:'G1 = ใช่ (ซับซ้อน หรือความเห็นในสายบังคับบัญชาไม่ตรงกัน)' },
@@ -307,7 +252,6 @@ const TRANSITIONS = [
   { from:'PENDING_SECGEN', to:'RETURNED', event:'RETURN_TO_SOURCE', actor:'secgen',
     ref:'EX-01', note:'ส่งคืนออกนอกกิจกรรมที่ 7 กลับสายงานต้นทาง (กจ.5)' },
 
-  /* ── G2 — คณะอนุสนับสนุนฯ ──────────────────────────────────────────── */
   { from:'IN_SUPPORT_SUB', to:'PENDING_CHAIR_OF', event:'SUPPORT_ALIGNED', actor:'support_sub',
     ref:'T6→G2→T8', note:'ความเห็นสอดคล้อง → Bypass ข้ามอนุกลั่นกรองฯ 1-8' },
   { from:'IN_SUPPORT_SUB', to:'PENDING_URGENT', event:'SUPPORT_DIVERGED_URGENT', actor:'support_sub',
@@ -316,13 +260,11 @@ const TRANSITIONS = [
   { from:'IN_SUPPORT_SUB', to:'PENDING_CHAIR_OF', event:'SUPPORT_DIVERGED', actor:'support_sub',
     ref:'T6→G2→G3→T8', guard:k => !k.urgent, note:'ไม่สอดคล้อง และไม่มีใบด่วน' },
 
-  /* ── T7 — ผอ.กบค. รับรองใบด่วน (จุดควบคุม Bypass) ──────────────────── */
   { from:'PENDING_URGENT', to:'PENDING_CHAIR_OF', event:'URGENT_CERTIFY', actor:'dir_case',
     ref:'T7→T8', note:'ผอ.กบค. ลงนามรับรองเหตุผลเร่งด่วน' },
   { from:'PENDING_URGENT', to:'IN_SCREENING', event:'URGENT_REJECT', actor:'dir_case',
     ref:'EX-09 A', note:'ไม่รับรองใบด่วน → ตัดสิทธิ์ Bypass บังคับกลับเส้นทางปกติที่ T9' },
 
-  /* ── T8 · G4 — หน้าห้องประธานฯ และคำสั่งประธานฯ ────────────────────── */
   { from:'PENDING_CHAIR_OF', to:'PENDING_CHAIRMAN', event:'INTAKE_SCREEN', actor:'chair_office',
     ref:'T8→G4' },
   { from:'PENDING_CHAIRMAN', to:'IN_SCREENING', event:'ORDER_SCREENING', actor:'chairman',
@@ -331,11 +273,9 @@ const TRANSITIONS = [
     ref:'G4→T11', guard:k => !!k.urgentCertified,
     note:'สั่งบรรจุวาระด่วน — ต้องมีลายเซ็นรับรองของ ผอ.กบค. ก่อนเท่านั้น' },
 
-  /* ── T10 · T11 · T12 — อนุกลั่นกรองฯ → บรรจุวาระ ───────────────────── */
   { from:'IN_SCREENING', to:'AGENDA_SET', event:'SCREENING_RESOLVED', actor:'subcommittee',
     ref:'T10→T11→T12' },
 
-  /* ── T13 · T14 · G5 — ประชุมและบันทึกมติ ───────────────────────────── */
   { from:'AGENDA_SET', to:'IN_MEETING', event:'OPEN_AGENDA', actor:'board_sec',
     ref:'T13' },
   { from:'IN_MEETING', to:'RESOLVED_PENDING', event:'RECORD_RESOLUTION', actor:'board_sec',
@@ -347,7 +287,6 @@ const TRANSITIONS = [
     ref:'EX-03→T12', guard:k => !!k.newAgendaNo,
     note:'กลับเข้าประชุมต้องได้เลขวาระใหม่เสมอ' },
 
-  /* ── หลังมติ — ล็อกไฟล์และส่งต่อ ───────────────────────────────────── */
   { from:'RESOLVED_PENDING', to:'RESOLVED', event:'LOCK_PDF', actor:'board_sec',
     ref:'T14', guard:k => can('EDIT.MASTER', k.actorRoleId) || !k.actorRoleId,
     note:'ล็อกไฟล์ PDF — แก้ไขได้เฉพาะ 7 คนที่มีสิทธิ์ EDIT.MASTER' },
@@ -355,11 +294,7 @@ const TRANSITIONS = [
     ref:'G5 มติ 3', guard:k => k.resolution === 'FORWARD' && !!k.forwardTo &&
                                (forwardTarget(k.forwardTo) || {}).external === true,
     note:'ปลายทางนอกองค์กรเท่านั้นที่ต้องรอไฟล์สแกนฉบับลงนามกลับ' },
-  /* [F-02] ปิดสำนวนที่ส่งออกนอกองค์กรต้องผ่าน 2 เงื่อนไข ไม่ใช่เงื่อนไขเดียว
-     1) TOR 7.2.1.5 — อัปโหลดไฟล์สแกนฉบับลงนามกลับเข้าระบบ
-     2) ม.18/1 — "คัดสำเนาสำนวนดังกล่าวเก็บรักษาไว้เป็นหลักฐานด้วย"
-        บังคับเฉพาะปลายทางที่ตั้ง requireArchiveCopy ไว้ (ปัจจุบันคือ ป.ป.ช.)
-        ถ้าปิดสำนวนได้โดยไม่มีสำเนาเก็บไว้ สำนักงานจะไม่มีหลักฐานตามที่กฎหมายบังคับ */
+
   { from:'DISPATCHING', to:'CLOSED', event:'UPLOAD_SIGNED_SCAN', actor:'owner',
     ref:'TOR 7.2.1.5 · ม.18/1',
     guard:k => !!k.signedScanUploaded &&
@@ -371,18 +306,10 @@ const TRANSITIONS = [
     ref:'EX-03 X3.3', guard:k => !!k.newAgendaNo,
     note:'ขอแก้ไข/ทบทวนมติ — มติเดิมไม่ถูกลบ ผูกคู่กับมติใหม่' },
 
-  /* =========================================================================
-     กิจกรรมที่ 7.2 — การพิจารณาชั้นไต่สวนวินิจฉัยชี้มูล
-     รับต่อจากสำนวนที่ 7.1 CLOSED ด้วยมติรับไว้ไต่สวน (ออกคำสั่ง ม.24 แล้ว)
-     ความยุ่งยากซับซ้อน (complex72) และเร่งด่วน (urgent72) เป็น 2 แกนอิสระ
-     ที่ตัดกัน — เลขาธิการฯ ชี้ทั้งสองแกนพร้อมกันตอนลงนาม (7.2-03) แล้วระบบ
-     จึงคำนวณเส้นทางถัดไปให้เองจากค่าทั้งสองแกน                              */
   { from:'CLOSED', to:'PENDING_SECTION_72', event:'SUBMIT_RULING_REPORT', actor:'owner',
     ref:'7.2-A', guard:k => k.resolution === 'ACCEPT_S24P1' || k.resolution === 'ACCEPT_S24P3',
     note:'คณะไต่สวน/คณะพนักงานไต่สวนตาม ม.24 เสนอรายงานการไต่สวนวินิจฉัยชี้มูล' },
 
-  /* ── สายอนุมัติ 3 ชั้นก่อนถึงเลขาธิการฯ (บุคคลเดิมกับสายอนุมัติ 7.1 แต่คนละ
-     ขอบเขต — ในนี้อยู่ภายในกิจกรรมที่ 7.2 แล้ว ไม่ใช่ UPSTREAM) ────────── */
   { from:'PENDING_SECTION_72', to:'PENDING_DIRECTOR_72', event:'PROPOSE_72', actor:'section_head', ref:'7.2-02' },
   { from:'PENDING_SECTION_72', to:'RETURNED_72', event:'RETURN_72', actor:'section_head', ref:'7.2-02 EX' },
   { from:'PENDING_DIRECTOR_72', to:'PENDING_DEPUTY_72', event:'PROPOSE_72', actor:'director', ref:'7.2-02' },
@@ -391,7 +318,6 @@ const TRANSITIONS = [
   { from:'PENDING_DEPUTY_72', to:'RETURNED_72', event:'RETURN_72', actor:'deputy', ref:'7.2-02 EX' },
   { from:'RETURNED_72', to:'PENDING_SECTION_72', event:'RESUBMIT_72', actor:'owner', ref:'7.2-02 EX' },
 
-  /* ── เลขาธิการฯ ลงนาม แล้วชี้ 2 แกน: ซับซ้อนหรือไม่ / เร่งด่วนหรือไม่ ──── */
   { from:'PENDING_SECGEN_72', to:'IN_SUPPORT_SUB_72', event:'SIGN_COMPLEX_72', actor:'secgen',
     ref:'7.2-03 · Cb-60', guard:k => !!k.complex72,
     note:'สำนวนมีประเด็นซับซ้อนยุ่งยาก — เข้าคณะอนุกรรมการสนับสนุนเลขาธิการฯ ก่อน' },
@@ -404,23 +330,19 @@ const TRANSITIONS = [
   { from:'IN_SUPPORT_SUB_72', to:'IN_SCREENING_72', event:'SUPPORT_DONE_72', actor:'support_sub',
     ref:'7.2-04→7.2-06', guard:k => !k.urgent72 },
 
-  /* ── เส้นทางเร่งด่วน — ข้ามคณะอนุกลั่นกรองข้อเท็จจริง (7.2-06) ─────────── */
   { from:'PENDING_URGENT_72', to:'PENDING_CHAIRMAN_URGENT_72', event:'URGENT_CERTIFY_72', actor:'dir_case',
     ref:'7.2-05', note:'ผอ.กบค. รับรองเหตุผลเร่งด่วน' },
   { from:'PENDING_CHAIRMAN_URGENT_72', to:'PENDING_INVITE_72', event:'AGENDA_URGENT_72', actor:'chairman',
     ref:'7.2-05→7.2-07', note:'ประธานฯ ลงนามมอบหมาย/บรรจุวาระด่วน — Bypass 7.2-06' },
 
-  /* ── เส้นทางปกติ ─────────────────────────────────────────────────────── */
   { from:'IN_SCREENING_72', to:'PENDING_INVITE_72', event:'SCREEN_DONE_72', actor:'subcommittee',
     ref:'7.2-06→7.2-07' },
 
-  /* ── นัดประชุม → ประชุม → บันทึกมติ ─────────────────────────────────── */
   { from:'PENDING_INVITE_72', to:'IN_MEETING_72', event:'OPEN_MEETING_72', actor:'board_sec', ref:'7.2-07→7.2-08' },
   { from:'IN_MEETING_72', to:'RESOLVED_PENDING_72', event:'RECORD_RESOLUTION_72', actor:'board_sec',
     ref:'7.2-08', guard:k => !!k.quorumOk72,
     note:'องค์ประชุมไม่ครบ ระบบต้องบล็อกการบันทึกมติ (เช่นเดียวกับ 7.1 T14→G5)' },
 
-  /* ── หลังมติ — จัดทำ/ลงนามรายงานวินิจฉัยชี้มูล แล้วแยกตามมติ 4 แขนง ──── */
   { from:'RESOLVED_PENDING_72', to:'PENDING_SIGN_RULING_72', event:'DRAFT_RULING_72', actor:'affairs', ref:'7.2-09' },
   { from:'PENDING_SIGN_RULING_72', to:'PENDING_SECTION_72', event:'SIGN_MORE_INVESTIGATE_72', actor:'chairman',
     ref:'7.2-09 · ม.24 วรรคท้าย', guard:k => k.resolution72 === 'MORE_INVESTIGATE_72',
@@ -432,33 +354,22 @@ const TRANSITIONS = [
   { from:'PENDING_SIGN_RULING_72', to:'PENDING_DISPATCH_GUILTY_72', event:'SIGN_GUILTY_72', actor:'chairman',
     ref:'7.2-09→7.2-11 · ม.17(3)(4)·ม.38·ม.44', guard:k => k.resolution72 === 'GUILTY_72' },
 
-  /* ── ปิดกระบวนการ 7.2 ────────────────────────────────────────────────
-     ยุติเรื่อง (ม.32) ปิดได้ทันทีเมื่อบันทึกรับมติ/แจ้งผลแล้ว ไม่ต้องรอไฟล์
-     สแกนกลับเพราะเป็นการแจ้งผู้ถูกกล่าวหา ไม่ใช่การส่งสำนวนออกนอกองค์กร   */
   { from:'PENDING_AREA_NOTICE_72', to:'CLOSED_72', event:'NOTICE_RECORDED_72', actor:'owner',
     ref:'7.2-10 · ม.32', guard:k => !!k.noticeSentDate72,
     note:'บันทึกรับมติ + แจ้งผู้ถูกกล่าวหาแล้วไม่ช้ากว่า 15 วันนับแต่วันที่คณะกรรมการ ป.ป.ท. มีมติ' },
   { from:'DISPATCHING_NACC_72', to:'CLOSED_72', event:'NACC_DISPATCHED_72', actor:'owner',
     ref:'7.2-11 · ม.19(ข)(1)', guard:k => !!k.signedScanUploaded72,
     note:'ส่งเรื่องพร้อมสำนวนให้ ป.ป.ช. ภายใน 15 วันนับแต่วันที่ได้รับเรื่อง — ต้องอัปโหลดไฟล์สแกนฉบับนำส่งกลับ' },
-  /* [ออกแบบ] เส้นทางชี้มูลมี 2 สายที่เป็นอิสระต่อกันและอาจเกิดพร้อมกันได้
-     (ผังระบุ "หากมติแยกเฉพาะประเด็นอาญา ส่วนวินัยให้ ป.ป.ท. ดำเนินการต่อ
-     ขนานกันไป") จึงเก็บความคืบหน้าแต่ละสายไว้ที่ kase.criminalTrack72 /
-     kase.disciplinaryTrack72 แยกจาก status หลัก — ปิดสำนวนได้ก็ต่อเมื่อ
-     ทุกสายที่ถูกเลือก (ตาม guiltyCriminal72/guiltyDiscipline72) เสร็จสิ้น
-     ครบถ้วนแล้วเท่านั้น (ดู bothTracksDone72) — TC-057/SC-07                */
+
   { from:'PENDING_DISPATCH_GUILTY_72', to:'CLOSED_72', event:'CLOSE_GUILTY_72', actor:'affairs',
     ref:'7.2-11 · ม.38 · ม.44', guard:k => bothTracksDone72(k),
     note:'ปิดสำนวนได้เมื่อสายอาญา (ถ้ามี) ส่งอัยการแล้ว และสายวินัย (ถ้ามี) ส่งหน่วยงานต้นสังกัดแล้ว' }
 ];
 
-/* ทรานซิชันที่ตรงกับ from→to (อาจมีหลายรายการต่างกันที่ guard) */
 function transitionsBetween(from, to){
   return TRANSITIONS.filter(t => t.from === from && t.to === to);
 }
 
-/* ตรวจว่าเปลี่ยนสถานะได้หรือไม่ — คืนเหตุผลเสมอเพื่อให้เทสต์อ่านได้
-   kase อาจแนบ actorRoleId เพื่อให้ guard ตรวจสิทธิ์ได้ด้วย                */
 function canTransition(from, to, kase){
   if(!STATUS[from]) return { ok:false, reason:'UNKNOWN_FROM_STATE' };
   if(!STATUS[to])   return { ok:false, reason:'UNKNOWN_TO_STATE' };
@@ -477,20 +388,16 @@ function canTransition(from, to, kase){
     : { ok:false, reason:'GUARD_FAILED', guards:pool.map(t => t.note || t.ref) };
 }
 
-/* สถานะถัดไปที่เป็นไปได้จากสถานะปัจจุบัน */
 function nextStates(from, kase){
   return TRANSITIONS.filter(t => t.from === from)
     .filter(t => !t.guard || !kase || t.guard(kase) === true)
     .map(t => ({ to:t.to, event:t.event, actor:t.actor, ref:t.ref }));
 }
 
-/* สายการเสนอตามลำดับชั้น "ภายในกอง/เขต" — นอกขอบเขต กจ.7 แสดงเป็นประวัติอ่านอย่างเดียว */
 const UPSTREAM_CHAIN = ['owner','section_head','director','deputy'];
 
-/* ในขอบเขต กจ.7 เลขาธิการฯ เป็นชั้นอนุมัติเดียว ไม่มีสายลำดับชั้นต่อจากนี้ */
 const APPROVAL_CHAIN = ['secgen'];
 
-/* Stepper ของกิจกรรมที่ 7.1 — เริ่มที่เลขาธิการฯ */
 const FLOW_STEPS = [
   { key:'secgen',    label:'เลขาธิการฯ พิจารณา / ลงนาม', ref:'S1 · G1' },
   { key:'urgent',    label:'ใบด่วน / ผอ.กบค.',           ref:'G3 · S3' },
@@ -502,7 +409,7 @@ const FLOW_STEPS = [
 ];
 
 const STATUS_STEP = {
-  /* สถานะต้นทางยังไม่เข้า stepper ของ กจ.7 — ชี้ไปขั้นแรกเพื่อแสดงว่ากำลังจะเข้า */
+
   DRAFT:'secgen', RETURNED:'secgen',
   PENDING_SECTION:'secgen', PENDING_DIRECTOR:'secgen', PENDING_DEPUTY:'secgen',
   PENDING_SECGEN:'secgen', IN_SUPPORT_SUB:'secgen',
@@ -513,22 +420,11 @@ const STATUS_STEP = {
   RESOLVED:'resolution', CLOSED:'order'
 };
 
-/* ---- ตัวช่วยเรื่องขอบเขต ---- */
 function isUpstreamRole(roleId){ const r = getRole(roleId); return r.scope === 'UPSTREAM'; }
 function isUpstreamCase(kase){ const s = STATUS[kase.status]; return !!(s && s.scope === 'UPSTREAM'); }
 
-/* ---- สำนวนกิจกรรมที่ 7.2 (วินิจฉัยชี้มูล) หรือไม่ — ใช้ docType เป็นเกณฑ์เดียว
-   เพราะ CASES ทุกรายการถูกเติม docType ให้ครบแล้ว (ค่าเริ่มต้น '213') และ
-   เป็นฟิลด์เดียวที่แยก 213/644 (7.1) ออกจาก RULING (7.2) ได้ตรงที่สุด        */
 function isCase72(kase){ return !!kase && kase.docType === 'RULING'; }
 
-/* หน้าจอปลายทางตามสถานะของสำนวนกิจกรรมที่ 7.2 — ใช้ค้นแทน role-based PAGE_FOR
-   ของ 7.1 เพราะบทบาทเดียวกัน (เช่น section_head) ต้องไปคนละหน้าตามชนิดสำนวน
-   ที่ค้างอยู่ (source 213/644 ของ 7.1 → 03-report-213.html แบบอ่านอย่างเดียว
-   แต่ RULING ของ 7.2 → 04-approval-review.html ที่ต้องดำเนินการจริง)
-   72-04/72-05/72-08 ยังคงแยกหน้าเดิม (ดูผลวิเคราะห์การยุบรวมหน้าจอ 7.1/7.2)
-   ส่วน 72-09/72-10/72-11 ยังไม่ได้สร้าง จึงชี้ไปทะเบียนสำนวน (อ่านอย่างเดียว)
-   ไปพลางก่อน — TODO: แก้เมื่อสร้างหน้าจอเหล่านั้นแล้ว                        */
 const PAGE_FOR_72 = {
   PENDING_SECTION_72:'04-approval-review.html', PENDING_DIRECTOR_72:'04-approval-review.html',
   PENDING_DEPUTY_72:'04-approval-review.html', RETURNED_72:'04-approval-review.html',
@@ -538,20 +434,15 @@ const PAGE_FOR_72 = {
   IN_SCREENING_72:'07-subcommittee-screening.html',
   PENDING_INVITE_72:'10-agenda-set.html',
   IN_MEETING_72:'72-08-board-resolution.html',
-  RESOLVED_PENDING_72:'02-case-register.html',    /* TODO: 72-09 ยังไม่ได้สร้าง */
-  PENDING_SIGN_RULING_72:'02-case-register.html', /* TODO: 72-09 ยังไม่ได้สร้าง */
-  PENDING_AREA_NOTICE_72:'02-case-register.html', /* TODO: 72-10 ยังไม่ได้สร้าง */
-  DISPATCHING_NACC_72:'02-case-register.html',    /* TODO: 72-11 ยังไม่ได้สร้าง */
-  PENDING_DISPATCH_GUILTY_72:'02-case-register.html', /* TODO: 72-11 ยังไม่ได้สร้าง */
+  RESOLVED_PENDING_72:'02-case-register.html',
+  PENDING_SIGN_RULING_72:'02-case-register.html',
+  PENDING_AREA_NOTICE_72:'02-case-register.html',
+  DISPATCHING_NACC_72:'02-case-register.html',
+  PENDING_DISPATCH_GUILTY_72:'02-case-register.html',
   CLOSED_72:'02-case-register.html'
 };
 function pageForCase72(kase){ return PAGE_FOR_72[kase.status] || '02-case-register.html'; }
 
-/* ------------------------------------------------- G1 — เงื่อนไขที่ 2
-   ผัง P2 โหนด g1 อ่านว่า "เป็นเรื่องยุ่งยากซับซ้อน **หรือความเห็นใน
-   สายบังคับบัญชาไม่ตรงกัน**" — เงื่อนไขหลังเป็นข้อเท็จจริงที่ระบบรู้เองได้
-   จากความเห็นที่แต่ละชั้นบันทึกไว้ตอนเสนอขึ้นมา จึงคำนวณให้อัตโนมัติ
-   แทนที่จะให้เลขาธิการฯ ตอบเอง                                          */
 const OPINION_TYPES = {
   ACCEPT:  { code:'ACCEPT',  label:'เห็นควรรับไว้ไต่สวน' },
   REJECT:  { code:'REJECT',  label:'เห็นควรไม่รับไว้ไต่สวน / ยุติเรื่อง' },
@@ -559,14 +450,13 @@ const OPINION_TYPES = {
   FORWARD: { code:'FORWARD', label:'เห็นควรส่งเรื่องให้ ป.ป.ช.' }
 };
 
-/* คืนผลวิเคราะห์ความเห็นตามลำดับชั้นของสำนวน (ต้นทาง กจ.5 → เลขาธิการฯ) */
 function chainDivergence(kase){
   const ops = kase.chainOpinions || [];
   const kinds = [...new Set(ops.map(o => o.type))];
   const diverged = kinds.length > 1;
   let split = null;
   if(diverged){
-    /* ชั้นแรกที่ความเห็นเริ่มต่างจากชั้นก่อนหน้า — ใช้ชี้จุดที่ต้องอ่านซ้ำ */
+
     for(let i = 1; i < ops.length; i++){
       if(ops[i].type !== ops[i-1].type){ split = { from: ops[i-1], to: ops[i] }; break; }
     }
@@ -574,39 +464,30 @@ function chainDivergence(kase){
   return { opinions: ops, diverged, kinds, split };
 }
 
-/* G1 ต้องเข้าคณะอนุสนับสนุนฯ หรือไม่ — รวมทั้ง 2 เงื่อนไขตามผัง */
 function g1Triggers(kase){
   const d = chainDivergence(kase);
   return {
-    complex:   !!kase.complex,          /* เงื่อนไข 1 — ดุลพินิจเลขาธิการฯ */
-    diverged:  d.diverged,              /* เงื่อนไข 2 — ระบบตรวจให้ */
+    complex:   !!kase.complex,
+    diverged:  d.diverged,
     divergence: d,
     required:  !!kase.complex || d.diverged
   };
 }
 
-/* ------------------------------------------------- องค์ประชุมและการลงมติ
-   ม.10 คณะกรรมการทำหน้าที่ต่อไปได้ด้วยกรรมการเท่าที่เหลืออยู่ แต่ต้องไม่
-        น้อยกว่า 5 คน — เป็นเงื่อนไข "ก่อน" นับองค์ประชุม
-   ม.12 องค์ประชุม = ไม่น้อยกว่ากึ่งหนึ่งของกรรมการทั้งหมดเท่าที่มีอยู่
-   ม.15 มติ = เสียงข้างมากของกรรมการทั้งหมดเท่าที่มีอยู่ (ไม่ใช่ของผู้เข้าประชุม)
-        คะแนนเท่ากัน ประธานในที่ประชุมออกเสียงชี้ขาดเพิ่มอีกหนึ่งเสียง
-   ม.20 ผู้มีส่วนได้เสียถูก "กันออกโดยมติบอร์ด" — ยังนับเป็นกรรมการที่มีอยู่
-        แต่ถูกกันสิทธิ์ลงมติในวาระนั้น                                     */
 const BOARD_MIN_IN_OFFICE = 5;
 
 function boardQuorum({ inOffice, present, forV = 0, againstV = 0, abstainV = 0, chairBreaksTie = false }){
-  const boardValid  = inOffice >= BOARD_MIN_IN_OFFICE;          /* ม.10 */
-  const quorumMin   = Math.ceil(inOffice / 2);                  /* ม.12 */
+  const boardValid  = inOffice >= BOARD_MIN_IN_OFFICE;
+  const quorumMin   = Math.ceil(inOffice / 2);
   const quorumOk    = boardValid && present >= quorumMin;
-  const majorityMin = Math.floor(inOffice / 2) + 1;             /* ม.15 */
+  const majorityMin = Math.floor(inOffice / 2) + 1;
   const tie         = forV === againstV && forV > 0;
   const effectiveFor= tie && chairBreaksTie ? forV + 1 : forV;
   const majorityOk  = effectiveFor >= majorityMin;
   return {
     boardValid, quorumMin, quorumOk, majorityMin, majorityOk, tie,
     effectiveFor, forV, againstV, abstainV, present, inOffice,
-    /* บันทึกมติได้ก็ต่อเมื่อผ่านทั้ง ม.10 ม.12 และ ม.15 */
+
     canRecord: boardValid && quorumOk && majorityOk,
     blockedBy: !boardValid ? 'M10_BOARD_INCOMPLETE'
              : !quorumOk   ? 'M12_NO_QUORUM'
@@ -614,38 +495,22 @@ function boardQuorum({ inOffice, present, forV = 0, againstV = 0, abstainV = 0, 
   };
 }
 
-/* ------------------------------------------- องค์ประกอบองค์คณะ ม.24 ว.1
-   [F-03] ตัวบท ม.24 วรรคหนึ่ง แห่ง พ.ร.บ. มาตรการของฝ่ายบริหารฯ พ.ศ. 2551
-   (แก้ไขถึงฉบับที่ 4 พ.ศ. 2568) วางเงื่อนไของค์ประกอบไว้ 3 ชั้นซ้อนกัน คือ
-     1) "องค์คณะละไม่น้อยกว่าสองคนตามที่เลขาธิการแต่งตั้ง"
-     2) "ประกอบด้วยพนักงาน ป.ป.ท. อย่างน้อยหนึ่งคน"
-     3) "จะแต่งตั้งเจ้าหน้าที่ ป.ป.ท. ไม่เกินสองคนร่วมเป็นองค์คณะด้วยก็ได้
-         ในกรณีจำเป็นจะแต่งตั้งเจ้าหน้าที่ ป.ป.ท. เกินสองคนก็ได้ แต่ต้องมี
-         พนักงาน ป.ป.ท. ไม่น้อยกว่ากึ่งหนึ่งของจำนวนเจ้าหน้าที่ ป.ป.ท."
-   เดิมระบบตรวจแค่จำนวนรวม ≥ 2 ซึ่งปล่อยให้ตั้งองค์คณะที่ไม่มีพนักงาน ป.ป.ท.
-   เลย หรือมีเจ้าหน้าที่ ป.ป.ท. ล้นสัดส่วนได้ คำสั่งที่ออกมาจะไม่ชอบด้วยกฎหมาย
-   ตั้งแต่ต้น จึงย้ายกติกามาไว้ที่โมเดลกลางให้ตรวจได้ครบทั้ง 3 ข้อและทดสอบได้
-
-   หมายเหตุขอบเขต: ม.24 **วรรคสาม** (คณะอนุกรรมการไต่สวน) เป็นคนละฐานอำนาจ
-   และไม่มีถ้อยคำเรื่องสัดส่วนนี้ จึงต้องไม่นำกฎนี้ไปบังคับกับเส้นทาง
-   ACCEPT_S24P3                                                            */
-const M24P1_MIN_PANEL = 2;   /* "ไม่น้อยกว่าสองคน" */
-const M24P1_STAFF_FREE = 2;  /* "เจ้าหน้าที่ ป.ป.ท. ไม่เกินสองคน" = เกณฑ์ปกติ */
+const M24P1_MIN_PANEL = 2;
+const M24P1_STAFF_FREE = 2;
 
 function panelComposition({ officers = 0, staff = 0 } = {}){
   const total = officers + staff;
-  /* ข้อ 1 — ขนาดองค์คณะ */
+
   const minSize    = total >= M24P1_MIN_PANEL;
-  /* ข้อ 2 — ต้องมีพนักงาน ป.ป.ท. อย่างน้อยหนึ่งคน */
+
   const hasOfficer = officers >= 1;
-  /* ข้อ 3 — เจ้าหน้าที่ ป.ป.ท. ไม่เกิน 2 คน = ผ่านโดยอัตโนมัติ
-     ถ้าเกิน 2 (กรณีจำเป็น) ต้องมีพนักงาน ป.ป.ท. ≥ กึ่งหนึ่งของเจ้าหน้าที่ ป.ป.ท. */
+
   const officerMin = staff <= M24P1_STAFF_FREE ? 0 : Math.ceil(staff / 2);
   const ratioOk    = staff <= M24P1_STAFF_FREE || officers >= officerMin;
   return {
     officers, staff, total, minSize, hasOfficer, ratioOk, officerMin,
-    exceptional: staff > M24P1_STAFF_FREE,   /* ใช้ "กรณีจำเป็น" ของวรรคหนึ่งอยู่ */
-    /* ข้อ 4 — สรุปผลรวม พร้อมชี้ว่าตกข้อไหนเพื่อให้หน้าจอและเทสอ่านได้ */
+    exceptional: staff > M24P1_STAFF_FREE,
+
     valid: minSize && hasOfficer && ratioOk,
     blockedBy: !minSize    ? 'M24P1_MIN_PANEL'
              : !hasOfficer ? 'M24P1_NO_OFFICER'
@@ -653,15 +518,8 @@ function panelComposition({ officers = 0, staff = 0 } = {}){
   };
 }
 
-/* ------------------------------------------------------------ ม.28
-   เลขาธิการฯ สั่งรับ/ไม่รับเบื้องต้น แล้วต้องรายงานคณะกรรมการ ป.ป.ท.
-   ทุก 15 วัน — หากบอร์ดไม่มีมติเป็นอย่างอื่นภายใน 15 วัน ให้ถือว่า
-   บอร์ดมีมติตามคำสั่งของเลขาธิการฯ                                      */
 const M28 = { cycleDays: 15, boardSilenceDays: 15 };
 
-/* ม.28 ให้เลขาธิการฯ สั่งได้ 3 ทาง — ตัวบทเขียนว่า "รับหรือไม่รับเรื่องไว้
-   พิจารณา หรือสั่งจำหน่ายเรื่องเป็นเบื้องต้น" เดิมโมเดลฝั่งเลขาธิการฯ มีเพียง
-   2 ทาง ทั้งที่ฝั่งมติบอร์ดแยกครบแล้ว (NOT_ACCEPTED / DISMISS / NO_GROUND)  */
 const M28_ORDERS = [
   { code:'ACCEPT',  label:'สั่งรับเรื่องไว้พิจารณา',      lawRef:'ม.28' },
   { code:'REJECT',  label:'สั่งไม่รับเรื่องไว้พิจารณา',   lawRef:'ม.28 ประกอบ ม.25 / ม.26' },
@@ -669,12 +527,10 @@ const M28_ORDERS = [
 ];
 function m28Order(code){ return M28_ORDERS.find(o => o.code === code) || null; }
 
-/* สำนวนที่เลขาธิการฯ สั่งการแล้วและต้องเข้ารายงานรอบ ม.28 ถัดไป */
 function m28Pending(){
   return CASES.filter(c => c.m28 && c.m28.reported === false);
 }
 
-/* ------------------------------------------------- ACTIVITY 7 STATUSES (14 สถานะ 4 Section) */
 const ACT7_SECTIONS = [
   { id: 1, name: 'Section 1: ขั้นตอนเสนอกลั่นกรองและบรรจุวาระ', shortName: 'Section 1', badgeCls: 'bg-info text-dark', borderCls: 'border-info' },
   { id: 2, name: 'Section 2: ขั้นตอนการพิจารณาของคณะกรรมการ ป.ป.ท.', shortName: 'Section 2', badgeCls: 'bg-warning text-dark', borderCls: 'border-warning' },
@@ -683,17 +539,15 @@ const ACT7_SECTIONS = [
 ];
 
 const ACT7_STATUSES = [
-  // Section 1
+
   { section: 1, name: 'รอเลขาธิการ ป.ป.ท. ลงความเห็น', icon: 'fa-user-pen' },
   { section: 1, name: 'อยู่ระหว่างกลั่นกรองโดยอนุกรรมการฯ', icon: 'fa-users-gear' },
   { section: 1, name: 'รอประธานอนุมัติบรรจุวาระ', icon: 'fa-user-tie' },
   { section: 1, name: 'บรรจุระเบียบวาระการประชุมแล้ว', icon: 'fa-calendar-check' },
 
-  // Section 2
   { section: 2, name: 'อยู่ระหว่างพิจารณาโดยคณะกรรมการ ป.ป.ท.', icon: 'fa-gavel' },
   { section: 2, name: 'บอร์ดมีมติแล้ว - รอจัดทำรายงานการประชุม', icon: 'fa-file-signature' },
 
-  // Section 3
   { section: 3, name: 'บอร์ดมีมติรับไต่สวน - รอจัดทำคำสั่ง ม.24', icon: 'fa-file-shield' },
   { section: 3, name: 'อยู่ระหว่างเสนอลงนามคำสั่ง ม.24 วรรคแรก', icon: 'fa-file-pen' },
   { section: 3, name: 'อยู่ระหว่างเสนอลงนามคำสั่ง ม.24 วรรคสาม', icon: 'fa-file-circle-check' },
@@ -702,7 +556,6 @@ const ACT7_STATUSES = [
   { section: 3, name: 'บอร์ดมีมติส่งไต่สวนพยานเพิ่มเติม', icon: 'fa-magnifying-glass-plus' },
   { section: 3, name: 'บอร์ดมีมติอื่นๆ - ส่งแจ้งประสานงานหน่วยงาน', icon: 'fa-share-nodes' },
 
-  // Section 4
   { section: 4, name: 'ส่งออกผลมติและคำสั่งเรียบร้อย', icon: 'fa-circle-check' }
 ];
 
@@ -758,11 +611,6 @@ function getAct7Status(c) {
   return 'รอเลขาธิการ ป.ป.ท. ลงความเห็น';
 }
 
-/* คู่ขนานของ ACT7_STATUSES/getAct7Status สำหรับกิจกรรมที่ 7.2 (วินิจฉัยชี้มูล)
-   ใช้ 4 Section เดิม (เสนอกลั่นกรอง/บรรจุวาระ → พิจารณาโดยบอร์ด → หลังมติ →
-   ส่งออก/เสร็จสิ้น) แต่แยกตารางข้อความเพราะสถานะ (STATUS keys) คนละชุดกับ
-   7.1 โดยสิ้นเชิง — เขียนแยกจาก getAct7Status(7.1) เพื่อไม่ให้กระทบพฤติกรรม
-   เดิมของ 7.1 เลย ไม่ใช่การรวมโค้ดแบบเสี่ยง                                */
 const ACT7_STATUSES_72 = [
   { section: 1, name: 'อยู่ระหว่างสายอนุมัติ/เลขาธิการฯ พิจารณา (วินิจฉัยชี้มูล)', icon: 'fa-user-pen' },
   { section: 1, name: 'อยู่ระหว่างกลั่นกรอง/เตรียมวาระ (วินิจฉัยชี้มูล)', icon: 'fa-users-gear' },
@@ -785,8 +633,6 @@ function getAct7Status72(c) {
   return ACT7_STATUSES_72[idx !== undefined ? idx : 0].name;
 }
 
-/* list เป็น optional — ไม่ใส่ = ค้นใน ACT7_STATUSES (7.1) เหมือนเดิมทุกประการ
-   ใส่ ACT7_STATUSES_72 = ใช้กับสถานะกิจกรรมที่ 7.2 แทน (สีตาม Section เดียวกัน) */
 function act7Badge(statusName, list) {
   const item = (list || ACT7_STATUSES).find(s => s.name === statusName);
   const secId = item ? item.section : 1;
@@ -799,21 +645,17 @@ function act7Badge(statusName, list) {
     4: 'background:#DCFCE7; color:#15803D; border:1px solid #BBF7D0;'
   };
 
-  /* เดิม text-wrap ทำให้ badge ยาว ๆ ตัดขึ้นหลายบรรทัดในตาราง (สูงไม่เท่ากันทุกแถว
-     ผิดจาก .st badge ของคอลัมน์อื่นที่ white-space:nowrap บรรทัดเดียวเสมอ) เปลี่ยนเป็น
-     ตัดคำด้วย ... บรรทัดเดียวแทน ให้ทุกแถวสูงเท่ากันและอ่านชื่อเต็มได้จาก title ตอนชี้เมาส์ */
   const style = secStyles[secId] || secStyles[1];
   return `<span class="badge rounded-pill fw-medium py-1 px-2 d-inline-flex align-items-center gap-1" style="${style} font-size:0.73rem; max-width:200px; line-height:1.2" title="${statusName}">
     <i class="fa-solid ${icon}" style="font-size:0.7rem; flex-shrink:0"></i><span class="text-truncate" style="min-width:0">${statusName}</span>
   </span>`;
 }
 
-/* --------------------------------------------------- MOCK CASE DATASET */
 const CASES = [
   {
     id:'1547/2568',
     subject:'กล่าวหาเจ้าหน้าที่องค์การบริหารส่วนตำบลแห่งหนึ่ง จัดซื้อจัดจ้างโครงการก่อสร้างถนน คสล. โดยมิชอบ',
-    legalBase:'ม.18/4', /* ม.18/4 พรบ.มาตรการฯ | ม.62 พรป.ปปช. */
+    legalBase:'ม.18/4',
     status:'PENDING_SECGEN',
     owner:'นายสมชาย ใจซื่อ', ownerOrg:'สนง. ป.ป.ท. เขต 1',
     complainant:'นายวิรัตน์ ศรีสุข (ผู้ร้อง)',
@@ -829,8 +671,7 @@ const CASES = [
     docType:'213', signPhase:'WAIT',
     slaDays:3, slaLimit:5, subCommittee:null,
     meetingNo:null, agendaNo:null,
-    /* ความเห็นตามลำดับชั้น — ชั้น ผอ.เขต เห็นต่างจากนักสืบและหัวหน้ากลุ่มงาน
-       ระบบจึงตรวจพบ G1 เงื่อนไขที่ 2 ให้เองโดยเลขาธิการฯ ไม่ต้องกาเอง     */
+
     chainOpinions:[
       { roleId:'owner',        type:'ACCEPT', date:'2568-11-28',
         note:'พยานหลักฐานเพียงพอที่จะสนับสนุนข้อกล่าวหาว่ามีมูลความผิด เห็นควรรับไว้ไต่สวน' },
@@ -942,8 +783,6 @@ const CASES = [
   }
 ];
 
-/* เพิ่มสำนวนตัวอย่างชนิด 644 ที่ความเห็นตลอดสายตรงกัน — ใช้เทียบกับ 1547/2568
-   ให้เห็นว่า G1 ไม่ถูกจุดชนวน และเพดาน SLA เปลี่ยนตามชนิดรายงาน            */
 CASES.push(
   {
     id:'0012/2565',
@@ -1101,11 +940,7 @@ CASES.push(
     docRef:'ปป 0026/1150 ลงวันที่ 25 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
     docType:'213', signPhase:'WAIT', slaDays:6, slaLimit:5
   },
-  /* บันทึกไว้เพื่อให้หน้าจอ board_sec (01-work-inbox.html คอลัมน์ "หมวดหมู่มติ") มีตัวอย่าง
-     ครบทุกหมวดของ RESOLUTIONS[].group — เดิมมีแค่ 3 สำนวน RESOLVED และมีแค่กลุ่ม
-     "รับไว้ไต่สวน"/"มติอื่น ๆ" (ดูอีก 2 เคสด้านบน) ยังไม่มีตัวอย่างกลุ่ม
-     "ข้อกล่าวหาไม่มีมูล" เลย จึงเพิ่มสำนวนใหม่แทนการไปแก้ทับตัวอย่างเดิมที่ยังต้องใช้
-     สาธิตสถานะอื่น (AGENDA_SET/IN_SCREENING ที่มีตัวอย่างเดียว) */
+
   {
     id:'0592/2568',
     subject:'กล่าวหาเจ้าหน้าที่องค์การบริหารส่วนตำบลแห่งหนึ่ง เบิกค่าเบี้ยเลี้ยงเดินทางราชการซ้ำซ้อน',
@@ -1122,9 +957,6 @@ CASES.push(
   }
 );
 
-/* สำนวนตัวอย่างของกิจกรรมที่ 7.2 — ครอบคลุมแต่ละจุดหลักของ flow เพื่อให้
-   หน้าจอ 7.2-01 ถึง 7.2-12 มีข้อมูลสาธิตครบทุกจุด (สายอนุมัติ/ประชุม/
-   มติ 4 แขนง/SLA ใกล้ครบกำหนด/สายดำเนินคดีคู่ขนาน)                        */
 CASES.push(
   {
     id:'2201/2569', subject:'กล่าวหาผู้บริหารสหกรณ์การเกษตรแห่งหนึ่ง ทุจริตเงินกู้สมาชิก',
@@ -1196,16 +1028,12 @@ CASES.push(
   }
 );
 
-/* ค่าเริ่มต้นของฟิลด์ที่เพิ่มภายหลัง — กันหน้าจอพังกับสำนวนที่ยังไม่มีข้อมูลชุดใหม่ */
 CASES.forEach(c => {
   if(!c.docType)       c.docType = '213';
   if(!c.signPhase)     c.signPhase = 'WAIT';
   if(!c.chainOpinions) c.chainOpinions = [];
 });
 
-/* ---- รอบรายงาน ม.28 ของคำสั่งที่เลขาธิการฯ สั่งไปแล้ว ----
-   orderType = คำสั่งเบื้องต้นของเลขาธิการฯ | reported = เข้ารอบรายงานบอร์ดแล้วหรือยัง
-   dueDate   = วันครบกำหนดรายงานรอบ 15 วัน                                 */
 const M28_LOG = {
   '1396/2564': { orderType:'ACCEPT', orderedDate:'2569-05-22', reported:false, dueDate:'2569-06-06' },
   '1119/2565': { orderType:'ACCEPT', orderedDate:'2569-05-26', reported:false, dueDate:'2569-06-10' },
@@ -1215,10 +1043,6 @@ const M28_LOG = {
 };
 CASES.forEach(c => { if(M28_LOG[c.id]) c.m28 = M28_LOG[c.id]; });
 
-/* ---- LOCAL STORAGE / SESSION STORAGE STATE FOR CASES ----
-   CASES_VERSION กัน sessionStorage เก่าทับข้อมูล mock ชุดใหม่เวลาแก้ไข CASES
-   ในซอร์ส (เช่นเปลี่ยนรูปแบบเลขสำนวน) — ถ้าเวอร์ชันที่บันทึกไว้ไม่ตรง
-   ให้ทิ้งแคชเก่าและใช้ CASES สดจากซอร์สแทน                                */
 const CASES_VERSION = '2026-08-06-เลขสำนวน';
 if (typeof sessionStorage !== 'undefined') {
   const savedVersion = sessionStorage.getItem('ecmis_cases_version');
@@ -1242,7 +1066,6 @@ function saveCases() {
   }
 }
 
-/* Reason Code สำหรับการตีกลับ (EX-01 — TOR 7.2.1.2) */
 const RETURN_REASONS = [
   { code:'DOC_INCOMPLETE', label:'เอกสาร/พยานหลักฐานไม่ครบถ้วน' },
   { code:'FACT_UNCLEAR',   label:'ข้อเท็จจริงยังไม่ชัดเจน ต้องแสวงหาเพิ่มเติม' },
@@ -1252,18 +1075,6 @@ const RETURN_REASONS = [
   { code:'OTHER',          label:'อื่น ๆ (ระบุเหตุผล)' }
 ];
 
-/* ผลมติของ 7.1 (G5) — ตรงกับ Template มติการประชุม ไต่สวนเบื้องต้น
-
-   [F-04 — แก้ให้ตรงตัวบท ม.25 / ม.26 / ม.28 / ม.32]
-   เดิมมีมติเดียวชื่อ REJECT แล้วผูกกรอบแจ้งผล 15 วันตาม **ม.32** ไว้กับมตินั้น
-   ซึ่งผิด เพราะ ม.32 เขียนไว้เฉพาะกรณี "คณะกรรมการ ป.ป.ท. มีมติว่า
-   **ข้อกล่าวหาใดไม่มีมูล**" ให้ข้อกล่าวหานั้นเป็นอันตกไป และแจ้งผู้ถูกกล่าวหาทราบ
-   ส่วน "ไม่รับเรื่องไว้พิจารณา" เป็นคนละสถานะทางกฎหมาย — ม.25 ห้ามรับไว้พิจารณา
-   โดยเด็ดขาด และ ม.26 ให้ใช้ดุลพินิจไม่รับหรือสั่งจำหน่ายเรื่อง ทั้งสองมาตรา
-   **ไม่มี**กรอบ 15 วันของ ม.32 การผูกไว้ด้วยกันทำให้ระบบสร้างหนังสือผิดฉบับและ
-   นับ SLA ที่ไม่มีฐานกฎหมายรองรับ จึงต้องแยกเป็นคนละมติ
-   และเพิ่ม DISMISS เพราะ ม.28 ให้เลขาธิการฯ สั่งได้ 3 ทาง คือ รับ / ไม่รับ /
-   สั่งจำหน่ายเรื่อง — บอร์ดจึงต้องมีทางออกครบทั้งสามเช่นกัน                 */
 const RESOLUTIONS = [
   { code:'ACCEPT_S24P1', group:'รับไว้ไต่สวน',
     label:'รับไว้ไต่สวน — ดำเนินการเป็นองค์คณะ (ม.24 วรรคหนึ่ง)',
@@ -1271,20 +1082,17 @@ const RESOLUTIONS = [
   { code:'ACCEPT_S24P3', group:'รับไว้ไต่สวน',
     label:'รับไว้ไต่สวน — ดำเนินการเป็นคณะอนุกรรมการไต่สวน (ม.24 วรรคสาม)',
     doc:'คำสั่งแต่งตั้งคณะอนุกรรมการไต่สวน (ปปท. ๕-๐๔)', signer:'ประธานกรรมการ ป.ป.ท.' },
-  /* ม.25 (ห้ามรับไว้พิจารณาเด็ดขาด) / ม.26 (ดุลพินิจไม่รับ) — ไม่ใช่กรณี ม.32
-     จึงต้องไม่มี noticeDays 15 วันติดมากับมตินี้                             */
+
   { code:'NOT_ACCEPTED', group:'ไม่รับเรื่องไว้พิจารณา',
     label:'ไม่รับเรื่องไว้พิจารณา (ม.25 ห้ามเด็ดขาด / ม.26 ดุลพินิจ)',
     doc:'หนังสือแจ้งผลการพิจารณา (ระบุมาตราที่อ้าง)', signer:'—',
     needsLawRef:true, legalBasis:'ม.25 / ม.26' },
-  /* ม.26 ให้สั่ง "จำหน่ายเรื่อง" ได้ด้วย — ม.28 ยืนยันว่าเป็นคำสั่งคนละอย่างกับ
-     การไม่รับเรื่องไว้พิจารณา                                                */
+
   { code:'DISMISS', group:'ไม่รับเรื่องไว้พิจารณา',
     label:'สั่งจำหน่ายเรื่อง (ม.26)',
     doc:'หนังสือแจ้งคำสั่งจำหน่ายเรื่อง', signer:'—',
     needsLawRef:true, legalBasis:'ม.26 (ประกอบ ม.28)' },
-  /* ม.32 — เฉพาะกรณีบอร์ดมีมติว่า "ข้อกล่าวหาไม่มีมูล" ข้อกล่าวหาเป็นอันตกไป
-     และต้องแจ้งผู้ถูกกล่าวหาไม่ช้ากว่า 15 วันนับแต่วันที่บอร์ดมีมติ           */
+
   { code:'NO_GROUND', group:'ข้อกล่าวหาไม่มีมูล',
     label:'ข้อกล่าวหาไม่มีมูล — ข้อกล่าวหาเป็นอันตกไป (ม.32)',
     doc:'หนังสือแจ้งผลผู้ถูกกล่าวหา (ม.32 ไม่ช้ากว่า 15 วัน)', signer:'—',
@@ -1293,44 +1101,14 @@ const RESOLUTIONS = [
   { code:'MORE_INVESTIGATE', group:'มติอื่น ๆ',
     label:'ให้ผู้รับผิดชอบสำนวนไต่สวนเบื้องต้นเพิ่มเติม',
     doc:'บันทึกแจ้งมติให้ไต่สวนเพิ่มเติม', signer:'—' },
-  /* แบบฟอร์ม "มติการประชุม ไต่สวนเบื้องต้น.docx" เขียนบรรทัดนี้เป็นช่องว่าง
-     "ส่งเรื่องให้ ________ / คณะอนุกลั่นกรองฯ แล้วแต่กรณี" จึงเป็นมติเดียว
-     ที่มีได้หลายปลายทาง ไม่ใช่มติแยกประเภท — ผัง P2 หยิบมาแสดงเฉพาะปลายทาง
-     ป.ป.ช. เพราะเป็นเส้นเดียวที่ออกนอกองค์กรและมี SLA เฉพาะ              */
+
   { code:'FORWARD', group:'มติอื่น ๆ',
     label:'ส่งเรื่องให้หน่วยงาน / คณะอนุกลั่นกรองฯ พิจารณา',
     doc:'หนังสือนำส่งเรื่อง', signer:'—', needsDestination:true }
 ];
-/* หา entry ของ RESOLUTIONS จาก code — คู่ขนานกับ resolution72() ด้านล่าง */
+
 function resolutionOf(code){ return RESOLUTIONS.find(r => r.code === code) || null; }
 
-/* ปลายทางของมติ FORWARD — เฉพาะ ป.ป.ช. เท่านั้นที่ออกนอกองค์กร จึงมีข้อบังคับ
-   อัปโหลดไฟล์สแกนฉบับลงนามกลับตาม TOR 7.2.1.5
-
-   [F-02 — แก้ให้ตรงตัวบท ม.18/1 และแยก "นาฬิกาสองเรือน" ออกจากกัน]
-   เดิมตารางนี้มี slaDays ค่าเดียวคือ 30 วัน ความผิดพลาดไม่ได้อยู่ที่ตัวเลข
-   เพียงอย่างเดียว แต่อยู่ที่การเอากรอบเวลาคนละชนิดมายุบรวมเป็นค่าเดียว
-   ทำให้ระบบเตือนผิดเรือนและมองไม่เห็นเส้นตายที่กฎหมายบังคับ จึงแยกเป็น 2 ฟิลด์
-
-   เรือนที่ 1 — statutorySlaDays = 15 วัน (กำหนดส่งตามกฎหมาย)
-     ม.18/1 แห่ง พ.ร.บ. มาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต
-     พ.ศ. 2551 (แก้ไขถึงฉบับที่ 4 พ.ศ. 2568) กำหนดไว้ 15 วันทั้งสามกรณี คือ
-       (ก)(3) ป.ป.ช. มีมติจะดำเนินการเอง — นับแต่วันที่ได้รับแจ้งมติ ป.ป.ช.
-       (ข)(1) เรื่องอยู่ในหน้าที่และอำนาจของ ป.ป.ช. — นับแต่วันที่ได้รับเรื่อง
-       (ข)(3) พ้นกำหนดเวลา / เหลืออายุความไม่ถึงหกเดือน — นับแต่วันที่ได้รับเรื่อง
-     ใช้เฉพาะเส้นทางที่เกี่ยวกับการรับมอบหมายจาก ป.ป.ช. เท่านั้น และเป็น
-     **กำหนดตายตัวตามกฎหมาย ขยายไม่ได้** ระบบจึงต้องถือเป็นเส้นตาย (deadline)
-     ตัวบทเดียวกันยังบังคับให้ "คัดสำเนาสำนวนดังกล่าวเก็บรักษาไว้เป็นหลักฐานด้วย"
-     → ฟิลด์ requireArchiveCopy ใช้เป็นเงื่อนไขปิดสำนวน (ดู guard DISPATCHING → CLOSED)
-
-   เรือนที่ 2 — trackingSlaDays = 30 วัน (กรอบกำกับติดตาม)
-     เล่ม 6 กิจกรรมที่ 8 · Use Case CHK011 "กรณีที่ 4 มีมติส่งเรื่องให้ ป.ป.ช.
-     ดำเนินการ กำหนดระยะเวลากำกับติดตาม 30 วัน นับแต่วันที่ได้รับมติ"
-     เป็นกรอบที่กิจกรรมที่ 8 ใช้ **ติดตามผล** หลังบอร์ดมีมติ
-     **มิใช่** กำหนดส่งมอบสำนวน จึงห้ามนำมาแทนที่ 15 วันของ ม.18/1
-
-   ปลายทางภายในองค์กรไม่อยู่ใต้ ม.18/1 จึง **ไม่มี** statutorySlaDays เลย
-   (กฎหมายไม่ได้กำหนด) มีเพียงกรอบกำกับติดตามเชิงบริหารเท่านั้น            */
 const FORWARD_TARGETS = [
   { code:'NACC',      label:'สำนักงาน ป.ป.ช. (นอกอำนาจ ป.ป.ท.)',
     external:true,  requireSignedScan:true, requireArchiveCopy:true,
@@ -1358,11 +1136,6 @@ const FORWARD_TARGETS = [
 ];
 function forwardTarget(code){ return FORWARD_TARGETS.find(t => t.code === code) || null; }
 
-/* =========================================================================
-   กิจกรรมที่ 7.2 — มติที่ประชุมคณะกรรมการ ป.ป.ท. (วินิจฉัยชี้มูล)
-   4 แขนงตามผัง AS-IS หน้า "AS-IS ไต่สวน" — คนละชุดกับ RESOLUTIONS ของ 7.1
-   โดยสิ้นเชิง (รับ/ไม่รับไว้ไต่สวน ≠ วินิจฉัยชี้มูล) นำมาต่อยอดกันไม่ได้
-   ========================================================================= */
 const RESOLUTIONS_72 = [
   { code:'FORWARD_NACC', group:'ส่ง ป.ป.ช. (นอกอำนาจ)',
     label:'ส่งเรื่องให้คณะกรรมการ ป.ป.ช. เนื่องจากอยู่ในหน้าที่และอำนาจของ ป.ป.ช.',
@@ -1386,7 +1159,6 @@ const RESOLUTIONS_72 = [
 ];
 function resolution72(code){ return RESOLUTIONS_72.find(r => r.code === code) || null; }
 
-/* Stepper ของกิจกรรมที่ 7.2 — คู่ขนานกับ FLOW_STEPS/STATUS_STEP ของ 7.1 */
 const FLOW_STEPS_72 = [
   { key:'chain72',   label:'สายอนุมัติ 3 ชั้น',              ref:'7.2-02' },
   { key:'secgen72',  label:'เลขาธิการฯ ลงนาม',               ref:'7.2-03' },
@@ -1405,11 +1177,6 @@ const STATUS_STEP_72 = {
   CLOSED_72:'dispatch72'
 };
 
-/* ── ติดตามสายดำเนินคดีคู่ขนาน (7.2-11) ──────────────────────────────────
-   มติ "ชี้มูลความผิด" อาจแยกได้ทั้งอาญาและวินัยพร้อมกัน (guiltyCriminal72 /
-   guiltyDiscipline72 มาจาก checkbox บน 7.2-08) แต่ละสายดำเนินไปเป็นอิสระ
-   ต่อกันหลังจากนั้น ระบบจึงเก็บสถานะย่อยไว้คนละฟิลด์แทนที่จะพยายามยัดลง
-   status หลักตัวเดียว (ซึ่งรองรับสถานะเดียวในเวลาหนึ่งเท่านั้น)             */
 function trackStatus72(kase, kind){
   const track = kind === 'criminal' ? kase.criminalTrack72 : kase.disciplinaryTrack72;
   const active = kind === 'criminal' ? !!kase.guiltyCriminal72 : !!kase.guiltyDiscipline72;
@@ -1422,27 +1189,18 @@ function bothTracksDone72(kase){
   return crimOk && discOk;
 }
 
-/* =========================================================================
-   DESIGN DECISIONS — คำตอบ Q1–Q5 ที่นำมาบังคับใช้ในต้นแบบ
-   ทุกค่าในนี้เป็น "ข้อสันนิษฐานเชิงออกแบบ" ที่ตั้งให้ Admin แก้ได้
-   ยังต้องให้ ป.ป.ท. ยืนยันก่อน Go-Live
-   ========================================================================= */
 const CONFIG = {
-  /* Q1 — ทุกชั้นที่ถือคิวตีกลับได้ แต่แยก "ระดับการตีกลับ" 2 แบบ */
+
   returnAllLevels: true,
-  /* Q2 — ระบบเสนอ "เร่งด่วน" อัตโนมัติเมื่อเหลือเวลาตาม ม.23 น้อยกว่าค่านี้ */
+
   urgentAutoDays: 90,
-  /* Q3 — องค์ประชุมคณะอนุกลั่นกรองฯ: ใช้กึ่งหนึ่งโดยอนุโลมจาก ม.12 (ตั้งค่าได้) */
+
   subQuorumRatio: 0.5,
   subMemberCount: 7,
-  /* Q5 — โหมดบันทึกมติ: 'AFTER' อยู่ในขอบเขต TOR | 'LIVE' ต้องออก Change Request */
+
   eMeetingMode: 'AFTER'
 };
 
-/* Q1 — ระดับการส่งคืนของเลขาธิการฯ
-   เนื่องจากกิจกรรมที่ 7 เริ่มที่เลขาธิการฯ การส่งคืนทุกกรณีคือการ
-   "ส่งเรื่องออกนอกกิจกรรมที่ 7" กลับไปยังสายงานต้นทาง (กิจกรรมที่ 5)
-   ต่างกันเพียงว่าให้กลับไปตกที่ชั้นใดของกอง/เขต                        */
 const RETURN_SCOPES = [
   { code:'TO_DIRECTOR', label:'ส่งคืน ผอ.กอง / ผอ.สนง. ป.ป.ท. เขต',
     note:'ใช้กรณีข้อบกพร่องอยู่ที่การกลั่นกรองของหน่วยงาน เช่น ความเห็นตามลำดับชั้นไม่ครบ' },
@@ -1450,21 +1208,17 @@ const RETURN_SCOPES = [
     note:'ใช้กรณีข้อบกพร่องอยู่ที่ตัวรายงาน 213 หรือพยานหลักฐานต้นทาง' }
 ];
 
-/* Q1 — ฟิลด์ "สาระสำคัญ" ถ้าถูกแก้ ต้องเสนอใหม่ตามลำดับชั้นทั้งสาย
-   เพราะความเห็นของผู้พิจารณาเดิมตั้งอยู่บนเนื้อหาที่เปลี่ยนไปแล้ว */
 const MATERIAL_FIELDS = [
   { id:'f_allegation', label:'ข้อกล่าวหา' },
   { id:'f_finding',    label:'ผลการแสวงหาข้อเท็จจริงและพยานหลักฐาน' },
   { id:'f_opinionType',label:'ความเห็นของผู้รับผิดชอบสำนวน' }
 ];
 
-/* ------------------------------------------------------------ HELPERS */
-/* จำนวนวันคงเหลือถึงวันครบกำหนด (รับ ISO 'พ.ศ.-MM-DD' แปลงเป็น ค.ศ. ก่อน) */
 function daysUntil(thaiIso){
   const p = String(thaiIso).split('-');
   if(p.length !== 3) return null;
   const target = new Date(+p[0] - 543, +p[1] - 1, +p[2]);
-  const today  = new Date(2026, 7, 4);          /* ตรึงวันที่อ้างอิงของต้นแบบ */
+  const today  = new Date(2026, 7, 4);
   return Math.round((target - today) / 86400000);
 }
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
@@ -1487,8 +1241,7 @@ function slaLabel(used, limit){
 }
 function getCase(id){ return CASES.find(c => c.id === id) || CASES[0]; }
 function getRole(id){ return ROLES.find(r => r.id === id) || ROLES[0]; }
-/* จับคู่ username ที่กรอกในหน้า login.html (จำลอง — ยังไม่มี auth จริง) กับบทบาท
-   เพื่อให้เข้าสู่ระบบด้วยชื่อผู้ใช้ของแต่ละคนแล้วเห็นเมนู/คิวงานของบทบาทนั้นทันที */
+
 function roleIdForLogin(username){
   const u = String(username || '').trim().toLowerCase();
   if(!u) return null;
@@ -1501,8 +1254,6 @@ function currentRoleId(){ return sessionStorage.getItem('ecmis_role') || 'owner'
 function setRole(id){ sessionStorage.setItem('ecmis_role', id); location.reload(); }
 function currentRole(){ return getRole(currentRoleId()); }
 
-/* สถานะการเข้าสู่ระบบ — ต้อง login.html เซ็ต ecmis_authed ก่อนถึงจะเข้าหน้าในระบบได้
-   (ตัวสลับบทบาทในเมนู DEMO ยังคงใช้ต่อได้ตามปกติหลัง login แล้ว) */
 function isAuthed(){ return sessionStorage.getItem('ecmis_authed') === '1'; }
 function currentUsername(){ return sessionStorage.getItem('ecmis_username') || ''; }
 function logout(){
@@ -1512,44 +1263,25 @@ function logout(){
   location.href = 'login.html';
 }
 
-/* งานที่ค้างอยู่ที่บทบาทนี้ (Work Inbox count) */
 function inboxFor(roleId){
   return CASES.filter(c => STATUS[c.status] && STATUS[c.status].owner === roleId);
 }
 
-/* สิทธิ์: บทบาทปัจจุบันเป็น "เจ้าของคิว" ของสำนวนนี้หรือไม่
-   — และสำนวนต้องเข้าขอบเขตกิจกรรมที่ 7 แล้วเท่านั้น                    */
 function canAct(kase, roleId){
   const st = STATUS[kase.status];
-  if(!st || st.scope === 'UPSTREAM') return false;   /* ยังไม่เข้า กจ.7 */
+  if(!st || st.scope === 'UPSTREAM') return false;
   return st.owner === roleId;
 }
 
-/* Recall: เจ้าของเรื่องดึงกลับได้เฉพาะขณะยังอยู่ในสายต้นทาง (กจ.5)
-   เมื่อเข้ากิจกรรมที่ 7 แล้ว การดึงกลับต้องทำผ่านการ "ส่งคืน" ของเลขาธิการฯ */
 function canRecall(kase, roleId){
   if(roleId !== 'owner') return false;
   return ['PENDING_SECTION','PENDING_DIRECTOR','PENDING_DEPUTY'].includes(kase.status);
 }
 
-/* -------------------------------------------------------- SHELL RENDER
-   เมนู sidebar กรองตามสิทธิ์จริงของแต่ละบทบาท โดยใช้ระดับการมองเห็นสำนวน
-   เดียวกับ canViewCase() เป็นตัวตัดสิน (ไม่ผูกเมนูไว้ตายตัว):
-     view.all      → เห็นทุกหน้ารวมโต๊ะสั่งการเลขาธิการฯ (บทบาทกำกับ/บริหารคดี)
-     view.assigned → เห็นเฉพาะหน้าที่คณะของตนทำงานจริงตาม flow (อนุสนับสนุนฯ = S2,
-                     อนุกลั่นกรองฯ = S6) — ตรงกับที่ 04/07 เช็ค role.id ในหน้าจริง
-     view.own      → เห็นเฉพาะภาพรวม (Work Inbox + ทะเบียนสำนวน) ไม่เห็นหน้า
-                     กระบวนงานภายในกิจกรรมที่ 7 ซึ่งอยู่นอกขอบเขตงานของตน       */
-/* label อาจเป็น string ตายตัว หรือ function(role) เมื่อถ้อยคำต้องเปลี่ยนตามงานจริง
-   ของแต่ละบทบาท เช่น 01-work-inbox.html: เลขาธิการฯ ใช้คำว่า "พิจารณา/ลงนาม" ตรง ๆ
-   ตามงานของตน แต่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ (board_sec) ไม่ได้ลงนามสำนวน
-   งานจริงของเขาคือบันทึกมติที่ประชุม จึงต้องใช้คำว่า "บันทึกมติ" แทน */
 const NAV = [
   { section:'ภาพรวม' },
   { href:'01-work-inbox.html',            icon:'fa-inbox',
-    /* ต้องสอดคล้องกับ ROLE_COPY/UPSTREAM_COPY ใน 01-work-inbox.html — บทบาท scope:UPSTREAM
-       (owner/section_head/director/deputy_sg/deputy) ลงนามอะไรในโมดูลนี้ไม่ได้เลย (ดู scopeBanner
-       ในหน้านั้น) จึงห้ามใช้คำว่า "พิจารณา/ลงนาม" กับกลุ่มนี้ */
+
     label: role => {
       if (!role) return 'รายการพิจารณา/ลงนาม';
       if (role.id === 'board_sec') return 'รายการรอบันทึกมติ';
@@ -1560,13 +1292,10 @@ const NAV = [
   { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' }
 ];
 
-/* ถอด label จริงของรายการเมนูออกมาสำหรับบทบาทที่ระบุ (รองรับทั้ง string และ function) */
 function navLabel(navItem, role){
   return typeof navItem.label === 'function' ? navItem.label(role) : navItem.label;
 }
 
-/* คืนเฉพาะรายการเมนูที่บทบาทนี้เห็น พร้อมตัด section header ที่ไม่มีรายการ
-   ใต้ตัวเองเหลืออยู่ (orphan header) ออกไปด้วย */
 function visibleNavFor(role){
   const filtered = NAV.filter(n => !n.visible || n.visible(role));
   return filtered.filter((n, i) => {
@@ -1581,7 +1310,6 @@ function renderShell(activeHref){
   const role = currentRole();
   const inboxCount = inboxFor(role.id).length;
 
-  /* ---- notification center ---- */
   const notifications = [
     { title: 'เสนอเรื่องใหม่', body: 'สำนวน 1547/2568 รอเลขาธิการฯ พิจารณา/ลงนาม', time: '10 นาทีที่แล้ว', icon: 'fa-user-check', cls: 'bg-primary text-white' },
     { title: 'มติบอร์ดเสร็จสิ้น', body: 'บันทึกมติที่ประชุมบอร์ด สำนวน 1119/2565 แล้ว', time: '1 ชม. ที่แล้ว', icon: 'fa-scale-balanced', cls: 'bg-success text-white' },
@@ -1705,25 +1433,21 @@ function renderShell(activeHref){
   const collapseTog = document.getElementById('sbCollapseToggle');
   if(collapseTog) collapseTog.addEventListener('click', () => toggleSidebarCollapse());
 
-  // Initialize features
   initA11yAndPref();
   initCommandPalette();
   initVoiceInput();
   initCharCounterAndCopy();
   initDocPaneToggle();
 
-  // Auto-wire Real-time Validation on every form
   document.querySelectorAll('form[id], main form').forEach(f => {
     if (f.id) initRealTimeValidation(f);
   });
 
-  // Auto-wire AutoSave on forms with data-autosave attribute
   document.querySelectorAll('form[data-autosave]').forEach(f => {
     const key = f.dataset.autosave || ('draft_' + f.id);
     initAutoSave(f.id, key, 'คุณยังมีข้อมูลที่ไม่ได้บันทึก — ออกจากหน้านี้?');
   });
 
-  // Skeleton loading: replace empty tables with shimmer, then resolve when JS fills them
   document.querySelectorAll('table tbody:empty, table tbody').forEach(tbody => {
     if (!tbody.children.length) {
       const cols = tbody.closest('table')?.querySelectorAll('thead th').length || 4;
@@ -1751,8 +1475,6 @@ function renderShell(activeHref){
     });
   }, 800);
 
-
-  // Add Breadcrumb Trail
   const activeNav = NAV.find(n => n.href === activeHref);
   if (activeNav) {
     let parentSection = 'ภาพรวม';
@@ -1775,7 +1497,6 @@ function renderShell(activeHref){
   }
 }
 
-/* -------------------------------------------------------- UI BUILDERS */
 function stepperHtml(statusKey, stepsArr, stepMap){
   stepsArr = stepsArr || FLOW_STEPS;
   stepMap = stepMap || STATUS_STEP;
@@ -1808,14 +1529,13 @@ function slaBadge(kase){
     <i class="fa-regular fa-clock me-1"></i>${slaLabel(kase.slaDays, lim)}</span>`;
 }
 
-/* Action bar — ปุ่มเปลี่ยนตามบทบาท (ข้อกำหนดหลักของ Step 3) */
 function actionBar(kase, roleId, buttons){
   const role = getRole(roleId);
   const allowed = canAct(kase, roleId);
   let inner;
 
   if(isUpstreamCase(kase)){
-    /* สำนวนยังไม่เข้ากิจกรรมที่ 7 — ไม่มี Action ใดในโมดูลนี้ */
+
     const ownerRole = STATUS[kase.status] ? getRole(STATUS[kase.status].owner) : null;
     inner = `<div class="no-permission" style="border-color:#d79b00;background:#fff8ec">
       <i class="fa-solid fa-arrow-right-to-bracket me-1"></i>
@@ -1907,10 +1627,7 @@ function paginateResolutionDoc(containerEl, opts){
 
   function measure(html){ probe.innerHTML = html; return probe.scrollHeight; }
 
-  /* แพ็กแบบ greedy: ใส่บล็อกต่อไปเรื่อยๆ จนกว่าจะเกินงบพื้นที่หน้า ค่อยตัดขึ้นหน้าใหม่ — เลขหน้า
-     จริงคำนวณทีหลังตอน render (ใช้เลขหน้าโดยประมาณระหว่างวัดความสูง เพราะความสูงหัวกระดาษวิ่ง
-     แทบไม่ต่างกันไม่ว่าเลขหน้าจะเป็นเลขอะไร ไม่กระทบผลการตัดหน้า) */
-  const pages = []; // { isFirst, blocks: string[] }
+  const pages = [];
   let pageBlocks = [introBlock];
   let isFirst = true;
 
@@ -1995,10 +1712,8 @@ function toastWarn(msg){
   showFloatToast(msg, 'warning');
 }
 
-/* --------------------------------- Digital Signature simulation dialog */
-/* --------------------------------- Digital Signature simulation dialog */
 function signDialog(docName, signerName){
-  let selectedMode = 'hand'; // 'hand' or 'cert'
+  let selectedMode = 'hand';
 
   return Swal.fire({
     width: 720,
@@ -2109,7 +1824,7 @@ function signDialog(docName, signerName){
           boxCanvas.style.display = 'block';
           badge.className = 'badge rounded-pill bg-light text-primary border px-2 py-1';
           badge.innerHTML = '<i class="fa-solid fa-check me-1"></i> เซ็นมือ';
-          
+
           initSignaturePad('swal-sig-canvas', 'swal-sig-clear', 'swal-sig-input');
         } else {
           cardCert.style.background = '#F0F6FF';
@@ -2146,7 +1861,6 @@ function signDialog(docName, signerName){
   });
 }
 
-/* ------------------------------------------- Sequential e-signature */
 function sequentialSignDialog(docName, signers){
   const cur = signers[0];
   const rest = signers.slice(1);
@@ -2278,7 +1992,7 @@ function sequentialSignDialog(docName, signers){
           boxCanvas.style.display = 'block';
           badge.className = 'badge rounded-pill bg-light text-primary border px-2 py-1';
           badge.innerHTML = '<i class="fa-solid fa-check me-1"></i> เซ็นมือ';
-          
+
           initSignaturePad('swal-sig-canvas', 'swal-sig-clear', 'swal-sig-input');
         } else {
           cardCert.style.background = '#F0F6FF';
@@ -2315,13 +2029,6 @@ function sequentialSignDialog(docName, signers){
   });
 }
 
-/* ==========================================================================
-   UI/UX ENHANCEMENT HANDLERS (Step 2 Implementation)
-   ========================================================================== */
-
-/* ปุ่ม "ปรับสี" วนสามโหมด: ปกติ (light) → มืด (dark) → คอนทราสต์สูง (contrast) → ปกติ
-   เก็บสถานะเดียวใน localStorage แทนสอง flag แยก (เดิม dark/high-contrast เปิดพร้อมกันได้
-   ซึ่งไม่มี UI ใดตั้งใจให้ผสมสองโหมดนี้เข้าด้วยกัน) */
 const COLOR_MODES = ['light', 'dark', 'contrast'];
 const COLOR_MODE_META = {
   light:    { icon:'fa-sun',                text:'ปกติ',           toast:'เปลี่ยนเป็นโหมดปกติ (Light Mode)',        nextTitle:'สลับเป็นโหมดมืด' },
@@ -2353,8 +2060,6 @@ function toggleColorMode() {
   toastOk(COLOR_MODE_META[next].toast);
 }
 
-/* Desktop sidebar collapse (Master Screen Layout Desktop.pdf: 260px <-> 68px).
-   Separate from #sbToggle, which stays mobile-only slide-open/close. */
 function toggleSidebarCollapse() {
   const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
   localStorage.setItem('ecmis_sidebar_collapsed', isCollapsed);
@@ -2379,8 +2084,7 @@ function initA11yAndPref() {
 
   let colorMode = localStorage.getItem('ecmis_color_mode');
   if (colorMode === null) {
-    /* ไม่มีค่าใหม่ — ลองอ่าน flag เดิม (dark/high-contrast) เพื่อไม่ให้ผู้ใช้เดิมเสียการตั้งค่า
-       ถ้าไม่มีเลยค่อยตกไปที่ prefers-color-scheme ของเบราว์เซอร์ */
+
     if (localStorage.getItem('ecmis_high_contrast') === 'true') colorMode = 'contrast';
     else if (localStorage.getItem('ecmis_dark_mode') === 'true') colorMode = 'dark';
     else if (localStorage.getItem('ecmis_dark_mode') === null &&
@@ -2488,8 +2192,8 @@ function initCommandPalette() {
       });
 
     const matchedMenus = menus.filter(m => m.label.toLowerCase().includes(query));
-    const matchedCases = CASES.filter(c => 
-      c.id.toLowerCase().includes(query) || 
+    const matchedCases = CASES.filter(c =>
+      c.id.toLowerCase().includes(query) ||
       c.subject.toLowerCase().includes(query)
     );
 
@@ -2539,8 +2243,6 @@ function initCommandPalette() {
     results.innerHTML = html;
   }
 }
-
-
 
 function initSmartCombobox(selectEl) {
   if (!selectEl || selectEl.nextElementSibling?.classList.contains('smart-combo-container')) return;
@@ -2623,12 +2325,6 @@ function initSmartCombobox(selectEl) {
   });
 }
 
-/* Search-select แบบเลือกได้หลายรายการ (multi-select) — ใช้กับฟิลด์อย่าง
-   "ผู้ชี้แจงต่อที่ประชุม" ที่มีได้มากกว่า 1 คน โดยยังเก็บค่าไว้ใน <input> เดิม
-   เป็น string คั่นด้วยจุลภาค (comma-joined) เพื่อไม่ต้องแก้โค้ดที่อ่านค่าฟิลด์นี้
-   ทุกจุด — แค่ initMultiSelectCombo(inputEl, candidates) แล้ว .value/'input' event
-   ยังทำงานเหมือนเดิมทุกประการ รองรับพิมพ์ชื่อที่ไม่มีในลิสต์เพื่อเพิ่มเองด้วย
-   (ผู้ชี้แจงจริงอาจไม่ได้อยู่ในบัญชีตำแหน่งมาตรฐานเสมอไป) */
 function initMultiSelectCombo(inputEl, candidates, opts) {
   if (!inputEl || inputEl.nextElementSibling?.classList.contains('smart-combo-container')) return;
   opts = opts || {};
@@ -2948,7 +2644,6 @@ function initVoiceInput() {
   });
 }
 
-/* --------------------------------- Signature Pad Module */
 window.ecmis = window.ecmis || {};
 window.ecmis.signaturePad = (function () {
     const pads = new Map();
@@ -2972,7 +2667,7 @@ window.ecmis.signaturePad = (function () {
         const state = { canvas: canvas, drawing: false, hasInk: false };
         pads.set(canvasId, state);
 
-        context.strokeStyle = "#173f91"; // สีหมึกปากกาลงนาม
+        context.strokeStyle = "#173f91";
         context.lineWidth = 3;
         context.lineCap = "round";
         context.lineJoin = "round";
@@ -3125,17 +2820,17 @@ function initCharCounterAndCopy() {
   textareas.forEach(ta => {
     if (ta.hasAttribute('readonly') || ta.hasAttribute('disabled')) return;
     if (ta.nextElementSibling?.classList.contains('textarea-helper-bar')) return;
-    
+
     const bar = document.createElement('div');
     bar.className = 'textarea-helper-bar d-flex justify-content-between align-items-center mt-1 px-1';
     bar.style.fontSize = '0.72rem';
     bar.style.color = 'var(--ecmis-muted)';
-    
+
     const counterSpan = document.createElement('span');
     counterSpan.className = 'char-counter';
     const maxLength = ta.getAttribute('maxlength') || '500';
     counterSpan.textContent = `ตัวอักษร: ${ta.value.length}/${maxLength}`;
-    
+
     const copyBtn = document.createElement('button');
     copyBtn.type = 'button';
     copyBtn.className = 'btn btn-xs btn-outline-secondary py-0 px-2';
@@ -3147,22 +2842,20 @@ function initCharCounterAndCopy() {
         toastOk('คัดลอกข้อความลงคลิปบอร์ดแล้ว');
       });
     });
-    
+
     bar.appendChild(counterSpan);
     bar.appendChild(copyBtn);
-    
+
     ta.parentNode.insertBefore(bar, ta.nextSibling);
-    
+
     ta.addEventListener('input', () => {
       counterSpan.textContent = `ตัวอักษร: ${ta.value.length}/${maxLength}`;
     });
   });
 }
 
-/* ------------------------------------------------------------ EXPORT */
-/* ---- 5.7 Audit Trail & Activity History ---- */
 function initAuditTrail(containerId, events) {
-  /* events = [{ actor, role, action, detail, date }] */
+
   const el = document.getElementById(containerId);
   if (!el) return;
   if (!events || !events.length) {
@@ -3208,7 +2901,6 @@ function initChecklistGatekeeper(checklistId, nextBtnId) {
   updateGate();
 }
 
-/* ---- 3.3 Bulk Actions ---- */
 function initBulkActions(tableId, toolbarId, onAction) {
   const table   = document.getElementById(tableId);
   const toolbar = document.getElementById(toolbarId);
@@ -3245,7 +2937,6 @@ function initBulkActions(tableId, toolbarId, onAction) {
   });
 }
 
-/* ---- 4.1 Drag & Drop Upload ---- */
 function initDragDropUpload(zoneId, fileListId, allowedTypes, maxMB) {
   const zone     = document.getElementById(zoneId);
   const fileList = document.getElementById(fileListId);
@@ -3267,7 +2958,7 @@ function initDragDropUpload(zoneId, fileListId, allowedTypes, maxMB) {
       </button>`;
     fileList.appendChild(row);
     row.querySelector('.remove-file-btn').addEventListener('click', () => row.remove());
-    /* Simulate progress */
+
     const fill = row.querySelector('.upload-progress-fill');
     let pct = 0;
     const iv = setInterval(() => {
@@ -3304,7 +2995,6 @@ function initDragDropUpload(zoneId, fileListId, allowedTypes, maxMB) {
   });
 }
 
-/* ---- Doc Pane Layout Toggle (Show/Hide Document Split View) ---- */
 function initDocPaneToggle() {
   if (typeof document === 'undefined') return;
 
@@ -3356,7 +3046,6 @@ function initDocPaneToggle() {
       });
     }
 
-    // Inject button into page-head only
     const pageHeadTarget = document.querySelector('.page-head .ms-auto') || document.querySelector('.page-head');
     if (pageHeadTarget && !document.querySelector('.btn-doc-toggle-header')) {
       const headBtn = document.createElement('button');
@@ -3377,7 +3066,6 @@ function initDocPaneToggle() {
   setTimeout(runToggleInit, 100);
 }
 
-/* --------------------------------------------------- MANAGE SUGGESTIONS MODULE */
 const DEFAULT_SUGGESTIONS = {
   suggestions: [
     'เห็นชอบตามความเห็นและข้อเสนอของเจ้าหน้าที่รับเรื่อง',
@@ -3473,7 +3161,7 @@ function openSuggestionsModal() {
     buttonsStyling: false,
     didOpen: () => {
       function renderLists() {
-        // Render Suggestions List
+
         const sugContainer = document.getElementById('swal-suggestions-list');
         if (sugContainer) {
           if (!workingData.suggestions.length) {
@@ -3568,14 +3256,13 @@ function initWritingSuggestions() {
       chipContainer.id = 'sugChips-' + ta.id;
       chipContainer.className = 'sug-chips-box mt-2 p-2 rounded-3 border bg-light shadow-xs';
       chipContainer.style.fontSize = '0.8rem';
-      
+
       ta.parentNode.insertBefore(chipContainer, ta.nextSibling);
     }
 
-    // ตรวจสอบบริบทของ Textbox เพื่อคัดเลือกคำแนะนำที่เกี่ยวข้องที่สุด
     const parentText = (ta.parentNode ? ta.parentNode.innerText : '') + ' ' + (ta.placeholder || '') + ' ' + ta.id;
     const isReasonBox = /เหตุผล|ส่งคืน|ตีกลับ|ยุติ|ไม่รับ/.test(parentText);
-    
+
     // จัดลำดับความเกี่ยวข้อง (เหตุผล vs คำแนะนำการเขียน)
     const primaryItems = isReasonBox ? data.reasons.concat(data.suggestions) : data.suggestions.concat(data.reasons);
     const top3 = primaryItems.slice(0, 3);
@@ -3606,7 +3293,7 @@ function initWritingSuggestions() {
     // ผูก event เมื่อผู้ใช้กดปุ่มชิปคำแนะนำ
     chipContainer.querySelectorAll('.sug-chip-btn').forEach(btn => {
       btn.addEventListener('mousedown', (e) => {
-        e.preventDefault(); // ป้องกันไม่ให้ Textbox หลุดโฟกัส
+        e.preventDefault();
       });
       btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -3616,7 +3303,7 @@ function initWritingSuggestions() {
           const end = ta.selectionEnd || ta.value.length;
           const currentVal = ta.value;
           const prefix = (start > 0 && !currentVal.endsWith('\n') && !currentVal.endsWith(' ')) ? ' ' : '';
-          
+
           ta.value = currentVal.substring(0, start) + prefix + textToInsert + currentVal.substring(end);
           ta.selectionStart = ta.selectionEnd = start + prefix.length + textToInsert.length;
           ta.focus();
@@ -3630,11 +3317,9 @@ function initWritingSuggestions() {
     const showChips = () => chipContainer.classList.add('active');
     const hideChips = () => chipContainer.classList.remove('active');
 
-    // แสดงคำแนะนำอย่างนุ่มนวลเมื่อโฟกัสหรือคลิก Textbox
     ta.addEventListener('focus', showChips);
     ta.addEventListener('click', showChips);
 
-    // ซ่อนคำแนะนำเมื่อหลุดโฟกัสออกจาก Textbox
     ta.addEventListener('blur', () => {
       setTimeout(() => {
         if (document.activeElement !== ta && !chipContainer.contains(document.activeElement)) {
@@ -3659,7 +3344,6 @@ function initHeaderSuggestionsButton() {
   }
 }
 
-// Auto init on DOM ready
 if (typeof document !== 'undefined') {
   const initSug = () => {
     initHeaderSuggestionsButton();
@@ -3678,7 +3362,6 @@ global.ECMIS = {
   CASES, RETURN_REASONS, RESOLUTIONS, resolutionOf,
   DOC_TYPES, SIGN_PHASE, secgenSlaLimit, FORWARD_TARGETS, forwardTarget,
 
-  // กิจกรรมที่ 7.2
   RESOLUTIONS_72, resolution72, FLOW_STEPS_72, STATUS_STEP_72,
   trackStatus72, bothTracksDone72,
   OPINION_TYPES, chainDivergence, g1Triggers, M28, M28_ORDERS, m28Order, m28Pending,
@@ -3694,24 +3377,19 @@ global.ECMIS = {
   renderShell, stepperHtml, statusBadge, slaBadge, actionBar,
   mergeField, paginateResolutionDoc, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
 
-  // Custom Activity 7 Status helpers
   ACT7_SECTIONS, ACT7_STATUSES, getAct7Status, act7Badge,
   ACT7_STATUSES_72, getAct7Status72,
 
-  // Custom helpers
   saveCases, toggleColorMode, toggleSidebarCollapse, changeFont, toggleVoiceRecognition,
   initSmartCombobox, initMultiSelectCombo, initRealTimeValidation, initVoiceInput, initSignaturePad,
   signaturePad: (window.ecmis && window.ecmis.signaturePad),
   initAutoSave, initCharCounterAndCopy,
 
-  // New UX helpers
   initAuditTrail, initChecklistGatekeeper, initBulkActions, initDragDropUpload,
   initDocPaneToggle,
 
-  // Managed Suggestions Module
   getSuggestionsData, saveSuggestionsData, openSuggestionsModal, initWritingSuggestions
 };
 
 })(window);
-
 

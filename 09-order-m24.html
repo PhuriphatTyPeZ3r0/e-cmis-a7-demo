@@ -35,8 +35,6 @@
     <div class="row g-3">
       <div class="col-xl-6">
 
-
-
         <div class="card card-ecmis mb-3">
           <div class="card-header"><i class="fa-solid fa-hashtag"></i> เลขที่คำสั่ง</div>
           <div class="card-body">
@@ -47,11 +45,6 @@
               <div class="col-md-6"><label class="form-label field-req">ลงวันที่</label>
                 <input class="form-control" id="orderDate" value="2569-06-05">
               </div>
-            </div>
-            <div class="warn-note mt-2" style="font-size:.79rem">
-              <strong>ข้อจำกัดที่ยืนยันแล้ว:</strong> ระบบ e-สารบรรณ อยู่<strong>นอกขอบเขต E-CMIS</strong>
-              เจ้าหน้าที่ต้องขอเลขคำสั่งจากงานสารบรรณแล้วคีย์กลับเข้าระบบเอง
-              — หากต้องการเชื่อม API ดึงเลขอัตโนมัติ ต้องออก Change Request แยกต่างหาก
             </div>
           </div>
         </div>
@@ -98,11 +91,6 @@
                     ประธานกรรมการจะมอบหมายให้เลขาธิการลงนามในเอกสารแทนก็ได้"</small>
                 </label>
               </div>
-              <div class="law-note mt-2" style="font-size:.78rem">
-                เมื่อเลือกข้อนี้ ระบบจะสลับข้อความท้ายลายเซ็นเป็น
-                <strong>"ปฏิบัติราชการแทน ประธานกรรมการ ป.ป.ท."</strong> โดยอัตโนมัติ
-                และเปลี่ยนผู้ถือคิวลงนามเป็นเลขาธิการฯ
-              </div>
             </div>
             <div class="sig-box" id="sigBox">
               <i class="fa-solid fa-file-signature fa-2x mb-2" style="color:#7C8CA3"></i>
@@ -111,7 +99,6 @@
             </div>
           </div>
         </div>
-
 
       </div>
 
@@ -125,13 +112,6 @@
               <button class="btn btn-sm btn-light" id="btnDocx"><i class="fa-solid fa-download me-1"></i>.docx</button>
             </div>
             <div class="doc-paper" id="docPaper"></div>
-            <div class="law-note mt-3">
-              <strong>Template ที่ต้องใช้:</strong> ปปท. ๕-๐๑ (องค์คณะพนักงาน ป.ป.ท. — ม.24 ว.1) /
-              ปปท. ๕-๐๔ (คณะอนุกรรมการไต่สวน — ม.24 ว.3)
-              <br><small>ยังไม่พบไฟล์ทั้งสองใน Google Drive Folder ที่ให้มา — <strong>ต้องขอไฟล์ต้นฉบับจาก ป.ป.ท.
-                  เพิ่มเติม</strong>
-                เอกสารด้านบนเป็นโครงร่างที่ผู้ออกแบบเสนอตามถ้อยคำในกฎหมาย</small>
-            </div>
           </div>
         </div>
       </div>
@@ -151,7 +131,7 @@
     const kase = ECMIS.getCase(params.get('case') || '1547/2568');
     const role = ECMIS.currentRole();
     const resCode = params.get('res') || 'ACCEPT_S24P1';
-    const isSub = resCode === 'ACCEPT_S24P3';   /* ม.24 ว.3 */
+    const isSub = resCode === 'ACCEPT_S24P3';
 
     document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status);
     document.getElementById('stepper').innerHTML = ECMIS.stepperHtml('RESOLVED');
@@ -160,10 +140,6 @@
       dl2yEl.textContent = ECMIS.thaiDate(kase.deadline2y);
     }
 
-    /* Q4 — ผู้ลงนามตามตัวบท:
-       ม.24 ว.1 "องค์คณะ...ตามที่เลขาธิการแต่งตั้ง"        → เลขาธิการฯ
-       ม.24 ว.3 "คณะกรรมการ ป.ป.ท. จะแต่งตั้งคณะอนุกรรมการไต่สวน" → บอร์ด (ประธานฯ ลงนาม)
-       ม.18 ว.3 ประธานฯ มอบหมายให้เลขาธิการฯ ลงนามแทนได้ (เฉพาะกรณี ว.3) */
     const BASE_SIGNER = isSub
       ? { name: 'นายวิชัย ยุติธรรม', title: 'ประธานกรรมการ ป.ป.ท.', roleId: 'chairman' }
       : { name: 'นายอภิชาติ สุจริตกุล', title: 'เลขาธิการคณะกรรมการ ป.ป.ท.', roleId: 'secgen' };
@@ -196,7 +172,7 @@
     const resBannerEl = document.getElementById('resBanner');
     if (resBannerEl) {
       resBannerEl.innerHTML = `
-    <div class="law-note mb-3">
+    <div class="mb-3">
       <strong><i class="fa-solid fa-gavel me-1"></i>มติที่ประชุม ครั้งที่ ${kase.meetingNo || '38/2569'}
         วาระที่ ${kase.agendaNo || '5.12'}</strong><br>
       ${isSub
@@ -210,7 +186,6 @@
       ? 'คำสั่งแต่งตั้งคณะอนุกรรมการไต่สวน (ปปท. ๕-๐๔)'
       : 'คำสั่งแต่งตั้งองค์คณะพนักงาน ป.ป.ท. (ปปท. ๕-๐๑)';
 
-    /* ---------- members ---------- */
     let members = isSub ? [
       { name: 'นายสุเมธ นิติธรรม', pos: 'ผู้ทรงคุณวุฒิด้านกฎหมาย', role: 'ประธานอนุกรรมการไต่สวน', type: 'other' },
       { name: 'นายสมชาย ใจซื่อ', pos: 'นิติกรชำนาญการ', role: 'อนุกรรมการไต่สวน', type: 'officer' },
@@ -269,15 +244,6 @@
         }));
     }
 
-    /* ---------- ม.24 ว.1 composition rules ----------
-       [F-03] กติกาองค์ประกอบองค์คณะย้ายไปอยู่ที่โมเดลกลาง ECMIS.panelComposition()
-       เพื่อให้ตรวจครบทั้ง 3 เงื่อนไขของ ม.24 วรรคหนึ่ง (ขนาด ≥ 2 · มีพนักงาน ป.ป.ท.
-       อย่างน้อย 1 คน · สัดส่วนกึ่งหนึ่งเมื่อใช้ "กรณีจำเป็น" ตั้งเจ้าหน้าที่ ป.ป.ท.
-       เกินสองคน) และทดสอบได้ด้วยเทสหน่วย เดิมหน้านี้ตรวจเองและตกเงื่อนไขไป
-    
-       ข้อสำคัญเรื่องขอบเขต: ม.24 **วรรคสาม** (คณะอนุกรรมการไต่สวน) เป็นคนละฐาน
-       อำนาจ ตัวบทไม่มีถ้อยคำเรื่ององค์ประกอบ/สัดส่วนนี้ จึงต้อง **ไม่** เรียก
-       panelComposition() กับเส้นทาง ACCEPT_S24P3                                */
     function renderRules() {
       const officers = members.filter(m => m.type === 'officer').length;
       const staff = members.filter(m => m.type === 'staff').length;
@@ -331,7 +297,6 @@
       renderMembers(); renderRules(); renderDoc();
     });
 
-    /* ---------- document ---------- */
     function renderDoc() {
       const M = ECMIS.mergeField;
       const no = document.getElementById('orderNo').value.trim();
@@ -392,16 +357,13 @@
     document.getElementById('btnDocx').addEventListener('click', () =>
       ECMIS.toastOk('ดาวน์โหลด .docx — แก้ไขใน Word แล้วอัปโหลดกลับเพื่อล็อกเป็น PDF'));
 
-    /* ---------- actions ---------- */
     function handle(act) {
       if (act === 'draft') { ECMIS.toastOk('บันทึกร่างคำสั่งเรียบร้อย'); return; }
       if (act === 'sign') {
         if (!document.getElementById('orderNo').value.trim()) {
           ECMIS.toastWarn('กรุณากรอกเลขที่คำสั่งที่ขอจากงานสารบรรณ'); return;
         }
-        /* [F-03] บล็อกการลงนามเมื่อองค์ประกอบไม่ผ่าน — คำสั่งที่องค์ประกอบไม่ครบ
-           ตาม ม.24 วรรคหนึ่ง จะไม่ชอบด้วยกฎหมายตั้งแต่ต้น และทำให้สำนวนที่ไต่สวน
-           โดยองค์คณะนั้นเสียไปทั้งหมด ระบบจึงต้องกันไว้ก่อนลงนาม ไม่ใช่เตือนเฉย ๆ  */
+
         const rulesOk = renderRules();
         const comp = isSub ? null : ECMIS.panelComposition({
           officers: members.filter(m => m.type === 'officer').length,

@@ -22,7 +22,6 @@
 
 <main class="app-main">
 
-  <!-- Header -->
   <div class="page-head">
     <div>
       <h1><i class="fa-solid fa-file-signature me-2" id="pageTitleIcon" style="color:#0F2A62"></i><span id="pageTitleText">รายการพิจารณา/ลงนาม</span></h1>
@@ -32,10 +31,8 @@
 
   <div id="scopeBanner"></div>
 
-  <!-- KPI Summary Cards (4 Cards - Interactive Filter) -->
   <div class="row g-3 mb-4" id="kpiRow"></div>
 
-  <!-- Filter & Search Bar -->
   <div class="card card-ecmis mb-4">
     <div class="card-body p-3">
       <div class="row g-3 align-items-end">
@@ -97,7 +94,6 @@
   <div class="row g-3 align-items-start">
     <div class="col-12">
 
-      <!-- Single Table: รายการสำนวนพิจารณา/ลงนาม และติดตามผล Activity 7 -->
       <div class="card card-ecmis mb-4">
         <div class="card-header d-flex align-items-center flex-wrap gap-2">
           <i class="fa-solid fa-list-check text-primary"></i>
@@ -132,7 +128,7 @@
               <tbody id="myQueue"></tbody>
             </table>
           </div>
-          <!-- Bulk actions & Pagination footer -->
+
           <div class="px-3 py-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-2" id="queueFooter">
             <div id="bulkActionsBox" class="d-none align-items-center gap-2">
               <span class="small text-muted me-1" id="bulkSelectCount">เลือกแล้ว 0 รายการ</span>
@@ -160,17 +156,9 @@
 ECMIS.renderShell('01-work-inbox.html');
 
 const role  = ECMIS.currentRole();
-/* เดิม all = ECMIS.CASES ตรงๆ ไม่กรองสิทธิ์เลย ทำให้บทบาท view.own (เช่น owner)
-   เห็นสำนวนทั้ง 23 เรื่องในระบบ ทั้งที่ตามสิทธิ์จริงควรเห็นเฉพาะสำนวนของหน่วยงานตนเอง
-   — ใช้ canViewCase() ตัวเดียวกับที่หน้าอื่น (เช่น 08-board-resolution.html) ใช้กันสิทธิ์
-   อยู่แล้ว เพื่อให้ตารางนี้แสดงเฉพาะสำนวนที่บทบาทนี้มีสิทธิ์เห็นจริงๆ */
+
 const all   = ECMIS.CASES.filter(c => ECMIS.canViewCase(c, role.id));
-/* คิวงานจริงของ กจ.7 = ต้องเป็นสำนวนที่เข้าขอบเขตแล้วเท่านั้น
-   inboxFor() จับคู่ตาม "ประเภทบทบาท" ที่เป็นเจ้าของสถานะ (STATUS[...].owner) ไม่ใช่ตาม
-   ตัวบุคคล — สำหรับบทบาทที่มีคนจริงหลายคนพร้อมกัน (เช่น "owner" มีนักสืบหลายเขต แต่ตัวสลับ
-   บทบาทสาธิตเลือกได้ทีละคน) เคสของนักสืบคนอื่นที่สถานะบังเอิญ owner เดียวกัน (เช่น
-   DISPATCHING) จะหลุดเข้ามาด้วยถ้าไม่กรองซ้ำด้วย canViewCase() ให้เหลือเฉพาะสำนวนที่
-   บุคคลนี้จริงๆ มีสิทธิ์เห็น */
+
 let mine    = ECMIS.inboxFor(role.id).filter(c => !ECMIS.isUpstreamCase(c) && ECMIS.canViewCase(c, role.id));
 
 const mineIds = new Set(mine.map(c => c.id));
@@ -188,11 +176,7 @@ const DEFAULT_COPY = {
   bulkTitle:  n => `ยืนยันดำเนินการกลุ่มจำนวน ${n} รายการ`,
   bulkBody:   'ระบบจะอนุมัติและเสนอสำนวนที่เลือกทั้งหมดตามบทบาทปัจจุบันของคุณ'
 };
-/* บทบาท scope:UPSTREAM (owner/section_head/director/deputy_sg/deputy) เห็น scopeBanner
-   ด้านบนบอกตรงๆ ว่า "บทบาทนี้จึงมีเพียงสิทธิ์ติดตามสถานะ" (นอกขอบเขตกิจกรรมที่ 7) — เดิม copy
-   เริ่มต้นใช้คำว่า "รายการพิจารณา/ลงนาม" ทั่วทั้งหน้ารวมถึง 5 บทบาทนี้ด้วย ซึ่งขัดกับ banner
-   ของตัวเองตรงๆ (บทบาทเหล่านี้ลงนามอะไรในโมดูลนี้ไม่ได้เลย) จึงต้องมี copy ชุดของตัวเอง
-   ใช้คำว่า "ติดตามสถานะ" ให้ตรงกับ banner ไม่ใช้คำว่า "พิจารณา/ลงนาม" หรือ "อนุมัติ" */
+
 const UPSTREAM_COPY = {
   pageTitle:  'รายการติดตามสถานะสำนวน',
   pageIcon:   'fa-magnifying-glass-chart',
@@ -230,13 +214,9 @@ document.getElementById('flowRefText').textContent = copy.flowRef;
 document.getElementById('card1TitleText').textContent = copy.card1Title;
 document.getElementById('colStatusFilterLabel').textContent = copy.colStatusHeader;
 document.getElementById('colStatusHeader').textContent = copy.colStatusHeader;
-/* "หมวดหมู่มติ" เกี่ยวกับเจ้าหน้าที่ผู้บันทึกมติ (board_sec) โดยตรงเท่านั้น บทบาทอื่นไม่ต้อง
-   เห็นคอลัมน์นี้ — row() เว้น <td> ไว้เปล่าให้บทบาทอื่นอยู่แล้ว จึงต้องซ่อน <th> คู่กันด้วย
-   ไม่งั้นจำนวนคอลัมน์ระหว่างหัวตารางกับแถวข้อมูลจะไม่ตรงกัน */
+
 if (role.id === 'board_sec') document.getElementById('colResGroupHeader').classList.remove('d-none');
-/* ตัวกรอง #statusFilter เดิม option text hardcode คำว่า "รอเลขาพิจารณาลงนาม" ตรงๆ ทั้งที่
-   copy.stPending/stDone/stReturned มีคำที่เหมาะกับแต่ละบทบาทอยู่แล้ว (เช่น board_sec = "รอบันทึกมติ")
-   แต่ไม่เคยถูกใช้จริงกับ dropdown นี้เลย — ผูกเข้าด้วยกันให้ตรงกับ stat card/label ด้านบน */
+
 document.getElementById('stOptPending').textContent = copy.stPending;
 document.getElementById('stOptSigned').textContent = copy.stDone;
 document.getElementById('stOptReturned').textContent = copy.stReturned;
@@ -246,7 +226,7 @@ document.getElementById('myRoleLabel').textContent = `บทบาท: ${role.ti
 
 if(ECMIS.isUpstreamRole(role.id)){
   document.getElementById('scopeBanner').innerHTML = `
-    <div class="warn-note mb-3">
+    <div class="mb-3">
       <strong><i class="fa-solid fa-circle-info me-1"></i>บทบาทนี้อยู่นอกขอบเขตกิจกรรมที่ 7</strong><br>
       <strong>${role.title}</strong> เป็นส่วนหนึ่งของ<strong>การเสนอตามลำดับชั้นภายในกอง / สำนักงาน ป.ป.ท. เขต</strong>
       ซึ่งเป็นกระบวนงานของ <strong>กิจกรรมที่ 5 (ไต่สวนข้อเท็จจริง)</strong> ไม่ใช่กิจกรรมที่ 7
@@ -255,7 +235,6 @@ if(ECMIS.isUpstreamRole(role.id)){
     </div>`;
 }
 
-/* ---------- Single Unified Dataset ---------- */
 const allCasesCombinedMap = new Map();
 mine.forEach(c => allCasesCombinedMap.set(c.id, { caseData: c, isActionable: true }));
 all.forEach(c => {
@@ -269,12 +248,6 @@ const allCasesCombined = Array.from(allCasesCombinedMap.values()).map(item => {
   return { ...c, isActionable: item.isActionable || isMyPending(c) };
 });
 
-/* board_sec ไม่ได้อยู่ในสายอนุมัติ 213/644 ที่ pendingCount/signedCount เดิมออกแบบไว้
-   (เดิม hardcode ให้ AGENDA_SET/IN_MEETING/RESOLVED_PENDING/RESOLVED ทั้งชุดเป็น "signed/done"
-   ทั้งที่ IN_MEETING แปลว่า "ยังอยู่ระหว่างประชุม บอร์ดยังไม่มีมติ" ตรงๆ — ขัดกับคอลัมน์
-   "สถานะติดตาม" ที่ getAct7Status() แปลสถานะเดียวกันนี้เป็น "อยู่ระหว่างพิจารณา" ทำให้แถว
-   เดียวกันในตารางแสดงข้อมูลขัดแย้งกันเอง) ต้องแยกนิยาม "รอบันทึกมติ" กับ "บันทึกมติแล้ว"
-   ตามสถานะจริงของ board_sec เอง ไม่ใช้ชุดเดียวกับ secgen */
 const STATUS_BUCKETS = {
   board_sec: {
     pending:  ['AGENDA_SET', 'IN_MEETING', 'PENDING_INVITE_72', 'IN_MEETING_72'],
@@ -283,7 +256,6 @@ const STATUS_BUCKETS = {
   }
 };
 
-/* ---------- KPI Summary Cards (5 Cards) ---------- */
 function renderKPICards() {
   const currentSt = document.getElementById('statusFilter')?.value || 'ALL';
   const bucket = STATUS_BUCKETS[role.id];
@@ -336,7 +308,6 @@ function filterByKPI(statusId) {
   applyFilters();
 }
 
-/* ---------- Target page for roles ---------- */
 const PAGE_FOR = {
   owner:'03-report-213.html', section_head:'03-report-213.html',
   director:'03-report-213.html', deputy:'03-report-213.html',
@@ -346,13 +317,11 @@ const PAGE_FOR = {
   board_sec:'08-board-resolution.html', board:'08-board-resolution.html'
 };
 
-// --- Pagination & Sorting State ---
 let currentPage = 1;
 const pageSize = 10;
 let sortField = 'id';
 let sortOrder = 'asc';
 
-/* ฟังก์ชันกำหนด Badge สถานะการเสนอ/ลงนาม ของเลขาธิการฯ ให้มีเฉพาะ 4 สถานะหลักตามกำหนด */
 function getSecgenActionBadge(c) {
   const isPendingAction = isMyPending(c);
 
@@ -371,14 +340,6 @@ function getSecgenActionBadge(c) {
   return `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>รอเลขาพิจารณาลงนาม</span>`;
 }
 
-/* getSecgenActionBadge() ข้างบนไม่รู้จักสถานะ 7.2 เลยสักตัว (IN_MEETING_72,
-   PENDING_SECGEN_72 ฯลฯ) เพราะเขียนไว้สำหรับสายอนุมัติ 213/644 ของ secgen เท่านั้น —
-   สำนวน 7.2 ของ board_sec (เช่น IN_MEETING_72) เดิมจึงตกไปที่ default ท้ายฟังก์ชัน
-   "รอเลขาพิจารณาลงนาม" เสมอ ทั้งที่ค้างอยู่ในการประชุมบอร์ด ไม่เกี่ยวกับเลขาธิการฯ เลย —
-   ขัดกับคอลัมน์ "สถานะติดตาม" ที่รายงานถูกต้องว่า "อยู่ระหว่างประชุมบอร์ด" ใช้
-   STATUS_BUCKETS[role.id] (นิยามเดียวกับการ์ด KPI/ตัวกรอง) ตัดสิน pending/done/returned
-   ให้ตรงกับบทบาทจริงแทน ส่วนสถานะที่ไม่ใช่คิวของบทบาทนี้ (เช่น board_sec เห็นสำนวนที่ยัง
-   ค้างอยู่ที่เลขาธิการฯ) ให้แสดงสถานะจริงตรงๆ เหมือนคอลัมน์สถานะติดตาม แทนการเดายัดเข้ากลุ่ม */
 function getActionBadge(c) {
   const bucket = STATUS_BUCKETS[role.id];
   if (!bucket) return ECMIS.isCase72(c) ? ECMIS.statusBadge(c.status) : getSecgenActionBadge(c);
@@ -398,10 +359,7 @@ function getActionBadge(c) {
 }
 
 function row(c){
-  /* สำนวนกิจกรรมที่ 7.2 (docType RULING) ต้องหาปลายทางจาก "สถานะของสำนวน"
-     ไม่ใช่จากบทบาทผู้ดูอย่างเดียว เพราะบทบาทเดียวกัน (เช่น section_head)
-     ไปคนละหน้าตามชนิดสำนวนที่ค้างอยู่ — ต่างจาก 7.1 ที่แต่ละบทบาทมีปลายทาง
-     ตายตัวหน้าเดียวเสมอ ดู ECMIS.PAGE_FOR_72 ในไฟล์ ecmis-app.js            */
+
   const is72 = ECMIS.isCase72(c);
   const page = is72 ? ECMIS.pageForCase72(c) : (PAGE_FOR[role.id] || '02-case-register.html');
   const target = `${page}?case=${encodeURIComponent(c.id)}`;
@@ -411,11 +369,7 @@ function row(c){
   const act7BadgeHtml = is72
     ? ECMIS.act7Badge(ECMIS.getAct7Status72(c), ECMIS.ACT7_STATUSES_72)
     : ECMIS.act7Badge(ECMIS.getAct7Status(c));
-  /* "หมวดหมู่มติ" — RESOLUTIONS/RESOLUTIONS_72 มีฟิลด์ group อยู่แล้ว (เช่น "รับไว้ไต่สวน",
-     "ไม่รับเรื่องไว้พิจารณา") แต่ไม่เคยถูกดึงมาแสดงในตารางเลย ก่อนบอร์ดมีมติ (c.resolution
-     ยังไม่ถูกเซ็ต) แสดงเป็นค่ากลาง ไม่ใช่ค่าว่างเปล่า เพื่อไม่ให้ดูเหมือนข้อมูลหาย —
-     แสดงคอลัมน์นี้เฉพาะ board_sec (เจ้าหน้าที่ผู้บันทึกมติจริง) บทบาทอื่นไม่เกี่ยวกับ
-     การจัดหมวดมติโดยตรงจึงซ่อนไว้ ไม่ให้ตารางรกเกินจำเป็น */
+
   const resGroup = c.resolution
     ? (is72 ? ECMIS.resolution72(c.resolution) : ECMIS.resolutionOf(c.resolution))?.group
     : null;
@@ -482,13 +436,12 @@ function renderMyQueue(loading = false) {
     return;
   }
 
-  // Sort Table (Pending items first, then by field)
   const sortedCases = [...filteredCombined].sort((a, b) => {
     const isPendingA = isMyPending(a) ? 1 : 0;
     const isPendingB = isMyPending(b) ? 1 : 0;
 
     if (isPendingA !== isPendingB) {
-      return isPendingB - isPendingA; // Actionable pending items first
+      return isPendingB - isPendingA;
     }
 
     let valA = a[sortField];
@@ -505,7 +458,6 @@ function renderMyQueue(loading = false) {
     return 0;
   });
 
-  // Pagination
   const totalItems = sortedCases.length;
   const totalPages = Math.ceil(totalItems / pageSize) || 1;
   if (currentPage > totalPages) currentPage = totalPages;
@@ -605,8 +557,7 @@ document.getElementById('btnBulkApprove')?.addEventListener('click', () => {
 
   ECMIS.confirmAction({
     title: copy.bulkTitle(chks.length),
-    html: `<p>${copy.bulkBody}</p>
-           <div class="law-note">นี่เป็นการสั่งการแบบกลุ่ม (Bulk Action) ซึ่งจะบันทึกสถานะใหม่ลงในประวัติและ Audit Trail</div>`,
+    html: `<p>${copy.bulkBody}</p>`,
     confirmText: 'ยืนยันสั่งการกลุ่ม'
   }).then(res => {
     if (res.isConfirmed) {
@@ -637,7 +588,6 @@ document.getElementById('btnBulkApprove')?.addEventListener('click', () => {
   });
 });
 
-/* ---------- Filtering Logic ---------- */
 function applyFilters() {
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   const st = document.getElementById('statusFilter').value;
@@ -648,16 +598,12 @@ function applyFilters() {
     const act7Item = ECMIS.ACT7_STATUSES.find(s => s.name === act7St);
     const act7Sec = act7Item ? act7Item.section : 1;
 
-    // Search Query
     const matchQ = !q ||
       c.id.toLowerCase().includes(q) ||
       (c.subject && c.subject.toLowerCase().includes(q)) ||
       (c.ownerOrg && c.ownerOrg.toLowerCase().includes(q)) ||
       act7St.toLowerCase().includes(q);
 
-    // Sign / Action Status Filter — ต้องเข้าเงื่อนไขเดียวกับ renderKPICards() เป๊ะ
-    // (รวม STATUS_BUCKETS[role.id] สำหรับ board_sec) ไม่งั้นจำนวนบนการ์ด KPI จะไม่ตรงกับ
-    // จำนวนแถวจริงในตารางเมื่อกดกรอง
     let matchSt = true;
     const bucket = STATUS_BUCKETS[role.id];
     if (st !== 'ALL') {
@@ -680,7 +626,6 @@ function applyFilters() {
       }
     }
 
-    // Activity 7 Tracking Status Filter
     let matchAct7 = true;
     if (act7 !== 'ALL') {
       if (act7 === 'SEC1') matchAct7 = (act7Sec === 1);
@@ -708,7 +653,6 @@ document.getElementById('btnClearFilter').addEventListener('click', () => {
   applyFilters();
 });
 
-// Initial load
 renderKPICards();
 applyFilters();
 
