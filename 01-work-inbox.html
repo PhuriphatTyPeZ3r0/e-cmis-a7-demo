@@ -358,6 +358,32 @@ function getSecgenActionBadge(c) {
   return `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>รอเลขาพิจารณาลงนาม</span>`;
 }
 
+/* getSecgenActionBadge() ข้างบนไม่รู้จักสถานะ 7.2 เลยสักตัว (IN_MEETING_72,
+   PENDING_SECGEN_72 ฯลฯ) เพราะเขียนไว้สำหรับสายอนุมัติ 213/644 ของ secgen เท่านั้น —
+   สำนวน 7.2 ของ board_sec (เช่น IN_MEETING_72) เดิมจึงตกไปที่ default ท้ายฟังก์ชัน
+   "รอเลขาพิจารณาลงนาม" เสมอ ทั้งที่ค้างอยู่ในการประชุมบอร์ด ไม่เกี่ยวกับเลขาธิการฯ เลย —
+   ขัดกับคอลัมน์ "สถานะติดตาม" ที่รายงานถูกต้องว่า "อยู่ระหว่างประชุมบอร์ด" ใช้
+   STATUS_BUCKETS[role.id] (นิยามเดียวกับการ์ด KPI/ตัวกรอง) ตัดสิน pending/done/returned
+   ให้ตรงกับบทบาทจริงแทน ส่วนสถานะที่ไม่ใช่คิวของบทบาทนี้ (เช่น board_sec เห็นสำนวนที่ยัง
+   ค้างอยู่ที่เลขาธิการฯ) ให้แสดงสถานะจริงตรงๆ เหมือนคอลัมน์สถานะติดตาม แทนการเดายัดเข้ากลุ่ม */
+function getActionBadge(c) {
+  const bucket = STATUS_BUCKETS[role.id];
+  if (!bucket) return ECMIS.isCase72(c) ? ECMIS.statusBadge(c.status) : getSecgenActionBadge(c);
+  if (bucket.pending.includes(c.status)) {
+    return `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>${copy.stPending}</span>`;
+  }
+  if (bucket.done.includes(c.status)) {
+    return `<span class="st st-done"><i class="fa-solid fa-check me-1"></i>${copy.stDone}</span>`;
+  }
+  if (bucket.returned.includes(c.status)) {
+    return `<span class="st st-returned"><i class="fa-solid fa-xmark me-1"></i>${copy.stReturned}</span>`;
+  }
+  if (c.status === 'IN_SCREENING') {
+    return `<span class="st st-review"><i class="fa-solid fa-users-gear me-1"></i>ส่งให้อนุกลั่นกรองพิจารณา</span>`;
+  }
+  return ECMIS.statusBadge(c.status);
+}
+
 function row(c){
   /* สำนวนกิจกรรมที่ 7.2 (docType RULING) ต้องหาปลายทางจาก "สถานะของสำนวน"
      ไม่ใช่จากบทบาทผู้ดูอย่างเดียว เพราะบทบาทเดียวกัน (เช่น section_head)
@@ -368,7 +394,7 @@ function row(c){
   const target = `${page}?case=${encodeURIComponent(c.id)}`;
   const isPendingAction = isMyPending(c);
 
-  const statusBadgeHtml = is72 ? ECMIS.statusBadge(c.status) : getSecgenActionBadge(c);
+  const statusBadgeHtml = getActionBadge(c);
   const act7BadgeHtml = is72
     ? ECMIS.act7Badge(ECMIS.getAct7Status72(c), ECMIS.ACT7_STATUSES_72)
     : ECMIS.act7Badge(ECMIS.getAct7Status(c));

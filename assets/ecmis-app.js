@@ -799,9 +799,12 @@ function act7Badge(statusName, list) {
     4: 'background:#DCFCE7; color:#15803D; border:1px solid #BBF7D0;'
   };
 
+  /* เดิม text-wrap ทำให้ badge ยาว ๆ ตัดขึ้นหลายบรรทัดในตาราง (สูงไม่เท่ากันทุกแถว
+     ผิดจาก .st badge ของคอลัมน์อื่นที่ white-space:nowrap บรรทัดเดียวเสมอ) เปลี่ยนเป็น
+     ตัดคำด้วย ... บรรทัดเดียวแทน ให้ทุกแถวสูงเท่ากันและอ่านชื่อเต็มได้จาก title ตอนชี้เมาส์ */
   const style = secStyles[secId] || secStyles[1];
-  return `<span class="badge rounded-pill fw-medium py-1 px-2 text-wrap text-start d-inline-flex align-items-center gap-1" style="${style} font-size:0.73rem; max-width:260px; line-height:1.2">
-    <i class="fa-solid ${icon}" style="font-size:0.7rem; flex-shrink:0"></i><span>${statusName}</span>
+  return `<span class="badge rounded-pill fw-medium py-1 px-2 d-inline-flex align-items-center gap-1" style="${style} font-size:0.73rem; max-width:200px; line-height:1.2" title="${statusName}">
+    <i class="fa-solid ${icon}" style="font-size:0.7rem; flex-shrink:0"></i><span class="text-truncate" style="min-width:0">${statusName}</span>
   </span>`;
 }
 
