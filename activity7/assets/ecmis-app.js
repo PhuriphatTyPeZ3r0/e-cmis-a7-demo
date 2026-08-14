@@ -374,13 +374,13 @@ const APPROVAL_CHAIN = ['secgen'];
 
 /* Stepper ของกิจกรรมที่ 7.1 — เริ่มที่เลขาธิการฯ */
 const FLOW_STEPS = [
-  { key:'secgen',    label:'เลขาธิการฯ พิจารณา / ลงนาม', ref:'S1 · G1' },
-  { key:'urgent',    label:'ใบด่วน / ผอ.กบค.',           ref:'G3 · S3' },
-  { key:'chairman',  label:'ประธานฯ สั่งการ',            ref:'S4 · G4' },
-  { key:'screening', label:'อนุกลั่นกรองฯ 1–8',          ref:'S5 · S6' },
-  { key:'agenda',    label:'บรรจุวาระ',                 ref:'S7 · S8' },
-  { key:'resolution',label:'บอร์ดลงมติ',                ref:'S9 · G5' },
-  { key:'order',     label:'ออกคำสั่ง ม.24',             ref:'S11' }
+  { key:'secgen',    label:'เลขาธิการฯ พิจารณา / ลงนาม', ref:'เสนอเลขาธิการฯ' },
+  { key:'urgent',    label:'ใบด่วน / ผอ.กบค.',           ref:'รับรองเหตุผลเร่งด่วน' },
+  { key:'chairman',  label:'ประธานฯ สั่งการ',            ref:'ประธานฯ สั่งการ' },
+  { key:'screening', label:'อนุกลั่นกรองฯ 1–8',          ref:'อนุกรรมการกลั่นกรอง' },
+  { key:'agenda',    label:'บรรจุวาระ',                 ref:'บรรจุวาระการประชุม' },
+  { key:'resolution',label:'บอร์ดลงมติ',                ref:'คณะกรรมการลงมติ' },
+  { key:'order',     label:'ออกคำสั่ง ม.24',             ref:'ออกคำสั่ง' }
 ];
 
 const STATUS_STEP = {
@@ -2289,6 +2289,26 @@ global.ECMIS = {
   initAuditTrail, initChecklistGatekeeper, initBulkActions, initDragDropUpload,
   initDocPaneToggle
 };
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeprint', () => {
+    const docPane = document.querySelector('.doc-pane, .doc-paper');
+    if (docPane) {
+      document.body.classList.add('printing-doc-only');
+      document.querySelectorAll('.row > [class*="col-"]').forEach(col => {
+        if (!col.querySelector('.doc-pane, .doc-paper')) {
+          col.classList.add('no-print-temp');
+        }
+      });
+    }
+  });
+  window.addEventListener('afterprint', () => {
+    document.body.classList.remove('printing-doc-only');
+    document.querySelectorAll('.no-print-temp').forEach(col => {
+      col.classList.remove('no-print-temp');
+    });
+  });
+}
 
 })(window);
 

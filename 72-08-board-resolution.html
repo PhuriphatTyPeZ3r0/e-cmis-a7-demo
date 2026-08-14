@@ -4,15 +4,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>บันทึกมติที่ประชุมคณะกรรมการ ป.ป.ท. (วินิจฉัยชี้มูล) | E-CMIS 7.2</title>
+  <title>บันทึกมติที่ประชุมคณะกรรมการ ป.ป.ท. (วินิจฉัยชี้มูล) | E-CMIS</title>
   <link rel="icon" type="image/png" href="pacc_logo.png">
   <link
-    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link href="assets/ecmis-app.css" rel="stylesheet">
+  <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
 </head>
 
 <body>
@@ -23,21 +24,21 @@
         <h1><i class="fa-solid fa-gavel me-2"></i>บันทึกมติที่ประชุมคณะกรรมการ ป.ป.ท. (วินิจฉัยชี้มูล)</h1>
       </div>
       <div class="ms-auto text-end">
-        <span class="flow-ref">ผัง 7.2: 7.2-07 → 7.2-08 (มติ 4 แขนง)</span>
+        <span class="flow-ref">บันทึกมติวินิจฉัยชี้มูลของที่ประชุม</span>
         <div class="mt-1" id="stBadge"></div>
       </div>
     </div>
 
-    <div class="card card-ecmis mb-3">
+    <div class="ws-card mb-3">
       <div class="card-body pb-1" id="stepper"></div>
     </div>
 
     <div id="editGate"></div>
 
-    <div class="row g-3">
-      <div class="col-xl-6">
+    <div class="document-workspace" id="docWorkspace">
+      <div>
 
-        <div class="card card-ecmis mb-3">
+        <div class="ws-card mb-3">
           <div class="card-header"><i class="fa-solid fa-users-rectangle"></i> องค์ประชุมและการลงคะแนน (ม.12 / ม.15 /
             ม.20)</div>
           <div class="card-body">
@@ -69,7 +70,7 @@
           </div>
         </div>
 
-        <div class="card card-ecmis mb-3">
+        <div class="ws-card mb-3">
           <div class="card-header"><i class="fa-solid fa-code-branch"></i> มติที่ประชุม (วินิจฉัยชี้มูล)</div>
           <div class="card-body">
             <label class="form-label field-req">เลือกประเภทผลมติ</label>
@@ -133,18 +134,18 @@
 
       </div>
 
-      <div class="col-xl-6">
-        <div style="position:sticky;top:calc(var(--topbar-h) + 14px)">
-          <div class="doc-pane">
-            <div class="doc-toolbar">
-              <span class="name"><i class="fa-solid fa-file-word"></i> มติการประชุม (วินิจฉัยชี้มูล)
-                <span class="badge-tpl">Mail-Merge</span></span>
-              <button class="btn btn-sm btn-light" onclick="window.print()"><i class="fa-solid fa-print"></i></button>
-            </div>
-            <div class="doc-paper doc-resolution" id="docPaper"></div>
-          </div>
+      <aside class="ws-doc-pane" style="top:calc(var(--topbar-h) + 14px)">
+        <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
+        <div class="ws-doc-toolbar">
+          <span class="name"><i class="fa-solid fa-file-word"></i> มติการประชุม (วินิจฉัยชี้มูล)
+            <span class="badge-tpl">Mail-Merge</span></span>
+          <button class="btn btn-sm btn-light" onclick="window.print()" title="พิมพ์เฉพาะเอกสาร Preview"><i class="fa-solid fa-print"></i></button>
+          <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
         </div>
-      </div>
+        <div class="ws-paper-stage">
+          <div class="doc-paper doc-resolution a4-paper" id="docPaper"></div>
+        </div>
+      </aside>
     </div>
 
     <div id="actionBarSlot"></div>
@@ -452,7 +453,7 @@
         <div style="background:#fdf7e8;border-left:4px solid #D0A830;padding:.6rem .8rem;border-radius:0 6px 6px 0;font-size:.83rem">
           เมื่อบันทึกแล้วระบบจะ:<br>
           • ล็อกเอกสารมติเป็น PDF<br>
-          • ส่งสำนวนไปยัง <strong>7.2-09 จัดทำ/ลงนามรายงานวินิจฉัยชี้มูล</strong> ให้ประธานกรรมการ ป.ป.ท. ลงนาม<br>
+          • ส่งสำนวนไปยัง <strong>ขั้นตอนจัดทำ/ลงนามรายงานวินิจฉัยชี้มูล</strong> ให้ประธานกรรมการ ป.ป.ท. ลงนาม<br>
           ${r.code === 'GUILTY_72' ? `• เปิดสายดำเนินคดี: ${[crim ? 'อาญา' : null, disc ? 'วินัย' : null].filter(Boolean).join(' + ')}<br>` : ''}
         </div></div>`,
           confirmText: 'ยืนยันบันทึกมติ'
@@ -475,6 +476,17 @@
         });
       }
     }
+
+    /* ---------- Document workspace: collapsible pane ---------- */
+    const docWorkspace = document.getElementById('docWorkspace');
+    const PANE_KEY = 'ecmis-board-resolution-72-docpane-collapsed';
+    function setPaneCollapsed(collapsed) {
+      docWorkspace.classList.toggle('pane-collapsed', collapsed);
+      localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
+    }
+    if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
+    document.getElementById('btnPaneCollapse').addEventListener('click', () => setPaneCollapsed(true));
+    document.getElementById('btnPaneExpand').addEventListener('click', () => setPaneCollapsed(false));
 
     toggleBoxes(); renderQuorum(); renderDoc();
   </script>

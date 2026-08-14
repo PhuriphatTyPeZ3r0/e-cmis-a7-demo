@@ -4,15 +4,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ออกคำสั่งแต่งตั้งคณะไต่สวน ม.24 | E-CMIS 7.1</title>
+  <title>ออกคำสั่งแต่งตั้งคณะไต่สวน ม.24 | E-CMIS</title>
   <link rel="icon" type="image/png" href="pacc_logo.png">
   <link
-    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link href="assets/ecmis-app.css" rel="stylesheet">
+  <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
 </head>
 
 <body>
@@ -23,19 +24,19 @@
         <h1><i class="fa-solid fa-stamp me-2"></i>ออกคำสั่งแต่งตั้งผู้ไต่สวน (มาตรา 24)</h1>
       </div>
       <div class="ms-auto text-end">
-        <span class="flow-ref">ผัง: มติ 1 (รับไว้ไต่สวน) → Integration กจ.5</span>
+        <span class="flow-ref">ดำเนินการออกคำสั่งหลังมีมติรับไว้ไต่สวน</span>
         <div class="mt-1" id="stBadge"></div>
       </div>
     </div>
 
-    <div class="card card-ecmis mb-3">
+    <div class="ws-card mb-3">
       <div class="card-body pb-1" id="stepper"></div>
     </div>
 
-    <div class="row g-3">
-      <div class="col-xl-6">
+    <div class="document-workspace" id="docWorkspace">
+      <div>
 
-        <div class="card card-ecmis mb-3">
+        <div class="ws-card mb-3">
           <div class="card-header"><i class="fa-solid fa-hashtag"></i> เลขที่คำสั่ง</div>
           <div class="card-body">
             <div class="row g-2">
@@ -49,7 +50,24 @@
           </div>
         </div>
 
-        <div class="card card-ecmis mb-3">
+        <div class="ws-card mb-3">
+          <div class="card-header"><i class="fa-solid fa-file-lines"></i> พฤติการณ์คดี</div>
+          <div class="card-body">
+            <div class="rtf-toolbar" id="allegationToolbar">
+              <button type="button" data-format="bold" title="ตัวหนา"><b>B</b></button>
+              <button type="button" data-format="italic" title="ตัวเอียง"><i>I</i></button>
+              <span class="rtf-sep"></span>
+              <button type="button" data-format="insertUnorderedList" title="รายการหัวข้อ"><i class="fa-solid fa-list-ul"></i></button>
+              <button type="button" data-format="insertOrderedList" title="รายการลำดับเลข"><i class="fa-solid fa-list-ol"></i></button>
+              <span class="rtf-sep"></span>
+              <button type="button" data-format="removeFormat" title="ล้างรูปแบบ"><i class="fa-solid fa-eraser"></i></button>
+            </div>
+            <div class="rtf-box" id="allegationBox" data-placeholder="พิมพ์หรือวางข้อความพฤติการณ์คดี — รองรับข้อความยาว หลายกรรม และจัดรูปแบบตัวหนา/ย่อหน้าได้"></div>
+            <small class="text-muted d-block mt-1">ดึงจากพฤติการณ์คดีในสำนวนโดยอัตโนมัติ — แก้ไข/วางข้อความเพิ่มเติมได้ก่อนออกคำสั่ง</small>
+          </div>
+        </div>
+
+        <div class="ws-card mb-3">
           <div class="card-header">
             <i class="fa-solid fa-user-group"></i> องค์ประกอบผู้ไต่สวน
             <button class="btn btn-sm btn-outline-primary ms-auto" id="btnAdd">
@@ -74,7 +92,7 @@
           </div>
         </div>
 
-        <div class="card card-ecmis mb-3">
+        <div class="ws-card mb-3">
           <div class="card-header"><i class="fa-solid fa-signature"></i> การลงนามคำสั่ง</div>
           <div class="card-body">
             <div class="kv mb-2"><span class="k">ผู้มีอำนาจลงนามตามกฎหมาย:</span>
@@ -102,19 +120,19 @@
 
       </div>
 
-      <div class="col-xl-6">
-        <div style="position:sticky;top:calc(var(--topbar-h) + 14px)">
-          <div class="doc-pane">
-            <div class="doc-toolbar">
-              <span class="name"><i class="fa-solid fa-file-word"></i> <span id="docName"></span>
-                <span class="badge-tpl">Mail-Merge</span></span>
-              <button class="btn btn-sm btn-light" onclick="window.print()"><i class="fa-solid fa-print"></i></button>
-              <button class="btn btn-sm btn-light" id="btnDocx"><i class="fa-solid fa-download me-1"></i>.docx</button>
-            </div>
-            <div class="doc-paper" id="docPaper"></div>
-          </div>
+      <aside class="ws-doc-pane" style="top:calc(var(--topbar-h) + 14px)">
+        <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
+        <div class="ws-doc-toolbar">
+          <span class="name"><i class="fa-solid fa-file-word"></i> <span id="docName"></span>
+            <span class="badge-tpl">Mail-Merge</span></span>
+          <button class="btn btn-sm btn-light" onclick="window.print()" title="พิมพ์เฉพาะเอกสาร Preview"><i class="fa-solid fa-print"></i></button>
+          <button class="btn btn-sm btn-light" id="btnDocx"><i class="fa-solid fa-download me-1"></i>.docx</button>
+          <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
         </div>
-      </div>
+        <div class="ws-paper-stage">
+          <div class="doc-paper a4-paper" id="docPaper"></div>
+        </div>
+      </aside>
     </div>
 
     <div id="actionBarSlot"></div>
@@ -186,12 +204,23 @@
       ? 'คำสั่งแต่งตั้งคณะอนุกรรมการไต่สวน (ปปท. ๕-๐๔)'
       : 'คำสั่งแต่งตั้งองค์คณะพนักงาน ป.ป.ท. (ปปท. ๕-๐๑)';
 
-    let members = isSub ? [
+    /* ดึงรายชื่อคณะอนุกรรมการจากฐานข้อมูล (ECMIS.SUBCOMMITTEE_ROSTER) ตามคณะที่กลั่นกรองสำนวนนี้
+       (kase.subCommittee) มาลงแบบฟอร์มอัตโนมัติแทนการกรอกชื่อซ้ำเดิมทุกสำนวน ตามมติที่ประชุม
+       13/08/2569 — ใช้ได้เฉพาะ ม.24 วรรคสาม (คณะอนุกรรมการไต่สวน) เพราะเป็นคณะเดียวกับที่กลั่นกรอง
+       สำนวนมา; ม.24 วรรคหนึ่ง (องค์คณะพนักงาน) ไม่ผูกกับคณะกลั่นกรอง จึงดึงเฉพาะหัวหน้าองค์คณะจาก
+       ผู้รับผิดชอบสำนวน (kase.owner) แทน */
+    const roster = isSub ? ECMIS.SUBCOMMITTEE_ROSTER[kase.subCommittee] : null;
+    const RANK_ROLE_SUB = { chair: 'ประธานอนุกรรมการไต่สวน', member: 'อนุกรรมการไต่สวน', secretary: 'อนุกรรมการและเลขานุการ' };
+
+    let members = roster ? roster.map(m => ({
+      name: m.name, pos: m.pos, role: RANK_ROLE_SUB[m.rank],
+      type: m.rank === 'chair' ? 'other' : 'officer'
+    })) : isSub ? [
       { name: 'นายสุเมธ นิติธรรม', pos: 'ผู้ทรงคุณวุฒิด้านกฎหมาย', role: 'ประธานอนุกรรมการไต่สวน', type: 'other' },
       { name: 'นายสมชาย ใจซื่อ', pos: 'นิติกรชำนาญการ', role: 'อนุกรรมการไต่สวน', type: 'officer' },
       { name: 'นางสาวปรียา ตั้งมั่น', pos: 'นักสืบสวนสอบสวนชำนาญการ', role: 'อนุกรรมการและเลขานุการ', type: 'officer' }
     ] : [
-      { name: 'นายสมชาย ใจซื่อ', pos: 'นิติกรชำนาญการ', role: 'หัวหน้าองค์คณะ', type: 'officer' },
+      { name: kase.owner || 'นายสมชาย ใจซื่อ', pos: 'นิติกรชำนาญการ', role: 'หัวหน้าองค์คณะ', type: 'officer' },
       { name: 'นางสาวปรียา ตั้งมั่น', pos: 'นักสืบสวนสอบสวนชำนาญการ', role: 'องค์คณะ', type: 'officer' },
       { name: 'นายวรพล ตรวจสอบ', pos: 'เจ้าพนักงานป้องกันการทุจริต', role: 'ผู้ช่วยองค์คณะ', type: 'staff' }
     ];
@@ -317,8 +346,10 @@
       ด้วยคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ ในการประชุมครั้งที่
       ${M(kase.meetingNo || '38/2569')} เมื่อวันที่ ${M(ECMIS.thaiDate(kase.meetingDate || '2569-06-02'))}
       วาระที่ ${M(kase.agendaNo || '5.12')} ได้มีมติ<strong>รับไว้ไต่สวน</strong>
-      เรื่องที่ ${M(kase.id)} กรณี ${M(kase.subject)}
+      เรื่องที่ ${M(kase.id)} กรณี ${M(kase.subject)} โดยมีพฤติการณ์กล่าวโดยสรุปว่า
     </div>
+
+    <div class="doc-indent doc-body-indent" style="margin-top:4px">${document.getElementById('allegationBox').innerHTML || M('', 'พฤติการณ์คดี')}</div>
 
     <div class="doc-indent" style="margin-top:8px">
       ${isSub
@@ -408,7 +439,7 @@
               '<span style="color:#166434"><i class="fa-solid fa-signature"></i> ลงนามดิจิทัลแล้ว</span>';
             ECMIS.toastOk('ลงนามคำสั่งเรียบร้อย');
             setTimeout(() => Swal.fire({
-              icon: 'success', title: 'ออกคำสั่งเรียบร้อย — จบกระบวนงาน 7.1',
+              icon: 'success', title: 'ออกคำสั่งเรียบร้อย — เสร็จสิ้นกระบวนงานไต่สวนเบื้องต้น',
               html: `<div class="text-start" style="font-size:.9rem">
             <p>คำสั่งที่ <strong>${document.getElementById('orderNo').value}</strong> ลงนามเรียบร้อย</p>
             <div style="background:#f4f0fa;border-left:4px solid #9673a6;padding:.6rem .8rem;border-radius:0 6px 6px 0">
@@ -416,13 +447,30 @@
               • ยิงมติ + คำสั่งกลับ <strong>กิจกรรมที่ 5</strong><br>
               • เปลี่ยนสถานะคดีเป็น <strong>"อยู่ระหว่างไต่สวน"</strong><br>
               • เริ่มนับกรอบเวลา ม.23 (ครบกำหนด ${ECMIS.thaiDate(kase.deadline2y)})<br>
-              • สำนวนเข้าสู่ชั้นไต่สวนวินิจฉัยชี้มูล (กระบวนงาน 7.2)
+              • สำนวนเข้าสู่ชั้นไต่สวนวินิจฉัยชี้มูล
             </div></div>`,
               confirmButtonColor: '#0F2A62', width: 560
             }).then(() => location.href = ECMIS.homeHref(role.id)), 900);
           });
       }
     }
+
+    ECMIS.initRichTextBox(document.getElementById('allegationBox'), {
+      toolbar: 'allegationToolbar',
+      initialHtml: kase.allegation ? `<p>${kase.allegation}</p>` : '',
+      onChange: renderDoc
+    });
+
+    /* ---------- Document workspace: collapsible pane ---------- */
+    const docWorkspace = document.getElementById('docWorkspace');
+    const PANE_KEY = 'ecmis-order-m24-docpane-collapsed';
+    function setPaneCollapsed(collapsed) {
+      docWorkspace.classList.toggle('pane-collapsed', collapsed);
+      localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
+    }
+    if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
+    document.getElementById('btnPaneCollapse').addEventListener('click', () => setPaneCollapsed(true));
+    document.getElementById('btnPaneExpand').addEventListener('click', () => setPaneCollapsed(false));
 
     renderMembers(); renderRules(); refreshSigner();
   </script>

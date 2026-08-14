@@ -4,15 +4,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>คำร้องขอบรรจุวาระด่วน | E-CMIS 7.2</title>
+  <title>คำร้องขอบรรจุวาระด่วน | E-CMIS</title>
   <link rel="icon" type="image/png" href="pacc_logo.png">
   <link
-    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link href="assets/ecmis-app.css" rel="stylesheet">
+  <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
 </head>
 
 <body>
@@ -23,35 +24,35 @@
         <h1><i class="fa-solid fa-bolt me-2"></i>คำร้องขอบรรจุวาระด่วน</h1>
       </div>
       <div class="ms-auto text-end">
-        <span class="flow-ref">ผัง 7.2: 7.2-05 (ผอ.กบค. รับรอง → ประธานฯ ลงนามมอบหมาย/บรรจุวาระด่วน)</span>
+        <span class="flow-ref">รับรองเหตุผลเร่งด่วนและเสนอประธานฯ บรรจุวาระด่วน</span>
         <div class="mt-1" id="stBadge"></div>
       </div>
     </div>
 
-    <div class="card card-ecmis mb-3">
+    <div class="ws-card mb-3">
       <div class="card-body pb-1" id="stepper"></div>
     </div>
 
-    <div class="row g-3">
-      <div class="col-xl-6">
-        <div class="card card-ecmis mb-3">
+    <div class="document-workspace" id="docWorkspace">
+      <div>
+        <div class="ws-card mb-3">
           <div class="card-header" id="stepCardHeader"><i class="fa-solid fa-bolt"></i> <span id="stepCardTitle"></span></div>
           <div class="card-body" id="stepCardBody"></div>
         </div>
       </div>
 
-      <div class="col-xl-6">
-        <div style="position:sticky;top:calc(var(--topbar-h) + 14px)">
-          <div class="doc-pane">
-            <div class="doc-toolbar">
-              <span class="name"><i class="fa-solid fa-file-word"></i> หนังสือขอบรรจุวาระการประชุมด่วน
-                <span class="badge-tpl">Mail-Merge</span></span>
-              <button class="btn btn-sm btn-light" onclick="window.print()"><i class="fa-solid fa-print"></i></button>
-            </div>
-            <div class="doc-paper doc-resolution" id="docPaper"></div>
-          </div>
+      <aside class="ws-doc-pane" style="top:calc(var(--topbar-h) + 14px)">
+        <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
+        <div class="ws-doc-toolbar">
+          <span class="name"><i class="fa-solid fa-file-word"></i> หนังสือขอบรรจุวาระการประชุมด่วน
+            <span class="badge-tpl">Mail-Merge</span></span>
+          <button class="btn btn-sm btn-light" onclick="window.print()" title="พิมพ์เฉพาะเอกสาร Preview"><i class="fa-solid fa-print"></i></button>
+          <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
         </div>
-      </div>
+        <div class="ws-paper-stage">
+          <div class="doc-paper doc-resolution a4-paper" id="docPaper"></div>
+        </div>
+      </aside>
     </div>
 
     <div id="actionBarSlot"></div>
@@ -134,6 +135,17 @@
 
     <div class="doc-secret-foot">ลับ</div>`;
     }
+
+    /* ---------- Document workspace: collapsible pane ---------- */
+    const docWorkspace = document.getElementById('docWorkspace');
+    const PANE_KEY = 'ecmis-urgent-agenda-docpane-collapsed';
+    function setPaneCollapsed(collapsed) {
+      docWorkspace.classList.toggle('pane-collapsed', collapsed);
+      localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
+    }
+    if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
+    document.getElementById('btnPaneCollapse').addEventListener('click', () => setPaneCollapsed(true));
+    document.getElementById('btnPaneExpand').addEventListener('click', () => setPaneCollapsed(false));
 
     renderStepCard();
     renderDoc();

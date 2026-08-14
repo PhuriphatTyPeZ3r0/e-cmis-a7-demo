@@ -426,6 +426,20 @@ body.sidebar-collapsed .sidebar-user-chip-text{ display:none; }
 .doc-paper *, .doc-pane * {
   font-family: 'THSarabunIT9', 'TH Sarabun New', 'Sarabun', sans-serif !important;
 }
+/* คืนฟอนต์ไอคอนให้ปุ่ม/สัญลักษณ์ต่างๆ ใน .doc-pane/.ws-doc-pane/.doc-paper (พิมพ์/.docx/ย่อแผง/แถบแก้ไข/ตราครุฑ ฯลฯ)
+   เพราะกฎด้านบนทับ font-family ของ Font Awesome ทิ้งไป — .ws-doc-pane คือ class จาก a4-ecmis-workspace.css
+   ที่แทนที่ .doc-pane เดิมในหน้าที่ migrate แล้ว */
+.doc-pane .fa-solid, .doc-pane .fa-regular, .doc-pane .fas, .doc-pane .far,
+.ws-doc-pane .fa-solid, .ws-doc-pane .fa-regular, .ws-doc-pane .fas, .ws-doc-pane .far,
+.doc-paper .fa-solid, .doc-paper .fa-regular, .doc-paper .fas, .doc-paper .far {
+  font-family: 'Font Awesome 6 Free' !important;
+}
+.doc-pane .fa-solid, .doc-pane .fas,
+.ws-doc-pane .fa-solid, .ws-doc-pane .fas,
+.doc-paper .fa-solid, .doc-paper .fas { font-weight: 900 !important; }
+.doc-pane .fa-regular, .doc-pane .far,
+.ws-doc-pane .fa-regular, .ws-doc-pane .far,
+.doc-paper .fa-regular, .doc-paper .far { font-weight: 400 !important; }
 .doc-paper .doc-secret{ text-align:right; font-weight:700; color:#DB2626; letter-spacing:2px; font-size:16px; }
 .doc-paper .doc-title{ text-align:center; font-weight:700; font-size:20px; line-height:1.6; margin:14px 0 4px; }
 .doc-paper .doc-sub{ text-align:center; font-size:16px; margin-bottom:16px; }
@@ -466,6 +480,71 @@ body.sidebar-collapsed .sidebar-user-chip-text{ display:none; }
   line-height:1.4; margin:2px 0; }
 .doc-paper.doc-resolution .doc-run-page{ font-size:16pt; font-weight:400; text-align:center; margin-bottom:10px; }
 .mergefield.empty{ background:#FDE2E2; border-bottom-color:#DB2626; color:#991A1A; }
+
+/* ---------- Document workspace pattern (collapsible pane + rich-text edit mode) ----------
+   Ported from E-CMIS-A4 document-workspace-ui-pattern.md, scoped to new classes only
+   so it never touches the shared .doc-pane/.doc-toolbar/.doc-paper-wrap rules above. */
+.docws-col{ transition:flex .28s ease, max-width .28s ease; }
+.docws-collapsed .doc-pane-body,
+.docws-collapsed .doc-toolbar{ opacity:0; visibility:hidden; pointer-events:none; }
+.docws-collapsed{ width:44px !important; flex:0 0 44px !important; max-width:44px !important; overflow:hidden; }
+.row:has(> .docws-collapsed) > .docws-col:not(.docws-collapsed){
+  width:calc(100% - 60px) !important; flex:0 0 calc(100% - 60px) !important; max-width:calc(100% - 60px) !important;
+}
+.doc-pane-toggle{
+  display:grid; place-items:center; width:28px; height:28px; flex:none;
+  border:1px solid #c9d3dd; border-radius:8px; background:#f7f9fb; color:#44586c; cursor:pointer;
+}
+.doc-pane-toggle:hover{ background:#eef2f6; }
+.doc-pane-rail{ display:none; }
+.docws-collapsed .doc-pane-rail{
+  display:flex; flex-direction:column; align-items:center; gap:.5rem;
+  width:44px; min-height:130px; padding:.65rem .3rem; margin-top:calc(var(--topbar-h) + 14px);
+  border:1px solid var(--border-default,#dce3e9); border-radius:12px; background:#fff; cursor:pointer;
+}
+.doc-pane-rail span{ writing-mode:vertical-rl; font-size:.68rem; font-weight:700; letter-spacing:.16em; color:#44586c; }
+
+.doc-edit-host{ position:relative; }
+.doc-edit-fab{
+  position:fixed; right:2.1rem; bottom:1.4rem; z-index:1030;
+  display:inline-flex; align-items:center; gap:.4rem;
+  padding:.55rem .95rem; border:1px solid #c9d6e8; border-radius:999px;
+  background:#fff; color:var(--ecmis-navy); font-weight:600; font-size:.82rem; cursor:pointer;
+  box-shadow:0 3px 12px rgba(11,58,111,.18); transition:background .18s,color .18s,border-color .18s;
+}
+.doc-edit-fab.active{ background:linear-gradient(135deg,var(--ecmis-navy),var(--ecmis-navy-2)); color:#fff; border-color:var(--ecmis-navy); }
+.doc-edit-bar{
+  position:sticky; top:calc(var(--topbar-h) + 8px); z-index:20; margin:0 0 10px;
+  display:none; align-items:center; gap:.2rem; flex-wrap:wrap;
+  padding:.32rem .55rem; border:1px solid #c9d6e8; border-radius:8px;
+  background:rgba(255,255,255,.97); box-shadow:0 3px 14px rgba(11,58,111,.12);
+}
+.doc-edit-bar.show{ display:inline-flex; }
+.doc-edit-bar button{ width:28px; height:26px; border:0; border-radius:6px; background:transparent; color:var(--ecmis-navy); cursor:pointer; }
+.doc-edit-bar button:hover{ background:#e8eff7; }
+.doc-edit-bar select{ font-size:.72rem; padding:.2rem .35rem; border:1px solid #c9d3dd; border-radius:6px; }
+.doc-edit-bar-sep{ width:1px; height:16px; background:#d5dde4; margin:0 .25rem; }
+.doc-paper[contenteditable="true"]{ outline:1px dashed #4a90d9; cursor:text; }
+@media print{ .doc-edit-fab, .doc-edit-bar, .doc-pane-toggle, .doc-pane-rail{ display:none !important; } }
+
+/* ---------- ช่องข้อความยืดหยุ่น (rich-text) ใช้กับฟอร์มฝั่งซ้าย เช่น "พฤติการณ์คดี" ---------- */
+.rtf-toolbar{
+  display:flex; align-items:center; gap:.1rem; margin-bottom:0;
+  padding:.25rem .4rem; border:1px solid #ced4da; border-bottom:0; border-radius:6px 6px 0 0;
+  background:#f7f9fb;
+}
+.rtf-toolbar button{ width:26px; height:24px; border:0; border-radius:4px; background:transparent; color:var(--ecmis-navy); cursor:pointer; font-size:.78rem; }
+.rtf-toolbar button:hover{ background:#e8eff7; }
+.rtf-toolbar .rtf-sep{ width:1px; height:16px; background:#d5dde4; margin:0 .3rem; }
+.rtf-box{
+  min-height:140px; max-height:360px; overflow:auto;
+  padding:.55rem .75rem; border:1px solid #ced4da; border-radius:0 0 6px 6px;
+  background:#fff; font-size:.92rem; line-height:1.65; color:#212529;
+}
+.rtf-box:focus{ outline:none; box-shadow:inset 0 0 0 1px #9bb3c8; }
+.rtf-box p{ margin:0 0 .6em; }
+.rtf-box p:last-child{ margin-bottom:0; }
+.rtf-box:empty::before{ content:attr(data-placeholder); color:#9aa4b5; }
 
 .doc-toolbar {
   display: flex;
@@ -545,12 +624,76 @@ table.tbl-ecmis tbody tr.selected{ background:var(--table-row-selected); }
   .action-bar{ margin:22px -22px -60px; }
 }
 
-@page{ size: A4; margin: 20mm; }
+@page{ size: A4 portrait; margin: 12mm; }
 @media print{
-  .app-topbar,.app-sidebar,.action-bar,.doc-toolbar,.no-print{ display:none !important; }
-  .app-main{ margin:0; padding:0; }
-  .doc-pane{ background:#fff; padding:0; max-height:none; }
-  .doc-paper{ box-shadow:none; padding:0; max-width:none; aspect-ratio:auto; }
+  .app-topbar, .app-sidebar, .action-bar, .doc-toolbar, .no-print, .no-print-temp,
+  .a11y-bar, .page-head, .breadcrumb, .nav-tabs, .btn, .card-header,
+  .rule-panel, .law-note, .warn-note, .val-msg, .cmd-palette-backdrop,
+  .quick-switcher, .role-switcher, .filter-chip-bar, .flow-stepper {
+    display: none !important;
+  }
+
+  body.printing-doc-only .app-main > *:not(.row),
+  body:has(.doc-pane) .app-main > *:not(.row),
+  body:has(.doc-paper) .app-main > *:not(.row) {
+    display: none !important;
+  }
+
+  body.printing-doc-only .row,
+  body:has(.doc-pane) .row,
+  body:has(.doc-paper) .row {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  body.printing-doc-only .row > *,
+  body:has(.doc-pane) .row > *:has(.doc-pane),
+  body:has(.doc-paper) .row > *:has(.doc-paper) {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    position: static !important;
+  }
+
+  body:has(.doc-pane) .row > *:not(:has(.doc-pane)),
+  body:has(.doc-paper) .row > *:not(:has(.doc-paper)) {
+    display: none !important;
+  }
+
+  .app-main { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+
+  .doc-pane {
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-height: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    position: static !important;
+    overflow: visible !important;
+  }
+
+  .doc-paper-wrap {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    overflow: visible !important;
+  }
+
+  .doc-paper {
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    border: none !important;
+    background: #fff !important;
+    color: #000 !important;
+    aspect-ratio: auto !important;
+  }
 }
 
 .card-ecmis, .app-sidebar .nav-link, .btn, .st, .sla, .role-switcher .btn {

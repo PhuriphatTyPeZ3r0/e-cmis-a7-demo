@@ -68,14 +68,14 @@ const ROLES = [
     name:'นางวิไล ธุรการ', org:'กองบริหารคดี', lane:'L3', flow:'S5', act:'7.1',
     perms:['view.all','download','intake.route'] },
 
-  { id:'owner', login:'Somchai.J', row:17, group:'กอง / สนง. ป.ป.ท. เขต', title:'ผู้รับผิดชอบสำนวน / พนักงาน ป.ป.ท. (นักสืบ)',
-    name:'นายสมชาย ใจซื่อ', org:'สนง. ป.ป.ท. เขต 1', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2, 7.3', scope:'UPSTREAM',
+  { id:'owner', login:'Somchai.J', row:17, group:'กอง / สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต', title:'ผู้รับผิดชอบสำนวน / พนักงาน ป.ป.ท. (นักสืบ)',
+    name:'นายสมชาย ใจซื่อ', org:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2, 7.3', scope:'UPSTREAM',
     perms:['view.own','download.own','ack.resolution','urgent.request','present.board.ruling','dispatch.nacc'] },
-  { id:'section_head', login:'Kanjana.W', row:18, group:'กอง / สนง. ป.ป.ท. เขต', title:'หัวหน้ากลุ่มงาน (นสส. / ชพ.)',
-    name:'นางกาญจนา วงศ์ธรรม', org:'สนง. ป.ป.ท. เขต 1', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2', scope:'UPSTREAM',
+  { id:'section_head', login:'Kanjana.W', row:18, group:'กอง / สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต', title:'หัวหน้ากลุ่มงาน (นสส. / ชพ.)',
+    name:'นางกาญจนา วงศ์ธรรม', org:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2', scope:'UPSTREAM',
     perms:['view.own','download.own'] },
-  { id:'director', login:'Prasert.M', row:19, group:'กอง / สนง. ป.ป.ท. เขต', title:'ผอ.กอง / ผอ.สนง. ป.ป.ท. เขต',
-    name:'นายประเสริฐ มั่นคง', org:'สนง. ป.ป.ท. เขต 1', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2, 7.3', scope:'UPSTREAM',
+  { id:'director', login:'Prasert.M', row:19, group:'กอง / สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต', title:'ผอ.กอง / ผอ.สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต',
+    name:'นายประเสริฐ มั่นคง', org:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2, 7.3', scope:'UPSTREAM',
     perms:['view.own','download.own','urgent.endorse'] },
 
   { id:'chair_office', login:'Sunee.T', row:23, group:'สำนักงานเลขาธิการ', title:'หน้าห้องประธานกรรมการ ป.ป.ท.',
@@ -166,7 +166,7 @@ const PERM_DEFS = [
   { k:'ack.resolution',cat:'ปลายน้ำ',   label:'บันทึกรับมติในระบบ' },
   { k:'urgent.request',cat:'ปลายน้ำ',   label:'ยื่นใบด่วนขอบรรจุวาระ' },
   { k:'urgent.endorse',cat:'ปลายน้ำ',   label:'เห็นชอบใบด่วนเบื้องต้นก่อนส่ง ผอ.กบค.' },
-  { k:'dispatch.resolution',cat:'ปลายน้ำ',label:'ส่งมติคืนกอง / สนง. ป.ป.ท. เขต' },
+  { k:'dispatch.resolution',cat:'ปลายน้ำ',label:'ส่งมติคืนกอง / สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต' },
   { k:'dispatch.nacc', cat:'ปลายน้ำ',   label:'ทำหนังสือนำส่งสำนวนถึง ป.ป.ช.' },
   { k:'track.discipline',cat:'ปลายน้ำ', label:'ติดตามผลการดำเนินการทางวินัย (เชื่อม กจ.8)' },
   { k:'intake.screen', cat:'ปลายน้ำ',   label:'ลงรับและคัดกรองสำนวนอิเล็กทรอนิกส์' },
@@ -241,128 +241,128 @@ const STATUS = {
 const TRANSITIONS = [
 
   { from:'PENDING_SECGEN', to:'IN_SUPPORT_SUB', event:'SIGN_COMPLEX', actor:'secgen',
-    ref:'S1→G1→T6', guard:k => g1Triggers(k).required,
-    note:'G1 = ใช่ (ซับซ้อน หรือความเห็นในสายบังคับบัญชาไม่ตรงกัน)' },
+    ref:'เสนอเลขาธิการฯ', guard:k => g1Triggers(k).required,
+    note:'สำนวนซับซ้อน หรือความเห็นในสายบังคับบัญชาไม่ตรงกัน' },
   { from:'PENDING_SECGEN', to:'PENDING_URGENT', event:'SIGN_URGENT', actor:'secgen',
-    ref:'S1→G1→G3→T7', guard:k => !g1Triggers(k).required && !!k.urgent,
-    note:'G1 = ไม่ใช่ และ G3 = มีใบด่วน' },
+    ref:'เสนอขอเพิ่มวาระด่วน', guard:k => !g1Triggers(k).required && !!k.urgent,
+    note:'กรณีไม่ใช่เรื่องซับซ้อน และมีใบด่วน' },
   { from:'PENDING_SECGEN', to:'PENDING_CHAIR_OF', event:'SIGN_NORMAL', actor:'secgen',
-    ref:'S1→G1→G3→T8', guard:k => !g1Triggers(k).required && !k.urgent,
-    note:'G1 = ไม่ใช่ และ G3 = ไม่มีใบด่วน' },
+    ref:'เสนอตามขั้นตอนปกติ', guard:k => !g1Triggers(k).required && !k.urgent,
+    note:'กรณีไม่ใช่เรื่องซับซ้อน และไม่มีใบด่วน' },
   { from:'PENDING_SECGEN', to:'RETURNED', event:'RETURN_TO_SOURCE', actor:'secgen',
-    ref:'EX-01', note:'ส่งคืนออกนอกกิจกรรมที่ 7 กลับสายงานต้นทาง (กจ.5)' },
+    ref:'ส่งคืนสายงานต้นทาง', note:'ส่งคืนเรื่องกลับสายงานต้นทาง' },
 
   { from:'IN_SUPPORT_SUB', to:'PENDING_CHAIR_OF', event:'SUPPORT_ALIGNED', actor:'support_sub',
-    ref:'T6→G2→T8', note:'ความเห็นสอดคล้อง → Bypass ข้ามอนุกลั่นกรองฯ 1-8' },
+    ref:'อนุกรรมการฯ เห็นชอบตามเสนอ', note:'ความเห็นสอดคล้อง — เสนอประธานฯ สั่งการ' },
   { from:'IN_SUPPORT_SUB', to:'PENDING_URGENT', event:'SUPPORT_DIVERGED_URGENT', actor:'support_sub',
-    ref:'T6→G2→G3→T7', guard:k => !!k.urgent,
-    note:'ไม่สอดคล้อง → กลับเข้าเส้นทางปกติที่ G3 และมีใบด่วน' },
+    ref:'อนุกรรมการฯ เห็นชอบวาระด่วน', guard:k => !!k.urgent,
+    note:'ความเห็นไม่ตรงกัน — เสนอพิจารณาวาระด่วน' },
   { from:'IN_SUPPORT_SUB', to:'PENDING_CHAIR_OF', event:'SUPPORT_DIVERGED', actor:'support_sub',
-    ref:'T6→G2→G3→T8', guard:k => !k.urgent, note:'ไม่สอดคล้อง และไม่มีใบด่วน' },
+    ref:'อนุกรรมการฯ เห็นชอบวาระปกติ', guard:k => !k.urgent, note:'ความเห็นไม่ตรงกัน — เสนอเข้าการกลั่นกรองปกติ' },
 
   { from:'PENDING_URGENT', to:'PENDING_CHAIR_OF', event:'URGENT_CERTIFY', actor:'dir_case',
-    ref:'T7→T8', note:'ผอ.กบค. ลงนามรับรองเหตุผลเร่งด่วน' },
+    ref:'รับรองเหตุผลเร่งด่วน', note:'ผอ.กบค. ลงนามรับรองเหตุผลเร่งด่วน' },
   { from:'PENDING_URGENT', to:'IN_SCREENING', event:'URGENT_REJECT', actor:'dir_case',
-    ref:'EX-09 A', note:'ไม่รับรองใบด่วน → ตัดสิทธิ์ Bypass บังคับกลับเส้นทางปกติที่ T9' },
+    ref:'ไม่รับรองเหตุผลเร่งด่วน', note:'ไม่รับรองใบด่วน — ปรับเข้าสู่เส้นทางกลั่นกรองปกติ' },
 
   { from:'PENDING_CHAIR_OF', to:'PENDING_CHAIRMAN', event:'INTAKE_SCREEN', actor:'chair_office',
-    ref:'T8→G4' },
+    ref:'เสนอประธานฯ สั่งการ' },
   { from:'PENDING_CHAIRMAN', to:'IN_SCREENING', event:'ORDER_SCREENING', actor:'chairman',
-    ref:'G4→T9', note:'สั่งส่งกลั่นกรองตามปกติ' },
+    ref:'ประธานฯ สั่งส่งกลั่นกรอง', note:'สั่งส่งกลั่นกรองตามปกติ' },
   { from:'PENDING_CHAIRMAN', to:'AGENDA_SET', event:'ORDER_AGENDA_URGENT', actor:'chairman',
-    ref:'G4→T11', guard:k => !!k.urgentCertified,
+    ref:'ประธานฯ สั่งบรรจุวาระด่วน', guard:k => !!k.urgentCertified,
     note:'สั่งบรรจุวาระด่วน — ต้องมีลายเซ็นรับรองของ ผอ.กบค. ก่อนเท่านั้น' },
 
   { from:'IN_SCREENING', to:'AGENDA_SET', event:'SCREENING_RESOLVED', actor:'subcommittee',
-    ref:'T10→T11→T12' },
+    ref:'กลั่นกรองแล้วเสร็จ' },
 
   { from:'AGENDA_SET', to:'IN_MEETING', event:'OPEN_AGENDA', actor:'board_sec',
-    ref:'T13' },
+    ref:'เปิดการประชุม' },
   { from:'IN_MEETING', to:'RESOLVED_PENDING', event:'RECORD_RESOLUTION', actor:'board_sec',
-    ref:'T14→G5', guard:k => !!k.quorumOk,
-    note:'EX-04 — องค์ประชุมไม่ครบ ระบบต้องบล็อกการบันทึกมติ' },
+    ref:'บันทึกมติที่ประชุม', guard:k => !!k.quorumOk,
+    note:'องค์ประชุมไม่ครบ ระบบต้องบล็อกการบันทึกมติ' },
   { from:'IN_MEETING', to:'DEFERRED', event:'DEFER_AGENDA', actor:'board_sec',
-    ref:'EX-03 X3.2', note:'เลื่อน/ถอนวาระ — ต้องปิดเลขวาระเดิม' },
+    ref:'ถอน/เลื่อนวาระ', note:'เลื่อน/ถอนวาระ — ต้องปิดเลขวาระเดิม' },
   { from:'DEFERRED', to:'AGENDA_SET', event:'REAGENDA', actor:'affairs',
-    ref:'EX-03→T12', guard:k => !!k.newAgendaNo,
+    ref:'บรรจุวาระใหม่', guard:k => !!k.newAgendaNo,
     note:'กลับเข้าประชุมต้องได้เลขวาระใหม่เสมอ' },
 
   { from:'RESOLVED_PENDING', to:'RESOLVED', event:'LOCK_PDF', actor:'board_sec',
-    ref:'T14', guard:k => can('EDIT.MASTER', k.actorRoleId) || !k.actorRoleId,
+    ref:'อนุมัติมติที่ประชุม', guard:k => can('EDIT.MASTER', k.actorRoleId) || !k.actorRoleId,
     note:'ล็อกไฟล์ PDF — แก้ไขได้เฉพาะ 7 คนที่มีสิทธิ์ EDIT.MASTER' },
   { from:'RESOLVED', to:'DISPATCHING', event:'DISPATCH_EXTERNAL', actor:'owner',
-    ref:'G5 มติ 3', guard:k => k.resolution === 'FORWARD' && !!k.forwardTo &&
+    ref:'ส่งเรื่องหน่วยงานภายนอก', guard:k => k.resolution === 'FORWARD' && !!k.forwardTo &&
                                (forwardTarget(k.forwardTo) || {}).external === true,
     note:'ปลายทางนอกองค์กรเท่านั้นที่ต้องรอไฟล์สแกนฉบับลงนามกลับ' },
 
   { from:'DISPATCHING', to:'CLOSED', event:'UPLOAD_SIGNED_SCAN', actor:'owner',
-    ref:'TOR 7.2.1.5 · ม.18/1',
+    ref:'ระเบียบการคัดสำเนาและอัปโหลดฉบับลงนาม · ม.18/1',
     guard:k => !!k.signedScanUploaded &&
                (!(forwardTarget(k.forwardTo) || {}).requireArchiveCopy || !!k.archiveCopyKept),
     note:'ต้องอัปโหลดไฟล์สแกนฉบับลงนาม และ (ถ้าปลายทางบังคับ) ต้องคัดสำเนาสำนวนเก็บไว้เป็นหลักฐานตาม ม.18/1' },
   { from:'RESOLVED', to:'CLOSED', event:'CLOSE_CASE', actor:'owner',
-    ref:'G5 มติ 1/2', note:'รับไว้ไต่สวน (ยิงกลับ กจ.5) หรือไม่รับไว้ไต่สวน (ปิดสำนวน)' },
+    ref:'บันทึกมติการไต่สวน', note:'รับไว้ไต่สวน (ยิงกลับ กจ.5) หรือไม่รับไว้ไต่สวน (ปิดสำนวน)' },
   { from:'RESOLVED', to:'AGENDA_SET', event:'REVISE_RESOLUTION', actor:'affairs',
-    ref:'EX-03 X3.3', guard:k => !!k.newAgendaNo,
+    ref:'ขอทบทวนมติ', guard:k => !!k.newAgendaNo,
     note:'ขอแก้ไข/ทบทวนมติ — มติเดิมไม่ถูกลบ ผูกคู่กับมติใหม่' },
 
   { from:'CLOSED', to:'PENDING_SECTION_72', event:'SUBMIT_RULING_REPORT', actor:'owner',
-    ref:'7.2-A', guard:k => k.resolution === 'ACCEPT_S24P1' || k.resolution === 'ACCEPT_S24P3',
+    ref:'เสนอรายงานไต่สวนชี้มูล', guard:k => k.resolution === 'ACCEPT_S24P1' || k.resolution === 'ACCEPT_S24P3',
     note:'คณะไต่สวน/คณะพนักงานไต่สวนตาม ม.24 เสนอรายงานการไต่สวนวินิจฉัยชี้มูล' },
 
-  { from:'PENDING_SECTION_72', to:'PENDING_DIRECTOR_72', event:'PROPOSE_72', actor:'section_head', ref:'7.2-02' },
-  { from:'PENDING_SECTION_72', to:'RETURNED_72', event:'RETURN_72', actor:'section_head', ref:'7.2-02 EX' },
-  { from:'PENDING_DIRECTOR_72', to:'PENDING_DEPUTY_72', event:'PROPOSE_72', actor:'director', ref:'7.2-02' },
-  { from:'PENDING_DIRECTOR_72', to:'RETURNED_72', event:'RETURN_72', actor:'director', ref:'7.2-02 EX' },
-  { from:'PENDING_DEPUTY_72', to:'PENDING_SECGEN_72', event:'PROPOSE_72', actor:'deputy', ref:'7.2-02' },
-  { from:'PENDING_DEPUTY_72', to:'RETURNED_72', event:'RETURN_72', actor:'deputy', ref:'7.2-02 EX' },
-  { from:'RETURNED_72', to:'PENDING_SECTION_72', event:'RESUBMIT_72', actor:'owner', ref:'7.2-02 EX' },
+  { from:'PENDING_SECTION_72', to:'PENDING_DIRECTOR_72', event:'PROPOSE_72', actor:'section_head', ref:'เสนอตามลำดับชั้น' },
+  { from:'PENDING_SECTION_72', to:'RETURNED_72', event:'RETURN_72', actor:'section_head', ref:'ส่งคืนเสนอตามลำดับชั้น' },
+  { from:'PENDING_DIRECTOR_72', to:'PENDING_DEPUTY_72', event:'PROPOSE_72', actor:'director', ref:'เสนอตามลำดับชั้น' },
+  { from:'PENDING_DIRECTOR_72', to:'RETURNED_72', event:'RETURN_72', actor:'director', ref:'ส่งคืนเสนอตามลำดับชั้น' },
+  { from:'PENDING_DEPUTY_72', to:'PENDING_SECGEN_72', event:'PROPOSE_72', actor:'deputy', ref:'เสนอตามลำดับชั้น' },
+  { from:'PENDING_DEPUTY_72', to:'RETURNED_72', event:'RETURN_72', actor:'deputy', ref:'ส่งคืนเสนอตามลำดับชั้น' },
+  { from:'RETURNED_72', to:'PENDING_SECTION_72', event:'RESUBMIT_72', actor:'owner', ref:'ส่งคืนแก้ไขและเสนอใหม่' },
 
   { from:'PENDING_SECGEN_72', to:'IN_SUPPORT_SUB_72', event:'SIGN_COMPLEX_72', actor:'secgen',
-    ref:'7.2-03 · Cb-60', guard:k => !!k.complex72,
+    ref:'เสนอสำนวนซับซ้อน', guard:k => !!k.complex72,
     note:'สำนวนมีประเด็นซับซ้อนยุ่งยาก — เข้าคณะอนุกรรมการสนับสนุนเลขาธิการฯ ก่อน' },
   { from:'PENDING_SECGEN_72', to:'PENDING_URGENT_72', event:'SIGN_URGENT_72', actor:'secgen',
-    ref:'7.2-03→7.2-05', guard:k => !k.complex72 && !!k.urgent72 },
+    ref:'เสนอขอเพิ่มวาระด่วน', guard:k => !k.complex72 && !!k.urgent72 },
   { from:'PENDING_SECGEN_72', to:'IN_SCREENING_72', event:'SIGN_NORMAL_72', actor:'secgen',
-    ref:'7.2-03→7.2-06', guard:k => !k.complex72 && !k.urgent72 },
+    ref:'เสนอเข้าการกลั่นกรองปกติ', guard:k => !k.complex72 && !k.urgent72 },
   { from:'IN_SUPPORT_SUB_72', to:'PENDING_URGENT_72', event:'SUPPORT_DONE_URGENT_72', actor:'support_sub',
-    ref:'7.2-04→7.2-05', guard:k => !!k.urgent72 },
+    ref:'เห็นชอบวาระด่วน', guard:k => !!k.urgent72 },
   { from:'IN_SUPPORT_SUB_72', to:'IN_SCREENING_72', event:'SUPPORT_DONE_72', actor:'support_sub',
-    ref:'7.2-04→7.2-06', guard:k => !k.urgent72 },
+    ref:'เห็นชอบวาระปกติ', guard:k => !k.urgent72 },
 
   { from:'PENDING_URGENT_72', to:'PENDING_CHAIRMAN_URGENT_72', event:'URGENT_CERTIFY_72', actor:'dir_case',
-    ref:'7.2-05', note:'ผอ.กบค. รับรองเหตุผลเร่งด่วน' },
+    ref:'รับรองเหตุผลเร่งด่วน', note:'ผอ.กบค. รับรองเหตุผลเร่งด่วน' },
   { from:'PENDING_CHAIRMAN_URGENT_72', to:'PENDING_INVITE_72', event:'AGENDA_URGENT_72', actor:'chairman',
-    ref:'7.2-05→7.2-07', note:'ประธานฯ ลงนามมอบหมาย/บรรจุวาระด่วน — Bypass 7.2-06' },
+    ref:'ลงนามบรรจุวาระด่วน', note:'ประธานฯ ลงนามมอบหมาย/บรรจุวาระด่วน — ข้ามขั้นตอนการกลั่นกรอง' },
 
   { from:'IN_SCREENING_72', to:'PENDING_INVITE_72', event:'SCREEN_DONE_72', actor:'subcommittee',
-    ref:'7.2-06→7.2-07' },
+    ref:'กลั่นกรองและบรรจุวาระ' },
 
-  { from:'PENDING_INVITE_72', to:'IN_MEETING_72', event:'OPEN_MEETING_72', actor:'board_sec', ref:'7.2-07→7.2-08' },
+  { from:'PENDING_INVITE_72', to:'IN_MEETING_72', event:'OPEN_MEETING_72', actor:'board_sec', ref:'เปิดการประชุม' },
   { from:'IN_MEETING_72', to:'RESOLVED_PENDING_72', event:'RECORD_RESOLUTION_72', actor:'board_sec',
-    ref:'7.2-08', guard:k => !!k.quorumOk72,
-    note:'องค์ประชุมไม่ครบ ระบบต้องบล็อกการบันทึกมติ (เช่นเดียวกับ 7.1 T14→G5)' },
+    ref:'บันทึกมติที่ประชุม', guard:k => !!k.quorumOk72,
+    note:'องค์ประชุมไม่ครบ ระบบต้องบล็อกการบันทึกมติ (เช่นเดียวกับชั้นไต่สวนเบื้องต้น)' },
 
-  { from:'RESOLVED_PENDING_72', to:'PENDING_SIGN_RULING_72', event:'DRAFT_RULING_72', actor:'affairs', ref:'7.2-09' },
+  { from:'RESOLVED_PENDING_72', to:'PENDING_SIGN_RULING_72', event:'DRAFT_RULING_72', actor:'affairs', ref:'ร่างรายงานวินิจฉัยชี้มูล' },
   { from:'PENDING_SIGN_RULING_72', to:'PENDING_SECTION_72', event:'SIGN_MORE_INVESTIGATE_72', actor:'chairman',
-    ref:'7.2-09 · ม.24 วรรคท้าย', guard:k => k.resolution72 === 'MORE_INVESTIGATE_72',
+    ref:'สั่งไต่สวนเพิ่มเติม · ม.24 วรรคท้าย', guard:k => k.resolution72 === 'MORE_INVESTIGATE_72',
     note:'"จะสั่งให้ไต่สวนเพิ่มเติม หรือจะไต่สวนเองใหม่ทั้งหมดหรือบางส่วนก็ได้" — วนกลับเข้าสายอนุมัติใหม่ทั้งสาย (round72++)' },
   { from:'PENDING_SIGN_RULING_72', to:'PENDING_AREA_NOTICE_72', event:'SIGN_NO_MERIT_72', actor:'chairman',
-    ref:'7.2-09→7.2-10 · ม.32', guard:k => k.resolution72 === 'NO_MERIT_72' },
+    ref:'ข้อกล่าวหาไม่มีมูล · ม.32', guard:k => k.resolution72 === 'NO_MERIT_72' },
   { from:'PENDING_SIGN_RULING_72', to:'DISPATCHING_NACC_72', event:'SIGN_FORWARD_NACC_72', actor:'chairman',
-    ref:'7.2-09→7.2-11 · ม.19(ข)(1)', guard:k => k.resolution72 === 'FORWARD_NACC' },
+    ref:'ส่งเรื่องให้ ป.ป.ช. · ม.19(ข)(1)', guard:k => k.resolution72 === 'FORWARD_NACC' },
   { from:'PENDING_SIGN_RULING_72', to:'PENDING_DISPATCH_GUILTY_72', event:'SIGN_GUILTY_72', actor:'chairman',
-    ref:'7.2-09→7.2-11 · ม.17(3)(4)·ม.38·ม.44', guard:k => k.resolution72 === 'GUILTY_72' },
+    ref:'วินิจฉัยชี้มูลความผิด · ม.17(3)(4)·ม.38·ม.44', guard:k => k.resolution72 === 'GUILTY_72' },
 
   { from:'PENDING_AREA_NOTICE_72', to:'CLOSED_72', event:'NOTICE_RECORDED_72', actor:'owner',
-    ref:'7.2-10 · ม.32', guard:k => !!k.noticeSentDate72,
+    ref:'แจ้งผลผู้ถูกกล่าวหา · ม.32', guard:k => !!k.noticeSentDate72,
     note:'บันทึกรับมติ + แจ้งผู้ถูกกล่าวหาแล้วไม่ช้ากว่า 15 วันนับแต่วันที่คณะกรรมการ ป.ป.ท. มีมติ' },
   { from:'DISPATCHING_NACC_72', to:'CLOSED_72', event:'NACC_DISPATCHED_72', actor:'owner',
-    ref:'7.2-11 · ม.19(ข)(1)', guard:k => !!k.signedScanUploaded72,
+    ref:'ส่งมอบสำนวนให้ ป.ป.ช. · ม.19(ข)(1)', guard:k => !!k.signedScanUploaded72,
     note:'ส่งเรื่องพร้อมสำนวนให้ ป.ป.ช. ภายใน 15 วันนับแต่วันที่ได้รับเรื่อง — ต้องอัปโหลดไฟล์สแกนฉบับนำส่งกลับ' },
 
   { from:'PENDING_DISPATCH_GUILTY_72', to:'CLOSED_72', event:'CLOSE_GUILTY_72', actor:'affairs',
-    ref:'7.2-11 · ม.38 · ม.44', guard:k => bothTracksDone72(k),
+    ref:'ส่งเรื่องดำเนินการทางอาญาและวินัย · ม.38·ม.44', guard:k => bothTracksDone72(k),
     note:'ปิดสำนวนได้เมื่อสายอาญา (ถ้ามี) ส่งอัยการแล้ว และสายวินัย (ถ้ามี) ส่งหน่วยงานต้นสังกัดแล้ว' }
 ];
 
@@ -399,13 +399,13 @@ const UPSTREAM_CHAIN = ['owner','section_head','director','deputy'];
 const APPROVAL_CHAIN = ['secgen'];
 
 const FLOW_STEPS = [
-  { key:'secgen',    label:'เลขาธิการฯ พิจารณา / ลงนาม', ref:'S1 · G1' },
-  { key:'urgent',    label:'ใบด่วน / ผอ.กบค.',           ref:'G3 · S3' },
-  { key:'chairman',  label:'ประธานฯ สั่งการ',            ref:'S4 · G4' },
-  { key:'screening', label:'อนุกลั่นกรองฯ 1–8',          ref:'S5 · S6' },
-  { key:'agenda',    label:'บรรจุวาระ',                 ref:'S7 · S8' },
-  { key:'resolution',label:'บอร์ดลงมติ',                ref:'S9 · G5' },
-  { key:'order',     label:'ออกคำสั่ง ม.24',             ref:'S11' }
+  { key:'secgen',    label:'เลขาธิการฯ พิจารณา / ลงนาม', ref:'เสนอเลขาธิการฯ' },
+  { key:'urgent',    label:'ใบด่วน / ผอ.กบค.',           ref:'รับรองเหตุผลเร่งด่วน' },
+  { key:'chairman',  label:'ประธานฯ สั่งการ',            ref:'ประธานฯ สั่งการ' },
+  { key:'screening', label:'อนุกลั่นกรองฯ 1–8',          ref:'อนุกรรมการกลั่นกรอง' },
+  { key:'agenda',    label:'บรรจุวาระ',                 ref:'บรรจุวาระการประชุม' },
+  { key:'resolution',label:'บอร์ดลงมติ',                ref:'คณะกรรมการลงมติ' },
+  { key:'order',     label:'ออกคำสั่ง ม.24',             ref:'ออกคำสั่ง' }
 ];
 
 const STATUS_STEP = {
@@ -542,15 +542,34 @@ const ACT7_SECTIONS = [
   { id: 4, name: 'Section 4: ขั้นตอนส่งออกและเสร็จสิ้น', shortName: 'Section 4', badgeCls: 'bg-success text-white', borderCls: 'border-success' }
 ];
 
+const RESOLUTION_STAGES = [
+  { n: 1, label: 'อยู่ระหว่างการจัดทำมติ' },
+  { n: 2, label: 'จัดทำมติแล้วเสร็จ' },
+  { n: 3, label: 'ส่งสำเนามติเพื่อจัดทำคำสั่ง' },
+  { n: 4, label: 'ส่งมติและเอกสารที่เกี่ยวข้องเพื่อทำความเห็นชี้มูล (กรณีชี้มูล)' },
+  { n: 5, label: 'ส่งมติและเอกสารที่เกี่ยวข้องคืนเจ้าของสำนวน/ผู้รับผิดชอบ' },
+  { n: 6, label: 'จัดทำรายงานประชุมแล้วเสร็จ' }
+];
+
+function resolutionStageLabel(n) {
+  const s = RESOLUTION_STAGES.find(x => x.n === n);
+  return s ? s.label : '';
+}
+
 const ACT7_STATUSES = [
 
-  { section: 1, name: 'รอเลขาธิการ ป.ป.ท. ลงความเห็น', icon: 'fa-user-pen' },
   { section: 1, name: 'อยู่ระหว่างกลั่นกรองโดยอนุกรรมการฯ', icon: 'fa-users-gear' },
   { section: 1, name: 'รอประธานอนุมัติบรรจุวาระ', icon: 'fa-user-tie' },
   { section: 1, name: 'บรรจุระเบียบวาระการประชุมแล้ว', icon: 'fa-calendar-check' },
 
   { section: 2, name: 'อยู่ระหว่างพิจารณาโดยคณะกรรมการ ป.ป.ท.', icon: 'fa-gavel' },
   { section: 2, name: 'บอร์ดมีมติแล้ว - รอจัดทำรายงานการประชุม', icon: 'fa-file-signature' },
+  { section: 2, name: 'อยู่ระหว่างการจัดทำมติ', icon: 'fa-file-pen' },
+  { section: 2, name: 'จัดทำมติแล้วเสร็จ', icon: 'fa-file-circle-check' },
+  { section: 2, name: 'ส่งสำเนามติเพื่อจัดทำคำสั่ง', icon: 'fa-copy' },
+  { section: 2, name: 'ส่งมติและเอกสารที่เกี่ยวข้องเพื่อทำความเห็นชี้มูล (กรณีชี้มูล)', icon: 'fa-file-shield' },
+  { section: 2, name: 'ส่งมติและเอกสารที่เกี่ยวข้องคืนเจ้าของสำนวน/ผู้รับผิดชอบ', icon: 'fa-share-from-square' },
+  { section: 2, name: 'จัดทำรายงานประชุมแล้วเสร็จ', icon: 'fa-file-circle-check' },
 
   { section: 3, name: 'บอร์ดมีมติรับไต่สวน - รอจัดทำคำสั่ง ม.24', icon: 'fa-file-shield' },
   { section: 3, name: 'อยู่ระหว่างเสนอลงนามคำสั่ง ม.24 วรรคแรก', icon: 'fa-file-pen' },
@@ -588,6 +607,10 @@ function getAct7Status(c) {
     return 'อยู่ระหว่างกลั่นกรองโดยอนุกรรมการฯ';
   }
   if (st === 'RESOLVED') {
+    if (c.resolutionStage && c.resolutionStage < 6) {
+      const stageLabel = resolutionStageLabel(c.resolutionStage);
+      if (stageLabel) return stageLabel;
+    }
     if (res === 'ACCEPT_S24P1' || res === 'ACCEPT') {
       if (c.order24Signed) return 'ส่งออกผลมติและคำสั่งเรียบร้อย';
       if (c.order24Drafted) return 'อยู่ระหว่างเสนอลงนามคำสั่ง ม.24 วรรคแรก';
@@ -612,7 +635,7 @@ function getAct7Status(c) {
     return 'บอร์ดมีมติแล้ว - รอจัดทำรายงานการประชุม';
   }
 
-  return 'รอเลขาธิการ ป.ป.ท. ลงความเห็น';
+  return 'ยังไม่เข้าสู่กิจกรรมที่ 7';
 }
 
 const ACT7_STATUSES_72 = [
@@ -661,7 +684,7 @@ const CASES = [
     subject:'กล่าวหาเจ้าหน้าที่องค์การบริหารส่วนตำบลแห่งหนึ่ง จัดซื้อจัดจ้างโครงการก่อสร้างถนน คสล. โดยมิชอบ',
     legalBase:'ม.18/4',
     status:'PENDING_SECGEN',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สนง. ป.ป.ท. เขต 1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'นายวิรัตน์ ศรีสุข (ผู้ร้อง)',
     accused:[
       { no:1, name:'นายก้องภพ ทองแท้',   pos:'นายกองค์การบริหารส่วนตำบล',   idcard:'3-1009-0xxxx-xx-x', agency:'อบต.บางแสน' },
@@ -692,7 +715,7 @@ const CASES = [
     subject:'กล่าวหาข้าราชการสังกัดกรมหนึ่ง เรียกรับเงินจากผู้ประกอบการเพื่อแลกกับการออกใบอนุญาต',
     legalBase:'ม.62',
     status:'PENDING_URGENT',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สนง. ป.ป.ท. เขต 1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'สำนักงาน ป.ป.ช. (ส่งเรื่องมอบหมาย)',
     accused:[ { no:1, name:'นายเอกชัย รุ่งเรือง', pos:'นายช่างโยธาชำนาญงาน', idcard:'3-1005-0xxxx-xx-x', agency:'กรมโยธาธิการฯ' } ],
     allegation:'เรียกรับเงินจำนวน 50,000 บาท จากผู้ประกอบการเพื่อแลกกับการเร่งรัดออกใบอนุญาตก่อสร้าง',
@@ -726,7 +749,7 @@ const CASES = [
     subject:'กล่าวหาผู้บริหารสถานศึกษาแห่งหนึ่ง จัดซื้อครุภัณฑ์คอมพิวเตอร์ราคาสูงเกินจริง',
     legalBase:'ม.18/4',
     status:'AGENDA_SET',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สนง. ป.ป.ท. เขต 1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'นายพิชิต รักชาติ (ผู้ร้อง)',
     accused:[ { no:1, name:'นายบัณฑิต ศึกษาดี', pos:'ผู้อำนวยการสถานศึกษา', idcard:'3-1102-0xxxx-xx-x', agency:'โรงเรียนแห่งหนึ่ง' } ],
     allegation:'อนุมัติจัดซื้อครุภัณฑ์คอมพิวเตอร์จำนวน 40 เครื่อง ในราคาสูงกว่าราคากลางที่กระทรวงดิจิทัลฯ กำหนด รวม 1,240,000 บาท',
@@ -742,7 +765,7 @@ const CASES = [
     subject:'กล่าวหาเจ้าหน้าที่สำนักงานที่ดินแห่งหนึ่ง ออกโฉนดที่ดินทับที่สาธารณประโยชน์',
     legalBase:'ม.62',
     status:'RESOLVED',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สนง. ป.ป.ท. เขต 1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'องค์การบริหารส่วนตำบลแห่งหนึ่ง',
     accused:[ { no:1, name:'นายมนตรี ที่ดินงาม', pos:'เจ้าพนักงานที่ดินชำนาญการ', idcard:'3-1201-0xxxx-xx-x', agency:'สนง.ที่ดินจังหวัด' } ],
     allegation:'ดำเนินการออกโฉนดที่ดินเลขที่ 12345 เนื้อที่ 8 ไร่ ทับที่สาธารณประโยชน์ โดยมิได้ตรวจสอบระวางแผนที่',
@@ -752,14 +775,15 @@ const CASES = [
     slaDays:1, slaLimit:15, subCommittee:'คณะที่ 2',
     meetingNo:'36/2569', agendaNo:'5.4', meetingDate:'2569-05-05',
     orderNo:'ปปท 31/2569',
-    resolution:'ACCEPT_S24P1', signedBySecgen: true, secgenSignedAt:'04 ส.ค. 2569'
+    resolution:'ACCEPT_S24P1', signedBySecgen: true, secgenSignedAt:'04 ส.ค. 2569',
+    resolutionStage: 2, resolvedAtIso: '2026-07-28T03:00:00.000Z'
   },
   {
     id:'1609/2568',
     subject:'กล่าวหาพนักงานรัฐวิสาหกิจแห่งหนึ่ง ทุจริตการเบิกจ่ายค่าน้ำมันเชื้อเพลิง',
     legalBase:'ม.18/4',
     status:'DRAFT',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สนง. ป.ป.ท. เขต 1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'ความปรากฏต่อสำนักงาน',
     accused:[ { no:1, name:'นายวีระ ขับขี่ดี', pos:'พนักงานขับรถยนต์', idcard:'3-1301-0xxxx-xx-x', agency:'รัฐวิสาหกิจแห่งหนึ่ง' } ],
     allegation:'เบิกจ่ายค่าน้ำมันเชื้อเพลิงโดยใช้ใบเสร็จรับเงินอันเป็นเท็จ',
@@ -774,7 +798,7 @@ const CASES = [
     subject:'กล่าวหาเจ้าหน้าที่เทศบาลแห่งหนึ่ง เรียกรับผลประโยชน์จากผู้ขออนุญาตประกอบกิจการ',
     legalBase:'ม.18/4',
     status:'RETURNED',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สนง. ป.ป.ท. เขต 1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'นางสมหญิง ค้าขาย (ผู้ร้อง)',
     accused:[ { no:1, name:'นายอรรถพล เทศบาล', pos:'หัวหน้าฝ่ายพัฒนารายได้', idcard:'3-1405-0xxxx-xx-x', agency:'เทศบาลแห่งหนึ่ง' } ],
     allegation:'เรียกรับเงินจากผู้ประกอบการเพื่อแลกกับการออกใบอนุญาตประกอบกิจการที่เป็นอันตรายต่อสุขภาพ',
@@ -783,7 +807,7 @@ const CASES = [
     urgent:false, complex:false, dupWarning:false,
     slaDays:4, slaLimit:5, subCommittee:null,
     meetingNo:null, agendaNo:null,
-    returnedBy:'director', returnedByName:'นายประเสริฐ มั่นคง (ผอ.สนง. ป.ป.ท. เขต 1)',
+    returnedBy:'director', returnedByName:'นายประเสริฐ มั่นคง (ผอ.สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1)',
     returnReason:'DOC_INCOMPLETE',
     returnNote:'เอกสารพยานหลักฐานประกอบข้อ 3 (สำเนาใบอนุญาต) ยังไม่ครบถ้วน และยังไม่ได้แนบบันทึกถ้อยคำผู้ร้อง กรุณาแนบเพิ่มเติมแล้วเสนอกลับ'
   }
@@ -816,7 +840,7 @@ CASES.push(
     id:'0719/2568',
     subject:'กล่าวหาผู้บริหาร อบจ.แห่งหนึ่ง ปรับปรุงภูมิทัศน์สวนสาธารณะราคาสูงเกินจริง',
     legalBase:'ม.18/4', status:'PENDING_SECGEN',
-    owner:'นายประเสริฐ มั่นคง', ownerOrg:'สนง. ป.ป.ท. เขต 3',
+    owner:'นายประเสริฐ มั่นคง', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 3',
     complainant:'ชมรมตรวจสอบทุจริต',
     accused:[ { no:1, name:'นายสมศักดิ์ รุ่งเรือง', pos:'นายก อบจ.', idcard:'3-3001-0xxxx-xx-x', agency:'อบจ.แห่งหนึ่ง' } ],
     allegation:'อนุมัติโครงการปรับปรุงสวนสาธารณะงบประมาณ 12 ล้านบาท สูงกว่าราคากลางกว่า 30%',
@@ -828,7 +852,7 @@ CASES.push(
     id:'1378/2566',
     subject:'กล่าวหาเจ้าพนักงานป่าไม้ ออกหนังสือรับรองทำกินในเขตป่าสงวนโดยมิชอบ',
     legalBase:'ม.62', status:'PENDING_SECGEN',
-    owner:'นายอำนาจ ยุติธรรม', ownerOrg:'สนง. ป.ป.ท. เขต 5',
+    owner:'นายอำนาจ ยุติธรรม', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 5',
     complainant:'กรมป่าไม้',
     accused:[ { no:1, name:'นายสุวรรณ ป่าไม้', pos:'เจ้าพนักงานป่าไม้ชำนาญงาน', idcard:'3-5002-0xxxx-xx-x', agency:'สำนักบริหารพื้นที่อนุรักษ์' } ],
     allegation:'ออกหนังสือ สทก. ทับพื้นที่ป่าสงวนแห่งชาติให้นายทุนเอกชนจำนวน 120 ไร่',
@@ -840,7 +864,7 @@ CASES.push(
     id:'3648/2558',
     subject:'กล่าวหาผู้อำนวยการวิทยาลัยเทคนิคแห่งหนึ่ง ยักยอกเงินทุนการศึกษาของนักเรียน',
     legalBase:'ม.18/4', status:'PENDING_SECGEN',
-    owner:'นายอนุรักษ์ ปราบทุจริต', ownerOrg:'สนง. ป.ป.ท. เขต 2',
+    owner:'นายอนุรักษ์ ปราบทุจริต', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
     complainant:'คณะครูและผู้ปกครอง',
     accused:[ { no:1, name:'ดร.วิชาญ การศึกษา', pos:'ผู้อำนวยการวิทยาลัยเทคนิค', idcard:'3-2005-0xxxx-xx-x', agency:'วิทยาลัยเทคนิค' } ],
     allegation:'ถอนเงินบัญชีทุนการศึกษาเพื่อนักเรียนยากจนนำไปใช้ประโยชน์ส่วนตัว รวมเป็นเงิน 650,000 บาท',
@@ -852,7 +876,7 @@ CASES.push(
     id:'0818/2568',
     subject:'กล่าวหาเจ้าหน้าที่แขวงทางหลวง เบิกจ่ายงบประมาณซ่อมแซมทางหลวงอันเป็นเท็จ',
     legalBase:'ม.18/4', status:'PENDING_SECGEN',
-    owner:'นายชูเกียรติ สุจริต', ownerOrg:'สนง. ป.ป.ท. เขต 4',
+    owner:'นายชูเกียรติ สุจริต', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 4',
     complainant:'บัตรสนเท่ห์',
     accused:[ { no:1, name:'นายเกรียงไกร ทางหลวง', pos:'วิศวกรโยธาชำนาญการ', idcard:'3-4008-0xxxx-xx-x', agency:'แขวงทางหลวง' } ],
     allegation:'เบิกจ่ายงบประมาณซ่อมบำรุงผิวจราจร 3 โครงการ ทั้งที่ไม่ได้มีการปฏิบัติงานจริง',
@@ -864,7 +888,7 @@ CASES.push(
     id:'1083/2568',
     subject:'กล่าวหาคณะกรรมการตรวจรับงานจ้างซ่อมบำรุงระบบประปาหมู่บ้าน ตรวจรับงานเท็จ',
     legalBase:'ม.18/4', status:'PENDING_SECGEN',
-    owner:'นายสมเกียรติ พัฒนา', ownerOrg:'สนง. ป.ป.ท. เขต 7',
+    owner:'นายสมเกียรติ พัฒนา', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 7',
     complainant:'ชาวบ้านผู้ใช้ประปา',
     accused:[ { no:1, name:'นายดนัย ประปาดี', pos:'ประธานกรรมการตรวจรับ', idcard:'3-7001-0xxxx-xx-x', agency:'เทศบาลตำบล' } ],
     allegation:'ลงนามตรวจรับงานระบบกรองน้ำประปาหมู่บ้านทั้งที่ระบบยังใช้งานไม่ได้ น้ำยังขุ่นข้นไม่ได้มาตรฐาน',
@@ -888,7 +912,7 @@ CASES.push(
     id:'0773/2568',
     subject:'กล่าวหาบุคลากรทางการแพทย์ เบิกจ่ายยาและเวชภัณฑ์ออกนอกระบบโรงพยาบาล',
     legalBase:'ม.18/4', status:'PENDING_SECGEN',
-    owner:'นายวิศรุต สุขเกษม', ownerOrg:'สนง. ป.ป.ท. เขต 6',
+    owner:'นายวิศรุต สุขเกษม', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 6',
     complainant:'ผู้อำนวยการโรงพยาบาล',
     accused:[ { no:1, name:'ภก.พิสิษฐ์ ยาดี', pos:'เภสัชกรชำนาญการ', idcard:'3-6003-0xxxx-xx-x', agency:'โรงพยาบาลประจำจังหวัด' } ],
     allegation:'ปลอมลายเซ็นแพทย์เพื่อตัดจ่ายยาควบคุมและวัคซีนมูลค่าสูง ออกขายคลินิกเอกชน',
@@ -900,20 +924,21 @@ CASES.push(
     id:'1180/2568',
     subject:'กล่าวหาเจ้าหน้าที่ประมง ละเว้นการจับกุมเรือประมงผิดกฎหมาย',
     legalBase:'ม.62', status:'RESOLVED', signedBySecgen: true, secgenSignedAt:'05 ส.ค. 2569',
-    owner:'นายณัฐพงษ์ ทะเลไทย', ownerOrg:'สนง. ป.ป.ท. เขต 8',
+    owner:'นายณัฐพงษ์ ทะเลไทย', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 8',
     complainant:'สมาคมประมงพื้นบ้าน',
     accused:[ { no:1, name:'นายสมศักดิ์ วารี', pos:'เจ้าพนักงานประมงชำนาญงาน', idcard:'3-8004-0xxxx-xx-x', agency:'สำนักงานประมงจังหวัด' } ],
     allegation:'เรียกรับผลประโยชน์รายเดือนจากเรือประมงอวนลากรวดในเขตทะเลชายฝั่ง',
     receivedDate:'2568-11-10', deadline60:'2569-01-09', deadline2y:'2570-11-10', prescription:'2571-12-01',
     docRef:'ปป 0028/0835 ลงวันที่ 18 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
     docType:'213', signPhase:'COMPLETE', slaDays:2, slaLimit:5,
-    resolution:'MORE_INVESTIGATE'
+    resolution:'MORE_INVESTIGATE',
+    resolutionStage: 4, resolvedAtIso: '2026-07-10T03:00:00.000Z'
   },
   {
     id:'1478/2568',
     subject:'กล่าวหาเจ้าหน้าที่สรรพากร คืนภาษีมูลค่าเพิ่มให้แก่บริษัทนอมินีโดยมิชอบ',
     legalBase:'ม.18/4', status:'RESOLVED', signedBySecgen: true, secgenSignedAt:'06 ส.ค. 2569',
-    owner:'นายกิตติศักดิ์ ภาษีงาม', ownerOrg:'สนง. ป.ป.ท. เขต 9',
+    owner:'นายกิตติศักดิ์ ภาษีงาม', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 9',
     complainant:'กรมสรรพากร',
     accused:[ { no:1, name:'นายชูชาติ ภาษีดี', pos:'นักตรวจสอบภาษีชำนาญการ', idcard:'3-9005-0xxxx-xx-x', agency:'สำนักงานสรรพากรพื้นที่' } ],
     allegation:'อนุมัติคืนภาษี VAT ให้แก่บริษัทออกใบกำกับภาษีปลอม รวมมูลค่าความเสียหาย 4.5 ล้านบาท',
@@ -926,7 +951,7 @@ CASES.push(
     id:'681645',
     subject:'กล่าวหาเจ้าหน้าที่ฝ่ายจัดซื้อจัดจ้าง กำหนดสเปกพัดลมอุตสาหกรรมเอื้อประโยชน์ให้แก่ผู้เสนอราคา',
     legalBase:'ม.18/4', status:'RETURNED',
-    owner:'นายประเสริฐ มั่นคง', ownerOrg:'สนง. ป.ป.ท. เขต 1',
+    owner:'นายประเสริฐ มั่นคง', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'ผู้ร่วมเสนอราคา',
     accused:[ { no:1, name:'นายสมพงษ์ จัดซื้อ', pos:'นักจัดการงานทั่วไปชำนาญการ', idcard:'3-1002-0xxxx-xx-x', agency:'เทศบาลเมืองแห่งหนึ่ง' } ],
     allegation:'กำหนดรายละเอียดคุณลักษณะเฉพาะของพัดลมอุตสาหกรรมตรงตามสินค้าของบริษัทตนเองเพียงรายเดียว',
@@ -938,7 +963,7 @@ CASES.push(
     id:'681650',
     subject:'กล่าวหาเจ้าหน้าที่บริหารงานคลัง ยักยอกเงินค่าธรรมเนียมการเก็บขยะมูลฝากเข้าบัญชีส่วนตัว',
     legalBase:'ม.18/4', status:'RETURNED',
-    owner:'นายวิศรุต สุขเกษม', ownerOrg:'สนง. ป.ป.ท. เขต 6',
+    owner:'นายวิศรุต สุขเกษม', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 6',
     complainant:'ผลการตรวจสอบภายใน',
     accused:[ { no:1, name:'นางสาวสิรินธร คลังทอง', pos:'เจ้าพนักงานการเงินและบัญชีชำนาญงาน', idcard:'3-6004-0xxxx-xx-x', agency:'องค์การบริหารส่วนตำบล' } ],
     allegation:'ไม่นำส่งเงินค่าธรรมเนียมจัดเก็บขยะเข้าบัญชี อบต. แต่โอนเข้าบัญชีส่วนตัวต่อเนื่องกว่า 1 ปี',
@@ -951,7 +976,7 @@ CASES.push(
     id:'0592/2568',
     subject:'กล่าวหาเจ้าหน้าที่องค์การบริหารส่วนตำบลแห่งหนึ่ง เบิกค่าเบี้ยเลี้ยงเดินทางราชการซ้ำซ้อน',
     legalBase:'ม.18/4', status:'RESOLVED', signedBySecgen: true, secgenSignedAt:'07 ส.ค. 2569',
-    owner:'นายอนุรักษ์ ปราบทุจริต', ownerOrg:'สนง. ป.ป.ท. เขต 2',
+    owner:'นายอนุรักษ์ ปราบทุจริต', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
     complainant:'บัตรสนเท่ห์',
     accused:[ { no:1, name:'นายพิพัฒน์ เดินทางไกล', pos:'นักวิเคราะห์นโยบายและแผนชำนาญการ', idcard:'3-2006-0xxxx-xx-x', agency:'อบต.แห่งหนึ่ง' } ],
     allegation:'ถูกกล่าวหาเบิกค่าเบี้ยเลี้ยงเดินทางราชการซ้ำซ้อนกับหน่วยงานอื่น แต่จากการไต่สวนพบว่าเป็นการเดินทางไปราชการคนละภารกิจในวันเดียวกันจริง มีหลักฐานการอนุมัติและปฏิบัติงานครบถ้วน',
@@ -967,7 +992,7 @@ CASES.push(
   {
     id:'2201/2569', subject:'กล่าวหาผู้บริหารสหกรณ์การเกษตรแห่งหนึ่ง ทุจริตเงินกู้สมาชิก',
     legalBase:'ม.18/4', status:'PENDING_SECTION_72',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สนง. ป.ป.ท. เขต 1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'สมาชิกสหกรณ์ (ผู้ร้อง)',
     accused:[ { no:1, name:'นายประกิต มั่งมี', pos:'ผู้จัดการสหกรณ์การเกษตร', idcard:'3-1077-0xxxx-xx-x', agency:'สหกรณ์การเกษตรแห่งหนึ่ง' } ],
     allegation:'อนุมัติเงินกู้ให้สมาชิกปลอมโดยไม่มีตัวตนจริง แล้วเบิกถอนเงินเข้าบัญชีตนเอง 12 รายการ',
@@ -982,7 +1007,7 @@ CASES.push(
   {
     id:'2015/2569', subject:'กล่าวหาเจ้าหน้าที่กรมที่ดินแห่งหนึ่ง ออกโฉนดทับที่สาธารณประโยชน์',
     legalBase:'ม.18/4', status:'IN_MEETING_72',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สนง. ป.ป.ท. เขต 1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'องค์การบริหารส่วนตำบล (ผู้แจ้งเบาะแส)',
     accused:[
       { no:1, name:'นายวิสูตร รังวัด',  pos:'เจ้าพนักงานที่ดินชำนาญงาน', idcard:'3-1201-0xxxx-xx-x', agency:'สำนักงานที่ดินจังหวัดแห่งหนึ่ง' },
@@ -1020,7 +1045,7 @@ CASES.push(
   {
     id:'1750/2568', subject:'กล่าวหาผู้อำนวยการกองช่างเทศบาลแห่งหนึ่ง เรียกรับสินบนผู้รับเหมา',
     legalBase:'ม.18/4', status:'PENDING_DISPATCH_GUILTY_72',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สนง. ป.ป.ท. เขต 1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'ผู้รับเหมาก่อสร้าง (ผู้ร้อง)',
     accused:[ { no:1, name:'นายก้องภพ ทองแท้', pos:'ผู้อำนวยการกองช่าง', idcard:'3-1009-0xxxx-xx-x', agency:'เทศบาลแห่งหนึ่ง' } ],
     allegation:'เรียกรับเงินร้อยละ 5 ของมูลค่าสัญญาจากผู้รับเหมาทุกรายที่ชนะการประกวดราคาโครงการก่อสร้างถนนและระบบระบายน้ำ',
@@ -1052,6 +1077,52 @@ const M28_LOG = {
   '1015/2568': { orderType:'REJECT', orderedDate:'2569-05-28', reported:false, dueDate:'2569-06-12' }
 };
 CASES.forEach(c => { if(M28_LOG[c.id]) c.m28 = M28_LOG[c.id]; });
+
+/* ---------- รายชื่อคณะอนุกรรมการกลั่นกรองฯ 1-8 (ฐานข้อมูลบุคลากรจำลอง) ----------
+   ใช้ดึงชื่อ-ตำแหน่งอนุกรรมการมาลงแบบฟอร์มคำสั่ง ม.24 โดยอัตโนมัติตาม kase.subCommittee
+   แทนการกรอกชื่อซ้ำเดิมทุกสำนวน ตามมติที่ประชุม 13/08/2569 ระเบียบวาระที่ 3 */
+const SUBCOMMITTEE_ROSTER = {
+  'คณะที่ 1': [
+    { name:'นายสุเมธ นิติธรรม', pos:'ผู้ทรงคุณวุฒิด้านกฎหมาย', rank:'chair' },
+    { name:'นายสมชาย ใจซื่อ', pos:'นิติกรชำนาญการ', rank:'member' },
+    { name:'นางสาวปรียา ตั้งมั่น', pos:'นักสืบสวนสอบสวนชำนาญการ', rank:'secretary' }
+  ],
+  'คณะที่ 2': [
+    { name:'นายวรพล ตรวจสอบ', pos:'ผู้ทรงคุณวุฒิด้านบัญชี', rank:'chair' },
+    { name:'นางสาวณัฐฐา เที่ยงธรรม', pos:'นิติกรชำนาญการ', rank:'member' },
+    { name:'นายอนุชา สืบสวน', pos:'นักสืบสวนสอบสวนชำนาญการ', rank:'secretary' }
+  ],
+  'คณะที่ 3': [
+    { name:'นายประดิษฐ์ ยุติธรรม', pos:'ผู้ทรงคุณวุฒิด้านการจัดซื้อจัดจ้าง', rank:'chair' },
+    { name:'นางสาวศิริพร ซื่อตรง', pos:'นิติกรชำนาญการ', rank:'member' },
+    { name:'นายกิตติ ไต่สวน', pos:'นักสืบสวนสอบสวนชำนาญการ', rank:'secretary' }
+  ],
+  'คณะที่ 4': [
+    { name:'นายชัยวัฒน์ พิทักษ์สิทธิ์', pos:'ผู้ทรงคุณวุฒิด้านปกครองท้องถิ่น', rank:'chair' },
+    { name:'นางสาวรัชนี บริสุทธิ์', pos:'นิติกรชำนาญการ', rank:'member' },
+    { name:'นายธีระพงษ์ เสาะหา', pos:'นักสืบสวนสอบสวนชำนาญการ', rank:'secretary' }
+  ],
+  'คณะที่ 5': [
+    { name:'นายพิสิษฐ์ รอบรู้', pos:'ผู้ทรงคุณวุฒิด้านทรัพยากรธรรมชาติ', rank:'chair' },
+    { name:'นางสาวจุฑามาศ แจ้งจริง', pos:'นิติกรชำนาญการ', rank:'member' },
+    { name:'นายวุฒิชัย ค้นหา', pos:'นักสืบสวนสอบสวนชำนาญการ', rank:'secretary' }
+  ],
+  'คณะที่ 6': [
+    { name:'นายอรรถพล วินิจฉัย', pos:'ผู้ทรงคุณวุฒิด้านการแพทย์', rank:'chair' },
+    { name:'นางสาวเบญจวรรณ มั่นคง', pos:'นิติกรชำนาญการ', rank:'member' },
+    { name:'นายศักดิ์ดา เจนจัด', pos:'นักสืบสวนสอบสวนชำนาญการ', rank:'secretary' }
+  ],
+  'คณะที่ 7': [
+    { name:'นายเอกภพ ธรรมนูญ', pos:'ผู้ทรงคุณวุฒิด้านภาษีอากร', rank:'chair' },
+    { name:'นางสาวปวีณา สุจริตกุล', pos:'นิติกรชำนาญการ', rank:'member' },
+    { name:'นายบุญเลิศ พากเพียร', pos:'นักสืบสวนสอบสวนชำนาญการ', rank:'secretary' }
+  ],
+  'คณะที่ 8': [
+    { name:'นายไพศาล ยึดมั่น', pos:'ผู้ทรงคุณวุฒิด้านวิศวกรรม', rank:'chair' },
+    { name:'นางสาวกาญจนา ถูกต้อง', pos:'นิติกรชำนาญการ', rank:'member' },
+    { name:'นายสุรพงษ์ ตามรอย', pos:'นักสืบสวนสอบสวนชำนาญการ', rank:'secretary' }
+  ]
+};
 
 const CASES_VERSION = '2026-08-06-เลขสำนวน';
 if (typeof sessionStorage !== 'undefined') {
@@ -1170,12 +1241,12 @@ const RESOLUTIONS_72 = [
 function resolution72(code){ return RESOLUTIONS_72.find(r => r.code === code) || null; }
 
 const FLOW_STEPS_72 = [
-  { key:'chain72',   label:'สายอนุมัติ 3 ชั้น',              ref:'7.2-02' },
-  { key:'secgen72',  label:'เลขาธิการฯ ลงนาม',               ref:'7.2-03' },
-  { key:'agenda72',  label:'กลั่นกรอง / บรรจุวาระ',          ref:'7.2-04 · 7.2-05 · 7.2-06' },
-  { key:'meeting72', label:'ประชุม / บันทึกมติ',             ref:'7.2-07 · 7.2-08' },
-  { key:'ruling72',  label:'จัดทำ / ลงนามรายงานวินิจฉัยชี้มูล', ref:'7.2-09' },
-  { key:'dispatch72',label:'แจ้งผล / ส่งดำเนินการต่อ',        ref:'7.2-10 · 7.2-11' }
+  { key:'chain72',   label:'สายอนุมัติ 3 ชั้น',              ref:'การเสนอตามลำดับชั้น' },
+  { key:'secgen72',  label:'เลขาธิการฯ ลงนาม',               ref:'เลขาธิการฯ ลงนาม' },
+  { key:'agenda72',  label:'กลั่นกรอง / บรรจุวาระ',          ref:'กลั่นกรองและบรรจุวาระ' },
+  { key:'meeting72', label:'ประชุม / บันทึกมติ',             ref:'ประชุมและบันทึกมติ' },
+  { key:'ruling72',  label:'จัดทำ / ลงนามรายงานวินิจฉัยชี้มูล', ref:'จัดทำรายงานวินิจฉัยชี้มูล' },
+  { key:'dispatch72',label:'แจ้งผล / ส่งดำเนินการต่อ',        ref:'แจ้งผลและส่งเรื่องดำเนินการ' }
 ];
 const STATUS_STEP_72 = {
   PENDING_SECTION_72:'chain72', PENDING_DIRECTOR_72:'chain72', PENDING_DEPUTY_72:'chain72', RETURNED_72:'chain72',
@@ -1212,7 +1283,7 @@ const CONFIG = {
 };
 
 const RETURN_SCOPES = [
-  { code:'TO_DIRECTOR', label:'ส่งคืน ผอ.กอง / ผอ.สนง. ป.ป.ท. เขต',
+  { code:'TO_DIRECTOR', label:'ส่งคืน ผอ.กอง / ผอ.สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต',
     note:'ใช้กรณีข้อบกพร่องอยู่ที่การกลั่นกรองของหน่วยงาน เช่น ความเห็นตามลำดับชั้นไม่ครบ' },
   { code:'TO_OWNER', label:'ส่งคืนเจ้าของสำนวนโดยตรง',
     note:'ใช้กรณีข้อบกพร่องอยู่ที่ตัวรายงาน 213 หรือพยานหลักฐานต้นทาง' }
@@ -1224,12 +1295,52 @@ const MATERIAL_FIELDS = [
   { id:'f_opinionType',label:'ความเห็นของผู้รับผิดชอบสำนวน' }
 ];
 
+const DEMO_TODAY = new Date(2026, 7, 4);
+
 function daysUntil(thaiIso){
   const p = String(thaiIso).split('-');
   if(p.length !== 3) return null;
   const target = new Date(+p[0] - 543, +p[1] - 1, +p[2]);
-  const today  = new Date(2026, 7, 4);
-  return Math.round((target - today) / 86400000);
+  return Math.round((target - DEMO_TODAY) / 86400000);
+}
+
+/* ---------- วันทำการ (หักเสาร์-อาทิตย์อัตโนมัติ, ยังไม่รวมวันหยุดราชการพิเศษ) ----------
+   ใช้คำนวณกำหนดเวลาออกมติ 15 วันทำการ ตามมติที่ประชุม 13/08/2569 */
+function isWeekend(d){ const day = d.getDay(); return day === 0 || day === 6; }
+
+function addBusinessDays(startDate, days){
+  const d = new Date(startDate.getTime());
+  let added = 0;
+  while (added < days) {
+    d.setDate(d.getDate() + 1);
+    if (!isWeekend(d)) added++;
+  }
+  return d;
+}
+
+function businessDaysBetween(startDate, endDate){
+  let count = 0;
+  const d = new Date(startDate.getTime());
+  d.setHours(0, 0, 0, 0);
+  const end = new Date(endDate.getTime());
+  end.setHours(0, 0, 0, 0);
+  while (d < end) {
+    d.setDate(d.getDate() + 1);
+    if (!isWeekend(d)) count++;
+  }
+  return count;
+}
+
+const RESOLUTION_SLA_LIMIT_DAYS = 15;
+
+/* สถานะ "ระหว่างจัดทำมติ" (resolutionStage 1-5) มีกำหนด 15 วันทำการนับจากวันที่บอร์ดมีมติ (resolvedAtIso)
+   คืน null เมื่อไม่เข้าเงื่อนไขนี้ (เช่น จัดทำรายงานเสร็จแล้ว) เพื่อให้ slaBadge() ใช้ SLA ปกติของสำนวนแทน */
+function resolutionSlaInfo(kase){
+  if (kase && kase.status === 'RESOLVED' && kase.resolutionStage && kase.resolutionStage < 6 && kase.resolvedAtIso) {
+    const start = new Date(kase.resolvedAtIso);
+    return { used: businessDaysBetween(start, DEMO_TODAY), limit: RESOLUTION_SLA_LIMIT_DAYS };
+  }
+  return null;
 }
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
                      'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
@@ -1300,8 +1411,12 @@ const NAV = [
     },
     badge:true },
   { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' },
-  { href:'72-09-ruling-report.html',      icon:'fa-file-signature',   label:'รายงานวินิจฉัยชี้มูล (72-09)',
-    visible: role => !!role && (can('doc.generate', role.id) || can('sign.ruling', role.id) || canEditMaster(role.id)) }
+  { href:'72-09-ruling-report.html',      icon:'fa-file-signature',   label:'รายงานวินิจฉัยชี้มูล',
+    visible: role => !!role && (can('doc.generate', role.id) || can('sign.ruling', role.id) || canEditMaster(role.id)) },
+  { href:'11-agenda-compile.html',        icon:'fa-calendar-days',    label:'จัดวาระการประชุม',
+    visible: role => !!role && can('create.agenda', role.id) },
+  { href:'12-meeting-report.html',        icon:'fa-file-contract',    label:'จัดทำรายงานมติการประชุม',
+    visible: role => !!role && can('compile.minutes', role.id) }
 ];
 
 function navLabel(navItem, role){
@@ -1540,6 +1655,11 @@ function effectiveSlaLimit(kase){
 }
 
 function slaBadge(kase){
+  const resSla = resolutionSlaInfo(kase);
+  if (resSla) {
+    return `<span class="sla ${slaClass(resSla.used, resSla.limit)}" title="กำหนดออกมติ 15 วันทำการนับจากวันที่บอร์ดมีมติ">
+      <i class="fa-regular fa-clock me-1"></i>${slaLabel(resSla.used, resSla.limit)} (ออกมติ)</span>`;
+  }
   const lim = effectiveSlaLimit(kase);
   return `<span class="sla ${slaClass(kase.slaDays, lim)}">
     <i class="fa-regular fa-clock me-1"></i>${slaLabel(kase.slaDays, lim)}</span>`;
@@ -1556,7 +1676,7 @@ function actionBar(kase, roleId, buttons){
     inner = `<div class="no-permission" style="border-color:#d79b00;background:#fff8ec">
       <i class="fa-solid fa-arrow-right-to-bracket me-1"></i>
       <strong>สำนวนนี้ยังไม่เข้าสู่กิจกรรมที่ 7</strong> — อยู่ระหว่างการเสนอตามลำดับชั้น
-      ภายในกอง / สำนักงาน ป.ป.ท. เขต ซึ่งเป็นกระบวนงานของ <strong>กิจกรรมที่ 5</strong>
+      ภายในกอง / สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต ซึ่งเป็นกระบวนงานของ <strong>กิจกรรมที่ 5</strong>
       ${ownerRole ? `<br>ขณะนี้เรื่องอยู่ที่ <strong>${ownerRole.title}</strong>` : ''}
       <br><small>กิจกรรมที่ 7 เริ่มนับเมื่อรายงานมาถึง <strong>เลขาธิการคณะกรรมการ ป.ป.ท.</strong></small>
     </div>`;
@@ -1631,7 +1751,7 @@ function paginateResolutionDoc(containerEl, opts){
   if(!probe){
     probe = document.createElement('div');
     probe.id = 'docPaperProbe';
-    probe.className = 'doc-paper doc-resolution';
+    probe.className = 'doc-paper doc-resolution a4-paper';
     probe.style.cssText = 'position:absolute; visibility:hidden; left:-99999px; top:0; width:210mm; height:auto; aspect-ratio:auto;';
     document.body.appendChild(probe);
   }
@@ -1675,7 +1795,7 @@ function paginateResolutionDoc(containerEl, opts){
   containerEl.innerHTML = pages.map((p, i) => {
     const pageNo = i + 1;
     const header = p.isFirst ? '' : runningHeaderHtml(pageNo);
-    return `<div class="doc-paper doc-resolution">${header}${p.blocks.join('')}</div>`;
+    return `<div class="doc-paper doc-resolution a4-paper">${header}${p.blocks.join('')}</div>`;
   }).join('');
 }
 
@@ -2870,6 +2990,66 @@ function initCharCounterAndCopy() {
   });
 }
 
+/* ---------- ช่องข้อความยืดหยุ่น (rich-text) สำหรับกรอก/วางข้อความยาว เช่น "พฤติการณ์คดี" ----------
+   ต่างจาก <textarea> ตรงที่รองรับตัวหนา + ย่อหน้าไม่จำกัดความยาว, และ sanitize เนื้อหาที่วางมา
+   จาก Word/เว็บอื่น เหลือเฉพาะ b/strong/i/em/u/p/br/div ตัดสไตล์/ฟอนต์แปลกปลอมทิ้งหมด */
+function sanitizeRichPaste(html) {
+  const ALLOWED = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'P', 'BR', 'DIV']);
+  const srcDoc = new DOMParser().parseFromString(html, 'text/html');
+  function walk(srcNode) {
+    const frag = document.createDocumentFragment();
+    srcNode.childNodes.forEach(child => {
+      if (child.nodeType === 3) { frag.appendChild(document.createTextNode(child.textContent)); return; }
+      if (child.nodeType !== 1) return;
+      const inner = walk(child);
+      if (ALLOWED.has(child.tagName)) {
+        const el = document.createElement(child.tagName);
+        el.appendChild(inner);
+        frag.appendChild(el);
+      } else {
+        frag.appendChild(inner);
+      }
+    });
+    return frag;
+  }
+  const out = document.createElement('div');
+  out.appendChild(walk(srcDoc.body));
+  return out.innerHTML;
+}
+function plainTextToHtml(text) {
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return text.split(/\n{2,}/).map(para =>
+    `<p>${para.split('\n').map(esc).join('<br>')}</p>`).join('') || '<p></p>';
+}
+function initRichTextBox(boxEl, opts) {
+  if (!boxEl) return;
+  const toolbarEl = (opts && opts.toolbar) ? document.getElementById(opts.toolbar) : boxEl.previousElementSibling;
+  boxEl.setAttribute('contenteditable', 'true');
+
+  boxEl.addEventListener('paste', e => {
+    e.preventDefault();
+    const html = e.clipboardData.getData('text/html');
+    const text = e.clipboardData.getData('text/plain');
+    const insertHtml = html ? sanitizeRichPaste(html) : plainTextToHtml(text);
+    document.execCommand('insertHTML', false, insertHtml);
+    if (opts && opts.onChange) opts.onChange();
+  });
+
+  if (toolbarEl) {
+    toolbarEl.addEventListener('click', e => {
+      const btn = e.target.closest('[data-format]');
+      if (!btn) return;
+      boxEl.focus();
+      document.execCommand(btn.dataset.format);
+      if (opts && opts.onChange) opts.onChange();
+    });
+  }
+
+  boxEl.addEventListener('input', () => { if (opts && opts.onChange) opts.onChange(); });
+
+  if (opts && opts.initialHtml) boxEl.innerHTML = opts.initialHtml;
+}
+
 function initAuditTrail(containerId, events) {
 
   const el = document.getElementById(containerId);
@@ -3360,6 +3540,26 @@ function initHeaderSuggestionsButton() {
   }
 }
 
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeprint', () => {
+    const docPane = document.querySelector('.doc-pane, .doc-paper');
+    if (docPane) {
+      document.body.classList.add('printing-doc-only');
+      document.querySelectorAll('.row > [class*="col-"]').forEach(col => {
+        if (!col.querySelector('.doc-pane, .doc-paper')) {
+          col.classList.add('no-print-temp');
+        }
+      });
+    }
+  });
+  window.addEventListener('afterprint', () => {
+    document.body.classList.remove('printing-doc-only');
+    document.querySelectorAll('.no-print-temp').forEach(col => {
+      col.classList.remove('no-print-temp');
+    });
+  });
+}
+
 if (typeof document !== 'undefined') {
   const initSug = () => {
     initHeaderSuggestionsButton();
@@ -3388,6 +3588,7 @@ global.ECMIS = {
   UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72, homeHref,
   PERM_DEFS, can, canEditMaster, canViewCase,
   thaiDate, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole, roleIdForLogin,
+  addBusinessDays, businessDaysBetween, resolutionSlaInfo, SUBCOMMITTEE_ROSTER,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   isAuthed, currentUsername, logout,
   renderShell, stepperHtml, statusBadge, slaBadge, actionBar,
@@ -3395,6 +3596,7 @@ global.ECMIS = {
 
   ACT7_SECTIONS, ACT7_STATUSES, getAct7Status, act7Badge,
   ACT7_STATUSES_72, getAct7Status72,
+  RESOLUTION_STAGES, resolutionStageLabel,
 
   saveCases, toggleColorMode, toggleSidebarCollapse, changeFont, toggleVoiceRecognition,
   initSmartCombobox, initMultiSelectCombo, initRealTimeValidation, initVoiceInput, initSignaturePad,
@@ -3402,7 +3604,7 @@ global.ECMIS = {
   initAutoSave, initCharCounterAndCopy,
 
   initAuditTrail, initChecklistGatekeeper, initBulkActions, initDragDropUpload,
-  initDocPaneToggle,
+  initDocPaneToggle, initRichTextBox,
 
   getSuggestionsData, saveSuggestionsData, openSuggestionsModal, initWritingSuggestions
 };

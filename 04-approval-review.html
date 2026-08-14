@@ -7,12 +7,13 @@
   <title>เลขาธิการฯ พิจารณา / ลงนาม — จุดเริ่มกิจกรรมที่ 7 | E-CMIS</title>
   <link rel="icon" type="image/png" href="pacc_logo.png">
   <link
-    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link href="assets/ecmis-app.css" rel="stylesheet">
+  <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
 </head>
 
 <body>
@@ -23,19 +24,19 @@
         <h1><i class="fa-solid fa-user-check me-2"></i>เลขาธิการฯ พิจารณาและลงนามรายงาน 213</h1>
       </div>
       <div class="ms-auto text-end">
-        <span class="flow-ref">ผัง: S1 · G1 — <strong>จุดเริ่มต้นของกิจกรรมที่ 7</strong></span>
+        <span class="flow-ref"><strong>จุดเริ่มต้นของการพิจารณาในระบบ</strong></span>
         <div class="mt-1" id="stBadge"></div>
       </div>
     </div>
 
-    <div class="card card-ecmis mb-3">
+    <div class="ws-card mb-3">
       <div class="card-body pb-1" id="stepper"></div>
     </div>
 
-    <div class="row g-3">
-      <div class="col-xl-6">
+    <div class="document-workspace" id="docWorkspace">
+      <div>
 
-        <div class="card card-ecmis mb-3">
+        <div class="ws-card mb-3">
           <div class="card-header"><i class="fa-solid fa-list-ol"></i> ที่มาของสำนวน — การเสนอตามลำดับชั้นภายในกอง/เขต
             (ต้นทาง กจ.5)</div>
           <div class="card-body">
@@ -43,7 +44,7 @@
           </div>
         </div>
 
-        <div class="card card-ecmis mb-3">
+        <div class="ws-card mb-3">
           <div class="card-header"><i class="fa-solid fa-circle-info"></i> สรุปสำนวนสำหรับผู้พิจารณา</div>
           <div class="card-body">
             <div class="row g-2 kv" id="summary"></div>
@@ -57,7 +58,7 @@
           </div>
         </div>
 
-        <div class="card card-ecmis mb-3 d-none" id="m28Card">
+        <div class="ws-card mb-3 d-none" id="m28Card">
           <div class="card-header"><i class="fa-solid fa-gavel"></i> คำสั่งเบื้องต้นของเลขาธิการฯ ตามมาตรา 28</div>
           <div class="card-body">
             <div class="list-group mb-2" id="m28List"></div>
@@ -81,7 +82,7 @@
           </div>
         </div>
 
-        <div class="card card-ecmis mb-3" id="opinionCard">
+        <div class="ws-card mb-3" id="opinionCard">
           <div class="card-header"><i class="fa-solid fa-pen-nib"></i> ความเห็นของผู้พิจารณาชั้นนี้</div>
           <div class="card-body">
 
@@ -126,7 +127,7 @@
                 </div>
                 <div class="form-check">
                   <input class="form-check-input" type="radio" name="urgent72toggle" id="urgentYes72" value="yes">
-                  <label class="form-check-label" for="urgentYes72">เร่งด่วน — ขอรับรองบรรจุวาระด่วน (7.2-05)</label>
+                  <label class="form-check-label" for="urgentYes72">เร่งด่วน — ขอรับรองบรรจุวาระด่วน</label>
                 </div>
               </div>
               <div id="urgentReasonBox72" class="mb-1 d-none">
@@ -168,7 +169,7 @@
           </div>
         </div>
 
-        <div class="card card-ecmis mb-3 d-none" id="signCard">
+        <div class="ws-card mb-3 d-none" id="signCard">
           <div class="card-header"><i class="fa-solid fa-signature"></i> ลายมือชื่อดิจิทัลบนรายงาน 213</div>
           <div class="card-body">
             <div class="sig-box" id="sigBox">
@@ -181,19 +182,17 @@
         </div>
       </div>
 
-      <div class="col-xl-6">
-        <div style="position:sticky;top:calc(var(--topbar-h) + 14px)">
-          <div class="doc-pane">
-            <div class="doc-toolbar">
-              <span class="name"><i class="fa-solid fa-file-lines"></i> <span
-                  id="docTitleBar">รายงานที่เสนอ</span></span>
-              <button class="btn btn-sm btn-light" onclick="window.print()"><i class="fa-solid fa-print"></i></button>
-            </div>
-            <div class="doc-paper" id="docPaper"></div>
-          </div>
-
+      <aside class="ws-doc-pane" style="top:calc(var(--topbar-h) + 14px)">
+        <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
+        <div class="ws-doc-toolbar">
+          <span class="name"><i class="fa-solid fa-file-lines"></i> <span id="docTitleBar">รายงานที่เสนอ</span></span>
+          <button class="btn btn-sm btn-light" onclick="window.print()" title="พิมพ์เฉพาะเอกสาร Preview"><i class="fa-solid fa-print"></i></button>
+          <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
         </div>
-      </div>
+        <div class="ws-paper-stage">
+          <div class="doc-paper a4-paper" id="docPaper"></div>
+        </div>
+      </aside>
     </div>
 
     <div id="actionBarSlot"></div>
@@ -239,6 +238,17 @@
     const g1 = ECMIS.g1Triggers(kase);
 
     if (isRuling) { initRulingScreen(); } else { initReport213Screen(); }
+
+    /* ---------- Document workspace: collapsible pane ---------- */
+    const docWorkspace = document.getElementById('docWorkspace');
+    const PANE_KEY = 'ecmis-approval-review-docpane-collapsed';
+    function setPaneCollapsed(collapsed) {
+      docWorkspace.classList.toggle('pane-collapsed', collapsed);
+      localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
+    }
+    if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
+    document.getElementById('btnPaneCollapse').addEventListener('click', () => setPaneCollapsed(true));
+    document.getElementById('btnPaneExpand').addEventListener('click', () => setPaneCollapsed(false));
 
     function initReport213Screen(){
 
@@ -479,7 +489,7 @@
       }).join('')}</tbody>
     </table>
     ใช้ไปแล้ว <strong>${used}</strong> จาก <strong>${lim}</strong> วันของระยะปัจจุบัน
-    <span class="text-muted">— ระบบเตือนล่วงหน้า 3 วัน และ 1 วัน (Admin ตั้งค่าได้ · TOR 7.2.1.3)</span>`;
+    <span class="text-muted">— ระบบเตือนล่วงหน้า 3 วัน และ 1 วัน (Admin ตั้งค่าได้)</span>`;
     }
 
     /* ---------- Return/Recall panel ---------- */
@@ -749,7 +759,7 @@
           }
         }).then(res => {
           if (res.isConfirmed) {
-            const dest = res.value.s === 'TO_OWNER' ? 'เจ้าของสำนวน' : 'ผอ.กอง / ผอ.สนง. ป.ป.ท. เขต';
+            const dest = res.value.s === 'TO_OWNER' ? 'เจ้าของสำนวน' : 'ผอ.กอง / ผอ.สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต';
             ECMIS.toastOk(`ตีกลับเรียบร้อย — ส่งคืน${dest} และ Pause กำหนดเวลาแล้ว`);
             setTimeout(() => location.href = ECMIS.homeHref(role.id), 1600);
           }
@@ -778,8 +788,8 @@
         ECMIS.confirmAction({
           title: 'มอบหมายสำนวนให้คณะอนุกรรมการสนับสนุนเลขาธิการฯ',
           html: `<p>สำนวน <strong>${kase.id}</strong> จะถูกมอบหมายเข้า
-            <strong>คณะอนุกรรมการสนับสนุนเลขาธิการฯ (T6)</strong> เพื่อพิจารณาก่อนเสนอต่อ
-            <strong>หน้าห้องประธานกรรมการ ป.ป.ท. (G2)</strong></p>`,
+            <strong>คณะอนุกรรมการสนับสนุนเลขาธิการฯ</strong> เพื่อพิจารณาก่อนเสนอต่อ
+            <strong>หน้าห้องประธานกรรมการ ป.ป.ท.</strong></p>`,
           confirmText: 'ยืนยันมอบหมาย'
         }).then(r => {
           if (!r.isConfirmed) return;
@@ -799,8 +809,8 @@
             title: 'มอบหมายสำนวนเรียบร้อย',
             html: `<div class="text-start">
               สำนวน <strong>${kase.id}</strong> ถูกส่งต่อไปยัง
-              <strong>คณะอนุกรรมการสนับสนุนเลขาธิการฯ (T6)</strong> เรียบร้อยแล้ว<br>
-              <div style="font-size:.82rem;color:#7C8CA3;margin-top:.6rem">เส้นทางตามผัง: G1 = ใช่ (ดุลพินิจเลขาธิการฯ — เรื่องยุ่งยากซับซ้อน) → T6 → G2</div>
+              <strong>คณะอนุกรรมการสนับสนุนเลขาธิการฯ</strong> เรียบร้อยแล้ว<br>
+              <div style="font-size:.82rem;color:#7C8CA3;margin-top:.6rem">เส้นทางที่ระบบกำหนด: กลั่นกรองโดยคณะอนุสนับสนุนฯ ก่อนเสนอประธานฯ</div>
             </div>`,
             confirmButtonColor: '#0F2A62',
             confirmButtonText: 'ตกลง (ไปที่ Work Inbox)',
@@ -825,18 +835,18 @@
           path = `ม.28 — ${order.label} (${order.lawRef} มาตรา ${lawSel ? lawSel.value : ''})`;
         } else if (complex) {
           targetStatus = 'IN_SUPPORT_SUB';
-          dest = 'คณะอนุกรรมการสนับสนุนเลขาธิการฯ (T6)';
+          dest = 'คณะอนุกรรมการสนับสนุนเลขาธิการฯ';
           path = g1.diverged
-            ? 'G1 = ใช่ (ระบบตรวจพบความเห็นในสายบังคับบัญชาไม่ตรงกัน) → T6 → G2'
-            : 'G1 = ใช่ (ดุลพินิจเลขาธิการฯ — เรื่องยุ่งยากซับซ้อน) → T6 → G2';
+            ? 'เรื่องมีความเห็นไม่ตรงกันในสายบังคับบัญชา จึงส่งเข้ากลั่นกรองโดยคณะอนุสนับสนุนฯ'
+            : 'เลขาธิการฯ เห็นว่าเรื่องซับซ้อน จึงส่งเข้ากลั่นกรองโดยคณะอนุสนับสนุนฯ';
         } else if (kase.urgent) {
           targetStatus = 'PENDING_URGENT';
-          dest = 'ผู้อำนวยการกองบริหารคดี (T7) เพื่อรับรองเหตุผลเร่งด่วน';
-          path = 'G1 = ไม่ใช่ → G3 = มีใบด่วน → T7 → T8';
+          dest = 'ผู้อำนวยการกองบริหารคดี เพื่อรับรองเหตุผลเร่งด่วน';
+          path = 'สำนวนเร่งด่วน: รับรองเหตุผลเร่งด่วนก่อนเสนอประธานฯ';
         } else {
           targetStatus = 'PENDING_CHAIR_OF';
-          dest = 'หน้าห้องประธานกรรมการ ป.ป.ท. (T8)';
-          path = 'G1 = ไม่ใช่ → G3 = ไม่มีใบด่วน → T8';
+          dest = 'หน้าห้องประธานกรรมการ ป.ป.ท.';
+          path = 'สำนวนปกติ: เสนอหน้าห้องประธานฯ ตามลำดับ';
         }
 
         kase.status = targetStatus;
@@ -851,7 +861,7 @@
             สำนวน <strong>${kase.id}</strong> ถูกบันทึกสถานะเป็น
             <span class="st st-done" style="font-size:0.85rem"><i class="fa-solid fa-signature me-1"></i>เลขาลงนามแล้ว</span><br>
             และส่งต่อไปยัง <strong>${dest}</strong> เรียบร้อยแล้ว
-            <div style="font-size:.82rem;color:#7C8CA3;margin-top:.6rem">เส้นทางตามผัง: ${path}</div>
+            <div style="font-size:.82rem;color:#7C8CA3;margin-top:.6rem">เส้นทางที่ระบบกำหนด: ${path}</div>
             <div style="background:#fdf7e8;border-left:4px solid #D0A830;padding:.55rem .8rem;border-radius:0 6px 6px 0;margin-top:.7rem;font-size:.8rem">
               <strong>ม.28</strong> — คำสั่งของเลขาธิการฯ ถูกบรรจุเข้ารอบรายงานคณะกรรมการ ป.ป.ท. รอบถัดไปโดยอัตโนมัติ
             </div>
@@ -930,7 +940,7 @@
       document.querySelector('.page-head h1').innerHTML =
         `<i class="fa-solid fa-user-check me-2"></i>เลขาธิการฯ พิจารณาและลงนาม${docType.short}`;
       document.querySelector('.flow-ref').innerHTML =
-        `ผัง 7.2: 7.2-02 → 7.2-03 — <strong>สายอนุมัติ 3 ชั้น + เลขาธิการฯ ลงนาม/ชี้สำนวนซับซ้อน-เร่งด่วน</strong>`;
+        `<strong>สายอนุมัติ 3 ชั้น + เลขาธิการฯ ลงนาม/ชี้สำนวนซับซ้อน-เร่งด่วน</strong>`;
       document.querySelector('#signCard .card-header').innerHTML =
         `<i class="fa-solid fa-signature"></i> ลายมือชื่อดิจิทัลบน${docType.short}`;
       document.getElementById('docTitleBar').textContent = docType.label;
@@ -1041,9 +1051,9 @@
         const el = document.getElementById('g1Outcome');
         if (!el) return;
         let outcome;
-        if (complexYes()) outcome = 'ซับซ้อน → ส่งคณะอนุกรรมการสนับสนุนเลขาธิการฯ (7.2-04) ก่อน — หากเป็นกรณีเร่งด่วนด้วย จะพิจารณาความเร่งด่วนต่อหลังผ่าน 7.2-04 แล้ว';
-        else if (urgentYes()) outcome = 'ไม่ซับซ้อน + เร่งด่วน → ขอรับรองเหตุผลเร่งด่วนจาก ผอ.กบค. (7.2-05) — ข้ามคณะอนุกลั่นกรองฯ';
-        else outcome = 'ไม่ซับซ้อน + ไม่เร่งด่วน → เข้าคณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง (7.2-06) ตามเส้นทางปกติ';
+        if (complexYes()) outcome = 'ซับซ้อน → ส่งคณะอนุกรรมการสนับสนุนเลขาธิการฯ ก่อน หากเป็นกรณีเร่งด่วนจะพิจารณาความเร่งด่วนต่อในขั้นถัดไป';
+        else if (urgentYes()) outcome = 'ไม่ซับซ้อน + เร่งด่วน → ขอรับรองเหตุผลเร่งด่วนจาก ผอ.กบค. เพื่อเสนอวาระด่วน';
+        else outcome = 'ไม่ซับซ้อน + ไม่เร่งด่วน → เข้าคณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริงตามเส้นทางปกติ';
         el.innerHTML = `<strong>เส้นทางที่จะเกิดขึ้น:</strong> ${outcome}`;
       }
 
