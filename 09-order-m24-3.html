@@ -39,6 +39,15 @@
         <div class="ws-card mb-3">
           <div class="card-header"><i class="fa-solid fa-hashtag"></i> เลขที่คำสั่ง</div>
           <div class="card-body">
+            <div class="row g-2 mb-2">
+              <div class="col-12"><label class="form-label">ที่มาของสำนวน</label>
+                <select class="form-select" id="caseOrigin">
+                  <option value="MISCONDUCT" selected>กรณีประพฤติมิชอบ</option>
+                  <option value="NACC_M62">กรณีรับจาก ป.ป.ช. ตามมาตรา ๖๒</option>
+                </select>
+                <small class="text-muted d-block mt-1">กำหนดเลขแบบฟอร์ม (ปปท.) และฐานอำนาจที่อ้างอิงในคำสั่งให้ตรงตามที่มาของสำนวน</small>
+              </div>
+            </div>
             <div class="row g-2">
               <div class="col-md-6"><label class="form-label field-req">เลขที่คำสั่ง</label>
                 <input class="form-control" id="orderNo" placeholder="เช่น 210/2569">
@@ -142,6 +151,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="assets/ecmis-app.js"></script>
+  <script src="assets/ecmis-model.js"></script>
   <script>
     ECMIS.renderShell('09-order-m24.html');
 
@@ -159,7 +169,7 @@
     }
 
     const BASE_SIGNER = isSub
-      ? { name: 'นายวิชัย ยุติธรรม', title: 'ประธานกรรมการ ป.ป.ท.', roleId: 'chairman' }
+      ? { name: 'นายอำนาจ พวงชมภู', title: 'ประธานกรรมการ ป.ป.ท.', roleId: 'chairman' }
       : { name: 'นายอภิชาติ สุจริตกุล', title: 'เลขาธิการคณะกรรมการ ป.ป.ท.', roleId: 'secgen' };
     const DELEGATE_SIGNER = {
       name: 'นายอภิชาติ สุจริตกุล',
@@ -195,14 +205,24 @@
         วาระที่ ${kase.agendaNo || '5.12'}</strong><br>
       ${isSub
           ? 'รับไว้ไต่สวน โดยให้ดำเนินการไต่สวนเป็น <strong>คณะอนุกรรมการไต่สวน</strong> ตาม ม.24 วรรคสาม'
-          : 'รับไว้ไต่สวน โดยให้ดำเนินการไต่สวนเป็น <strong>องค์คณะ</strong> ตาม ม.24 วรรคหนึ่ง'}
+          : 'รับไว้ไต่สวน โดยให้ดำเนินการไต่สวนเป็น <strong>องค์คณะ</strong> ตาม ม.24 วรรคแรก'}
     </div>`;
     }
     if (isSub) document.getElementById('delegateBox').classList.remove('d-none');
     document.getElementById('delegate')?.addEventListener('change', refreshSigner);
-    document.getElementById('docName').textContent = isSub
-      ? 'คำสั่งแต่งตั้งคณะอนุกรรมการไต่สวน (ปปท. ๕-๐๔)'
-      : 'คำสั่งแต่งตั้งองค์คณะพนักงาน ป.ป.ท. (ปปท. ๕-๐๑)';
+
+    /* ที่มาของสำนวน กำหนดเลขแบบฟอร์ม ปปท. และฐานอำนาจเพิ่มเติมที่ต้องอ้างในคำสั่ง — ตรวจสอบจาก
+       ตัวอย่างคำสั่งจริง (ปปท. 5-02/5-08 สำหรับ ม.24 ว.3, ปปท. 5-05/5-17 สำหรับ ม.24 ว.แรก) */
+    const FORM_CODES = { sub: { MISCONDUCT: '5-02', NACC_M62: '5-08' }, base: { MISCONDUCT: '5-05', NACC_M62: '5-17' } };
+    function caseOriginCode() { return document.getElementById('caseOrigin')?.value || 'MISCONDUCT'; }
+    function updateDocName() {
+      const code = FORM_CODES[isSub ? 'sub' : 'base'][caseOriginCode()];
+      document.getElementById('docName').textContent = isSub
+        ? `คำสั่งแต่งตั้งคณะอนุกรรมการไต่สวน (ปปท. ${code})`
+        : `คำสั่งแต่งตั้งองค์คณะพนักงาน ป.ป.ท. (ปปท. ${code})`;
+    }
+    updateDocName();
+    document.getElementById('caseOrigin').addEventListener('change', () => { updateDocName(); renderDoc(); });
 
     /* ดึงรายชื่อคณะอนุกรรมการจากฐานข้อมูล (ECMIS.SUBCOMMITTEE_ROSTER) ตามคณะที่กลั่นกรองสำนวนนี้
        (kase.subCommittee) มาลงแบบฟอร์มอัตโนมัติแทนการกรอกชื่อซ้ำเดิมทุกสำนวน ตามมติที่ประชุม
@@ -330,6 +350,9 @@
       const M = ECMIS.mergeField;
       const no = document.getElementById('orderNo').value.trim();
       const dt = ECMIS.thaiDate(document.getElementById('orderDate').value.trim());
+      const accused = (kase.accused && kase.accused[0]) || {};
+      const etAl = kase.accused && kase.accused.length > 1 ? ' กับพวก' : '';
+      const isNaccM62 = caseOriginCode() === 'NACC_M62';
 
       document.getElementById('docPaper').innerHTML = `
     <div style="text-align:center;margin-bottom:8px"><i class="fa-solid fa-landmark fa-2x" style="color:#333"></i></div>
@@ -346,32 +369,67 @@
       ด้วยคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ ในการประชุมครั้งที่
       ${M(kase.meetingNo || '38/2569')} เมื่อวันที่ ${M(ECMIS.thaiDate(kase.meetingDate || '2569-06-02'))}
       วาระที่ ${M(kase.agendaNo || '5.12')} ได้มีมติ<strong>รับไว้ไต่สวน</strong>
-      เรื่องที่ ${M(kase.id)} กรณี ${M(kase.subject)} โดยมีพฤติการณ์กล่าวโดยสรุปว่า
+      สำนวนเรื่องที่ ${M(kase.id)} กรณีกล่าวหา ${M(accused.name)} เลขประจำตัวประชาชน ${M(accused.idcard)}
+      ขณะเกิดเหตุดำรงตำแหน่ง ${M(accused.pos)} สังกัด ${M(accused.agency)} ผู้ถูกกล่าวหา${etAl}
+      ว่ากระทำการทุจริตในภาครัฐ โดยมีพฤติการณ์กล่าวโดยสรุปว่า
     </div>
 
     <div class="doc-indent doc-body-indent" style="margin-top:4px">${document.getElementById('allegationBox').innerHTML || M('', 'พฤติการณ์คดี')}</div>
 
     <div class="doc-indent" style="margin-top:8px">
       ${isSub
-          ? `อาศัยอำนาจตามความในมาตรา ๒๔ วรรคสาม แห่งพระราชบัญญัติมาตรการของฝ่ายบริหาร
-           ในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม
+          ? `อาศัยอำนาจตามความในมาตรา ๑๗(๔)(๕)(๖)(๑๐) มาตรา ๑๗/๑ มาตรา ๑๘ มาตรา ๑๙
+           และมาตรา ๒๔ วรรคสาม แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต
+           พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม และระเบียบคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ
+           ว่าด้วยหลักเกณฑ์และวิธีการไต่สวน พ.ศ. ๒๕๖๘ ข้อ ๗
+           ${isNaccM62 ? 'ประกอบมติคณะกรรมการป้องกันและปราบปรามการทุจริตแห่งชาติ (ป.ป.ช.) ที่มอบหมายให้คณะกรรมการ ป.ป.ท. ดำเนินการไต่สวนแทนตามมาตรา ๖๒ แห่งพระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑' : ''}
            โดยเป็นเรื่องสำคัญหรือมีความซับซ้อน และตามข้อเสนอแนะของเลขาธิการคณะกรรมการ ป.ป.ท.
-           จึงแต่งตั้งคณะอนุกรรมการไต่สวน ประกอบด้วย`
-          : `อาศัยอำนาจตามความในมาตรา ๒๔ วรรคหนึ่ง แห่งพระราชบัญญัติมาตรการของฝ่ายบริหาร
-           ในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม
-           จึงแต่งตั้งองค์คณะเพื่อดำเนินการไต่สวน ประกอบด้วย`}
+           จึงแต่งตั้งคณะอนุกรรมการไต่สวน โดยมีองค์ประกอบและอำนาจหน้าที่ดังนี้`
+          : `อาศัยอำนาจตามความในมาตรา ๑๗(๔)(๕)(๖) มาตรา ๑๗/๑ มาตรา ๑๘ มาตรา ๑๙
+           และมาตรา ๒๔ วรรคแรก แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต
+           พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม และระเบียบคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ
+           ว่าด้วยหลักเกณฑ์และวิธีการไต่สวน พ.ศ. ๒๕๖๘ ข้อ ๑๐๑
+           ${isNaccM62 ? 'ประกอบข้อ ๕ วรรคสอง และมติคณะกรรมการป้องกันและปราบปรามการทุจริตแห่งชาติ (ป.ป.ช.) ที่มอบหมายให้คณะกรรมการ ป.ป.ท. ดำเนินการไต่สวนแทนตามมาตรา ๖๒ แห่งพระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑' : ''}
+           จึงแต่งตั้งองค์คณะเพื่อดำเนินการไต่สวน โดยมีองค์ประกอบและอำนาจหน้าที่ดังนี้`}
     </div>
 
-    <div style="margin-top:10px">
+    <div class="doc-h" style="margin-top:10px">ก. องค์ประกอบ</div>
+    <div style="margin-top:4px">
       ${members.map((m, i) => `<div class="doc-row">
         <span class="k">${i + 1}.</span> ${M(m.name, 'ชื่อ-สกุล')} ${M(m.pos, 'ตำแหน่ง')}
         &nbsp;เป็น ${M(m.role)}</div>`).join('')}
     </div>
 
+    <div class="doc-h" style="margin-top:12px">ข. อำนาจหน้าที่</div>
+    <div class="doc-indent">
+      ๑. แสวงหา รวบรวม และดำเนินการอื่นใด เพื่อให้ได้มาซึ่งข้อเท็จจริงและพยานหลักฐาน
+      โดยให้มีอำนาจตามมาตรา ๑๘ และมาตรา ๑๙ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหาร
+      ในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม
+    </div>
+    <div class="doc-indent" style="margin-top:6px">
+      ๒. ดำเนินการไต่สวนให้เป็นไปตามพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปราม
+      การทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม และระเบียบคณะกรรมการป้องกันและปราบปรามการทุจริต
+      ในภาครัฐว่าด้วยหลักเกณฑ์และวิธีการไต่สวน พ.ศ. ๒๕๖๘
+    </div>
+    <div class="doc-indent" style="margin-top:6px">
+      ๓. เมื่อดำเนินการไต่สวนแล้วเสร็จ ให้เสนอสำนวนไต่สวนต่อคณะกรรมการ ป.ป.ท.
+      เพื่อพิจารณาให้ความเห็นชอบและวินิจฉัยชี้มูล
+    </div>
+    <div class="doc-indent" style="margin-top:6px">
+      ๔. รับผิดชอบดำเนินการใด ๆ ซึ่งเกี่ยวข้องกับสำนวนการไต่สวน จนกว่าจะปรากฏข้อเท็จจริงว่า
+      สำนวนการไต่สวนดังกล่าวนี้ศาลได้มีคำพิพากษาถึงที่สุด
+    </div>
+    <div class="doc-indent" style="margin-top:6px">
+      ๕. ดำเนินการอื่นใดตามที่คณะกรรมการ ป.ป.ท. มอบหมาย
+    </div>
+
     <div class="doc-indent" style="margin-top:10px">
-      ให้ผู้ได้รับแต่งตั้งดำเนินการไต่สวนและพิจารณาวินิจฉัยให้แล้วเสร็จภายในระยะเวลาที่กำหนด
-      ตามมาตรา ๒๓ แห่งพระราชบัญญัติดังกล่าว แล้วเสนอสำนวนการไต่สวนต่อคณะกรรมการ ป.ป.ท.
-      เพื่อพิจารณาให้ความเห็นชอบและวินิจฉัยชี้มูลต่อไป
+      อนึ่ง ในการดำเนินการไต่สวนของ${isSub ? 'คณะอนุกรรมการไต่สวน' : 'องค์คณะ'} หากพบว่ามีเจ้าหน้าที่ของรัฐหรือบุคคลอื่นซึ่งเป็นตัวการ
+      ผู้ใช้ ผู้สนับสนุน รวมทั้งผู้ขอ รับ หรือเรียกจะรับว่าให้ หรือรับว่าจะให้ หรือนิติบุคคลที่เกี่ยวข้อง
+      กับการให้ทรัพย์สินหรือประโยชน์อื่นใดแก่บุคคล เพื่อจูงใจให้กระทำการ ไม่กระทำการ
+      หรือประวิงการกระทำอันมิชอบด้วยกฎหมายในระหว่างการไต่สวน ให้${isSub ? 'คณะอนุกรรมการไต่สวน' : 'องค์คณะ'}
+      รายงานให้คณะกรรมการ ป.ป.ท. ทราบโดยเร็ว เพื่อพิจารณาดำเนินการตามพระราชบัญญัติมาตรการของ
+      ฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติมต่อไป
     </div>
 
     <div class="doc-indent" style="margin-top:8px">ทั้งนี้ ตั้งแต่บัดนี้เป็นต้นไป</div>
@@ -426,6 +484,11 @@
           .then(res => {
             if (!res.isConfirmed) return;
             const now = new Date();
+            ECMIS.Model.SignatureStore.create({
+              caseId: kase.id, docType: document.getElementById('docName').textContent,
+              signerRole: SIGNER.roleId, signerName: `${SIGNER.name} — ${SIGNER.title}`,
+              method: res.value.mode, signedAt: now.toISOString()
+            });
             document.getElementById('sigBox').className = 'sig-box signed';
             document.getElementById('sigBox').innerHTML = `
           <i class="fa-solid fa-circle-check fa-2x mb-2" style="color:#166434"></i>

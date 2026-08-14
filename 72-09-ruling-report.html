@@ -50,19 +50,46 @@
         </div>
 
         <div class="ws-card mb-3">
-          <div class="card-header"><i class="fa-solid fa-file-lines"></i> ข้อมูลรายงานวินิจฉัยชี้มูล</div>
+          <div class="card-header"><i class="fa-solid fa-file-lines"></i> ข้อมูลรายงานวินิจฉัยชี้มูล (ปปท. 7-02)</div>
           <div class="card-body">
             <div class="mb-3">
-              <label class="form-label field-req">สรุปข้อเท็จจริงและพยานหลักฐานสำคัญ</label>
+              <label class="form-label field-req">ประเด็นเกี่ยวกับสถานะของผู้ถูกกล่าวหา</label>
+              <small class="text-muted d-block mb-1">สถานะขณะกระทำความผิด / สถานะปัจจุบันของผู้ถูกกล่าวหา</small>
+              <textarea class="form-control" id="accusedStatus" rows="2"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label field-req">ประเด็นเกี่ยวกับอำนาจหน้าที่ของผู้ถูกกล่าวหา</label>
+              <textarea class="form-control" id="accusedAuthority" rows="2"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label field-req">ประเด็นเกี่ยวกับการกระทำความผิดของผู้ถูกกล่าวหา</label>
               <textarea class="form-control" id="factSummary" rows="3" placeholder="สรุปประเด็นพยานหลักฐานที่ทำให้เกิดมติ"></textarea>
             </div>
             <div class="mb-3">
-              <label class="form-label field-req">ข้อกฎหมายที่ใช้วินิจฉัย</label>
+              <label class="form-label field-req">ประเด็นเกี่ยวกับความเสียหาย</label>
+              <textarea class="form-control" id="damageDetail" rows="2"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label field-req">วัน เวลา สถานที่ เกิดเหตุ</label>
+              <textarea class="form-control" id="incidentDetail" rows="2"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label field-req">อายุความ</label>
+              <textarea class="form-control" id="prescriptionNote" rows="2" placeholder="เช่น มีอายุความ ... นับแต่วันที่ ..."></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label field-req">เหตุผลในการวินิจฉัย (การปรับข้อเท็จจริงประกอบเข้ากับข้อกฎหมาย)</label>
               <textarea class="form-control" id="legalAnalysis" rows="3" placeholder="ระบุมาตรา/เหตุผลทางกฎหมาย"></textarea>
             </div>
+            <div class="mb-3">
+              <label class="form-label">ความผิดทางอาญา</label>
+              <small class="text-muted d-block mb-1">เว้นว่างได้หากไม่มีมูลทางอาญา</small>
+              <textarea class="form-control" id="criminalFinding" rows="3"></textarea>
+            </div>
             <div class="mb-0">
-              <label class="form-label field-req">ข้อวินิจฉัยและคำสั่งของคณะกรรมการ ป.ป.ท.</label>
-              <textarea class="form-control" id="rulingText" rows="4" placeholder="ข้อความคำสั่งตามมติ"></textarea>
+              <label class="form-label">ความผิดทางวินัย</label>
+              <small class="text-muted d-block mb-1">เว้นว่างได้หากไม่มีมูลทางวินัย</small>
+              <textarea class="form-control" id="disciplinaryFinding" rows="3"></textarea>
             </div>
           </div>
         </div>
@@ -83,9 +110,11 @@
                   <option value="ไล่ออก">ไล่ออก</option>
                 </select>
               </div>
-              <div class="col-md-6"><label class="form-label field-req">กำหนดแจ้งผลกลับ (วัน)</label><input class="form-control" id="discDueDate" placeholder="เช่น ภายใน 30 วัน"></div>
               <div class="col-12"><label class="form-label field-req">พฤติการณ์ความผิดทางวินัย</label><textarea class="form-control" id="discMisconduct" rows="3"></textarea></div>
-              <div class="col-12"><label class="form-label field-req">ฐานกฎหมายอ้างอิง</label><input class="form-control" id="discLawRef" placeholder="เช่น ม.38 แห่ง พ.ร.บ.มาตรการฯ"></div>
+            </div>
+            <div class="mt-2" style="font-size:.82rem;color:#7C8CA3">
+              <i class="fa-solid fa-circle-info me-1"></i>ฐานกฎหมายและกำหนดเวลา (ม.38 หรือ ม.38+ม.44 · 60 วัน / 15 วัน)
+              ระบบกำหนดให้อัตโนมัติตามมาตรฐาน ปปท. 8-05/8-06 — ไม่ต้องกรอกเอง
             </div>
           </div>
         </div>
@@ -114,6 +143,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="assets/ecmis-app.js"></script>
+  <script src="assets/ecmis-model.js"></script>
   <script>
     ECMIS.renderShell('72-09-ruling-report.html');
 
@@ -121,6 +151,18 @@
     const kase = ECMIS.getCase(params.get('case') || '2015/2569');
     const role = ECMIS.currentRole();
     let docTab = 'ruling';
+
+    /* รายชื่อกรรมการ ป.ป.ท. — ใช้ชุดเดียวกับ 72-08-board-resolution.html เพื่อให้รายชื่อ
+       ผู้เข้าประชุม/ผู้ลงนามในรายงานวินิจฉัยชี้มูล (ปปท. 7-02) ตรงกับผู้ที่ลงมติในขั้นตอนก่อนหน้า */
+    const BOARD = [
+      { n: 'นายอำนาจ พวงชมภู', r: 'ประธานกรรมการ ป.ป.ท.' },
+      { n: 'พลเอก จิระ โกมุทพงศ์', r: 'กรรมการ ป.ป.ท.' },
+      { n: 'พันตำรวจโท วันนพ สมจินตนากุล', r: 'กรรมการ ป.ป.ท.' },
+      { n: 'นายวิเชียร จันทรโณทัย', r: 'กรรมการ ป.ป.ท.' },
+      { n: 'นายพรเทพ อัมพรกลิ่นแก้ว', r: 'กรรมการ ป.ป.ท.' },
+      { n: 'นายกมล สกลเดชา', r: 'กรรมการ ป.ป.ท.' },
+      { n: 'นายสุรพงษ์ อินทรถาวร', r: 'กรรมการ ป.ป.ท.' }
+    ];
 
     document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
     document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72);
@@ -145,34 +187,43 @@
     document.getElementById('agendaNo').value = kase.agendaNo || '';
     document.getElementById('orderNo').value = kase.orderNo || '';
 
+    document.getElementById('accusedStatus').value = kase.accusedStatus72 || '';
+    document.getElementById('accusedAuthority').value = kase.accusedAuthority72 || '';
     document.getElementById('factSummary').value = kase.factSummary72 || kase.allegation || '';
+    document.getElementById('damageDetail').value = kase.damageDetail72 || '';
+    document.getElementById('incidentDetail').value = kase.incidentDetail72 || '';
+    document.getElementById('prescriptionNote').value = kase.prescriptionNote72 || (kase.prescription ? `มีอายุความถึงวันที่ ${ECMIS.thaiDate(kase.prescription)}` : '');
     document.getElementById('legalAnalysis').value = kase.legalAnalysis72 || (res.legalBasis || '');
-    document.getElementById('rulingText').value = kase.rulingText72 || `คณะกรรมการ ป.ป.ท. มีมติให้ดำเนินการตามแนวมติประเภท "${res.label}"`;
+    document.getElementById('criminalFinding').value = kase.criminalFinding72 || '';
+    document.getElementById('disciplinaryFinding').value = kase.disciplinaryFinding72 || '';
 
     document.getElementById('discAgency').value = kase.discAgency72 || kase.ownerOrg || '';
     document.getElementById('discAccused').value = kase.discAccused72 || (kase.accused[0] ? kase.accused[0].name : '');
     document.getElementById('discPenalty').value = kase.discPenalty72 || '';
-    document.getElementById('discDueDate').value = kase.discDueDate72 || 'ภายใน 30 วัน';
     document.getElementById('discMisconduct').value = kase.discMisconduct72 || kase.allegation || '';
-    document.getElementById('discLawRef').value = kase.discLawRef72 || 'ม.38 แห่ง พ.ร.บ.มาตรการฯ';
 
     const disciplineVisible = (kase.resolution72 || '') === 'GUILTY_72';
     document.getElementById('disciplineCard').classList.toggle('d-none', !disciplineVisible);
 
     function persistForm() {
-      kase.meetingNo = document.getElementById('meetNo').value.trim();
-      kase.agendaNo = document.getElementById('agendaNo').value.trim();
-      kase.orderNo = document.getElementById('orderNo').value.trim();
-      kase.factSummary72 = document.getElementById('factSummary').value.trim();
-      kase.legalAnalysis72 = document.getElementById('legalAnalysis').value.trim();
-      kase.rulingText72 = document.getElementById('rulingText').value.trim();
-      kase.discAgency72 = document.getElementById('discAgency').value.trim();
-      kase.discAccused72 = document.getElementById('discAccused').value.trim();
-      kase.discPenalty72 = document.getElementById('discPenalty').value;
-      kase.discDueDate72 = document.getElementById('discDueDate').value.trim();
-      kase.discMisconduct72 = document.getElementById('discMisconduct').value.trim();
-      kase.discLawRef72 = document.getElementById('discLawRef').value.trim();
-      ECMIS.saveCases();
+      ECMIS.Model.CaseStore.update(kase.id, {
+        meetingNo: document.getElementById('meetNo').value.trim(),
+        agendaNo: document.getElementById('agendaNo').value.trim(),
+        orderNo: document.getElementById('orderNo').value.trim(),
+        accusedStatus72: document.getElementById('accusedStatus').value.trim(),
+        accusedAuthority72: document.getElementById('accusedAuthority').value.trim(),
+        factSummary72: document.getElementById('factSummary').value.trim(),
+        damageDetail72: document.getElementById('damageDetail').value.trim(),
+        incidentDetail72: document.getElementById('incidentDetail').value.trim(),
+        prescriptionNote72: document.getElementById('prescriptionNote').value.trim(),
+        legalAnalysis72: document.getElementById('legalAnalysis').value.trim(),
+        criminalFinding72: document.getElementById('criminalFinding').value.trim(),
+        disciplinaryFinding72: document.getElementById('disciplinaryFinding').value.trim(),
+        discAgency72: document.getElementById('discAgency').value.trim(),
+        discAccused72: document.getElementById('discAccused').value.trim(),
+        discPenalty72: document.getElementById('discPenalty').value,
+        discMisconduct72: document.getElementById('discMisconduct').value.trim()
+      });
     }
 
     function renderDoc() {
@@ -180,46 +231,134 @@
       const meetNo = document.getElementById('meetNo').value.trim();
       const agendaNo = document.getElementById('agendaNo').value.trim();
       const orderNo = document.getElementById('orderNo').value.trim();
+      const accusedStatus = document.getElementById('accusedStatus').value.trim();
+      const accusedAuthority = document.getElementById('accusedAuthority').value.trim();
       const factSummary = document.getElementById('factSummary').value.trim();
+      const damageDetail = document.getElementById('damageDetail').value.trim();
+      const incidentDetail = document.getElementById('incidentDetail').value.trim();
+      const prescriptionNote = document.getElementById('prescriptionNote').value.trim();
       const legalAnalysis = document.getElementById('legalAnalysis').value.trim();
-      const rulingText = document.getElementById('rulingText').value.trim();
+      const criminalFinding = document.getElementById('criminalFinding').value.trim();
+      const disciplinaryFinding = document.getElementById('disciplinaryFinding').value.trim();
       const discAgency = document.getElementById('discAgency').value.trim();
       const discAccused = document.getElementById('discAccused').value.trim();
       const discPenalty = document.getElementById('discPenalty').value;
-      const discDueDate = document.getElementById('discDueDate').value.trim();
       const discMisconduct = document.getElementById('discMisconduct').value.trim();
-      const discLawRef = document.getElementById('discLawRef').value.trim();
+      const accused = (kase.accused && kase.accused[0]) || {};
+      const etAl = kase.accused && kase.accused.length > 1 ? ' กับพวก' : '';
+      const meetDateThai = ECMIS.thaiDate(kase.resolutionDate72 || kase.meetingDate);
+      const hasCriminal = !!kase.guiltyCriminal72;
 
       if (docTab === 'ruling') {
         document.getElementById('docPaper').innerHTML = `
-          <div class="doc-title">รายงานการไต่สวนวินิจฉัยชี้มูล</div>
-          <div class="doc-sub">เลขสำนวน ${M(kase.id)} · ครั้งที่ประชุม ${M(meetNo)} · วาระที่ ${M(agendaNo)}</div>
-          <div class="doc-row"><span class="k">เลขที่คำสั่ง/หนังสือ:</span> ${M(orderNo, 'ปปท .../...')}</div>
-          <div class="doc-h">ข้อเท็จจริงและพยานหลักฐานสำคัญ</div>
+          <div class="doc-title">รายงานการไต่สวนเพื่อวินิจฉัยชี้มูล</div>
+          <div class="doc-sub" style="text-align:center">คณะกรรมการ ป.ป.ท.</div>
+          <div class="doc-row" style="margin-top:6px"><span class="k">เรื่องที่:</span> ${M(kase.id)}</div>
+          <div class="doc-row"><span class="k">วันที่:</span> ${M(meetDateThai)}</div>
+
+          <div class="doc-indent" style="margin-top:10px">
+            ในคราวการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)} เมื่อวันที่ ${M(meetDateThai)}
+            เพื่อพิจารณาและวินิจฉัยชี้มูลความผิด เรื่องที่ ${M(kase.id)} ของคณะอนุกรรมการไต่สวน/
+            คณะพนักงานไต่สวน ตามคำสั่งคณะกรรมการ ป.ป.ท./สำนักงาน ป.ป.ท. ลับ ที่ ${M(orderNo, '.../...')}
+            ลงวันที่ ${M(meetDateThai)} กรณีกล่าวหา ${M(accused.name)}${etAl} ผู้ถูกกล่าวหา
+          </div>
+
+          <div class="doc-indent" style="margin-top:10px">กรรมการ ป.ป.ท. ที่มาประชุม จำนวน ${ECMIS.toThaiDigits(BOARD.length)} คน ประกอบด้วย</div>
+          <div style="margin-top:4px">
+            ${BOARD.map((b, i) => `<div class="doc-row"><span class="k">(${ECMIS.toThaiDigits(i + 1)})</span> ${b.n} — ${b.r}</div>`).join('')}
+          </div>
+
+          <div class="doc-indent" style="margin-top:10px">
+            คณะกรรมการ ป.ป.ท. ได้พิจารณาข้อเท็จจริงและพยานหลักฐานตามรายงานการไต่สวนของ
+            คณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวนแล้ว ฟังได้ว่า
+          </div>
+
+          <div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับการดำเนินการไต่สวนของคณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวน</div>
+          <div class="doc-indent">คณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวน ได้ดำเนินการไต่สวนและรวบรวมพยานหลักฐาน
+            ถูกต้องตามกฎหมายและระเบียบที่เกี่ยวข้องเรียบร้อยแล้ว</div>
+
+          <div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับสถานะของผู้ถูกกล่าวหา</div>
+          <div class="doc-indent">${M(accusedStatus)}</div>
+
+          <div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับอำนาจหน้าที่ของผู้ถูกกล่าวหา</div>
+          <div class="doc-indent">${M(accusedAuthority)}</div>
+
+          <div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับการกระทำความผิดของผู้ถูกกล่าวหา</div>
           <div class="doc-indent">${M(factSummary)}</div>
-          <div class="doc-h">ข้อกฎหมายที่ใช้วินิจฉัย</div>
+
+          <div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับความเสียหาย</div>
+          <div class="doc-indent">${M(damageDetail)}</div>
+
+          <div class="doc-h" style="margin-top:10px">วัน เวลา สถานที่ เกิดเหตุ</div>
+          <div class="doc-indent">${M(incidentDetail)}</div>
+
+          <div class="doc-h" style="margin-top:10px">อายุความ</div>
+          <div class="doc-indent">${M(prescriptionNote)}</div>
+
+          <div class="doc-indent" style="margin-top:10px">
+            คณะกรรมการ ป.ป.ท. มีมติเป็นเอกฉันท์วินิจฉัยชี้มูลความผิดทางอาญา และความผิดทางวินัย
+            ผู้ถูกกล่าวหา ดังนี้
+          </div>
+
+          <div class="doc-h" style="margin-top:10px">เหตุผลในการวินิจฉัย (การปรับข้อเท็จจริงประกอบเข้ากับข้อกฎหมาย)</div>
           <div class="doc-indent">${M(legalAnalysis)}</div>
-          <div class="doc-h">ข้อวินิจฉัยและคำสั่ง</div>
-          <div class="doc-indent">${M(rulingText)}</div>
-          <div class="doc-sign" style="margin-top:32px">
-            <span class="doc-dots"></span><br>(นายวิชัย ยุติธรรม)<br>ประธานกรรมการ ป.ป.ท.
+
+          <div class="doc-h" style="margin-top:10px">ความผิดทางอาญา</div>
+          <div class="doc-indent">${M(criminalFinding, 'ไม่มีมูลความผิดทางอาญา')}</div>
+
+          <div class="doc-h" style="margin-top:10px">ความผิดทางวินัย</div>
+          <div class="doc-indent">${M(disciplinaryFinding, 'ไม่มีมูลความผิดทางวินัย')}</div>
+
+          <div style="margin-top:24px">
+            ${BOARD.map(b => `<div class="doc-sign" style="margin-top:18px">
+              <span class="doc-dots"></span><br>(${b.n})<br>${b.r}</div>`).join('')}
           </div>`;
       } else {
         document.getElementById('docPaper').innerHTML = `
-          <div class="doc-title">หนังสือลงโทษทางวินัย</div>
-          <div class="doc-row"><span class="k">เลขที่:</span> ${M(orderNo, 'ปปท .../...')}</div>
-          <div class="doc-row"><span class="k">เรียน:</span> ${M(discAgency)}</div>
+          <div class="doc-row" style="text-align:right">${M(orderNo, 'ที่ ปป .../...')} สำนักงาน ป.ป.ท.</div>
+          <div class="doc-row" style="text-align:right">อาคารซอฟต์แวร์ปาร์ค ถนนแจ้งวัฒนะ</div>
+          <div class="doc-row" style="text-align:right; margin-bottom:10px">อำเภอปากเกร็ด จังหวัดนนทบุรี ๑๑๑๒๐</div>
+
+          <div class="doc-row"><span class="k">เรื่อง</span> ขอให้พิจารณาลงโทษทางวินัย</div>
+          <div class="doc-row"><span class="k">เรียน</span> ${M(discAgency, '(ผู้บังคับบัญชาหรือผู้มีอำนาจแต่งตั้งถอดถอนผู้ถูกกล่าวหา)')}</div>
+          <div class="doc-indent" style="margin-top:6px">
+            สิ่งที่ส่งมาด้วย &nbsp;๑. สำเนารายงานการไต่สวนเพื่อวินิจฉัยชี้มูลของคณะกรรมการ ป.ป.ท. เรื่องที่ ${M(kase.id)} จำนวน ๑ ชุด<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;๒. สำเนามติคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)} เมื่อวันที่ ${M(meetDateThai)} จำนวน ๑ ชุด
+          </div>
+
           <div class="doc-indent" style="margin-top:10px">
-            ตามที่คณะกรรมการ ป.ป.ท. มีมติวินิจฉัยชี้มูลความผิดทางวินัยในสำนวนเลขที่ ${M(kase.id)}
-            เกี่ยวกับ ${M(discAccused)} เนื่องจาก ${M(discMisconduct)}
+            ด้วยคณะกรรมการ ป.ป.ท. ได้ดำเนินการไต่สวนโดยการแต่งตั้งคณะอนุกรรมการไต่สวน/คณะพนักงาน
+            ป.ป.ท. ไต่สวน กรณี ${M(accused.name)}${etAl} ${M(accused.pos)} สังกัด ${M(accused.agency)}
+            ว่ากระทำความผิดฐานทุจริตต่อหน้าที่หรือประพฤติมิชอบ
           </div>
           <div class="doc-indent" style="margin-top:8px">
-            จึงขอให้หน่วยงานของท่านพิจารณาดำเนินการลงโทษทางวินัยประเภท ${M(discPenalty, 'ระบุประเภทโทษ')}
-            โดยอาศัยฐานกฎหมาย ${M(discLawRef)} และแจ้งผลการดำเนินการกลับมายังสำนักงาน ป.ป.ท. ${M(discDueDate)}
+            คณะกรรมการ ป.ป.ท. ได้พิจารณาสำนวนการไต่สวนในคราวประชุม ครั้งที่ ${M(meetNo)}
+            เมื่อวันที่ ${M(meetDateThai)} แล้วมีมติว่า ${M(discMisconduct)}
           </div>
-          <div class="doc-sign" style="margin-top:32px">
-            <span class="doc-dots"></span><br>(นายวิชัย ยุติธรรม)<br>ประธานกรรมการ ป.ป.ท.
-          </div>`;
+          <div class="doc-indent" style="margin-top:8px">
+            ดังนั้น เพื่อปฏิบัติตามมาตรา ๓๘${hasCriminal ? ' และ ๔๔' : ''} แห่งพระราชบัญญัติมาตรการของ
+            ฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม จึงขอส่งรายงาน
+            การไต่สวนและเอกสารที่เกี่ยวข้องมายังท่านเพื่อพิจารณาโทษทางวินัยแก่ ${M(discAccused)}
+            ตามกฎหมาย ระเบียบ หรือข้อบังคับว่าด้วยการบริหารงานบุคคลของ ${M(discAgency)} ภายใน
+            ๖๐ วันนับแต่วันที่ได้รับหนังสือฉบับนี้โดยมิต้องดำเนินการสอบสวนทางวินัยอีก และเมื่อได้
+            ดำเนินการลงโทษทางวินัย${M(discPenalty, '')}แล้ว ขอได้ส่งสำเนาคำสั่งลงโทษดังกล่าวไปให้
+            คณะกรรมการ ป.ป.ท. ทราบภายใน ๑๕ วัน นับแต่วันที่ได้ออกคำสั่งด้วย
+          </div>
+          ${hasCriminal ? `<div class="doc-indent" style="margin-top:8px">
+            อนึ่ง สำหรับความผิดทางอาญาในเรื่องนี้ ได้ส่งเรื่องให้พนักงานอัยการเพื่อดำเนินคดีอาญาแก่
+            บุคคลดังกล่าวแล้ว
+          </div>` : ''}
+          <div class="doc-indent" style="margin-top:8px">จึงเรียนมาเพื่อโปรดพิจารณาดำเนินการในส่วนที่เกี่ยวข้องต่อไป</div>
+
+          <div class="doc-sign" style="margin-top:24px">
+            ขอแสดงความนับถือ<br><br>
+            <span class="doc-dots"></span><br>(${M(BOARD[0].n)})<br>ประธานกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ
+          </div>
+
+          <div class="doc-row" style="margin-top:24px; font-size:.85rem">สำนัก (กปท./ปปท.เขต ของฝ่ายเลขานุการไต่สวน/พนักงาน ป.ป.ท. เจ้าของสำนวน)</div>
+          <div class="doc-row" style="font-size:.85rem">โทร. ${M(kase.ownerOrgTel, '-')}</div>
+          <div class="doc-row" style="font-size:.85rem">โทรสาร ${M('', '-')}</div>
+          <div class="doc-row" style="font-size:.85rem">${M(kase.owner)}</div>`;
       }
     }
 
@@ -232,7 +371,7 @@
       });
     });
 
-    ['meetNo', 'agendaNo', 'orderNo', 'factSummary', 'legalAnalysis', 'rulingText', 'discAgency', 'discAccused', 'discPenalty', 'discDueDate', 'discMisconduct', 'discLawRef']
+    ['meetNo', 'agendaNo', 'orderNo', 'accusedStatus', 'accusedAuthority', 'factSummary', 'damageDetail', 'incidentDetail', 'prescriptionNote', 'legalAnalysis', 'criminalFinding', 'disciplinaryFinding', 'discAgency', 'discAccused', 'discPenalty', 'discMisconduct']
       .forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -240,17 +379,23 @@
         el.addEventListener('change', () => { persistForm(); renderDoc(); });
       });
 
-    function setNextStatusByResolution() {
+    function nextStatusPatchByResolution() {
       const code = kase.resolution72 || 'GUILTY_72';
       if (code === 'MORE_INVESTIGATE_72') {
-        kase.status = 'PENDING_SECTION_72';
-        kase.round72 = (kase.round72 || 1) + 1;
+        const priorRounds = ECMIS.Model.RoundStore.list(kase.id).filter(rr => rr.phase === '7.2');
+        ECMIS.Model.RoundStore.create({
+          caseId: kase.id, phase: '7.2', roundNumber: priorRounds.length + 1,
+          reasonText: kase.moreReason72 || '',
+          scopeCode: kase.moreScope72 || '',
+          triggeredBy: 'RULING_REPORT_72'
+        });
+        return { status: 'PENDING_SECTION_72', round72: (kase.round72 || 1) + 1 };
       } else if (code === 'NO_MERIT_72') {
-        kase.status = 'PENDING_AREA_NOTICE_72';
+        return { status: 'PENDING_AREA_NOTICE_72' };
       } else if (code === 'FORWARD_NACC') {
-        kase.status = 'DISPATCHING_NACC_72';
+        return { status: 'DISPATCHING_NACC_72' };
       } else {
-        kase.status = 'PENDING_DISPATCH_GUILTY_72';
+        return { status: 'PENDING_DISPATCH_GUILTY_72' };
       }
     }
 
@@ -282,8 +427,7 @@
       const btnDraftDone = document.getElementById('btnDraftDone');
       if (btnDraftDone) btnDraftDone.addEventListener('click', () => {
         persistForm();
-        kase.status = 'PENDING_SIGN_RULING_72';
-        ECMIS.saveCases();
+        ECMIS.Model.CaseStore.update(kase.id, { status: 'PENDING_SIGN_RULING_72' });
         ECMIS.toastOk('ส่งรายงานเข้าสู่ขั้นตอนรอลงนามแล้ว');
         setTimeout(() => location.reload(), 500);
       });
@@ -294,9 +438,14 @@
         const signed = await ECMIS.signDialog('รายงานวินิจฉัยชี้มูล', ECMIS.getRole('chairman').name);
         if (!signed.isConfirmed) return;
 
-        kase.signedRulingAt = new Date().toISOString().slice(0, 10);
-        setNextStatusByResolution();
-        ECMIS.saveCases();
+        ECMIS.Model.SignatureStore.create({
+          caseId: kase.id, docType: 'รายงานวินิจฉัยชี้มูล',
+          signerRole: 'chairman', signerName: ECMIS.getRole('chairman').name,
+          method: signed.value.mode, signedAt: new Date().toISOString()
+        });
+        const patch = nextStatusPatchByResolution();
+        patch.signedRulingAt = new Date().toISOString().slice(0, 10);
+        ECMIS.Model.CaseStore.update(kase.id, patch);
         ECMIS.toastOk('ลงนามรายงานเรียบร้อยแล้ว');
         setTimeout(() => { location.href = '02-case-register.html'; }, 550);
       });

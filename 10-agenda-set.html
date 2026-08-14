@@ -108,6 +108,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="assets/ecmis-app.js"></script>
+    <script src="assets/ecmis-model.js"></script>
     <script>
         ECMIS.renderShell('10-agenda-set.html');
 
@@ -251,9 +252,9 @@
                     confirmText: 'ยืนยันบรรจุวาระ'
                 }).then(r => {
                     if (r.isConfirmed) {
-                        kase.meetingNo = meetNo; kase.agendaNo = agendaNo;
-                        kase.status = 'IN_MEETING';
-                        ECMIS.saveCases();
+                        ECMIS.Model.CaseStore.update(kase.id, {
+                            meetingNo: meetNo, agendaNo: agendaNo, status: 'IN_MEETING'
+                        });
                         ECMIS.toastOk('บรรจุระเบียบวาระเรียบร้อย');
                         setTimeout(() => location.href = '08-board-resolution.html?case=' + encodeURIComponent(kase.id), 1400);
                     }
@@ -281,13 +282,13 @@
             }
 
             const BOARD = [
-                { n: 'นายวิชัย ยุติธรรม', r: 'ประธานกรรมการ ป.ป.ท.', chair: true },
-                { n: 'นายสมบูรณ์ ธรรมรัฐ', r: 'กรรมการ ป.ป.ท.' },
-                { n: 'นางอรุณี พิทักษ์ชน', r: 'กรรมการ ป.ป.ท.' },
-                { n: 'นายเกรียงไกร สุจริต', r: 'กรรมการ ป.ป.ท.' },
-                { n: 'นางสาวรัตนา ยึดมั่น', r: 'กรรมการ ป.ป.ท.' },
-                { n: 'นายถาวร โปร่งใส', r: 'กรรมการ ป.ป.ท.' },
-                { n: 'เลขาธิการคณะกรรมการ ป.ป.ท.', r: 'กรรมการ ป.ป.ท. โดยตำแหน่ง' }
+                { n: 'นายอำนาจ พวงชมภู', r: 'ประธานกรรมการ ป.ป.ท.', chair: true },
+                { n: 'พลเอก จิระ โกมุทพงศ์', r: 'กรรมการ ป.ป.ท.' },
+                { n: 'พันตำรวจโท วันนพ สมจินตนากุล', r: 'กรรมการ ป.ป.ท.' },
+                { n: 'นายวิเชียร จันทรโณทัย', r: 'กรรมการ ป.ป.ท.' },
+                { n: 'นายพรเทพ อัมพรกลิ่นแก้ว', r: 'กรรมการ ป.ป.ท.' },
+                { n: 'นายกมล สกลเดชา', r: 'กรรมการ ป.ป.ท.' },
+                { n: 'นายสุรพงษ์ อินทรถาวร', r: 'กรรมการ ป.ป.ท.' }
             ];
             document.getElementById('boardTb72').innerHTML = BOARD.map((b, i) => `
     <tr data-i="${i}">
@@ -334,11 +335,12 @@
                     confirmText: 'ยืนยันส่งหนังสือเชิญประชุม'
                 }).then(res => {
                     if (!res.isConfirmed) return;
-                    kase.inviteChecklist72 = CHECKLIST.slice();
-                    kase.inviteStatus72 = inviteStatus;
-                    kase.inviteSentDate72 = new Date().toISOString().slice(0, 10);
-                    kase.status = 'IN_MEETING_72';
-                    ECMIS.saveCases();
+                    ECMIS.Model.CaseStore.update(kase.id, {
+                        inviteChecklist72: CHECKLIST.slice(),
+                        inviteStatus72: inviteStatus,
+                        inviteSentDate72: new Date().toISOString().slice(0, 10),
+                        status: 'IN_MEETING_72'
+                    });
                     ECMIS.toastOk('ส่งหนังสือเชิญประชุมและเปิดวาระเรียบร้อย');
                     setTimeout(() => location.href = ECMIS.pageForCase72(kase) + '?case=' + encodeURIComponent(kase.id), 1400);
                 });

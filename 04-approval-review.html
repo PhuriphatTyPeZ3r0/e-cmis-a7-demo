@@ -202,6 +202,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="assets/ecmis-app.js"></script>
+  <script src="assets/ecmis-model.js"></script>
   <script>
     ECMIS.renderShell('04-approval-review.html');
 
@@ -801,8 +802,7 @@
           if (gr && !gr.value.trim()) gr.value = 'เลขาธิการฯ พิจารณาแล้วเห็นควรมอบหมายให้คณะอนุกรรมการสนับสนุนฯ ตรวจสอบก่อน';
 
           // Change status to IN_SUPPORT_SUB directly without signing
-          kase.status = 'IN_SUPPORT_SUB';
-          ECMIS.saveCases();
+          ECMIS.Model.CaseStore.update(kase.id, { status: 'IN_SUPPORT_SUB' });
 
           Swal.fire({
             icon: 'success',
@@ -849,10 +849,11 @@
           path = 'สำนวนปกติ: เสนอหน้าห้องประธานฯ ตามลำดับ';
         }
 
-        kase.status = targetStatus;
-        kase.signedBySecgen = true;
-        kase.secgenSignedAt = new Date().toLocaleString('th-TH');
-        ECMIS.saveCases();
+        ECMIS.Model.CaseStore.update(kase.id, {
+          status: targetStatus,
+          signedBySecgen: true,
+          secgenSignedAt: new Date().toLocaleString('th-TH')
+        });
 
         Swal.fire({
           icon: 'success',
@@ -894,6 +895,11 @@
               signed = true;
               const now = new Date();
               kase._pendingSig = res.value.sig;
+              ECMIS.Model.SignatureStore.create({
+                caseId: kase.id, docType: `คำสั่งเลขาธิการฯ ตาม ${order.lawRef}`,
+                signerRole: 'secgen', signerName: 'นายอภิชาติ สุจริตกุล — เลขาธิการคณะกรรมการ ป.ป.ท.',
+                method: res.value.mode, signedAt: now.toISOString()
+              });
               updateSigBoxUI(true, res.value.sig, now.toLocaleString('th-TH'));
               renderActionButtons();
               ECMIS.toastOk('ลงนามคำสั่งเรียบร้อยแล้ว กรุณากดปุ่ม "บันทึกเพื่อเปลี่ยนสถานะ"');
@@ -924,6 +930,11 @@
           signed = true;
           const now = new Date();
           kase._pendingSig = res.value.sig;
+          ECMIS.Model.SignatureStore.create({
+            caseId: kase.id, docType: docType.label,
+            signerRole: 'secgen', signerName: `${SEC.name} — ${SEC.title}`,
+            method: res.value.mode, signedAt: now.toISOString()
+          });
           updateSigBoxUI(true, res.value.sig, now.toLocaleString('th-TH'));
           renderActionButtons();
           ECMIS.toastOk('ลงนามดิจิทัลเรียบร้อยแล้ว กรุณากดปุ่ม "บันทึกเพื่อเปลี่ยนสถานะ"');
@@ -1169,11 +1180,11 @@
             confirmText: 'ยืนยันเห็นชอบ'
           }).then(res => {
             if (!res.isConfirmed) return;
-            kase.chainOpinions = kase.chainOpinions || [];
-            kase.chainOpinions.push({ roleId: role.id, type:'ACCEPT', date: todayThaiIso(), note });
             const NEXT = { section_head:'PENDING_DIRECTOR_72', director:'PENDING_DEPUTY_72', deputy:'PENDING_SECGEN_72' };
-            kase.status = NEXT[role.id];
-            ECMIS.saveCases();
+            ECMIS.Model.CaseStore.update(kase.id, {
+              chainOpinions: (kase.chainOpinions || []).concat([{ roleId: role.id, type:'ACCEPT', date: todayThaiIso(), note }]),
+              status: NEXT[role.id]
+            });
             ECMIS.toastOk(`เห็นชอบเรียบร้อย — เสนอ${nextTitle}แล้ว`);
             setTimeout(() => location.href = ECMIS.homeHref(role.id), 1500);
           });
@@ -1235,6 +1246,11 @@
             if (!res.isConfirmed) return;
             signed = true;
             kase._pendingSig = res.value.sig;
+            ECMIS.Model.SignatureStore.create({
+              caseId: kase.id, docType: docType.label,
+              signerRole: 'secgen', signerName: 'นายอภิชาติ สุจริตกุล — เลขาธิการคณะกรรมการ ป.ป.ท.',
+              method: res.value.mode, signedAt: new Date().toISOString()
+            });
             updateSigBoxUI(true);
             renderActionButtons();
             ECMIS.toastOk('ลงนามดิจิทัลเรียบร้อยแล้ว กรุณาเลือกประเด็นซับซ้อน/เร่งด่วนแล้วกดปุ่ม "บันทึกและส่งต่อ"');
@@ -1285,10 +1301,11 @@
             confirmText: 'ยืนยันบันทึกและส่งต่อ'
           }).then(res => {
             if (!res.isConfirmed) return;
-            kase.status = next.to;
-            kase.signPhase = 'COMPLETE';
-            kase.secgenSignedAt72 = new Date().toLocaleString('th-TH');
-            ECMIS.saveCases();
+            ECMIS.Model.CaseStore.update(kase.id, {
+              status: next.to,
+              signPhase: 'COMPLETE',
+              secgenSignedAt72: new Date().toLocaleString('th-TH')
+            });
             ECMIS.toastOk('บันทึกและส่งต่อเรียบร้อยแล้ว');
             setTimeout(() => location.href = targetPage + '?case=' + encodeURIComponent(kase.id), 1500);
           });

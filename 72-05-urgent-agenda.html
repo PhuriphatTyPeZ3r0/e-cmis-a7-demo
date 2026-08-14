@@ -62,6 +62,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="assets/ecmis-app.js"></script>
+  <script src="assets/ecmis-model.js"></script>
   <script>
     ECMIS.renderShell('72-05-urgent-agenda.html');
 
@@ -184,10 +185,11 @@
           confirmText: 'ยืนยันรับรอง'
         }).then(res => {
           if (!res.isConfirmed) return;
-          kase.urgentReason = ta.value.trim();
-          kase.urgentCertifiedDate72 = new Date().toISOString().slice(0, 10);
-          kase.status = 'PENDING_CHAIRMAN_URGENT_72';
-          ECMIS.saveCases();
+          ECMIS.Model.CaseStore.update(kase.id, {
+            urgentReason: ta.value.trim(),
+            urgentCertifiedDate72: new Date().toISOString().slice(0, 10),
+            status: 'PENDING_CHAIRMAN_URGENT_72'
+          });
           ECMIS.toastOk('รับรองเหตุผลเร่งด่วนเรียบร้อย ส่งต่อประธานฯ แล้ว');
           setTimeout(() => location.reload(), 1400);
         });
@@ -202,9 +204,15 @@
               const sigEl = document.querySelector('#docPaper .doc-secret-foot');
               if (sigEl) sigEl.insertAdjacentHTML('beforebegin', `<div class="doc-sign"><img class="doc-sig-img" src="${res.value.sig}" alt="ลายมือชื่อ"><br>(${chairman.name})<br>${chairman.title}</div>`);
             }
-            kase.agendaUrgentSignedDate72 = new Date().toISOString().slice(0, 10);
-            kase.status = 'PENDING_INVITE_72';
-            ECMIS.saveCases();
+            ECMIS.Model.SignatureStore.create({
+              caseId: kase.id, docType: `หนังสือขอบรรจุวาระการประชุมด่วน`,
+              signerRole: 'chairman', signerName: `${chairman.name} — ${chairman.title}`,
+              method: res.value.mode, signedAt: new Date().toISOString()
+            });
+            ECMIS.Model.CaseStore.update(kase.id, {
+              agendaUrgentSignedDate72: new Date().toISOString().slice(0, 10),
+              status: 'PENDING_INVITE_72'
+            });
             ECMIS.toastOk('ลงนามมอบหมาย/บรรจุวาระด่วนเรียบร้อย');
             setTimeout(() => location.href = '10-agenda-set.html?case=' + encodeURIComponent(kase.id), 1400);
           });

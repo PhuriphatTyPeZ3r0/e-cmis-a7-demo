@@ -5,18 +5,17 @@
 
 const ROLES = [
 
-  { id:'chairman', login:'Wichai.Y', row:1, group:'คณะกรรมการ ป.ป.ท.', title:'ประธานกรรมการ ป.ป.ท.',
-    name:'นายวิชัย ยุติธรรม', org:'คณะกรรมการ ป.ป.ท.', lane:'L5', flow:'G4 / S7', act:'7.1, 7.2, 7.3',
+  { id:'chairman', login:'Amanat.P', row:1, group:'คณะกรรมการ ป.ป.ท.', title:'ประธานกรรมการ ป.ป.ท.',
+    name:'นายอำนาจ พวงชมภู', org:'คณะกรรมการ ป.ป.ท.', lane:'L5', flow:'G4 / S7', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','order.agenda','sign.agenda','sign.order24p3','sign.ruling','vote','bypass.approve','return'] },
   { id:'board', login:'Somboon.T', row:2, group:'คณะกรรมการ ป.ป.ท.', title:'กรรมการ ป.ป.ท.',
-    name:'นายสมบูรณ์ ธรรมรัฐ', org:'คณะกรรมการ ป.ป.ท.', lane:'L8', flow:'S9 / G5', act:'7.1, 7.2, 7.3',
+    name:'พลเอก จิระ โกมุทพงศ์', org:'คณะกรรมการ ป.ป.ท.', lane:'L8', flow:'S9 / G5', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','vote','read.agenda.advance'] },
   { id:'board_ex', login:'BoardEx.Demo', row:3, group:'คณะกรรมการ ป.ป.ท.', title:'กรรมการ ป.ป.ท. โดยตำแหน่ง',
-    name:'เลขาธิการคณะกรรมการ ป.ป.ท.', org:'คณะกรรมการ ป.ป.ท.', lane:'L8', flow:'S9 / G5', act:'7.1, 7.2, 7.3',
+    name:'พันตำรวจโท วันนพ สมจินตนากุล', org:'คณะกรรมการ ป.ป.ท.', lane:'L8', flow:'S9 / G5', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','vote','read.agenda.advance'] },
-
   { id:'sup_chair', login:'Kitti.P', row:4, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'ประธานคณะอนุสนับสนุนฯ',
-    name:'นายกิตติ ปรีชาญาณ', org:'ส่วนกลาง (2 คณะ)', lane:'L2', flow:'S2 / G2', act:'7.1, 7.2',
+    name:'นายวิเชียร จันทรโณทัย)', lane:'L2', flow:'S2 / G2', act:'7.1, 7.2',
     perms:['view.assigned','download','support.opinion','support.certify'] },
   { id:'support_sub', login:'Jiraporn.N', row:5, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'อนุกรรมการสนับสนุนเลขาธิการฯ',
     name:'นางสาวจิราพร นิติกิจ', org:'ส่วนกลาง (2 คณะ)', lane:'L2', flow:'S2 / G2', act:'7.1, 7.2',
@@ -1154,7 +1153,7 @@ CASES.push(
   {
     id:'2210/2569',
     subject:'กล่าวหาเจ้าหน้าที่กรมขนส่งทางบก ทุจริตการออกใบอนุญาตขับรถยนต์',
-    legalBase:'ม.18/4', status:'DEFERRED',
+    legalBase:'ม.18/4', status:'RETURNED',
     owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'ประชาชนผู้ขอรับบริการ',
     accused:[ { no:1, name:'นายอนุพงษ์ ขับขี่ปลอดภัย', pos:'เจ้าพนักงานขนส่งชำนาญงาน', idcard:'3-1715-0xxxx-xx-x', agency:'สำนักงานขนส่งจังหวัด' } ],

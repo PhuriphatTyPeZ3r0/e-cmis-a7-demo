@@ -107,6 +107,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="assets/ecmis-app.js"></script>
+  <script src="assets/ecmis-model.js"></script>
   <script>
     ECMIS.renderShell('12-meeting-report.html');
     const role = ECMIS.currentRole();
@@ -266,8 +267,7 @@
           confirmText: 'ยืนยันรายงานเสร็จสมบูรณ์'
         }).then(res => {
           if (!res.isConfirmed) return;
-          items.forEach(c => { c.resolutionStage = 6; c.meetingReportDone = true; });
-          ECMIS.saveCases();
+          items.forEach(c => ECMIS.Model.CaseStore.update(c.id, { resolutionStage: 6, meetingReportDone: true }));
           ECMIS.toastOk('บันทึกรายงานการประชุมเสร็จสมบูรณ์เรียบร้อย');
           renderItems(); renderActions();
         });

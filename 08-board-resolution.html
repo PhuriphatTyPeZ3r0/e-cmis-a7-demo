@@ -201,7 +201,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pizzip@3/dist/pizzip.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/build/docxtemplater.js"></script>
   <script src="assets/ecmis-app.js"></script>
+  <script src="assets/ecmis-model.js"></script>
   <script>
     ECMIS.renderShell('08-board-resolution.html');
 
@@ -336,8 +339,7 @@
       if (btn) {
         btn.addEventListener('click', () => {
           const val = parseInt(document.getElementById('resStageSelect').value, 10);
-          kase.resolutionStage = val;
-          ECMIS.saveCases();
+          ECMIS.Model.CaseStore.update(kase.id, { resolutionStage: val });
           ECMIS.toastOk('บันทึกสถานะการจัดทำมติเรียบร้อย');
           renderResolutionStageBox();
         });
@@ -368,13 +370,13 @@
 
     /* ---------- คณะกรรมการ 7 ท่าน ---------- */
     const BOARD = [
-      { n: 'นายวิชัย ยุติธรรม', r: 'ประธานกรรมการ ป.ป.ท.', chair: true },
-      { n: 'นายสมบูรณ์ ธรรมรัฐ', r: 'กรรมการ ป.ป.ท.' },
-      { n: 'นางอรุณี พิทักษ์ชน', r: 'กรรมการ ป.ป.ท.' },
-      { n: 'นายเกรียงไกร สุจริต', r: 'กรรมการ ป.ป.ท.' },
-      { n: 'นางสาวรัตนา ยึดมั่น', r: 'กรรมการ ป.ป.ท.' },
-      { n: 'นายถาวร โปร่งใส', r: 'กรรมการ ป.ป.ท.' },
-      { n: 'เลขาธิการคณะกรรมการ ป.ป.ท.', r: 'กรรมการ ป.ป.ท. โดยตำแหน่ง' }
+      { n: 'นายอำนาจ พวงชมภู', r: 'ประธานกรรมการ ป.ป.ท.', chair: true },
+      { n: 'พลเอก จิระ โกมุทพงศ์', r: 'กรรมการ ป.ป.ท.' },
+      { n: 'พันตำรวจโท วันนพ สมจินตนากุล', r: 'กรรมการ ป.ป.ท.' },
+      { n: 'นายวิเชียร จันทรโณทัย', r: 'กรรมการ ป.ป.ท.' },
+      { n: 'นายพรเทพ อัมพรกลิ่นแก้ว', r: 'กรรมการ ป.ป.ท.' },
+      { n: 'นายกมล สกลเดชา', r: 'กรรมการ ป.ป.ท.' },
+      { n: 'นายสุรพงษ์ อินทรถาวร', r: 'กรรมการ ป.ป.ท.' }
     ];
     const TOTAL = BOARD.length;
 
@@ -477,6 +479,35 @@
       return ECMIS.RESOLUTIONS.find(r => r.code === code);
     }
 
+    /* ข้อความ "มติที่ประชุม" ตามประเภทมติที่เลือก — ใช้ร่วมกันทั้ง HTML preview (renderDoc)
+       และตอนสร้างไฟล์ .docx จริง (generateDocx) เพื่อไม่ให้ข้อความเพี้ยนไปคนละทางกัน */
+    function computeResolutionText() {
+      const opinion = document.getElementById('boardOpinion').value.trim();
+      const r = selectedRes();
+      if (r.code === 'ACCEPT_S24P1') {
+        return 'รับไว้ไต่สวน โดยให้ดำเนินการไต่สวนเป็นองค์คณะ ตามมาตรา ๒๔ วรรคหนึ่ง แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม';
+      } else if (r.code === 'ACCEPT_S24P3') {
+        return 'รับไว้ไต่สวน โดยให้ดำเนินการไต่สวนเป็นคณะอนุกรรมการไต่สวน ตามมาตรา ๒๔ วรรคสาม แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม';
+      } else if (r.code === 'NOT_ACCEPTED') {
+        const law = document.getElementById('rejectLaw').value;
+        return `ไม่รับเรื่องไว้พิจารณา เนื่องจาก ${opinion || '……………………'} ตามพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ${law || '…………'}`;
+      } else if (r.code === 'DISMISS') {
+        const law = document.getElementById('rejectLaw').value;
+        return `ให้จำหน่ายเรื่องออกจากสารบบ เนื่องจาก ${opinion || '……………………'} ตามพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ${law || '…………'}`;
+      } else if (r.code === 'NO_GROUND') {
+        return `ข้อกล่าวหาไม่มีมูล ให้ข้อกล่าวหานั้นเป็นอันตกไป ตามมาตรา ๓๒ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม และให้แจ้งผู้ถูกกล่าวหาทราบไม่ช้ากว่าสิบห้าวันนับแต่วันที่คณะกรรมการ ป.ป.ท. มีมติ`;
+      } else if (r.code === 'MORE_INVESTIGATE') {
+        const task = document.getElementById('moreTask').value.trim();
+        return `ให้ผู้รับผิดชอบสำนวนไต่สวนเบื้องต้นเพิ่มเติม ดังนี้ ${task || '……………………………………'}`;
+      } else {
+        const fwd = ECMIS.forwardTarget(fwdSel.value);
+        const fwdLabel = fwd?.code === 'OTHER'
+          ? (document.getElementById('forwardToOther').value.trim() || 'อื่นๆ (ยังไม่ได้ระบุปลายทาง)')
+          : fwd?.label;
+        return `ส่งเรื่องให้ ${fwdLabel || '—'}`;
+      }
+    }
+
     const fwdSel = document.getElementById('forwardTo');
     fwdSel.innerHTML = ECMIS.FORWARD_TARGETS
       .map(t => `<option value="${t.code}">${t.label}</option>`).join('');
@@ -534,13 +565,13 @@
       const r = selectedRes();
       const MAP = {
         ACCEPT_S24P1: [
-          ['เอกสารที่ระบบสร้าง', 'คำสั่งแต่งตั้งองค์คณะพนักงาน ป.ป.ท. (ปปท. ๕-๐๑)'],
-          ['ผู้ลงนาม', 'เลขาธิการคณะกรรมการ ป.ป.ท. (ม.24 วรรคหนึ่ง)'],
+          ['เอกสารที่ระบบสร้าง', 'คำสั่งแต่งตั้งองค์คณะพนักงาน ป.ป.ท. (ปปท. ๕-๐๕)'],
+          ['ผู้ลงนาม', 'เลขาธิการคณะกรรมการ ป.ป.ท. (ม.24 วรรคแรก)'],
           ['ปลายทาง', 'ยิงมติ + คำสั่งกลับ กิจกรรมที่ 5 → เปลี่ยนสถานะเป็น "อยู่ระหว่างไต่สวน"'],
           ['กำหนดเวลา', 'ออกคำสั่ง 5 วันทำการ / ส่งคืนหน่วยงาน 3 วันทำการ']
         ],
         ACCEPT_S24P3: [
-          ['เอกสารที่ระบบสร้าง', 'คำสั่งแต่งตั้งคณะอนุกรรมการไต่สวน (ปปท. ๕-๐๔)'],
+          ['เอกสารที่ระบบสร้าง', 'คำสั่งแต่งตั้งคณะอนุกรรมการไต่สวน (ปปท. ๕-๐๒)'],
           ['ผู้ลงนาม', 'ประธานกรรมการ ป.ป.ท. (ม.24 วรรคสาม — เฉพาะเรื่องสำคัญ/ซับซ้อน ตามข้อเสนอแนะเลขาธิการฯ)'],
           ['ปลายทาง', 'ยิงมติ + คำสั่งกลับ กิจกรรมที่ 5'],
           ['กำหนดเวลา', 'ออกคำสั่ง 5 วันทำการ / ส่งคืนหน่วยงาน 3 วันทำการ']
@@ -613,32 +644,7 @@
         ({ ...BOARD[i], recused: tr.querySelector('.attend').value === 'recused' }));
       const recusedList = attendees.filter(b => b.recused);
 
-      let resText = '';
-      if (r.code === 'ACCEPT_S24P1') {
-        resText = 'รับไว้ไต่สวน โดยให้ดำเนินการไต่สวนเป็นองค์คณะ ตามมาตรา ๒๔ วรรคหนึ่ง แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม';
-      } else if (r.code === 'ACCEPT_S24P3') {
-        resText = 'รับไว้ไต่สวน โดยให้ดำเนินการไต่สวนเป็นคณะอนุกรรมการไต่สวน ตามมาตรา ๒๔ วรรคสาม แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม';
-      } else if (r.code === 'NOT_ACCEPTED') {
-
-        const law = document.getElementById('rejectLaw').value;
-        resText = `ไม่รับเรื่องไว้พิจารณา เนื่องจาก ${opinion || '……………………'} ตามพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ${law || '…………'}`;
-      } else if (r.code === 'DISMISS') {
-        const law = document.getElementById('rejectLaw').value;
-        resText = `ให้จำหน่ายเรื่องออกจากสารบบ เนื่องจาก ${opinion || '……………………'} ตามพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ${law || '…………'}`;
-      } else if (r.code === 'NO_GROUND') {
-
-        resText = `ข้อกล่าวหาไม่มีมูล ให้ข้อกล่าวหานั้นเป็นอันตกไป ตามมาตรา ๓๒ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม และให้แจ้งผู้ถูกกล่าวหาทราบไม่ช้ากว่าสิบห้าวันนับแต่วันที่คณะกรรมการ ป.ป.ท. มีมติ`;
-      } else if (r.code === 'MORE_INVESTIGATE') {
-        const task = document.getElementById('moreTask').value.trim();
-        resText = `ให้ผู้รับผิดชอบสำนวนไต่สวนเบื้องต้นเพิ่มเติม ดังนี้ ${task || '……………………………………'}`;
-      } else {
-
-        const fwd = ECMIS.forwardTarget(fwdSel.value);
-        const fwdLabel = fwd?.code === 'OTHER'
-          ? (document.getElementById('forwardToOther').value.trim() || 'อื่นๆ (ยังไม่ได้ระบุปลายทาง)')
-          : fwd?.label;
-        resText = `ส่งเรื่องให้ ${fwdLabel || '—'}`;
-      }
+      const resText = computeResolutionText();
 
       const s65 = kase.legalBase === 'ม.62'
         ? `<div style="margin-top:6px">๒. ให้ผู้รับผิดชอบสำนวนดำเนินการรายงานผลการดำเนินการตามพระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑ มาตรา ๖๕</div>`
@@ -731,8 +737,70 @@
           el.addEventListener('input', renderDoc); el.addEventListener('change', renderDoc);
         }
       });
-    document.getElementById('btnDocx').addEventListener('click', () =>
-      ECMIS.toastOk('ดาวน์โหลด .docx — แก้ไขใน Word แล้วอัปโหลดกลับเพื่อล็อกเป็น PDF'));
+    /* ---------- สร้างไฟล์ .docx จริงจาก template ต้นฉบับ (assets/templates/order-preliminary.docx)
+       ด้วย docxtemplater — แทนที่ปุ่ม .docx เดิมซึ่งเป็นแค่ toast จำลอง ไม่ได้สร้างไฟล์จริง ---------- */
+    async function generateDocx(templateUrl, tags, filename) {
+      const resp = await fetch(templateUrl);
+      if (!resp.ok) throw new Error('โหลด template ไม่สำเร็จ: ' + templateUrl);
+      const buf = await resp.arrayBuffer();
+      const zip = new PizZip(buf);
+      const doc = new window.docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+      doc.render(tags);
+      const out = doc.getZip().generate({
+        type: 'blob',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      });
+      const url = URL.createObjectURL(out);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
+    function docxTags() {
+      const P = (v, ph) => (v && String(v).trim()) ? String(v).trim() : (ph || '…………');
+      const meetNo = document.getElementById('meetNo').value.trim();
+      const meetDateValue = normalizeDateInputValue(document.getElementById('meetDate').value.trim());
+      const meetDate = ECMIS.thaiDate(meetDateValue);
+      const agendaNo = document.getElementById('agendaNo').value.trim();
+      const ownerOrg = document.getElementById('ownerOrgField').value.trim() || kase.ownerOrg;
+      const presenter = document.getElementById('presenter').value.trim();
+      const presenterNote = document.getElementById('presenterNote').value.trim();
+      const opinion = document.getElementById('boardOpinion').value.trim();
+      const ac = kase.accused || [];
+      const legalBaseClause = kase.legalBase === 'ม.62'
+        ? '(รับตามมาตรา 62 พระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. 2561)'
+        : '(รับตามมาตรา 18/4 พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม)';
+      const nacc65Clause = kase.legalBase === 'ม.62'
+        ? '2. ให้ผู้รับผิดชอบสำนวนดำเนินการรายงานผลการดำเนินการตามพระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. 2561 มาตรา 65'
+        : '';
+      return {
+        meetNo: P(meetNo), meetDate: P(meetDate), agendaNo: P(agendaNo),
+        subject: P(kase.subject), ownerName: P(kase.owner), ownerOrg: P(ownerOrg),
+        explainer: P(presenter), refDoc: P(kase.docRef !== '—' ? kase.docRef : ''),
+        caseId: P(kase.id), legalBaseClause,
+        complainant: P(kase.complainant),
+        accused1: ac[0] ? P(`${ac[0].name} ${ac[0].pos}`) : '',
+        accused2: ac[1] ? P(`${ac[1].name} ${ac[1].pos}`) : '',
+        accused3: ac[2] ? P(`${ac[2].name} ${ac[2].pos}`) : '',
+        allegation: P(kase.allegation), explainNote: P(presenterNote),
+        boardOpinion: P(opinion), resolutionText: computeResolutionText(),
+        nacc65Clause,
+        ratifyMeetNo: P(meetNo), ratifyMeetDate: P(meetDate), ratifyAgendaNo: P(agendaNo),
+        lastClauseNo: kase.legalBase === 'ม.62' ? '3' : '2'
+      };
+    }
+
+    document.getElementById('btnDocx').addEventListener('click', async () => {
+      try {
+        await generateDocx('assets/templates/order-preliminary.docx', docxTags(),
+          `มติที่ประชุม-${kase.id.replace('/', '_')}.docx`);
+        ECMIS.toastOk('ดาวน์โหลด .docx เรียบร้อย — แก้ไขใน Word ได้ตามปกติ');
+      } catch (e) {
+        console.error(e);
+        ECMIS.toastWarn('สร้างไฟล์ .docx ไม่สำเร็จ: ' + e.message);
+      }
+    });
 
     function buildButtons() {
       if (!mayEdit) return [];
@@ -822,13 +890,25 @@
         }).then(res => {
           if (!res.isConfirmed) return;
 
-          kase.status = 'RESOLVED';
-          kase.resolution = r.code;
-          kase.resolvedAt = new Date().toLocaleString('th-TH');
-          kase.resolvedAtIso = new Date().toISOString();
-          kase.recordedDocHtml = document.getElementById('docPaper').innerHTML;
-          kase.resolutionStage = 1;
-          ECMIS.saveCases();
+          if (r.code === 'MORE_INVESTIGATE') {
+            const priorRounds = ECMIS.Model.RoundStore.list(kase.id).filter(rr => rr.phase === '7.1');
+            ECMIS.Model.RoundStore.create({
+              caseId: kase.id, phase: '7.1', roundNumber: priorRounds.length + 1,
+              reasonText: document.getElementById('moreTask').value.trim(),
+              owner: document.getElementById('moreOwner').value.trim(),
+              dueDate: document.getElementById('moreDue').value.trim(),
+              triggeredBy: 'BOARD_RESOLUTION'
+            });
+          }
+
+          ECMIS.Model.CaseStore.update(kase.id, {
+            status: 'RESOLVED',
+            resolution: r.code,
+            resolvedAt: new Date().toLocaleString('th-TH'),
+            resolvedAtIso: new Date().toISOString(),
+            recordedDocHtml: document.getElementById('docPaper').innerHTML,
+            resolutionStage: 1
+          });
           ECMIS.toastOk('บันทึกมติและล็อก PDF เรียบร้อย');
           const next = (r.code === 'ACCEPT_S24P1' || r.code === 'ACCEPT_S24P3')
             ? '09-order-m24.html?case=' + encodeURIComponent(kase.id) + '&res=' + r.code
@@ -887,8 +967,7 @@
     });
 
     document.getElementById('btnSaveDocEdit').addEventListener('click', () => {
-      kase.recordedDocHtml = docPaperWrap.innerHTML;
-      ECMIS.saveCases();
+      ECMIS.Model.CaseStore.update(kase.id, { recordedDocHtml: docPaperWrap.innerHTML });
       setDocEditMode(false);
       ECMIS.toastOk('บันทึกการแก้ไขเอกสารเรียบร้อย');
     });

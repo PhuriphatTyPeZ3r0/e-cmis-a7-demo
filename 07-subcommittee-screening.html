@@ -140,6 +140,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="assets/ecmis-app.js"></script>
+    <script src="assets/ecmis-model.js"></script>
     <script>
         ECMIS.renderShell('07-subcommittee-screening.html');
 
@@ -337,9 +338,10 @@
                 }).then(r => {
                     if (r.isConfirmed) {
 
-                        if (res === 'AGREE' || res === 'DIFFER') kase.status = 'AGENDA_SET';
-                        kase.subCommittee = document.getElementById('manualTeam').value || assigned;
-                        ECMIS.saveCases();
+                        ECMIS.Model.CaseStore.update(kase.id, Object.assign(
+                            { subCommittee: document.getElementById('manualTeam').value || assigned },
+                            (res === 'AGREE' || res === 'DIFFER') ? { status: 'AGENDA_SET' } : {}
+                        ));
                         ECMIS.toastOk('ส่งมติคณะอนุกลั่นกรองฯ เรียบร้อย');
                         setTimeout(() => location.href = next.p + '?case=' + encodeURIComponent(kase.id), 1400);
                     }
@@ -491,10 +493,11 @@
                         confirmText: 'ยืนยันขอข้อมูลเพิ่มเติม'
                     }).then(res => {
                         if (!res.isConfirmed) return;
-                        kase.screeningOpinion72 = opinion;
-                        kase.subCommittee = team;
-                        kase.moreInfoRequested72 = { date: new Date().toISOString().slice(0, 10), note: opinion };
-                        ECMIS.saveCases();
+                        ECMIS.Model.CaseStore.update(kase.id, {
+                            screeningOpinion72: opinion,
+                            subCommittee: team,
+                            moreInfoRequested72: { date: new Date().toISOString().slice(0, 10), note: opinion }
+                        });
                         ECMIS.toastOk('บันทึกคำขอข้อมูลเพิ่มเติม และแจ้งเตือนผู้รับผิดชอบสำนวนแล้ว');
                     });
                     return;
@@ -507,12 +510,13 @@
                         confirmText: 'ยืนยันเห็นควรบรรจุวาระ'
                     }).then(res => {
                         if (!res.isConfirmed) return;
-                        kase.screeningOpinion72 = opinion;
-                        kase.screeningMeetNo72 = meetNo;
-                        kase.screeningMeetDate72 = meetDate;
-                        kase.subCommittee = team;
-                        kase.status = 'PENDING_INVITE_72';
-                        ECMIS.saveCases();
+                        ECMIS.Model.CaseStore.update(kase.id, {
+                            screeningOpinion72: opinion,
+                            screeningMeetNo72: meetNo,
+                            screeningMeetDate72: meetDate,
+                            subCommittee: team,
+                            status: 'PENDING_INVITE_72'
+                        });
                         ECMIS.toastOk('บันทึกความเห็นและส่งบรรจุวาระเรียบร้อย');
                         setTimeout(() => location.href = ECMIS.pageForCase72(kase) + '?case=' + encodeURIComponent(kase.id), 1400);
                     });
