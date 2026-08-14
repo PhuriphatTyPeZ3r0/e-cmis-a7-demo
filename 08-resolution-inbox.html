@@ -22,7 +22,7 @@
 
   <div class="page-head">
     <div>
-      <h1><i class="fa-solid fa-scale-balanced me-2" style="color:#0F2A62"></i>รายการรอบันทึกมติ/จัดทำเอกสาร</h1>
+      <h1><i class="fa-solid fa-scale-balanced me-2" style="color:#0F2A62"></i>รายการรอจัดทำมติ</h1>
     </div>
     <span class="flow-ref ms-auto">รายการงานของกลุ่มงานคำวินิจฉัยและมติคณะกรรมการ</span>
   </div>
@@ -37,12 +37,15 @@
           <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="เลขสำนวน, ผู้กล่าวหา, ผู้ถูกกล่าวหา, เลขบัตร ปชช., ผู้รับผิดชอบ หรือหน่วยงาน">
         </div>
         <div class="col-md-3">
-          <label class="form-label fw-semibold text-dark small mb-1"><i class="fa-solid fa-pen-to-square me-1 text-muted"></i>สถานะบันทึกมติ</label>
+          <label class="form-label fw-semibold text-dark small mb-1"><i class="fa-solid fa-pen-to-square me-1 text-muted"></i>สถานะมติ</label>
           <select id="statusFilter" class="form-select form-select-sm">
             <option value="ALL">ทั้งหมด</option>
-            <option value="PENDING">รอบันทึกมติ</option>
-            <option value="SIGNED">บันทึกมติแล้ว</option>
-            <option value="RETURNED">ยังไม่บันทึก / ส่งคืน</option>
+            <option value="IN_PROGRESS">อยู่ระหว่างการจัดทำมติ</option>
+            <option value="COMPLETED">จัดทำมติแล้วเสร็จ</option>
+            <option value="SIGNED">ส่งสำเนามติเพื่อจัดทำคำสั่ง</option>
+            <option value="RETURNED">ส่งมติและเอกสารที่เกี่ยวข้องเพื่อทำความเห็นชี้มูล (กรณีชี้มูล)</option>
+            <option value="CLOSED">ส่งมติและเอกสารที่เกี่ยวข้องคืนเจ้าของสำนวน/ผู้รับผิดชอบ</option>
+            <option value="DISPATCHING">จัดทำรายงานประชุมแล้วเสร็จ</option>
           </select>
         </div>
         <div class="col-md-3">
@@ -96,7 +99,7 @@
       <div class="card card-ecmis mb-4">
         <div class="card-header d-flex align-items-center flex-wrap gap-2">
           <i class="fa-solid fa-list-check text-primary"></i>
-          <span class="fw-bold" id="card1TitleText">รายการสำนวนที่ต้องบันทึกมติ</span>
+          <span class="fw-bold" id="card1TitleText">รายการสำนวนที่ต้องจัดทำมติ</span>
           <span class="badge bg-primary rounded-pill ms-1" id="totalCount">0</span>
           <span class="ms-auto small text-muted" id="myRoleLabel"></span>
         </div>
@@ -119,7 +122,7 @@
                   <th class="sortable-header" data-sort="id" style="cursor:pointer">เรื่องที่ <i class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
                   <th>หมวดหมู่มติ</th>
                   <th>เรื่องกล่าวหา</th>
-                  <th>สถานะบันทึกมติ</th>
+                  <th>สถานะมติ</th>
                   <th class="sortable-header" data-sort="act7Status" style="cursor:pointer">สถานะติดตาม <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                   <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                   <th class="text-end">ดำเนินการ</th>
@@ -172,7 +175,7 @@ const OWN_SCOPE_STATUSES = [...BUCKET.pending, ...BUCKET.done, ...BUCKET.returne
 
 const all = ECMIS.CASES.filter(c => OWN_SCOPE_STATUSES.includes(c.status) && ECMIS.canViewCase(c, role.id));
 
-document.title = 'รายการรอบันทึกมติ/จัดทำเอกสาร | E-CMIS';
+document.title = 'รายการรอจัดทำมติ | E-CMIS';
 document.getElementById('myRoleLabel').textContent = `บทบาท: ${role.title}`;
 
 const allCasesCombined = all;
@@ -188,8 +191,10 @@ function renderKPICards() {
 
   const kpis = [
     { id:'ALL', n: allCasesCombined.length, l:'รายการทั้งหมด', i:'fa-folder-open', c:'#0F2A62' },
-    { id:'PENDING', n: pendingCount, l:'รอบันทึกมติ', i:'fa-hourglass-half', c:'#D0A830' },
-    { id:'SIGNED', n: signedCount, l:'บันทึกมติแล้ว', i:'fa-circle-check', c:'#16A34A' },
+    { id:'PENDING', n: pendingCount, l:'อยู่ระหว่างการจัดทำมติ', i:'fa-hourglass-half', c:'#D0A830' },
+    { id:'SIGNED', n: signedCount, l:'จัดทำมติแล้วเสร็จ', i:'fa-circle-check', c:'#16A34A' },
+    { id:'DEFERRED', n: returnedCount, l:'ส่งคืน', i:'fa-circle-xmark', c:'#DB2626'},
+    
     { id:'RETURNED', n: returnedCount, l:'ยังไม่บันทึก', i:'fa-circle-xmark', c:'#DB2626' }
   ];
 
@@ -234,14 +239,22 @@ function caseIdSortValue(id) {
 }
 
 function getActionBadge(c) {
+  if (c.resolutionStage) {
+    if (c.resolutionStage === 1) return `<span class="badge bg-warning text-dark px-2 py-1"><i class="fa-solid fa-hourglass-half me-1"></i>1. อยู่ระหว่างการจัดทำมติ</span>`;
+    if (c.resolutionStage === 2) return `<span class="badge bg-primary px-2 py-1"><i class="fa-solid fa-file-circle-check me-1"></i>2. จัดทำมติแล้วเสร็จ</span>`;
+    if (c.resolutionStage === 3) return `<span class="badge bg-success px-2 py-1"><i class="fa-solid fa-file-signature me-1"></i>3. ส่งสำเนามติเพื่อจัดทำคำสั่ง</span>`;
+    if (c.resolutionStage === 4) return `<span class="badge bg-info text-dark px-2 py-1"><i class="fa-solid fa-file-shield me-1"></i>4. ส่งมติและเอกสารฯ (กรณีชี้มูล)</span>`;
+    if (c.resolutionStage === 5) return `<span class="badge bg-secondary px-2 py-1"><i class="fa-solid fa-share-from-square me-1"></i>5. คืนเจ้าของสำนวน</span>`;
+    if (c.resolutionStage === 6) return `<span class="badge bg-success px-2 py-1"><i class="fa-solid fa-circle-check me-1"></i>6. จัดทำรายงานประชุมแล้วเสร็จ</span>`;
+  }
   if (BUCKET.pending.includes(c.status)) {
-    return `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>รอบันทึกมติ</span>`;
+    return `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>อยู่ระหว่างการจัดทำมติ</span>`;
   }
   if (BUCKET.done.includes(c.status)) {
-    return `<span class="st st-done"><i class="fa-solid fa-check me-1"></i>บันทึกมติแล้ว</span>`;
+    return `<span class="st st-done"><i class="fa-solid fa-check me-1"></i>จัดทำมติแล้วเสร็จ</span>`;
   }
   if (BUCKET.returned.includes(c.status)) {
-    return `<span class="st st-returned"><i class="fa-solid fa-xmark me-1"></i>ยังไม่บันทึก / ส่งคืน</span>`;
+    return `<span class="st st-returned"><i class="fa-solid fa-xmark me-1"></i>เลื่อน/ส่งคืน</span>`;
   }
   return ECMIS.statusBadge(c.status);
 }
@@ -498,8 +511,12 @@ function applyFilters() {
     let matchSt = true;
     if (st !== 'ALL') {
       if (st === 'PENDING') matchSt = BUCKET.pending.includes(c.status);
-      else if (st === 'SIGNED') matchSt = BUCKET.done.includes(c.status);
-      else if (st === 'RETURNED') matchSt = BUCKET.returned.includes(c.status);
+      else if (st === 'IN_PROGRESS') matchSt = (c.resolutionStage === 1 || c.status === 'IN_PROGRESS');
+      else if (st === 'COMPLETED') matchSt = (c.resolutionStage === 2 || c.status === 'COMPLETED');
+      else if (st === 'SIGNED') matchSt = (c.resolutionStage === 3 || c.status === 'SIGNED' || BUCKET.done.includes(c.status));
+      else if (st === 'RETURNED') matchSt = (c.resolutionStage === 4 || c.status === 'RETURNED' || BUCKET.returned.includes(c.status));
+      else if (st === 'CLOSED') matchSt = (c.resolutionStage === 5 || c.status === 'CLOSED');
+      else if (st === 'DISPATCHING') matchSt = (c.resolutionStage === 6 || c.status === 'DISPATCHING');
       else matchSt = (c.status === st);
     }
 
