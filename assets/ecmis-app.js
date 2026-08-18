@@ -15,7 +15,7 @@ const ROLES = [
     name:'พันตำรวจโท วันนพ สมจินตนากุล', org:'คณะกรรมการ ป.ป.ท.', lane:'L8', flow:'S9 / G5', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','vote','read.agenda.advance'] },
   { id:'sup_chair', login:'Kitti.P', row:4, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'ประธานคณะอนุสนับสนุนฯ',
-    name:'นายวิเชียร จันทรโณทัย)', lane:'L2', flow:'S2 / G2', act:'7.1, 7.2',
+    name:'นายกิตติ พรหมวงศ์', lane:'L2', flow:'S2 / G2', act:'7.1, 7.2',
     perms:['view.assigned','download','support.opinion','support.certify'] },
   { id:'support_sub', login:'Jiraporn.N', row:5, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'อนุกรรมการสนับสนุนเลขาธิการฯ',
     name:'นางสาวจิราพร นิติกิจ', org:'ส่วนกลาง (2 คณะ)', lane:'L2', flow:'S2 / G2', act:'7.1, 7.2',
@@ -1516,10 +1516,11 @@ const NAV = [
   { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' },
   { href:'72-09-ruling-report.html',      icon:'fa-file-signature',   label:'รายงานวินิจฉัยชี้มูล',
     visible: role => !!role && (can('doc.generate', role.id) || can('sign.ruling', role.id) || canEditMaster(role.id)) },
-  { href:'11-agenda-compile.html',        icon:'fa-calendar-days',    label:'จัดวาระการประชุม',
-    visible: role => !!role && can('create.agenda', role.id) },
+
+  { section:'การประชุมคณะกรรมการ ป.ป.ท.' },
   { href:'12-meeting-report.html',        icon:'fa-file-contract',    label:'จัดทำรายงานมติการประชุม',
-    visible: role => !!role && can('compile.minutes', role.id) }
+    visible: role => !!role && can('compile.minutes', role.id) },
+  { href:'13-agenda-registry.html',       icon:'fa-table-list',       label:'ทะเบียนวาระการประชุม' }
 ];
 
 function navLabel(navItem, role){

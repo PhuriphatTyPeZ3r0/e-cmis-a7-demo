@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ทะเบียนวาระการประชุม | E-CMIS</title>
+  <link rel="icon" type="image/png" href="pacc_logo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="assets/ecmis-app.css" rel="stylesheet">
+  <style>
+    .agenda-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;margin-bottom:1rem}
+    .agenda-stat{padding:.9rem 1.05rem;border:1px solid var(--border-divider);border-radius:var(--radius-card);background:var(--bg-surface)}
+    .agenda-stat span{display:block;color:var(--text-disabled);font-size:.72rem;font-weight:600;letter-spacing:.02em}
+    .agenda-stat strong{display:block;margin-top:.2rem;font-size:1.5rem;color:var(--ecmis-navy);font-family:var(--serif)}
+    .agenda-stat small{display:block;margin-top:.15rem;color:var(--ecmis-muted);font-size:.72rem}
+    .meet-badge{display:inline-flex;align-items:center;padding:.2rem .55rem;border-radius:999px;font-size:.72rem;font-weight:600;white-space:nowrap}
+    .meet-active{color:#1e6141;background:#dff0e7}
+    .meet-cancel{color:#8c261f;background:#f9e1df}
+    .meet-confirmed{display:inline-flex;align-items:center;gap:.25rem;padding:.15rem .5rem;border-radius:999px;font-size:.68rem;font-weight:600;color:#1e6141;background:#dff0e7;margin-left:.4rem}
+    .meet-row{cursor:pointer}
+    #meetTb tr:hover{background:var(--table-row-hover)}
+    .swal2-popup .form-label{font-size:.82rem;font-weight:600;margin-bottom:.25rem;display:block;text-align:left}
+    @media(max-width:900px){.agenda-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  </style>
+</head>
+
+<body>
+
+  <main class="app-main">
+    <div class="page-head">
+      <div>
+        <h1><i class="fa-solid fa-calendar-days me-2"></i>ทะเบียนวาระการประชุม</h1>
+      </div>
+      <span class="flow-ref ms-auto">สืบค้นและติดตามวาระการประชุมคณะกรรมการ ป.ป.ท. ทุกครั้ง</span>
+    </div>
+
+    <div class="alert alert-light border small mb-3" style="font-size:.8rem">
+      <i class="fa-solid fa-circle-info me-1"></i>
+      การประชุม <strong>ครั้งที่ 55/2569 (22 ก.ค. 2569)</strong> คัดข้อมูลจริงจากเอกสารวาระที่ 5 (30 อนุวาระ) —
+      กดปุ่ม <strong>เพิ่มการประชุม</strong> เพื่อเพิ่มการประชุมครั้งใหม่ แล้วเลือกครั้งที่ประชุมจากตารางด้านล่างเพื่อดูรายละเอียดวาระ
+    </div>
+
+    <div id="editGate"></div>
+
+    <div class="agenda-stats" id="statsBox"></div>
+
+    <div class="card card-ecmis">
+      <div class="card-header">
+        <i class="fa-solid fa-calendar-check"></i> ครั้งที่ประชุม
+        <span class="badge bg-secondary rounded-pill ms-2" id="meetCnt">0</span>
+        <button class="btn btn-sm btn-navy ms-auto" id="btnAddMeeting"><i class="fa-solid fa-plus me-1"></i>เพิ่มการประชุม</button>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover tbl-ecmis mb-0" id="meetingList">
+            <thead>
+              <tr>
+                <th>ครั้งที่ประชุม</th>
+                <th>วันที่</th>
+                <th class="text-center">จำนวนวาระ</th>
+                <th>สถานะ</th>
+                <th style="width:40px"></th>
+              </tr>
+            </thead>
+            <tbody id="meetTb"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="assets/ecmis-app.js"></script>
+  <script src="assets/agenda-registry-data.js"></script>
+  <script>
+    ECMIS.renderShell('13-agenda-registry.html');
+    const M = ECMIS.mergeField;
+    const AR = AgendaRegistry;
+    const role = ECMIS.currentRole();
+    const mayEdit = ECMIS.can('create.agenda', role.id);
+
+    if (!mayEdit) {
+      document.getElementById('editGate').innerHTML = `
+    <div class="alert alert-light border mb-3" style="font-size:.85rem">
+      <strong><i class="fa-solid fa-lock me-1"></i>โหมดอ่านอย่างเดียว — บทบาทนี้เพิ่มการประชุมไม่ได้</strong><br>
+      สิทธิ์ <strong>จัดทำระเบียบวาระการประชุม (create.agenda)</strong> จำกัดเฉพาะ
+      <strong>${ECMIS.getRole('board_sec').title}</strong> — ยังคงดูทะเบียนได้ตามปกติ
+    </div>`;
+      document.getElementById('btnAddMeeting').disabled = true;
+    }
+
+    function renderStats() {
+      const flaggedCount = AR.ITEMS.filter(AR.isFlagged).length;
+      const bundledCount = AR.ITEMS.filter(AR.isBundled).length;
+      document.getElementById('statsBox').innerHTML = `
+        <div class="agenda-stat"><span>จำนวนการประชุม</span><strong>${AR.MEETINGS.length}</strong><small>ครั้ง</small></div>
+        <div class="agenda-stat"><span>จำนวนวาระทั้งหมด</span><strong>${AR.ITEMS.length}</strong><small>อนุวาระ</small></div>
+        <div class="agenda-stat"><span>อนุกรรมการเห็นแย้ง / ไม่ผ่าน</span><strong style="color:#8c261f">${flaggedCount}</strong><small>อนุวาระ</small></div>
+        <div class="agenda-stat"><span>รวมหลายสำนวนในวาระเดียว</span><strong style="color:#174e80">${bundledCount}</strong><small>อนุวาระ</small></div>`;
+    }
+
+    function renderMeetingList() {
+      const tbody = document.getElementById('meetTb');
+      document.getElementById('meetCnt').textContent = AR.MEETINGS.length;
+      const sorted = [...AR.MEETINGS].sort((a, b) => b.trc_date.localeCompare(a.trc_date));
+      tbody.innerHTML = sorted.map(m => {
+        const count = AR.itemsOf(m.trc_id).length;
+        return `
+      <tr class="meet-row" data-id="${m.trc_id}">
+        <td class="fw-semibold">${M(m.trc_name)}</td>
+        <td>${M(ECMIS.thaiDate(m.trc_date))}</td>
+        <td class="text-center">${count}</td>
+        <td><span class="meet-badge ${AR.STATUS_CLASS[m.trc_status]}">${AR.STATUS_LABEL[m.trc_status]}</span>
+          ${m.trc_confirmed ? '<span class="meet-confirmed"><i class="fa-solid fa-check"></i>จัดวาระแล้ว</span>' : ''}</td>
+        <td class="text-end"><i class="fa-solid fa-chevron-right text-muted"></i></td>
+      </tr>`;
+      }).join('');
+      tbody.querySelectorAll('.meet-row').forEach(tr =>
+        tr.addEventListener('click', () => { location.href = `14-agenda-registry-detail.html?meet=${tr.dataset.id}`; }));
+    }
+
+    document.getElementById('btnAddMeeting').addEventListener('click', () => {
+      Swal.fire({
+        title: 'เพิ่มการประชุมใหม่',
+        html: `
+          <div class="mb-2"><label class="form-label">ครั้งที่ประชุม *</label>
+            <input type="text" id="swMeetName" class="form-control" placeholder="เช่น 56/2569"></div>
+          <div class="mb-2"><label class="form-label">วันที่ประชุม *</label>
+            <input type="date" id="swMeetDate" class="form-control"></div>
+          <div><label class="form-label">สถานะ</label>
+            <select id="swMeetStatus" class="form-select">
+              <option value="1" selected>ประชุมแล้ว</option>
+              <option value="2">ยกเลิก/เลื่อน</option>
+            </select></div>`,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'บันทึก',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#0F2A62',
+        preConfirm: () => {
+          const name = document.getElementById('swMeetName').value.trim();
+          const date = document.getElementById('swMeetDate').value;
+          if (!name || !date) { Swal.showValidationMessage('กรุณากรอกครั้งที่ประชุมและวันที่ประชุมให้ครบถ้วน'); return false; }
+          if (AR.MEETINGS.some(m => m.trc_name === name)) { Swal.showValidationMessage('มีครั้งที่ประชุมนี้อยู่แล้วในทะเบียน'); return false; }
+          return { name, date, status: document.getElementById('swMeetStatus').value };
+        }
+      }).then(res => {
+        if (!res.isConfirmed) return;
+        const trc_id = AR.nextTrcId();
+        AR.MEETINGS.push({ trc_id, trc_name: res.value.name, trc_date: res.value.date, trc_status: res.value.status, trc_secrecy: 'SECRET', trc_confirmed: false });
+        AR.save();
+        ECMIS.toastOk(`เพิ่มการประชุมครั้งที่ ${res.value.name} เรียบร้อย — กำลังเปิดหน้ารายละเอียด`);
+        setTimeout(() => { location.href = `14-agenda-registry-detail.html?meet=${trc_id}`; }, 700);
+      });
+    });
+
+    renderStats();
+    renderMeetingList();
+  </script>
+</body>
+
+</html>
