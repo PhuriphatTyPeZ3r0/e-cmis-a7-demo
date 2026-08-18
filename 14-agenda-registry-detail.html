@@ -337,8 +337,13 @@
               <select id="swItemCat" class="form-select">${catOptions}</select></div>
             <div class="col-12"><label class="form-label">ลักษณะเรื่อง *</label>
               <input type="text" id="swItemTopic" class="form-control" placeholder="เช่น รายงานไต่สวนเพื่อวินิจฉัยชี้มูล"></div>
-            <div class="col-12"><label class="form-label">เลขที่เรื่อง</label>
-              <input type="text" id="swItemCase" class="form-control" placeholder="เช่น 1234/2569 (เว้นว่างได้ถ้าไม่มี)"></div>
+            <div class="col-12">
+              <label class="form-label d-flex justify-content-between align-items-center mb-1">
+                <span>เลขที่เรื่อง (เว้นว่างได้ถ้าไม่มี — เพิ่มช่องได้หากวาระนี้รวมหลายสำนวน)</span>
+                <button type="button" id="btnAddCaseRow" class="btn btn-sm btn-link p-0" style="font-size:.8rem"><i class="fa-solid fa-plus me-1"></i>เพิ่มเลขที่เรื่อง</button>
+              </label>
+              <div id="swItemCaseList"></div>
+            </div>
             <div class="col-12"><label class="form-label">สถานะ / หมายเหตุ</label>
               <input type="text" id="swItemRemark" class="form-control" placeholder="เช่น ครบอายุความ .../ ผ่านการพิจารณา"></div>
           </div>`,
@@ -348,6 +353,22 @@
           cancelButtonText: 'ยกเลิก',
           confirmButtonColor: '#0F2A62',
           didOpen: () => {
+            const caseRowHtml = (value = '') => `
+              <div class="input-group input-group-sm mb-2 case-ref-row">
+                <input type="text" class="form-control case-ref-input" value="${value}" placeholder="เช่น 1234/2569">
+                <button type="button" class="btn btn-outline-secondary btn-remove-case-row" tabindex="-1"><i class="fa-solid fa-xmark"></i></button>
+              </div>`;
+            const listEl = document.getElementById('swItemCaseList');
+            const addCaseRow = (value = '') => { listEl.insertAdjacentHTML('beforeend', caseRowHtml(value)); };
+            listEl.addEventListener('click', e => {
+              const btn = e.target.closest('.btn-remove-case-row');
+              if (!btn) return;
+              if (listEl.querySelectorAll('.case-ref-row').length > 1) btn.closest('.case-ref-row').remove();
+              else btn.closest('.case-ref-row').querySelector('.case-ref-input').value = '';
+            });
+            document.getElementById('btnAddCaseRow').addEventListener('click', () => addCaseRow());
+            addCaseRow();
+
             document.getElementById('swLookup').addEventListener('change', e => {
               const hit = AR.lookupCaseForAgenda(e.target.value);
               const statusEl = document.getElementById('swLookupStatus');
@@ -358,7 +379,8 @@
               }
               document.getElementById('swItemCat').value = hit.category;
               document.getElementById('swItemTopic').value = hit.topic;
-              document.getElementById('swItemCase').value = hit.caseRef;
+              const firstInput = listEl.querySelector('.case-ref-input');
+              firstInput.value = hit.caseRef;
               document.getElementById('swItemRemark').value = hit.remark;
               statusEl.innerHTML = '<span style="color:#1e6141"><i class="fa-solid fa-circle-check me-1"></i>ดึงข้อมูลจากระบบแล้ว — ตรวจสอบและแก้ไขได้ก่อนบันทึก</span>';
             });
@@ -367,10 +389,18 @@
             const trci_number = document.getElementById('swItemNo').value.trim();
             const trci_topic = document.getElementById('swItemTopic').value.trim();
             if (!trci_number || !trci_topic) { Swal.showValidationMessage('กรุณากรอกวาระที่และลักษณะเรื่องให้ครบถ้วน'); return false; }
+            const caseNos = Array.from(document.querySelectorAll('.case-ref-input')).map(el => el.value.trim()).filter(Boolean);
+            const seen = new Set();
+            const dupes = [];
+            caseNos.forEach(v => {
+              const key = v.toLowerCase();
+              if (seen.has(key)) dupes.push(v); else seen.add(key);
+            });
+            if (dupes.length) { Swal.showValidationMessage(`กรอกเลขที่เรื่องซ้ำกัน: ${dupes.join(', ')}`); return false; }
             return {
               trci_number, trci_topic,
               category: document.getElementById('swItemCat').value,
-              case_ref: document.getElementById('swItemCase').value.trim() || '-',
+              case_ref: caseNos.length ? caseNos.join(', ') : '-',
               remark: document.getElementById('swItemRemark').value.trim() || '-'
             };
           }
