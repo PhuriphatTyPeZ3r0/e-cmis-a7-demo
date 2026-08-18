@@ -166,6 +166,18 @@
     return mapped;
   }
 
+  /* Soft delete — ตั้ง is_deleted = true เท่านั้น ข้อมูลยังอยู่ในฐานข้อมูลจริง
+     เผื่อกรณีอยากสร้างวาระใหม่แทนโดยไม่ต้องลบทิ้งถาวร */
+  async function deleteItem(trciId) {
+    const role = global.ECMIS.currentRole();
+    const { error } = await sb.from('tbl_res_calendar_item')
+      .update({ is_deleted: true, updated_by: role.row, updated_datetime: new Date().toISOString() })
+      .eq('trci_id', trciId);
+    if (error) throw error;
+    const idx = ITEMS.findIndex(x => x.trci_id === trciId);
+    if (idx !== -1) ITEMS.splice(idx, 1);
+  }
+
   async function updateItemNumber(trciId, newNumber) {
     const it = ITEMS.find(x => x.trci_id === trciId);
     if (!it) return;
@@ -197,7 +209,7 @@
     MEETINGS, ITEMS, CATEGORY_LABEL, CATEGORY_CLASS, STATUS_LABEL, STATUS_CLASS,
     ready, meetingOf, itemsOf, isFlagged, isBundled,
     renderCaseRef, lookupCaseForAgenda,
-    addMeeting, deleteMeeting, addItem, updateItemNumber, swapItemNumber, setCaseRef
+    addMeeting, deleteMeeting, addItem, deleteItem, updateItemNumber, swapItemNumber, setCaseRef
   };
 
 })(window);

@@ -118,7 +118,7 @@
                     <th>ลักษณะเรื่อง</th>
                     <th style="width:200px">เลขที่เรื่อง</th>
                     <th style="width:230px">หมายเหตุ</th>
-                    <th style="width:60px"></th>
+                    <th style="width:90px"></th>
                   </tr>
                 </thead>
                 <tbody id="tb"></tbody>
@@ -268,6 +268,7 @@
           ${canReorder ? `
           <button type="button" class="move-btn move-up" data-trci="${it.trci_id}" title="เลื่อนขึ้น" ${idx === 0 ? 'disabled' : ''}><i class="fa-solid fa-arrow-up"></i></button>
           <button type="button" class="move-btn move-down" data-trci="${it.trci_id}" title="เลื่อนลง" ${idx === all.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-arrow-down"></i></button>` : ''}
+          ${mayEdit ? `<button type="button" class="move-btn text-danger btn-delete-item" data-trci="${it.trci_id}" data-no="${it.trci_number}" title="ลบวาระนี้"><i class="fa-solid fa-trash-can"></i></button>` : ''}
         </td>
       </tr>`;
         }).join('');
@@ -284,6 +285,25 @@
         }));
         tbody.querySelectorAll('.move-up').forEach(el => el.addEventListener('click', e => moveItem(+e.currentTarget.dataset.trci, -1)));
         tbody.querySelectorAll('.move-down').forEach(el => el.addEventListener('click', e => moveItem(+e.currentTarget.dataset.trci, 1)));
+        tbody.querySelectorAll('.btn-delete-item').forEach(el => el.addEventListener('click', async e => {
+          const trciId = +e.currentTarget.dataset.trci;
+          const no = e.currentTarget.dataset.no;
+          const confirmed = await ECMIS.confirmAction({
+            title: `ลบวาระที่ ${no}?`,
+            html: 'ระบบจะซ่อนรายการนี้ออกจากรายการวาระ (ข้อมูลยังอยู่ในฐานข้อมูล)',
+            confirmText: 'ลบ', danger: true
+          });
+          if (!confirmed.isConfirmed) return;
+          try {
+            await AR.deleteItem(trciId);
+          } catch (err) {
+            console.error('ลบวาระไม่สำเร็จ:', err);
+            ECMIS.toastWarn('ลบไม่สำเร็จ ลองใหม่อีกครั้ง');
+            return;
+          }
+          ECMIS.toastOk(`ลบวาระที่ ${no} เรียบร้อย`);
+          renderStats(); renderDetail();
+        }));
 
         document.getElementById('pageIndicator').textContent = `กำลังแสดงหน้า ${currentPage} จาก ${totalPages}`;
         const pager = document.getElementById('pager');
