@@ -76,7 +76,6 @@
                 <col style="width:120px">
                 <col>
                 <col style="width:160px">
-                <col style="width:250px">
                 <col style="width:115px">
                 <col style="width:130px">
               </colgroup>
@@ -87,7 +86,6 @@
                   <th>หมวดหมู่มติ</th>
                   <th>เรื่องกล่าวหา</th>
                   <th>สถานะมติ</th>
-                  <th class="sortable-header" data-sort="act7Status" style="cursor:pointer">สถานะติดตาม <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                   <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                   <th class="text-end">ดำเนินการ</th>
                 </tr>
@@ -223,9 +221,6 @@ function row(c){
   const isPendingAction = isRowActionable(c);
 
   const statusBadgeHtml = getActionBadge(c);
-  const act7BadgeHtml = is72
-    ? ECMIS.act7Badge(ECMIS.getAct7Status72(c), ECMIS.ACT7_STATUSES_72)
-    : ECMIS.act7Badge(ECMIS.getAct7Status(c));
 
   const resGroup = c.resolution
     ? (is72 ? ECMIS.resolution72(c.resolution) : ECMIS.resolutionOf(c.resolution))?.group
@@ -243,7 +238,6 @@ function row(c){
       <small class="text-muted d-block" style="font-size:0.75rem">${c.ownerOrg}</small>
     </td>
     <td>${statusBadgeHtml}</td>
-    <td>${act7BadgeHtml}</td>
     <td>${ECMIS.slaBadge(c)}</td>
     <td class="text-end">
       ${isPendingAction ? `
@@ -274,7 +268,6 @@ function renderMyQueue(loading = false) {
           <td><div class="skeleton-box" style="width:100px"></div></td>
           <td><div class="skeleton-box" style="width:200px"></div></td>
           <td><div class="skeleton-box" style="width:110px"></div></td>
-          <td><div class="skeleton-box" style="width:180px"></div></td>
           <td><div class="skeleton-box" style="width:80px"></div></td>
           <td class="text-end"><div class="skeleton-box ms-auto" style="width:80px"></div></td>
         </tr>`;
@@ -307,9 +300,6 @@ function renderMyQueue(loading = false) {
     } else if (sortField === 'slaDays') {
       valA = a.slaDays;
       valB = b.slaDays;
-    } else if (sortField === 'act7Status') {
-      valA = ECMIS.getAct7Status(a);
-      valB = ECMIS.getAct7Status(b);
     }
     if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
     if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
@@ -324,10 +314,10 @@ function renderMyQueue(loading = false) {
 
   tbodyPrimary.innerHTML = paginatedCases.length
     ? paginatedCases.map(c => row(c)).join('')
-    : `<tr><td colspan="8" class="text-center text-muted py-4">
+    : `<tr><td colspan="7" class="text-center text-muted py-4">
          <i class="fa-regular fa-face-smile fa-lg mb-2 d-block"></i>
          ไม่มีรายการสำนวนตามเงื่อนไขการค้นหา<br>
-         <small>ลองเปลี่ยนข้อความค้นหาหรือตัวกรองสถานะติดตาม</small></td></tr>`;
+         <small>ลองเปลี่ยนข้อความค้นหาหรือตัวกรองสถานะ</small></td></tr>`;
 
   const totalCountEl = document.getElementById('totalCount');
   if (totalCountEl) totalCountEl.textContent = sortedCases.length;
@@ -447,8 +437,6 @@ function applyFilters() {
   const st = document.getElementById('statusFilter').value;
 
   filteredCombined = allCasesCombined.filter(c => {
-    const act7St = ECMIS.getAct7Status(c);
-
     const matchQ = !q ||
       c.id.toLowerCase().includes(q) ||
       (c.subject && c.subject.toLowerCase().includes(q)) ||
@@ -458,8 +446,7 @@ function applyFilters() {
       (Array.isArray(c.accused) && c.accused.some(p =>
         (p.name && p.name.toLowerCase().includes(q)) ||
         (p.idcard && p.idcard.toLowerCase().includes(q))
-      )) ||
-      act7St.toLowerCase().includes(q);
+      ));
 
     let matchSt = true;
     if (st !== 'ALL') {
