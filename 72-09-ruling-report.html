@@ -49,7 +49,7 @@
           </div>
         </div>
 
-        <div class="ws-card mb-3">
+        <div class="ws-card mb-3" id="rulingCard">
           <div class="card-header"><i class="fa-solid fa-file-lines"></i> ข้อมูลรายงานวินิจฉัยชี้มูล (ปปท. 7-02)</div>
           <div class="card-body">
             <div class="mb-3">
@@ -217,7 +217,14 @@
     document.getElementById('hasCriminalToggle').checked = !!kase.guiltyCriminal72;
 
     const disciplineVisible = (kase.resolution72 || '') === 'GUILTY_72';
-    document.getElementById('disciplineCard').classList.toggle('d-none', !disciplineVisible);
+
+    /* ฟิลด์ ปปท. 7-02 กับฟอร์มหนังสือลงโทษทางวินัย เป็นคนละเอกสารกัน แสดงเฉพาะฟิลด์ของ
+       เอกสารที่กำลังดูอยู่ทางขวา ไม่ต้องรวมกันทั้งสองชุด */
+    function toggleFormCards() {
+      document.getElementById('rulingCard').classList.toggle('d-none', docTab !== 'ruling');
+      document.getElementById('disciplineCard').classList.toggle('d-none', docTab !== 'discipline' || !disciplineVisible);
+    }
+    toggleFormCards();
 
     function persistForm() {
       ECMIS.Model.CaseStore.update(kase.id, {
@@ -397,6 +404,7 @@
         document.querySelectorAll('#docTabs .ws-doc-tab').forEach(x => x.classList.remove('active'));
         btn.classList.add('active');
         docTab = btn.dataset.doc;
+        toggleFormCards();
         renderDoc();
       });
     });
