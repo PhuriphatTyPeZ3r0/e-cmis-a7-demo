@@ -423,7 +423,11 @@ function isUpstreamRole(roleId){ const r = getRole(roleId); return r.scope === '
 /* board_sec has its own dedicated work-inbox (08-resolution-inbox.html) — every other
    role still shares 01-work-inbox.html. This is the one place that decision lives, so
    every redirect/nav-link/breadcrumb across the app stays correct if that ever changes. */
-function homeHref(roleId){ return (roleId || currentRoleId()) === 'board_sec' ? '08-resolution-inbox.html' : '01-work-inbox.html'; }
+function homeHref(roleId){
+  const r = roleId || currentRoleId();
+  if (r === 'board_sec') return '08-resolution-inbox.html';
+  return '01-work-inbox.html';
+}
 function isUpstreamCase(kase){ const s = STATUS[kase.status]; return !!(s && s.scope === 'UPSTREAM'); }
 
 function isCase72(kase){ return !!kase && kase.docType === 'RULING'; }
@@ -682,7 +686,9 @@ const CASES = [
     id:'1547/2568',
     subject:'กล่าวหาเจ้าหน้าที่องค์การบริหารส่วนตำบลแห่งหนึ่ง จัดซื้อจัดจ้างโครงการก่อสร้างถนน คสล. โดยมิชอบ',
     legalBase:'ม.18/4',
-    status:'PENDING_SECGEN',
+    status:'PENDING_CHAIRMAN',
+    signedBySecgen: true, secgenSignedAt:'18 ส.ค. 2569',
+    frontNote:'ผ่านการพิจารณาและลงนามเห็นชอบโดยเลขาธิการฯ แล้ว เสนอประธานฯ พิจารณาสั่งการบรรจุวาระ',
     owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'นายวิรัตน์ ศรีสุข (ผู้ร้อง)',
     accused:[
@@ -694,7 +700,7 @@ const CASES = [
     receivedDate:'2568-11-14', deadline60:'2569-01-13', deadline2y:'2570-11-14', prescription:'2571-03-20',
     docRef:'ปป 0020/1028 ลงวันที่ 7 พฤษภาคม 2569',
     urgent:false, complex:false, dupWarning:true,
-    docType:'213', signPhase:'WAIT',
+    docType:'213', signPhase:'COMPLETE',
     slaDays:3, slaLimit:5, subCommittee:null,
     meetingNo:null, agendaNo:null,
 
@@ -706,21 +712,25 @@ const CASES = [
       { roleId:'director',     type:'MORE',   date:'2568-12-09',
         note:'ราคากลางที่ใช้เปรียบเทียบยังไม่ได้มาจากหน่วยงานกลาง เห็นควรแสวงหาข้อเท็จจริงเพิ่มเติมก่อน' },
       { roleId:'deputy',       type:'ACCEPT', date:'2568-12-16',
-        note:'ข้อบกพร่องที่ ผอ.เขต ตั้งข้อสังเกตสามารถแก้ในชั้นไต่สวนได้ เห็นควรรับไว้ไต่สวน' }
+        note:'ข้อบกพร่องที่ ผอ.เขต ตั้งข้อสังเกตสามารถแก้ในชั้นไต่สวนได้ เห็นควรรับไว้ไต่สวน' },
+      { roleId:'secgen',       type:'ACCEPT', date:'2569-05-07',
+        note:'เห็นชอบตามที่เสนอ เสนอประธานกรรมการ ป.ป.ท. สั่งการและบรรจุวาระ' }
     ]
   },
   {
     id:'1396/2564',
     subject:'กล่าวหาข้าราชการสังกัดกรมหนึ่ง เรียกรับเงินจากผู้ประกอบการเพื่อแลกกับการออกใบอนุญาต',
     legalBase:'ม.62',
-    status:'PENDING_URGENT',
+    status:'PENDING_CHAIRMAN_URGENT_72',
+    signedBySecgen: true, secgenSignedAt:'18 ส.ค. 2569',
+    frontNote:'มีใบด่วนที่ ผอ.กบค. ลงนามรับรองแล้ว — เสนอประธานฯ สั่งบรรจุวาระด่วน (Bypass)',
     owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'สำนักงาน ป.ป.ช. (ส่งเรื่องมอบหมาย)',
     accused:[ { no:1, name:'นายเอกชัย รุ่งเรือง', pos:'นายช่างโยธาชำนาญงาน', idcard:'3-1005-0xxxx-xx-x', agency:'กรมโยธาธิการฯ' } ],
     allegation:'เรียกรับเงินจำนวน 50,000 บาท จากผู้ประกอบการเพื่อแลกกับการเร่งรัดออกใบอนุญาตก่อสร้าง',
     receivedDate:'2568-12-02', deadline60:'2569-01-31', deadline2y:'2570-12-02', prescription:'2569-09-18',
     docRef:'ปป 0020/1104 ลงวันที่ 20 พฤษภาคม 2569',
-    urgent:true, urgentReason:'คดีใกล้ขาดอายุความภายใน 45 วัน และผู้ถูกร้องมีพฤติการณ์จะโอนย้ายหน่วยงาน',
+    urgent:true, urgentReason:'คดีใกล้ขาดอายุความภายใน 45 วัน และผู้ถูกร้องมีพฤติการณ์จะโอนย้ายหน่วยงาน (ผอ.กบค. รับรองใบด่วนแล้ว)',
     complex:false, dupWarning:false,
     slaDays:6, slaLimit:5, subCommittee:null,
     meetingNo:null, agendaNo:null
@@ -1184,6 +1194,58 @@ CASES.push(
   }
 );
 
+CASES.push(
+  {
+    id:'1789/2569',
+    subject:'กล่าวหาผู้บริหารเทศบาลนครแห่งหนึ่ง ทุจริตโครงการระบบสมาร์ตซิตี้ มูลค่า 45 ล้านบาท',
+    legalBase:'ม.18/4', status:'PENDING_CHAIRMAN',
+    owner:'นางสาวศิริพร กิจการ', ownerOrg:'กองบริหารคดี (กบค.)',
+    complainant:'ชมรมตรวจสอบทุจริตแห่งประเทศไทย',
+    accused:[
+      { no:1, name:'นายกิตติศักดิ์ นครเมือง', pos:'นายกเทศมนตรี', idcard:'3-1008-0xxxx-xx-x', agency:'เทศบาลนครแห่งหนึ่ง' },
+      { no:2, name:'นายวิชัย เทคโนโลยี', pos:'ผู้อำนวยการสำนักคอมพิวเตอร์', idcard:'3-1009-0xxxx-xx-x', agency:'เทศบาลนครแห่งหนึ่ง' }
+    ],
+    allegation:'กำหนดคุณลักษณะเฉพาะและราคากลางเอื้อประโยชน์ให้บริษัทระบบสื่อสารรายเดียวในการประกวดราคาอิเล็กทรอนิกส์ (e-bidding)',
+    receivedDate:'2568-12-01', deadline60:'2569-01-30', deadline2y:'2570-12-01', prescription:'2573-04-10',
+    docRef:'ปป 0020/1420 ลงวันที่ 10 สิงหาคม 2569', urgent:false, complex:true, dupWarning:false,
+    docType:'213', signPhase:'COMPLETE', slaDays:2, slaLimit:5, subCommittee:null,
+    frontNote:'เลขาธิการฯ ลงนามเห็นชอบแล้ว เสนอประธานฯ พิจารณาสั่งการบรรจุวาระเข้าคณะอนุกลั่นกรองฯ คณะ 1-8'
+  },
+  {
+    id:'1820/2569',
+    subject:'กล่าวหาเจ้าหน้าที่ที่ดิน ทุจริตการออกเอกสารสิทธิ์ในเขตป่าไม้ด่วนพิเศษ (Bypass)',
+    legalBase:'ม.62', status:'PENDING_CHAIRMAN_URGENT_72',
+    owner:'นางสาวศิริพร กิจการ', ownerOrg:'กองบริหารคดี (กบค.)',
+    complainant:'กรมป่าไม้ (มอบหมายเรื่องเร่งด่วน)',
+    accused:[
+      { no:1, name:'นายรังวัด ที่ดินทอง', pos:'เจ้าพนักงานที่ดินอาวุโส', idcard:'3-1011-0xxxx-xx-x', agency:'สำนักงานที่ดินจังหวัด' }
+    ],
+    allegation:'ออกโฉนดที่ดินในเขตป่าสงวนแห่งชาติให้นายทุนเอกชน 150 ไร่ โดยคดีใกล้ขาดอายุความใน 35 วัน',
+    receivedDate:'2568-11-20', deadline60:'2569-01-19', deadline2y:'2570-11-20', prescription:'2569-09-25',
+    docRef:'ปป 0020/1435 ลงวันที่ 12 สิงหาคม 2569', urgent:true, urgent72:true, urgentReason:'ผอ.กบค. ลงนามรับรองใบด่วน — คดีใกล้ขาดอายุความใน 35 วัน เข้าเงื่อนไข Bypass สั่งบรรจุวาระทันที',
+    complex:false, dupWarning:false,
+    docType:'RULING', signPhase:'COMPLETE', slaDays:1, slaLimit:5, subCommittee:null,
+    frontNote:'มีใบด่วนที่ ผอ.กบค. ลงนามรับรองแล้ว — เสนอประธานฯ สั่งบรรจุวาระการประชุมทันที (Bypass)'
+  },
+  {
+    id:'1945/2569',
+    subject:'กล่าวหาผู้บริหารโรงพยาบาลรัฐ ยักยอกเวชภัณฑ์และชี้มูลความผิด ม.24 วรรคท้าย',
+    legalBase:'ม.18/4', status:'PENDING_SIGN_RULING_72',
+    owner:'นางสาวศิริพร กิจการ', ownerOrg:'กองบริหารคดี (กบค.)',
+    complainant:'ผลการไต่สวนข้อเท็จจริง',
+    accused:[
+      { no:1, name:'นพ.สมเกียรติ ยาดี', pos:'ผู้อำนวยการโรงพยาบาล', idcard:'3-1015-0xxxx-xx-x', agency:'โรงพยาบาลศูนย์' }
+    ],
+    allegation:'ยักยอกยาและเวชภัณฑ์ราคาแพงของโรงพยาบาลรัฐออกขายคลินิกส่วนตัว มติบอร์ดชี้มูลความผิดวินัยร้ายแรงและอาญา',
+    receivedDate:'2568-05-15', deadline60:null, deadline2y:null, prescription:'2573-05-15',
+    docRef:'ปป 0020/1480 ลงวันที่ 15 สิงหาคม 2569', urgent:false, complex:true, dupWarning:false,
+    docType:'RULING', signPhase:'COMPLETE', slaDays:3, slaLimit:15, subCommittee:'คณะที่ 2',
+    meetingNo:'38/2569', agendaNo:'3.1', round72:1, quorumOk72:true,
+    orderNo:'ปปท วฉ 25/2569', resolution72:'GUILTY_72', resolutionDate72:'2569-08-15',
+    frontNote:'องค์อนุกรรมการฯ และบอร์ดมีมติชี้มูลความผิดแล้ว เสนอประธานฯ ลงนามในรายงานการไต่สวนวินิจฉัยชี้มูล'
+  }
+);
+
 CASES.forEach(c => {
   if(!c.docType)       c.docType = '213';
   if(!c.signPhase)     c.signPhase = 'WAIT';
@@ -1198,6 +1260,17 @@ const M28_LOG = {
   '1015/2568': { orderType:'REJECT', orderedDate:'2569-05-28', reported:false, dueDate:'2569-06-12' }
 };
 CASES.forEach(c => { if(M28_LOG[c.id]) c.m28 = M28_LOG[c.id]; });
+
+// Filter dataset to exactly 20 mock cases covering all status categories
+const TARGET_20_IDS = [
+  '1547/2568', '1396/2564', '1119/2565', '1525/2558', '1189/2569',
+  '1478/2568', '1015/2568', '0012/2565', '0719/2568', '3648/2558',
+  '0818/2568', '1083/2568', '0674/2568', '0773/2568', '2201/2569',
+  '2015/2569', '1988/2568', '1750/2568', '1820/2569', '1945/2569'
+];
+const _cases20 = CASES.filter(c => TARGET_20_IDS.includes(c.id));
+CASES.length = 0;
+_cases20.forEach(c => CASES.push(c));
 
 /* ---------- รายชื่อคณะอนุกรรมการกลั่นกรองฯ 1-8 (ฐานข้อมูลบุคลากรจำลอง) ----------
    ใช้ดึงชื่อ-ตำแหน่งอนุกรรมการมาลงแบบฟอร์มคำสั่ง ม.24 โดยอัตโนมัติตาม kase.subCommittee
@@ -1245,7 +1318,7 @@ const SUBCOMMITTEE_ROSTER = {
   ]
 };
 
-const CASES_VERSION = '2026-08-06-เลขสำนวน';
+const CASES_VERSION = '2026-08-18-20cases-v6';
 if (typeof sessionStorage !== 'undefined') {
   const savedVersion = sessionStorage.getItem('ecmis_cases_version');
   const savedCases = sessionStorage.getItem('ecmis_cases');
