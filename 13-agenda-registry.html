@@ -48,10 +48,10 @@
           <table class="table table-hover tbl-ecmis mb-0" id="meetingList">
             <thead>
               <tr>
-                <th id="thMeetName" style="cursor:pointer;user-select:none">ครั้งที่ประชุม <i class="fa-solid fa-sort-down ms-1" id="thMeetNameIcon" style="font-size:0.75rem"></i></th>
-                <th>วันที่</th>
-                <th class="text-center">จำนวนวาระ</th>
-                <th>สถานะ</th>
+                <th class="meet-sortable" data-sort-key="name" style="cursor:pointer;user-select:none">ครั้งที่ประชุม <i class="fa-solid fa-sort ms-1 sort-icon"></i></th>
+                <th class="meet-sortable" data-sort-key="date" style="cursor:pointer;user-select:none">วันที่ <i class="fa-solid fa-sort ms-1 sort-icon"></i></th>
+                <th class="meet-sortable text-center" data-sort-key="count" style="cursor:pointer;user-select:none">จำนวนวาระ <i class="fa-solid fa-sort ms-1 sort-icon"></i></th>
+                <th class="meet-sortable" data-sort-key="status" style="cursor:pointer;user-select:none">สถานะ <i class="fa-solid fa-sort ms-1 sort-icon"></i></th>
                 <th style="width:40px"></th>
               </tr>
             </thead>
@@ -84,22 +84,48 @@
       document.getElementById('btnAddMeeting').disabled = true;
     }
 
+    let meetSortKey = 'name';
     let meetSortDir = 'desc';
     function meetNameKey(m) {
       const parts = String(m.trc_name).split('/');
       return (parseInt(parts[1], 10) || 0) * 1000 + (parseInt(parts[0], 10) || 0);
     }
-    document.getElementById('thMeetName').addEventListener('click', () => {
-      meetSortDir = meetSortDir === 'desc' ? 'asc' : 'desc';
-      document.getElementById('thMeetNameIcon').className = `fa-solid ms-1 ${meetSortDir === 'desc' ? 'fa-sort-down' : 'fa-sort-up'}`;
-      renderMeetingList();
+    const MEET_SORT_FNS = {
+      name: meetNameKey,
+      date: m => m.trc_date,
+      count: m => AR.itemsOf(m.trc_id).length,
+      status: m => parseInt(m.trc_status, 10) || 0
+    };
+    function updateMeetSortIcons() {
+      document.querySelectorAll('.meet-sortable').forEach(th => {
+        const icon = th.querySelector('.sort-icon');
+        if (th.dataset.sortKey === meetSortKey) {
+          icon.className = `fa-solid ms-1 sort-icon ${meetSortDir === 'desc' ? 'fa-sort-down' : 'fa-sort-up'}`;
+        } else {
+          icon.className = 'fa-solid fa-sort ms-1 sort-icon';
+        }
+      });
+    }
+    document.querySelectorAll('.meet-sortable').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.dataset.sortKey;
+        if (meetSortKey === key) { meetSortDir = meetSortDir === 'desc' ? 'asc' : 'desc'; }
+        else { meetSortKey = key; meetSortDir = 'desc'; }
+        updateMeetSortIcons();
+        renderMeetingList();
+      });
     });
+    updateMeetSortIcons();
 
     function renderMeetingList() {
       const tbody = document.getElementById('meetTb');
       document.getElementById('meetCnt').textContent = AR.MEETINGS.length;
-      const sorted = [...AR.MEETINGS].sort((a, b) =>
-        meetSortDir === 'desc' ? meetNameKey(b) - meetNameKey(a) : meetNameKey(a) - meetNameKey(b));
+      const keyFn = MEET_SORT_FNS[meetSortKey];
+      const sorted = [...AR.MEETINGS].sort((a, b) => {
+        const ka = keyFn(a), kb = keyFn(b);
+        const cmp = ka < kb ? -1 : ka > kb ? 1 : 0;
+        return meetSortDir === 'desc' ? -cmp : cmp;
+      });
       tbody.innerHTML = sorted.map(m => {
         const count = AR.itemsOf(m.trc_id).length;
         return `
