@@ -176,7 +176,11 @@ function isChairActionable(c) {
          (c.status === 'PENDING_URGENT' && c.urgent);
 }
 
-const all   = ECMIS.CASES.filter(c => ECMIS.canViewCase(c, role.id));
+const AFFAIRS_STATUSES = ['DEFERRED', 'RESOLVED_PENDING_72', 'PENDING_DISPATCH_GUILTY_72'];
+
+const all   = role.id === 'affairs'
+  ? ECMIS.CASES.filter(c => AFFAIRS_STATUSES.includes(c.status) && ECMIS.canViewCase(c, role.id))
+  : ECMIS.CASES.filter(c => ECMIS.canViewCase(c, role.id));
 let mine    = role.id === 'chairman'
   ? ECMIS.CASES.filter(c => isChairActionable(c))
   : ECMIS.inboxFor(role.id).filter(c => !ECMIS.isUpstreamCase(c) && ECMIS.canViewCase(c, role.id));
