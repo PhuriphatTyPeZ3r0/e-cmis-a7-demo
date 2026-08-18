@@ -143,6 +143,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/ecmis-app.js"></script>
   <script src="assets/agenda-registry-data.js"></script>
   <script>
@@ -169,6 +170,12 @@
     </div>`;
     }
 
+    AR.ready.then(main).catch(err => {
+      console.error('โหลดข้อมูลทะเบียนวาระการประชุมไม่สำเร็จ:', err);
+      ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
+    });
+
+    function main() {
     const params = new URLSearchParams(location.search);
     const meetId = +params.get('meet');
     const meeting = AR.MEETINGS.find(m => m.trc_id === meetId);
@@ -215,16 +222,15 @@
         return true;
       }
 
-      function moveItem(trciId, dir) {
-        const it = AR.ITEMS.find(x => x.trci_id === trciId);
-        if (!it) return;
-        const groupIdx = AR.ITEMS.filter(x => x.trc_id === it.trc_id);
-        const posInGroup = groupIdx.indexOf(it);
-        const swapWith = groupIdx[posInGroup + dir];
-        if (!swapWith) return;
-        const a = AR.ITEMS.indexOf(it), b = AR.ITEMS.indexOf(swapWith);
-        [AR.ITEMS[a], AR.ITEMS[b]] = [AR.ITEMS[b], AR.ITEMS[a]];
-        AR.save();
+      async function moveItem(trciId, dir) {
+        try {
+          const moved = await AR.swapItemNumber(trciId, dir);
+          if (!moved) return;
+        } catch (err) {
+          console.error('เลื่อนลำดับวาระไม่สำเร็จ:', err);
+          ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+          return;
+        }
         renderDetail();
       }
 
@@ -266,9 +272,15 @@
       </tr>`;
         }).join('');
 
-        tbody.querySelectorAll('.agenda-no-input').forEach(el => el.addEventListener('change', e => {
-          const it = AR.ITEMS.find(x => x.trci_id === +e.target.dataset.trci);
-          if (it) { it.trci_number = e.target.value.trim(); AR.save(); }
+        tbody.querySelectorAll('.agenda-no-input').forEach(el => el.addEventListener('change', async e => {
+          const trciId = +e.target.dataset.trci;
+          const newNumber = e.target.value.trim();
+          try {
+            await AR.updateItemNumber(trciId, newNumber);
+          } catch (err) {
+            console.error('แก้ไขวาระที่ไม่สำเร็จ:', err);
+            ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+          }
         }));
         tbody.querySelectorAll('.move-up').forEach(el => el.addEventListener('click', e => moveItem(+e.currentTarget.dataset.trci, -1)));
         tbody.querySelectorAll('.move-down').forEach(el => el.addEventListener('click', e => moveItem(+e.currentTarget.dataset.trci, 1)));
@@ -404,10 +416,15 @@
               remark: document.getElementById('swItemRemark').value.trim() || '-'
             };
           }
-        }).then(res => {
+        }).then(async res => {
           if (!res.isConfirmed) return;
-          AR.ITEMS.push({ trci_id: AR.nextTrciId(), trc_id: meeting.trc_id, ...res.value });
-          AR.save();
+          try {
+            await AR.addItem({ trc_id: meeting.trc_id, ...res.value });
+          } catch (err) {
+            console.error('เพิ่มวาระไม่สำเร็จ:', err);
+            ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+            return;
+          }
           currentPage = 1;
           renderStats(); renderDetail();
           ECMIS.toastOk(`เพิ่มวาระที่ ${res.value.trci_number} เรียบร้อย`);
@@ -418,6 +435,7 @@
 
       renderStats();
       renderDetail();
+    }
     }
   </script>
 </body>

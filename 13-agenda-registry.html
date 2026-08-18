@@ -65,6 +65,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/ecmis-app.js"></script>
   <script src="assets/agenda-registry-data.js"></script>
   <script>
@@ -177,23 +178,29 @@
           const dateInput = document.getElementById('swMeetDate').value;
           if (!name || !dateInput) { Swal.showValidationMessage('กรุณากรอกครั้งที่ประชุมและวันที่ประชุมให้ครบถ้วน'); return false; }
           if (AR.MEETINGS.some(m => m.trc_name === name)) { Swal.showValidationMessage('มีครั้งที่ประชุมนี้อยู่แล้วในทะเบียน'); return false; }
-          /* <input type="date"> คืนค่าปี ค.ศ. จริงเสมอ แต่ trc_date ทั้งระบบเก็บเป็นปี พ.ศ. (fake-ISO)
-             ต้อง +543 ก่อนบันทึก ไม่เช่นนั้น ECMIS.thaiDate() จะโชว์ปีเป็น ค.ศ. ปนกับรายการอื่นที่เป็น พ.ศ. */
-          const [y, m, d] = dateInput.split('-');
-          const date = `${parseInt(y, 10) + 543}-${m}-${d}`;
-          return { name, date, status: document.getElementById('swMeetStatus').value };
+          /* <input type="date"> คืนค่าปี ค.ศ. จริงเสมอ ซึ่งตรงกับคอลัมน์ trc_date (type DATE)
+             ใน Supabase พอดี — ไม่ต้อง +543 อีกต่อไป (AgendaRegistry แปลงเป็น พ.ศ. ให้เองตอนอ่าน) */
+          return { name, date: dateInput, status: document.getElementById('swMeetStatus').value };
         }
-      }).then(res => {
+      }).then(async res => {
         if (!res.isConfirmed) return;
-        const trc_id = AR.nextTrcId();
-        AR.MEETINGS.push({ trc_id, trc_name: res.value.name, trc_date: res.value.date, trc_status: res.value.status, trc_secrecy: 'SECRET', trc_confirmed: false });
-        AR.save();
+        let meeting;
+        try {
+          meeting = await AR.addMeeting({ trc_name: res.value.name, trc_date: res.value.date, trc_status: res.value.status });
+        } catch (err) {
+          console.error('เพิ่มการประชุมไม่สำเร็จ:', err);
+          ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+          return;
+        }
         ECMIS.toastOk(`เพิ่มการประชุมครั้งที่ ${res.value.name} เรียบร้อย — กำลังเปิดหน้ารายละเอียด`);
-        setTimeout(() => { location.href = `14-agenda-registry-detail.html?meet=${trc_id}`; }, 700);
+        setTimeout(() => { location.href = `14-agenda-registry-detail.html?meet=${meeting.trc_id}`; }, 700);
       });
     });
 
-    renderMeetingList();
+    AR.ready.then(renderMeetingList).catch(err => {
+      console.error('โหลดทะเบียนวาระการประชุมไม่สำเร็จ:', err);
+      ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
+    });
   </script>
 </body>
 
