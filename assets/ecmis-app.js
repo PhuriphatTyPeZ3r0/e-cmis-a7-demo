@@ -1607,6 +1607,7 @@ const NAV = [
     label: role => {
       if (!role) return 'รายการพิจารณา/ลงนาม';
       if (role.id === 'board_sec') return 'รายการรอจัดทำมติ';
+      if (role.id === 'affairs') return 'รายการเรื่องที่ต้องจัดทำ';
       if (isUpstreamRole(role.id)) return 'รายการติดตามสถานะสำนวน';
       return 'รายการพิจารณา/ลงนาม';
     },
