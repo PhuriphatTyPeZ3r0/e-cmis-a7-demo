@@ -48,7 +48,7 @@
           <table class="table table-hover tbl-ecmis mb-0" id="meetingList">
             <thead>
               <tr>
-                <th>ครั้งที่ประชุม</th>
+                <th id="thMeetName" style="cursor:pointer;user-select:none">ครั้งที่ประชุม <i class="fa-solid fa-sort-down ms-1" id="thMeetNameIcon" style="font-size:0.75rem"></i></th>
                 <th>วันที่</th>
                 <th class="text-center">จำนวนวาระ</th>
                 <th>สถานะ</th>
@@ -84,10 +84,22 @@
       document.getElementById('btnAddMeeting').disabled = true;
     }
 
+    let meetSortDir = 'desc';
+    function meetNameKey(m) {
+      const parts = String(m.trc_name).split('/');
+      return (parseInt(parts[1], 10) || 0) * 1000 + (parseInt(parts[0], 10) || 0);
+    }
+    document.getElementById('thMeetName').addEventListener('click', () => {
+      meetSortDir = meetSortDir === 'desc' ? 'asc' : 'desc';
+      document.getElementById('thMeetNameIcon').className = `fa-solid ms-1 ${meetSortDir === 'desc' ? 'fa-sort-down' : 'fa-sort-up'}`;
+      renderMeetingList();
+    });
+
     function renderMeetingList() {
       const tbody = document.getElementById('meetTb');
       document.getElementById('meetCnt').textContent = AR.MEETINGS.length;
-      const sorted = [...AR.MEETINGS].sort((a, b) => b.trc_date.localeCompare(a.trc_date));
+      const sorted = [...AR.MEETINGS].sort((a, b) =>
+        meetSortDir === 'desc' ? meetNameKey(b) - meetNameKey(a) : meetNameKey(a) - meetNameKey(b));
       tbody.innerHTML = sorted.map(m => {
         const count = AR.itemsOf(m.trc_id).length;
         return `
@@ -104,12 +116,23 @@
         tr.addEventListener('click', () => { location.href = `14-agenda-registry-detail.html?meet=${tr.dataset.id}`; }));
     }
 
+    function nextMeetName() {
+      const buddhistYear = new Date().getFullYear() + 543;
+      const maxNo = AR.MEETINGS.reduce((max, m) => {
+        const parts = String(m.trc_name).split('/');
+        const no = parseInt(parts[0], 10) || 0;
+        const yr = parseInt(parts[1], 10) || 0;
+        return yr === buddhistYear && no > max ? no : max;
+      }, 0);
+      return `${maxNo + 1}/${buddhistYear}`;
+    }
+
     document.getElementById('btnAddMeeting').addEventListener('click', () => {
       Swal.fire({
         title: 'เพิ่มการประชุมใหม่',
         html: `
           <div class="mb-2"><label class="form-label">ครั้งที่ประชุม *</label>
-            <input type="text" id="swMeetName" class="form-control" placeholder="เช่น 56/2569"></div>
+            <input type="text" id="swMeetName" class="form-control" value="${nextMeetName()}" placeholder="เช่น 56/2569"></div>
           <div class="mb-2"><label class="form-label">วันที่ประชุม *</label>
             <input type="date" id="swMeetDate" class="form-control"></div>
           <div><label class="form-label">สถานะ</label>

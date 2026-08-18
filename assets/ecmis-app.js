@@ -1061,6 +1061,24 @@ CASES.push(
     chainOpinions:[]
   },
   {
+    /* สำนวนตัวอย่างที่ scenario มาถึง 72-09-ruling-report.html จริง (บอร์ดมีมติชี้มูลแล้ว
+       รอกลุ่มงานกิจการฯ จัดทำร่างรายงานวินิจฉัยชี้มูล) — เข้าถึงหน้านี้ผ่านทะเบียนสำนวนตามปกติ
+       แทนลิงก์เมนูบนสุดที่ถอดออกแล้ว */
+    id:'1855/2568', subject:'กล่าวหาเจ้าหน้าที่กรมที่ดินแห่งหนึ่ง ออกโฉนดทับที่สาธารณประโยชน์',
+    legalBase:'ม.18/4', status:'RESOLVED_PENDING_72',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
+    complainant:'ราษฎรในพื้นที่ (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายวิสูตร รังวัด', pos:'เจ้าพนักงานที่ดินชำนาญการ', idcard:'3-1099-0xxxx-xx-x', agency:'สำนักงานที่ดินจังหวัดแห่งหนึ่ง' } ],
+    allegation:'ร่วมกันออกโฉนดที่ดินทับที่สาธารณประโยชน์ (หนองน้ำสาธารณะ) โดยรู้อยู่แล้วว่าที่ดินดังกล่าวเป็นที่หวงห้าม',
+    receivedDate:'2568-05-12', deadline60:null, deadline2y:null, prescription:'2573-05-12',
+    docRef:'ปป 0018/0980 ลงวันที่ 3 มีนาคม 2569',
+    urgent:false, urgent72:false, complex:true, complex72:true, dupWarning:false,
+    docType:'RULING', signPhase:'DRAFT', slaDays:1, slaLimit:15, subCommittee:null,
+    meetingNo:'12/2569', agendaNo:'3.4', round72:1, quorumOk72:true,
+    resolution72:'GUILTY_72', resolutionDate72:'2569-08-14',
+    chainOpinions:[]
+  },
+  {
     id:'2041/2569',
     subject:'กล่าวหาเจ้าหน้าที่กรมศุลกากร หลีกเลี่ยงการเสียภาษีอากรนำเข้าสินค้าประเภทเครื่องใช้ไฟฟ้า',
     legalBase:'ม.18/4', status:'RESOLVED',
@@ -1521,8 +1539,6 @@ const NAV = [
     },
     badge:true },
   { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' },
-  { href:'72-09-ruling-report.html',      icon:'fa-file-signature',   label:'รายงานวินิจฉัยชี้มูล',
-    visible: role => !!role && (can('doc.generate', role.id) || can('sign.ruling', role.id) || canEditMaster(role.id)) },
 
   { section:'การประชุมคณะกรรมการ ป.ป.ท.' },
   { href:'12-meeting-report.html',        icon:'fa-file-contract',    label:'จัดทำรายงานมติการประชุม',

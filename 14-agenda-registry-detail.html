@@ -307,6 +307,18 @@
       /* ===================================================================
          เพิ่มวาระ — บันทึกลง sessionStorage (จำลอง)
          =================================================================== */
+      function nextItemNo() {
+        const items = AR.itemsOf(meeting.trc_id);
+        let major = 5, minor = 0;
+        items.forEach(it => {
+          const parts = String(it.trci_number).split('.');
+          const maj = parseInt(parts[0], 10);
+          const min = parseInt(parts[1], 10) || 0;
+          if (!isNaN(maj) && (maj > major || (maj === major && min > minor))) { major = maj; minor = min; }
+        });
+        return `${major}.${minor + 1}`;
+      }
+
       document.getElementById('btnAddItem').addEventListener('click', () => {
         const catOptions = Object.entries(AR.CATEGORY_LABEL).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
         Swal.fire({
@@ -320,7 +332,7 @@
               <small class="d-block mt-1" id="swLookupStatus" style="min-height:1.1em"></small>
             </div>
             <div class="col-4"><label class="form-label">วาระที่ *</label>
-              <input type="text" id="swItemNo" class="form-control" placeholder="เช่น 5.31"></div>
+              <input type="text" id="swItemNo" class="form-control" value="${nextItemNo()}" placeholder="เช่น 5.31"></div>
             <div class="col-8"><label class="form-label">หมวดหมู่ *</label>
               <select id="swItemCat" class="form-select">${catOptions}</select></div>
             <div class="col-12"><label class="form-label">ลักษณะเรื่อง *</label>
