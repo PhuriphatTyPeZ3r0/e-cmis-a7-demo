@@ -207,7 +207,8 @@ async function loadCasesFromSupabase() {
         accused: (cc.tbl_cmp_case_accused || [])
           .sort((a, b) => (a.tcca_no || 0) - (b.tcca_no || 0))
           .map(a => ({ no: a.tcca_no, name: a.tcca_name, pos: a.tcca_position, idcard: a.tcca_idcard, agency: a.tcca_agency })),
-        status: row.trr_status, slaDays: row.trr_sla_days, slaLimit: row.trr_sla_limit,
+        status: ECMIS.CODE_STATUS[row.trr_status] || row.trr_status,
+        slaDays: row.trr_sla_days, slaLimit: row.trr_sla_limit,
         urgent: !!row.trr_urgent, urgent72: !!row.trr_urgent,
         signedBySecgen: !!row.trr_signed_secgen, subCommittee: row.trr_sub_committee
       };
@@ -215,7 +216,9 @@ async function loadCasesFromSupabase() {
 }
 
 async function updateCaseStatus(kase, newStatus) {
-  const { error } = await sb.from('tbl_res_request').update({ trr_status: newStatus }).eq('trr_id', kase.trr_id);
+  const code = ECMIS.STATUS_CODE[newStatus];
+  if (!code) throw new Error(`ไม่พบรหัสสถานะสำหรับ ${newStatus}`);
+  const { error } = await sb.from('tbl_res_request').update({ trr_status: code }).eq('trr_id', kase.trr_id);
   if (error) throw error;
   kase.status = newStatus;
 }
