@@ -14,19 +14,14 @@
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link href="assets/ecmis-app.css" rel="stylesheet">
   <style>
-    .agenda-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;margin-bottom:1rem}
-    .agenda-stat{padding:.9rem 1.05rem;border:1px solid var(--border-divider);border-radius:var(--radius-card);background:var(--bg-surface)}
-    .agenda-stat span{display:block;color:var(--text-disabled);font-size:.72rem;font-weight:600;letter-spacing:.02em}
-    .agenda-stat strong{display:block;margin-top:.2rem;font-size:1.5rem;color:var(--ecmis-navy);font-family:var(--serif)}
-    .agenda-stat small{display:block;margin-top:.15rem;color:var(--ecmis-muted);font-size:.72rem}
     .meet-badge{display:inline-flex;align-items:center;padding:.2rem .55rem;border-radius:999px;font-size:.72rem;font-weight:600;white-space:nowrap}
+    .meet-scheduled{color:#174e80;background:#e3edf9}
     .meet-active{color:#1e6141;background:#dff0e7}
     .meet-cancel{color:#8c261f;background:#f9e1df}
     .meet-confirmed{display:inline-flex;align-items:center;gap:.25rem;padding:.15rem .5rem;border-radius:999px;font-size:.68rem;font-weight:600;color:#1e6141;background:#dff0e7;margin-left:.4rem}
     .meet-row{cursor:pointer}
     #meetTb tr:hover{background:var(--table-row-hover)}
     .swal2-popup .form-label{font-size:.82rem;font-weight:600;margin-bottom:.25rem;display:block;text-align:left}
-    @media(max-width:900px){.agenda-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
 </head>
 
@@ -40,15 +35,7 @@
       <span class="flow-ref ms-auto">สืบค้นและติดตามวาระการประชุมคณะกรรมการ ป.ป.ท. ทุกครั้ง</span>
     </div>
 
-    <div class="alert alert-light border small mb-3" style="font-size:.8rem">
-      <i class="fa-solid fa-circle-info me-1"></i>
-      การประชุม <strong>ครั้งที่ 55/2569 (22 ก.ค. 2569)</strong> คัดข้อมูลจริงจากเอกสารวาระที่ 5 (30 อนุวาระ) —
-      กดปุ่ม <strong>เพิ่มการประชุม</strong> เพื่อเพิ่มการประชุมครั้งใหม่ แล้วเลือกครั้งที่ประชุมจากตารางด้านล่างเพื่อดูรายละเอียดวาระ
-    </div>
-
     <div id="editGate"></div>
-
-    <div class="agenda-stats" id="statsBox"></div>
 
     <div class="card card-ecmis">
       <div class="card-header">
@@ -97,16 +84,6 @@
       document.getElementById('btnAddMeeting').disabled = true;
     }
 
-    function renderStats() {
-      const flaggedCount = AR.ITEMS.filter(AR.isFlagged).length;
-      const bundledCount = AR.ITEMS.filter(AR.isBundled).length;
-      document.getElementById('statsBox').innerHTML = `
-        <div class="agenda-stat"><span>จำนวนการประชุม</span><strong>${AR.MEETINGS.length}</strong><small>ครั้ง</small></div>
-        <div class="agenda-stat"><span>จำนวนวาระทั้งหมด</span><strong>${AR.ITEMS.length}</strong><small>อนุวาระ</small></div>
-        <div class="agenda-stat"><span>อนุกรรมการเห็นแย้ง / ไม่ผ่าน</span><strong style="color:#8c261f">${flaggedCount}</strong><small>อนุวาระ</small></div>
-        <div class="agenda-stat"><span>รวมหลายสำนวนในวาระเดียว</span><strong style="color:#174e80">${bundledCount}</strong><small>อนุวาระ</small></div>`;
-    }
-
     function renderMeetingList() {
       const tbody = document.getElementById('meetTb');
       document.getElementById('meetCnt').textContent = AR.MEETINGS.length;
@@ -118,7 +95,7 @@
         <td class="fw-semibold">${M(m.trc_name)}</td>
         <td>${M(ECMIS.thaiDate(m.trc_date))}</td>
         <td class="text-center">${count}</td>
-        <td><span class="meet-badge ${AR.STATUS_CLASS[m.trc_status]}">${AR.STATUS_LABEL[m.trc_status]}</span>
+        <td><span class="meet-badge ${AR.STATUS_CLASS[m.trc_status] || 'meet-scheduled'}">${AR.STATUS_LABEL[m.trc_status] || 'กำหนดการแล้ว — รอประชุม'}</span>
           ${m.trc_confirmed ? '<span class="meet-confirmed"><i class="fa-solid fa-check"></i>จัดวาระแล้ว</span>' : ''}</td>
         <td class="text-end"><i class="fa-solid fa-chevron-right text-muted"></i></td>
       </tr>`;
@@ -137,7 +114,8 @@
             <input type="date" id="swMeetDate" class="form-control"></div>
           <div><label class="form-label">สถานะ</label>
             <select id="swMeetStatus" class="form-select">
-              <option value="1" selected>ประชุมแล้ว</option>
+              <option value="0" selected>กำหนดการแล้ว — รอประชุม</option>
+              <option value="1">ประชุมแล้ว</option>
               <option value="2">ยกเลิก/เลื่อน</option>
             </select></div>`,
         focusConfirm: false,
@@ -147,9 +125,13 @@
         confirmButtonColor: '#0F2A62',
         preConfirm: () => {
           const name = document.getElementById('swMeetName').value.trim();
-          const date = document.getElementById('swMeetDate').value;
-          if (!name || !date) { Swal.showValidationMessage('กรุณากรอกครั้งที่ประชุมและวันที่ประชุมให้ครบถ้วน'); return false; }
+          const dateInput = document.getElementById('swMeetDate').value;
+          if (!name || !dateInput) { Swal.showValidationMessage('กรุณากรอกครั้งที่ประชุมและวันที่ประชุมให้ครบถ้วน'); return false; }
           if (AR.MEETINGS.some(m => m.trc_name === name)) { Swal.showValidationMessage('มีครั้งที่ประชุมนี้อยู่แล้วในทะเบียน'); return false; }
+          /* <input type="date"> คืนค่าปี ค.ศ. จริงเสมอ แต่ trc_date ทั้งระบบเก็บเป็นปี พ.ศ. (fake-ISO)
+             ต้อง +543 ก่อนบันทึก ไม่เช่นนั้น ECMIS.thaiDate() จะโชว์ปีเป็น ค.ศ. ปนกับรายการอื่นที่เป็น พ.ศ. */
+          const [y, m, d] = dateInput.split('-');
+          const date = `${parseInt(y, 10) + 543}-${m}-${d}`;
           return { name, date, status: document.getElementById('swMeetStatus').value };
         }
       }).then(res => {
@@ -162,7 +144,6 @@
       });
     });
 
-    renderStats();
     renderMeetingList();
   </script>
 </body>

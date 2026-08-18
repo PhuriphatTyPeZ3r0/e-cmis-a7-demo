@@ -58,8 +58,8 @@
     policy: 'เรื่องเชิงนโยบาย/บริหารงาน', overdue: 'รายงานเกินกรอบระยะเวลา', prosecutor: 'ความเห็นอัยการ/กันบุคคลไว้เป็นพยาน'
   };
   const CATEGORY_CLASS = { finding: 'cat-finding', preliminary: 'cat-preliminary', policy: 'cat-policy', overdue: 'cat-overdue', prosecutor: 'cat-prosecutor' };
-  const STATUS_LABEL = { '1': 'ประชุมแล้ว', '2': 'ยกเลิก/เลื่อน' };
-  const STATUS_CLASS = { '1': 'meet-active', '2': 'meet-cancel' };
+  const STATUS_LABEL = { '0': 'กำหนดการแล้ว — รอประชุม', '1': 'ประชุมแล้ว', '2': 'ยกเลิก/เลื่อน' };
+  const STATUS_CLASS = { '0': 'meet-scheduled', '1': 'meet-active', '2': 'meet-cancel' };
 
   /* ---------- sessionStorage persistence (เดียวกับแนวทางของ ECMIS.CASES) ---------- */
   const DATA_VERSION = '2026-08-18-agenda-registry-v1';

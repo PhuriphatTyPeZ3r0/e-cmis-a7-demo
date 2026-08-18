@@ -97,9 +97,23 @@
         <div class="ws-card mb-3" id="disciplineCard">
           <div class="card-header"><i class="fa-solid fa-file-shield"></i> แบบฟอร์มหนังสือลงโทษทางวินัย</div>
           <div class="card-body">
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="hasCriminalToggle">
+              <label class="form-check-label" for="hasCriminalToggle">
+                <strong>มีมูลความผิดทางอาญาด้วย</strong> — สลับรูปแบบเอกสารเป็น ปปท. 8-06 (ค่าเริ่มต้นตามมติที่บันทึกไว้ แก้ไขที่นี่ได้เพื่อดูตัวอย่างทั้งสองแบบ)
+              </label>
+            </div>
             <div class="row g-2">
               <div class="col-md-6"><label class="form-label field-req">หน่วยงานผู้บังคับบัญชา</label><input class="form-control" id="discAgency" placeholder="ระบุหน่วยงานผู้ลงโทษ"></div>
               <div class="col-md-6"><label class="form-label field-req">ผู้ถูกกล่าวหา</label><input class="form-control" id="discAccused"></div>
+              <div class="col-md-6"><label class="form-label field-req">ฐานความผิด</label>
+                <select class="form-select" id="discCharge">
+                  <option value="ทุจริตต่อหน้าที่">ทุจริตต่อหน้าที่</option>
+                  <option value="กระทำความผิดต่อตำแหน่งหน้าที่ราชการ">กระทำความผิดต่อตำแหน่งหน้าที่ราชการ</option>
+                  <option value="การกระทำความผิดต่อตำแหน่งหน้าที่ในการยุติธรรม">การกระทำความผิดต่อตำแหน่งหน้าที่ในการยุติธรรม</option>
+                  <option value="ประพฤติมิชอบ">ประพฤติมิชอบ</option>
+                </select>
+              </div>
               <div class="col-md-6"><label class="form-label field-req">ประเภทโทษทางวินัย</label>
                 <select class="form-select" id="discPenalty">
                   <option value="">— เลือกประเภทโทษ —</option>
@@ -130,9 +144,7 @@
           <button class="btn btn-sm btn-light" onclick="window.print()" title="พิมพ์เฉพาะเอกสาร Preview"><i class="fa-solid fa-print"></i></button>
           <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
         </div>
-        <div class="ws-paper-stage">
-          <div class="doc-paper a4-paper" id="docPaper"></div>
-        </div>
+        <div class="ws-paper-stage" id="docPaper"></div>
       </aside>
     </div>
 
@@ -199,8 +211,10 @@
 
     document.getElementById('discAgency').value = kase.discAgency72 || kase.ownerOrg || '';
     document.getElementById('discAccused').value = kase.discAccused72 || (kase.accused[0] ? kase.accused[0].name : '');
+    document.getElementById('discCharge').value = kase.discCharge72 || 'ทุจริตต่อหน้าที่';
     document.getElementById('discPenalty').value = kase.discPenalty72 || '';
     document.getElementById('discMisconduct').value = kase.discMisconduct72 || kase.allegation || '';
+    document.getElementById('hasCriminalToggle').checked = !!kase.guiltyCriminal72;
 
     const disciplineVisible = (kase.resolution72 || '') === 'GUILTY_72';
     document.getElementById('disciplineCard').classList.toggle('d-none', !disciplineVisible);
@@ -221,8 +235,10 @@
         disciplinaryFinding72: document.getElementById('disciplinaryFinding').value.trim(),
         discAgency72: document.getElementById('discAgency').value.trim(),
         discAccused72: document.getElementById('discAccused').value.trim(),
+        discCharge72: document.getElementById('discCharge').value,
         discPenalty72: document.getElementById('discPenalty').value,
-        discMisconduct72: document.getElementById('discMisconduct').value.trim()
+        discMisconduct72: document.getElementById('discMisconduct').value.trim(),
+        guiltyCriminal72: document.getElementById('hasCriminalToggle').checked
       });
     }
 
@@ -242,15 +258,24 @@
       const disciplinaryFinding = document.getElementById('disciplinaryFinding').value.trim();
       const discAgency = document.getElementById('discAgency').value.trim();
       const discAccused = document.getElementById('discAccused').value.trim();
+      const discCharge = document.getElementById('discCharge').value;
       const discPenalty = document.getElementById('discPenalty').value;
       const discMisconduct = document.getElementById('discMisconduct').value.trim();
       const accused = (kase.accused && kase.accused[0]) || {};
       const etAl = kase.accused && kase.accused.length > 1 ? ' กับพวก' : '';
       const meetDateThai = ECMIS.thaiDate(kase.resolutionDate72 || kase.meetingDate);
-      const hasCriminal = !!kase.guiltyCriminal72;
+      const hasCriminal = document.getElementById('hasCriminalToggle').checked;
+      const docPaperEl = document.getElementById('docPaper');
+
+      function runningHeader(subjectLine) {
+        return pageNo => `
+      <div class="doc-run-title">${subjectLine} (ต่อ)</div>
+      <div class="doc-run-page">- ${ECMIS.toThaiDigits(pageNo)} -</div>`;
+      }
 
       if (docTab === 'ruling') {
-        document.getElementById('docPaper').innerHTML = `
+        const introBlock = `
+          <div style="text-align:center;margin-bottom:8px"><img src="doc_logo.jpg" alt="ตราครุฑ" style="height:52px"></div>
           <div class="doc-title">รายงานการไต่สวนเพื่อวินิจฉัยชี้มูล</div>
           <div class="doc-sub" style="text-align:center">คณะกรรมการ ป.ป.ท.</div>
           <div class="doc-row" style="margin-top:6px"><span class="k">เรื่องที่:</span> ${M(kase.id)}</div>
@@ -271,51 +296,47 @@
           <div class="doc-indent" style="margin-top:10px">
             คณะกรรมการ ป.ป.ท. ได้พิจารณาข้อเท็จจริงและพยานหลักฐานตามรายงานการไต่สวนของ
             คณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวนแล้ว ฟังได้ว่า
-          </div>
+          </div>`;
 
-          <div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับการดำเนินการไต่สวนของคณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวน</div>
+        const flowBlocks = [
+          `<div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับการดำเนินการไต่สวนของคณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวน</div>
           <div class="doc-indent">คณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวน ได้ดำเนินการไต่สวนและรวบรวมพยานหลักฐาน
-            ถูกต้องตามกฎหมายและระเบียบที่เกี่ยวข้องเรียบร้อยแล้ว</div>
-
-          <div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับสถานะของผู้ถูกกล่าวหา</div>
-          <div class="doc-indent">${M(accusedStatus)}</div>
-
-          <div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับอำนาจหน้าที่ของผู้ถูกกล่าวหา</div>
-          <div class="doc-indent">${M(accusedAuthority)}</div>
-
-          <div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับการกระทำความผิดของผู้ถูกกล่าวหา</div>
-          <div class="doc-indent">${M(factSummary)}</div>
-
-          <div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับความเสียหาย</div>
-          <div class="doc-indent">${M(damageDetail)}</div>
-
-          <div class="doc-h" style="margin-top:10px">วัน เวลา สถานที่ เกิดเหตุ</div>
-          <div class="doc-indent">${M(incidentDetail)}</div>
-
-          <div class="doc-h" style="margin-top:10px">อายุความ</div>
-          <div class="doc-indent">${M(prescriptionNote)}</div>
-
-          <div class="doc-indent" style="margin-top:10px">
+            ถูกต้องตามกฎหมายและระเบียบที่เกี่ยวข้องเรียบร้อยแล้ว</div>`,
+          `<div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับสถานะของผู้ถูกกล่าวหา</div>
+          <div class="doc-indent">${M(accusedStatus)}</div>`,
+          `<div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับอำนาจหน้าที่ของผู้ถูกกล่าวหา</div>
+          <div class="doc-indent">${M(accusedAuthority)}</div>`,
+          `<div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับการกระทำความผิดของผู้ถูกกล่าวหา</div>
+          <div class="doc-indent">${M(factSummary)}</div>`,
+          `<div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับความเสียหาย</div>
+          <div class="doc-indent">${M(damageDetail)}</div>`,
+          `<div class="doc-h" style="margin-top:10px">วัน เวลา สถานที่ เกิดเหตุ</div>
+          <div class="doc-indent">${M(incidentDetail)}</div>`,
+          `<div class="doc-h" style="margin-top:10px">อายุความ</div>
+          <div class="doc-indent">${M(prescriptionNote)}</div>`,
+          `<div class="doc-indent" style="margin-top:10px">
             คณะกรรมการ ป.ป.ท. มีมติเป็นเอกฉันท์วินิจฉัยชี้มูลความผิดทางอาญา และความผิดทางวินัย
             ผู้ถูกกล่าวหา ดังนี้
-          </div>
+          </div>`,
+          `<div class="doc-h" style="margin-top:10px">เหตุผลในการวินิจฉัย (การปรับข้อเท็จจริงประกอบเข้ากับข้อกฎหมาย)</div>
+          <div class="doc-indent">${M(legalAnalysis)}</div>`,
+          `<div class="doc-h" style="margin-top:10px">ความผิดทางอาญา</div>
+          <div class="doc-indent">${M(criminalFinding, 'ไม่มีมูลความผิดทางอาญา')}</div>`,
+          `<div class="doc-h" style="margin-top:10px">ความผิดทางวินัย</div>
+          <div class="doc-indent">${M(disciplinaryFinding, 'ไม่มีมูลความผิดทางวินัย')}</div>`
+        ];
 
-          <div class="doc-h" style="margin-top:10px">เหตุผลในการวินิจฉัย (การปรับข้อเท็จจริงประกอบเข้ากับข้อกฎหมาย)</div>
-          <div class="doc-indent">${M(legalAnalysis)}</div>
-
-          <div class="doc-h" style="margin-top:10px">ความผิดทางอาญา</div>
-          <div class="doc-indent">${M(criminalFinding, 'ไม่มีมูลความผิดทางอาญา')}</div>
-
-          <div class="doc-h" style="margin-top:10px">ความผิดทางวินัย</div>
-          <div class="doc-indent">${M(disciplinaryFinding, 'ไม่มีมูลความผิดทางวินัย')}</div>
-
+        const signBlock = `
           <div style="margin-top:24px">
             ${BOARD.map(b => `<div class="doc-sign" style="margin-top:18px">
               <span class="doc-dots"></span><br>(${b.n})<br>${b.r}</div>`).join('')}
           </div>`;
+
+        ECMIS.paginateDoc(docPaperEl, { introBlock, flowBlocks, signBlock, runningHeaderHtml: runningHeader(`รายงานการไต่สวนเพื่อวินิจฉัยชี้มูล เรื่องที่ ${M(kase.id)}`) });
+
       } else {
         const discCode = hasCriminal ? '8-06' : '8-05';
-        document.getElementById('docPaper').innerHTML = `
+        const introBlock = `
           <div style="text-align:center;margin-bottom:8px"><img src="doc_logo.jpg" alt="ตราครุฑ" style="height:60px"></div>
           <div class="doc-row" style="text-align:right">${M(orderNo, 'ที่ ปป .../...')} สำนักงาน ป.ป.ท.</div>
           <div class="doc-row" style="text-align:right">อาคารซอฟต์แวร์ปาร์ค ถนนแจ้งวัฒนะ</div>
@@ -326,18 +347,19 @@
           <div class="doc-indent" style="margin-top:6px">
             สิ่งที่ส่งมาด้วย &nbsp;๑. สำเนารายงานการไต่สวนเพื่อวินิจฉัยชี้มูลของคณะกรรมการ ป.ป.ท. เรื่องที่ ${M(kase.id)} จำนวน ๑ แผ่น<br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;๒. สำเนามติคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)} เมื่อวันที่ ${M(meetDateThai)} จำนวน ๑ แผ่น
-          </div>
+          </div>`;
 
-          <div class="doc-indent" style="margin-top:10px">
+        const flowBlocks = [
+          `<div class="doc-indent" style="margin-top:10px">
             ด้วยคณะกรรมการ ป.ป.ท. ได้ดำเนินการไต่สวนโดยการแต่งตั้งคณะอนุกรรมการไต่สวน/คณะพนักงาน
             ป.ป.ท. ไต่สวน กรณี ${M(accused.name)}${etAl} ${M(accused.pos)} สังกัด ${M(accused.agency)}
-            ว่ากระทำความผิดฐานทุจริตต่อหน้าที่หรือประพฤติมิชอบ
-          </div>
-          <div class="doc-indent" style="margin-top:8px">
+            ว่ากระทำความผิดฐาน${M(discCharge)}
+          </div>`,
+          `<div class="doc-indent" style="margin-top:8px">
             คณะกรรมการ ป.ป.ท. ได้พิจารณาสำนวนการไต่สวนในคราวประชุม ครั้งที่ ${M(meetNo)}
             เมื่อวันที่ ${M(meetDateThai)} แล้วมีมติว่า ${M(discMisconduct)}
-          </div>
-          <div class="doc-indent" style="margin-top:8px">
+          </div>`,
+          `<div class="doc-indent" style="margin-top:8px">
             ดังนั้น เพื่อปฏิบัติตามมาตรา ๓๘${hasCriminal ? ' และ ๔๔' : ''} แห่งพระราชบัญญัติมาตรการของ
             ฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม จึงขอส่งรายงาน
             การไต่สวนและเอกสารที่เกี่ยวข้องมายังท่านเพื่อพิจารณาโทษทางวินัยแก่ ${M(discAccused)}
@@ -345,11 +367,14 @@
             ๖๐ วันนับแต่วันที่ได้รับหนังสือฉบับนี้โดยมิต้องดำเนินการสอบสวนทางวินัยอีก และเมื่อได้
             ดำเนินการลงโทษทางวินัย${M(discPenalty, '')}แล้ว ขอได้ส่งสำเนาคำสั่งลงโทษดังกล่าวไปให้
             คณะกรรมการ ป.ป.ท. ทราบภายใน ๑๕ วัน นับแต่วันที่ได้ออกคำสั่งด้วย
-          </div>
-          ${hasCriminal ? `<div class="doc-indent" style="margin-top:8px">
+          </div>`,
+          ...(hasCriminal ? [`<div class="doc-indent" style="margin-top:8px">
             อนึ่ง สำหรับความผิดทางอาญาในเรื่องนี้ ได้ส่งเรื่องให้พนักงานอัยการเพื่อดำเนินคดีอาญาแก่
             บุคคลดังกล่าวแล้ว
-          </div>` : ''}
+          </div>`] : [])
+        ];
+
+        const signBlock = `
           <div class="doc-indent" style="margin-top:8px">จึงเรียนมาเพื่อโปรดพิจารณาดำเนินการในส่วนที่เกี่ยวข้องต่อไป</div>
 
           <div class="doc-sign" style="margin-top:24px">
@@ -362,6 +387,8 @@
           <div class="doc-row" style="font-size:.85rem">โทรสาร -</div>
           <div class="doc-row" style="font-size:.85rem">${M(kase.owner)}</div>
           <div style="text-align:right;margin-top:18px;font-size:14px;color:#555">ปปท. ${discCode}</div>`;
+
+        ECMIS.paginateDoc(docPaperEl, { introBlock, flowBlocks, signBlock, runningHeaderHtml: runningHeader('หนังสือขอให้พิจารณาโทษทางวินัย') });
       }
     }
 
@@ -374,7 +401,7 @@
       });
     });
 
-    ['meetNo', 'agendaNo', 'orderNo', 'accusedStatus', 'accusedAuthority', 'factSummary', 'damageDetail', 'incidentDetail', 'prescriptionNote', 'legalAnalysis', 'criminalFinding', 'disciplinaryFinding', 'discAgency', 'discAccused', 'discPenalty', 'discMisconduct']
+    ['meetNo', 'agendaNo', 'orderNo', 'accusedStatus', 'accusedAuthority', 'factSummary', 'damageDetail', 'incidentDetail', 'prescriptionNote', 'legalAnalysis', 'criminalFinding', 'disciplinaryFinding', 'discAgency', 'discAccused', 'discCharge', 'discPenalty', 'discMisconduct', 'hasCriminalToggle']
       .forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;

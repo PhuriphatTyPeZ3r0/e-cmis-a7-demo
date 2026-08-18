@@ -392,8 +392,8 @@
     <td>
       <select class="form-select form-select-sm vote">
         <option value="for" selected>เห็นด้วย</option>
-        <option value="against">เห็นแย้ง</option>
-        <option value="abstain" class="d-none">-</option>
+        <option value="against">ไม่เห็นด้วย</option>
+        <option value="abstain">งดออกเสียง</option>
       </select>
     </td>
   </tr>`).join('');
@@ -410,10 +410,10 @@
           abstainV++;
         } else {
           v.disabled = false;
-          if (v.value === 'abstain') v.value = 'for';
           present++;
           if (v.value === 'for') forV++;
           else if (v.value === 'against') againstV++;
+          else if (v.value === 'abstain') abstainV++;
         }
       });
       return { present, recused, forV, againstV, abstainV };
@@ -490,7 +490,7 @@
         return 'รับไว้ไต่สวน โดยให้ดำเนินการไต่สวนเป็นคณะอนุกรรมการไต่สวน ตามมาตรา ๒๔ วรรคสาม แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม';
       } else if (r.code === 'NOT_ACCEPTED') {
         const law = document.getElementById('rejectLaw').value;
-        return `ไม่รับเรื่องไว้พิจารณา เนื่องจาก ${opinion || '……………………'} ตามพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ${law || '…………'}`;
+        return `ไม่รับไว้ไต่สวน เนื่องจาก ${opinion || '……………………'} ตามพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ${law || '…………'}`;
       } else if (r.code === 'DISMISS') {
         const law = document.getElementById('rejectLaw').value;
         return `ให้จำหน่ายเรื่องออกจากสารบบ เนื่องจาก ${opinion || '……………………'} ตามพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ${law || '…………'}`;
@@ -684,7 +684,13 @@
 
       const bi = html => `<div class="doc-body-indent">${html}</div>`;
       const flowBlocks = [
-        bi(`<div class="doc-indent" style="margin-top:12px">
+        bi(kase.subCommittee ? `<div class="doc-indent" style="margin-top:12px">
+        ${M(presenter)} ในฐานะฝ่ายเลขานุการคณะอนุกรรมการกลั่นกรอง เรื่อง รายงานผลการรวบรวมพยานหลักฐาน
+        ไต่สวนเบื้องต้นและรายงานการไต่สวนเพื่อวินิจฉัยชี้มูลเพื่อเสนอคณะกรรมการ ป.ป.ท. ${M(kase.subCommittee)}
+        เสนอรายงานการไต่สวนเบื้องต้นที่ผ่านการพิจารณาของคณะอนุกรรมการกลั่นกรอง เรื่อง รายงานผลการรวบรวม
+        พยานหลักฐานไต่สวนเบื้องต้นและรายงานการไต่สวนเพื่อวินิจฉัยชี้มูลเพื่อเสนอคณะกรรมการ ป.ป.ท. ${M(kase.subCommittee)}
+        ต่อที่ประชุมคณะกรรมการ ป.ป.ท. ดังนี้
+      </div>` : `<div class="doc-indent" style="margin-top:12px">
         ${M(presenter)} ${M(ownerOrg)} เสนอรายงานการไต่สวนเบื้องต้นที่ผ่านการพิจารณา
         เลขาธิการคณะกรรมการ ป.ป.ท. ต่อที่ประชุมคณะกรรมการ ป.ป.ท. ดังนี้
       </div>`),

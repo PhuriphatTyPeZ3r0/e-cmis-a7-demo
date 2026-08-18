@@ -71,6 +71,18 @@
         </div>
 
         <div class="ws-card mb-3">
+          <div class="card-header"><i class="fa-solid fa-users-gear"></i> องค์คณะผู้ไต่สวนและความเห็น</div>
+          <div class="card-body">
+            <label class="form-label">คณะอนุกรรมการไต่สวน / คณะพนักงานไต่สวน (แล้วแต่กรณี)</label>
+            <input class="form-control mb-3" id="investigatorRef"
+              placeholder="เช่น คณะพนักงานไต่สวน ตามคำสั่งสำนักงาน ป.ป.ท. ลับ ที่ .../... ลงวันที่ ...">
+            <label class="form-label">ความเห็นของคณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวน</label>
+            <textarea class="form-control" id="investigatorOpinion" rows="3"
+              placeholder="คณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวน มีความเห็นว่า..."></textarea>
+          </div>
+        </div>
+
+        <div class="ws-card mb-3">
           <div class="card-header"><i class="fa-solid fa-code-branch"></i> มติที่ประชุม (วินิจฉัยชี้มูล)</div>
           <div class="card-body">
             <label class="form-label field-req">เลือกประเภทผลมติ</label>
@@ -90,6 +102,16 @@
             </div>
 
             <div id="noMeritBox" class="mb-3 d-none">
+              <label class="form-label field-req">เหตุผลที่ข้อกล่าวหาตกไป</label>
+              <select class="form-select mb-2" id="noMeritReason">
+                <option value="INSUFFICIENT_ACT">ไม่ปรากฏพยานหลักฐานเพียงพอว่ากระทำการทุจริตในภาครัฐ</option>
+                <option value="INSUFFICIENT_SUPPORT">ไม่ปรากฏพยานหลักฐานเพียงพอว่าสนับสนุนเจ้าหน้าที่ของรัฐกระทำการทุจริตในภาครัฐ</option>
+                <option value="NOT_CORRUPTION">การกระทำไม่ใช่การทุจริตในภาครัฐ ตามนัยมาตรา ๓</option>
+                <option value="OTHER">อื่น ๆ (ระบุเอง)</option>
+              </select>
+              <div id="noMeritOtherBox" class="d-none">
+                <textarea class="form-control" id="noMeritOther" rows="2" placeholder="ระบุเหตุผลอื่น..."></textarea>
+              </div>
             </div>
 
             <div id="forwardNaccBox" class="mb-3 d-none">
@@ -102,11 +124,19 @@
                   <strong>ทางอาญา</strong> — ส่งสำนวนให้พนักงานอัยการดำเนินคดีต่อไป (ม.44)
                 </label>
               </div>
+              <div id="criminalFindingBox" class="mb-2 d-none">
+                <label class="form-label">การกระทำของผู้ถูกกล่าวหาเป็นความผิดตาม (ฐานความผิด/กฎหมายและมาตรา)</label>
+                <textarea class="form-control" id="criminalFinding" rows="2"></textarea>
+              </div>
               <div class="form-check mb-2">
                 <input class="form-check-input" type="checkbox" id="guiltyDiscipline">
                 <label class="form-check-label" for="guiltyDiscipline">
                   <strong>ทางวินัย</strong> — แจ้งผู้บังคับบัญชาพิจารณาโทษทางวินัย (ม.38)
                 </label>
+              </div>
+              <div id="disciplinaryFindingBox" class="mb-2 d-none">
+                <label class="form-label">การกระทำของผู้ถูกกล่าวหาเป็นความผิดวินัยอย่างร้ายแรง ฐาน (ฐานความผิด/กฎหมายและมาตรา)</label>
+                <textarea class="form-control" id="disciplinaryFinding" rows="2"></textarea>
               </div>
               <div class="val-msg val-err" data-for="guiltyCheck">ต้องเลือกอย่างน้อย 1 ประเภทความผิด (อาญา และ/หรือ
                 วินัย)</div>
@@ -129,6 +159,12 @@
               <label class="form-label">ผู้ชี้แจงต่อที่ประชุม</label>
               <input class="form-control" id="presenter">
             </div>
+
+            <div class="mt-3">
+              <label class="form-label">การชี้แจงเพิ่มเติม (ถ้ามี)</label>
+              <textarea class="form-control" id="presenterNote" rows="2"
+                placeholder="ผู้ชี้แจงเพิ่มเติมว่า..."></textarea>
+            </div>
           </div>
         </div>
 
@@ -143,9 +179,7 @@
           <button class="btn btn-sm btn-light" id="btnDocx"><i class="fa-solid fa-download me-1"></i>.docx</button>
           <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
         </div>
-        <div class="ws-paper-stage">
-          <div class="doc-paper doc-resolution a4-paper" id="docPaper"></div>
-        </div>
+        <div class="ws-paper-stage" id="docPaper"></div>
       </aside>
     </div>
 
@@ -171,6 +205,9 @@
     if (kase.meetingNo) document.getElementById('meetNo').value = kase.meetingNo;
     if (kase.agendaNo) document.getElementById('agendaNo').value = kase.agendaNo;
     if (kase.meetingDate) document.getElementById('meetDate').value = kase.meetingDate;
+    document.getElementById('investigatorRef').value =
+      kase.investigatorRef72 || `คณะพนักงานไต่สวน/คณะอนุกรรมการไต่สวน แล้วแต่กรณี ตามคำสั่งแต่งตั้งเรื่องที่ ${kase.id}`;
+    document.getElementById('investigatorOpinion').value = kase.investigatorOpinion72 || '';
 
     document.getElementById('presenter').value = `${kase.owner} (ผู้รับผิดชอบสำนวน)`;
     ECMIS.initMultiSelectCombo(document.getElementById('presenter'), [
@@ -219,8 +256,8 @@
     <td>
       <select class="form-select form-select-sm vote">
         <option value="for" selected>เห็นด้วย</option>
-        <option value="against">เห็นแย้ง</option>
-        <option value="abstain" class="d-none">-</option>
+        <option value="against">ไม่เห็นด้วย</option>
+        <option value="abstain">งดออกเสียง</option>
       </select>
     </td>
   </tr>`).join('');
@@ -234,9 +271,8 @@
           recused++; v.value = 'abstain'; v.disabled = true; abstainV++;
         } else {
           v.disabled = false;
-          if (v.value === 'abstain') v.value = 'for';
           present++;
-          if (v.value === 'for') forV++; else if (v.value === 'against') againstV++;
+          if (v.value === 'for') forV++; else if (v.value === 'against') againstV++; else if (v.value === 'abstain') abstainV++;
         }
       });
       return { present, recused, forV, againstV, abstainV };
@@ -286,28 +322,34 @@
       return ECMIS.resolution72(code);
     }
 
+    /* เหตุผลข้อกล่าวหาตกไป (NO_MERIT_72) — ตรงตาม 3 ตัวเลือกจริงในแบบฟอร์ม
+       "มติการประชุม ไต่สวน กรณี ไม่ชี้มูล-ทำเพิ่ม.docx" + ช่องอื่นๆ ให้ระบุเอง */
+    const NO_MERIT_REASONS = {
+      INSUFFICIENT_ACT: name => `จากการไต่สวนไม่ปรากฏพยานหลักฐานเพียงพอว่า ${name} กระทำการทุจริตในภาครัฐ จึงให้ข้อกล่าวหาตกไป`,
+      INSUFFICIENT_SUPPORT: name => `จากการไต่สวนไม่ปรากฏพยานหลักฐานเพียงพอว่า ${name} สนับสนุนเจ้าหน้าที่ของรัฐกระทำการทุจริตในภาครัฐ จึงให้ข้อกล่าวหาตกไป`,
+      NOT_CORRUPTION: name => `เนื่องจากการกระทำของ ${name} ตามที่มีการร้องเรียนกล่าวหาไม่ใช่การกระทำทุจริตในภาครัฐ ตามนัยมาตรา ๓ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม จึงให้ข้อกล่าวหาตกไป`
+    };
+
     /* ข้อความ "มติที่ประชุม" ตามประเภทมติที่เลือก — ใช้ร่วมกันทั้ง HTML preview (renderDoc)
-       และตอนสร้างไฟล์ .docx จริง (generateDocx) เพื่อไม่ให้ข้อความเพี้ยนไปคนละทางกัน */
+       และตอนสร้างไฟล์ .docx จริง (generateDocx) เพื่อไม่ให้ข้อความเพี้ยนไปคนละทางกัน
+       (GUILTY_72 ไม่ผ่านฟังก์ชันนี้ — ขึ้นหัวข้อ "ความผิดทางอาญา/ทางวินัย" แยกเองใน renderDoc) */
     function computeResolutionText() {
       const r = selectedRes();
-      const crim = document.getElementById('guiltyCriminal').checked;
-      const disc = document.getElementById('guiltyDiscipline').checked;
-      const flight = document.getElementById('flightRisk') && document.getElementById('flightRisk').checked;
       if (r.code === 'FORWARD_NACC') {
         return 'เรื่องนี้อยู่ในหน้าที่และอำนาจของคณะกรรมการ ป.ป.ช. ให้ส่งเรื่องพร้อมทั้งสำนวนการไต่สวนเท่าที่มีอยู่ให้คณะกรรมการ ป.ป.ช. ภายในสิบห้าวันนับแต่วันที่ได้รับเรื่อง ตามมาตรา ๑๙ (ข) (๑) แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม';
       } else if (r.code === 'MORE_INVESTIGATE_72') {
         const scope = document.getElementById('moreScope').value;
         const reason = document.getElementById('moreReason').value.trim();
-        return `ให้${scope === 'เพิ่มเติมบางส่วน' ? 'ไต่สวนเพิ่มเติม' : scope} โดยมีเหตุผลดังนี้ ${reason || '……………………………………'} ตามมาตรา ๒๔ วรรคท้าย แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม`;
+        return `ให้ ${document.getElementById('investigatorRef').value.trim()} เรื่องที่ ${kase.id} ไปดำเนินการ${scope === 'เพิ่มเติมบางส่วน' ? 'ไต่สวนเพิ่มเติม' : scope} โดยมีเหตุผลดังนี้ ${reason || '……………………………………'} ตามมาตรา ๒๔ วรรคท้าย แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม`;
       } else if (r.code === 'NO_MERIT_72') {
-        return 'ข้อกล่าวหาไม่มีมูล ให้ข้อกล่าวหานั้นเป็นอันตกไป ตามมาตรา ๓๒ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม และให้แจ้งผู้ถูกกล่าวหาทราบไม่ช้ากว่าสิบห้าวันนับแต่วันที่คณะกรรมการ ป.ป.ท. มีมติ';
-      } else {
-        const parts = [];
-        if (disc) parts.push('กระทำความผิดทางวินัยอันเป็นการกระทำการทุจริตในภาครัฐ ตามมาตรา ๓๘');
-        if (crim) parts.push('การกระทำดังกล่าวเป็นความผิดทางอาญาด้วย ให้ส่งเรื่องพร้อมทั้งสำนวนการไต่สวน รายงาน เอกสาร และความเห็นของคณะกรรมการ ป.ป.ท. ให้พนักงานอัยการดำเนินคดีต่อไป ตามมาตรา ๔๔');
-        return `วินิจฉัยชี้มูลว่าผู้ถูกกล่าวหา${ECMIS.mergeField(kase.accused[0] ? kase.accused[0].name : '')} ${parts.join(' และ')} แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม`
-          + (crim && flight ? ' และเนื่องจากมีเหตุอันควรเชื่อว่าผู้ถูกกล่าวหาจะหลบหนี ให้ดำเนินการขอให้ศาลที่มีเขตอำนาจออกหมายจับและควบคุมตัวผู้ถูกกล่าวหาไว้ตามมาตรา ๑๙/๒' : '');
+        const reasonCode = document.getElementById('noMeritReason').value;
+        const name = ECMIS.mergeField(kase.accused[0] ? kase.accused[0].name : '', '(ชื่อผู้ถูกกล่าวหา)');
+        if (reasonCode === 'OTHER') {
+          return document.getElementById('noMeritOther').value.trim() || '……………………………………';
+        }
+        return NO_MERIT_REASONS[reasonCode](name);
       }
+      return '';
     }
 
     function toggleBoxes() {
@@ -318,8 +360,17 @@
       document.getElementById('guiltyBox').classList.toggle('d-none', code !== 'GUILTY_72');
     }
 
+    document.getElementById('noMeritReason').addEventListener('change', function () {
+      document.getElementById('noMeritOtherBox').classList.toggle('d-none', this.value !== 'OTHER');
+      renderDoc();
+    });
     document.getElementById('guiltyCriminal').addEventListener('change', function () {
       document.getElementById('flightRiskBox').classList.toggle('d-none', !this.checked);
+      document.getElementById('criminalFindingBox').classList.toggle('d-none', !this.checked);
+      renderDoc();
+    });
+    document.getElementById('guiltyDiscipline').addEventListener('change', function () {
+      document.getElementById('disciplinaryFindingBox').classList.toggle('d-none', !this.checked);
       renderDoc();
     });
 
@@ -345,66 +396,109 @@
       const lastNo = kase.legalBase === 'ม.62' ? '๓' : '๒';
 
       const resText = computeResolutionText();
+      const investigatorRef = document.getElementById('investigatorRef').value.trim();
+      const investigatorOpinion = document.getElementById('investigatorOpinion').value.trim();
+      const presenterNote = document.getElementById('presenterNote').value.trim();
+      const criminalFinding = document.getElementById('criminalFinding').value.trim();
+      const disciplinaryFinding = document.getElementById('disciplinaryFinding').value.trim();
 
-      document.getElementById('docPaper').innerHTML = `
+      function runningHeaderHtml(pageNo) {
+        return `
+    <div class="doc-run-title">มติการประชุมคณะกรรมการ ป.ป.ท. — วินิจฉัยชี้มูล<br>
+      ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}<br>วาระที่ ${M(agendaNo)}</div>
+    <div class="doc-secret">ลับ</div>
+    <div class="doc-run-page">- ${ECMIS.toThaiDigits(pageNo)} -</div>`;
+      }
+
+      const introBlock = `
     <div class="doc-secret">ลับ</div>
     <div class="doc-title">
       <div class="doc-title-l1">มติการประชุม</div>
-      <div class="doc-title-l2">คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ (วินิจฉัยชี้มูล)</div>
+      <div class="doc-title-l2">คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
     </div>
     <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}<br>วาระที่ ${M(agendaNo)}</div>
 
     <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
-    <div class="doc-row"><span class="k">ผู้รับผิดชอบสำนวน</span> ${M(kase.owner)}</div>
+    <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner)}</div>
     <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
     <div class="doc-row"><span class="k">ผู้ชี้แจง</span> ${M(presenter)}</div>
+    <div class="doc-row"><span class="k">เอกสารอ้างอิง</span> หนังสือหน่วยงานที่รับผิดชอบตามเอกสาร
+      ${M(kase.docRef !== '—' ? kase.docRef : '', 'ที่ ปป …………/……… ลงวันที่ ……………')} และเอกสารประกอบการประชุม</div>`;
 
-    <div class="doc-body-indent">
-      <div class="doc-indent" style="margin-top:12px">
-        ${M(presenter)} เสนอรายงานการไต่สวนวินิจฉัยชี้มูลตามคำสั่งแต่งตั้งคณะไต่สวนเรื่องที่ ${M(kase.id)}
-        ต่อที่ประชุมคณะกรรมการ ป.ป.ท. เพื่อพิจารณาให้ความเห็นชอบและวินิจฉัยชี้มูลตามมาตรา ๒๔ วรรคท้าย ดังนี้
-      </div>
-
-      <div class="doc-h">ผู้ถูกกล่าวหา</div>
-      ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}
-
-      <div class="doc-h">ข้อกล่าวหา</div>
-      <div class="doc-indent">${M(kase.allegation)}</div>
-
+      const bi = html => `<div class="doc-body-indent">${html}</div>`;
+      const flowBlocks = [
+        bi(`<div class="doc-indent" style="margin-top:12px">
+        ${M(presenter)} กล่าวต่อที่ประชุมว่า ${M(investigatorRef)} ขอรายงานผลการไต่สวน ดังต่อไปนี้
+      </div>`),
+        bi(`<div style="margin-top:10px">เรื่องที่ ${M(kase.id)}
+        (${M(kase.legalBase === 'ม.62'
+              ? 'รับตามมาตรา ๖๒ พระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑'
+              : 'รับตามมาตรา ๑๘/๔ พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม')})
+      </div>`),
+        bi(`<div class="doc-h">ผู้กล่าวหา</div><div>${M(kase.complainant)}</div>`),
+        bi(`<div class="doc-h">ผู้ถูกกล่าวหา</div>
+      ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}`),
+        bi(`<div class="doc-h">พฤติการณ์ที่กล่าวหา</div><div class="doc-indent">${M(kase.allegation)}</div>`),
+        bi(`<div class="doc-h">คณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวน แล้วแต่กรณี มีความเห็น ดังนี้</div>
+      <div class="doc-indent">${M(investigatorOpinion, '………………………………………………………………………………………………')}</div>
       <div class="doc-indent" style="margin-top:6px">
+        เหตุผลในการวินิจฉัยรายละเอียดปรากฏตามรายงานการไต่สวนเพื่อวินิจฉัยชี้มูลของคณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวน
+        แล้วแต่กรณี ตามเอกสารประกอบการประชุม
+      </div>`),
+        bi(`<div class="doc-indent" style="margin-top:6px">
         ในการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}
         คณะกรรมการ ป.ป.ท. ที่มาประชุม จำนวน ${attendees.length} คน ประกอบด้วย</div>
       <div class="doc-indent">${attendees.map((b, i) => `${i + 1}. ${M(b.n)} ${M(b.r)}`).join('<br>')}</div>
       ${recusedList.length ? `<div class="doc-indent" style="margin-top:6px">
         กรรมการ ป.ป.ท. ที่ถอนตัวจากการพิจารณาวาระนี้ตามมาตรา ๒๐ จำนวน ${recusedList.length} คน คือ</div>
       <div class="doc-indent">${recusedList.map((b, i) => `${i + 1}. ${M(b.n)}`).join('<br>')}</div>` : ''}
+      <div class="doc-indent" style="margin-top:6px">
+        เหตุผลในการวินิจฉัยคณะกรรมการ ป.ป.ท. มีความเห็นสอดคล้องกับคณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวน แล้วแต่กรณี
+      </div>`),
+        bi(`<div class="doc-h">การชี้แจงเพิ่มเติม</div>
+      <div class="doc-indent">ผู้ชี้แจง (${M(presenter)}) ชี้แจงเพิ่มเติมว่า
+        ${M(presenterNote, '………………………………………………………………………………………………')}</div>`),
+        bi(`<div class="doc-h">ความเห็นที่ประชุม</div>
+      <div class="doc-indent">คณะกรรมการ ป.ป.ท. พิจารณาแล้วเห็นว่า
+        ${M(opinion, '………………………………………………………………………………………………')}</div>`),
+        r.code === 'GUILTY_72'
+          ? `<div class="doc-h">มติที่ประชุม</div>
+      <div>๑. คณะกรรมการ ป.ป.ท. มีมติ${M(unanimous ? 'เป็นเอกฉันท์' : `ด้วยคะแนนเสียงข้างมาก ${t.forV} ต่อ ${t.againstV} เสียง`)}วินิจฉัยชี้มูลความผิด ดังนี้</div>
+      ${crim ? `<div class="doc-h" style="margin-top:6px">ความผิดทางอาญา</div>
+      <div class="doc-indent">การกระทำของ${M(kase.accused[0] ? kase.accused[0].name : '', '(ชื่อผู้ถูกกล่าวหา)')} เป็นความผิดตาม
+        ${M(criminalFinding, '(ฐานความผิด/กฎหมายและมาตรา)')} — ให้ส่งเรื่องพร้อมทั้งสำนวนการไต่สวน รายงาน เอกสาร และความเห็น
+        ของคณะกรรมการ ป.ป.ท. ให้พนักงานอัยการดำเนินคดีต่อไป ตามมาตรา ๔๔${flight
+              ? ' และเนื่องจากมีเหตุอันควรเชื่อว่าผู้ถูกกล่าวหาจะหลบหนี ให้ดำเนินการขอให้ศาลที่มีเขตอำนาจออกหมายจับและควบคุมตัวผู้ถูกกล่าวหาไว้ตามมาตรา ๑๙/๒'
+              : ''}</div>` : ''}
+      ${disc ? `<div class="doc-h" style="margin-top:6px">ความผิดทางวินัย</div>
+      <div class="doc-indent">การกระทำของ${M(kase.accused[0] ? kase.accused[0].name : '', '(ชื่อผู้ถูกกล่าวหา)')} เป็นความผิดวินัยอย่างร้ายแรง ฐาน
+        ${M(disciplinaryFinding, '(ฐานความผิด/กฎหมายและมาตรา)')} ตามมาตรา ๓๘</div>` : ''}`
+          : `<div class="doc-h">มติที่ประชุม</div>
+      <div>๑. คณะกรรมการ ป.ป.ท. มีมติ${M(unanimous ? 'เป็นเอกฉันท์' : `ด้วยคะแนนเสียงข้างมาก ${t.forV} ต่อ ${t.againstV} เสียง`)}</div>
+      <div style="padding-left:1.5em">- ${M(resText)}</div>`,
+        ...(t.againstV > 0 ? [`<div style="padding-left:1.5em;color:#DB2626">
+      (มีกรรมการเห็นแย้ง ${t.againstV} ท่าน — บันทึกความเห็นแย้งพร้อมเหตุผลไว้ในรายงานการประชุมตาม ม.๑๖)</div>`] : []),
+        ...(t.recused > 0 ? [`<div style="padding-left:1.5em;color:#6b3fa0">
+      (กรรมการที่ถูกกันออกจากการพิจารณาวาระนี้ตาม ม.๒๐ จำนวน ${t.recused} ท่าน)</div>`] : []),
+        ...(s65 ? [s65] : []),
+        `<div style="margin-top:6px">${lastNo}. รับรองมติการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)}
+      วันที่ ${M(meetDate)} วาระที่ ${M(agendaNo)}</div>`
+      ];
 
-      <div class="doc-h">ความเห็นที่ประชุม</div>
-      <div class="doc-indent">คณะกรรมการ ป.ป.ท. พิจารณารายงานการไต่สวนแล้วเห็นว่า
-        ${M(opinion, '………………………………………………………………………………………………')}</div>
-    </div>
-
-    <div class="doc-h">มติที่ประชุม</div>
-    <div>๑. คณะกรรมการ ป.ป.ท. มีมติ${M(unanimous ? 'เป็นเอกฉันท์' : `ด้วยคะแนนเสียงข้างมาก ${t.forV} ต่อ ${t.againstV} เสียง`)}</div>
-    <div style="padding-left:1.5em">- ${M(resText)}</div>
-    ${t.againstV > 0 ? `<div style="padding-left:1.5em;color:#DB2626">
-      (มีกรรมการเห็นแย้ง ${t.againstV} ท่าน — บันทึกความเห็นแย้งพร้อมเหตุผลไว้ในรายงานการประชุมตาม ม.๑๖)</div>` : ''}
-    ${t.recused > 0 ? `<div style="padding-left:1.5em;color:#6b3fa0">
-      (กรรมการที่ถูกกันออกจากการพิจารณาวาระนี้ตาม ม.๒๐ จำนวน ${t.recused} ท่าน)</div>` : ''}
-    ${s65}
-    <div style="margin-top:6px">${lastNo}. รับรองมติการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)}
-      วันที่ ${M(meetDate)} วาระที่ ${M(agendaNo)}</div>
-
+      const signBlock = `
     <div class="doc-sign">
       <span class="doc-dots"></span><br>
       (นางสาวณพัสตร์ ศรีสมเกียรติ)<br>
       ผู้อำนวยการกองบริหารคดี ปฏิบัติหน้าที่เลขานุการคณะกรรมการ ป.ป.ท.
     </div>
     <div class="doc-secret-foot">ลับ</div>`;
+
+      ECMIS.paginateResolutionDoc(document.getElementById('docPaper'), { introBlock, flowBlocks, signBlock, runningHeaderHtml });
     }
 
     document.getElementById('resList').addEventListener('change', () => { toggleBoxes(); renderDoc(); });
-    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'presenter', 'moreScope', 'moreReason', 'guiltyDiscipline', 'flightRisk']
+    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'presenter', 'presenterNote', 'investigatorRef', 'investigatorOpinion',
+      'moreScope', 'moreReason', 'noMeritOther', 'criminalFinding', 'disciplinaryFinding', 'guiltyDiscipline', 'flightRisk']
       .forEach(id => {
         const el = document.getElementById(id); if (el) { el.addEventListener('input', renderDoc); el.addEventListener('change', renderDoc); }
       });
@@ -477,7 +571,10 @@
             status: 'RESOLVED_PENDING_72',
             resolution72: r.code,
             boardOpinion72: op.value.trim(),
-            resolutionDate72: document.getElementById('meetDate').value.trim()
+            resolutionDate72: document.getElementById('meetDate').value.trim(),
+            investigatorRef72: document.getElementById('investigatorRef').value.trim(),
+            investigatorOpinion72: document.getElementById('investigatorOpinion').value.trim(),
+            presenterNote72: document.getElementById('presenterNote').value.trim()
           };
           if (r.code === 'MORE_INVESTIGATE_72') {
             const reasonText = document.getElementById('moreReason').value.trim();
@@ -495,6 +592,10 @@
             patch.criminalTrack72 = crim ? { status: 'PENDING' } : null;
             patch.disciplinaryTrack72 = disc ? { status: 'PENDING' } : null;
             patch.flightRisk72 = crim && document.getElementById('flightRisk').checked;
+            /* ให้ค่าตั้งต้นแก่ช่องความเห็นทางอาญา/วินัยของหน้ารายงานชี้มูล (72-09) จากมติที่บันทึกไว้
+               ที่นี่ — เฉพาะกรณียังไม่เคยกรอกไว้ ไม่เขียนทับของเดิมถ้าผู้ใช้แก้ไขในหน้า 72-09 ไปแล้ว */
+            if (crim && !kase.criminalFinding72) patch.criminalFinding72 = document.getElementById('criminalFinding').value.trim();
+            if (disc && !kase.disciplinaryFinding72) patch.disciplinaryFinding72 = document.getElementById('disciplinaryFinding').value.trim();
           }
           ECMIS.Model.CaseStore.update(kase.id, patch);
           ECMIS.toastOk('บันทึกมติและล็อก PDF เรียบร้อย');
@@ -561,8 +662,9 @@
         accused2: ac[1] ? P(`${ac[1].name} ${ac[1].pos} ${ac[1].agency}`) : '',
         accused3: ac[2] ? P(`${ac[2].name} ${ac[2].pos} ${ac[2].agency}`) : '',
         factSummary: P(kase.allegation), legalBaseClause,
-        investigatorPanel: P('', 'คณะพนักงานไต่สวน/คณะอนุกรรมการไต่สวน แล้วแต่กรณี ตามคำสั่งแต่งตั้งเรื่องที่ ' + kase.id),
-        investigatorMembers: P(''), investigatorOpinion: P(''),
+        investigatorPanel: P(document.getElementById('investigatorRef').value,
+          'คณะพนักงานไต่สวน/คณะอนุกรรมการไต่สวน แล้วแต่กรณี ตามคำสั่งแต่งตั้งเรื่องที่ ' + kase.id),
+        investigatorMembers: P(''), investigatorOpinion: P(document.getElementById('investigatorOpinion').value),
         presentCount: String(attendeeCount || BOARD.length),
         criminalBasis: crim ? 'มาตรา ๔๔ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม (ส่งพนักงานอัยการดำเนินคดีต่อไป)' : 'ไม่มีมูลความผิดทางอาญา',
         disciplinaryBasis: disc ? 'มาตรา ๓๘ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม' : 'ไม่มีมูลความผิดทางวินัย',

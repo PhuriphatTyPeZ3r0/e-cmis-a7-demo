@@ -1454,6 +1454,13 @@ function thaiDate(iso){
   if(p.length !== 3) return iso;
   return `${parseInt(p[2],10)} ${THAI_MONTHS[parseInt(p[1],10)-1]} ${p[0]}`;
 }
+const THAI_DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+function thaiDayName(iso){
+  const p = String(iso).split('-');
+  if(p.length !== 3) return '';
+  const d = new Date(parseInt(p[0],10) - 543, parseInt(p[1],10) - 1, parseInt(p[2],10));
+  return THAI_DAYS[d.getDay()];
+}
 function slaClass(used, limit){
   if(used > limit) return 'sla-late';
   if(used >= limit - 2) return 'sla-warn';
@@ -1508,7 +1515,7 @@ const NAV = [
 
     label: role => {
       if (!role) return 'รายการพิจารณา/ลงนาม';
-      if (role.id === 'board_sec') return 'รายการรอบันทึกมติ';
+      if (role.id === 'board_sec') return 'รายการรอจัดทำมติ';
       if (isUpstreamRole(role.id)) return 'รายการติดตามสถานะสำนวน';
       return 'รายการพิจารณา/ลงนาม';
     },
@@ -1845,8 +1852,9 @@ function mergeField(value, placeholder){
      flowBlocks   — array ของ HTML แต่ละชิ้น เป็นหน่วยเล็กสุดที่ตัดขึ้นหน้าใหม่ระหว่างกลางไม่ได้
      signBlock    — HTML คงที่ที่อยู่ท้ายหน้าสุดท้ายเท่านั้น (ลายเซ็น + ลับท้ายกระดาษ)
      runningHeaderHtml(pageNo) — คืน HTML หัวกระดาษวิ่งของหน้านั้น (ไม่ใช้กับหน้า 1) */
-function paginateResolutionDoc(containerEl, opts){
-  const { introBlock, flowBlocks, signBlock, runningHeaderHtml } = opts;
+function paginateDoc(containerEl, opts){
+  const { introBlock, flowBlocks, signBlock, runningHeaderHtml, docClass } = opts;
+  const pageClass = `doc-paper${docClass ? ' ' + docClass : ''} a4-paper`;
 
   /* probe ใช้วัดความสูงเนื้อหาจริงที่ความกว้างหน้ากระดาษจริง (210mm) — ไม่ใช้ % ของ container
      เพราะต้องได้ค่าคงที่ไม่ขึ้นกับขนาดจอ ใช้ visibility:hidden (ไม่ใช่ display:none) เพื่อให้ยัง
@@ -1855,10 +1863,10 @@ function paginateResolutionDoc(containerEl, opts){
   if(!probe){
     probe = document.createElement('div');
     probe.id = 'docPaperProbe';
-    probe.className = 'doc-paper doc-resolution a4-paper';
-    probe.style.cssText = 'position:absolute; visibility:hidden; left:-99999px; top:0; width:210mm; height:auto; aspect-ratio:auto;';
+    probe.style.cssText = 'position:absolute; visibility:hidden; left:-99999px; top:0; width:210mm; height:auto; min-height:0; aspect-ratio:auto;';
     document.body.appendChild(probe);
   }
+  probe.className = pageClass;
   const mmProbe = document.createElement('div');
   mmProbe.style.cssText = 'position:absolute; visibility:hidden; left:-99999px; height:297mm; width:0;';
   document.body.appendChild(mmProbe);
@@ -1899,8 +1907,12 @@ function paginateResolutionDoc(containerEl, opts){
   containerEl.innerHTML = pages.map((p, i) => {
     const pageNo = i + 1;
     const header = p.isFirst ? '' : runningHeaderHtml(pageNo);
-    return `<div class="doc-paper doc-resolution a4-paper">${header}${p.blocks.join('')}</div>`;
+    return `<div class="${pageClass}">${header}${p.blocks.join('')}</div>`;
   }).join('');
+}
+
+function paginateResolutionDoc(containerEl, opts){
+  return paginateDoc(containerEl, { ...opts, docClass: 'doc-resolution' });
 }
 
 /* ---------------------------------------------------------- DIALOGS */
@@ -3691,12 +3703,12 @@ global.ECMIS = {
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
   UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72, homeHref,
   PERM_DEFS, can, canEditMaster, canViewCase,
-  thaiDate, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole, roleIdForLogin,
+  thaiDate, thaiDayName, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole, roleIdForLogin,
   addBusinessDays, businessDaysBetween, resolutionSlaInfo, SUBCOMMITTEE_ROSTER,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   isAuthed, currentUsername, logout,
   renderShell, stepperHtml, statusBadge, slaBadge, actionBar,
-  mergeField, paginateResolutionDoc, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
+  mergeField, paginateDoc, paginateResolutionDoc, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
 
   ACT7_SECTIONS, ACT7_STATUSES, getAct7Status, act7Badge,
   ACT7_STATUSES_72, getAct7Status72,

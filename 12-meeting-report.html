@@ -91,9 +91,7 @@
           <span class="doc-edit-bar-sep"></span>
           <button type="button" class="btn btn-sm btn-gold" id="btnSaveDocEdit" style="width:auto;padding:0 .6rem">บันทึกการแก้ไข</button>
         </div>
-        <div class="ws-paper-stage">
-          <div class="doc-paper a4-paper" id="docPaper"></div>
-        </div>
+        <div class="ws-paper-stage" id="docPaper"></div>
         <button type="button" class="doc-edit-fab d-none" id="docEditFab" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
           <span aria-hidden="true">✏️</span><span>แก้ไขเอกสาร</span>
         </button>
@@ -168,32 +166,82 @@
       }).join('');
     }
 
-    /* ---------- เอกสาร ---------- */
+    /* ---------- เอกสาร ----------
+       โครงสร้างตามรายงานการประชุมคณะกรรมการ ป.ป.ท. ฉบับจริงที่ลูกค้าให้มา — เปิดประชุม/รับรอง
+       รายงานครั้งก่อน (วาระ 1-4) แล้วจึงเข้าเรื่องพิจารณา (วาระ 5) ต่อด้วยเรื่องอื่น ๆ (วาระ 6)
+       ไม่ใช่แค่หัวข้อเดียวพร้อมรายการมติแบบเดิม */
+    const SEC = ECMIS.getRole('board_sec');
+    function runningHeader(pageNo) {
+      return `
+    <div class="doc-run-title">รายงานการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${ECMIS.mergeField(currentMeetNo)} (ต่อ)</div>
+    <div class="doc-run-page">- ${ECMIS.toThaiDigits(pageNo)} -</div>`;
+    }
+
     function renderDoc() {
       const M = ECMIS.mergeField;
       const meetNo = currentMeetNo;
       const meetDate = ECMIS.thaiDate(document.getElementById('meetDate').value.trim());
+      const meetTimeText = 'เวลา ๐๙.๓๐ นาฬิกา';
 
-      document.getElementById('docPaper').innerHTML = `
+      const introBlock = `
       <div class="doc-title">รายงานการประชุม<br>คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
       <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}</div>
 
-      <div class="doc-h">ระเบียบวาระที่ 5 &nbsp; เรื่องเพื่อพิจารณา</div>
-      ${items.map(c => {
+      <div class="doc-indent" style="margin-top:8px">เริ่มประชุม${meetTimeText}</div>
+      <div class="doc-indent" style="margin-top:6px">
+        ประธานกรรมการ ป.ป.ท. กล่าวเปิดประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)} โดยเป็นการประชุมและ
+        ชี้แจงผ่านสื่ออิเล็กทรอนิกส์ ตามพระราชกำหนดว่าด้วยการประชุมผ่านสื่ออิเล็กทรอนิกส์ พ.ศ. ๒๕๖๓
+        และตามระเบียบคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ ว่าด้วยการประชุมคณะกรรมการ ป.ป.ท.
+      </div>
+      <div class="doc-indent" style="margin-top:6px">
+        ${M(SEC.name)} ผู้อำนวยการกองบริหารคดี ปฏิบัติหน้าที่เลขานุการคณะกรรมการ ป.ป.ท. กล่าวต่อที่ประชุมว่า
+        เพื่อให้เป็นไปตามระเบียบคณะกรรมการ ป.ป.ท. ว่าด้วยการประชุมคณะกรรมการ ป.ป.ท. จึงขออนุญาตให้ผู้ที่เกี่ยวข้อง
+        เข้าร่วมประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)}
+      </div>
+
+      <div class="doc-h" style="margin-top:10px">ระเบียบวาระที่ ๑&emsp;เรื่องที่ประธานแจ้งให้ที่ประชุมทราบ</div>
+      <div class="doc-indent">-ไม่มี-</div>
+
+      <div class="doc-h" style="margin-top:10px">ระเบียบวาระที่ ๒&emsp;เรื่องรับรองรายงานการประชุมคณะกรรมการ ป.ป.ท.</div>
+      <div class="doc-indent">รับรองรายงานการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ผ่านมา</div>
+      <div class="doc-indent" style="margin-top:4px"><strong>มติที่ประชุม</strong>&emsp;รับรองรายงานการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ผ่านมาตามที่ฝ่ายเลขานุการเสนอ</div>
+
+      <div class="doc-h" style="margin-top:10px">ระเบียบวาระที่ ๓&emsp;เรื่องที่เสนอให้ที่ประชุมทราบ</div>
+      <div class="doc-indent">-ไม่มี-</div>
+
+      <div class="doc-h" style="margin-top:10px">ระเบียบวาระที่ ๔&emsp;เรื่องสืบเนื่องจากการประชุม</div>
+      <div class="doc-indent">-ไม่มี-</div>
+
+      <div class="doc-h" style="margin-top:10px">ระเบียบวาระที่ ๕&emsp;เรื่องเสนอให้ที่ประชุมพิจารณา</div>`;
+
+      const flowBlocks = items.length ? items.map(c => {
         const res = ECMIS.resolutionOf(c.resolution);
+        const complainant = c.complainant ? `<div class="doc-indent" style="margin-top:2px">ผู้กล่าวหา&emsp;${M(c.complainant)}</div>` : '';
+        const accusedList = (c.accused || []).length
+          ? `<div class="doc-indent" style="margin-top:2px">ผู้ถูกร้อง&emsp;${(c.accused || []).map(a => `${M(a.name)} ${M(a.pos)}`).join(', ')}</div>`
+          : '';
+        const allegation = c.allegation ? `<div class="doc-indent" style="margin-top:2px">ข้อกล่าวหา&emsp;${M(c.allegation)}</div>` : '';
         return `
         <div style="margin-top:10px">
           <div class="doc-row"><span class="k">วาระที่ ${M(c.agendaNo)}</span> เรื่องที่ ${M(c.id)} กรณี ${M(c.subject)}</div>
-          <div class="doc-indent" style="margin-top:2px">
-            ที่ประชุมพิจารณาแล้วมีมติ<strong>${M(res ? res.label : c.resolution)}</strong>
+          ${complainant}${accusedList}${allegation}
+          <div class="doc-indent" style="margin-top:4px">
+            <strong>มติที่ประชุม</strong>&emsp;ที่ประชุมพิจารณาแล้วมีมติ${M(res ? res.label : c.resolution)}
           </div>
         </div>`;
-      }).join('') || `<div class="text-muted" style="margin-top:8px">— ไม่มีมติในการประชุมครั้งนี้ —</div>`}
+      }) : [`<div class="text-muted" style="margin-top:8px">— ไม่มีมติในการประชุมครั้งนี้ —</div>`];
+
+      const signBlock = `
+      <div class="doc-h" style="margin-top:16px">ระเบียบวาระที่ ๖&emsp;เรื่องอื่น ๆ</div>
+      <div class="doc-indent">พิจารณากำหนดวัน เวลา ในการประชุมครั้งต่อไป</div>
+      <div class="doc-indent" style="margin-top:6px">ปิดประชุมเวลา ๑๖.๓๐ นาฬิกา</div>
 
       <div class="doc-sign" style="margin-top:28px">
-        <span class="doc-dots"></span><br>(${ECMIS.getRole('board_sec').name})<br>
-        ${ECMIS.getRole('board_sec').title}<br>ผู้จัดทำรายงานการประชุม
+        <span class="doc-dots"></span><br>(${M(SEC.name)})<br>
+        ${M(SEC.title)}<br>ผู้จัดทำรายงานการประชุม
       </div>`;
+
+      ECMIS.paginateDoc(document.getElementById('docPaper'), { introBlock, flowBlocks, signBlock, runningHeaderHtml: runningHeader });
     }
 
     document.getElementById('meetDate').addEventListener('input', renderDoc);
@@ -223,15 +271,17 @@
     if (mayEdit) docEditFab.classList.remove('d-none');
 
     function setDocEditMode(on) {
-      if (on) docPaperEl.setAttribute('contenteditable', 'true');
-      else docPaperEl.removeAttribute('contenteditable');
+      docPaperEl.querySelectorAll('.doc-paper').forEach(p => {
+        if (on) p.setAttribute('contenteditable', 'true');
+        else p.removeAttribute('contenteditable');
+      });
       docEditFab.classList.toggle('active', on);
       docEditBar.classList.toggle('show', on);
     }
     docEditFab.addEventListener('click', () => setDocEditMode(!docEditFab.classList.contains('active')));
     docEditBar.addEventListener('click', e => {
       const btn = e.target.closest('[data-format]');
-      if (btn) { document.execCommand(btn.dataset.format); docPaperEl.focus(); }
+      if (btn) { document.execCommand(btn.dataset.format); docPaperEl.querySelector('.doc-paper')?.focus(); }
     });
     document.getElementById('btnSaveDocEdit').addEventListener('click', () => {
       setDocEditMode(false);
