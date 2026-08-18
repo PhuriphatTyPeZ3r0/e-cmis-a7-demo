@@ -470,7 +470,7 @@
       if (role.id === SIGNER.roleId)
         btns.push({ act: 'sign', label: 'ลงนามดิจิทัลและส่งต่อ', icon: 'fa-signature', cls: 'btn-gold' });
       document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(
-        Object.assign({}, kase, { status: 'RESOLVED' }), role.id, btns);
+        Object.assign({}, kase, { status: 'RESOLVED' }), role.id, btns, { forceAllowed: btns.length > 0 });
       document.querySelectorAll('.action-bar [data-act]').forEach(b =>
         b.addEventListener('click', () => handle(b.dataset.act)));
     }
@@ -491,9 +491,9 @@
     const RANK_ROLE_SUB = { chair: 'ประธานอนุกรรมการไต่สวน', member: 'อนุกรรมการไต่สวน', secretary: 'อนุกรรมการและเลขานุการ' };
     let members = roster ? roster.map(m => ({
       name: m.name, pos: m.pos, role: RANK_ROLE_SUB[m.rank],
-      type: m.rank === 'chair' ? 'other' : 'officer'
+      type: 'officer'
     })) : isSub ? [
-      { name: 'นายสุเมธ นิติธรรม', pos: 'ผู้ทรงคุณวุฒิด้านกฎหมาย', role: 'ประธานอนุกรรมการไต่สวน', type: 'other' },
+      { name: 'นายสุเมธ นิติธรรม', pos: 'ผู้ทรงคุณวุฒิด้านกฎหมาย', role: 'ประธานอนุกรรมการไต่สวน', type: 'officer' },
       { name: 'นายสมชาย ใจซื่อ', pos: 'นิติกรชำนาญการ', role: 'อนุกรรมการไต่สวน', type: 'officer' },
       { name: 'นางสาวปรียา ตั้งมั่น', pos: 'นักสืบสวนสอบสวนชำนาญการ', role: 'อนุกรรมการและเลขานุการ', type: 'officer' }
     ] : [
@@ -513,11 +513,10 @@
       <td><input class="form-control form-control-sm ${nameEmpty ? 'is-invalid' : ''}" data-f="name" data-i="${i}" value="${m.name || ''}" placeholder="ชื่อ-นามสกุล (ห้ามว่าง)"></td>
       <td><input class="form-control form-control-sm ${posEmpty ? 'is-invalid' : ''}" data-f="pos" data-i="${i}" value="${m.pos || ''}" placeholder="ตำแหน่ง (ห้ามว่าง)"></td>
       <td>
-        <select class="form-select form-select-sm mb-1" data-f="type" data-i="${i}">
+        ${isSub ? '' : `<select class="form-select form-select-sm mb-1" data-f="type" data-i="${i}">
           <option value="officer" ${m.type === 'officer' ? 'selected' : ''}>พนักงาน ป.ป.ท.</option>
           <option value="staff"   ${m.type === 'staff' ? 'selected' : ''}>เจ้าหน้าที่ ป.ป.ท.</option>
-          <option value="other"   ${m.type === 'other' ? 'selected' : ''}>ผู้ทรงคุณวุฒิ/อื่น ๆ</option>
-        </select>
+        </select>`}
         <input class="form-control form-control-sm ${roleEmpty ? 'is-invalid' : ''}" data-f="role" data-i="${i}" value="${m.role || ''}" placeholder="ฐานะในคณะ (ห้ามว่าง)">
       </td>
       <td><button class="btn btn-sm btn-link text-danger p-0" data-del="${i}" title="ลบรายชื่อ"><i class="fa-solid fa-trash"></i></button></td>
@@ -737,7 +736,7 @@
         btns.push({ act: 'memoSign', label: 'เห็นชอบและลงนาม', icon: 'fa-signature', cls: 'btn-gold' });
       btns.push({ act: 'memoDraft', label: 'บันทึกร่าง', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' });
       document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(
-        Object.assign({}, kase, { status: 'RESOLVED' }), role.id, btns);
+        Object.assign({}, kase, { status: 'RESOLVED' }), role.id, btns, { forceAllowed: btns.length > 0 });
       document.querySelectorAll('.action-bar [data-act]').forEach(b =>
         b.addEventListener('click', () => handle(b.dataset.act)));
     }
@@ -912,7 +911,7 @@
       const btns = [{ act: 'amendDraft', label: 'บันทึกร่าง', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' }];
       if (role.id === s.roleId) btns.push({ act: 'amendSign', label: 'ลงนามดิจิทัลและส่งต่อ', icon: 'fa-signature', cls: 'btn-gold' });
       document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(
-        Object.assign({}, kase, { status: 'RESOLVED' }), role.id, btns);
+        Object.assign({}, kase, { status: 'RESOLVED' }), role.id, btns, { forceAllowed: btns.length > 0 });
       document.querySelectorAll('.action-bar [data-act]').forEach(b =>
         b.addEventListener('click', () => handle(b.dataset.act)));
     }

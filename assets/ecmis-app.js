@@ -1776,9 +1776,12 @@ function slaBadge(kase){
     <i class="fa-regular fa-clock me-1"></i>${slaLabel(kase.slaDays, lim)}</span>`;
 }
 
-function actionBar(kase, roleId, buttons){
+function actionBar(kase, roleId, buttons, opts){
   const role = getRole(roleId);
-  const allowed = canAct(kase, roleId);
+  /* opts.forceAllowed — ใช้เมื่อหน้าเพจคำนวณสิทธิ์เองแล้วจากโมเดลสิทธิ์เฉพาะของหน้านั้น
+     (เช่น order24.draft / role.id===SIGNER.roleId) ไม่ใช่จาก STATUS[status].owner ทั่วไป
+     ค่าเริ่มต้น false เพื่อไม่กระทบพฤติกรรมเดิมของหน้าอื่นที่พึ่งพา canAct ตามสถานะ */
+  const allowed = (opts && opts.forceAllowed) || canAct(kase, roleId);
   let inner;
 
   if(isUpstreamCase(kase)){
