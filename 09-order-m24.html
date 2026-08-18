@@ -339,9 +339,7 @@
           <button class="btn btn-sm btn-light" id="btnDocx"><i class="fa-solid fa-download me-1"></i>.docx</button>
           <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
         </div>
-        <div class="ws-paper-stage">
-          <div class="doc-paper a4-paper" id="docPaper"></div>
-        </div>
+        <div class="ws-paper-stage" id="docPaper"></div>
       </aside>
     </div>
 
@@ -362,6 +360,26 @@
     const resCode = params.get('res') || 'ACCEPT_S24P1';
     const isSub = resCode === 'ACCEPT_S24P3';
     const M = ECMIS.mergeField;
+
+    /* เอกสารในหน้านี้ยาวและมีหลายโหมด (แต่งตั้ง/บันทึกเสนอ/แก้ไของค์ประกอบ) — แทนที่จะแยก
+       introBlock/flowBlocks/signBlock ด้วยมือทีละโหมด ใช้ตัวตัดหน้าอัตโนมัติ: รับ HTML เดิมที่มีอยู่แล้ว
+       มาตัดเป็น flowBlocks ตาม div ระดับบนสุด แล้วส่งเข้า ECMIS.paginateDoc เพื่อแบ่งหน้า A4 จริง
+       (บล็อกแรก/บล็อกสุดท้ายมักเป็นครุฑ+หัวเรื่อง และลายเซ็น จึงตรึงไว้เป็น introBlock/signBlock เสมอ) */
+    function paginateFromHtml(containerEl, html, runningTitle) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      const blocks = Array.from(tmp.children).map(el => el.outerHTML);
+      if (blocks.length < 3) { containerEl.innerHTML = `<div class="doc-paper a4-paper">${html}</div>`; return; }
+      const introBlock = blocks[0];
+      const signBlock = blocks[blocks.length - 1];
+      const flowBlocks = blocks.slice(1, -1);
+      ECMIS.paginateDoc(containerEl, {
+        introBlock, flowBlocks, signBlock,
+        runningHeaderHtml: pageNo => `
+      <div class="doc-run-title">${runningTitle} (ต่อ)</div>
+      <div class="doc-run-page">- ${ECMIS.toThaiDigits(pageNo)} -</div>`
+      });
+    }
 
     document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status);
     document.getElementById('stepper').innerHTML = ECMIS.stepperHtml('RESOLVED');
@@ -567,7 +585,7 @@
       const isNaccM62 = caseOriginCode() === 'NACC_M62';
       const code = FORM_CODES[isSub ? 'sub' : 'base'][caseOriginCode()];
 
-      document.getElementById('docPaper').innerHTML = `
+      const appointHtml = `
     <div style="text-align:center;margin-bottom:8px"><img src="doc_logo.jpg" alt="ตราครุฑ" style="height:60px"></div>
     <div class="doc-title">
       คำสั่ง${isSub ? 'คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ' : 'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ'}<br>
@@ -651,15 +669,17 @@
 
     <div class="doc-indent" style="margin-top:8px">ทั้งนี้ ตั้งแต่บัดนี้เป็นต้นไป</div>
 
-    <div class="doc-sign">
-      สั่ง ณ วันที่ ${M(dt, '……………………………')}<br><br>
-      <span id="docSignLine">ลงชื่อ <span class="doc-dots"></span></span><br>
-      (${M(SIGNER.name)})<br>${M(SIGNER.title)}
-    </div>
-
-    <div style="text-align:left;margin-top:18px;font-size:14px;color:#555">
-      ปปท. ${code}
+    <div>
+      <div class="doc-sign">
+        สั่ง ณ วันที่ ${M(dt, '……………………………')}<br><br>
+        <span id="docSignLine">ลงชื่อ <span class="doc-dots"></span></span><br>
+        (${M(SIGNER.name)})<br>${M(SIGNER.title)}
+      </div>
+      <div style="text-align:left;margin-top:18px;font-size:14px;color:#555">
+        ปปท. ${code}
+      </div>
     </div>`;
+      paginateFromHtml(document.getElementById('docPaper'), appointHtml, `คำสั่งแต่งตั้ง${isSub ? 'คณะอนุกรรมการไต่สวน' : 'องค์คณะพนักงาน ป.ป.ท.'}`);
     }
 
     /* ===================================================================
@@ -740,7 +760,7 @@
       const namesList = memoMembers.map(m =>
         `${M(m.name, 'ชื่อ - สกุล')} ${M(m.pos, 'ตำแหน่ง')} สังกัด ${M(m.agency, '……………')} (${M(m.role)})`).join(' และ ');
 
-      document.getElementById('docPaper').innerHTML = `
+      const memoHtml = `
     <div class="doc-title" style="font-size:22px">บันทึกข้อความ</div>
     <div class="doc-memo-hdr"><span class="doc-memo-lbl">ส่วนราชการ</span> กลุ่มงานกิจการคณะกรรมการ กองบริหารคดี โทร. ๔๓๑๓</div>
     <div class="doc-memo-hdr"><span class="doc-memo-lbl">ที่</span> ${M(no, 'ปป ๐๐๐๔/')}&nbsp;&nbsp;&nbsp;&nbsp;<span class="doc-memo-lbl" style="min-width:auto">วันที่</span> ${M(dt, '……………………')}</div>
@@ -781,23 +801,26 @@
       (${'…'.repeat(30)})<br>เจ้าหน้าที่ ป.ป.ท./พนักงาน ป.ป.ท.
     </div>
 
-    <div style="page-break-before:always;margin-top:30px">
-      <div style="text-align:right;font-size:13px;color:#666">- ๒ -</div>
+    <div style="margin-top:30px">
       <div class="doc-h" style="margin-top:10px">๔. ความเห็นผู้ตรวจ (เรื่องที่ ${M(ref4 || kase.id)})</div>
       <div class="doc-indent">ได้ตรวจสอบร่างคำสั่ง${isSub ? 'คณะกรรมการ' : 'สำนักงาน'} ป.ป.ท. เรื่อง แต่งตั้ง${orderKind}ดังกล่าวถูกต้องครบถ้วนแล้ว</div>
       <div class="doc-indent" style="margin-top:6px">จึงเรียนมาเพื่อโปรดพิจารณา</div>
       <div class="doc-sign" style="margin-top:24px">(${'…'.repeat(30)})<br>ผู้อำนวยการกลุ่มงานกิจการคณะกรรมการ</div>
+    </div>
 
+    <div>
       <div class="doc-h" style="margin-top:22px">๕. ความเห็นผู้อำนวยการกองบริหารคดี (เรื่องที่ ${M(ref5 || kase.id)})</div>
       <div class="doc-indent">ได้ตรวจสอบร่างคำสั่ง${isSub ? 'คณะกรรมการ' : 'สำนักงาน'} ป.ป.ท. เรื่อง แต่งตั้ง${orderKind}ดังกล่าวถูกต้องครบถ้วน จึงเห็นควรพิจารณาลงนาม</div>
       <div class="doc-indent" style="margin-top:6px">จึงเรียนมาเพื่อโปรดพิจารณา</div>
       <div class="doc-sign" style="margin-top:24px">(${'…'.repeat(30)})<br>ผู้อำนวยการกองบริหารคดี</div>
-
-      <div class="doc-indent" style="margin-top:22px;text-indent:0">- เห็นชอบ<br>- ลงนามแล้ว</div>
-      <div class="doc-sign" style="margin-top:20px">(${'…'.repeat(30)})<br>${s.title}</div>
     </div>
 
-    <div style="text-align:left;margin-top:18px;font-size:14px;color:#555">ปปท. ${code}</div>`;
+    <div>
+      <div class="doc-indent" style="margin-top:22px;text-indent:0">- เห็นชอบ<br>- ลงนามแล้ว</div>
+      <div class="doc-sign" style="margin-top:20px">(${'…'.repeat(30)})<br>${s.title}</div>
+      <div style="text-align:left;margin-top:18px;font-size:14px;color:#555">ปปท. ${code}</div>
+    </div>`;
+      paginateFromHtml(document.getElementById('docPaper'), memoHtml, `บันทึกเสนอเพื่อลงนามคำสั่งแต่งตั้ง${orderKind}`);
     }
 
     /* ===================================================================
@@ -985,7 +1008,7 @@
     <div class="doc-indent" style="margin-top:4px">ทั้งนี้ ตั้งแต่บัดนี้เป็นต้นไป</div>`;
       }
 
-      document.getElementById('docPaper').innerHTML = `
+      const amendHtml = `
     <div style="text-align:center;margin-bottom:8px"><img src="doc_logo.jpg" alt="ตราครุฑ" style="height:60px"></div>
     <div class="doc-title">
       คำสั่ง${orgFullName}<br>
@@ -994,14 +1017,17 @@
     <div class="doc-sub">เรื่อง ${meta.subject}</div>
     <div style="width:140px;margin:6px auto 14px;border-bottom:1px solid #333"></div>
     ${body}
-    <div class="doc-sign" style="margin-top:20px">
-      สั่ง ณ วันที่ ${M(dt, '……………………………')}<br><br>
-      ลงชื่อ <span class="doc-dots"></span><br>
-      (${M(s.name)})<br>${M(s.title)}
-    </div>
-    <div style="text-align:left;margin-top:18px;font-size:14px;color:#555">
-      ${code === 'UNCODED' ? '(ไม่ปรากฏเลข ปปท. กำกับในต้นฉบับ)' : `ปปท. ${code}`}
+    <div>
+      <div class="doc-sign" style="margin-top:20px">
+        สั่ง ณ วันที่ ${M(dt, '……………………………')}<br><br>
+        ลงชื่อ <span class="doc-dots"></span><br>
+        (${M(s.name)})<br>${M(s.title)}
+      </div>
+      <div style="text-align:left;margin-top:18px;font-size:14px;color:#555">
+        ${code === 'UNCODED' ? '(ไม่ปรากฏเลข ปปท. กำกับในต้นฉบับ)' : `ปปท. ${code}`}
+      </div>
     </div>`;
+      paginateFromHtml(document.getElementById('docPaper'), amendHtml, meta.subject);
     }
 
     /* ===================================================================
