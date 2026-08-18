@@ -55,7 +55,7 @@
                 <th class="meet-sortable" data-sort-key="date" style="cursor:pointer;user-select:none">วันที่ <i class="fa-solid fa-sort ms-1 sort-icon"></i></th>
                 <th class="meet-sortable text-center" data-sort-key="count" style="cursor:pointer;user-select:none">จำนวนวาระ <i class="fa-solid fa-sort ms-1 sort-icon"></i></th>
                 <th class="meet-sortable" data-sort-key="status" style="cursor:pointer;user-select:none">สถานะ <i class="fa-solid fa-sort ms-1 sort-icon"></i></th>
-                <th style="width:70px"></th>
+                <th style="width:170px"></th>
               </tr>
             </thead>
             <tbody id="meetTb"></tbody>
@@ -142,13 +142,19 @@
         <td class="text-end">
           <span class="meet-row-actions">
             ${mayEdit ? `<button type="button" class="btn-delete-meet" data-id="${m.trc_id}" data-name="${m.trc_name}" title="ลบครั้งที่ประชุมนี้"><i class="fa-solid fa-trash-can"></i></button>` : ''}
-            <i class="fa-solid fa-chevron-right text-muted"></i>
+            <button type="button" class="btn btn-sm btn-navy px-3 btn-open-meet" data-id="${m.trc_id}">
+              <i class="fa-solid fa-pen-to-square me-1"></i>ดำเนินการ
+            </button>
           </span>
         </td>
       </tr>`;
       }).join('');
       tbody.querySelectorAll('.meet-row').forEach(tr =>
         tr.addEventListener('click', () => { location.href = `14-agenda-registry-detail.html?meet=${tr.dataset.id}`; }));
+      tbody.querySelectorAll('.btn-open-meet').forEach(btn => btn.addEventListener('click', e => {
+        e.stopPropagation();
+        location.href = `14-agenda-registry-detail.html?meet=${btn.dataset.id}`;
+      }));
       tbody.querySelectorAll('.btn-delete-meet').forEach(btn => btn.addEventListener('click', async e => {
         e.stopPropagation();
         const trcId = +btn.dataset.id;
