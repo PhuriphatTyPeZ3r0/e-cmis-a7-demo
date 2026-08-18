@@ -231,20 +231,6 @@
     const role = ECMIS.currentRole();
     const docType = ECMIS.DOC_TYPES[kase.docType];
 
-    const LEGAL_BASE_OPTIONS = [
-      { value: 'ม.18/4', label: 'ม.18/4 พ.ร.บ.มาตรการฯ' },
-      { value: 'ม.62', label: 'ม.62 พ.ร.ป.ป.ป.ช.' }
-    ];
-    function legalBaseFieldHtml() {
-      if (role.id !== 'secgen') return kase.legalBase;
-      return `<select id="legalBaseSel" class="form-select form-select-sm d-inline-block w-auto">
-        ${LEGAL_BASE_OPTIONS.map(o => `<option value="${o.value}" ${kase.legalBase === o.value ? 'selected' : ''}>${o.label}</option>`).join('')}
-      </select>`;
-    }
-    function wireLegalBaseSel() {
-      document.getElementById('legalBaseSel')?.addEventListener('change', e => { kase.legalBase = e.target.value; });
-    }
-
     const isRuling = docType.code === 'RULING';
     const secgenPendingStatus = isRuling ? 'PENDING_SECGEN_72' : 'PENDING_SECGEN';
 
@@ -350,19 +336,15 @@
     }).join('');
 
     /* ---------- สรุปสำนวน ----------
-       "ฐานการรับเรื่อง" เดิมเป็น text อ่านอย่างเดียว ผูกกับ kase.legalBase ตรงๆ ทั้งที่มีแค่
-       2 ค่าจริงในระบบ (ม.18/4 พ.ร.บ.มาตรการฯ | ม.62 พ.ร.ป.ป.ป.ช. — ดูคอมเมนต์ที่ CASES[].legalBase
-       ใน ecmis-app.js) ทำเป็น dropdown แก้ไขได้เฉพาะเลขาธิการฯ (บทบาทเดียวที่พิจารณา/ลงนามหน้านี้)
-       ไม่เพิ่ม "24 วรรค 3" เข้ามาปนเพราะเป็นคนละฟิลด์ — นั่นคือแนวทางไต่สวน (ACCEPT_S24P1/P3)
-       ที่ตัดสินทีหลังตอนบันทึกมติบอร์ด ไม่ใช่ฐานการรับเรื่องตอนรับสำนวน */
+       "ฐานการรับเรื่อง" เป็นข้อมูลที่มาจากต้นทาง (ตอนรับสำนวนเข้าระบบ) ไม่ใช่ฟิลด์ที่
+       เลขาธิการฯ เลือก/แก้ไขเองในขั้นตอนนี้ — แสดงเป็น text อ่านอย่างเดียวเสมอ */
     document.getElementById('summary').innerHTML = [
       ['เลขสำนวน', kase.id],
-      ['ฐานการรับเรื่อง', legalBaseFieldHtml()], ['เจ้าของสำนวน', kase.owner],
+      ['ฐานการรับเรื่อง', kase.legalBase], ['เจ้าของสำนวน', kase.owner],
       ['หน่วยงาน', kase.ownerOrg], ['วันที่รับเรื่อง', ECMIS.thaiDate(kase.receivedDate)],
       ['ต้องเริ่มไต่สวนภายใน (ม.23)', ECMIS.thaiDate(kase.deadline60)],
       ['ครบกำหนด 2 ปี (ม.23)', ECMIS.thaiDate(kase.deadline2y)]
     ].map(([k, v]) => `<div class="col-md-6"><span class="k">${k}:</span> <span class="v">${v}</span></div>`).join('');
-    wireLegalBaseSel();
     document.getElementById('sAllegation').textContent = kase.allegation;
     const ownerOp = opByRole['owner'];
     document.getElementById('sOpinion').innerHTML = ownerOp
@@ -1019,11 +1001,10 @@
       /* ---------- สรุปสำนวน — ไม่มี ม.23 (60 วัน/2 ปี) ในชั้นวินิจฉัยชี้มูล ใช้รอบการไต่สวนแทน ---------- */
       document.getElementById('summary').innerHTML = [
         ['เลขสำนวน', kase.id],
-        ['ฐานการรับเรื่อง', legalBaseFieldHtml()], ['ผู้รับผิดชอบสำนวน', kase.owner],
+        ['ฐานการรับเรื่อง', kase.legalBase], ['ผู้รับผิดชอบสำนวน', kase.owner],
         ['หน่วยงาน', kase.ownerOrg], ['วันที่รับเรื่อง', ECMIS.thaiDate(kase.receivedDate)],
         ['รอบการไต่สวน', `ครั้งที่ ${kase.round72 || 1}`]
       ].map(([k, v]) => `<div class="col-md-6"><span class="k">${k}:</span> <span class="v">${v}</span></div>`).join('');
-      wireLegalBaseSel();
       document.getElementById('sAllegation').textContent = kase.allegation;
       document.getElementById('sOpinion').innerHTML = (kase.chainOpinions || []).length
         ? (kase.chainOpinions || []).map(o => `<span class="chip me-1">${ECMIS.getRole(o.roleId).title}</span>`).join('')

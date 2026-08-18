@@ -1434,8 +1434,10 @@ const RESOLUTIONS_72 = [
 ];
 function resolution72(code){ return RESOLUTIONS_72.find(r => r.code === code) || null; }
 
+/* กิจกรรมที่ 7 (ตาม TOR) เริ่มนับเมื่อรายงานมาถึงเลขาธิการฯ — สาย 3 ชั้น
+   (ผอ.กอง/ผอ.สำนักงาน ป.ป.ท. เขต/รองเลขาธิการฯ) เป็นขั้นก่อนหน้านั้น จึงไม่แยก
+   เป็นสเต็ปของตัวเอง ให้สเต็ปที่ 1 เริ่มที่ "เลขาธิการฯ ลงนาม" เลย */
 const FLOW_STEPS_72 = [
-  { key:'chain72',   label:'สายอนุมัติ 3 ชั้น',              ref:'การเสนอตามลำดับชั้น' },
   { key:'secgen72',  label:'เลขาธิการฯ ลงนาม',               ref:'เลขาธิการฯ ลงนาม' },
   { key:'agenda72',  label:'กลั่นกรอง / บรรจุวาระ',          ref:'กลั่นกรองและบรรจุวาระ' },
   { key:'meeting72', label:'ประชุม / บันทึกมติ',             ref:'ประชุมและบันทึกมติ' },
@@ -1443,7 +1445,7 @@ const FLOW_STEPS_72 = [
   { key:'dispatch72',label:'แจ้งผล / ส่งดำเนินการต่อ',        ref:'แจ้งผลและส่งเรื่องดำเนินการ' }
 ];
 const STATUS_STEP_72 = {
-  PENDING_SECTION_72:'chain72', PENDING_DIRECTOR_72:'chain72', PENDING_DEPUTY_72:'chain72', RETURNED_72:'chain72',
+  PENDING_SECTION_72:'secgen72', PENDING_DIRECTOR_72:'secgen72', PENDING_DEPUTY_72:'secgen72', RETURNED_72:'secgen72',
   PENDING_SECGEN_72:'secgen72',
   IN_SUPPORT_SUB_72:'agenda72', PENDING_URGENT_72:'agenda72', PENDING_CHAIRMAN_URGENT_72:'agenda72', IN_SCREENING_72:'agenda72',
   PENDING_INVITE_72:'meeting72', IN_MEETING_72:'meeting72',
