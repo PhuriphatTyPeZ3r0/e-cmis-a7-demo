@@ -1261,12 +1261,16 @@ const M28_LOG = {
 };
 CASES.forEach(c => { if(M28_LOG[c.id]) c.m28 = M28_LOG[c.id]; });
 
-// Filter dataset to exactly 20 mock cases covering all status categories
+// Filter dataset to a curated mock-case set covering all status categories.
+// 1855/2568 kept in even though it's outside the original "exactly 20" cut —
+// it's the seeded case that keeps 72-09-ruling-report.html reachable via the
+// normal case-register flow now that it's off the top-level nav.
 const TARGET_20_IDS = [
   '1547/2568', '1396/2564', '1119/2565', '1525/2558', '1189/2569',
   '1478/2568', '1015/2568', '0012/2565', '0719/2568', '3648/2558',
   '0818/2568', '1083/2568', '0674/2568', '0773/2568', '2201/2569',
-  '2015/2569', '1988/2568', '1750/2568', '1820/2569', '1945/2569'
+  '2015/2569', '1988/2568', '1750/2568', '1820/2569', '1945/2569',
+  '1855/2568'
 ];
 const _cases20 = CASES.filter(c => TARGET_20_IDS.includes(c.id));
 CASES.length = 0;
