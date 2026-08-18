@@ -718,20 +718,7 @@ const CASES = [
     urgent:false, complex:false, dupWarning:true,
     docType:'213', signPhase:'COMPLETE',
     slaDays:3, slaLimit:5, subCommittee:null,
-    meetingNo:null, agendaNo:null,
-
-    chainOpinions:[
-      { roleId:'owner',        type:'ACCEPT', date:'2568-11-28',
-        note:'พยานหลักฐานเพียงพอที่จะสนับสนุนข้อกล่าวหาว่ามีมูลความผิด เห็นควรรับไว้ไต่สวน' },
-      { roleId:'section_head', type:'ACCEPT', date:'2568-12-02',
-        note:'เห็นพ้องกับผู้รับผิดชอบสำนวน' },
-      { roleId:'director',     type:'MORE',   date:'2568-12-09',
-        note:'ราคากลางที่ใช้เปรียบเทียบยังไม่ได้มาจากหน่วยงานกลาง เห็นควรแสวงหาข้อเท็จจริงเพิ่มเติมก่อน' },
-      { roleId:'deputy',       type:'ACCEPT', date:'2568-12-16',
-        note:'ข้อบกพร่องที่ ผอ.เขต ตั้งข้อสังเกตสามารถแก้ในชั้นไต่สวนได้ เห็นควรรับไว้ไต่สวน' },
-      { roleId:'secgen',       type:'ACCEPT', date:'2569-05-07',
-        note:'เห็นชอบตามที่เสนอ เสนอประธานกรรมการ ป.ป.ท. สั่งการและบรรจุวาระ' }
-    ]
+    meetingNo:null, agendaNo:null
   },
   {
     id:'1396/2564',
@@ -853,13 +840,7 @@ CASES.push(
     urgent:false, complex:false, dupWarning:false,
     docType:'644', signPhase:'WAIT',
     slaDays:11, slaLimit:15, subCommittee:null,
-    meetingNo:null, agendaNo:null,
-    chainOpinions:[
-      { roleId:'owner',        type:'ACCEPT', date:'2568-12-18', note:'พฤติการณ์ละเว้นชัดเจน มีเอกสารตรวจสอบรองรับ เห็นควรรับไว้ไต่สวน' },
-      { roleId:'section_head', type:'ACCEPT', date:'2568-12-24', note:'เห็นพ้องตามที่เสนอ' },
-      { roleId:'director',     type:'ACCEPT', date:'2569-01-06', note:'เห็นชอบตามลำดับชั้น' },
-      { roleId:'deputy',       type:'ACCEPT', date:'2569-01-14', note:'เห็นควรเสนอเลขาธิการฯ ลงนาม' }
-    ]
+    meetingNo:null, agendaNo:null
   },
   {
     id:'0719/2568',
@@ -1026,8 +1007,7 @@ CASES.push(
     urgent:false, urgent72:false, complex:false, complex72:false, dupWarning:false,
     docType:'RULING', signPhase:'WAIT', slaDays:2, slaLimit:15, subCommittee:null,
     round72:1,
-    orderNo:'ปปท วฉ 12/2569',
-    chainOpinions:[]
+    orderNo:'ปปท วฉ 12/2569'
   },
   {
     id:'2015/2569', subject:'กล่าวหาเจ้าหน้าที่กรมที่ดินแห่งหนึ่ง ออกโฉนดทับที่สาธารณประโยชน์',
@@ -1044,12 +1024,7 @@ CASES.push(
     urgent:false, urgent72:false, complex:true, complex72:true, dupWarning:false,
     docType:'RULING', signPhase:'COMPLETE', slaDays:5, slaLimit:15, subCommittee:'คณะที่ 2',
     meetingNo:'12/2569', agendaNo:'3.4', round72:1, quorumOk72:true,
-    orderNo:'ปปท วฉ 19/2569',
-    chainOpinions:[
-      { roleId:'section_head', type:'ACCEPT', date:'2569-04-02', note:'รายงานการไต่สวนมีพยานหลักฐานทางเอกสารครบถ้วน เห็นควรเสนอต่อ' },
-      { roleId:'director',     type:'ACCEPT', date:'2569-04-09', note:'เห็นพ้องตามที่เสนอ' },
-      { roleId:'deputy',       type:'ACCEPT', date:'2569-04-15', note:'เห็นควรเสนอเลขาธิการฯ ลงนาม' }
-    ]
+    orderNo:'ปปท วฉ 19/2569'
   },
   {
     id:'1988/2568', subject:'กล่าวหาข้าราชการครูแห่งหนึ่ง เรียกรับผลประโยชน์จากผู้ปกครองเพื่อแลกที่นั่งเรียน',
@@ -1064,8 +1039,7 @@ CASES.push(
     docType:'RULING', signPhase:'COMPLETE', slaDays:14, slaLimit:15, subCommittee:null,
     meetingNo:'9/2569', agendaNo:'2.1', round72:1, quorumOk72:true,
     orderNo:'ปปท วฉ 07/2569',
-    resolution72:'NO_MERIT_72', resolutionDate72:'2569-03-20',
-    chainOpinions:[]
+    resolution72:'NO_MERIT_72', resolutionDate72:'2569-03-20'
   },
   {
     id:'1750/2568', subject:'กล่าวหาผู้อำนวยการกองช่างเทศบาลแห่งหนึ่ง เรียกรับสินบนผู้รับเหมา',
@@ -1083,8 +1057,7 @@ CASES.push(
     resolution72:'GUILTY_72', resolutionDate72:'2569-02-10',
     guiltyCriminal72:true, guiltyDiscipline72:true,
     criminalTrack72:{ status:'PENDING' },
-    disciplinaryTrack72:{ status:'DISPATCHED', dispatchedDate:'2569-02-18' },
-    chainOpinions:[]
+    disciplinaryTrack72:{ status:'DISPATCHED', dispatchedDate:'2569-02-18' }
   },
   {
     /* สำนวนตัวอย่างที่ scenario มาถึง 72-09-ruling-report.html จริง (บอร์ดมีมติชี้มูลแล้ว
@@ -1101,8 +1074,7 @@ CASES.push(
     urgent:false, urgent72:false, complex:true, complex72:true, dupWarning:false,
     docType:'RULING', signPhase:'DRAFT', slaDays:1, slaLimit:15, subCommittee:null,
     meetingNo:'12/2569', agendaNo:'3.4', round72:1, quorumOk72:true,
-    resolution72:'GUILTY_72', resolutionDate72:'2569-08-14',
-    chainOpinions:[]
+    resolution72:'GUILTY_72', resolutionDate72:'2569-08-14'
   },
   {
     id:'2041/2569',
@@ -1262,10 +1234,48 @@ CASES.push(
   }
 );
 
+/* ---------- ที่มาของสำนวน: ความเห็นตามลำดับชั้น (owner→section_head→director→deputy→secgen) ----------
+   สร้างจากสถานะปัจจุบันของแต่ละสำนวนแบบเดียวกันทุกสำนวน แทนข้อมูลเดิมที่บางสำนวนมีบันทึกไว้
+   บางสำนวนไม่มี — เลขาธิการฯ มีหน้าที่เพียงลงนามให้ความเห็นเมื่อถึงชั้นนี้ จึงใช้ ACCEPT เสมอ */
+const CHAIN_ROLE_ORDER = ['owner', 'section_head', 'director', 'deputy', 'secgen'];
+const CHAIN_ROLE_NOTE = {
+  owner:        'พิจารณาสำนวนแล้วเห็นว่าเข้าหลักเกณฑ์รับไว้ดำเนินการ เห็นควรเสนอตามลำดับชั้น',
+  section_head: 'ตรวจสอบสำนวนแล้วเห็นพ้องกับผู้รับผิดชอบสำนวน เห็นควรเสนอผู้บังคับบัญชาลำดับถัดไป',
+  director:     'พิจารณาแล้วเห็นชอบตามที่เสนอ เห็นควรเสนอลำดับชั้นถัดไป',
+  deputy:       'ตรวจสอบสำนวนแล้วเห็นชอบตามที่เสนอ เห็นควรนำเสนอเลขาธิการฯ พิจารณา',
+  secgen:       'เห็นชอบตามที่เสนอ ลงนามและเสนอขั้นตอนถัดไปตามลำดับ'
+};
+const CHAIN_STEP_OFFSET_DAYS = [10, 16, 23, 30, 45];
+
+function addDaysToDateStr(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function chainStepsDone(status) {
+  const suffix = status.endsWith('_72') ? '_72' : '';
+  const base = suffix ? status.slice(0, -3) : status;
+  if (base === 'DRAFT' || base === 'RETURNED') return 0;
+  const ladder = ['PENDING_SECTION', 'PENDING_DIRECTOR', 'PENDING_DEPUTY', 'PENDING_SECGEN'];
+  const idx = ladder.indexOf(base);
+  return idx === -1 ? 5 : idx + 1;
+}
+
+function buildChainOpinions(c) {
+  if (!c.receivedDate) return [];
+  const steps = chainStepsDone(c.status);
+  return CHAIN_ROLE_ORDER.slice(0, steps).map((roleId, i) => ({
+    roleId, type: 'ACCEPT',
+    date: addDaysToDateStr(c.receivedDate, CHAIN_STEP_OFFSET_DAYS[i]),
+    note: CHAIN_ROLE_NOTE[roleId]
+  }));
+}
+
 CASES.forEach(c => {
-  if(!c.docType)       c.docType = '213';
-  if(!c.signPhase)     c.signPhase = 'WAIT';
-  if(!c.chainOpinions) c.chainOpinions = [];
+  if(!c.docType)   c.docType = '213';
+  if(!c.signPhase) c.signPhase = 'WAIT';
+  c.chainOpinions = buildChainOpinions(c);
 });
 
 const M28_LOG = {
