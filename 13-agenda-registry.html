@@ -136,11 +136,34 @@
         <td class="text-center">${count}</td>
         <td><span class="meet-badge ${AR.STATUS_CLASS[m.trc_status] || 'meet-scheduled'}">${AR.STATUS_LABEL[m.trc_status] || 'กำหนดการแล้ว — รอประชุม'}</span>
           ${m.trc_confirmed ? '<span class="meet-confirmed"><i class="fa-solid fa-check"></i>จัดวาระแล้ว</span>' : ''}</td>
-        <td class="text-end"><i class="fa-solid fa-chevron-right text-muted"></i></td>
+        <td class="text-end">
+          ${mayEdit ? `<button type="button" class="btn btn-sm btn-link text-danger p-0 me-2 btn-delete-meet" data-id="${m.trc_id}" data-name="${m.trc_name}" title="ลบครั้งที่ประชุมนี้"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+          <i class="fa-solid fa-chevron-right text-muted"></i>
+        </td>
       </tr>`;
       }).join('');
       tbody.querySelectorAll('.meet-row').forEach(tr =>
         tr.addEventListener('click', () => { location.href = `14-agenda-registry-detail.html?meet=${tr.dataset.id}`; }));
+      tbody.querySelectorAll('.btn-delete-meet').forEach(btn => btn.addEventListener('click', async e => {
+        e.stopPropagation();
+        const trcId = +btn.dataset.id;
+        const name = btn.dataset.name;
+        const confirmed = await ECMIS.confirmAction({
+          title: `ลบครั้งที่ประชุม ${name}?`,
+          html: 'ระบบจะซ่อนรายการนี้ออกจากทะเบียน (ข้อมูลยังอยู่ในฐานข้อมูล) เผื่อกรณีต้องการสร้างครั้งที่ประชุมใหม่แทน',
+          confirmText: 'ลบ', danger: true
+        });
+        if (!confirmed.isConfirmed) return;
+        try {
+          await AR.deleteMeeting(trcId);
+        } catch (err) {
+          console.error('ลบครั้งที่ประชุมไม่สำเร็จ:', err);
+          ECMIS.toastWarn('ลบไม่สำเร็จ ลองใหม่อีกครั้ง');
+          return;
+        }
+        ECMIS.toastOk(`ลบครั้งที่ประชุม ${name} เรียบร้อย`);
+        renderMeetingList();
+      }));
     }
 
     function nextMeetName() {
@@ -162,6 +185,12 @@
             <input type="text" id="swMeetName" class="form-control" value="${nextMeetName()}" placeholder="เช่น 56/2569"></div>
           <div class="mb-2"><label class="form-label">วันที่ประชุม *</label>
             <input type="date" id="swMeetDate" class="form-control"></div>
+          <div class="row g-2 mb-2">
+            <div class="col-6"><label class="form-label">เวลาเริ่มประชุม</label>
+              <input type="time" id="swMeetStartTime" class="form-control"></div>
+            <div class="col-6"><label class="form-label">เวลาสิ้นสุดประชุม</label>
+              <input type="time" id="swMeetEndTime" class="form-control"></div>
+          </div>
           <div><label class="form-label">สถานะ</label>
             <select id="swMeetStatus" class="form-select">
               <option value="0" selected>กำหนดการแล้ว — รอประชุม</option>
@@ -180,13 +209,20 @@
           if (AR.MEETINGS.some(m => m.trc_name === name)) { Swal.showValidationMessage('มีครั้งที่ประชุมนี้อยู่แล้วในทะเบียน'); return false; }
           /* <input type="date"> คืนค่าปี ค.ศ. จริงเสมอ ซึ่งตรงกับคอลัมน์ trc_date (type DATE)
              ใน Supabase พอดี — ไม่ต้อง +543 อีกต่อไป (AgendaRegistry แปลงเป็น พ.ศ. ให้เองตอนอ่าน) */
-          return { name, date: dateInput, status: document.getElementById('swMeetStatus').value };
+          return {
+            name, date: dateInput, status: document.getElementById('swMeetStatus').value,
+            startTime: document.getElementById('swMeetStartTime').value,
+            endTime: document.getElementById('swMeetEndTime').value
+          };
         }
       }).then(async res => {
         if (!res.isConfirmed) return;
         let meeting;
         try {
-          meeting = await AR.addMeeting({ trc_name: res.value.name, trc_date: res.value.date, trc_status: res.value.status });
+          meeting = await AR.addMeeting({
+            trc_name: res.value.name, trc_date: res.value.date, trc_status: res.value.status,
+            trc_start_time: res.value.startTime, trc_end_time: res.value.endTime
+          });
         } catch (err) {
           console.error('เพิ่มการประชุมไม่สำเร็จ:', err);
           ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');

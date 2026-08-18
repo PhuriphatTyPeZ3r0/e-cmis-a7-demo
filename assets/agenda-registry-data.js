@@ -67,6 +67,7 @@
     return {
       trc_id: row.trc_id, trc_name: row.trc_name || '',
       trc_date: toBuddhistFakeIso(row.trc_date), trc_status: row.trc_status || '0',
+      trc_start_time: row.trc_start_time || '', trc_end_time: row.trc_end_time || '',
       trc_confirmed: !!row.trc_confirmed
     };
   }
@@ -127,14 +128,31 @@
   }
 
   /* ---------- mutations: เขียนลง Supabase จริง แล้วอัปเดต array ในเครื่อง ---------- */
-  async function addMeeting({ trc_name, trc_date, trc_status }) {
+  async function addMeeting({ trc_name, trc_date, trc_status, trc_start_time, trc_end_time }) {
+    const role = global.ECMIS.currentRole();
     const { data, error } = await sb.from('tbl_res_calendar')
-      .insert({ trc_name, trc_date, trc_status })
+      .insert({
+        trc_name, trc_date, trc_status,
+        trc_start_time: trc_start_time || null, trc_end_time: trc_end_time || null,
+        created_by: role.row, created_datetime: new Date().toISOString()
+      })
       .select().single();
     if (error) throw error;
     const mapped = mapMeetingRow(data);
     MEETINGS.push(mapped);
     return mapped;
+  }
+
+  /* Soft delete — ตั้ง is_deleted = true เท่านั้น ข้อมูลยังอยู่ในฐานข้อมูลจริง
+     เผื่อกรณีอยากสร้างครั้งที่ประชุมใหม่โดยไม่ต้องลบทิ้งถาวร */
+  async function deleteMeeting(trcId) {
+    const role = global.ECMIS.currentRole();
+    const { error } = await sb.from('tbl_res_calendar')
+      .update({ is_deleted: true, updated_by: role.row, updated_datetime: new Date().toISOString() })
+      .eq('trc_id', trcId);
+    if (error) throw error;
+    const idx = MEETINGS.findIndex(m => m.trc_id === trcId);
+    if (idx !== -1) MEETINGS.splice(idx, 1);
   }
 
   async function addItem({ trc_id, trci_number, category, trci_topic, case_ref, remark }) {
@@ -179,7 +197,7 @@
     MEETINGS, ITEMS, CATEGORY_LABEL, CATEGORY_CLASS, STATUS_LABEL, STATUS_CLASS,
     ready, meetingOf, itemsOf, isFlagged, isBundled,
     renderCaseRef, lookupCaseForAgenda,
-    addMeeting, addItem, updateItemNumber, swapItemNumber, setCaseRef
+    addMeeting, deleteMeeting, addItem, updateItemNumber, swapItemNumber, setCaseRef
   };
 
 })(window);
