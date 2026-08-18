@@ -972,20 +972,33 @@
       const curIdx = CHAIN_72.findIndex(r => CHAIN_STATUS_72[r] === kase.status);
       const opByRole = Object.fromEntries((kase.chainOpinions || []).map(o => [o.roleId, o]));
 
+      /* วันที่ใช้ไปในแต่ละลำดับชั้นที่ผ่านไปแล้ว — นับจากวันที่รับเรื่อง/วันที่เห็นชอบของ
+         ลำดับก่อนหน้า ถึงวันที่เห็นชอบของลำดับนั้น (เผื่อไม่มี chainOpinions บันทึกไว้ก็ไม่แสดง) */
+      function daysBetween(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); }
+      let prevDate = kase.receivedDate;
+      const daysUsedByRole = {};
+      CHAIN_72.forEach(rid => {
+        const op = opByRole[rid];
+        if (op && prevDate) { daysUsedByRole[rid] = daysBetween(prevDate, op.date); prevDate = op.date; }
+        else { prevDate = null; }
+      });
+
       document.getElementById('chain').innerHTML = CHAIN_72.map((rid, i) => {
         const r = ECMIS.getRole(rid);
         const op = opByRole[rid];
+        const usedDays = daysUsedByRole[rid];
+        const usedNote = usedDays != null ? ` · ใช้ไป ${ECMIS.toThaiDigits(usedDays)} วัน` : '';
         let cls = '', note = 'รอคิว';
         if (isReturned) {
           cls = 'rej'; note = 'ถูกตีกลับ — รอเจ้าของสำนวนแก้ไขและเสนอใหม่ทั้งสาย';
         } else if (curIdx === -1) {
-          cls = 'ok'; note = 'ผ่านขั้นตอนนี้แล้ว';
+          cls = 'ok'; note = `ผ่านขั้นตอนนี้แล้ว${usedNote}`;
         } else if (i === curIdx) {
           cls = 'now'; note = `<strong>อยู่ระหว่างพิจารณา</strong> · ${ECMIS.slaBadge(kase)}`;
         } else if (i > curIdx) {
           cls = ''; note = 'รอคิว';
         } else {
-          cls = 'ok'; note = 'เห็นชอบแล้ว';
+          cls = 'ok'; note = `เห็นชอบแล้ว${usedNote}`;
         }
         const isMe = rid === role.id;
         const opHtml = op ? `<div class="tl-m mt-1"><span class="st st-done" style="font-size:.68rem">เห็นชอบ</span>
