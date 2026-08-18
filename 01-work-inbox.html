@@ -158,6 +158,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="assets/ecmis-app.js"></script>
 <script src="assets/ecmis-model.js"></script>
 <script>
@@ -167,6 +168,57 @@ const role  = ECMIS.currentRole();
 
 /* board_sec (เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ) มีหน้า work-inbox ของตัวเองแยกต่างหาก (08-resolution-inbox.html) */
 if (role.id === 'board_sec') { location.href = ECMIS.homeHref(role.id); }
+
+/* ---------- โหลดสำนวนจาก Supabase จริง (tbl_res_request → tbl_cmp_case → tbl_cmp_case_accused)
+   แทน ECMIS.CASES แบบ mock — คงรูปร่าง object ให้เหมือนเดิมทุกฟิลด์ที่หน้านี้ใช้ เพื่อไม่ต้อง
+   แก้ตรรกะ render/filter/KPI ด้านล่าง ยังไม่ครอบคลุมทุกฟิลด์ของ CASES เดิม (เช่น chainOpinions,
+   resolution, meetingNo, m28 รายละเอียด) เพราะหน้านี้ไม่ได้ใช้ — หน้าอื่นที่ต้องใช้ฟิลด์เหล่านั้น
+   (04-approval-review.html ฯลฯ) ยังอ่านจาก ECMIS.CASES เดิมอยู่ จนกว่าจะย้ายเป็นรอบถัดไป */
+const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function toBuddhistFakeIso(realIso) {
+  if (!realIso) return null;
+  const [y, m, d] = String(realIso).split('-');
+  return `${parseInt(y, 10) + 543}-${m}-${d}`;
+}
+
+async function loadCasesFromSupabase() {
+  const { data, error } = await sb
+    .from('tbl_res_request')
+    .select('*, tbl_cmp_case(*, tbl_cmp_case_accused(*))')
+    .eq('is_deleted', false);
+  if (error) throw error;
+
+  return data
+    .filter(row => row.tbl_cmp_case)
+    .map(row => {
+      const cc = row.tbl_cmp_case;
+      return {
+        trr_id: row.trr_id, tcc_id: cc.tcc_id,
+        id: cc.tcc_no, subject: cc.tcc_subject, allegation: cc.tcc_allegation,
+        legalBase: cc.tcc_legal_base, complainant: cc.tcc_complainant,
+        owner: cc.tcc_owner, ownerOrg: cc.tcc_owner_org,
+        receivedDate: toBuddhistFakeIso(cc.tcc_received_date),
+        prescription: toBuddhistFakeIso(cc.tcc_prescription_date),
+        docRef: cc.tcc_doc_ref, docType: cc.tcc_doc_type,
+        complex: !!cc.tcc_complex,
+        accused: (cc.tbl_cmp_case_accused || [])
+          .sort((a, b) => (a.tcca_no || 0) - (b.tcca_no || 0))
+          .map(a => ({ no: a.tcca_no, name: a.tcca_name, pos: a.tcca_position, idcard: a.tcca_idcard, agency: a.tcca_agency })),
+        status: row.trr_status, slaDays: row.trr_sla_days, slaLimit: row.trr_sla_limit,
+        urgent: !!row.trr_urgent, urgent72: !!row.trr_urgent,
+        signedBySecgen: !!row.trr_signed_secgen, subCommittee: row.trr_sub_committee
+      };
+    });
+}
+
+async function updateCaseStatus(kase, newStatus) {
+  const { error } = await sb.from('tbl_res_request').update({ trr_status: newStatus }).eq('trr_id', kase.trr_id);
+  if (error) throw error;
+  kase.status = newStatus;
+}
 
 function isChairActionable(c) {
   return c.status === 'PENDING_CHAIRMAN' ||
@@ -178,12 +230,11 @@ function isChairActionable(c) {
 
 const AFFAIRS_STATUSES = ['DEFERRED', 'RESOLVED_PENDING_72', 'PENDING_DISPATCH_GUILTY_72'];
 
-const all   = role.id === 'affairs'
-  ? ECMIS.CASES.filter(c => AFFAIRS_STATUSES.includes(c.status) && ECMIS.canViewCase(c, role.id))
-  : ECMIS.CASES.filter(c => ECMIS.canViewCase(c, role.id));
-let mine    = role.id === 'chairman'
-  ? ECMIS.CASES.filter(c => isChairActionable(c))
-  : ECMIS.inboxFor(role.id).filter(c => !ECMIS.isUpstreamCase(c) && ECMIS.canViewCase(c, role.id));
+let CASES, all, mine;
+
+function inboxFor(roleId) {
+  return CASES.filter(c => ECMIS.STATUS[c.status] && ECMIS.STATUS[c.status].owner === roleId);
+}
 
 function getSecgenStatusCategory(c) {
   if (c.status === 'IN_SCREENING') {
@@ -198,7 +249,7 @@ function getSecgenStatusCategory(c) {
   return 'PENDING';
 }
 
-const mineIds = new Set(mine.map(c => c.id));
+let mineIds = new Set();
 function isMyPending(c){
   if (role.id === 'chairman') return isChairActionable(c);
   if (role.id === 'secgen' || role.id === 'support_sub') {
@@ -323,18 +374,18 @@ if(ECMIS.isUpstreamRole(role.id)){
   }
 }
 
-const allCasesCombinedMap = new Map();
-mine.forEach(c => allCasesCombinedMap.set(c.id, { caseData: c, isActionable: true }));
-all.forEach(c => {
-  if (!allCasesCombinedMap.has(c.id)) {
-    allCasesCombinedMap.set(c.id, { caseData: c, isActionable: false });
-  }
-});
-
-const allCasesCombined = Array.from(allCasesCombinedMap.values()).map(item => {
-  const c = item.caseData;
-  return { ...c, isActionable: item.isActionable || isMyPending(c) };
-});
+let allCasesCombined = [];
+function buildAllCasesCombined() {
+  const map = new Map();
+  mine.forEach(c => map.set(c.id, { caseData: c, isActionable: true }));
+  all.forEach(c => {
+    if (!map.has(c.id)) map.set(c.id, { caseData: c, isActionable: false });
+  });
+  allCasesCombined = Array.from(map.values()).map(item => {
+    const c = item.caseData;
+    return { ...c, isActionable: item.isActionable || isMyPending(c) };
+  });
+}
 
 function renderKPICards() {
   const currentSt = document.getElementById('statusFilter')?.value || 'ALL';
@@ -561,7 +612,7 @@ function row(c){
   </tr>`;
 }
 
-let filteredCombined = [...allCasesCombined];
+let filteredCombined = [];
 
 function renderMyQueue(loading = false) {
   const tbodyPrimary = document.getElementById('myQueue');
@@ -714,32 +765,34 @@ document.getElementById('btnBulkApprove')?.addEventListener('click', () => {
     title: copy.bulkTitle(chks.length),
     html: `<p>${copy.bulkBody}</p>`,
     confirmText: 'ยืนยันสั่งการกลุ่ม'
-  }).then(res => {
-    if (res.isConfirmed) {
-      chks.forEach(chk => {
+  }).then(async res => {
+    if (!res.isConfirmed) return;
+    const transitionMap = {
+      'PENDING_SECGEN': c => c.urgent ? 'PENDING_CHAIRMAN' : 'IN_SCREENING',
+      'PENDING_CHAIR_OF': () => 'PENDING_CHAIRMAN',
+      'PENDING_CHAIRMAN': () => 'IN_SCREENING',
+      'IN_SCREENING': () => 'AGENDA_SET',
+      'AGENDA_SET': () => 'IN_MEETING',
+      'IN_MEETING': () => 'RESOLVED_PENDING',
+      'RESOLVED_PENDING': () => 'RESOLVED',
+      'RESOLVED': () => 'DISPATCHING',
+      'DISPATCHING': () => 'CLOSED'
+    };
+    try {
+      for (const chk of chks) {
         const id = chk.dataset.id;
-        const c = ECMIS.CASES.find(x => x.id === id);
-        if (c) {
-          const transitionMap = {
-            'PENDING_SECGEN': c.urgent ? 'PENDING_CHAIRMAN' : 'IN_SCREENING',
-            'PENDING_CHAIR_OF': 'PENDING_CHAIRMAN',
-            'PENDING_CHAIRMAN': 'IN_SCREENING',
-            'IN_SCREENING': 'AGENDA_SET',
-            'AGENDA_SET': 'IN_MEETING',
-            'IN_MEETING': 'RESOLVED_PENDING',
-            'RESOLVED_PENDING': 'RESOLVED',
-            'RESOLVED': 'DISPATCHING',
-            'DISPATCHING': 'CLOSED'
-          };
-          if (transitionMap[c.status]) {
-            c.status = transitionMap[c.status];
-          }
+        const c = CASES.find(x => x.id === id);
+        if (c && transitionMap[c.status]) {
+          await updateCaseStatus(c, transitionMap[c.status](c));
         }
-      });
-      ECMIS.saveCases();
-      ECMIS.toastOk(`สั่งการกลุ่มสำเร็จจำนวน ${chks.length} รายการแล้ว`);
-      setTimeout(() => location.reload(), 1200);
+      }
+    } catch (err) {
+      console.error('สั่งการกลุ่มไม่สำเร็จ:', err);
+      ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+      return;
     }
+    ECMIS.toastOk(`สั่งการกลุ่มสำเร็จจำนวน ${chks.length} รายการแล้ว`);
+    setTimeout(() => location.reload(), 1200);
   });
 });
 
@@ -793,8 +846,27 @@ document.getElementById('btnClearFilter').addEventListener('click', () => {
   applyFilters();
 });
 
-renderKPICards();
-applyFilters();
+(async function main() {
+  try {
+    CASES = await loadCasesFromSupabase();
+  } catch (err) {
+    console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+    ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
+    CASES = [];
+  }
+  all = role.id === 'affairs'
+    ? CASES.filter(c => AFFAIRS_STATUSES.includes(c.status) && ECMIS.canViewCase(c, role.id))
+    : CASES.filter(c => ECMIS.canViewCase(c, role.id));
+  mine = role.id === 'chairman'
+    ? CASES.filter(c => isChairActionable(c))
+    : inboxFor(role.id).filter(c => !ECMIS.isUpstreamCase(c) && ECMIS.canViewCase(c, role.id));
+  mineIds = new Set(mine.map(c => c.id));
+  buildAllCasesCombined();
+  filteredCombined = [...allCasesCombined];
+
+  renderKPICards();
+  applyFilters();
+})();
 
 </script>
 </body>
