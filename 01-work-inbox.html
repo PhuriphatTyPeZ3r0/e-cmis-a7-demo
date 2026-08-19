@@ -873,12 +873,19 @@ document.getElementById('btnClearFilter').addEventListener('click', () => {
     ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
     CASES = [];
   }
-  /* เลขาธิการฯ: "ทั้งหมด" ควรนับเฉพาะสำนวนที่เข้าสู่กระบวนการของเลขาธิการฯ แล้วจริง (ถึงหรือผ่านชั้น
-     PENDING_SECGEN(_72) มาแล้ว) — ตัดสำนวนที่ยังอยู่กับสายงานต้นทาง (กจ.5) ออกจากมุมมองนี้ */
+  /* เลขาธิการฯ: "ทั้งหมด" ควรมีเฉพาะสำนวนที่คลิก "ดำเนินการ" แล้วเข้าหน้า 04-approval-review.html
+     จริง (หน้าที่เลขาธิการฯ มี process จริงๆ) — สำนวนสาย 213/644 ไปหน้านี้เสมอไม่ว่าสถานะใด
+     ส่วนสายรายงานวินิจฉัยชี้มูล (_72) ไปหน้านี้เฉพาะช่วงก่อนถึง/รอเลขาธิการฯ ลงนามเท่านั้น
+     (พ้นจากนั้นไปหน้าเฉพาะทาง เช่น 72-08/72-09) จึงตัดออกจากมุมมองนี้เช่นกัน */
+  function routesToApprovalReview(c) {
+    return ECMIS.isCase72(c)
+      ? ECMIS.pageForCase72(c) === '04-approval-review.html'
+      : (PAGE_FOR['secgen'] === '04-approval-review.html');
+  }
   all = role.id === 'affairs'
     ? CASES.filter(c => AFFAIRS_STATUSES.includes(c.status) && ECMIS.canViewCase(c, role.id))
     : role.id === 'secgen'
-      ? CASES.filter(c => ECMIS.canViewCase(c, role.id) && !UPSTREAM_STATUSES.includes(c.status))
+      ? CASES.filter(c => ECMIS.canViewCase(c, role.id) && routesToApprovalReview(c) && !UPSTREAM_STATUSES.includes(c.status))
       : CASES.filter(c => ECMIS.canViewCase(c, role.id));
   mine = role.id === 'chairman'
     ? CASES.filter(c => isChairActionable(c))
