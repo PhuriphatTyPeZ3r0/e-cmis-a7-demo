@@ -177,7 +177,6 @@
               <div class="sig-name">ยังไม่ได้ลงนาม</div>
               <div class="sig-meta">กดปุ่ม "ลงนามดิจิทัลและส่งต่อ" ที่แถบด้านล่าง</div>
             </div>
-            <div class="mt-3" id="slaNote"></div>
           </div>
         </div>
       </div>
@@ -245,7 +244,7 @@
       kase.chainOpinions = ECMIS.buildChainOpinions(kase);
     }
 
-    let kase, docType, isRuling, secgenPendingStatus, alreadySigned, signed, phase, g1;
+    let kase, docType, isRuling, secgenPendingStatus, alreadySigned, signed, g1;
     const SECGEN_SIG_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 70">' +
       '<path d="M8 50 C 30 10, 55 10, 70 40 S 110 65, 130 30 S 165 5, 185 35 S 205 55, 212 40" ' +
@@ -266,7 +265,6 @@
       secgenPendingStatus = isRuling ? 'PENDING_SECGEN_72' : 'PENDING_SECGEN';
       alreadySigned = kase.status !== secgenPendingStatus && !ECMIS.isUpstreamCase(kase);
       signed = alreadySigned;
-      phase = ECMIS.SIGN_PHASE[kase.signPhase];
       g1 = ECMIS.g1Triggers(kase);
 
       if (isRuling) { initRulingScreen(); } else { initReport213Screen(); }
@@ -496,29 +494,6 @@
       document.getElementById('g1yes').checked = true;
       onG1Change();
       renderG1Outcome(); renderG3();
-    }
-
-    /* ---------- SLA ของชั้นเลขาธิการฯ (2 ระยะ · ต่างกันตามชนิดรายงาน) ---------- */
-    const slaNoteEl = document.getElementById('slaNote');
-    if (slaNoteEl) {
-      const used = kase.slaDays, lim = ECMIS.effectiveSlaLimit(kase);
-      const rows = [
-        { k: 'waitSign', lbl: 'ระยะที่ 1 — รอเลขาธิการฯ ลงนาม' },
-        { k: 'completeSign', lbl: 'ระยะที่ 2 — ลงนามเสร็จ / ส่งต่อ' }
-      ];
-      slaNoteEl.innerHTML = `
-    <strong>กำหนดเวลาชั้นเลขาธิการฯ — ${docType.label}</strong>
-    <span class="src-tag">ผัง P2 · โหนด T5</span>
-    <table class="table table-sm mb-2 mt-2" style="font-size:.8rem">
-      <tbody>${rows.map(r => {
-        const cur = phase.slaKey === r.k;
-        return `<tr${cur ? ' style="background:#fdf7e8"' : ''}>
-          <td>${r.lbl}${cur ? ' <span class="st st-pending" style="font-size:.66rem">ระยะปัจจุบัน</span>' : ''}</td>
-          <td class="text-end fw-semibold">${docType.sla[r.k]} วัน</td></tr>`;
-      }).join('')}</tbody>
-    </table>
-    ใช้ไปแล้ว <strong>${used}</strong> จาก <strong>${lim}</strong> วันของระยะปัจจุบัน
-    <span class="text-muted">— ระบบเตือนล่วงหน้า 3 วัน และ 1 วัน (Admin ตั้งค่าได้)</span>`;
     }
 
     /* ---------- Return/Recall panel ---------- */
