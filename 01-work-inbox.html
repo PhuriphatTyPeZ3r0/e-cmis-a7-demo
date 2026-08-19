@@ -239,17 +239,29 @@ function inboxFor(roleId) {
   return CASES.filter(c => ECMIS.STATUS[c.status] && ECMIS.STATUS[c.status].owner === roleId);
 }
 
+/* สถานะที่ยังไม่ถึงชั้นเลขาธิการฯ เลย (ยังอยู่กับสายงานต้นทาง กจ.5) — ใช้เช็คทั้งสายรายงาน 213
+   และสายรายงานวินิจฉัยชี้มูล (_72) เนื่องจาก ECMIS.STATUS ใส่ scope:'UPSTREAM' ไว้เฉพาะสายหลัก */
+const UPSTREAM_STATUSES = [
+  'DRAFT', 'PENDING_SECTION', 'PENDING_DIRECTOR', 'PENDING_DEPUTY',
+  'PENDING_SECTION_72', 'PENDING_DIRECTOR_72', 'PENDING_DEPUTY_72'
+];
+
 function getSecgenStatusCategory(c) {
-  if (c.status === 'IN_SCREENING') {
+  if (c.status === 'IN_SCREENING' || c.status === 'IN_SCREENING_72') {
     return 'SCREENING';
   }
-  if (c.status === 'RETURNED' || (c.m28 && (c.m28.orderType === 'REJECT' || c.m28 === 'REJECT' || c.m28 === 'DISMISS'))) {
+  if (c.status === 'RETURNED' || c.status === 'RETURNED_72' ||
+      (c.m28 && (c.m28.orderType === 'REJECT' || c.m28 === 'REJECT' || c.m28 === 'DISMISS'))) {
     return 'RETURNED';
   }
-  if (c.signedBySecgen || ['AGENDA_SET', 'IN_MEETING', 'RESOLVED_PENDING', 'RESOLVED', 'DISPATCHING', 'CLOSED', 'PENDING_DISPATCH_GUILTY_72'].includes(c.status)) {
-    return 'SIGNED';
+  if (c.status === 'PENDING_SECGEN' || c.status === 'PENDING_SECGEN_72') {
+    return 'PENDING';
   }
-  return 'PENDING';
+  if (UPSTREAM_STATUSES.includes(c.status)) {
+    return 'UPSTREAM';
+  }
+  /* ทุกสถานะอื่นแปลว่าผ่านชั้นเลขาธิการฯ ไปแล้ว (ไม่ว่าจะรอประธานฯ/อนุกลั่นกรอง/บอร์ด/ปิดสำนวน) */
+  return 'SIGNED';
 }
 
 let mineIds = new Set();
@@ -536,6 +548,10 @@ function getSecgenActionBadge(c) {
   }
   if (cat === 'SIGNED') {
     return `<span class="st st-done"><i class="fa-solid fa-check me-1"></i>ลงนามแล้ว</span>`;
+  }
+  /* UPSTREAM: ยังไม่ถึงชั้นเลขาธิการฯ — แสดงสถานะจริงตามสายงานต้นทาง ไม่ใช่ป้าย "รอเลขาฯ" ที่ทำให้เข้าใจผิด */
+  if (cat === 'UPSTREAM') {
+    return ECMIS.statusBadge(c.status);
   }
   return `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>รอเลขาพิจารณาลงนาม</span>`;
 }
