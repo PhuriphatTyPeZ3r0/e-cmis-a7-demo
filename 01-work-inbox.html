@@ -873,9 +873,13 @@ document.getElementById('btnClearFilter').addEventListener('click', () => {
     ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
     CASES = [];
   }
+  /* เลขาธิการฯ: "ทั้งหมด" ควรนับเฉพาะสำนวนที่เข้าสู่กระบวนการของเลขาธิการฯ แล้วจริง (ถึงหรือผ่านชั้น
+     PENDING_SECGEN(_72) มาแล้ว) — ตัดสำนวนที่ยังอยู่กับสายงานต้นทาง (กจ.5) ออกจากมุมมองนี้ */
   all = role.id === 'affairs'
     ? CASES.filter(c => AFFAIRS_STATUSES.includes(c.status) && ECMIS.canViewCase(c, role.id))
-    : CASES.filter(c => ECMIS.canViewCase(c, role.id));
+    : role.id === 'secgen'
+      ? CASES.filter(c => ECMIS.canViewCase(c, role.id) && !UPSTREAM_STATUSES.includes(c.status))
+      : CASES.filter(c => ECMIS.canViewCase(c, role.id));
   mine = role.id === 'chairman'
     ? CASES.filter(c => isChairActionable(c))
     : inboxFor(role.id).filter(c => !ECMIS.isUpstreamCase(c) && ECMIS.canViewCase(c, role.id));
