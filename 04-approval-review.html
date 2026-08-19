@@ -1079,7 +1079,9 @@
       if (role.id === 'secgen') {
         document.getElementById('g1Box').classList.remove('d-none');
         document.getElementById('urgentBox72').classList.remove('d-none');
-        document.getElementById('signCard').classList.remove('d-none');
+        /* ไม่มีการลงนามดิจิทัลในขั้นนี้ -- รายงานการไต่สวนวินิจฉัยชี้มูล (ม.24 วรรคท้าย) ตัวจริง
+           ยังไม่เกิดขึ้นจนกว่าบอร์ดจะลงมติ (ลงนามจริงที่ PENDING_SIGN_RULING_72 โดยประธานฯ)
+           เลขาธิการฯ ในขั้นนี้มีหน้าที่เพียงเห็นชอบส่งเข้าสู่กระบวนการกลั่นกรอง/บรรจุวาระ */
 
         const supportBox = document.getElementById('supportSubSelectBox');
         if (supportBox) supportBox.classList.add('d-none');
@@ -1182,11 +1184,7 @@
 
       function buildButtons(){
         if (role.id === 'secgen') {
-          if (!signed) return [{ act:'sign', label:'ลงนามดิจิทัล', icon:'fa-signature', cls:'btn-gold' }];
-          return [
-            { act:'clear_sign', label:'ลบลายเซ็น', icon:'fa-trash-can', cls:'btn-outline-danger' },
-            { act:'save', label:'บันทึกและส่งต่อ', icon:'fa-floppy-disk', cls:'btn-success' }
-          ];
+          return [{ act:'approve', label:'เห็นชอบส่งเข้าสู่กระบวนการกลั่นกรอง/บรรจุวาระ', icon:'fa-check', cls:'btn-navy' }];
         }
         if (isReturned) return [{ act:'resubmit', label:'เสนอใหม่', icon:'fa-paper-plane', cls:'btn-navy' }];
         return [
@@ -1297,41 +1295,7 @@
           return;
         }
 
-        if (act === 'sign') {
-          ECMIS.signDialog(`${docType.label} เรื่องที่ ${kase.id}`, 'นายอภิชาติ สุจริตกุล — เลขาธิการคณะกรรมการ ป.ป.ท.').then(res => {
-            if (!res.isConfirmed) return;
-            signed = true;
-            kase._pendingSig = res.value.sig;
-            ECMIS.Model.SignatureStore.create({
-              caseId: kase.id, docType: docType.label,
-              signerRole: 'secgen', signerName: 'นายอภิชาติ สุจริตกุล — เลขาธิการคณะกรรมการ ป.ป.ท.',
-              method: res.value.mode, signedAt: new Date().toISOString()
-            });
-            updateSigBoxUI(true);
-            renderActionButtons();
-            ECMIS.toastOk('ลงนามดิจิทัลเรียบร้อยแล้ว กรุณาเลือกประเด็นซับซ้อน/เร่งด่วนแล้วกดปุ่ม "บันทึกและส่งต่อ"');
-          });
-          return;
-        }
-
-        if (act === 'clear_sign') {
-          ECMIS.confirmAction({
-            title: 'ยืนยันการลบลายเซ็น',
-            html: '<p>คุณต้องการยกเลิกลายเซ็นบนเอกสารนี้ใช่หรือไม่?</p>',
-            confirmText: 'ยืนยันลบลายเซ็น', danger: true
-          }).then(r => {
-            if (!r.isConfirmed) return;
-            signed = false;
-            kase._pendingSig = null;
-            updateSigBoxUI(false);
-            renderActionButtons();
-            ECMIS.toastOk('ลบลายเซ็นเรียบร้อยแล้ว');
-          });
-          return;
-        }
-
-        if (act === 'save') {
-          if (!signed) { ECMIS.toastWarn('กรุณาลงนามดิจิทัลก่อนบันทึกและส่งต่อ'); return; }
+        if (act === 'approve') {
           const complexReasonEl = document.getElementById('g1reason');
           const urgentReasonEl = document.getElementById('urgentReason72');
           if (complexYes() && (!complexReasonEl || !complexReasonEl.value.trim())) {
@@ -1352,21 +1316,21 @@
           const targetPage = ECMIS.PAGE_FOR_72[next.to] || '02-case-register.html';
 
           ECMIS.confirmAction({
-            title: 'บันทึกและส่งต่อ',
+            title: 'เห็นชอบและส่งต่อ',
             html: `<p>สำนวน <strong>${kase.id}</strong> จะถูกส่งต่อไปยัง <strong>${ECMIS.STATUS[next.to].label}</strong></p>`,
-            confirmText: 'ยืนยันบันทึกและส่งต่อ'
+            confirmText: 'ยืนยันเห็นชอบ'
           }).then(async res => {
             if (!res.isConfirmed) return;
             try {
-              await persistCase(kase, { status: next.to, signedBySecgen: true });
+              /* ไม่ set signedBySecgen -- เลขาธิการฯ เห็นชอบส่งต่อ ไม่ได้ลงนามบนรายงานวินิจฉัยชี้มูล
+                 (ตัวจริงยังไม่เกิดขึ้นจนกว่าบอร์ดจะลงมติ และลงนามจริงโดยประธานฯ นอกระบบ) */
+              await persistCase(kase, { status: next.to });
             } catch (err) {
-              console.error('บันทึกและส่งต่อไม่สำเร็จ:', err);
+              console.error('บันทึกเห็นชอบไม่สำเร็จ:', err);
               ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
               return;
             }
-            kase.signPhase = 'COMPLETE';
-            kase.secgenSignedAt72 = new Date().toLocaleString('th-TH');
-            ECMIS.toastOk('บันทึกและส่งต่อเรียบร้อยแล้ว');
+            ECMIS.toastOk('เห็นชอบและส่งต่อเรียบร้อยแล้ว');
             setTimeout(() => location.href = targetPage + '?case=' + encodeURIComponent(kase.id), 1500);
           });
         }
