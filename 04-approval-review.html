@@ -201,30 +201,76 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/ecmis-app.js"></script>
   <script src="assets/ecmis-model.js"></script>
   <script>
     ECMIS.renderShell('04-approval-review.html');
 
     const params = new URLSearchParams(location.search);
-    const kase = ECMIS.getCase(params.get('case') || '1547/2568');
     const role = ECMIS.currentRole();
-    const docType = ECMIS.DOC_TYPES[kase.docType];
 
-    const isRuling = docType.code === 'RULING';
-    const secgenPendingStatus = isRuling ? 'PENDING_SECGEN_72' : 'PENDING_SECGEN';
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const alreadySigned = kase.status !== secgenPendingStatus && !ECMIS.isUpstreamCase(kase);
-    let signed = alreadySigned;
+    async function loadCaseFromSupabase(caseId) {
+      const { data, error } = await sb
+        .from('tbl_res_request')
+        .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+        .eq('tbl_cmp_case.tcc_no', caseId)
+        .eq('is_deleted', false)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? ECMIS.supabaseRowToCase(data) : null;
+    }
+
+    /* บันทึกการเปลี่ยนแปลงกลับ tbl_res_request จริง แล้วอัปเดต kase ในหน่วยความจำ + สร้าง
+       ที่มาของสำนวนใหม่ตามสถานะล่าสุด — ฟิลด์ที่ไม่มีคอลัมน์ใน Supabase (เช่น secgenSignedAt,
+       returnNote72) ยังคง set บน kase ไว้ให้ใช้แสดงผลในหน้านี้ได้ตามเดิม เพียงแต่ไม่ถูกบันทึก
+       ข้ามหน้า/ข้ามอุปกรณ์ ตามขอบเขตฟิลด์ที่ migrate ไว้ */
+    async function persistCase(kase, patch) {
+      const dbPatch = {};
+      if ('status' in patch) {
+        const code = ECMIS.STATUS_CODE[patch.status];
+        if (!code) throw new Error(`ไม่พบรหัสสถานะสำหรับ ${patch.status}`);
+        dbPatch.trr_status = code;
+      }
+      if ('signedBySecgen' in patch) dbPatch.trr_signed_secgen = patch.signedBySecgen;
+      if ('urgent' in patch)         dbPatch.trr_urgent = patch.urgent;
+      if ('subCommittee' in patch)   dbPatch.trr_sub_committee = patch.subCommittee;
+      const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
+      if (error) throw error;
+      Object.assign(kase, patch);
+      kase.chainOpinions = ECMIS.buildChainOpinions(kase);
+    }
+
+    let kase, docType, isRuling, secgenPendingStatus, alreadySigned, signed, phase, g1;
     const SECGEN_SIG_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 70">' +
       '<path d="M8 50 C 30 10, 55 10, 70 40 S 110 65, 130 30 S 165 5, 185 35 S 205 55, 212 40" ' +
       'fill="none" stroke="#0a2647" stroke-width="4" stroke-linecap="round"/></svg>');
 
-    const phase = ECMIS.SIGN_PHASE[kase.signPhase];
-    const g1 = ECMIS.g1Triggers(kase);
+    (async function main() {
+      try {
+        kase = await loadCaseFromSupabase(params.get('case') || '1547/2568');
+      } catch (err) {
+        console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+        ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
+        return;
+      }
+      if (!kase) { ECMIS.toastWarn('ไม่พบสำนวนนี้ในระบบ'); return; }
 
-    if (isRuling) { initRulingScreen(); } else { initReport213Screen(); }
+      docType = ECMIS.DOC_TYPES[kase.docType];
+      isRuling = docType.code === 'RULING';
+      secgenPendingStatus = isRuling ? 'PENDING_SECGEN_72' : 'PENDING_SECGEN';
+      alreadySigned = kase.status !== secgenPendingStatus && !ECMIS.isUpstreamCase(kase);
+      signed = alreadySigned;
+      phase = ECMIS.SIGN_PHASE[kase.signPhase];
+      g1 = ECMIS.g1Triggers(kase);
+
+      if (isRuling) { initRulingScreen(); } else { initReport213Screen(); }
+    })();
 
     /* ---------- Document workspace: collapsible pane ---------- */
     const docWorkspace = document.getElementById('docWorkspace');
@@ -665,7 +711,7 @@
       return true;
     }
 
-    function handle(act) {
+    async function handle(act) {
       if (act === 'edit_sign') {
         handle('sign');
         return;
@@ -740,8 +786,15 @@
             if (n.length < 10) { Swal.showValidationMessage('กรุณาระบุรายละเอียดอย่างน้อย 10 ตัวอักษร'); return false; }
             return { r, n, s };
           }
-        }).then(res => {
+        }).then(async res => {
           if (res.isConfirmed) {
+            try {
+              await persistCase(kase, { status: 'RETURNED' });
+            } catch (err) {
+              console.error('ตีกลับไม่สำเร็จ:', err);
+              ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+              return;
+            }
             const dest = res.value.s === 'TO_OWNER' ? 'เจ้าของสำนวน' : 'ผอ.กอง / ผอ.สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต';
             ECMIS.toastOk(`ตีกลับเรียบร้อย — ส่งคืน${dest} และ Pause กำหนดเวลาแล้ว`);
             setTimeout(() => location.href = ECMIS.homeHref(role.id), 1600);
@@ -752,12 +805,21 @@
 
       if (act === 'approve') {
         if (!requireOpinion()) return;
+        const nextRoleId = FULL_CHAIN[FULL_CHAIN.indexOf(role.id) + 1];
+        const nextStatus = CHAIN_STATUS[nextRoleId];
         ECMIS.confirmAction({
           title: 'เห็นชอบและเสนอตามลำดับชั้น',
           html: `<p>เสนอสำนวน <strong>${kase.id}</strong> ต่อไปยัง <strong>${nextRoleTitle()}</strong></p>`,
           confirmText: 'ยืนยันเห็นชอบ'
-        }).then(r => {
+        }).then(async r => {
           if (r.isConfirmed) {
+            try {
+              if (nextStatus) await persistCase(kase, { status: nextStatus });
+            } catch (err) {
+              console.error('บันทึกเห็นชอบไม่สำเร็จ:', err);
+              ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+              return;
+            }
             ECMIS.toastOk(`เห็นชอบเรียบร้อย — เสนอ${nextRoleTitle()}แล้ว`);
             setTimeout(() => location.href = ECMIS.homeHref(role.id), 1500);
           }
@@ -774,7 +836,7 @@
             <strong>คณะอนุกรรมการสนับสนุนเลขาธิการฯ</strong> เพื่อพิจารณาก่อนเสนอต่อ
             <strong>หน้าห้องประธานกรรมการ ป.ป.ท.</strong></p>`,
           confirmText: 'ยืนยันมอบหมาย'
-        }).then(r => {
+        }).then(async r => {
           if (!r.isConfirmed) return;
           const g1yes = document.getElementById('g1yes');
           if (g1yes) g1yes.checked = true;
@@ -784,7 +846,13 @@
           if (gr && !gr.value.trim()) gr.value = 'เลขาธิการฯ พิจารณาแล้วเห็นควรมอบหมายให้คณะอนุกรรมการสนับสนุนฯ ตรวจสอบก่อน';
 
           // Change status to IN_SUPPORT_SUB directly without signing
-          ECMIS.Model.CaseStore.update(kase.id, { status: 'IN_SUPPORT_SUB' });
+          try {
+            await persistCase(kase, { status: 'IN_SUPPORT_SUB' });
+          } catch (err) {
+            console.error('มอบหมายไม่สำเร็จ:', err);
+            ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+            return;
+          }
 
           Swal.fire({
             icon: 'success',
@@ -831,11 +899,17 @@
           path = 'สำนวนปกติ: เสนอหน้าห้องประธานฯ ตามลำดับ';
         }
 
-        ECMIS.Model.CaseStore.update(kase.id, {
-          status: targetStatus,
-          signedBySecgen: true,
-          secgenSignedAt: new Date().toLocaleString('th-TH')
-        });
+        try {
+          await persistCase(kase, {
+            status: targetStatus,
+            signedBySecgen: true,
+            secgenSignedAt: new Date().toLocaleString('th-TH')
+          });
+        } catch (err) {
+          console.error('บันทึกสถานะไม่สำเร็จ:', err);
+          ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+          return;
+        }
 
         Swal.fire({
           icon: 'success',
@@ -1156,7 +1230,7 @@
         return `${d.getFullYear() + 543}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       }
 
-      function handle(act){
+      async function handle(act){
         if (act === 'propose') {
           const el = document.getElementById('myOpinion');
           const valMsg = document.querySelector('.val-msg[data-for="myOpinion"]');
@@ -1172,13 +1246,16 @@
             title: 'เห็นชอบและเสนอตามลำดับชั้น',
             html: `<p>เสนอสำนวน <strong>${kase.id}</strong> ต่อไปยัง <strong>${nextTitle}</strong></p>`,
             confirmText: 'ยืนยันเห็นชอบ'
-          }).then(res => {
+          }).then(async res => {
             if (!res.isConfirmed) return;
             const NEXT = { section_head:'PENDING_DIRECTOR_72', director:'PENDING_DEPUTY_72', deputy:'PENDING_SECGEN_72' };
-            ECMIS.Model.CaseStore.update(kase.id, {
-              chainOpinions: (kase.chainOpinions || []).concat([{ roleId: role.id, type:'ACCEPT', date: todayThaiIso(), note }]),
-              status: NEXT[role.id]
-            });
+            try {
+              await persistCase(kase, { status: NEXT[role.id] });
+            } catch (err) {
+              console.error('บันทึกเห็นชอบไม่สำเร็จ:', err);
+              ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+              return;
+            }
             ECMIS.toastOk(`เห็นชอบเรียบร้อย — เสนอ${nextTitle}แล้ว`);
             setTimeout(() => location.href = ECMIS.homeHref(role.id), 1500);
           });
@@ -1207,13 +1284,18 @@
               if (n.length < 10) { Swal.showValidationMessage('กรุณาระบุรายละเอียดอย่างน้อย 10 ตัวอักษร'); return false; }
               return { r, n };
             }
-          }).then(res => {
+          }).then(async res => {
             if (!res.isConfirmed) return;
-            kase.status = 'RETURNED_72';
+            try {
+              await persistCase(kase, { status: 'RETURNED_72' });
+            } catch (err) {
+              console.error('ตีกลับไม่สำเร็จ:', err);
+              ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+              return;
+            }
             kase.returnReason72 = res.value.r;
             kase.returnNote72 = res.value.n;
             kase.returnedBy72 = role.id;
-            ECMIS.saveCases();
             ECMIS.toastOk('ตีกลับเรียบร้อย — ส่งคืนเจ้าของสำนวนแล้ว');
             setTimeout(() => location.href = ECMIS.homeHref(role.id), 1400);
           });
@@ -1225,10 +1307,15 @@
             title: 'ยืนยันเสนอใหม่',
             html: `<p>สำนวน <strong>${kase.id}</strong> จะถูกเสนอกลับเข้าสายอนุมัติ 3 ชั้นอีกครั้ง เริ่มที่ <strong>หัวหน้ากลุ่มงาน</strong></p>`,
             confirmText: 'ยืนยันเสนอใหม่'
-          }).then(res => {
+          }).then(async res => {
             if (!res.isConfirmed) return;
-            kase.status = 'PENDING_SECTION_72';
-            ECMIS.saveCases();
+            try {
+              await persistCase(kase, { status: 'PENDING_SECTION_72' });
+            } catch (err) {
+              console.error('เสนอใหม่ไม่สำเร็จ:', err);
+              ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+              return;
+            }
             ECMIS.toastOk('เสนอใหม่เรียบร้อยแล้ว');
             setTimeout(() => location.href = ECMIS.homeHref(role.id), 1400);
           });
@@ -1293,13 +1380,17 @@
             title: 'บันทึกและส่งต่อ',
             html: `<p>สำนวน <strong>${kase.id}</strong> จะถูกส่งต่อไปยัง <strong>${ECMIS.STATUS[next.to].label}</strong></p>`,
             confirmText: 'ยืนยันบันทึกและส่งต่อ'
-          }).then(res => {
+          }).then(async res => {
             if (!res.isConfirmed) return;
-            ECMIS.Model.CaseStore.update(kase.id, {
-              status: next.to,
-              signPhase: 'COMPLETE',
-              secgenSignedAt72: new Date().toLocaleString('th-TH')
-            });
+            try {
+              await persistCase(kase, { status: next.to, signedBySecgen: true });
+            } catch (err) {
+              console.error('บันทึกและส่งต่อไม่สำเร็จ:', err);
+              ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+              return;
+            }
+            kase.signPhase = 'COMPLETE';
+            kase.secgenSignedAt72 = new Date().toLocaleString('th-TH');
             ECMIS.toastOk('บันทึกและส่งต่อเรียบร้อยแล้ว');
             setTimeout(() => location.href = targetPage + '?case=' + encodeURIComponent(kase.id), 1500);
           });

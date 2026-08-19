@@ -1278,6 +1278,49 @@ CASES.forEach(c => {
   c.chainOpinions = buildChainOpinions(c);
 });
 
+/* ---------- ตัวช่วยแปลงข้อมูลระหว่าง Supabase (tbl_res_request/tbl_cmp_case) กับรูปแบบ kase
+   ที่หน้าเว็บทุกหน้าใช้ร่วมกัน (เดิมมีสำเนาเฉพาะใน 01-work-inbox.html — ย้ายมาไว้ที่นี่เพื่อให้
+   หน้าอื่น เช่น 04-approval-review.html ใช้ตรรกะเดียวกัน ไม่เขียนซ้ำแยกกัน) ---------- */
+function addYearsToDateStr(dateStr, years) {
+  const [y, m, d] = String(dateStr).split('-');
+  return `${parseInt(y, 10) + years}-${m}-${d}`;
+}
+
+function toBuddhistFakeIso(realIso) {
+  if (!realIso) return null;
+  const [y, m, d] = String(realIso).split('-');
+  return `${parseInt(y, 10) + 543}-${m}-${d}`;
+}
+
+function supabaseRowToCase(row) {
+  const cc = row.tbl_cmp_case;
+  if (!cc) return null;
+  const kase = {
+    trr_id: row.trr_id, tcc_id: cc.tcc_id,
+    id: cc.tcc_no, subject: cc.tcc_subject, allegation: cc.tcc_allegation,
+    legalBase: cc.tcc_legal_base, complainant: cc.tcc_complainant,
+    owner: cc.tcc_owner, ownerOrg: cc.tcc_owner_org,
+    receivedDate: toBuddhistFakeIso(cc.tcc_received_date),
+    prescription: toBuddhistFakeIso(cc.tcc_prescription_date),
+    docRef: cc.tcc_doc_ref, docType: cc.tcc_doc_type || '213',
+    complex: !!cc.tcc_complex,
+    accused: (cc.tbl_cmp_case_accused || [])
+      .sort((a, b) => (a.tcca_no || 0) - (b.tcca_no || 0))
+      .map(a => ({ no: a.tcca_no, name: a.tcca_name, pos: a.tcca_position, idcard: a.tcca_idcard, agency: a.tcca_agency })),
+    status: CODE_STATUS[row.trr_status] || row.trr_status,
+    slaDays: row.trr_sla_days, slaLimit: row.trr_sla_limit,
+    urgent: !!row.trr_urgent, urgent72: !!row.trr_urgent,
+    signedBySecgen: !!row.trr_signed_secgen, subCommittee: row.trr_sub_committee,
+    signPhase: row.trr_signed_secgen ? 'COMPLETE' : 'WAIT'
+  };
+  if (kase.receivedDate) {
+    kase.deadline60 = addDaysToDateStr(kase.receivedDate, 60);
+    kase.deadline2y = addYearsToDateStr(kase.receivedDate, 2);
+  }
+  kase.chainOpinions = buildChainOpinions(kase);
+  return kase;
+}
+
 const M28_LOG = {
   '1396/2564': { orderType:'ACCEPT', orderedDate:'2569-05-22', reported:false, dueDate:'2569-06-06' },
   '1119/2565': { orderType:'ACCEPT', orderedDate:'2569-05-26', reported:false, dueDate:'2569-06-10' },
@@ -3816,6 +3859,7 @@ if (typeof document !== 'undefined') {
 
 global.ECMIS = {
   ROLES, STATUS, STATUS_CODE, CODE_STATUS, STATUS_STEP, FLOW_STEPS, APPROVAL_CHAIN,
+  buildChainOpinions, supabaseRowToCase, toBuddhistFakeIso, addDaysToDateStr, addYearsToDateStr,
   CASES, RETURN_REASONS, RESOLUTIONS, resolutionOf,
   DOC_TYPES, SIGN_PHASE, secgenSlaLimit, FORWARD_TARGETS, forwardTarget,
 
