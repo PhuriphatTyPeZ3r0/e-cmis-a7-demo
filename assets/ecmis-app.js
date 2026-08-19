@@ -1692,7 +1692,8 @@ const NAV = [
   { section:'การประชุมคณะกรรมการ ป.ป.ท.' },
   { href:'12-meeting-report.html',        icon:'fa-file-contract',    label:'จัดทำรายงานมติการประชุม',
     visible: role => !!role && can('compile.minutes', role.id) },
-  { href:'13-agenda-registry.html',       icon:'fa-table-list',       label:'ทะเบียนวาระการประชุม' }
+  { href:'13-agenda-registry.html',       icon:'fa-table-list',       label:'ทะเบียนวาระการประชุม',
+    visible: role => !!role && role.id !== 'secgen' }
 ];
 
 function navLabel(navItem, role){
