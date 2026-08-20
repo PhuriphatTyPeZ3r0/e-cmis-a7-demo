@@ -209,7 +209,7 @@ const STATUS = {
   PENDING_CHAIR_OF: { label:'รอหน้าห้องประธานฯ คัดกรอง',   cls:'st-pending',  owner:'chair_office' },
   PENDING_CHAIRMAN: { label:'รอประธานฯ สั่งการ',           cls:'st-pending',  owner:'chairman' },
   IN_SCREENING:     { label:'อยู่อนุกลั่นกรองฯ',           cls:'st-review',   owner:'subcommittee' },
-  AGENDA_SET:       { label:'บรรจุวาระแล้ว',              cls:'st-agenda',   owner:'board_sec' },
+  AGENDA_SET:       { label:'รอบรรจุวาระ',                cls:'st-agenda',   owner:'board_sec' },
 
   IN_MEETING:       { label:'อยู่ระหว่างประชุมบอร์ด',      cls:'st-review',   owner:'board_sec' },
   DEFERRED:         { label:'เลื่อน/ถอนวาระ — รอเลขวาระใหม่', cls:'st-returned', owner:'affairs' },
