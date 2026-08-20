@@ -231,6 +231,8 @@
       if (!c) { ECMIS.toastWarn('ไม่พบสำนวนนี้ในคิว'); return; }
       const resolvedLike = ['RESOLVED_PENDING', 'RESOLVED', 'DISPATCHING', 'CLOSED'].includes(c.status);
 
+      const defaultTopic = `รายงานไต่สวน${resolvedLike ? 'เพื่อวินิจฉัยชี้มูล' : 'เบื้องต้น'} กรณี ${c.subject}`;
+
       const { value: form } = await Swal.fire({
         title: 'บรรจุระเบียบวาระ',
         width: 560,
@@ -267,6 +269,15 @@
                 <input class="form-control" id="swMeetDate" type="date"></div>
               <div class="col-4"><label class="form-label">วาระที่ *</label>
                 <input class="form-control" id="swAgendaNo" placeholder="เช่น 5.1"></div>
+            </div>
+            <div class="mb-2"><label class="form-label">ลักษณะเรื่อง *</label>
+              <input class="form-control" id="swItemTopic" value="${ECMIS.escapeHtml(defaultTopic)}"></div>
+            <div class="mb-2">
+              <label class="form-label d-flex justify-content-between align-items-center mb-1">
+                <span>เลขที่เรื่อง (หมวดหมู่เดียวกัน 1 วาระบรรจุได้หลายเรื่อง — เพิ่มช่องได้)</span>
+                <button type="button" id="swBtnAddCaseRow" class="btn btn-sm btn-link p-0" style="font-size:.8rem"><i class="fa-solid fa-plus me-1"></i>เพิ่มเลขที่เรื่อง</button>
+              </label>
+              <div id="swItemCaseList"></div>
             </div>
             <div class="mb-1"><label class="form-label">ชั้นความลับของหนังสือเชิญประชุม</label>
               <select class="form-select" id="swSecrecy">
@@ -308,10 +319,36 @@
           pick.addEventListener('change', syncAuto);
           urgentBox.addEventListener('change', renderPick);
           renderPick();
+
+          /* แถวเลขที่เรื่องแบบเพิ่มได้ — pattern เดียวกับ "เพิ่มวาระ" ใน
+             agenda-registry-detail.html (หมวดหมู่เดียวกัน 1 วาระบรรจุได้หลายเรื่อง)
+             แถวแรก prefill ด้วยเรื่องที่กดมาจากคิว */
+          const caseRowHtml = (value = '') => `
+            <div class="input-group input-group-sm mb-2 case-ref-row">
+              <input type="text" class="form-control case-ref-input" value="${ECMIS.escapeHtml(value)}" placeholder="เช่น 1234/2569">
+              <button type="button" class="btn btn-outline-secondary btn-remove-case-row" tabindex="-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>`;
+          const listEl = document.getElementById('swItemCaseList');
+          const addCaseRow = (value = '') => { listEl.insertAdjacentHTML('beforeend', caseRowHtml(value)); };
+          listEl.addEventListener('click', e => {
+            const btn = e.target.closest('.btn-remove-case-row');
+            if (!btn) return;
+            if (listEl.querySelectorAll('.case-ref-row').length > 1) btn.closest('.case-ref-row').remove();
+            else btn.closest('.case-ref-row').querySelector('.case-ref-input').value = '';
+          });
+          document.getElementById('swBtnAddCaseRow').addEventListener('click', () => addCaseRow());
+          addCaseRow(c.id);
         },
         preConfirm: () => {
           const existingMode = document.querySelector('input[name="swAgendaMode"]:checked').value === 'EXISTING';
           const urgent = document.getElementById('swUrgentToggle').checked;
+          const topic = document.getElementById('swItemTopic').value.trim();
+          if (!topic) { Swal.showValidationMessage('กรุณากรอกลักษณะเรื่อง'); return false; }
+          const caseNos = Array.from(document.querySelectorAll('.case-ref-input')).map(el => el.value.trim()).filter(Boolean);
+          const seen = new Set();
+          const dupes = [];
+          caseNos.forEach(v => { const key = v.toLowerCase(); if (seen.has(key)) dupes.push(v); else seen.add(key); });
+          if (dupes.length) { Swal.showValidationMessage(`กรอกเลขที่เรื่องซ้ำกัน: ${dupes.join(', ')}`); return false; }
           let trcId = null, meetNo, meetDate, agendaNo;
           if (existingMode) {
             const meetings = meetingsOpenForPopup(urgent);
@@ -327,14 +364,15 @@
               return false;
             }
           }
-          return { existingMode, trcId, meetNo, meetDate, agendaNo, urgent, secrecy: document.getElementById('swSecrecy').value };
+          return { existingMode, trcId, meetNo, meetDate, agendaNo, urgent, topic, caseNos, secrecy: document.getElementById('swSecrecy').value };
         }
       });
       if (!form) return;
 
+      const caseCountNote = form.caseNos.length > 1 ? ` (รวม ${form.caseNos.length} เรื่อง)` : '';
       const confirmed = await ECMIS.confirmAction({
         title: 'ยืนยันบรรจุระเบียบวาระ',
-        html: `<p>สำนวน <strong>${ECMIS.escapeHtml(c.id)}</strong> จะถูกบรรจุเข้าระเบียบวาระ ครั้งที่ ${ECMIS.escapeHtml(form.meetNo)} วาระที่ ${ECMIS.escapeHtml(form.agendaNo)}${form.urgent ? ' <span class="badge bg-danger">ด่วน</span>' : ''}</p>`,
+        html: `<p>สำนวน <strong>${ECMIS.escapeHtml(form.caseNos.join(', ') || c.id)}</strong>${caseCountNote} จะถูกบรรจุเข้าระเบียบวาระ ครั้งที่ ${ECMIS.escapeHtml(form.meetNo)} วาระที่ ${ECMIS.escapeHtml(form.agendaNo)}${form.urgent ? ' <span class="badge bg-danger">ด่วน</span>' : ''}</p>`,
         confirmText: 'ยืนยันบรรจุวาระ'
       });
       if (!confirmed.isConfirmed) return;
@@ -348,8 +386,8 @@
         await AR.addItem({
           trc_id, trci_number: form.agendaNo,
           category: resolvedLike ? 'finding' : 'preliminary',
-          trci_topic: `รายงานไต่สวน${resolvedLike ? 'เพื่อวินิจฉัยชี้มูล' : 'เบื้องต้น'} กรณี ${c.subject}`,
-          case_ref: c.id,
+          trci_topic: form.topic,
+          case_ref: form.caseNos.length ? form.caseNos.join(', ') : c.id,
           remark: form.urgent ? 'วาระเร่งด่วน' : '-'
         });
         if (form.urgent && c.trr_id) {

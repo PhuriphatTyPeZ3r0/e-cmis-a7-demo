@@ -122,33 +122,6 @@
                     </div>
                 </div>
 
-                <!-- Card 5: Meeting Agenda Details -->
-                <div class="ws-card mb-3" id="agendaCard">
-                    <div class="card-header"><i class="fa-solid fa-calendar-check"></i> บรรจุระเบียบวาระและหนังสือเชิญประชุม</div>
-                    <div class="card-body">
-                        <div class="row g-2 mb-3">
-                            <div class="col-md-4"><label class="form-label field-req">ครั้งที่ประชุม</label>
-                                <input class="form-control" id="meetNo" value="38/2569">
-                            </div>
-                            <div class="col-md-4"><label class="form-label field-req">วันที่ประชุม</label>
-                                <input class="form-control" id="meetDate" value="2569-06-02" type="text">
-                            </div>
-                            <div class="col-md-4"><label class="form-label field-req">วาระที่</label>
-                                <input class="form-control" id="agendaNo" value="5.12">
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label field-req">ชั้นความลับของหนังสือเชิญประชุม</label>
-                            <select class="form-select" id="secrecy">
-                                <option value="SECRET" selected>ลับ — แนบระเบียบวาระเต็ม (พาดพิงสำนวนคดี)</option>
-                                <option value="NORMAL">ปกติ — ไม่แนบระเบียบวาระเต็ม</option>
-                            </select>
-                        </div>
-
-                        <div class="rule-panel" id="meetRules"></div>
-                    </div>
-                </div>
             </div>
 
             <!-- Right Column Document Viewer -->
@@ -157,8 +130,6 @@
                 <div class="ws-doc-toolbar">
                     <div class="ws-doc-tabs" id="docTabs">
                         <button class="ws-doc-tab active" data-doc="report213"><i class="fa-solid fa-file-contract me-1"></i>รายงาน 213 (เลขาฯ ลงนามแล้ว)</button>
-                        <button class="ws-doc-tab" data-doc="agenda">ระเบียบวาระ</button>
-                        <button class="ws-doc-tab" data-doc="invite">หนังสือเชิญประชุม</button>
                     </div>
                     <button class="btn btn-sm btn-light" onclick="window.print()" title="พิมพ์เอกสาร"><i class="fa-solid fa-print"></i></button>
                     <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
@@ -269,29 +240,9 @@
         ].map(r => `<div class="rule ${r.ok ? 'pass' : 'fail'}">
   <i class="fa-solid ${r.ok ? 'fa-circle-check' : 'fa-circle-xmark'}"></i><span>${r.t}</span></div>`).join('');
 
-        /* ---------- meeting rules ---------- */
-        function renderMeetRules() {
-            const secrecy = document.getElementById('secrecy').value;
-            document.getElementById('meetRules').innerHTML = [
-                { ok: true, t: 'แจ้งนัดประชุมเป็นหนังสือล่วงหน้าไม่น้อยกว่า 3 วัน (ม.13 วรรคสอง)' },
-                { ok: true, t: 'ระบบแจ้งเตือนกรรมการอ่านระเบียบวาระล่วงหน้า 3 วันก่อนประชุม' },
-                {
-                    ok: secrecy === 'SECRET', t: secrecy === 'SECRET'
-                        ? 'ตั้งชั้นความลับ "ลับ" ถูกต้องตาม ม.19/1 (แนบวาระเต็ม)'
-                        : 'เลือก "ปกติ" — ระบบจะไม่แนบระเบียบวาระเต็มไปกับหนังสือเชิญ'
-                },
-                { ok: true, t: 'ระบบตรวจองค์ประชุมขั้นต่ำ ม.12 (ไม่น้อยกว่ากึ่งหนึ่งของกรรมการเท่าที่มีอยู่) ก่อนเปิดวาระ' }
-            ].map(r => `<div class="rule ${r.ok ? 'pass' : ''}">
-    <i class="fa-solid ${r.ok ? 'fa-circle-check' : 'fa-circle-info'}"></i><span>${r.t}</span></div>`).join('');
-        }
-
         /* ---------- documents ---------- */
         function renderDoc() {
             const M = ECMIS.mergeField;
-            const meetNo = document.getElementById('meetNo').value.trim();
-            const meetDate = ECMIS.thaiDate(document.getElementById('meetDate').value.trim());
-            const agendaNo = document.getElementById('agendaNo').value.trim();
-            const secrecy = document.getElementById('secrecy').value;
 
             if (docTab === 'report213') {
                 const chainOpinionsHtml = (kase.chainOpinions || []).map(o => `
@@ -328,62 +279,6 @@
         <div class="small text-muted">เลขาธิการคณะกรรมการ ป.ป.ท.</div>
         <div class="small text-success mt-1"><i class="fa-solid fa-shield-check me-1"></i>Digital Certificate Verified · ${kase.secgenSignedAt || '04 ส.ค. 2569'}</div>
       </div>`;
-            } else if (docTab === 'agenda') {
-                document.getElementById('docPaper').innerHTML = `
-      <div class="doc-secret">${secrecy === 'SECRET' ? 'ลับ' : ''}</div>
-      <div class="doc-title">ระเบียบวาระการประชุม<br>คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
-      <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}</div>
-
-      <div class="doc-h">ระเบียบวาระที่ 5 &nbsp; เรื่องเพื่อพิจารณา</div>
-      <div style="margin-top:6px">
-        <div class="doc-row"><span class="k">วาระที่ ${M(agendaNo)}</span> ${M(kase.subject)}</div>
-        <div style="padding-left:2em">
-          <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
-          <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner)}</div>
-          <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
-          <div class="doc-row"><span class="k">ผู้ชี้แจง</span>
-            ${M('ฝ่ายเลขานุการคณะอนุกลั่นกรองฯ (นิติกร กบค.)')}</div>
-          <div class="doc-row"><span class="k">เอกสารอ้างอิง</span> ${M(kase.docRef || 'ปป 0020/1028')}</div>
-          <div class="doc-row"><span class="k">ชั้นการพิจารณา</span> ไต่สวนเบื้องต้น</div>
-        </div>
-      </div>
-
-      <div class="doc-h">ผู้ถูกร้อง</div>
-      ${(kase.accused || []).map(a => `<div style="padding-left:1em">${a.no}. ${M(a.name)} — ${M(a.pos)}</div>`).join('')}
-
-      <div class="doc-h">ประเด็นเสนอที่ประชุม</div>
-      <div class="doc-indent">
-        ${M(kase.ownerOrg)} เสนอรายงานการไต่สวนเบื้องต้นที่ผ่านการพิจารณาและลงนามของ
-        เลขาธิการคณะกรรมการ ป.ป.ท. แล้ว เพื่อโปรดพิจารณามีมติ
-      </div>`;
-            } else {
-                document.getElementById('docPaper').innerHTML = `
-      <div class="doc-secret">${secrecy === 'SECRET' ? 'ลับ' : ''}</div>
-      <div class="doc-title">บันทึกข้อความ</div>
-      <div style="margin-top:14px">
-        <div class="doc-row"><span class="k">ส่วนราชการ</span> กองบริหารคดี สำนักงาน ป.ป.ท.</div>
-        <div class="doc-row"><span class="k">ที่</span> ${M('', 'ปป 0020/ว.38')}
-          <span class="k" style="margin-left:24px">วันที่</span> ${M(meetDate)}</div>
-        <div class="doc-row"><span class="k">เรื่อง</span> ขอเรียนเชิญประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)}</div>
-      </div>
-      <div style="margin-top:12px">เรียน &nbsp; ประธานกรรมการและกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ ทุกท่าน</div>
-      <div class="doc-indent" style="margin-top:12px">
-        ด้วยสำนักงาน ป.ป.ท. กำหนดจัดประชุมคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ
-        ครั้งที่ ${M(meetNo)} ในวันที่ ${M(meetDate)} เวลา 09.30 น.
-        ณ ห้องประชุมสำนักงาน ป.ป.ท.
-      </div>
-      <div class="doc-indent" style="margin-top:8px">
-        ในการนี้ จึงขอเรียนเชิญท่านเข้าร่วมประชุมตามวัน เวลา และสถานที่ดังกล่าว
-        โดยได้แนบระเบียบวาระการประชุมมาพร้อมนี้
-        ${secrecy === 'SECRET'
-                        ? '<strong>(เอกสารชั้นความลับ — โปรดอย่าเผยแพร่)</strong>'
-                        : '<span style="color:#666">(ไม่ได้แนบระเบียบวาระเต็ม)</span>'}
-      </div>
-      <div class="doc-indent" style="margin-top:8px">จึงเรียนมาเพื่อโปรดทราบและเข้าร่วมประชุม</div>
-      <div class="doc-sign">
-        <span class="doc-dots"></span><br>(นายวิชัย ยุติธรรม)<br>
-        ประธานกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ
-      </div>`;
             }
         }
 
@@ -402,9 +297,6 @@
         if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
         document.getElementById('btnPaneCollapse').addEventListener('click', () => setPaneCollapsed(true));
         document.getElementById('btnPaneExpand').addEventListener('click', () => setPaneCollapsed(false));
-        ['meetNo', 'meetDate', 'agendaNo'].forEach(id =>
-            document.getElementById(id).addEventListener('input', renderDoc));
-        document.getElementById('secrecy').addEventListener('change', () => { renderDoc(); renderMeetRules(); });
 
         function buildButtons() {
             if (role.id === 'chair_office') {
@@ -452,15 +344,6 @@
             }
             if (act === 'command') {
                 const order = document.querySelector('input[name="order"]:checked').value;
-                if (order === 'AGENDA') {
-                    const meetNo = document.getElementById('meetNo').value.trim();
-                    const meetDate = document.getElementById('meetDate').value.trim();
-                    const agendaNo = document.getElementById('agendaNo').value.trim();
-                    if (!meetNo || !meetDate || !agendaNo) {
-                        ECMIS.toastWarn('กรุณาระบุ ครั้งที่ประชุม, วันที่ประชุม และ วาระที่');
-                        return;
-                    }
-                }
                 const MAP = {
                     SCREEN: {
                         t: 'ส่งคณะอนุกรรมการกลั่นกรองฯ', nextStatus: 'IN_SCREENING', next: 'subcommittee-screening.html',
@@ -515,7 +398,7 @@
             }
         }
 
-        renderMeetRules(); renderDoc();
+        renderDoc();
     </script>
 </body>
 
