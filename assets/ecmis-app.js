@@ -5,11 +5,11 @@
 
 const ROLES = [
 
-  { id:'chairman', login:'Amanat.P', row:1, group:'คณะกรรมการ ป.ป.ท.', title:'ประธานกรรมการ ป.ป.ท.',
-    name:'นายอำนาจ พวงชมภู', org:'คณะกรรมการ ป.ป.ท.', lane:'L5', flow:'G4 / S7', act:'7.1, 7.2, 7.3',
+  { id:'chairman', login:'Wichai.Y', row:1, group:'คณะกรรมการ ป.ป.ท.', title:'ประธานกรรมการ ป.ป.ท.',
+    name:'นายวิชัย ยุติธรรม', org:'คณะกรรมการ ป.ป.ท.', lane:'L5', flow:'G4 / S7', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','order.agenda','sign.agenda','sign.order24p3','sign.ruling','vote','bypass.approve','return'] },
   { id:'board', login:'Somboon.T', row:2, group:'คณะกรรมการ ป.ป.ท.', title:'กรรมการ ป.ป.ท.',
-    name:'พลเอก จิระ โกมุทพงศ์', org:'คณะกรรมการ ป.ป.ท.', lane:'L8', flow:'S9 / G5', act:'7.1, 7.2, 7.3',
+    name:'นายสมบูรณ์ ธรรมรัฐ', org:'คณะกรรมการ ป.ป.ท.', lane:'L8', flow:'S9 / G5', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','vote','read.agenda.advance'] },
   { id:'board_ex', login:'BoardEx.Demo', row:3, group:'คณะกรรมการ ป.ป.ท.', title:'กรรมการ ป.ป.ท. โดยตำแหน่ง',
     name:'พันตำรวจโท วันนพ สมจินตนากุล', org:'คณะกรรมการ ป.ป.ท.', lane:'L8', flow:'S9 / G5', act:'7.1, 7.2, 7.3',
@@ -1721,15 +1721,15 @@ function slaLabel(used, limit){
 function getCase(id){ return CASES.find(c => c.id === id) || CASES[0]; }
 function getRole(id){ return ROLES.find(r => r.id === id) || ROLES[0]; }
 
+// เข้าสู่ระบบได้เฉพาะ 6 บทบาทนี้เท่านั้น (ตามที่กำหนดไว้) — บทบาทอื่นๆ ใน ROLES ยังคงอยู่
+// เพราะยังใช้อ้างอิงเจ้าของสถานะ/สิทธิ์ในหน้าจออื่นๆ ทั่วระบบ เพียงแต่ล็อกอินตรงเข้าไม่ได้
+const LOGIN_ALLOWED_ROLE_IDS = ['secgen', 'support_sub', 'chairman', 'board_sec', 'board', 'affairs'];
+
 function roleIdForLogin(username){
   const u = String(username || '').trim().toLowerCase();
   if(!u) return null;
-  if(['admin', 'administrator', 'sysadmin', 'root'].includes(u)) return 'board_sec';
-  const byLogin = ROLES.find(r => r.login && r.login.toLowerCase() === u);
-  if (byLogin) return byLogin.id;
-  const byId = ROLES.find(r => r.id && r.id.toLowerCase() === u);
-  if (byId) return byId.id;
-  return 'owner'; // Fallback to investigator role if any arbitrary username is entered
+  const role = ROLES.find(r => LOGIN_ALLOWED_ROLE_IDS.includes(r.id) && r.login && r.login.toLowerCase() === u);
+  return role ? role.id : null;
 }
 
 /* current role — เก็บใน sessionStorage เพื่อให้สลับข้ามหน้าได้ */
@@ -4060,7 +4060,7 @@ global.ECMIS = {
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
   UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72, homeHref, resolvePage,
   PERM_DEFS, can, canEditMaster, canViewCase,
-  thaiDate, thaiDayName, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole, roleIdForLogin,
+  thaiDate, thaiDayName, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole, roleIdForLogin, LOGIN_ALLOWED_ROLE_IDS,
   addBusinessDays, businessDaysBetween, resolutionSlaInfo, SUBCOMMITTEE_ROSTER,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   isAuthed, currentUsername, logout,
