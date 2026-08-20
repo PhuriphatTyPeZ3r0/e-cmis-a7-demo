@@ -197,9 +197,13 @@
           ? `<a href="${ECMIS.pageForCase72(c)}?case=${encodeURIComponent(c.id)}" class="btn btn-sm btn-navy px-3">
                <i class="fa-solid fa-pen-to-square me-1"></i>บรรจุวาระ
              </a>`
-          : `<button type="button" class="btn btn-sm btn-navy px-3" onclick="openAgendaSetPopup('${encodeURIComponent(c.id)}')">
+          : mayEdit
+          ? `<button type="button" class="btn btn-sm btn-navy px-3" onclick="openAgendaSetPopup('${encodeURIComponent(c.id)}')">
                <i class="fa-solid fa-pen-to-square me-1"></i>บรรจุวาระ
-             </button>`;
+             </button>`
+          : `<span class="badge bg-light text-muted border" title="สิทธิ์จัดทำระเบียบวาระ (create.agenda) จำกัดเฉพาะ ${ECMIS.getRole('board_sec').title}">
+               <i class="fa-solid fa-lock me-1"></i>ดูอย่างเดียว
+             </span>`;
 
         return `<tr>
           <td class="case-no">${c.id} ${catBadge}</td>
@@ -226,6 +230,7 @@
     const nextAgendaNoForPopup = m => `5.${m.agendaCount + 1}`;
 
     async function openAgendaSetPopup(encodedCaseId) {
+      if (!mayEdit) { ECMIS.toastWarn('สิทธิ์จัดทำระเบียบวาระ (create.agenda) จำกัดเฉพาะ ' + ECMIS.getRole('board_sec').title); return; }
       const caseId = decodeURIComponent(encodedCaseId);
       const c = queueCases.find(x => x.id === caseId);
       if (!c) { ECMIS.toastWarn('ไม่พบสำนวนนี้ในคิว'); return; }
