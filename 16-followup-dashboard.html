@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard ติดตามผลมติ | E-CMIS</title>
+    <link rel="icon" type="image/png" href="pacc_logo.png">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link href="assets/ecmis-app.css" rel="stylesheet">
+    <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
+    <style>
+        .followup-card { border-top: 4px solid var(--ecmis-navy); }
+        .followup-card.crim { border-top-color: #DB2626; }
+        .followup-card.disc { border-top-color: #D0A830; }
+        .followup-card.police { border-top-color: #2563EB; }
+        .followup-card.closed { border-top-color: #64748B; }
+        .followup-count { font-size: 2.1rem; font-weight: 700; line-height: 1; }
+        .followup-table td, .followup-table th { font-size: .82rem; vertical-align: middle; }
+        .followup-empty { padding: 24px 8px; text-align: center; color: var(--ecmis-muted); font-size: .85rem; }
+        .sla-banner {
+            background: linear-gradient(90deg, #FEF2F2 0%, #FFFBEB 100%);
+            border: 1px solid #FECACA;
+            border-left: 5px solid #EF4444;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 18px;
+        }
+        .sla-tag {
+            font-size: .75rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 999px;
+            display: inline-block;
+        }
+        .sla-warning { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
+        .sla-danger { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
+        .sla-ok { background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; }
+    </style>
+</head>
+
+<body>
+
+    <main class="app-main">
+        <div class="page-head">
+            <div>
+                <h1><i class="fa-solid fa-diagram-project me-2"></i>Dashboard ติดตามผลมติ</h1>
+            </div>
+            <div class="ms-auto text-end d-flex align-items-center gap-2">
+                <a href="dashboard.html" class="btn btn-sm btn-outline-navy"><i class="fa-solid fa-chart-pie me-1 text-primary"></i>Dashboard สถิติมติ กบค.</a>
+                <div>
+                    <span class="flow-ref">ติดตามสำนวนหลังมติ แยกราย อาญา / วินัย / ส่งพนักงานสอบสวน</span>
+                    <div class="mt-1" id="loadedAt"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLA Advance Alert Banner (60 วัน, 90 วัน, แจ้งเตือนล่วงหน้า 15 วัน) -->
+        <div class="sla-banner shadow-sm">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <h6 class="mb-1 text-danger fw-bold"><i class="fa-solid fa-bell me-2"></i>ระบบแจ้งเตือนกำหนดเวลาติดตามสำนวน (SLA Alerts)</h6>
+                    <p class="mb-0 text-muted small">
+                        เกณฑ์มาตรฐาน: รายงานผลวินัย <strong>๖๐ วัน</strong> (ม.๓๘) | ติดตามผลอัยการ/ศาล <strong>๙๐ วัน</strong> (ม.๔๔) |
+                        <span class="text-danger fw-bold">ระบบแจ้งเตือนล่วงหน้า ๑๕ วัน ก่อนครบกำหนด</span>
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <span class="badge bg-danger p-2"><i class="fa-solid fa-triangle-exclamation me-1"></i>เกินกำหนด: <span id="cntOverdue">1</span> เรื่อง</span>
+                    <span class="badge bg-warning text-dark p-2"><i class="fa-solid fa-clock me-1"></i>เตือนล่วงหน้า &lt; 15 วัน: <span id="cntWarn15">2</span> เรื่อง</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Filter / Search Bar -->
+        <div class="ws-card mb-3">
+            <div class="card-body p-2">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-5">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text"><i class="fa-solid fa-search"></i></span>
+                            <input class="form-control" id="searchCase" placeholder="ค้นหาเลขสำนวน, ชื่อเรื่อง, หน่วยงาน...">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select form-select-sm" id="filterStatus">
+                            <option value="ALL">ทั้งหมด (ทุกประเภทมติ)</option>
+                            <option value="CRIM">สายอาญา (ส่ง ป.ป.ช. / อัยการ)</option>
+                            <option value="DISC">สายวินัย (ส่งผู้บังคับบัญชา)</option>
+                            <option value="POLICE">ส่งพนักงานสอบสวน (สน./สภ.)</option>
+                            <option value="CLOSED">ปิดสำนวนแล้ว</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <button class="btn btn-sm btn-outline-navy" id="btnRefresh" onclick="loadDashboard()"><i class="fa-solid fa-rotate me-1"></i>รีเฟรชข้อมูล</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <!-- Card 1: ส่ง ป.ป.ช. / อาญา -->
+            <div class="col-md-6 col-lg-3">
+                <div class="ws-card followup-card crim h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-gavel text-danger me-1"></i> ส่ง ป.ป.ช. / อาญา</span>
+                        <span class="badge bg-danger rounded-pill" id="cntNacc">0</span>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="text-muted small mb-2">ม.19 (ข)(1) / ม.44 ส่งอัยการ ติดตามใน 30-90 วัน</div>
+                        <div class="table-responsive"><table class="table table-sm followup-table mb-0" id="tblNacc"></table></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: ชี้มูลวินัย -->
+            <div class="col-md-6 col-lg-3">
+                <div class="ws-card followup-card disc h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-scale-unbalanced text-warning me-1"></i> ส่งลงโทษทางวินัย</span>
+                        <span class="badge bg-warning text-dark rounded-pill" id="cntGuilty">0</span>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="text-muted small mb-2">ม.38 แจ้งผู้บังคับบัญชาลงโทษใน 30-60 วัน</div>
+                        <div class="table-responsive"><table class="table table-sm followup-table mb-0" id="tblGuilty"></table></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: สำนวนเก่าส่งพนักงานสอบสวน -->
+            <div class="col-md-6 col-lg-3">
+                <div class="ws-card followup-card police h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-building-shield text-primary me-1"></i> ส่งพนักงานสอบสวน</span>
+                        <span class="badge bg-primary rounded-pill" id="cntPolice">0</span>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="text-muted small mb-2">สำนวนที่ส่งพนักงานสอบสวน สน./สภ. ดำเนินคดีต่อ</div>
+                        <div class="table-responsive"><table class="table table-sm followup-table mb-0" id="tblPolice"></table></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 4: ปิดสำนวนแล้ว -->
+            <div class="col-md-6 col-lg-3">
+                <div class="ws-card followup-card closed h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-box-archive text-secondary me-1"></i> ปิดสำนวนแล้ว</span>
+                        <span class="badge bg-secondary rounded-pill" id="cntClosed">0</span>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="text-muted small mb-2">ครบกระบวนการ / แจ้งผลยุติเรื่อง / ปิดคดี</div>
+                        <div class="table-responsive"><table class="table table-sm followup-table mb-0" id="tblClosed"></table></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- รายการสำนวนที่อยู่ในข่ายแจ้งเตือนล่วงหน้า 15 วัน -->
+        <div class="ws-card mb-3">
+            <div class="card-header bg-light">
+                <i class="fa-solid fa-triangle-exclamation text-danger me-1"></i> รายการสำนวนที่ใกล้ครบกำหนดเวลา (Alerts & Warnings)
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table tbl-ecmis table-hover mb-0" id="tblAlerts">
+                        <thead>
+                            <tr>
+                                <th>เลขสำนวน</th>
+                                <th>ชื่อเรื่อง</th>
+                                <th>สายงานติดตาม</th>
+                                <th>หน่วยงานปลายทาง</th>
+                                <th>ครบกำหนด (SLA)</th>
+                                <th>สถานะการเตือน</th>
+                                <th class="text-end">การดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tblAlertsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="assets/ecmis-app.js"></script>
+    <script src="assets/ecmis-model.js"></script>
+    <script>
+        ECMIS.renderShell('16-followup-dashboard.html');
+
+        const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const SAMPLE_FOLLOWUPS = [
+            { tcc_no: '2015/2569', subject: 'โครงการก่อสร้างระบบระบายน้ำ เทศบาลตำบลหนองบัว', agency: 'สำนักงาน ป.ป.ช.', category: 'CRIM', slaDays: 30, daysPassed: 18, targetDate: '2569-07-02', statusLabel: 'ส่ง ป.ป.ช. แล้ว', page: '72-09-ruling-report.html' },
+            { tcc_no: '1547/2568', subject: 'การจัดซื้ออุปกรณ์คอมพิวเตอร์ โรงเรียนอนุบาลประจำจังหวัด', agency: 'สำนักงานเขตพื้นที่การศึกษา', category: 'DISC', slaDays: 60, daysPassed: 52, targetDate: '2569-06-25', statusLabel: 'ส่งลงโทษทางวินัย', page: '72-09-ruling-report.html' },
+            { tcc_no: '0982/2568', subject: 'เบิกจ่ายงบประมาณซ่อมแซมถนน อบต.ดอนทอง', agency: 'สภ.เมืองนครปฐม', category: 'POLICE', slaDays: 90, daysPassed: 95, targetDate: '2569-05-15', statusLabel: 'ส่งพนักงานสอบสวน', page: '02-case-register.html' },
+            { tcc_no: '0412/2567', subject: 'ตรวจรับงานก่อสร้างอาคารสำนักงาน กรมชลประทาน', agency: 'กรมชลประทาน', category: 'DISC', slaDays: 60, daysPassed: 48, targetDate: '2569-06-28', statusLabel: 'รอรายงานผลวินัย', page: '72-09-ruling-report.html' },
+            { tcc_no: '0129/2567', subject: 'ร้องเรียนการปฏิบัติหน้าที่โดยมิชอบ กองช่าง เทศบาลเมือง', agency: 'สภ.บางกรวย', category: 'POLICE', slaDays: 90, daysPassed: 40, targetDate: '2569-07-20', statusLabel: 'พนักงานสอบสวนรับเรื่องแล้ว', page: '02-case-register.html' },
+            { tcc_no: '0054/2567', subject: 'ไม่ปรากฏพยานหลักฐานเพียงพอ โครงการขุดลอกคลอง', agency: 'สำนักงาน ป.ป.ท. เขต 1', category: 'CLOSED', slaDays: 0, daysPassed: 0, targetDate: '-', statusLabel: 'ปิดสำนวน (ไม่มีมูล)', page: '02-case-register.html' }
+        ];
+
+        function computeSlaStatus(row) {
+            if (row.category === 'CLOSED') return { tag: '<span class="sla-tag sla-ok">เสร็จสิ้น</span>', isWarn: false, isOverdue: false };
+            const remaining = row.slaDays - row.daysPassed;
+            if (remaining < 0) {
+                return { tag: `<span class="sla-tag sla-danger"><i class="fa-solid fa-circle-exclamation me-1"></i>เกินกำหนด ${Math.abs(remaining)} วัน</span>`, isWarn: false, isOverdue: true };
+            }
+            if (remaining <= 15) {
+                return { tag: `<span class="sla-tag sla-warning"><i class="fa-solid fa-clock me-1"></i>เตือน: เหลือ ${remaining} วัน</span>`, isWarn: true, isOverdue: false };
+            }
+            return { tag: `<span class="sla-tag sla-ok">ปกติ (เหลือ ${remaining} วัน)</span>`, isWarn: false, isOverdue: false };
+        }
+
+        function renderMiniTable(tblId, rows) {
+            const tbl = document.getElementById(tblId);
+            if (!rows.length) {
+                tbl.innerHTML = '<tbody><tr><td class="followup-empty">ไม่มีรายการ</td></tr></tbody>';
+                return;
+            }
+            tbl.innerHTML = `
+                <tbody>${rows.map(r => {
+                    const sla = computeSlaStatus(r);
+                    return `
+                    <tr>
+                        <td>
+                            <div class="fw-bold">${r.tcc_no}</div>
+                            <div class="text-truncate text-muted" style="max-width:140px;font-size:.72rem">${r.subject}</div>
+                        </td>
+                        <td class="text-end">
+                            ${sla.tag}<br>
+                            <a class="btn btn-xs btn-outline-navy py-0 px-1 mt-1" style="font-size:.7rem" href="${r.page}?case=${encodeURIComponent(r.tcc_no)}">ติดตาม</a>
+                        </td>
+                    </tr>`;
+                }).join('')}</tbody>`;
+        }
+
+        async function loadDashboard() {
+            let list = [...SAMPLE_FOLLOWUPS];
+
+            try {
+                const { data, error } = await sb
+                    .from('tbl_res_request')
+                    .select('trr_status, tbl_cmp_case!inner(tcc_no, tcc_subject, tcc_received_date)')
+                    .in('trr_status', ['114', '115', '116'])
+                    .eq('is_deleted', false);
+
+                if (!error && data && data.length) {
+                    const liveRows = data.map(r => {
+                        const cat = r.trr_status === '114' ? 'CRIM' : r.trr_status === '115' ? 'DISC' : 'CLOSED';
+                        return {
+                            tcc_no: r.tbl_cmp_case.tcc_no,
+                            subject: r.tbl_cmp_case.tcc_subject || '',
+                            agency: 'หน่วยงานที่เกี่ยวข้อง',
+                            category: cat,
+                            slaDays: cat === 'CRIM' ? 30 : 60,
+                            daysPassed: 20,
+                            targetDate: '2569-07-15',
+                            statusLabel: cat === 'CRIM' ? 'ส่ง ป.ป.ช.' : cat === 'DISC' ? 'ส่งลงโทษวินัย' : 'ปิดสำนวน',
+                            page: '72-09-ruling-report.html'
+                        };
+                    });
+                    list = [...liveRows, ...SAMPLE_FOLLOWUPS];
+                }
+            } catch (err) {
+                console.warn('โหลด Supabase ไม่สำเร็จ ใช้ mock data:', err);
+            }
+
+            const q = document.getElementById('searchCase').value.trim().toLowerCase();
+            const fCat = document.getElementById('filterStatus').value;
+
+            const filtered = list.filter(r => {
+                const matchQ = !q || r.tcc_no.toLowerCase().includes(q) || r.subject.toLowerCase().includes(q) || (r.agency && r.agency.toLowerCase().includes(q));
+                const matchC = fCat === 'ALL' || r.category === fCat;
+                return matchQ && matchC;
+            });
+
+            const nacc = filtered.filter(r => r.category === 'CRIM');
+            const guilty = filtered.filter(r => r.category === 'DISC');
+            const police = filtered.filter(r => r.category === 'POLICE');
+            const closed = filtered.filter(r => r.category === 'CLOSED');
+
+            document.getElementById('cntNacc').textContent = nacc.length;
+            document.getElementById('cntGuilty').textContent = guilty.length;
+            document.getElementById('cntPolice').textContent = police.length;
+            document.getElementById('cntClosed').textContent = closed.length;
+
+            renderMiniTable('tblNacc', nacc);
+            renderMiniTable('tblGuilty', guilty);
+            renderMiniTable('tblPolice', police);
+            renderMiniTable('tblClosed', closed);
+
+            // Render Alert Table
+            const alertRows = list.filter(r => {
+                const s = computeSlaStatus(r);
+                return s.isWarn || s.isOverdue;
+            });
+
+            document.getElementById('cntOverdue').textContent = alertRows.filter(r => computeSlaStatus(r).isOverdue).length;
+            document.getElementById('cntWarn15').textContent = alertRows.filter(r => computeSlaStatus(r).isWarn).length;
+
+            const alertsTb = document.getElementById('tblAlertsBody');
+            if (!alertRows.length) {
+                alertsTb.innerHTML = '<tr><td colspan="7" class="text-center py-3 text-muted">ไม่มีสำนวนที่อยู่ในเกณฑ์แจ้งเตือน</td></tr>';
+            } else {
+                alertsTb.innerHTML = alertRows.map(r => {
+                    const sla = computeSlaStatus(r);
+                    const catBadge = r.category === 'CRIM' ? '<span class="badge bg-danger">อาญา</span>'
+                        : r.category === 'DISC' ? '<span class="badge bg-warning text-dark">วินัย</span>'
+                        : '<span class="badge bg-primary">พนักงานสอบสวน</span>';
+
+                    return `
+                    <tr>
+                        <td class="fw-bold">${r.tcc_no}</td>
+                        <td class="text-truncate" style="max-width:280px">${r.subject}</td>
+                        <td>${catBadge}</td>
+                        <td>${r.agency || '-'}</td>
+                        <td>ครบกำหนด: ${r.targetDate} (${r.slaDays} วัน)</td>
+                        <td>${sla.tag}</td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-navy py-1 px-2" href="${r.page}?case=${encodeURIComponent(r.tcc_no)}">
+                                <i class="fa-solid fa-magnifying-glass-location me-1"></i>ติดตามสำนวน
+                            </a>
+                        </td>
+                    </tr>`;
+                }).join('');
+            }
+
+            document.getElementById('loadedAt').innerHTML =
+                `<span class="chip">อัปเดตล่าสุด ${new Date().toLocaleString('th-TH')}</span>`;
+        }
+
+        document.getElementById('searchCase').addEventListener('input', loadDashboard);
+        document.getElementById('filterStatus').addEventListener('change', loadDashboard);
+
+        loadDashboard();
+    </script>
+</body>
+
+</html>
