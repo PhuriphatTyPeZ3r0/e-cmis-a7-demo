@@ -40,6 +40,26 @@
 
     <div id="editGate"></div>
 
+    <div class="card card-ecmis mb-4">
+      <div class="card-body p-3 pb-2">
+        <label class="form-label fw-semibold text-dark small mb-2"><i class="fa-solid fa-layer-group me-1 text-muted"></i>คิวรอบรรจุวาระ — จัดหมวดตามลักษณะงาน</label>
+        <div class="d-flex flex-wrap gap-2" id="categoryChips"></div>
+        <div class="table-responsive mt-2 d-none" id="queueTableWrap">
+          <table class="table table-hover tbl-ecmis mb-0" style="font-size:.85rem">
+            <thead>
+              <tr>
+                <th>เรื่องที่</th>
+                <th>เรื่องกล่าวหา</th>
+                <th>สถานะ</th>
+                <th class="text-end">ดำเนินการ</th>
+              </tr>
+            </thead>
+            <tbody id="queueTb"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <div class="card card-ecmis">
       <div class="card-header">
         <i class="fa-solid fa-calendar-check"></i> ครั้งที่ประชุม
@@ -87,6 +107,119 @@
     </div>`;
       document.getElementById('btnAddMeeting').disabled = true;
     }
+
+    /* คิวรอบรรจุวาระ — เดิมอยู่ที่ 08-resolution-inbox.html แต่ concept นี้ (สำนวนที่รอถูกจัดวาระ
+       ยังไม่ใช่รายการมติที่บันทึกแล้ว) เข้ากับหน้าทะเบียนวาระนี้มากกว่า จึงย้ายมาไว้ที่นี่ — สถานะที่ใช้
+       จัดหมวดอ้างจาก STATUS map จริง (ecmis-app.js): AGENDA_SET/PENDING_INVITE_72 = รอดำเนินการที่
+       10-agenda-set.html, DEFERRED = เคยตีกลับ/เลื่อนวาระ รอเลขวาระใหม่ */
+    /* ใช้ AR.sb (client เดียวกับที่ agenda-registry-data.js สร้างไว้แล้ว) แทนการสร้าง client
+       ใหม่ซ้ำ — กันคำเตือน "Multiple GoTrueClient instances" เมื่อหน้าเดียวกันมีหลาย client */
+    const QUEUE_BUCKET = {
+      pending:  ['AGENDA_SET', 'PENDING_INVITE_72'],
+      rework:   ['MORE_INFO', 'DEFERRED'],
+      returned: ['RETURNED', 'ROUND_REWORK']
+    };
+    let queueCases = [];
+    let categoryFilterVal = 'ALL';
+
+    async function loadQueueCasesFromSupabase() {
+      try {
+        const wantedCodes = [...QUEUE_BUCKET.pending, ...QUEUE_BUCKET.rework, ...QUEUE_BUCKET.returned]
+          .map(k => ECMIS.STATUS_CODE[k]).filter(Boolean);
+        const { data, error } = await AR.sb
+          .from('tbl_res_request')
+          .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+          .in('trr_status', wantedCodes)
+          .eq('is_deleted', false);
+        if (error) throw error;
+        const mapped = (data || []).map(ECMIS.supabaseRowToCase).filter(Boolean)
+          .filter(c => ECMIS.canViewCase(c, role.id))
+          .filter(c => !AR.LINKED_TRR_IDS.has(c.trr_id));
+        if (mapped.length) return mapped;
+      } catch (err) {
+        console.warn('โหลดคิวจาก Supabase ไม่สำเร็จ ใช้รายการสำนวนจำลอง:', err);
+      }
+
+      // Fallback จาก ECMIS.CASES ให้มีครบทุกหมวดพร้อม Demo
+      return ECMIS.CASES.filter(c => {
+        return ['AGENDA_SET', 'PENDING_INVITE_72', 'DEFERRED', 'RETURNED', 'SUBCOMMITTEE_DONE'].includes(c.status) || c.urgent || c.urgent72;
+      }).map(c => Object.assign({}, c));
+    }
+
+    function getQueueCaseCategory(c) {
+      if (c.urgent || c.urgent72) return 'URGENT';
+      if (c.status === 'RETURNED' || c.status === 'ROUND_REWORK') return 'RETURN';
+      if (QUEUE_BUCKET.rework.includes(c.status) || c.status === 'DEFERRED') return 'REWORK';
+      return 'NEW';
+    }
+
+    function renderCategoryChips() {
+      const counts = { URGENT: 0, REWORK: 0, RETURN: 0, NEW: 0 };
+      queueCases.forEach(c => { const cat = getQueueCaseCategory(c); if (counts[cat] !== undefined) counts[cat]++; });
+      const chips = [
+        { id: 'ALL', l: 'ทั้งหมด', i: 'fa-list', c: '#0F2A62', n: queueCases.length },
+        { id: 'NEW', l: 'เรื่องใหม่', i: 'fa-file-circle-plus', c: '#0F2A62', n: counts.NEW },
+        { id: 'REWORK', l: 'เรื่องทำเพิ่ม', i: 'fa-rotate-left', c: '#D0A830', n: counts.REWORK },
+        { id: 'RETURN', l: 'กลับมาอีก', i: 'fa-arrows-rotate', c: '#6b3fa0', n: counts.RETURN },
+        { id: 'URGENT', l: 'เรื่องเร่งด่วน', i: 'fa-bolt', c: '#DB2626', n: counts.URGENT }
+      ];
+      document.getElementById('categoryChips').innerHTML = chips.map(k => {
+        const active = categoryFilterVal === k.id;
+        return `<button type="button" class="btn btn-sm ${active ? '' : 'btn-outline-secondary'}"
+            style="${active ? `background:${k.c};border-color:${k.c};color:#fff` : ''}"
+            onclick="setCategoryFilter('${k.id}')">
+          <i class="fa-solid ${k.i} me-1"></i>${k.l}
+          <span class="badge ${active ? 'bg-light text-dark' : 'bg-secondary'} ms-1">${k.n}</span>
+        </button>`;
+      }).join('');
+    }
+
+    function renderQueueTable() {
+      const wrap = document.getElementById('queueTableWrap');
+      const tbody = document.getElementById('queueTb');
+      const filtered = categoryFilterVal === 'ALL'
+        ? queueCases
+        : queueCases.filter(c => getQueueCaseCategory(c) === categoryFilterVal);
+      if (!filtered.length) { wrap.classList.add('d-none'); tbody.innerHTML = ''; return; }
+      wrap.classList.remove('d-none');
+      tbody.innerHTML = filtered.map(c => {
+        const is72 = ECMIS.isCase72(c);
+        const target = is72 ? ECMIS.pageForCase72(c) : '10-agenda-set.html';
+        const cat = getQueueCaseCategory(c);
+        const catBadge = cat === 'URGENT' ? '<span class="badge bg-danger ms-1">เร่งด่วน</span>'
+          : cat === 'REWORK' ? '<span class="badge bg-warning text-dark ms-1">ทำเพิ่ม</span>'
+          : cat === 'RETURN' ? '<span class="badge bg-purple text-white ms-1" style="background:#6b3fa0">กลับมาอีก</span>'
+          : '<span class="badge bg-primary ms-1">เรื่องใหม่</span>';
+
+        return `<tr>
+          <td class="case-no">${c.id} ${catBadge}</td>
+          <td class="text-truncate" style="max-width:320px">${c.subject}</td>
+          <td>${ECMIS.statusBadge(c.status)}</td>
+          <td class="text-end">
+            <a href="${target}?case=${encodeURIComponent(c.id)}" class="btn btn-sm btn-navy px-3">
+              <i class="fa-solid fa-pen-to-square me-1"></i>บรรจุวาระ
+            </a>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function setCategoryFilter(id) {
+      categoryFilterVal = id;
+      renderCategoryChips();
+      renderQueueTable();
+    }
+
+    /* ต้องรอ AR.ready ก่อนเสมอ — AR.LINKED_TRR_IDS (ใช้กรองเรื่องที่บรรจุวาระไปแล้วจริงออกจากคิว)
+       ถูก populate ระหว่าง AR.ready เท่านั้น ถ้าเรียกคิวก่อนจะกรองซ้ำไม่ได้ (เห็นเรื่องซ้ำในคิว) */
+    AR.ready.then(loadQueueCasesFromSupabase).then(cases => {
+      queueCases = cases;
+      renderCategoryChips();
+      renderQueueTable();
+    }).catch(err => {
+      console.error('โหลดคิวรอบรรจุวาระไม่สำเร็จ:', err);
+      ECMIS.toastWarn('โหลดคิวรอบรรจุวาระไม่สำเร็จ');
+    });
 
     let meetSortKey = 'name';
     let meetSortDir = 'desc';

@@ -401,12 +401,21 @@
             document.getElementById('btnAddCaseRow').addEventListener('click', () => addCaseRow());
             addCaseRow();
 
-            document.getElementById('swLookup').addEventListener('change', e => {
-              const hit = AR.lookupCaseForAgenda(e.target.value);
+            document.getElementById('swLookup').addEventListener('change', async e => {
               const statusEl = document.getElementById('swLookupStatus');
+              const q = e.target.value.trim();
+              if (!q) { statusEl.innerHTML = ''; return; }
+              statusEl.innerHTML = '<span class="text-muted"><i class="fa-solid fa-spinner fa-spin me-1"></i>กำลังค้นหา...</span>';
+              let hit = null;
+              try {
+                hit = await AR.lookupCaseForAgenda(q);
+              } catch (err) {
+                console.error('ค้นหาสำนวนไม่สำเร็จ:', err);
+                statusEl.innerHTML = '<span style="color:#8c261f"><i class="fa-solid fa-circle-xmark me-1"></i>ค้นหาไม่สำเร็จ ลองใหม่อีกครั้ง</span>';
+                return;
+              }
               if (!hit) {
-                statusEl.innerHTML = e.target.value.trim()
-                  ? '<span style="color:#8c261f"><i class="fa-solid fa-circle-xmark me-1"></i>ไม่พบสำนวนนี้ในระบบ — กรอกข้อมูลเองด้านล่าง</span>' : '';
+                statusEl.innerHTML = '<span style="color:#8c261f"><i class="fa-solid fa-circle-xmark me-1"></i>ไม่พบสำนวนนี้ในระบบ — กรอกข้อมูลเองด้านล่าง</span>';
                 return;
               }
               document.getElementById('swItemCat').value = hit.category;
