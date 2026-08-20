@@ -457,7 +457,6 @@ function resolvePage(path) {
     '13-agenda-registry.html': 'agenda-registry.html',
     '14-agenda-registry-detail.html': 'agenda-registry-detail.html',
     '15-agenda-meeting-docs.html': 'agenda-meeting-docs.html',
-    '16-followup-dashboard.html': 'followup-dashboard.html',
     'dashboard.html': 'dashboard.html',
     'followup-dashboard.html': 'followup-dashboard.html',
     '72-04-support-subcommittee.html': 'support-subcommittee.html',

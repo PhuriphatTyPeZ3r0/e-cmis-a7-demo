@@ -59,7 +59,6 @@ class SmartHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             "res/agenda-registry-detail": "res/agenda-registry-detail.html",
             "res/agenda-meeting-docs": "res/agenda-meeting-docs.html",
             "res/ruling-report": "res/ruling-report.html",
-            "16-followup-dashboard": "16-followup-dashboard.html",
             "followup-dashboard": "followup-dashboard.html",
             "dashboard": "dashboard.html",
             "login": "login.html",
