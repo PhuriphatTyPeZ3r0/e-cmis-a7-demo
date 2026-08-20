@@ -341,6 +341,18 @@ body.high-contrast .auth-tab.active{ background:#fff !important; color:#000 !imp
         <button type="submit" class="btn-login-submit">
           <i class="fa-solid fa-right-to-bracket"></i>เข้าสู่ระบบ
         </button>
+        <div class="mt-3 pt-2 text-center border-top">
+          <div style="font-size:0.75rem; color:#64748B; margin-bottom:6px; font-weight:600;">-- ทางลัดเลือกบทบาทเข้าสู่ระบบ (Demo Roles) --</div>
+          <div class="d-flex flex-wrap gap-1 justify-content-center">
+            <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:0.75rem" onclick="quickLogin('secgen')">เลขาธิการฯ</button>
+            <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:0.75rem" onclick="quickLogin('chairman')">ประธานฯ</button>
+            <button type="button" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size:0.75rem" onclick="quickLogin('board_sec')">กบค. (มติ)</button>
+            <button type="button" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size:0.75rem" onclick="quickLogin('affairs')">กบค. (กิจการ)</button>
+            <button type="button" class="btn btn-sm btn-outline-dark py-0 px-2" style="font-size:0.75rem" onclick="quickLogin('dir_case')">ผอ.กบค.</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem" onclick="quickLogin('owner')">เจ้าของสำนวน</button>
+            <button type="button" class="btn btn-sm btn-outline-info py-0 px-2" style="font-size:0.75rem" onclick="quickLogin('subcommittee')">อนุกลั่นกรองฯ</button>
+          </div>
+        </div>
       </form>
     </div>
 
@@ -463,6 +475,22 @@ function togglePasswordVisibility(){
   const show = input.type === 'password';
   input.type = show ? 'text' : 'password';
   icon.className = show ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+}
+
+function quickLogin(roleId){
+  const role = ECMIS.getRole(roleId);
+  sessionStorage.setItem('ecmis_role', role.id);
+  sessionStorage.setItem('ecmis_username', role.login || role.id);
+  sessionStorage.setItem('ecmis_authed', '1');
+  Swal.fire({
+    icon:'success',
+    title:'เข้าสู่ระบบสำเร็จ',
+    html:`ยินดีต้อนรับ <b>${role.title}</b><br>(${role.name})`,
+    timer: 700,
+    showConfirmButton: false
+  }).then(() => {
+    window.location.href = ECMIS.homeHref(role.id);
+  });
 }
 
 function handleLogin(event){
