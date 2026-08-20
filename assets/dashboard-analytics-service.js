@@ -254,9 +254,10 @@
       meetings: ['13/2568', '14/2568'],
       cat1: { accepted: 22, rejected: 76, forward_nacc: 4, investigate_more: 1 }, // Total 103
       cat2: { crim_and_disc: 47, crim_only: 0, disc_only: 0, dismissed: 25, forward_nacc: 2, prohibited_m25: 1, investigate_more: 6, other_legal: 0 }, // Total 81
-      cat3: { change_committee: 70, extend_time: 110, review_resolution: 5, dissenting_opinion: 3, appeal_petition: 7 }, // Total 195
-      cat4: { withdrawn: 1, postponed: 3 }, // Total 4
-      cat5: { accepted: 1, dismissed: 0, forward_agency: 0, guilty: 0, investigate_more: 0 } // Total 1
+      // [CLEANSED DATA] เมษายน 2568: แหล่งข้อมูลจริงมีเฉพาะหมวด 1-2 หมวด 3/4/5 ไม่มีข้อมูล = 0 (รวม 184 เรื่อง)
+      cat3: { change_committee: 0, extend_time: 0, review_resolution: 0, dissenting_opinion: 0, appeal_petition: 0 }, // Total 0
+      cat4: { withdrawn: 0, postponed: 0 }, // Total 0
+      cat5: { accepted: 0, dismissed: 0, forward_agency: 0, guilty: 0, investigate_more: 0 } // Total 0
     },
     '2568-05': {
       monthKey: '2568-05',
@@ -312,7 +313,10 @@
       quarter: 'Q4',
       meetings: ['21/2568', '22/2568'],
       cat1: { accepted: 20, rejected: 68, forward_nacc: 22, investigate_more: 5 }, // Total 115
-      cat2: { crim_and_disc: 38, crim_only: 2, disc_only: 1, dismissed: 18, forward_nacc: 1, prohibited_m25: 2, investigate_more: 9, other_legal: 3 }, // Total 74
+      // [CLEANSED DATA] สิงหาคม 2568: แหล่งข้อมูลจริงไม่มีหมวดย่อย "ชี้มูลวินัยอย่างเดียว" แยก
+      // ต่างหาก (disc_only ต้องเป็น 0 เสมอ) — ของเดิมใส่ 1 ไว้ ทำให้ยอดรวมหมวด 2 (74) ไม่ตรงกับ
+      // ผลรวมของ 7 แถวที่แสดงจริงในตาราง Excel (73)
+      cat2: { crim_and_disc: 38, crim_only: 2, disc_only: 0, dismissed: 18, forward_nacc: 1, prohibited_m25: 2, investigate_more: 9, other_legal: 3 }, // Total 73
       cat3: { change_committee: 75, extend_time: 115, review_resolution: 4, dissenting_opinion: 5, appeal_petition: 6 }, // Total 205
       cat4: { withdrawn: 2, postponed: 4 }, // Total 6
       cat5: { accepted: 1, dismissed: 1, forward_agency: 0, guilty: 0, investigate_more: 0 } // Total 2

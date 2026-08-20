@@ -229,16 +229,16 @@
             border-color: #CBD5E1;
         }
 
-        /* ── KPI Strip (War Room 4 Cards) ── */
+        /* ── KPI Strip (War Room 5 Cards — matches CommitteeStats.razor's 5-category split) ── */
         .wr-kpi-strip {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 14px;
             margin-bottom: 1.25rem;
         }
 
-        @media (max-width: 992px) {
-            .wr-kpi-strip { grid-template-columns: repeat(2, 1fr); }
+        @media (max-width: 1200px) {
+            .wr-kpi-strip { grid-template-columns: repeat(3, 1fr); }
         }
         @media (max-width: 576px) {
             .wr-kpi-strip { grid-template-columns: 1fr; }
@@ -275,16 +275,19 @@
         .wr-kpi.kc-teal   { background: rgba(13, 148, 136, .14); border-color: rgba(52, 211, 153, .28); }
         .wr-kpi.kc-red    { background: rgba(220, 38, 38, .14);  border-color: rgba(248, 113, 113, .28); }
         .wr-kpi.kc-amber  { background: rgba(217, 119, 6, .15);  border-color: rgba(251, 191, 36, .28); }
+        .wr-kpi.kc-purple { background: rgba(124, 58, 237, .15); border-color: rgba(167, 139, 250, .28); }
 
         .wr-kpi.kc-blue   { background: #EFF6FF; border-color: #BFDBFE; }
         .wr-kpi.kc-teal   { background: #ECFDF5; border-color: #A7F3D0; }
         .wr-kpi.kc-red    { background: #FEF2F2; border-color: #FECACA; }
         .wr-kpi.kc-amber  { background: #FFFBEB; border-color: #FDE68A; }
+        .wr-kpi.kc-purple { background: #F5F3FF; border-color: #DDD6FE; }
 
         .kc-blue::after   { background: linear-gradient(90deg, #3b82f6, #6366f1); }
         .kc-teal::after   { background: linear-gradient(90deg, #14b8a6, #10b981); }
         .kc-red::after    { background: linear-gradient(90deg, #ef4444, #f97316); }
         .kc-amber::after  { background: linear-gradient(90deg, #f59e0b, #eab308); }
+        .kc-purple::after { background: linear-gradient(90deg, #7c3aed, #a855f7); }
 
         .wr-kpi-icon {
             font-size: 1.25rem;
@@ -295,11 +298,13 @@
         .kc-teal .wr-kpi-icon   { color: #34d399; }
         .kc-red .wr-kpi-icon    { color: #f87171; }
         .kc-amber .wr-kpi-icon  { color: #fbbf24; }
+        .kc-purple .wr-kpi-icon { color: #c4b5fd; }
 
         .kc-blue .wr-kpi-icon   { color: #1D4ED8; }
         .kc-teal .wr-kpi-icon   { color: #059669; }
         .kc-red .wr-kpi-icon    { color: #DC2626; }
         .kc-amber .wr-kpi-icon  { color: #D97706; }
+        .kc-purple .wr-kpi-icon { color: #7C3AED; }
 
         .wr-kpi-label {
             font-size: 0.8rem;
@@ -318,11 +323,13 @@
         .kc-teal .wr-kpi-value   { color: #34d399; }
         .kc-red .wr-kpi-value    { color: #f87171; }
         .kc-amber .wr-kpi-value  { color: #fbbf24; }
+        .kc-purple .wr-kpi-value { color: #c4b5fd; }
 
         .kc-blue .wr-kpi-value   { color: #0F2A62; }
         .kc-teal .wr-kpi-value   { color: #166534; }
         .kc-red .wr-kpi-value    { color: #991B1B; }
         .kc-amber .wr-kpi-value  { color: #92400E; }
+        .kc-purple .wr-kpi-value { color: #5B21B6; }
 
         .wr-kpi-sub {
             font-size: 0.72rem;
@@ -660,12 +667,20 @@
                 <div class="wr-kpi-sub" id="kpiCat2Meta">ชี้มูล 35 | ตกไป 15 | ไต่สวนเพิ่ม 10</div>
             </div>
 
-            <!-- Card 4: General / Postponed (kc-amber) -->
-            <div class="wr-kpi kc-amber" onclick="DashboardExportService.showDrilldownModal({ month: currentFilter.month, categoryKey:'cat3', itemKey:'all', label:'เรื่องทั่วไป / ถอนเลื่อน / ประพฤติมิชอบ', count: (currentData.categories.cat3.total + currentData.categories.cat4.total) })">
+            <!-- Card 4: หมวด 3 เรื่องทั่วไป เดี่ยว (kc-amber) -->
+            <div class="wr-kpi kc-amber" onclick="DashboardExportService.showDrilldownModal({ month: currentFilter.month, categoryKey:'cat3', itemKey:'all', label:'เรื่องทั่วไป', count: currentData.categories.cat3.total })">
                 <div class="wr-kpi-icon"><i class="fa-solid fa-folder-tree"></i></div>
-                <div class="wr-kpi-label">เรื่องทั่วไป / ถอนเลื่อน / มิชอบ</div>
-                <div class="wr-kpi-value" id="kpiCat345Total">221</div>
-                <div class="wr-kpi-sub" id="kpiCat345Meta">เรื่องทั่วไป 216 | ถอน/เลื่อน 5</div>
+                <div class="wr-kpi-label">3. เรื่องทั่วไป</div>
+                <div class="wr-kpi-value" id="kpiCat3Total">216</div>
+                <div class="wr-kpi-sub">วาระทั่วไป</div>
+            </div>
+
+            <!-- Card 5: หมวด 4-5 ถอน/เลื่อน & ประพฤติมิชอบ รวมกัน (kc-purple) -->
+            <div class="wr-kpi kc-purple" onclick="DashboardExportService.showDrilldownModal({ month: currentFilter.month, categoryKey:'cat4', itemKey:'all', label:'ถอน/เลื่อนการประชุม และคดีประพฤติมิชอบ', count: (currentData.categories.cat4.total + currentData.categories.cat5.total) })">
+                <div class="wr-kpi-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
+                <div class="wr-kpi-label">4-5. ถอน/เลื่อน & มิชอบ</div>
+                <div class="wr-kpi-value" id="kpiCat45Total">5</div>
+                <div class="wr-kpi-sub" id="kpiCat45Meta">ถอน/เลื่อน 5 | มิชอบ 0</div>
             </div>
         </div>
 
@@ -810,8 +825,10 @@
             document.getElementById('kpiCat1Total').textContent = DashboardChartService.formatNumber(data.categories.cat1.total);
             document.getElementById('kpiCat2Total').textContent = DashboardChartService.formatNumber(data.categories.cat2.total);
 
-            const cat345Sum = (data.categories.cat3.total || 0) + (data.categories.cat4.total || 0) + (data.categories.cat5.total || 0);
-            document.getElementById('kpiCat345Total').textContent = DashboardChartService.formatNumber(cat345Sum);
+            document.getElementById('kpiCat3Total').textContent = DashboardChartService.formatNumber(data.categories.cat3.total || 0);
+
+            const cat45Sum = (data.categories.cat4.total || 0) + (data.categories.cat5.total || 0);
+            document.getElementById('kpiCat45Total').textContent = DashboardChartService.formatNumber(cat45Sum);
 
             // Sub-details for Cat 1
             const c1Acc = data.categories.cat1.items?.accepted?.count || 0;
@@ -826,10 +843,10 @@
             const c2More = data.categories.cat2.items?.investigate_more?.count || 0;
             document.getElementById('kpiCat2Meta').textContent = `ชี้มูล ${c2Both + c2Crim} | ตกไป ${c2Dism} | ส่งเพิ่ม ${c2More}`;
 
-            // Sub-details for Cat 3/4/5
-            const c3Tot = data.categories.cat3.total || 0;
+            // Sub-details for Cat 4/5
             const c4Tot = data.categories.cat4.total || 0;
-            document.getElementById('kpiCat345Meta').textContent = `เรื่องทั่วไป ${c3Tot} | ถอน/เลื่อน ${c4Tot}`;
+            const c5Tot = data.categories.cat5.total || 0;
+            document.getElementById('kpiCat45Meta').textContent = `ถอน/เลื่อน ${c4Tot} | มิชอบ ${c5Tot}`;
 
             // Timestamp
             document.getElementById('loadedTimestamp').innerHTML =
