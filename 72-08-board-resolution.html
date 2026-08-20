@@ -165,6 +165,12 @@
               <textarea class="form-control" id="presenterNote" rows="2"
                 placeholder="ผู้ชี้แจงเพิ่มเติมว่า..."></textarea>
             </div>
+
+            <div class="mt-3" id="ownerClarificationBox">
+              <label class="form-label">คำชี้แจงจากเจ้าของสำนวน (ถ้ามี)</label>
+              <textarea class="form-control" id="ownerClarification" rows="3"
+                placeholder="เจ้าของสำนวนชี้แจงเพิ่มเติมว่า..."></textarea>
+            </div>
           </div>
         </div>
 
@@ -191,15 +197,62 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/pizzip@3/dist/pizzip.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/build/docxtemplater.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/ecmis-app.js"></script>
   <script src="assets/ecmis-model.js"></script>
   <script>
     ECMIS.renderShell('72-08-board-resolution.html');
 
-    const params = new URLSearchParams(location.search);
-    const kase = ECMIS.getCase(params.get('case') || '2015/2569');
-    const role = ECMIS.currentRole();
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    async function loadCaseFromSupabase(caseId) {
+      const { data, error } = await sb
+        .from('tbl_res_request')
+        .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+        .eq('tbl_cmp_case.tcc_no', caseId)
+        .eq('is_deleted', false)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? ECMIS.supabaseRowToCase(data) : null;
+    }
+
+    /* บันทึกกลับ tbl_res_request จริงเฉพาะ trr_status — ฟิลด์รายละเอียดมติ (resolution72,
+       boardOpinion72, investigatorOpinion72, ownerClarification72 ฯลฯ) ยังไม่มีคอลัมน์ใน Supabase
+       จึงคง set บน kase ในหน่วยความจำไว้ให้ 72-09-ruling-report.html อ่านต่อได้เหมือนเดิม (ตามรูปแบบ
+       เดียวกับ persistCase ใน 04-approval-review.html / 06-chairman-agenda.html) — ไม่ถูกบันทึก
+       ข้ามหน้า/ข้ามอุปกรณ์ */
+    async function persistCase(kase, patch) {
+      const dbPatch = {};
+      if ('status' in patch) {
+        const code = ECMIS.STATUS_CODE[patch.status];
+        if (!code) throw new Error(`ไม่พบรหัสสถานะสำหรับ ${patch.status}`);
+        dbPatch.trr_status = code;
+      }
+      const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
+      if (error) throw error;
+      Object.assign(kase, patch);
+    }
+
+    const params = new URLSearchParams(location.search);
+    const role = ECMIS.currentRole();
+    let kase;
+
+    (async function main() {
+      try {
+        kase = await loadCaseFromSupabase(params.get('case') || '2015/2569');
+      } catch (err) {
+        console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+        ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
+        return;
+      }
+      if (!kase) { ECMIS.toastWarn('ไม่พบสำนวนนี้ในระบบ'); return; }
+
+      renderPage();
+    })();
+
+    function renderPage() {
     document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
     document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72);
     if (kase.meetingNo) document.getElementById('meetNo').value = kase.meetingNo;
@@ -218,6 +271,14 @@
 
     const mayEdit = ECMIS.canEditMaster(role.id) || ECMIS.can('record.minutes', role.id);
     const mayView = ECMIS.canViewCase(kase, role.id);
+
+    /* คำชี้แจงจากเจ้าของสำนวน — กรอกได้เฉพาะ role owner, บทบาทอื่นเป็น read-only */
+    const ownerClarificationEl = document.getElementById('ownerClarification');
+    ownerClarificationEl.value = kase.ownerClarification || kase.ownerClarification72 || '';
+    if (role.id !== 'owner') {
+      ownerClarificationEl.readOnly = true;
+      document.getElementById('ownerClarificationBox').classList.toggle('d-none', !ownerClarificationEl.value);
+    }
 
     if (!mayView) {
       document.getElementById('editGate').innerHTML = `
@@ -458,6 +519,8 @@
         bi(`<div class="doc-h">การชี้แจงเพิ่มเติม</div>
       <div class="doc-indent">ผู้ชี้แจง (${M(presenter)}) ชี้แจงเพิ่มเติมว่า
         ${M(presenterNote, '………………………………………………………………………………………………')}</div>`),
+        ...(document.getElementById('ownerClarification').value.trim() ? [bi(`<div class="doc-h">คำชี้แจงจากเจ้าของสำนวน</div>
+      <div class="doc-indent">${M(document.getElementById('ownerClarification').value.trim())}</div>`)] : []),
         bi(`<div class="doc-h">ความเห็นที่ประชุม</div>
       <div class="doc-indent">คณะกรรมการ ป.ป.ท. พิจารณาแล้วเห็นว่า
         ${M(opinion, '………………………………………………………………………………………………')}</div>`),
@@ -497,7 +560,7 @@
     }
 
     document.getElementById('resList').addEventListener('change', () => { toggleBoxes(); renderDoc(); });
-    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'presenter', 'presenterNote', 'investigatorRef', 'investigatorOpinion',
+    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'presenter', 'presenterNote', 'ownerClarification', 'investigatorRef', 'investigatorOpinion',
       'moreScope', 'moreReason', 'noMeritOther', 'criminalFinding', 'disciplinaryFinding', 'guiltyDiscipline', 'flightRisk']
       .forEach(id => {
         const el = document.getElementById(id); if (el) { el.addEventListener('input', renderDoc); el.addEventListener('change', renderDoc); }
@@ -513,7 +576,7 @@
     document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons());
     document.querySelectorAll('.action-bar [data-act]').forEach(b => b.addEventListener('click', () => handle(b.dataset.act)));
 
-    function handle(act) {
+    async function handle(act) {
       if (act === 'save') { ECMIS.toastOk('บันทึกร่างมติเรียบร้อย'); return; }
 
       if (act === 'lock') {
@@ -564,7 +627,7 @@
           ${r.code === 'GUILTY_72' ? `• เปิดสายดำเนินคดี: ${[crim ? 'อาญา' : null, disc ? 'วินัย' : null].filter(Boolean).join(' + ')}<br>` : ''}
         </div></div>`,
           confirmText: 'ยืนยันบันทึกมติ'
-        }).then(res => {
+        }).then(async res => {
           if (!res.isConfirmed) return;
 
           const patch = {
@@ -574,7 +637,8 @@
             resolutionDate72: document.getElementById('meetDate').value.trim(),
             investigatorRef72: document.getElementById('investigatorRef').value.trim(),
             investigatorOpinion72: document.getElementById('investigatorOpinion').value.trim(),
-            presenterNote72: document.getElementById('presenterNote').value.trim()
+            presenterNote72: document.getElementById('presenterNote').value.trim(),
+            ownerClarification72: document.getElementById('ownerClarification').value.trim()
           };
           if (r.code === 'MORE_INVESTIGATE_72') {
             const reasonText = document.getElementById('moreReason').value.trim();
@@ -597,7 +661,13 @@
             if (crim && !kase.criminalFinding72) patch.criminalFinding72 = document.getElementById('criminalFinding').value.trim();
             if (disc && !kase.disciplinaryFinding72) patch.disciplinaryFinding72 = document.getElementById('disciplinaryFinding').value.trim();
           }
-          ECMIS.Model.CaseStore.update(kase.id, patch);
+          try {
+            await persistCase(kase, patch);
+          } catch (err) {
+            console.error('บันทึกมติไม่สำเร็จ:', err);
+            ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+            return;
+          }
           ECMIS.toastOk('บันทึกมติและล็อก PDF เรียบร้อย');
           setTimeout(() => location.href = '72-09-ruling-report.html?case=' + encodeURIComponent(kase.id), 1400);
         });
@@ -693,6 +763,7 @@
     }
 
     toggleBoxes(); renderQuorum(); renderDoc();
+    }
   </script>
 </body>
 

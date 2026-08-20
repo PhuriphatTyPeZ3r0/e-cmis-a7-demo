@@ -51,14 +51,59 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/ecmis-app.js"></script>
   <script>
     ECMIS.renderShell('72-04-support-subcommittee.html');
 
-    const params = new URLSearchParams(location.search);
-    const kase = ECMIS.getCase(params.get('case') || '2015/2569');
-    const role = ECMIS.currentRole();
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    async function loadCaseFromSupabase(caseId) {
+      const { data, error } = await sb
+        .from('tbl_res_request')
+        .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+        .eq('tbl_cmp_case.tcc_no', caseId)
+        .eq('is_deleted', false)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? ECMIS.supabaseRowToCase(data) : null;
+    }
+
+    /* supportTeam72/supportOpinion72 ไม่มีคอลัมน์ใน Supabase จึงคง set บน kase ในหน่วยความจำไว้
+       เหมือนเดิม เพียงแต่ไม่ถูกบันทึกข้ามหน้า/ข้ามอุปกรณ์ — ตามรูปแบบเดียวกับ persistCase ใน
+       04-approval-review.html / 72-08-board-resolution.html */
+    async function persistCase(kase, patch) {
+      const dbPatch = {};
+      if ('status' in patch) {
+        const code = ECMIS.STATUS_CODE[patch.status];
+        if (!code) throw new Error(`ไม่พบรหัสสถานะสำหรับ ${patch.status}`);
+        dbPatch.trr_status = code;
+      }
+      const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
+      if (error) throw error;
+      Object.assign(kase, patch);
+    }
+
+    const params = new URLSearchParams(location.search);
+    const role = ECMIS.currentRole();
+    let kase;
+
+    (async function main() {
+      try {
+        kase = await loadCaseFromSupabase(params.get('case') || '2015/2569');
+      } catch (err) {
+        console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+        ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
+        return;
+      }
+      if (!kase) { ECMIS.toastWarn('ไม่พบสำนวนนี้ในระบบ'); return; }
+
+      renderPage();
+    })();
+
+    function renderPage() {
     document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
     document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72);
 
@@ -97,14 +142,13 @@
       return el ? el.value : 'TEAM1';
     }
 
-    function handle(act) {
+    async function handle(act) {
       const team = TEAMS.find(t => t.code === selectedTeam());
       const op = document.getElementById('supportOpinion');
 
       if (act === 'save') {
         kase.supportTeam72 = team.code;
         kase.supportOpinion72 = op.value.trim();
-        ECMIS.saveCases();
         ECMIS.toastOk('บันทึกร่างความเห็นเรียบร้อย');
         return;
       }
@@ -128,16 +172,24 @@
           title: 'ส่งความเห็นกลับเลขาธิการฯ',
           html: `<p>สำนวน <strong>${kase.id}</strong> — กลั่นกรองโดย <strong>${team.label}</strong></p>`,
           confirmText: 'ยืนยันส่งกลับ'
-        }).then(res => {
+        }).then(async res => {
           if (!res.isConfirmed) return;
-          kase.supportTeam72 = team.code;
-          kase.supportOpinion72 = op.value.trim();
-          kase.status = isUrgent ? 'PENDING_URGENT_72' : 'IN_SCREENING_72';
-          ECMIS.saveCases();
+          try {
+            await persistCase(kase, {
+              supportTeam72: team.code,
+              supportOpinion72: op.value.trim(),
+              status: isUrgent ? 'PENDING_URGENT_72' : 'IN_SCREENING_72'
+            });
+          } catch (err) {
+            console.error('ส่งความเห็นไม่สำเร็จ:', err);
+            ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+            return;
+          }
           ECMIS.toastOk('ส่งความเห็นกลับเลขาธิการฯ เรียบร้อย');
           setTimeout(() => location.href = next.p + '?case=' + encodeURIComponent(kase.id), 1400);
         });
       }
+    }
     }
   </script>
 </body>
