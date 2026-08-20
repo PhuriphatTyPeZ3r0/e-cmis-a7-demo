@@ -116,12 +116,40 @@
               </div>
               <div class="col-md-6"><label class="form-label field-req">ประเภทโทษทางวินัย</label>
                 <select class="form-select" id="discPenalty">
-                  <option value="">— เลือกประเภทโทษ —</option>
-                  <option value="ภาคทัณฑ์">ภาคทัณฑ์</option>
-                  <option value="ตัดเงินเดือน">ตัดเงินเดือน</option>
-                  <option value="ลดเงินเดือน">ลดเงินเดือน</option>
-                  <option value="ปลดออก">ปลดออก</option>
-                  <option value="ไล่ออก">ไล่ออก</option>
+                  <option value="">— เลือกประเภทโทษทางวินัย —</option>
+                  <optgroup label="ข้าราชการพลเรือน">
+                    <option value="ภาคทัณฑ์">ภาคทัณฑ์</option>
+                    <option value="ตัดเงินเดือน">ตัดเงินเดือน</option>
+                    <option value="ลดเงินเดือน">ลดเงินเดือน</option>
+                    <option value="ปลดออก">ปลดออก</option>
+                    <option value="ไล่ออก">ไล่ออก</option>
+                  </optgroup>
+                  <optgroup label="วินัยทหาร (พ.ร.บ.ว่าด้วยวินัยทหาร พ.ศ. ๒๔๗๖)">
+                    <option value="ภาคทัณฑ์ (ทหาร)">ภาคทัณฑ์ (ทหาร)</option>
+                    <option value="ทัณฑกรรม (ทหาร)">ทัณฑกรรม (ทหาร)</option>
+                    <option value="กัก (ทหาร)">กัก (ทหาร)</option>
+                    <option value="ขัง (ทหาร)">ขัง (ทหาร)</option>
+                    <option value="จำขัง (ทหาร)">จำขัง (ทหาร)</option>
+                    <option value="ปลดออกจากประจำการ (ทหาร)">ปลดออกจากประจำการ (ทหาร)</option>
+                    <option value="ไล่ออกจากประจำการ (ทหาร)">ไล่ออกจากประจำการ (ทหาร)</option>
+                  </optgroup>
+                  <optgroup label="ข้าราชการตำรวจ (พ.ร.บ.ตำรวจแห่งชาติ)">
+                    <option value="ภาคทัณฑ์ (ตำรวจ)">ภาคทัณฑ์ (ตำรวจ)</option>
+                    <option value="ทัณฑกรรม (ตำรวจ)">ทัณฑกรรม (ตำรวจ)</option>
+                    <option value="กักยาม (ตำรวจ)">กักยาม (ตำรวจ)</option>
+                    <option value="กักขัง (ตำรวจ)">กักขัง (ตำรวจ)</option>
+                    <option value="ตัดเงินเดือน (ตำรวจ)">ตัดเงินเดือน (ตำรวจ)</option>
+                    <option value="ปลดออก (ตำรวจ)">ปลดออก (ตำรวจ)</option>
+                    <option value="ไล่ออก (ตำรวจ)">ไล่ออก (ตำรวจ)</option>
+                  </optgroup>
+                  <optgroup label="พนักงานรัฐวิสาหกิจ / องค์กรปกครองส่วนท้องถิ่น">
+                    <option value="ภาคทัณฑ์ (รัฐวิสาหกิจ/ท้องถิ่น)">ภาคทัณฑ์</option>
+                    <option value="ตัดเงินเดือน/ตัดค่าจ้าง">ตัดเงินเดือน/ตัดค่าจ้าง</option>
+                    <option value="ลดขั้นเงินเดือน/ค่าจ้าง">ลดขั้นเงินเดือน/ค่าจ้าง</option>
+                    <option value="ให้ออก (รัฐวิสาหกิจ/ท้องถิ่น)">ให้ออก</option>
+                    <option value="ปลดออก (รัฐวิสาหกิจ/ท้องถิ่น)">ปลดออก</option>
+                    <option value="ไล่ออก (รัฐวิสาหกิจ/ท้องถิ่น)">ไล่ออก</option>
+                  </optgroup>
                 </select>
               </div>
               <div class="col-12"><label class="form-label field-req">พฤติการณ์ความผิดทางวินัย</label><textarea class="form-control" id="discMisconduct" rows="3"></textarea></div>
@@ -130,6 +158,14 @@
               <i class="fa-solid fa-circle-info me-1"></i>ฐานกฎหมายและกำหนดเวลา (ม.38 หรือ ม.38+ม.44 · 60 วัน / 15 วัน)
               ระบบกำหนดให้อัตโนมัติตามมาตรฐาน ปปท. 8-05/8-06 — ไม่ต้องกรอกเอง
             </div>
+          </div>
+        </div>
+
+        <div class="ws-card mb-3" id="offenseBasisCard">
+          <div class="card-header"><i class="fa-solid fa-list-check"></i> ฐานความผิด/มาตรา ต่อผู้ถูกกล่าวหา (คลิกเลือก)</div>
+          <div class="card-body">
+            <div id="offenseBasisLoading" class="text-muted small">กำลังโหลดข้อมูล...</div>
+            <div id="offenseBasisBody"></div>
           </div>
         </div>
       </div>
@@ -154,6 +190,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/ecmis-app.js"></script>
   <script src="assets/ecmis-model.js"></script>
   <script>
@@ -175,6 +212,162 @@
       { n: 'นายกมล สกลเดชา', r: 'กรรมการ ป.ป.ท.' },
       { n: 'นายสุรพงษ์ อินทรถาวร', r: 'กรรมการ ป.ป.ท.' }
     ];
+
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    /* ฐานความผิด/มาตรา ต่อผู้ถูกกล่าวหา — ผูกกับ tbl_res_offense_basis / tbl_res_accused_offense
+       จริงบน Supabase (หน้านี้ส่วนอื่นยังใช้ mock CaseStore) เพราะต้องอ้าง tcca_id จริงของผู้ถูกกล่าวหา
+       แต่ละคนจาก tbl_cmp_case_accused ถึงจะเลือกฐานความผิดแยกรายคน + กันเลือกซ้ำข้ามหน้าได้ */
+    const DEFAULT_OFFENSE_BASIS = [
+      { trob_id: 1, trob_group: 'ประมวลกฎหมายอาญา', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๕๗', trob_article_label: 'เจ้าพนักงานปฏิบัติหรือละเว้นการปฏิบัติหน้าที่โดยมิชอบ', trob_sort_order: 1 },
+      { trob_id: 2, trob_group: 'ประมวลกฎหมายอาญา', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๖๒', trob_article_label: 'เจ้าพนักงานทำเอกสารเท็จ', trob_sort_order: 2 },
+      { trob_id: 3, trob_group: 'ประมวลกฎหมายอาญา', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๖๔', trob_article_label: 'เจ้าพนักงานเปิดเผยความลับในราชการ', trob_sort_order: 3 },
+      { trob_id: 4, trob_group: 'ประมวลกฎหมายอาญา', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๔๙', trob_article_label: 'เจ้าพนักงานเรียก รับ หรือยอมจะรับทรัพย์สิน', trob_sort_order: 4 },
+      { trob_id: 5, trob_group: 'ประมวลกฎหมายอาญา', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๕๑', trob_article_label: 'เจ้าพนักงานใช้อำนาจในตำแหน่งโดยทุจริต', trob_sort_order: 5 },
+      { trob_id: 6, trob_group: 'ประมวลกฎหมายอาญา', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๕๒', trob_article_label: 'เจ้าพนักงานเข้ามีส่วนได้เสียในกิจการ', trob_sort_order: 6 },
+      { trob_id: 7, trob_group: 'ประมวลกฎหมายอาญา', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๒๐๑', trob_article_label: 'เจ้าพนักงานในตำแหน่งตุลาการเรียกรับประโยชน์', trob_sort_order: 7 },
+      { trob_id: 8, trob_group: 'พ.ร.บ. ป.ป.ช. พ.ศ. ๒๕๖๑', trob_law_name: 'พ.ร.บ. ประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต', trob_article_no: 'มาตรา ๑๒๘', trob_article_label: 'ห้ามรับทรัพย์สินหรือประโยชน์อื่นใด', trob_sort_order: 8 },
+      { trob_id: 9, trob_group: 'พ.ร.บ. ป.ป.ช. พ.ศ. ๒๕๖๑', trob_law_name: 'พ.ร.บ. ประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต', trob_article_no: 'มาตรา ๑๗๒', trob_article_label: 'เจ้าพนักงานของรัฐปฏิบัติหรือละเว้นการปฏิบัติอย่างใดในตำแหน่งหรือหน้าที่', trob_sort_order: 9 },
+      { trob_id: 10, trob_group: 'พ.ร.บ. การจัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ พ.ศ. ๒๕๖๐', trob_law_name: 'พ.ร.บ. จัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ พ.ศ. ๒๕๖๐', trob_article_no: 'มาตรา ๑๒๐', trob_article_label: 'ผู้มีหน้าที่ปฏิบัติการจัดซื้อจัดจ้างปฏิบัติหรือละเว้นการปฏิบัติโดยมิชอบ', trob_sort_order: 10 },
+      { trob_id: 11, trob_group: 'พ.ร.บ. ว่าด้วยความผิดเกี่ยวกับการเสนอราคาต่อหน่วยงานของรัฐ พ.ศ. ๒๕๔๒', trob_law_name: 'พ.ร.บ. ว่าด้วยความผิดเกี่ยวกับการเสนอราคาต่อหน่วยงานของรัฐ พ.ศ. ๒๕๔๒', trob_article_no: 'มาตรา ๑๐', trob_article_label: 'เจ้าหน้าที่ใช้อำนาจเอื้อประโยชน์ในการเสนอราคา', trob_sort_order: 11 },
+      { trob_id: 12, trob_group: 'พ.ร.บ. ว่าด้วยความผิดเกี่ยวกับการเสนอราคาต่อหน่วยงานของรัฐ พ.ศ. ๒๕๔๒', trob_law_name: 'พ.ร.บ. ว่าด้วยความผิดเกี่ยวกับการเสนอราคาต่อหน่วยงานของรัฐ พ.ศ. ๒๕๔๒', trob_article_no: 'มาตรา ๑๒', trob_article_label: 'เจ้าหน้าที่ละเว้นมิให้มีการแข่งขันราคาอย่างเป็นธรรม', trob_sort_order: 12 }
+    ];
+
+    let offenseBasisList = [];
+    let accusedRealList = [];
+
+    async function loadOffenseBasisData() {
+      try {
+        const [{ data: caseRow, error: caseErr }, { data: basisRows, error: basisErr }] = await Promise.all([
+          sb.from('tbl_cmp_case').select('tcc_id, tbl_cmp_case_accused(*)').eq('tcc_no', kase.id).maybeSingle(),
+          sb.from('tbl_res_offense_basis').select('*').eq('is_deleted', false).order('trob_sort_order')
+        ]);
+        offenseBasisList = (basisRows && basisRows.length) ? basisRows : DEFAULT_OFFENSE_BASIS;
+
+        let accusedRows = ((caseRow && caseRow.tbl_cmp_case_accused) || [])
+          .filter(a => !a.is_deleted).sort((a, b) => (a.tcca_no || 0) - (b.tcca_no || 0));
+
+        if (!accusedRows.length && kase.accused && kase.accused.length) {
+          accusedRows = kase.accused.map((a, idx) => ({
+            tcca_id: 9000 + idx,
+            tcca_name: a.name,
+            tcca_position: a.pos,
+            tcca_agency: a.agency || kase.agency || ''
+          }));
+        }
+
+        if (!accusedRows.length) {
+          accusedRows = [{ tcca_id: 9001, tcca_name: kase.accusedName || 'นายสมศักดิ์ ข้าราชการ', tcca_position: 'ผู้อำนวยการกอง', tcca_agency: kase.agency || 'กรมชลประทาน' }];
+        }
+
+        const tccaIds = accusedRows.map(a => a.tcca_id);
+        const { data: selRows } = await sb.from('tbl_res_accused_offense')
+          .select('tcca_id, trob_id').eq('is_deleted', false).in('tcca_id', tccaIds);
+
+        accusedRealList = accusedRows.map(a => ({
+          tcca_id: a.tcca_id, name: a.tcca_name, pos: a.tcca_position, agency: a.tcca_agency,
+          selected: new Set((selRows || []).filter(s => s.tcca_id === a.tcca_id).map(s => s.trob_id))
+        }));
+
+        // Default: ถ้ายังไม่เคยเลือก ให้ pre-select มาตรา 157 สำหรับคนแรกเพื่อเป็นตัวอย่างพร้อมใช้ทันที
+        if (accusedRealList[0] && accusedRealList[0].selected.size === 0) {
+          accusedRealList[0].selected.add(1); // 157
+        }
+
+        return true;
+      } catch (err) {
+        console.warn('โหลดฐานความผิดแบบ live ไม่สำเร็จ ใช้ข้อมูลเริ่มต้น:', err);
+        offenseBasisList = DEFAULT_OFFENSE_BASIS;
+        const mockAcc = (kase.accused && kase.accused.length) ? kase.accused : [{ name: kase.accusedName || 'นายสมศักดิ์ ข้าราชการ', pos: 'ผู้อำนวยการกอง', agency: kase.agency || 'กรมชลประทาน' }];
+        accusedRealList = mockAcc.map((a, idx) => ({
+          tcca_id: 9000 + idx, name: a.name, pos: a.pos, agency: a.agency,
+          selected: new Set(idx === 0 ? [1, 2] : [1]) // 157, 162
+        }));
+        return true;
+      }
+    }
+
+    function offenseCountByTrob() {
+      const counts = {};
+      accusedRealList.forEach(a => a.selected.forEach(id => { counts[id] = (counts[id] || 0) + 1; }));
+      return counts;
+    }
+
+    function renderOffenseBasisBody() {
+      document.getElementById('offenseBasisLoading').classList.add('d-none');
+      const body = document.getElementById('offenseBasisBody');
+      if (!accusedRealList.length) {
+        body.innerHTML = '<div class="text-muted small">ไม่พบข้อมูลผู้ถูกกล่าวหาที่เชื่อมกับสำนวนนี้ในฐานข้อมูล</div>';
+        return;
+      }
+      const groups = [...new Set(offenseBasisList.map(b => b.trob_group))];
+      const counts = offenseCountByTrob();
+
+      body.innerHTML = accusedRealList.map(acc => {
+        const suggested = offenseBasisList.filter(b => counts[b.trob_id] > 0 && !acc.selected.has(b.trob_id));
+        return `
+      <div class="ws-card mb-2" style="background:#F8FAFC">
+        <div class="card-body p-2">
+          <div style="font-weight:600;color:var(--ecmis-navy)">${acc.name}
+            <span class="text-muted fw-normal">${acc.pos || ''}${acc.agency ? ' (' + acc.agency + ')' : ''}</span></div>
+          ${suggested.length ? `<div class="mt-1 mb-1" style="font-size:.78rem">
+            <span class="text-muted">แนะนำ (เคยเลือกในสำนวนนี้แล้วโดยผู้ถูกกล่าวหาคนอื่น):</span>
+            ${suggested.map(b => `<button type="button" class="btn btn-sm btn-outline-warning py-0 px-2 ms-1 mb-1 offense-chip"
+              data-tcca="${acc.tcca_id}" data-trob="${b.trob_id}" style="font-size:.75rem">+ ${b.trob_article_no}</button>`).join('')}
+          </div>` : ''}
+          ${groups.map(g => `
+            <div class="mt-1">
+              <div style="font-size:.72rem;color:#7C8CA3;font-weight:600">${g}</div>
+              ${offenseBasisList.filter(b => b.trob_group === g).map(b => {
+                const active = acc.selected.has(b.trob_id);
+                const title = `${b.trob_law_name}${b.trob_article_label ? ' — ' + b.trob_article_label : ''}`;
+                return `<button type="button" class="btn btn-sm ${active ? 'btn-navy' : 'btn-outline-secondary'} py-0 px-2 me-1 mb-1 offense-chip"
+                  data-tcca="${acc.tcca_id}" data-trob="${b.trob_id}" title="${title.replace(/"/g, '&quot;')}"
+                  style="font-size:.78rem">${active ? '<i class="fa-solid fa-check me-1"></i>' : ''}${b.trob_article_no}</button>`;
+              }).join('')}
+            </div>`).join('')}
+        </div>
+      </div>`;
+      }).join('');
+
+      body.querySelectorAll('.offense-chip').forEach(btn => {
+        btn.addEventListener('click', () => toggleOffense(+btn.dataset.tcca, +btn.dataset.trob));
+      });
+    }
+
+    async function toggleOffense(tcca_id, trob_id) {
+      const acc = accusedRealList.find(a => a.tcca_id === tcca_id);
+      if (!acc) return;
+      const nowSelected = !acc.selected.has(trob_id);
+      try {
+        if (nowSelected) {
+          acc.selected.add(trob_id);
+          const { error } = await sb.from('tbl_res_accused_offense')
+            .upsert({ tcca_id, trob_id }, { onConflict: 'tcca_id,trob_id', ignoreDuplicates: true });
+          if (error) throw error;
+        } else {
+          acc.selected.delete(trob_id);
+          const { error } = await sb.from('tbl_res_accused_offense').delete().eq('tcca_id', tcca_id).eq('trob_id', trob_id);
+          if (error) throw error;
+        }
+      } catch (err) {
+        console.error('บันทึกฐานความผิดไม่สำเร็จ:', err);
+        ECMIS.toastWarn('บันทึกฐานความผิดไม่สำเร็จ');
+        if (nowSelected) acc.selected.delete(trob_id); else acc.selected.add(trob_id);
+      }
+      renderOffenseBasisBody();
+      renderDoc();
+    }
+
+    function selectedChargesText() {
+      if (!accusedRealList.length) return '';
+      return accusedRealList.map(a => {
+        const arts = offenseBasisList.filter(b => a.selected.has(b.trob_id)).map(b => b.trob_article_no);
+        return arts.length ? `${a.name}: ${arts.join(', ')}` : '';
+      }).filter(Boolean).join(' / ');
+    }
 
     document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
     document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72);
@@ -223,6 +416,7 @@
     function toggleFormCards() {
       document.getElementById('rulingCard').classList.toggle('d-none', docTab !== 'ruling');
       document.getElementById('disciplineCard').classList.toggle('d-none', docTab !== 'discipline' || !disciplineVisible);
+      document.getElementById('offenseBasisCard').classList.toggle('d-none', docTab !== 'discipline' || !disciplineVisible);
     }
     toggleFormCards();
 
@@ -356,11 +550,12 @@
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;๒. สำเนามติคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)} เมื่อวันที่ ${M(meetDateThai)} จำนวน ๑ แผ่น
           </div>`;
 
+        const chargesText = selectedChargesText();
         const flowBlocks = [
           `<div class="doc-indent" style="margin-top:10px">
             ด้วยคณะกรรมการ ป.ป.ท. ได้ดำเนินการไต่สวนโดยการแต่งตั้งคณะอนุกรรมการไต่สวน/คณะพนักงาน
             ป.ป.ท. ไต่สวน กรณี ${M(accused.name)}${etAl} ${M(accused.pos)} สังกัด ${M(accused.agency)}
-            ว่ากระทำความผิดฐาน${M(discCharge)}
+            ว่ากระทำความผิดฐาน${M(discCharge)}${chargesText ? ` (ฐานความผิด/มาตรา: ${M(chargesText)})` : ''}
           </div>`,
           `<div class="doc-indent" style="margin-top:8px">
             คณะกรรมการ ป.ป.ท. ได้พิจารณาสำนวนการไต่สวนในคราวประชุม ครั้งที่ ${M(meetNo)}
@@ -502,6 +697,12 @@
 
     renderDoc();
     renderActions();
+
+    (async function initOffenseBasis() {
+      const ok = await loadOffenseBasisData();
+      if (ok) { renderOffenseBasisBody(); renderDoc(); }
+      else { document.getElementById('offenseBasisLoading').textContent = 'ไม่สามารถโหลดข้อมูลฐานความผิดได้'; }
+    })();
   </script>
 </body>
 
