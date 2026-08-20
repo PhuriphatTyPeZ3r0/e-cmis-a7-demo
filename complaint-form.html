@@ -794,8 +794,33 @@ body.high-contrast .btn-tracking-save{ background:#000 !important; color:#fff !i
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
 <script>
+
+/* หน้านี้ยังไม่ submit เรื่องร้องเรียนไป Supabase จริง (submitComplaint() ทั้งหมดเป็น mock — สร้าง
+   trackNo แบบสุ่มฝั่ง client เท่านั้น ไม่มี insert tbl_cmp_case) จึงยังไม่มี tcc_id จริงให้ผูกไฟล์แนบ
+   ใน tbl_res_attachment ได้ — อัปโหลดไฟล์เข้า Storage bucket จริงไปพลางก่อนภายใต้ path
+   pending/{trackNo}/... เมื่อฟอร์มนี้ถูกต่อเข้า Supabase จริงในอนาคต ค่อยย้าย/ผูกไฟล์เหล่านี้เข้ากับ
+   tcc_id ที่สร้างจริงและ insert แถว tbl_res_attachment ตาม */
+const CF_SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+const CF_SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+const cfSb = window.supabase.createClient(CF_SUPABASE_URL, CF_SUPABASE_KEY);
+async function uploadPendingFiles(trackNo, files){
+  const results = [];
+  for (const f of files) {
+    const path = `pending/${trackNo}/${Date.now()}_${f.name}`;
+    try {
+      const { error } = await cfSb.storage.from('case-documents').upload(path, f);
+      if (error) throw error;
+      results.push({ name: f.name, ok: true });
+    } catch (err) {
+      console.error('อัปโหลดไฟล์ไม่สำเร็จ:', f.name, err);
+      results.push({ name: f.name, ok: false });
+    }
+  }
+  return results;
+}
 
 function acceptCookies(){
   const banner = document.getElementById('cookieBanner');
@@ -1201,7 +1226,7 @@ function submitComplaint(){
     cancelButtonText:'ยกเลิก',
     confirmButtonColor:'#0b2e59',
     cancelButtonColor:'#6b7280'
-  }).then(res => {
+  }).then(async res => {
     if(res.isConfirmed){
       const trackNo = 'PACC-2569-' + Math.floor(100000 + Math.random()*900000);
       currentTrackingNo = trackNo;
@@ -1210,6 +1235,13 @@ function submitComplaint(){
       qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=' + encodeURIComponent(trackNo);
       qrImg.classList.remove('d-none');
       document.getElementById('trackingSaveActions').classList.remove('d-none');
+      if (uploadedFiles.length) {
+        const uploadResults = await uploadPendingFiles(trackNo, uploadedFiles);
+        const failed = uploadResults.filter(r => !r.ok);
+        if (failed.length) {
+          console.warn('ไฟล์ที่อัปโหลดไม่สำเร็จ:', failed.map(f => f.name).join(', '));
+        }
+      }
       Swal.fire({
         icon:'success',
         title:'ส่งคำร้องสำเร็จ!',
