@@ -377,7 +377,6 @@ if(ECMIS.isUpstreamRole(role.id)){
       <option value="PENDING_NORMAL">รอสั่งการวาระปกติ</option>
       <option value="PENDING_URGENT">วาระด่วน (Bypass)</option>
       <option value="PENDING_RULING">รอลงนามรายงานชี้มูล</option>
-      <option value="DONE">สั่งการแล้ว</option>
     `;
   }
 } else if (role.id === 'affairs') {
@@ -412,14 +411,12 @@ function renderKPICards() {
     const pendingNormalCount = allCasesCombined.filter(c => c.status === 'PENDING_CHAIRMAN' || c.status === 'PENDING_CHAIR_OF').length;
     const pendingUrgentCount = allCasesCombined.filter(c => c.status === 'PENDING_CHAIRMAN_URGENT_72' || (c.status === 'PENDING_URGENT' && c.urgent)).length;
     const pendingRulingCount = allCasesCombined.filter(c => c.status === 'PENDING_SIGN_RULING_72').length;
-    const doneCount = allCasesCombined.filter(c => ['AGENDA_SET', 'IN_SCREENING', 'RESOLVED', 'CLOSED'].includes(c.status) || c.signedByChair).length;
 
     const kpis = [
       { id:'ALL', n: allCasesCombined.length, l:'รายการทั้งหมด', i:'fa-folder-open', c:'#0F2A62' },
       { id:'PENDING_NORMAL', n: pendingNormalCount, l:'รอสั่งการวาระปกติ', i:'fa-hourglass-half', c:'#D0A830' },
       { id:'PENDING_URGENT', n: pendingUrgentCount, l:'วาระด่วน (Bypass)', i:'fa-bolt', c:'#DB2626' },
-      { id:'PENDING_RULING', n: pendingRulingCount, l:'รอลงนามชี้มูล', i:'fa-file-signature', c:'#0284C7' },
-      { id:'DONE', n: doneCount, l:'สั่งการแล้ว', i:'fa-circle-check', c:'#16A34A' }
+      { id:'PENDING_RULING', n: pendingRulingCount, l:'รอลงนามชี้มูล', i:'fa-file-signature', c:'#0284C7' }
     ];
 
     document.getElementById('kpiRow').innerHTML = kpis.map(k => {
@@ -847,7 +844,6 @@ function applyFilters() {
         if (st === 'PENDING_NORMAL') matchSt = (c.status === 'PENDING_CHAIRMAN' || c.status === 'PENDING_CHAIR_OF');
         else if (st === 'PENDING_URGENT') matchSt = (c.status === 'PENDING_CHAIRMAN_URGENT_72' || (c.status === 'PENDING_URGENT' && c.urgent));
         else if (st === 'PENDING_RULING') matchSt = (c.status === 'PENDING_SIGN_RULING_72');
-        else if (st === 'DONE') matchSt = (['AGENDA_SET', 'IN_SCREENING', 'RESOLVED', 'CLOSED'].includes(c.status) || c.signedByChair);
       }
     } else if (role.id === 'affairs') {
       if (st !== 'ALL') matchSt = (c.status === st);
@@ -892,11 +888,16 @@ document.getElementById('btnClearFilter').addEventListener('click', () => {
       ? ECMIS.pageForCase72(c) === '04-approval-review.html'
       : (PAGE_FOR['secgen'] === '04-approval-review.html');
   }
+  /* ประธานฯ: "ทั้งหมด" เหลือเฉพาะสำนวนที่ประธานฯ ต้องดำเนินการ (isChairActionable) เท่านั้น —
+     ตัดมุมมองแบบเห็นทุกสำนวนในระบบ (view.all) ออก เพราะไม่ใช่ process ของประธานฯ โดยตรง
+     เหมือนหลักการเดียวกับ secgen ด้านล่าง */
   all = role.id === 'affairs'
     ? CASES.filter(c => AFFAIRS_STATUSES.includes(c.status) && ECMIS.canViewCase(c, role.id))
     : role.id === 'secgen'
       ? CASES.filter(c => ECMIS.canViewCase(c, role.id) && routesToApprovalReview(c) && !UPSTREAM_STATUSES.includes(c.status))
-      : CASES.filter(c => ECMIS.canViewCase(c, role.id));
+      : role.id === 'chairman'
+        ? CASES.filter(c => isChairActionable(c) && ECMIS.canViewCase(c, role.id))
+        : CASES.filter(c => ECMIS.canViewCase(c, role.id));
   mine = role.id === 'chairman'
     ? CASES.filter(c => isChairActionable(c))
     /* affairs ใช้ AFFAIRS_STATUSES เดียวกับ `all` ด้านบนเสมอ — ไม่ใช้ inboxFor() ตรงๆ เพราะ
