@@ -1595,6 +1595,7 @@ table.dataTable thead th{ color:var(--ecmis-navy); font-family:var(--serif); }
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
 <script>
 
@@ -1646,13 +1647,36 @@ function showZoneDetail(zoneId){
   });
 }
 
-function trackStatus(){
+const TRACK_SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+const TRACK_SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+const trackSb = window.supabase.createClient(TRACK_SUPABASE_URL, TRACK_SUPABASE_KEY);
+
+/* หน้านี้ไม่ต้อง login — ค่าที่ผู้ใช้พิมพ์เอง (result.value) และค่าที่มาจาก Supabase
+   (row.* จากตารางที่ anon เขียนได้โดยดีไซน์ของระบบ) จึงเป็น untrusted input เสมอ
+   ต้อง escape ก่อน interpolate ลง Swal html: กันไว้ */
+function escapeHtml(str){
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function stepIcon(done, active){
+  if (active) return '<i class="fa-solid fa-spinner text-warning me-1"></i>';
+  return done
+    ? '<i class="fa-solid fa-check text-success me-1"></i>'
+    : '<i class="fa-regular fa-circle me-1"></i>';
+}
+
+async function trackStatus(){
   const val = document.getElementById('quickTrackInput').value.trim();
-  Swal.fire({
+  const result = await Swal.fire({
     title: 'ตรวจสอบสถานะเรื่องร้องเรียน',
     input: 'text',
     inputValue: val,
-    inputPlaceholder: 'กรอกเลขที่ติดตามเรื่อง เช่น PACC-2569-000123',
+    inputPlaceholder: 'กรอกเลขที่ติดตามเรื่อง เช่น 1547/2568',
     showCancelButton: true,
     confirmButtonText: 'ตรวจสอบ',
     cancelButtonText: 'ยกเลิก',
@@ -1663,26 +1687,58 @@ function trackStatus(){
       }
       return trackingNo;
     }
-  }).then((result) => {
-    if (result.isConfirmed && result.value) {
-      Swal.fire({
-        icon: 'success',
-        title: 'พบข้อมูลเรื่องร้องเรียน',
-        html: `
-          <div class="text-start small">
-            <p><b>เลขติดตามเรื่อง:</b> ${result.value}</p>
-            <p><b>สถานะปัจจุบัน:</b> <span class="badge bg-warning text-dark badge-live">อยู่ระหว่างไต่สวนเบื้องต้น</span></p>
-            <hr>
-            <p class="mb-1"><i class="fa-solid fa-check text-success me-1"></i> รับเรื่องร้องเรียนแล้ว</p>
-            <p class="mb-1"><i class="fa-solid fa-check text-success me-1"></i> มอบหมายผู้รับผิดชอบสำนวนแล้ว</p>
-            <p class="mb-1"><i class="fa-solid fa-spinner text-warning me-1"></i> อยู่ระหว่างไต่สวนเบื้องต้น</p>
-            <p class="mb-1 text-muted"><i class="fa-regular fa-circle me-1"></i> ไต่สวนวินิจฉัยชี้มูล</p>
-          </div>
-        `,
-        confirmButtonColor: '#0b2e59',
-        confirmButtonText: 'ปิด'
-      });
-    }
+  });
+  if (!result.isConfirmed || !result.value) return;
+
+  Swal.fire({ title: 'กำลังตรวจสอบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+  let row = null;
+  try {
+    const { data, error } = await trackSb
+      .from('public_case_status_view')
+      .select('*')
+      .eq('tracking_no', result.value)
+      .maybeSingle();
+    if (error) throw error;
+    row = data;
+  } catch (err) {
+    console.error('ตรวจสอบสถานะไม่สำเร็จ:', err);
+    Swal.fire({
+      icon: 'error',
+      title: 'ตรวจสอบสถานะไม่สำเร็จ',
+      text: 'เกิดข้อผิดพลาดในการเชื่อมต่อระบบ กรุณาลองใหม่อีกครั้ง',
+      confirmButtonColor: '#0b2e59'
+    });
+    return;
+  }
+
+  if (!row) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'ไม่พบข้อมูล',
+      html: `<p class="small">ไม่พบเรื่องร้องเรียนสำหรับเลขติดตาม <b>${escapeHtml(result.value)}</b> กรุณาตรวจสอบเลขติดตามอีกครั้ง</p>`,
+      confirmButtonColor: '#0b2e59',
+      confirmButtonText: 'ปิด'
+    });
+    return;
+  }
+
+  Swal.fire({
+    icon: 'success',
+    title: 'พบข้อมูลเรื่องร้องเรียน',
+    html: `
+      <div class="text-start small">
+        <p><b>เลขติดตามเรื่อง:</b> ${escapeHtml(row.tracking_no)}</p>
+        <p><b>สถานะปัจจุบัน:</b> <span class="badge bg-warning text-dark badge-live">${escapeHtml(row.status_label)}</span></p>
+        <hr>
+        <p class="mb-1">${stepIcon(row.step_received, false)} รับเรื่องร้องเรียนแล้ว</p>
+        <p class="mb-1">${stepIcon(row.step_assigned, !row.step_preliminary && row.step_assigned)} มอบหมายผู้รับผิดชอบสำนวนแล้ว</p>
+        <p class="mb-1">${stepIcon(row.step_preliminary, row.step_preliminary && !row.step_ruling)} อยู่ระหว่างไต่สวนเบื้องต้น</p>
+        <p class="mb-1">${stepIcon(row.step_ruling, row.step_ruling)} ไต่สวนวินิจฉัยชี้มูล</p>
+      </div>
+    `,
+    confirmButtonColor: '#0b2e59',
+    confirmButtonText: 'ปิด'
   });
 }
 
