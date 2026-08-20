@@ -349,14 +349,44 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/ecmis-app.js"></script>
   <script src="assets/ecmis-model.js"></script>
   <script>
     ECMIS.renderShell('09-order-m24.html');
 
     const params = new URLSearchParams(location.search);
-    const kase = ECMIS.getCase(params.get('case') || '1547/2568');
     const role = ECMIS.currentRole();
+
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function loadCaseFromSupabase(caseId) {
+      const { data, error } = await sb
+        .from('tbl_res_request')
+        .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+        .eq('tbl_cmp_case.tcc_no', caseId)
+        .eq('is_deleted', false)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? ECMIS.supabaseRowToCase(data) : null;
+    }
+
+    /* หน้านี้เป็นขั้นตอนสุดท้ายของกิจกรรมที่ 7 สำหรับเรื่องที่บอร์ดมีมติรับไว้ไต่สวน (ACCEPT_S24P1/P3)
+       — สถานะสำนวนคงเป็น RESOLVED ตลอดหน้านี้ ไม่มีการเปลี่ยนสถานะจริงเมื่อลงนาม (ข้อความ "เปลี่ยน
+       สถานะคดีเป็นอยู่ระหว่างไต่สวน" เป็นเพียงคำอธิบายสิ่งที่จะเกิดขึ้นในกิจกรรมที่ 5 นอกระบบนี้)
+       จึงอ่านข้อมูลจริงจาก Supabase แต่ไม่ต้องมี persistCase/เขียนสถานะกลับเหมือนหน้าอื่น */
+    (async function main() {
+    let kase;
+    try {
+      kase = await loadCaseFromSupabase(params.get('case') || '1547/2568');
+    } catch (err) {
+      console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+      ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
+      return;
+    }
+    if (!kase) { ECMIS.toastWarn('ไม่พบสำนวนนี้ในระบบ'); return; }
     const resCode = params.get('res') || 'ACCEPT_S24P1';
     const isSub = resCode === 'ACCEPT_S24P3';
     const M = ECMIS.mergeField;
@@ -1144,6 +1174,7 @@
     renderMemoMembers();
     renderAmendTable();
     setMode('appoint');
+    })();
   </script>
 </body>
 

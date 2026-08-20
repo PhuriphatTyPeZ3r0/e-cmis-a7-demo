@@ -116,6 +116,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="assets/ecmis-app.js"></script>
 <script>
 ECMIS.renderShell('08-resolution-inbox.html');
@@ -128,6 +129,28 @@ const role = ECMIS.currentRole();
    (KPI/badge/ปุ่ม/การเรียงลำดับ/ขอบเขตรายการ ไม่ตรงกัน) — ถ้าไม่ใช่ board_sec ให้กลับไปหน้าเดิม */
 if (role.id !== 'board_sec') { location.href = ECMIS.homeHref(role.id); }
 
+/* ---------- โหลดสำนวนจาก Supabase จริง แทน ECMIS.CASES แบบ mock (เหมือน 01-work-inbox.html) ---------- */
+const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function loadCasesFromSupabase() {
+  const { data, error } = await sb
+    .from('tbl_res_request')
+    .select('*, tbl_cmp_case(*, tbl_cmp_case_accused(*))')
+    .eq('is_deleted', false);
+  if (error) throw error;
+  return data.map(row => ECMIS.supabaseRowToCase(row)).filter(Boolean);
+}
+
+async function updateCaseStatus(kase, newStatus) {
+  const code = ECMIS.STATUS_CODE[newStatus];
+  if (!code) throw new Error(`ไม่พบรหัสสถานะสำหรับ ${newStatus}`);
+  const { error } = await sb.from('tbl_res_request').update({ trr_status: code }).eq('trr_id', kase.trr_id);
+  if (error) throw error;
+  kase.status = newStatus;
+}
+
 const BUCKET = {
   pending:  ['AGENDA_SET', 'IN_MEETING', 'PENDING_INVITE_72', 'IN_MEETING_72'],
   done:     ['RESOLVED_PENDING', 'RESOLVED', 'RESOLVED_PENDING_72'],
@@ -135,12 +158,13 @@ const BUCKET = {
 };
 const OWN_SCOPE_STATUSES = [...BUCKET.pending, ...BUCKET.done, ...BUCKET.returned];
 
-const all = ECMIS.CASES.filter(c => OWN_SCOPE_STATUSES.includes(c.status) && ECMIS.canViewCase(c, role.id));
+let CASES = [];
+let all = [];
 
 document.title = 'รายการรอจัดทำมติ | E-CMIS';
 document.getElementById('myRoleLabel').textContent = `บทบาท: ${role.title}`;
 
-const allCasesCombined = all;
+let allCasesCombined = [];
 
 function isRowActionable(c) { return BUCKET.pending.includes(c.status); }
 
@@ -407,28 +431,30 @@ document.getElementById('btnBulkApprove')?.addEventListener('click', () => {
     title: `ยืนยันบันทึกมติกลุ่มจำนวน ${chks.length} รายการ`,
     html: `<p>ระบบจะบันทึกมติและดำเนินการสำนวนที่เลือกทั้งหมดตามขั้นตอนของกลุ่มงานคำวินิจฉัยและมติคณะกรรมการ</p>`,
     confirmText: 'ยืนยันสั่งการกลุ่ม'
-  }).then(res => {
-    if (res.isConfirmed) {
-      chks.forEach(chk => {
+  }).then(async res => {
+    if (!res.isConfirmed) return;
+    const transitionMap = {
+      'AGENDA_SET': 'IN_MEETING',
+      'IN_MEETING': 'RESOLVED_PENDING',
+      'RESOLVED_PENDING': 'RESOLVED',
+      'RESOLVED': 'DISPATCHING',
+      'DISPATCHING': 'CLOSED'
+    };
+    try {
+      for (const chk of chks) {
         const id = chk.dataset.id;
-        const c = ECMIS.CASES.find(x => x.id === id);
-        if (c) {
-          const transitionMap = {
-            'AGENDA_SET': 'IN_MEETING',
-            'IN_MEETING': 'RESOLVED_PENDING',
-            'RESOLVED_PENDING': 'RESOLVED',
-            'RESOLVED': 'DISPATCHING',
-            'DISPATCHING': 'CLOSED'
-          };
-          if (transitionMap[c.status]) {
-            c.status = transitionMap[c.status];
-          }
+        const c = CASES.find(x => x.id === id);
+        if (c && transitionMap[c.status]) {
+          await updateCaseStatus(c, transitionMap[c.status]);
         }
-      });
-      ECMIS.saveCases();
-      ECMIS.toastOk(`สั่งการกลุ่มสำเร็จจำนวน ${chks.length} รายการแล้ว`);
-      setTimeout(() => location.reload(), 1200);
+      }
+    } catch (err) {
+      console.error('สั่งการกลุ่มไม่สำเร็จ:', err);
+      ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+      return;
     }
+    ECMIS.toastOk(`สั่งการกลุ่มสำเร็จจำนวน ${chks.length} รายการแล้ว`);
+    setTimeout(() => location.reload(), 1200);
   });
 });
 
@@ -476,8 +502,21 @@ document.getElementById('btnClearFilter').addEventListener('click', () => {
   applyFilters();
 });
 
-renderKPICards();
-applyFilters();
+(async function main() {
+  try {
+    CASES = await loadCasesFromSupabase();
+  } catch (err) {
+    console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+    ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
+    CASES = [];
+  }
+  all = CASES.filter(c => OWN_SCOPE_STATUSES.includes(c.status) && ECMIS.canViewCase(c, role.id));
+  allCasesCombined = all;
+  filteredCombined = [...allCasesCombined];
+
+  renderKPICards();
+  applyFilters();
+})();
 
 </script>
 </body>

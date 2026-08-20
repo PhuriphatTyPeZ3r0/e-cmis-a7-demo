@@ -145,6 +145,12 @@
                 placeholder="ผู้ชี้แจงเพิ่มเติมว่า..."></textarea>
             </div>
 
+            <div class="mt-3" id="ownerClarificationBox">
+              <label class="form-label">คำชี้แจงจากเจ้าของสำนวน (ถ้ามี)</label>
+              <textarea class="form-control" id="ownerClarification" rows="3"
+                placeholder="เจ้าของสำนวนชี้แจงเพิ่มเติมว่า..."></textarea>
+            </div>
+
             <div class="mt-3">
               <label class="form-label">ผู้ลงนามท้ายเอกสาร</label>
               <select class="form-select" id="signerName"></select>
@@ -203,14 +209,56 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/pizzip@3/dist/pizzip.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/build/docxtemplater.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/ecmis-app.js"></script>
   <script src="assets/ecmis-model.js"></script>
   <script>
     ECMIS.renderShell('08-board-resolution.html');
 
     const params = new URLSearchParams(location.search);
-    const kase = ECMIS.getCase(params.get('case') || '1547/2568');
     const role = ECMIS.currentRole();
+
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function loadCaseFromSupabase(caseId) {
+      const { data, error } = await sb
+        .from('tbl_res_request')
+        .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+        .eq('tbl_cmp_case.tcc_no', caseId)
+        .eq('is_deleted', false)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? ECMIS.supabaseRowToCase(data) : null;
+    }
+
+    /* บันทึกสถานะกลับ tbl_res_request จริง — ฟิลด์อื่นที่ไม่มีคอลัมน์ใน Supabase (resolution,
+       resolvedAt, recordedDocHtml, resolutionStage, meetingNo/agendaNo, ownerClarification ฯลฯ)
+       ยังคง set บน kase ไว้ให้แสดงผลในหน้านี้ได้ตามเดิม เพียงแต่ไม่ถูกบันทึกข้ามหน้า/ข้ามอุปกรณ์
+       ตามขอบเขตฟิลด์ที่ migrate ไว้ เหมือนกับ 04-approval-review.html */
+    async function persistCase(kase, patch) {
+      const dbPatch = {};
+      if ('status' in patch) {
+        const code = ECMIS.STATUS_CODE[patch.status];
+        if (!code) throw new Error(`ไม่พบรหัสสถานะสำหรับ ${patch.status}`);
+        dbPatch.trr_status = code;
+      }
+      const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
+      if (error) throw error;
+      Object.assign(kase, patch);
+    }
+
+    (async function main() {
+    let kase;
+    try {
+      kase = await loadCaseFromSupabase(params.get('case') || '1547/2568');
+    } catch (err) {
+      console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+      ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
+      return;
+    }
+    if (!kase) { ECMIS.toastWarn('ไม่พบสำนวนนี้ในระบบ'); return; }
 
     function normalizeDateInputValue(value) {
       const v = String(value || '').trim();
@@ -286,11 +334,21 @@
     /* ---------- Q: สิทธิ์แก้ไขมติ (ชีตแถว 15) ---------- */
     const mayEdit = ECMIS.canEditMaster(role.id) || ECMIS.can('record.minutes', role.id);
     const mayView = ECMIS.canViewCase(kase, role.id);
+
+    /* คำชี้แจงจากเจ้าของสำนวน — กรอกได้เฉพาะ role owner (แยกจาก #presenterNote ที่เจ้าหน้าที่
+       กบค. กรอกแทน), บทบาทอื่นเห็นเป็น read-only และซ่อนถ้ายังไม่มีข้อความ */
+    const ownerClarificationEl = document.getElementById('ownerClarification');
+    ownerClarificationEl.value = kase.ownerClarification || '';
+    if (role.id !== 'owner') {
+      ownerClarificationEl.readOnly = true;
+      document.getElementById('ownerClarificationBox').classList.toggle('d-none', !kase.ownerClarification);
+    }
     /* เดิมปุ่ม "บันทึกมติและล็อก PDF" ไม่เคยเปลี่ยน kase.status/บันทึกข้อมูลจริงเลย (แค่ toast
        แล้ว redirect) ทำให้กดบันทึกกี่ครั้งก็ไม่มีอะไรเปลี่ยนจริง และเอกสารฝั่งขวาก็ไม่มีทาง
        "ดูย้อนหลัง" มติที่บันทึกไปแล้วได้ (renderDoc() สร้างจากค่าฟอร์มปัจจุบันเสมอ ไม่ใช่ค่าที่
        บันทึกไว้จริง) — isLocked คือสำนวนที่บันทึกมติไปแล้วจริง (ผ่าน handle('lock') ด้านล่าง
-       ซึ่งตอนนี้ set kase.status/kase.resolution/kase.recordedDocHtml + ECMIS.saveCases() แล้ว)
+       ซึ่งตอนนี้ persistCase() บันทึก kase.status ลง Supabase จริง แล้ว set kase.resolution/
+       kase.recordedDocHtml ฯลฯ ที่ไม่มีคอลัมน์ใน Supabase ไว้บน kase ในหน่วยความจำแล้ว)
        renderDoc() จะโชว์ recordedDocHtml ที่บันทึกไว้ตรงๆ แทนการ generate ใหม่จากฟอร์ม
        (ค่าฟอร์มที่โหลดใหม่จะไม่ตรงกับตอนบันทึกจริงอีกต่อไป) และซ่อนปุ่มบันทึกไม่ให้กดซ้ำ */
     const isLocked = kase.status === 'RESOLVED' || kase.status === 'RESOLVED_PENDING';
@@ -339,7 +397,7 @@
       if (btn) {
         btn.addEventListener('click', () => {
           const val = parseInt(document.getElementById('resStageSelect').value, 10);
-          ECMIS.Model.CaseStore.update(kase.id, { resolutionStage: val });
+          Object.assign(kase, { resolutionStage: val });
           ECMIS.toastOk('บันทึกสถานะการจัดทำมติเรียบร้อย');
           renderResolutionStageBox();
         });
@@ -635,6 +693,7 @@
       const ownerOrg = document.getElementById('ownerOrgField').value.trim() || kase.ownerOrg;
       const presenter = document.getElementById('presenter').value.trim();
       const presenterNote = document.getElementById('presenterNote').value.trim();
+      const ownerClarification = document.getElementById('ownerClarification').value.trim();
       const signerName = document.getElementById('signerName').value.trim();
       const signerTitle = document.getElementById('signerTitle').value.trim();
       const r = selectedRes();
@@ -706,6 +765,8 @@
         bi(`<div class="doc-h">การชี้แจงเพิ่มเติม</div>
       <div class="doc-indent">ผู้ชี้แจง (${M(presenter)}) ชี้แจงเพิ่มเติมว่า
         ${M(presenterNote, '………………………………………………………………………………………………')}</div>`),
+        ...(ownerClarification ? [bi(`<div class="doc-h">คำชี้แจงจากเจ้าของสำนวน</div>
+      <div class="doc-indent">${M(ownerClarification)}</div>`)] : []),
         bi(`<div class="doc-indent" style="margin-top:6px">
         ในการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}
         คณะกรรมการ ป.ป.ท. ที่มาประชุม จำนวน ${attendees.length} คน ประกอบด้วย</div>
@@ -737,7 +798,7 @@
     }
 
     document.getElementById('resList').addEventListener('change', () => { toggleBoxes(); renderOutcome(); renderDoc(); });
-    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'ownerOrgField', 'presenter', 'presenterNote', 'signerName', 'signerTitle', 'rejectLaw', 'moreTask', 'moreOwner', 'moreDue', 'forwardTo', 'forwardToOther']
+    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'ownerOrgField', 'presenter', 'presenterNote', 'ownerClarification', 'signerName', 'signerTitle', 'rejectLaw', 'moreTask', 'moreOwner', 'moreDue', 'forwardTo', 'forwardToOther']
       .forEach(id => {
         const el = document.getElementById(id); if (el) {
           el.addEventListener('input', renderDoc); el.addEventListener('change', renderDoc);
@@ -772,6 +833,7 @@
       const ownerOrg = document.getElementById('ownerOrgField').value.trim() || kase.ownerOrg;
       const presenter = document.getElementById('presenter').value.trim();
       const presenterNote = document.getElementById('presenterNote').value.trim();
+      const ownerClarification = document.getElementById('ownerClarification').value.trim();
       const opinion = document.getElementById('boardOpinion').value.trim();
       const ac = kase.accused || [];
       const legalBaseClause = kase.legalBase === 'ม.62'
@@ -790,6 +852,7 @@
         accused2: ac[1] ? P(`${ac[1].name} ${ac[1].pos}`) : '',
         accused3: ac[2] ? P(`${ac[2].name} ${ac[2].pos}`) : '',
         allegation: P(kase.allegation), explainNote: P(presenterNote),
+        ownerClarification: P(ownerClarification),
         boardOpinion: P(opinion), resolutionText: computeResolutionText(),
         nacc65Clause,
         ratifyMeetNo: P(meetNo), ratifyMeetDate: P(meetDate), ratifyAgendaNo: P(agendaNo),
@@ -893,7 +956,7 @@
           • Auto-compile รายงานการประชุมรวมทุกเรื่องในวันประชุมเดียวกัน
         </div></div>`,
           confirmText: 'ยืนยันบันทึกมติ'
-        }).then(res => {
+        }).then(async res => {
           if (!res.isConfirmed) return;
 
           if (r.code === 'MORE_INVESTIGATE') {
@@ -907,13 +970,20 @@
             });
           }
 
-          ECMIS.Model.CaseStore.update(kase.id, {
-            status: 'RESOLVED',
+          try {
+            await persistCase(kase, { status: 'RESOLVED' });
+          } catch (err) {
+            console.error('บันทึกมติไม่สำเร็จ:', err);
+            ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+            return;
+          }
+          Object.assign(kase, {
             resolution: r.code,
             resolvedAt: new Date().toLocaleString('th-TH'),
             resolvedAtIso: new Date().toISOString(),
             recordedDocHtml: document.getElementById('docPaper').innerHTML,
-            resolutionStage: 1
+            resolutionStage: 1,
+            ownerClarification: document.getElementById('ownerClarification').value.trim()
           });
           ECMIS.toastOk('บันทึกมติและล็อก PDF เรียบร้อย');
           const next = (r.code === 'ACCEPT_S24P1' || r.code === 'ACCEPT_S24P3')
@@ -973,12 +1043,13 @@
     });
 
     document.getElementById('btnSaveDocEdit').addEventListener('click', () => {
-      ECMIS.Model.CaseStore.update(kase.id, { recordedDocHtml: docPaperWrap.innerHTML });
+      Object.assign(kase, { recordedDocHtml: docPaperWrap.innerHTML });
       setDocEditMode(false);
       ECMIS.toastOk('บันทึกการแก้ไขเอกสารเรียบร้อย');
     });
 
     applyMode(); toggleBoxes(); renderOutcome(); renderDoc();
+    })();
   </script>
 </body>
 
