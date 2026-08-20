@@ -150,10 +150,28 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/ecmis-app.js"></script>
   <script>
     ECMIS.renderShell('02-case-register.html');
     const role = ECMIS.currentRole();
+
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    /* ทะเบียนสำนวนกลาง — เดิมผูกกับ ECMIS.CASES (mock array คงที่) ไม่ sync กับหน้าที่ migrate ไป
+       Supabase แล้ว และไม่เคยกรองสิทธิ์การมองเห็นเลย (canViewCase ไม่เคยถูกเรียกในไฟล์นี้) ทำให้ทุก role
+       เห็นทุกสำนวนรวมเลขบัตร ปชช./ข้อกล่าวหาของทุกคดี — แก้ทั้งสองจุดพร้อมกันเพราะเป็นไฟล์เดียวกัน */
+    let ALL_CASES = [];
+    async function loadAllCasesFromSupabase() {
+      const { data, error } = await sb
+        .from('tbl_res_request')
+        .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return (data || []).map(ECMIS.supabaseRowToCase).filter(Boolean);
+    }
 
     document.getElementById('qStatus').insertAdjacentHTML('beforeend',
       Object.keys(ECMIS.STATUS).map(k => `<option value="${k}">${ECMIS.STATUS[k].label}</option>`).join(''));
@@ -201,7 +219,7 @@
       const tbody = document.getElementById('tb');
       const cntBadge = document.getElementById('cnt');
 
-      const filtered = ECMIS.CASES.filter(matches);
+      const filtered = ALL_CASES.filter(c => ECMIS.canViewCase(c, role.id)).filter(matches);
       cntBadge.textContent = filtered.length;
 
       if (loading) {
@@ -260,6 +278,9 @@
         <span class="case-no">${c.id}</span>
         ${(c.urgent || c.urgent72) ? '<span class="st st-urgent ms-1">ด่วน</span>' : ''}
         ${c.dupWarning ? '<span class="st st-returned ms-1" title="ระบบตรวจพบสำนวนที่อาจซ้ำซ้อน"><i class="fa-solid fa-clone"></i> ซ้ำ?</span>' : ''}
+        ${c.meetingNo ? `<a href="13-agenda-registry.html" class="chip ms-1" title="เคยบรรจุวาระ — ครั้งที่ ${c.meetingNo}${c.agendaNo ? ' วาระที่ ' + c.agendaNo : ''} — ดูทะเบียนวาระ">
+          <i class="fa-solid fa-calendar-check"></i> ${c.meetingNo}
+        </a>` : ''}
       </td>
       <td style="max-width:280px" class="editable-subject clickable-row" data-id="${c.id}" title="ดับเบิ้ลคลิกเพื่อแก้ไขด่วน">
         <div class="text-truncate fw-semibold text-primary" id="subject-text-${c.id}">${c.subject}</div>
@@ -345,7 +366,7 @@
           if (cell.classList.contains('editing')) return;
           cell.classList.add('editing');
 
-          const kase = ECMIS.CASES.find(c => c.id === id);
+          const kase = ALL_CASES.find(c => c.id === id);
           if (!kase) return;
 
           const currentSubject = kase.subject;
@@ -366,15 +387,24 @@
           const subInput = cell.querySelector('#edit-sub-input');
           subInput.focus();
 
-          cell.querySelector('#btn-save-inline').addEventListener('click', (e) => {
+          cell.querySelector('#btn-save-inline').addEventListener('click', async (e) => {
             e.stopPropagation();
             const newSub = cell.querySelector('#edit-sub-input').value.trim();
             const newOwn = cell.querySelector('#edit-own-input').value.trim();
             if (newSub && newOwn) {
-              kase.subject = newSub;
-              kase.owner = newOwn;
-              ECMIS.saveCases();
-              ECMIS.toastOk('แก้ไขข้อมูลสำนวนเรียบร้อยแล้ว');
+              try {
+                const { error } = await sb
+                  .from('tbl_cmp_case')
+                  .update({ tcc_subject: newSub, tcc_owner: newOwn })
+                  .eq('tcc_id', kase.tcc_id);
+                if (error) throw error;
+                kase.subject = newSub;
+                kase.owner = newOwn;
+                ECMIS.toastOk('แก้ไขข้อมูลสำนวนเรียบร้อยแล้ว');
+              } catch (err) {
+                console.error('บันทึกแก้ไขไม่สำเร็จ:', err);
+                ECMIS.toastWarn('บันทึกข้อมูลไม่สำเร็จ');
+              }
             }
             render(false);
           });
@@ -394,7 +424,7 @@
     }
 
     function collectExportRows() {
-      const filtered = ECMIS.CASES.filter(matches);
+      const filtered = ALL_CASES.filter(c => ECMIS.canViewCase(c, role.id)).filter(matches);
       if (!filtered.length) return [];
       return filtered.map(c => {
         const accusedStr = c.accused.map(a => `${a.name} (${a.pos})`).join('; ');
@@ -530,7 +560,17 @@
       currentPage = 1;
       render(true);
     }));
-    render();
+
+    (async function main() {
+      render(true);
+      try {
+        ALL_CASES = await loadAllCasesFromSupabase();
+      } catch (err) {
+        console.error('โหลดทะเบียนสำนวนจากฐานข้อมูลไม่สำเร็จ:', err);
+        ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
+      }
+      render(false);
+    })();
   </script>
 </body>
 
