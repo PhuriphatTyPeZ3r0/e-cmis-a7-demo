@@ -62,14 +62,23 @@
                     <div class="card-header"><i class="fa-solid fa-clipboard-check"></i> บันทึกมติและข้อสังเกตของคณะอนุกลั่นกรองฯ</div>
                     <div class="card-body">
                         <div class="row g-2 mb-3">
-                            <div class="col-md-4"><label class="form-label field-req">ครั้งที่ประชุมคณะอนุฯ</label>
+                            <div class="col-md-3"><label class="form-label field-req">ครั้งที่ประชุมคณะอนุฯ</label>
                                 <input class="form-control" id="subMeetNo" value="12/2569">
                             </div>
-                            <div class="col-md-4"><label class="form-label field-req">วันที่ประชุม</label>
-                                <input class="form-control" id="subMeetDate" value="2569-05-28">
+                            <div class="col-md-3"><label class="form-label field-req"><i class="fa-solid fa-calendar-day me-1 text-primary"></i>๑. วันที่ประชุมอนุฯ</label>
+                                <input class="form-control" id="subMeetDate" value="2569-05-28" type="text">
                             </div>
-                            <div class="col-md-4"><label class="form-label">จำนวนอนุกรรมการที่เข้าประชุม</label>
+                            <div class="col-md-3"><label class="form-label field-req"><i class="fa-solid fa-file-circle-check me-1 text-success"></i>๒. วันที่ออกมติอนุฯ</label>
+                                <input class="form-control" id="subResDate" value="2569-05-28" type="text">
+                            </div>
+                            <div class="col-md-3"><label class="form-label">จำนวนอนุฯ ที่เข้าประชุม</label>
                                 <input class="form-control" id="subQuorum" value="5" type="number" min="1">
+                            </div>
+                            <div class="col-md-6"><label class="form-label field-req"><i class="fa-solid fa-paper-plane me-1 text-warning"></i>๓. วันที่ส่งเข้าบอร์ด ป.ป.ท.</label>
+                                <input class="form-control" id="subSendBoardDate" value="2569-05-30" type="text">
+                            </div>
+                            <div class="col-md-6"><label class="form-label field-req"><i class="fa-solid fa-calendar-check me-1 text-navy"></i>๔. กำหนดรอบบรรจุวาระบอร์ด</label>
+                                <input class="form-control" id="subTargetAgendaDate" value="2569-06-02" type="text">
                             </div>
                         </div>
 
@@ -139,30 +148,80 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <script src="assets/ecmis-app.js"></script>
     <script src="assets/ecmis-model.js"></script>
     <script>
         ECMIS.renderShell('07-subcommittee-screening.html');
 
         const params = new URLSearchParams(location.search);
-        const kase = ECMIS.getCase(params.get('case') || '1547/2568');
         const role = ECMIS.currentRole();
 
-        const docType = ECMIS.DOC_TYPES[kase.docType];
-        const isRuling = docType.code === 'RULING';
+        const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
-        document.getElementById('stepper').innerHTML = isRuling
-            ? ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72)
-            : ECMIS.stepperHtml(kase.status);
-
-        if (isRuling) {
-            document.querySelector('.page-head h1').innerHTML =
-                '<i class="fa-solid fa-users-viewfinder me-2"></i>คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง พิจารณา';
-            document.querySelector('.flow-ref').innerHTML = 'คณะอนุกลั่นกรองฯ พิจารณาและส่งต่อเพื่อเตรียมประชุม';
+        async function loadCaseFromSupabase(caseId) {
+            const { data, error } = await sb
+                .from('tbl_res_request')
+                .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+                .eq('tbl_cmp_case.tcc_no', caseId)
+                .eq('is_deleted', false)
+                .maybeSingle();
+            if (error) throw error;
+            return data ? ECMIS.supabaseRowToCase(data) : null;
         }
 
-        if (isRuling) { initScreening72(); } else { initScreening71(); }
+        /* บันทึกการเปลี่ยนแปลงกลับ tbl_res_request จริง แล้วอัปเดต kase ในหน่วยความจำ — รวมวันที่
+           ประชุมอนุฯ/วันที่มีมติ/วันที่ส่งคณะกรรมการ (trr_subcmt_meeting_date/trr_subcmt_resolved_date/
+           trr_subcmt_sent_board_date) ฟิลด์ที่ไม่มีคอลัมน์ใน Supabase (เช่น screeningOpinion72,
+           moreInfoRequested72) ยังคง set บน kase ไว้ให้แสดงผลในหน้านี้ได้ตามเดิม เพียงแต่ไม่ถูกบันทึก
+           ข้ามหน้า/ข้ามอุปกรณ์ ตามขอบเขตฟิลด์ที่ migrate ไว้ */
+        async function persistCase(kase, patch) {
+            const dbPatch = {};
+            if ('status' in patch) {
+                const code = ECMIS.STATUS_CODE[patch.status];
+                if (!code) throw new Error(`ไม่พบรหัสสถานะสำหรับ ${patch.status}`);
+                dbPatch.trr_status = code;
+            }
+            if ('subCommittee' in patch)          dbPatch.trr_sub_committee = patch.subCommittee;
+            if ('screeningMeetingDate' in patch)  dbPatch.trr_subcmt_meeting_date = patch.screeningMeetingDate;
+            if ('screeningResolvedDate' in patch) dbPatch.trr_subcmt_resolved_date = patch.screeningResolvedDate;
+            if ('sentToBoardDate' in patch)       dbPatch.trr_subcmt_sent_board_date = patch.sentToBoardDate;
+            const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
+            if (error) throw error;
+            Object.assign(kase, patch);
+            kase.chainOpinions = ECMIS.buildChainOpinions(kase);
+        }
+
+        let kase, docType, isRuling;
+
+        (async function main() {
+            try {
+                kase = await loadCaseFromSupabase(params.get('case') || '1547/2568');
+            } catch (err) {
+                console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+                ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
+                return;
+            }
+            if (!kase) { ECMIS.toastWarn('ไม่พบสำนวนนี้ในระบบ'); return; }
+
+            docType = ECMIS.DOC_TYPES[kase.docType];
+            isRuling = docType.code === 'RULING';
+
+            document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
+            document.getElementById('stepper').innerHTML = isRuling
+                ? ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72)
+                : ECMIS.stepperHtml(kase.status);
+
+            if (isRuling) {
+                document.querySelector('.page-head h1').innerHTML =
+                    '<i class="fa-solid fa-users-viewfinder me-2"></i>คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง พิจารณา';
+                document.querySelector('.flow-ref').innerHTML = 'คณะอนุกลั่นกรองฯ พิจารณาและส่งต่อเพื่อเตรียมประชุม';
+            }
+
+            if (isRuling) { initScreening72(); } else { initScreening71(); }
+        })();
 
         /* ---------- Document workspace: collapsible pane ---------- */
         const docWorkspace = document.getElementById('docWorkspace');
@@ -287,7 +346,7 @@
     <div class="doc-secret-foot">ลับ</div>`;
         }
 
-        ['subMeetNo', 'subMeetDate', 'subOpinion'].forEach(id =>
+        ['subMeetNo', 'subMeetDate', 'subResDate', 'subSendBoardDate', 'subTargetAgendaDate', 'subOpinion'].forEach(id =>
             document.getElementById(id).addEventListener('input', renderDoc));
         document.querySelectorAll('input[name="subRes"]').forEach(r =>
             r.addEventListener('change', renderDoc));
@@ -302,11 +361,14 @@
         document.querySelectorAll('.action-bar [data-act]').forEach(b =>
             b.addEventListener('click', () => handle(b.dataset.act)));
 
-        function handle(act) {
+        async function handle(act) {
             if (act === 'save') { ECMIS.toastOk('บันทึกร่างมติคณะอนุฯ เรียบร้อย'); return; }
             if (act === 'submit') {
                 const subMeetNo = document.getElementById('subMeetNo').value.trim();
                 const subMeetDate = document.getElementById('subMeetDate').value.trim();
+                const subResDate = document.getElementById('subResDate').value.trim();
+                const subSendBoardDate = document.getElementById('subSendBoardDate').value.trim();
+                const subTargetAgendaDate = document.getElementById('subTargetAgendaDate').value.trim();
                 if (!subMeetNo || !subMeetDate) {
                     ECMIS.toastWarn('กรุณาระบุ ครั้งที่ประชุม และ วันที่ประชุมคณะอนุฯ');
                     return;
@@ -335,13 +397,26 @@
                     title: 'ส่งมติคณะอนุกลั่นกรองฯ',
                     html: `<p>สำนวน <strong>${kase.id}</strong> — ${next.t}</p>`,
                     confirmText: 'ยืนยันส่งมติ'
-                }).then(r => {
+                }).then(async r => {
                     if (r.isConfirmed) {
-
-                        ECMIS.Model.CaseStore.update(kase.id, Object.assign(
-                            { subCommittee: document.getElementById('manualTeam').value || assigned },
-                            (res === 'AGREE' || res === 'DIFFER') ? { status: 'AGENDA_SET' } : {}
-                        ));
+                        const today = new Date().toISOString().slice(0, 10);
+                        const patch = Object.assign(
+                            {
+                                subCommittee: document.getElementById('manualTeam').value || assigned,
+                                screeningMeetingDate: subMeetDate,
+                                screeningResolvedDate: subResDate || today,
+                                sentToBoardDate: subSendBoardDate || today,
+                                targetAgendaDate: subTargetAgendaDate || '2569-06-02'
+                            },
+                            (res === 'AGREE' || res === 'DIFFER') ? { status: 'AGENDA_SET', sentToBoardDate: subSendBoardDate || today } : {}
+                        );
+                        try {
+                            await persistCase(kase, patch);
+                        } catch (err) {
+                            console.error('บันทึกมติคณะอนุกลั่นกรองฯ ไม่สำเร็จ:', err);
+                            ECMIS.toastWarn('บันทึกข้อมูลไม่สำเร็จ');
+                            return;
+                        }
                         ECMIS.toastOk('ส่งมติคณะอนุกลั่นกรองฯ เรียบร้อย');
                         setTimeout(() => location.href = next.p + '?case=' + encodeURIComponent(kase.id), 1400);
                     }
@@ -479,7 +554,7 @@
                 return true;
             }
 
-            function handle(act){
+            async function handle(act){
                 if (!validateOpinion()) return;
                 const opinion = document.getElementById('subOpinion').value.trim();
                 const meetNo = document.getElementById('subMeetNo').value.trim();
@@ -491,11 +566,20 @@
                         title: 'ขอข้อมูลเพิ่มเติม',
                         html: `<p>สำนวน <strong>${kase.id}</strong> — คณะอนุกลั่นกรองฯ ขอข้อมูล/เอกสารเพิ่มเติมจากผู้รับผิดชอบสำนวน</p>`,
                         confirmText: 'ยืนยันขอข้อมูลเพิ่มเติม'
-                    }).then(res => {
+                    }).then(async res => {
                         if (!res.isConfirmed) return;
-                        ECMIS.Model.CaseStore.update(kase.id, {
+                        try {
+                            await persistCase(kase, {
+                                subCommittee: team,
+                                screeningMeetingDate: meetDate
+                            });
+                        } catch (err) {
+                            console.error('บันทึกคำขอข้อมูลเพิ่มเติมไม่สำเร็จ:', err);
+                            ECMIS.toastWarn('บันทึกข้อมูลไม่สำเร็จ');
+                            return;
+                        }
+                        Object.assign(kase, {
                             screeningOpinion72: opinion,
-                            subCommittee: team,
                             moreInfoRequested72: { date: new Date().toISOString().slice(0, 10), note: opinion }
                         });
                         ECMIS.toastOk('บันทึกคำขอข้อมูลเพิ่มเติม และแจ้งเตือนผู้รับผิดชอบสำนวนแล้ว');
@@ -508,15 +592,23 @@
                         title: 'เห็นควรบรรจุวาระ',
                         html: `<p>สำนวน <strong>${kase.id}</strong> — คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริงเห็นควรเสนอบรรจุระเบียบวาระ</p>`,
                         confirmText: 'ยืนยันเห็นควรบรรจุวาระ'
-                    }).then(res => {
+                    }).then(async res => {
                         if (!res.isConfirmed) return;
-                        ECMIS.Model.CaseStore.update(kase.id, {
-                            screeningOpinion72: opinion,
-                            screeningMeetNo72: meetNo,
-                            screeningMeetDate72: meetDate,
-                            subCommittee: team,
-                            status: 'PENDING_INVITE_72'
-                        });
+                        const today = new Date().toISOString().slice(0, 10);
+                        try {
+                            await persistCase(kase, {
+                                subCommittee: team,
+                                screeningMeetingDate: meetDate,
+                                screeningResolvedDate: today,
+                                sentToBoardDate: today,
+                                status: 'PENDING_INVITE_72'
+                            });
+                        } catch (err) {
+                            console.error('บันทึกมติคณะอนุกลั่นกรองฯ ไม่สำเร็จ:', err);
+                            ECMIS.toastWarn('บันทึกข้อมูลไม่สำเร็จ');
+                            return;
+                        }
+                        Object.assign(kase, { screeningOpinion72: opinion, screeningMeetNo72: meetNo, screeningMeetDate72: meetDate });
                         ECMIS.toastOk('บันทึกความเห็นและส่งบรรจุวาระเรียบร้อย');
                         setTimeout(() => location.href = ECMIS.pageForCase72(kase) + '?case=' + encodeURIComponent(kase.id), 1400);
                     });
