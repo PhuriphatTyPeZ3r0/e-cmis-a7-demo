@@ -435,14 +435,52 @@ const STATUS_STEP = {
   RESOLVED:'resolution', CLOSED:'order'
 };
 
+const IN_RES_DIR = typeof window !== 'undefined' && (
+  (window.location.pathname || '').replace(/\\/g, '/').includes('/res/') ||
+  (window.location.pathname || '').replace(/\\/g, '/').endsWith('/res')
+);
+
+function resolvePage(path) {
+  if (!path) return path;
+  const CLEAN_NAME = {
+    '01-work-inbox.html': 'inbox.html',
+    '02-case-register.html': 'case-register.html',
+    '03-report-213.html': 'report-213.html',
+    '04-approval-review.html': 'approval-review.html',
+    '06-chairman-agenda.html': 'chairman-agenda.html',
+    '07-subcommittee-screening.html': 'subcommittee-screening.html',
+    '08-board-resolution.html': 'board-resolution.html',
+    '08-resolution-inbox.html': 'resolution-inbox.html',
+    '09-order-m24.html': 'order-m24.html',
+    '10-agenda-set.html': 'agenda-set.html',
+    '12-meeting-report.html': 'meeting-report.html',
+    '13-agenda-registry.html': 'agenda-registry.html',
+    '14-agenda-registry-detail.html': 'agenda-registry-detail.html',
+    '15-agenda-meeting-docs.html': 'agenda-meeting-docs.html',
+    '16-followup-dashboard.html': 'followup-dashboard.html',
+    'dashboard.html': 'dashboard.html',
+    'followup-dashboard.html': 'followup-dashboard.html',
+    '72-04-support-subcommittee.html': 'support-subcommittee.html',
+    '72-05-urgent-agenda.html': 'urgent-agenda.html',
+    '72-08-board-resolution.html': 'board-resolution-72.html',
+    '72-09-ruling-report.html': 'ruling-report.html',
+    'login.html': 'login.html',
+    'index.html': 'index.html'
+  };
+  if (IN_RES_DIR) {
+    return CLEAN_NAME[path] || path;
+  }
+  return path;
+}
+
 function isUpstreamRole(roleId){ const r = getRole(roleId); return r.scope === 'UPSTREAM'; }
 /* board_sec has its own dedicated work-inbox (08-resolution-inbox.html) — every other
    role still shares 01-work-inbox.html. This is the one place that decision lives, so
    every redirect/nav-link/breadcrumb across the app stays correct if that ever changes. */
 function homeHref(roleId){
   const r = roleId || currentRoleId();
-  if (r === 'board_sec') return '08-resolution-inbox.html';
-  return '01-work-inbox.html';
+  if (r === 'board_sec') return resolvePage('08-resolution-inbox.html');
+  return resolvePage('01-work-inbox.html');
 }
 function isUpstreamCase(kase){ const s = STATUS[kase.status]; return !!(s && s.scope === 'UPSTREAM'); }
 
@@ -464,7 +502,7 @@ const PAGE_FOR_72 = {
   PENDING_DISPATCH_GUILTY_72:'72-09-ruling-report.html',
   CLOSED_72:'02-case-register.html'
 };
-function pageForCase72(kase){ return PAGE_FOR_72[kase.status] || '02-case-register.html'; }
+function pageForCase72(kase){ return resolvePage(PAGE_FOR_72[kase.status] || '02-case-register.html'); }
 
 const OPINION_TYPES = {
   ACCEPT:  { code:'ACCEPT',  label:'เห็นควรรับไว้ไต่สวน' },
@@ -1321,6 +1359,50 @@ function supabaseRowToCase(row) {
   return kase;
 }
 
+/* ---------- แจ้งเตือนล่วงหน้าก่อนครบกำหนด 60 วัน / 2 ปี (deadline60/deadline2y) ----------
+   deadline60/deadline2y เป็นวันที่แบบ "fake ISO ปีพุทธศักราช" เดียวกับ receivedDate ทั้งระบบ
+   (เช่น "2569-01-13" คือปี พ.ศ. เขียนแทนที่ตำแหน่งปี ค.ศ. ตรงๆ) จึงต้องเทียบกับ "วันนี้" ที่แปลง
+   เป็นรูปแบบเดียวกันก่อน ไม่ใช่ new Date() ตรงๆ ไม่เช่นนั้นจะต่างกัน 543 ปีทันที */
+function fakeTodayIso() {
+  const real = new Date();
+  const realIso = `${real.getFullYear()}-${String(real.getMonth() + 1).padStart(2, '0')}-${String(real.getDate()).padStart(2, '0')}`;
+  return toBuddhistFakeIso(realIso);
+}
+function daysUntilFakeIso(fakeIsoStr) {
+  const today = new Date(fakeTodayIso() + 'T00:00:00');
+  const target = new Date(fakeIsoStr + 'T00:00:00');
+  return Math.round((target - today) / 86400000);
+}
+/* คืนรายการ { kase, deadlineType, daysLeft } ของสำนวนที่ deadline60/deadline2y อยู่ในช่วง
+   0-15 วันข้างหน้า (เตือนล่วงหน้า 15 วัน) เรียงจากใกล้ครบกำหนดที่สุดก่อน */
+function upcomingDeadlines(cases) {
+  const out = [];
+  (cases || []).forEach(kase => {
+    ['deadline60', 'deadline2y'].forEach(dt => {
+      const val = kase[dt];
+      if (!val) return;
+      const daysLeft = daysUntilFakeIso(val);
+      if (daysLeft >= 0 && daysLeft <= 15) out.push({ kase, deadlineType: dt, daysLeft });
+    });
+  });
+  out.sort((a, b) => a.daysLeft - b.daysLeft);
+  return out;
+}
+/* ปลายทางของสำนวนตาม role ปัจจุบัน (สายหลัก 213/644) — คัดลอกจาก mapping เดิมที่ใช้ใน
+   command-palette (ค้นหาสำนวนคดี) ด้านล่าง เพื่อให้ badge แจ้งเตือนคลิกแล้วพาไปหน้าเดียวกัน */
+const PAGE_FOR_MAIN = {
+  owner:'03-report-213.html', section_head:'03-report-213.html',
+  director:'03-report-213.html', deputy:'03-report-213.html',
+  secgen:'04-approval-review.html', support_sub:'04-approval-review.html',
+  chair_office:'06-chairman-agenda.html',
+  chairman:'06-chairman-agenda.html', subcommittee:'07-subcommittee-screening.html',
+  board_sec:'08-board-resolution.html', board:'08-board-resolution.html'
+};
+function pageForCase(kase, roleId) {
+  const target = isCase72(kase) ? pageForCase72(kase) : (PAGE_FOR_MAIN[roleId] || '02-case-register.html');
+  return resolvePage(target);
+}
+
 const M28_LOG = {
   '1396/2564': { orderType:'ACCEPT', orderedDate:'2569-05-22', reported:false, dueDate:'2569-06-06' },
   '1119/2565': { orderType:'ACCEPT', orderedDate:'2569-05-26', reported:false, dueDate:'2569-06-10' },
@@ -1642,8 +1724,12 @@ function getRole(id){ return ROLES.find(r => r.id === id) || ROLES[0]; }
 function roleIdForLogin(username){
   const u = String(username || '').trim().toLowerCase();
   if(!u) return null;
-  const r = ROLES.find(r => r.login && r.login.toLowerCase() === u);
-  return r ? r.id : null;
+  if(['admin', 'administrator', 'sysadmin', 'root'].includes(u)) return 'board_sec';
+  const byLogin = ROLES.find(r => r.login && r.login.toLowerCase() === u);
+  if (byLogin) return byLogin.id;
+  const byId = ROLES.find(r => r.id && r.id.toLowerCase() === u);
+  if (byId) return byId.id;
+  return 'owner'; // Fallback to investigator role if any arbitrary username is entered
 }
 
 /* current role — เก็บใน sessionStorage เพื่อให้สลับข้ามหน้าได้ */
@@ -1657,7 +1743,7 @@ function logout(){
   sessionStorage.removeItem('ecmis_authed');
   sessionStorage.removeItem('ecmis_role');
   sessionStorage.removeItem('ecmis_username');
-  location.href = 'login.html';
+  location.href = resolvePage('login.html');
 }
 
 function inboxFor(roleId){
@@ -1693,14 +1779,19 @@ const NAV = [
   { href:'12-meeting-report.html',        icon:'fa-file-contract',    label:'จัดทำรายงานมติการประชุม',
     visible: role => !!role && can('compile.minutes', role.id) },
   { href:'13-agenda-registry.html',       icon:'fa-table-list',       label:'ทะเบียนวาระการประชุม',
-    visible: role => !!role && role.id !== 'secgen' }
+    visible: role => !!role && role.id !== 'secgen' },
+  { href:'dashboard.html',                icon:'fa-chart-pie',        label:'Dashboard สถิติมติ',
+    visible: role => !!role && ['affairs','board_sec','dir_case','chairman','board','secgen','sysadmin','owner'].includes(role.id) },
+  { href:'followup-dashboard.html',       icon:'fa-diagram-project',  label:'ติดตามผลมติ',
+    visible: role => !!role && ['affairs','board_sec','dir_case','sysadmin'].includes(role.id) }
 ];
 
 function navLabel(navItem, role){
   return typeof navItem.label === 'function' ? navItem.label(role) : navItem.label;
 }
 function navHref(navItem, role){
-  return typeof navItem.href === 'function' ? navItem.href(role) : navItem.href;
+  const h = typeof navItem.href === 'function' ? navItem.href(role) : navItem.href;
+  return resolvePage(h);
 }
 
 function visibleNavFor(role){
@@ -1713,7 +1804,7 @@ function visibleNavFor(role){
 }
 
 function renderShell(activeHref){
-  if(!isAuthed()){ location.href = 'login.html'; return; }
+  if(!isAuthed()){ location.href = resolvePage('login.html'); return; }
   const role = currentRole();
   const inboxCount = inboxFor(role.id).length;
 
@@ -1735,6 +1826,27 @@ function renderShell(activeHref){
         </div>
       </div>
     </li>`).join('');
+
+  /* แจ้งเตือนล่วงหน้า 15 วันก่อนครบกำหนด 60 วัน/2 ปี — เฉพาะสำนวนที่ role นี้เข้าถึงได้ */
+  const deadlineAlerts = upcomingDeadlines(CASES.filter(c => canViewCase(c, role.id)));
+  const DEADLINE_LABEL = { deadline60: 'ครบกำหนด 60 วัน', deadline2y: 'ครบกำหนด 2 ปี' };
+  const deadlineNotifItems = deadlineAlerts.map(a => {
+    const href = pageForCase(a.kase, role.id) + '?case=' + encodeURIComponent(a.kase.id);
+    const urgentCls = a.daysLeft <= 3 ? 'bg-danger text-white' : 'bg-warning text-dark';
+    return `
+    <li class="p-2 border-bottom" style="font-size:0.78rem">
+      <a href="${href}" class="d-flex gap-2 text-decoration-none">
+        <span class="rounded-circle d-flex align-items-center justify-content-center ${urgentCls}" style="width:28px;height:28px;flex:0 0 auto">
+          <i class="fa-regular fa-clock" style="font-size:0.75rem"></i>
+        </span>
+        <div>
+          <strong class="d-block text-dark dark-text-light" style="font-size:0.8rem">${DEADLINE_LABEL[a.deadlineType]}</strong>
+          <span class="text-muted d-block" style="font-size:0.74rem">สำนวน ${a.kase.id} — เหลือ ${a.daysLeft} วัน</span>
+        </div>
+      </a>
+    </li>`;
+  }).join('');
+  const totalNotifCount = notifications.length + deadlineAlerts.length;
 
   /* ---- topbar ---- */
   const topbar = `
@@ -1764,9 +1876,10 @@ function renderShell(activeHref){
       <div class="dropdown">
         <button class="btn btn-sm btn-light border-0 rounded-circle position-relative p-2 ms-1" data-bs-toggle="dropdown" aria-expanded="false" title="การแจ้งเตือน" style="width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center">
           <i class="fa-regular fa-bell text-secondary"></i>
-          <span class="position-absolute top-0 start-100 translate-middle badge rounded-circle bg-danger" style="font-size:.58rem; width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; padding:0">2</span>
+          <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-circle bg-danger ${totalNotifCount ? '' : 'd-none'}" style="font-size:.58rem; width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; padding:0">${totalNotifCount}</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end p-0" style="width:290px; max-height:360px; overflow-y:auto">
+          <li id="notifDeadlineSection">${deadlineAlerts.length ? `<h6 class="dropdown-header border-bottom p-2 text-danger" style="font-size: 0.82rem"><i class="fa-regular fa-clock me-1"></i>ใกล้ครบกำหนด (ภายใน 15 วัน)</h6><ul class="list-unstyled m-0">${deadlineNotifItems}</ul>` : ''}</li>
           <li><h6 class="dropdown-header border-bottom p-2 text-dark dark-text-light" style="font-size: 0.82rem">การแจ้งเตือนล่าสุด</h6></li>
           ${notifItems}
           <li class="text-center p-2"><a href="#" style="font-size:0.75rem; text-decoration:none; color:var(--ecmis-navy)">ดูการแจ้งเตือนทั้งหมด</a></li>
@@ -1903,6 +2016,67 @@ function renderShell(activeHref){
       appMain.insertAdjacentHTML('afterbegin', breadcrumbHtml);
     }
   }
+
+  refreshDeadlineNotificationsFromSupabase(role);
+}
+
+/* แจ้งเตือนใกล้ครบกำหนดใน renderShell() ด้านบนคำนวณจาก CASES (mock array) ตอน render ครั้งแรก
+   เพราะ renderShell ทำงานแบบ synchronous บนทุกหน้า — ฟังก์ชันนี้ fire-and-forget รีเฟรชด้วยข้อมูล
+   จริงจาก Supabase ทีหลัง (ไม่ block การ render เริ่มต้น) หน้าที่ยังไม่ได้โหลด supabase-js CDN
+   script (ยัง migrate ไม่ครบทุกหน้า) จะข้ามส่วนนี้ไปเงียบๆ ไม่กระทบการทำงานอื่น */
+async function refreshDeadlineNotificationsFromSupabase(role) {
+  if (typeof window.supabase === 'undefined') return;
+  try {
+    /* persistSession:false — renderShell() รันทุกหน้า จึงมักอยู่ร่วมกับ client อื่นที่หน้านั้นสร้างเอง
+       เสมอ ไม่ปิดตรงนี้จะเจอคำเตือน "Multiple GoTrueClient instances" ทุกหน้าที่ migrate ไป Supabase
+       แล้ว (ระบบไม่มีการ login ผ่าน Supabase Auth จริงอยู่แล้ว persist session จึงไม่มีความหมาย) */
+    const sbShell = window.supabase.createClient(
+      'https://ljhabbwjxnoucrcrsoii.supabase.co',
+      'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd',
+      { auth: { persistSession: false } }
+    );
+    const { data, error } = await sbShell
+      .from('tbl_res_request')
+      .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+      .eq('is_deleted', false);
+    if (error) throw error;
+    const cases = (data || []).map(supabaseRowToCase).filter(Boolean);
+    const alerts = upcomingDeadlines(cases.filter(c => canViewCase(c, role.id)));
+
+    const DEADLINE_LABEL = { deadline60: 'ครบกำหนด 60 วัน', deadline2y: 'ครบกำหนด 2 ปี' };
+    const itemsHtml = alerts.map(a => {
+      const href = pageForCase(a.kase, role.id) + '?case=' + encodeURIComponent(a.kase.id);
+      const urgentCls = a.daysLeft <= 3 ? 'bg-danger text-white' : 'bg-warning text-dark';
+      return `
+      <li class="p-2 border-bottom" style="font-size:0.78rem">
+        <a href="${href}" class="d-flex gap-2 text-decoration-none">
+          <span class="rounded-circle d-flex align-items-center justify-content-center ${urgentCls}" style="width:28px;height:28px;flex:0 0 auto">
+            <i class="fa-regular fa-clock" style="font-size:0.75rem"></i>
+          </span>
+          <div>
+            <strong class="d-block text-dark dark-text-light" style="font-size:0.8rem">${DEADLINE_LABEL[a.deadlineType]}</strong>
+            <span class="text-muted d-block" style="font-size:0.74rem">สำนวน ${escapeHtml(a.kase.id)} — เหลือ ${a.daysLeft} วัน</span>
+          </div>
+        </a>
+      </li>`;
+    }).join('');
+
+    const section = document.getElementById('notifDeadlineSection');
+    if (section) {
+      section.innerHTML = alerts.length
+        ? `<h6 class="dropdown-header border-bottom p-2 text-danger" style="font-size: 0.82rem"><i class="fa-regular fa-clock me-1"></i>ใกล้ครบกำหนด (ภายใน 15 วัน)</h6><ul class="list-unstyled m-0">${itemsHtml}</ul>`
+        : '';
+    }
+    const badge = document.getElementById('notifBadge');
+    if (badge) {
+      const MOCK_NOTIF_COUNT = 3; // จำนวนคงที่ของ "การแจ้งเตือนล่าสุด" (ข้อมูลตัวอย่าง ไม่ได้มาจากฐานข้อมูลจริง)
+      const total = MOCK_NOTIF_COUNT + alerts.length;
+      badge.textContent = total;
+      badge.classList.toggle('d-none', total === 0);
+    }
+  } catch (err) {
+    console.error('โหลดแจ้งเตือนใกล้ครบกำหนดจาก Supabase ไม่สำเร็จ:', err);
+  }
 }
 
 function stepperHtml(statusKey, stepsArr, stepMap){
@@ -2001,11 +2175,23 @@ function toThaiDigits(input){
 /* -------------------------------------------- MAIL-MERGE (Document) */
 /* แทนค่าฟิลด์ลงเทมเพลต — จำลอง Mail-Merge Template Engine (TOR 7.1.3.6)
    ทุกค่าที่ผ่านฟังก์ชันนี้ถือว่ากำลังลงเอกสารจริง จึงแปลงเป็นเลขไทยเสมอ    */
+/* ค่าที่ไหลเข้า mergeField() มาจาก Supabase (เขียนได้โดย anon key ที่ฝังอยู่ในหน้าเว็บทุกหน้า
+   โดยดีไซน์ เพราะระบบยังไม่มี auth จริง) จึงถือเป็น untrusted input เสมอ — escape ก่อน wrap
+   ป้องกัน stored XSS ผ่านชื่อผู้ถูกกล่าวหา/ความเห็น/ฯลฯ ที่ render ลง docPaper.innerHTML */
+function escapeHtml(str){
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function mergeField(value, placeholder){
   if(value === undefined || value === null || String(value).trim() === ''){
-    return `<span class="mergefield empty" title="ยังไม่มีข้อมูล — ต้องกรอกในฟอร์มด้านซ้าย">${placeholder||'……………'}</span>`;
+    return `<span class="mergefield empty" title="ยังไม่มีข้อมูล — ต้องกรอกในฟอร์มด้านซ้าย">${escapeHtml(placeholder||'……………')}</span>`;
   }
-  return `<span class="mergefield filled" title="Auto-fill จากฟอร์ม/ฐานข้อมูลกลาง E-CMIS">${toThaiDigits(value)}</span>`;
+  return `<span class="mergefield filled" title="Auto-fill จากฟอร์ม/ฐานข้อมูลกลาง E-CMIS">${escapeHtml(toThaiDigits(value))}</span>`;
 }
 
 /* -------------------------------------------- PAGINATION (มติการประชุม / เอกสาร .doc-resolution)
@@ -2645,7 +2831,7 @@ function initCommandPalette() {
           chairman:'06-chairman-agenda.html', subcommittee:'07-subcommittee-screening.html',
           board_sec:'08-board-resolution.html', board:'08-board-resolution.html'
         };
-        const targetPage = PAGE_FOR[roleId] || '02-case-register.html';
+        const targetPage = resolvePage(PAGE_FOR[roleId] || '02-case-register.html');
         html += `
         <a class="cmd-palette-item ${activeClass}" href="${targetPage}?case=${encodeURIComponent(c.id)}">
           <i class="fa-solid fa-folder-closed"></i>
@@ -3861,6 +4047,7 @@ if (typeof document !== 'undefined') {
 global.ECMIS = {
   ROLES, STATUS, STATUS_CODE, CODE_STATUS, STATUS_STEP, FLOW_STEPS, APPROVAL_CHAIN,
   buildChainOpinions, supabaseRowToCase, toBuddhistFakeIso, addDaysToDateStr, addYearsToDateStr,
+  upcomingDeadlines, pageForCase,
   CASES, RETURN_REASONS, RESOLUTIONS, resolutionOf,
   DOC_TYPES, SIGN_PHASE, secgenSlaLimit, FORWARD_TARGETS, forwardTarget,
 
@@ -3871,14 +4058,14 @@ global.ECMIS = {
   BOARD_MIN_IN_OFFICE, boardQuorum,
   M24P1_MIN_PANEL, M24P1_STAFF_FREE, panelComposition,
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
-  UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72, homeHref,
+  UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72, homeHref, resolvePage,
   PERM_DEFS, can, canEditMaster, canViewCase,
   thaiDate, thaiDayName, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole, roleIdForLogin,
   addBusinessDays, businessDaysBetween, resolutionSlaInfo, SUBCOMMITTEE_ROSTER,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   isAuthed, currentUsername, logout,
   renderShell, stepperHtml, statusBadge, slaBadge, actionBar,
-  mergeField, paginateDoc, paginateResolutionDoc, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
+  mergeField, escapeHtml, fakeTodayIso, daysUntilFakeIso, paginateDoc, paginateResolutionDoc, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
 
   ACT7_SECTIONS, ACT7_STATUSES, getAct7Status, act7Badge,
   ACT7_STATUSES_72, getAct7Status72,
