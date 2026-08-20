@@ -231,7 +231,10 @@ function isChairActionable(c) {
          (c.status === 'PENDING_URGENT' && c.urgent);
 }
 
-const AFFAIRS_STATUSES = ['DEFERRED', 'RESOLVED_PENDING_72', 'PENDING_DISPATCH_GUILTY_72'];
+/* 'RESOLVED' รวมอยู่ด้วย เพราะ กจ. (affairs) ต้องพิจารณาจัดทำคำสั่งแต่งตั้งคณะอนุกรรมการ/พนักงานไต่สวน
+   ตาม ม.24 ต่อจากมติ — ระบบยังไม่มีคอลัมน์แยกประเภทมติ (รับไว้ไต่สวน/ไม่รับไว้/ส่ง ป.ป.ช. ฯลฯ) ใน Supabase
+   จึงต้องแสดงสำนวนที่ "มีมติแล้ว" ทั้งหมดให้ กจ. คัดกรองเองว่าเรื่องใดต้องออกคำสั่ง ม.24 จริง */
+const AFFAIRS_STATUSES = ['DEFERRED', 'RESOLVED_PENDING_72', 'PENDING_DISPATCH_GUILTY_72', 'RESOLVED'];
 
 let CASES, all, mine;
 
@@ -445,10 +448,12 @@ function renderKPICards() {
     const deferredCount   = allCasesCombined.filter(c => c.status === 'DEFERRED').length;
     const rulingCount     = allCasesCombined.filter(c => c.status === 'RESOLVED_PENDING_72').length;
     const dispatchCount   = allCasesCombined.filter(c => c.status === 'PENDING_DISPATCH_GUILTY_72').length;
+    const order24Count    = allCasesCombined.filter(c => c.status === 'RESOLVED').length;
 
     const kpis = [
       { id:'ALL', n: allCasesCombined.length, l:'รายการทั้งหมด', i:'fa-folder-open', c:'#0F2A62' },
       { id:'DEFERRED', n: deferredCount, l:'เลื่อน/ถอนวาระ — รอเลขวาระใหม่', i:'fa-calendar-plus', c:'#DB2626' },
+      { id:'RESOLVED', n: order24Count, l:'มีมติแล้ว — รอพิจารณาจัดทำคำสั่ง ม.24', i:'fa-gavel', c:'#7C3AED' },
       { id:'RESOLVED_PENDING_72', n: rulingCount, l:'รอจัดทำรายงานวินิจฉัยชี้มูล', i:'fa-file-pen', c:'#D0A830' },
       { id:'PENDING_DISPATCH_GUILTY_72', n: dispatchCount, l:'ชี้มูลความผิดแล้ว รอส่งดำเนินคดี', i:'fa-paper-plane', c:'#0284C7' }
     ];
@@ -561,9 +566,14 @@ function getActionBadge(c) {
   return getSecgenActionBadge(c);
 }
 
+/* กจ. (affairs) คุมหลายสถานะสายหลักที่ต้องไปคนละหน้าจอ — ต่างจาก role อื่นที่มีหน้าจอเดียว
+   ต่อบทบาทใน PAGE_FOR ด้านบน จึงต้องกำหนดปลายทางตามสถานะเป็นกรณีพิเศษ */
+const AFFAIRS_PAGE_FOR_STATUS = { DEFERRED: '13-agenda-registry.html', RESOLVED: '09-order-m24.html' };
+
 function row(c){
   const is72 = ECMIS.isCase72(c);
-  const page = is72 ? ECMIS.pageForCase72(c) : (PAGE_FOR[role.id] || '02-case-register.html');
+  const page = is72 ? ECMIS.pageForCase72(c)
+    : (role.id === 'affairs' && AFFAIRS_PAGE_FOR_STATUS[c.status]) || (PAGE_FOR[role.id] || '02-case-register.html');
   const target = `${page}?case=${encodeURIComponent(c.id)}`;
 
   if (role.id === 'chairman') {
@@ -889,7 +899,12 @@ document.getElementById('btnClearFilter').addEventListener('click', () => {
       : CASES.filter(c => ECMIS.canViewCase(c, role.id));
   mine = role.id === 'chairman'
     ? CASES.filter(c => isChairActionable(c))
-    : inboxFor(role.id).filter(c => !ECMIS.isUpstreamCase(c) && ECMIS.canViewCase(c, role.id));
+    /* affairs ใช้ AFFAIRS_STATUSES เดียวกับ `all` ด้านบนเสมอ — ไม่ใช้ inboxFor() ตรงๆ เพราะ
+       inboxFor() อิง STATUS[status].owner ตัวเดียว (RESOLVED เป็นของ board_sec) แต่ affairs
+       ก็ต้องเห็นสำนวน RESOLVED เป็นงานของตัวเองด้วยเพื่อพิจารณาจัดทำคำสั่ง ม.24 ต่อ */
+    : role.id === 'affairs'
+      ? CASES.filter(c => AFFAIRS_STATUSES.includes(c.status) && !ECMIS.isUpstreamCase(c) && ECMIS.canViewCase(c, role.id))
+      : inboxFor(role.id).filter(c => !ECMIS.isUpstreamCase(c) && ECMIS.canViewCase(c, role.id));
   mineIds = new Set(mine.map(c => c.id));
   buildAllCasesCombined();
   filteredCombined = [...allCasesCombined];
