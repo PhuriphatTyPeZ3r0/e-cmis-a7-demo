@@ -116,10 +116,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/ecmis-app.js"></script>
   <script src="assets/agenda-registry-data.js"></script>
   <script>
-    ECMIS.renderShell('13-agenda-registry.html');
+    ECMIS.renderShell('15-agenda-meeting-docs.html');
     const M = ECMIS.mergeField;
     const AR = AgendaRegistry;
     const role = ECMIS.currentRole();
@@ -127,8 +128,17 @@
 
     const params = new URLSearchParams(location.search);
     const meetId = +params.get('meet');
-    const meeting = AR.MEETINGS.find(m => m.trc_id === meetId);
     document.getElementById('backLink').href = `14-agenda-registry-detail.html?meet=${meetId}`;
+
+    /* AR.MEETINGS/AR.ITEMS ยังว่างอยู่จนกว่า AR.ready (โหลดจาก Supabase) จะ resolve ก่อน —
+       ต้องรอก่อนอ่านเสมอ เหมือน 13-agenda-registry.html/14-agenda-registry-detail.html */
+    AR.ready.then(runPage).catch(err => {
+      console.error('โหลดทะเบียนวาระการประชุมไม่สำเร็จ:', err);
+      ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
+    });
+
+    function runPage() {
+    const meeting = AR.MEETINGS.find(m => m.trc_id === meetId);
 
     if (!meeting) {
       document.getElementById('notFoundBox').classList.remove('d-none');
@@ -435,7 +445,10 @@
       }
 
       function handle(act) {
-        if (act === 'save') { AR.save(); ECMIS.toastOk('บันทึกร่างลำดับวาระเรียบร้อย'); return; }
+        /* รายละเอียดหนังสือเชิญประชุม (เลขที่หนังสือ/วันที่ออกหนังสือ/เวลา/สถานที่/ผู้ลงนาม ฯลฯ) ยังไม่มี
+           คอลัมน์ใน tbl_res_calendar — "บันทึกร่าง" จึงยังเป็นแค่ mutate ตัวแปร meeting ในหน่วยความจำ
+           (เหมือนเดิม) ไม่ได้เขียนลง Supabase จนกว่าจะมีคอลัมน์รองรับ */
+        if (act === 'save') { ECMIS.toastOk('บันทึกร่างลำดับวาระเรียบร้อย'); return; }
         if (act === 'confirm') {
           if (!items.length) return;
           ECMIS.confirmAction({
@@ -443,10 +456,15 @@
             html: `<p>การประชุมครั้งที่ <strong>${meeting.trc_name}</strong> รวม <strong>${items.length}</strong> เรื่อง
               จะถูกจัดเรียงเป็นระเบียบวาระฉบับสมบูรณ์</p>`,
             confirmText: 'ยืนยันจัดวาระ'
-          }).then(res => {
+          }).then(async res => {
             if (!res.isConfirmed) return;
-            meeting.trc_confirmed = true;
-            AR.save();
+            try {
+              await AR.confirmMeeting(meeting.trc_id);
+            } catch (err) {
+              console.error('บันทึกการจัดวาระไม่สำเร็จ:', err);
+              ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+              return;
+            }
             ECMIS.toastOk('จัดระเบียบวาระการประชุมเรียบร้อย');
             document.getElementById('confirmedBadgeWrap').innerHTML =
               '<span class="meet-confirmed"><i class="fa-solid fa-check"></i>จัดวาระแล้ว</span>';
@@ -455,6 +473,7 @@
       }
 
       renderDoc(); renderActions();
+    }
     }
   </script>
 </body>

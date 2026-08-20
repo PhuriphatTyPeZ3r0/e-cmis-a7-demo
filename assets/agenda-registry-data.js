@@ -19,7 +19,11 @@
 
   const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
-  const sb = global.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  /* persistSession:false — ระบบนี้ไม่มีการ login ผ่าน Supabase Auth จริงเลย (ใช้ anon key
+     ตายตัวทุกหน้า) การ persist auth session จึงไม่มีความหมาย และเป็นสาเหตุของคำเตือน
+     "Multiple GoTrueClient instances" เมื่อหน้าเดียวกันมีหลาย createClient() (เช่นหน้านี้ +
+     ecmis-app.js ที่สร้าง client แยกสำหรับ notification bell) */
+  const sb = global.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 
   const MEETINGS = [];
   const ITEMS = [];
@@ -42,11 +46,11 @@
     return `${parseInt(y, 10) + 543}-${m}-${d}`;
   }
 
-  /* ---------- case_ref: ยังไม่มีคอลัมน์ในฐานข้อมูลจริง — การเชื่อมสำนวนต้องผ่าน
-     tbl_res_calendar_item_case → tbl_res_request → tcc_id (tbl_cmp_case ของ
-     กิจกรรมที่ 4) ซึ่งยังไม่ได้สร้างในโปรเจกต์นี้ เก็บเป็น overlay ใน
-     sessionStorage คีย์ตาม trci_id ไปก่อน (ข้อมูลเรื่อง/สำนวนจริงในอนาคตจะมา
-     จากกิจกรรมที่ 5/6/10 ตามที่วิเคราะห์ไว้ ไม่ใช่กิจกรรมที่ 4 โดยตรง) ---------- */
+  /* ---------- case_ref: ตอนนี้เชื่อมจริงผ่าน tbl_res_calendar_item_case → tbl_res_request →
+     tbl_cmp_case.tcc_no (RLS ของตารางเชื่อมนี้เพิ่งเปิดสิทธิ์ให้ anon select/insert — เดิม RLS
+     เปิดอยู่แต่ไม่มี policy เลยสักอัน จึงเข้าถึงไม่ได้และไม่เคยถูกใช้งานจริง) เลขที่เรื่องที่พิมพ์เอง
+     แล้วไม่พบสำนวนจริงในระบบ (อ้างอิงนอกระบบ) ยังคง fallback เป็น sessionStorage overlay เหมือนเดิม
+     — case_ref ที่แสดงผลจึงเป็นการรวมกันของ 2 แหล่งนี้เสมอ ---------- */
   const CASE_REF_KEY = 'ecmis_agenda_case_ref_overlay';
   function loadCaseRefOverlay() {
     try { return JSON.parse(sessionStorage.getItem(CASE_REF_KEY) || '{}'); } catch (e) { return {}; }
@@ -54,13 +58,37 @@
   function saveCaseRefOverlay(map) {
     try { sessionStorage.setItem(CASE_REF_KEY, JSON.stringify(map)); } catch (e) { /* ignore */ }
   }
-  function getCaseRef(trciId) {
-    return loadCaseRefOverlay()[trciId] || '-';
+  function getUnresolvedCaseRef(trciId) {
+    return loadCaseRefOverlay()[trciId] || '';
   }
-  function setCaseRef(trciId, value) {
+  function setUnresolvedCaseRef(trciId, value) {
     const map = loadCaseRefOverlay();
-    map[trciId] = value;
+    if (value) map[trciId] = value; else delete map[trciId];
     saveCaseRefOverlay(map);
+  }
+
+  /* trci_id -> [เลขสำนวนจริง, ...] ที่เชื่อมผ่าน tbl_res_calendar_item_case จริง (โหลดใน load()) */
+  const LINKED_CASE_NOS = {};
+  /* trr_id -> true สำหรับสำนวนที่ถูกบรรจุวาระแล้ว (มี link จริง) — ใช้กันคิวรอบรรจุวาระ
+     ไม่ให้แสดงเรื่องที่บรรจุวาระไปแล้วซ้ำ แม้ trr_status ยังไม่ถูกอัปเดตตาม */
+  const LINKED_TRR_IDS = new Set();
+
+  function combinedCaseRef(trciId) {
+    const parts = [...(LINKED_CASE_NOS[trciId] || [])];
+    const unresolved = getUnresolvedCaseRef(trciId);
+    if (unresolved) parts.push(...unresolved.split(',').map(s => s.trim()).filter(Boolean));
+    return parts.length ? parts.join(', ') : '-';
+  }
+
+  async function resolveCaseNoToTrrId(caseNo) {
+    const { data, error } = await sb
+      .from('tbl_res_request')
+      .select('trr_id, tbl_cmp_case!inner(tcc_no)')
+      .eq('tbl_cmp_case.tcc_no', caseNo)
+      .eq('is_deleted', false)
+      .maybeSingle();
+    if (error) throw error;
+    return data ? data.trr_id : null;
   }
 
   function mapMeetingRow(row) {
@@ -75,18 +103,32 @@
     return {
       trci_id: row.trci_id, trc_id: row.trc_id, trci_number: row.trci_number || '',
       category: row.category || 'finding', trci_topic: row.trci_topic || '',
-      case_ref: getCaseRef(row.trci_id), remark: row.remark || '-'
+      case_ref: combinedCaseRef(row.trci_id), remark: row.remark || '-'
     };
   }
 
   async function load() {
-    const [{ data: mRows, error: mErr }, { data: iRows, error: iErr }] = await Promise.all([
+    const [{ data: mRows, error: mErr }, { data: iRows, error: iErr }, { data: licRows, error: licErr }] = await Promise.all([
       sb.from('tbl_res_calendar').select('*').eq('is_deleted', false).order('trc_id'),
-      sb.from('tbl_res_calendar_item').select('*').eq('is_deleted', false).order('trci_id')
+      sb.from('tbl_res_calendar_item').select('*').eq('is_deleted', false).order('trci_id'),
+      sb.from('tbl_res_calendar_item_case')
+        .select('trci_id, trr_id, tbl_res_request!inner(tbl_cmp_case!inner(tcc_no))')
+        .eq('is_deleted', false)
     ]);
     if (mErr) throw mErr;
     if (iErr) throw iErr;
+    if (licErr) throw licErr;
     MEETINGS.length = 0; (mRows || []).forEach(r => MEETINGS.push(mapMeetingRow(r)));
+
+    Object.keys(LINKED_CASE_NOS).forEach(k => delete LINKED_CASE_NOS[k]);
+    LINKED_TRR_IDS.clear();
+    (licRows || []).forEach(r => {
+      const caseNo = r.tbl_res_request && r.tbl_res_request.tbl_cmp_case && r.tbl_res_request.tbl_cmp_case.tcc_no;
+      if (!caseNo) return;
+      (LINKED_CASE_NOS[r.trci_id] = LINKED_CASE_NOS[r.trci_id] || []).push(caseNo);
+      LINKED_TRR_IDS.add(r.trr_id);
+    });
+
     ITEMS.length = 0; (iRows || []).forEach(r => ITEMS.push(mapItemRow(r)));
   }
 
@@ -106,17 +148,29 @@
 
   function renderCaseRef(text) {
     if (!text || text === '-') return '<span class="text-muted small">—</span>';
+    const target = (global.ECMIS && global.ECMIS.resolvePage) ? global.ECMIS.resolvePage('02-case-register.html') : '02-case-register.html';
     const linked = text.replace(/(\d[\d]{1,6}\/\d{4})/g, m =>
-      `<a class="case-chip" href="02-case-register.html?q=${encodeURIComponent(m)}" title="ค้นหาในทะเบียนสำนวน">${m}</a>`);
+      `<a class="case-chip" href="${target}?q=${encodeURIComponent(m)}" title="ค้นหาในทะเบียนสำนวน">${m}</a>`);
     return `<span class="small">${linked}</span>`;
   }
 
   /* ดึงข้อมูลสำนวนจากระบบด้วยเลขสำนวน — จำลองการอัตโนมัติแทนขั้นตอน
      "เจ้าหน้าที่ติดต่อประสานงานกับผู้รับผิดชอบเพื่อรวบรวมข้อมูล/เอกสารประกอบวาระ"
-     ในผัง AS-IS (คัดข้อมูลจาก ECMIS.CASES โดยตรง ไม่ต้องติดต่อประสานงานเอง) */
-  function lookupCaseForAgenda(caseId) {
-    const kase = global.ECMIS.CASES.find(c => c.id === caseId.trim());
-    if (!kase) return null;
+     ในผัง AS-IS (คิวเรื่อง ณ ฐานข้อมูลจริง — เดิมค้นจาก ECMIS.CASES mock ทำให้เรื่องที่มีจริงใน
+     Supabase แต่ไม่อยู่ใน mock array ค้นไม่เจอ) */
+  async function lookupCaseForAgenda(caseId) {
+    const trimmed = String(caseId || '').trim();
+    if (!trimmed) return null;
+    const { data, error } = await sb
+      .from('tbl_res_request')
+      .select('*, tbl_cmp_case!inner(*)')
+      .eq('tbl_cmp_case.tcc_no', trimmed)
+      .eq('is_deleted', false)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    const cc = data.tbl_cmp_case;
+    const kase = global.ECMIS.supabaseRowToCase(data);
     const resolvedLike = ['RESOLVED_PENDING', 'RESOLVED', 'DISPATCHING', 'CLOSED'].includes(kase.status);
     const category = resolvedLike ? 'finding' : 'preliminary';
     const topic = `รายงานไต่สวน${resolvedLike ? 'เพื่อวินิจฉัยชี้มูล' : 'เบื้องต้น'} กรณี ${kase.subject}`;
@@ -124,7 +178,7 @@
     if (kase.prescription) remarkParts.push(`ครบอายุความ ${global.ECMIS.thaiDate(kase.prescription)}`);
     const statusLabel = global.ECMIS.STATUS[kase.status]?.label;
     if (statusLabel) remarkParts.push(statusLabel);
-    return { category, topic, caseRef: kase.id, remark: remarkParts.join(' / ') || '-' };
+    return { category, topic, caseRef: cc.tcc_no, remark: remarkParts.join(' / ') || '-' };
   }
 
   /* ---------- mutations: เขียนลง Supabase จริง แล้วอัปเดต array ในเครื่อง ---------- */
@@ -141,6 +195,19 @@
     const mapped = mapMeetingRow(data);
     MEETINGS.push(mapped);
     return mapped;
+  }
+
+  /* จัดวาระแล้ว (15-agenda-meeting-docs.html) — trc_confirmed เป็นคอลัมน์จริง เขียนกลับ Supabase
+     ทันที ส่วนรายละเอียดหนังสือเชิญประชุม (เลขที่หนังสือ/วันที่ออกหนังสือ/เวลา/สถานที่/ผู้ลงนาม ฯลฯ)
+     ยังไม่มีคอลัมน์ใน tbl_res_calendar จึงยังคงเป็น local state บนหน้านั้นเท่านั้น */
+  async function confirmMeeting(trcId) {
+    const role = global.ECMIS.currentRole();
+    const { error } = await sb.from('tbl_res_calendar')
+      .update({ trc_confirmed: true, updated_by: role.row, updated_datetime: new Date().toISOString() })
+      .eq('trc_id', trcId);
+    if (error) throw error;
+    const m = MEETINGS.find(x => x.trc_id === trcId);
+    if (m) m.trc_confirmed = true;
   }
 
   /* Soft delete — ตั้ง is_deleted = true เท่านั้น ข้อมูลยังอยู่ในฐานข้อมูลจริง
@@ -160,7 +227,27 @@
       .insert({ trc_id, trci_number, category, trci_topic, remark })
       .select().single();
     if (error) throw error;
-    setCaseRef(data.trci_id, case_ref || '-');
+
+    /* เชื่อมสำนวนจริงเข้า tbl_res_calendar_item_case ถ้าเลขที่เรื่องมีอยู่จริงในระบบ — เลขที่ไม่พบ
+       (พิมพ์เอง/อ้างอิงนอกระบบ) เก็บ fallback เป็น sessionStorage overlay เหมือนพฤติกรรมเดิม */
+    const caseNos = String(case_ref || '').split(',').map(s => s.trim()).filter(s => s && s !== '-');
+    const unresolved = [];
+    const linkedNos = [];
+    for (const caseNo of caseNos) {
+      let trrId = null;
+      try { trrId = await resolveCaseNoToTrrId(caseNo); } catch (e) { console.error('ค้นหาสำนวนไม่สำเร็จ:', e); }
+      if (trrId) {
+        const { error: linkErr } = await sb.from('tbl_res_calendar_item_case')
+          .insert({ trci_id: data.trci_id, trr_id: trrId });
+        if (linkErr) { console.error('เชื่อมสำนวนกับวาระไม่สำเร็จ:', linkErr); unresolved.push(caseNo); }
+        else { linkedNos.push(caseNo); LINKED_TRR_IDS.add(trrId); }
+      } else {
+        unresolved.push(caseNo);
+      }
+    }
+    if (linkedNos.length) LINKED_CASE_NOS[data.trci_id] = linkedNos;
+    setUnresolvedCaseRef(data.trci_id, unresolved.join(', '));
+
     const mapped = mapItemRow(data);
     ITEMS.push(mapped);
     return mapped;
@@ -206,10 +293,10 @@
   }
 
   global.AgendaRegistry = {
-    MEETINGS, ITEMS, CATEGORY_LABEL, CATEGORY_CLASS, STATUS_LABEL, STATUS_CLASS,
+    sb, MEETINGS, ITEMS, LINKED_TRR_IDS, CATEGORY_LABEL, CATEGORY_CLASS, STATUS_LABEL, STATUS_CLASS,
     ready, meetingOf, itemsOf, isFlagged, isBundled,
-    renderCaseRef, lookupCaseForAgenda,
-    addMeeting, deleteMeeting, addItem, deleteItem, updateItemNumber, swapItemNumber, setCaseRef
+    renderCaseRef, lookupCaseForAgenda, resolveCaseNoToTrrId,
+    addMeeting, deleteMeeting, addItem, deleteItem, updateItemNumber, swapItemNumber, confirmMeeting
   };
 
 })(window);

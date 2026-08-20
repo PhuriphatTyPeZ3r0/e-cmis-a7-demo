@@ -175,16 +175,62 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <script src="assets/ecmis-app.js"></script>
     <script src="assets/ecmis-model.js"></script>
     <script>
         ECMIS.renderShell('06-chairman-agenda.html');
 
         const params = new URLSearchParams(location.search);
-        const kase = ECMIS.getCase(params.get('case') || '1547/2568');
         const role = ECMIS.currentRole();
         let docTab = 'report213';
 
+        const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function loadCaseFromSupabase(caseId) {
+            const { data, error } = await sb
+                .from('tbl_res_request')
+                .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+                .eq('tbl_cmp_case.tcc_no', caseId)
+                .eq('is_deleted', false)
+                .maybeSingle();
+            if (error) throw error;
+            return data ? ECMIS.supabaseRowToCase(data) : null;
+        }
+
+        /* signedByChair/chairSignedAt ไม่มีคอลัมน์ใน Supabase (มีเฉพาะ trr_signed_secgen สำหรับเลขาธิการฯ)
+           จึงคง set บน kase ไว้ให้แสดงผลในหน้านี้ได้ตามเดิม เพียงแต่ไม่ถูกบันทึกข้ามหน้า/ข้ามอุปกรณ์ —
+           ตามรูปแบบเดียวกับฟิลด์ที่ไม่มีคอลัมน์จริงใน 07-subcommittee-screening.html */
+        async function persistCase(kase, patch) {
+            const dbPatch = {};
+            if ('status' in patch) {
+                const code = ECMIS.STATUS_CODE[patch.status];
+                if (!code) throw new Error(`ไม่พบรหัสสถานะสำหรับ ${patch.status}`);
+                dbPatch.trr_status = code;
+            }
+            const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
+            if (error) throw error;
+            Object.assign(kase, patch);
+        }
+
+        let kase;
+
+        (async function main() {
+            try {
+                kase = await loadCaseFromSupabase(params.get('case') || '1547/2568');
+            } catch (err) {
+                console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+                ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
+                return;
+            }
+            if (!kase) { ECMIS.toastWarn('ไม่พบสำนวนนี้ในระบบ'); return; }
+
+            renderPage();
+        })();
+
+        function renderPage() {
         document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
         document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status);
 
@@ -440,10 +486,15 @@
             <textarea id="swal-note" class="form-control" rows="3" placeholder="ระบุเหตุผลที่ตีกลับสำนวน"></textarea>`,
                     confirmText: 'ยืนยันตีกลับ'
                 })
-                    .then(r => {
+                    .then(async r => {
                         if (r.isConfirmed) {
-                            kase.status = 'RETURNED';
-                            ECMIS.saveCases();
+                            try {
+                                await persistCase(kase, { status: 'RETURNED' });
+                            } catch (err) {
+                                console.error('บันทึกการตีกลับไม่สำเร็จ:', err);
+                                ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+                                return;
+                            }
                             ECMIS.toastOk('ตีกลับเรียบร้อย');
                             setTimeout(() => location.href = ECMIS.homeHref(role.id), 1400);
                         }
@@ -482,13 +533,20 @@
                 const sel = MAP[order];
                 ECMIS.signDialog(`คำสั่งประธานกรรมการ ป.ป.ท. — ${sel.t} (เรื่องที่ ${kase.id})`,
                     'นายอำนาจ พวงชมภู — ประธานกรรมการ ป.ป.ท.')
-                    .then(res => {
+                    .then(async res => {
                         if (!res.isConfirmed) return;
 
-                        kase.status = sel.nextStatus;
+                        try {
+                            await persistCase(kase, { status: sel.nextStatus });
+                        } catch (err) {
+                            console.error('บันทึกคำสั่งประธานฯ ไม่สำเร็จ:', err);
+                            ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+                            return;
+                        }
+                        /* signedByChair/chairSignedAt ไม่มีคอลัมน์ใน Supabase — คงไว้เป็น local state
+                           สำหรับแสดงผลหน้านี้เท่านั้น (ดูหมายเหตุที่ persistCase ด้านบน) */
                         kase.signedByChair = true;
                         kase.chairSignedAt = new Date().toISOString();
-                        ECMIS.saveCases();
 
                         if (res.value && res.value.sig) {
                             const sigEl = document.querySelector('.doc-sign');
@@ -516,6 +574,7 @@
         }
 
         renderMeetRules(); renderDoc();
+        }
     </script>
 </body>
 
