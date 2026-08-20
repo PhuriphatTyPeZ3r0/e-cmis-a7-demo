@@ -361,21 +361,13 @@ if(ECMIS.isUpstreamRole(role.id)){
       — บทบาทนี้จึงมีเพียงสิทธิ์ <strong>ติดตามสถานะ</strong> สำนวนของตนเองในโมดูลนี้</small>
     </div>`;
 } else if (role.id === 'chairman') {
-  document.getElementById('scopeBanner').innerHTML = `
-    <div class="alert border-0 shadow-sm d-flex align-items-center justify-content-between mb-3 py-2 px-3" style="background: linear-gradient(135deg, #0F2A62 0%, #1E3A8A 100%); color: #fff; border-radius: 10px;">
-      <div class="d-flex align-items-center gap-2">
-        <span class="badge bg-warning text-dark"><i class="fa-solid fa-crown me-1"></i>ประธานกรรมการ ป.ป.ท.</span>
-        <span class="small text-white-50">นายวิชัย ยุติธรรม (สิทธิ์สั่งการส่งอนุกลั่นกรองฯ / สั่งบรรจุวาระด่วน Bypass / ลงนามรายงานชี้มูล)</span>
-      </div>
-    </div>`;
-
   // Customize dropdown filter for Chairman
   const sf = document.getElementById('statusFilter');
   if (sf) {
     sf.innerHTML = `
       <option value="ALL">ทั้งหมด</option>
       <option value="PENDING_NORMAL">รอสั่งการวาระปกติ</option>
-      <option value="PENDING_URGENT">วาระด่วน (Bypass)</option>
+      <option value="PENDING_URGENT">วาระด่วน</option>
       <option value="PENDING_RULING">รอลงนามรายงานชี้มูล</option>
     `;
   }
@@ -415,7 +407,7 @@ function renderKPICards() {
     const kpis = [
       { id:'ALL', n: allCasesCombined.length, l:'รายการทั้งหมด', i:'fa-folder-open', c:'#0F2A62' },
       { id:'PENDING_NORMAL', n: pendingNormalCount, l:'รอสั่งการวาระปกติ', i:'fa-hourglass-half', c:'#D0A830' },
-      { id:'PENDING_URGENT', n: pendingUrgentCount, l:'วาระด่วน (Bypass)', i:'fa-bolt', c:'#DB2626' },
+      { id:'PENDING_URGENT', n: pendingUrgentCount, l:'วาระด่วน', i:'fa-bolt', c:'#DB2626' },
       { id:'PENDING_RULING', n: pendingRulingCount, l:'รอลงนามชี้มูล', i:'fa-file-signature', c:'#0284C7' }
     ];
 
@@ -576,11 +568,13 @@ function row(c){
   if (role.id === 'chairman') {
     const isActionable = (c.status === 'PENDING_CHAIRMAN' || c.status === 'PENDING_CHAIRMAN_URGENT_72' || c.status === 'PENDING_SIGN_RULING_72' || c.status === 'PENDING_CHAIR_OF' || isMyPending(c));
     
+    /* ข้อความ badge ต้องตรงกับตัวเลือกใน dropdown "สถานะสั่งการ/บรรจุวาระ" ทุกคำ — คิว all
+       ถูกจำกัดเหลือเฉพาะ isChairActionable แล้ว (ดู all= ด้านล่าง) จึงไม่มีสถานะอื่นหลุดเข้ามา
+       ให้ตกไปที่ ECMIS.statusBadge() (ป้ายกำกับทั่วไปที่ใช้คำไม่ตรงกับ dropdown นี้) อีก */
     let catBadge = '';
-    if (c.status === 'PENDING_CHAIRMAN_URGENT_72' || (c.status === 'PENDING_URGENT' && c.urgent)) catBadge = `<span class="st st-urgent"><i class="fa-solid fa-bolt me-1"></i>วาระด่วน (Bypass)</span>`;
-    else if (c.status === 'PENDING_SIGN_RULING_72') catBadge = `<span class="st st-review"><i class="fa-solid fa-file-signature me-1"></i>รอลงนามชี้มูล</span>`;
-    else if (c.status === 'PENDING_CHAIRMAN' || c.status === 'PENDING_CHAIR_OF') catBadge = `<span class="st st-pending"><i class="fa-solid fa-hourglass-half me-1"></i>รอประธานสั่งการ</span>`;
-    else catBadge = ECMIS.statusBadge(c.status);
+    if (c.status === 'PENDING_CHAIRMAN_URGENT_72' || (c.status === 'PENDING_URGENT' && c.urgent)) catBadge = `<span class="st st-urgent"><i class="fa-solid fa-bolt me-1"></i>วาระด่วน</span>`;
+    else if (c.status === 'PENDING_SIGN_RULING_72') catBadge = `<span class="st st-review"><i class="fa-solid fa-file-signature me-1"></i>รอลงนามรายงานชี้มูล</span>`;
+    else catBadge = `<span class="st st-pending"><i class="fa-solid fa-hourglass-half me-1"></i>รอสั่งการวาระปกติ</span>`;
 
     return `<tr>
       <td class="text-center">
@@ -909,6 +903,14 @@ document.getElementById('btnClearFilter').addEventListener('click', () => {
   mineIds = new Set(mine.map(c => c.id));
   buildAllCasesCombined();
   filteredCombined = [...allCasesCombined];
+
+  /* เลขบนแถบเมนูด้านข้าง (badge สีแดง) มาจาก ECMIS.inboxFor() ซึ่งอิง CASES จำลองส่วนกลาง
+     ไม่ใช่ข้อมูลจริงจาก Supabase ที่โหลดในหน้านี้ — sync ให้ตรงกับจำนวนที่ต้องดำเนินการจริง (mine) */
+  const navBadge = document.querySelector('#appSidebar .badge.bg-danger.rounded-pill');
+  if (navBadge) {
+    if (mine.length) navBadge.textContent = mine.length;
+    else navBadge.remove();
+  }
 
   renderKPICards();
   applyFilters();
