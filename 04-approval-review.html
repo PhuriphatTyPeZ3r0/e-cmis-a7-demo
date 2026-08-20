@@ -58,6 +58,13 @@
           </div>
         </div>
 
+        <div class="ws-card mb-3">
+          <div class="card-header"><i class="fa-solid fa-paperclip"></i> ไฟล์แนบสำนวน</div>
+          <div class="card-body">
+            <div id="attachmentList" class="small text-muted">กำลังโหลด...</div>
+          </div>
+        </div>
+
         <div class="ws-card mb-3 d-none" id="m28Card">
           <div class="card-header"><i class="fa-solid fa-gavel"></i> คำสั่งเบื้องต้นของเลขาธิการฯ ตามมาตรา 28</div>
           <div class="card-body">
@@ -244,6 +251,42 @@
       kase.chainOpinions = ECMIS.buildChainOpinions(kase);
     }
 
+    /* ไฟล์แนบสำนวนจริง (TOR ๗.๑.๑) — เดิม input type="file" ในไดอะล็อกตีกลับเป็น mock ล้วนๆ
+       (preConfirm ไม่เคยอ่านค่าไฟล์เลย) แก้ให้ upload จริงไปที่ Storage bucket "case-documents"
+       แล้วบันทึก metadata ลง tbl_res_attachment ผูกกับ tcc_id ของสำนวนนี้ */
+    async function uploadAttachment(tccId, file, roleId) {
+      const path = `${tccId}/${Date.now()}_${file.name}`;
+      const { error: upErr } = await sb.storage.from('case-documents').upload(path, file);
+      if (upErr) throw upErr;
+      const { error: insErr } = await sb.from('tbl_res_attachment').insert({
+        tcc_id: tccId, trat_filename: file.name, trat_storage_path: path,
+        trat_mime_type: file.type, trat_size_bytes: file.size, trat_uploaded_by_role: roleId
+      });
+      if (insErr) throw insErr;
+      return path;
+    }
+
+    async function renderAttachments(tccId) {
+      const el = document.getElementById('attachmentList');
+      if (!tccId) { el.textContent = 'ไม่พบเลขที่อ้างอิงสำนวนสำหรับไฟล์แนบ'; return; }
+      const { data, error } = await sb.from('tbl_res_attachment')
+        .select('*').eq('tcc_id', tccId).eq('is_deleted', false)
+        .order('created_datetime', { ascending: false });
+      if (error) { el.textContent = 'โหลดรายการไฟล์แนบไม่สำเร็จ'; console.error('โหลดไฟล์แนบไม่สำเร็จ:', error); return; }
+      if (!data || !data.length) { el.textContent = 'ยังไม่มีไฟล์แนบสำหรับสำนวนนี้'; return; }
+      const rows = await Promise.all(data.map(async a => {
+        const { data: signed } = await sb.storage.from('case-documents').createSignedUrl(a.trat_storage_path, 3600);
+        const url = signed && signed.signedUrl ? signed.signedUrl : '#';
+        const sizeKb = a.trat_size_bytes ? (a.trat_size_bytes / 1024).toFixed(0) + ' KB' : '';
+        return `<div class="d-flex align-items-center gap-2 py-1">
+          <i class="fa-regular fa-file-lines"></i>
+          <a href="${url}" target="_blank" rel="noopener">${ECMIS.escapeHtml(a.trat_filename)}</a>
+          <span class="text-muted" style="font-size:.75rem">${sizeKb}</span>
+        </div>`;
+      }));
+      el.innerHTML = rows.join('');
+    }
+
     let kase, docType, isRuling, secgenPendingStatus, alreadySigned, signed, g1;
     const SECGEN_SIG_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 70">' +
@@ -267,6 +310,7 @@
       signed = alreadySigned;
       g1 = ECMIS.g1Triggers(kase);
 
+      renderAttachments(kase.tcc_id);
       if (isRuling) { initRulingScreen(); } else { initReport213Screen(); }
     })();
 
@@ -759,12 +803,17 @@
             const s = document.querySelector('input[name="swal-scope"]:checked').value;
             if (!r) { Swal.showValidationMessage('กรุณาเลือกเหตุผลการส่งคืน'); return false; }
             if (n.length < 10) { Swal.showValidationMessage('กรุณาระบุรายละเอียดอย่างน้อย 10 ตัวอักษร'); return false; }
-            return { r, n, s };
+            const f = document.getElementById('swal-file').files[0] || null;
+            return { r, n, s, f };
           }
         }).then(async res => {
           if (res.isConfirmed) {
             try {
               await persistCase(kase, { status: 'RETURNED' });
+              if (res.value.f) {
+                await uploadAttachment(kase.tcc_id, res.value.f, role.id);
+                renderAttachments(kase.tcc_id);
+              }
             } catch (err) {
               console.error('ตีกลับไม่สำเร็จ:', err);
               ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
