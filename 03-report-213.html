@@ -184,6 +184,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/ecmis-app.js"></script>
   <script>
     ECMIS.renderShell('03-report-213.html');
@@ -191,6 +192,19 @@
     const params = new URLSearchParams(location.search);
     const kase = ECMIS.getCase(params.get('case') || '1547/2568');
     const role = ECMIS.currentRole();
+
+    /* หน้านี้ยังใช้ ECMIS.getCase() (mock) ไม่ใช่ Supabase เต็มรูปแบบ — แต่ de-dup check และไฟล์แนบ
+       ต้องผูกกับ tcc_id จริงเพื่อ query ข้ามสำนวนได้ จึงหา tcc_id จาก tcc_no=kase.id แยกต่างหาก
+       โดยไม่ migrate ทั้งหน้า (นอกขอบเขตงานนี้) */
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let tccId = null;
+    async function resolveTccId() {
+      const { data, error } = await sb.from('tbl_cmp_case').select('tcc_id').eq('tcc_no', kase.id).maybeSingle();
+      if (error) { console.error('หา tcc_id ไม่สำเร็จ:', error); return null; }
+      return data ? data.tcc_id : null;
+    }
 
     document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
     document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status);
@@ -206,19 +220,40 @@
       <small>เมื่อแก้ไขเสร็จ ระบบจะส่งกลับ <strong>ตรงไปยังผู้ที่กดตีกลับ</strong> (Fast Re-route) โดยไม่ต้องไล่ทุกชั้นใหม่ และกำหนดเวลาถูก Pause ระหว่างแก้ไข</small>
     </div>`;
     }
-    if (kase.dupWarning) {
+    /* De-duplication Check จริง — เดิมแสดง banner ตายตัวเมื่อ kase.dupWarning===true (flag คงที่บน
+       mock data 2 รายการ) ไม่มีการเปรียบเทียบจริง เปลี่ยนเป็น query เลขบัตร ปชช. ผู้ถูกกล่าวหาข้าม
+       สำนวนอื่นจริงใน tbl_cmp_case_accused — แค่เตือน ไม่บล็อกการเสนอ (พฤติกรรมเดิม) */
+    async function checkDuplicateCase() {
+      if (!tccId) return;
+      const idcards = kase.accused.map(a => a.idcard).filter(Boolean);
+      if (!idcards.length) return;
+      const { data, error } = await sb
+        .from('tbl_cmp_case_accused')
+        .select('tcc_id, tbl_cmp_case!inner(tcc_no)')
+        .in('tcca_idcard', idcards)
+        .neq('tcc_id', tccId);
+      if (error) { console.error('ตรวจสอบสำนวนซ้ำไม่สำเร็จ:', error); return; }
+      const matches = [...new Set((data || []).map(r => r.tbl_cmp_case.tcc_no))];
+      if (!matches.length) return;
       document.getElementById('dupBanner').innerHTML = `
     <div class="mb-3 d-flex align-items-start gap-2">
       <i class="fa-solid fa-clone mt-1"></i>
       <div class="flex-grow-1">
         <strong>De-duplication Check — ตรวจพบสำนวนที่อาจซ้ำซ้อน</strong><br>
-        จับคู่จาก [เลขบัตรประชาชนผู้ถูกกล่าวหา + พฤติการณ์] พบเรื่อง <strong>681499</strong> ที่มีผู้ถูกกล่าวหารายเดียวกัน
+        จับคู่จากเลขบัตรประชาชนผู้ถูกกล่าวหา พบเรื่อง ${matches.map(m => `<strong>${ECMIS.escapeHtml(m)}</strong>`).join(', ')} ที่มีผู้ถูกกล่าวหารายเดียวกัน
         <div class="mt-2">
           <button class="btn btn-sm btn-outline-dark" id="btnMerge"><i class="fa-solid fa-object-group me-1"></i>เสนอรวมสำนวน</button>
           <button class="btn btn-sm btn-outline-secondary" id="btnSeparate"><i class="fa-solid fa-object-ungroup me-1"></i>ยืนยันดำเนินการแยก</button>
         </div>
       </div>
     </div>`;
+      document.getElementById('btnMerge')?.addEventListener('click', () =>
+        ECMIS.confirmAction({
+          title: 'เสนอรวมสำนวน',
+          html: 'การรวม/แยกสำนวนหลังลงเลขสำนวนแล้ว <strong>ต้องผ่านมติคณะกรรมการ ป.ป.ท.</strong> ระบบจะสร้างเรื่องเสนอเข้าโมดูลมติเรื่องทั่วไป'
+        }).then(r => { if (r.isConfirmed) ECMIS.toastOk('สร้างเรื่องขอรวมสำนวนเข้าโมดูลมติเรื่องทั่วไปแล้ว'); }));
+      document.getElementById('btnSeparate')?.addEventListener('click', () =>
+        ECMIS.toastOk('ยืนยันดำเนินการแยกสำนวน — บันทึกเหตุผลลง Audit Log แล้ว'));
     }
 
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
@@ -241,10 +276,27 @@
       { k: 'order', label: 'สำเนาคำสั่งมอบหมายผู้รับผิดชอบสำนวน', required: false }
     ];
 
+    /* เอกสารแนบจริง — เดิมเก็บแค่ {name,size} ใน memory ไม่มี upload จริง (mock ตายตัวสำหรับสถานะ
+       ที่ไม่ใช่ DRAFT) เปลี่ยนเป็นอัปโหลดจริงไปที่ Supabase Storage bucket "case-documents" +
+       บันทึก metadata ใน tbl_res_attachment โครงสร้าง path ในบักเก็ต: {tccId}/{docKey}/{timestamp}_{filename}
+       ใช้ path เพื่อ derive docKey กลับตอนโหลด (ไม่ต้องเพิ่มคอลัมน์ doc-type แยก) */
     const filesMap = {};
-    if (kase.status !== 'DRAFT') {
-      filesMap['report'] = { name: 'รายงานการแสวงหาข้อเท็จจริง_213_ฉบับเต็ม.pdf', size: '2.4 MB' };
-      filesMap['evidence'] = { name: 'พยานเอกสารประกอบข้อกล่าวหา_ชุดที่1.pdf', size: '4.8 MB' };
+    async function loadAttachments() {
+      if (!tccId) return;
+      const { data, error } = await sb
+        .from('tbl_res_attachment')
+        .select('*')
+        .eq('tcc_id', tccId)
+        .eq('is_deleted', false);
+      if (error) { console.error('โหลดไฟล์แนบไม่สำเร็จ:', error); return; }
+      Object.keys(filesMap).forEach(k => delete filesMap[k]);
+      (data || []).forEach(row => {
+        const docKey = row.trat_storage_path.split('/')[1];
+        if (!docKey) return;
+        const szMB = row.trat_size_bytes / (1024 * 1024);
+        const sizeLabel = szMB >= 1 ? `${szMB.toFixed(1)} MB` : `${Math.round(row.trat_size_bytes / 1024)} KB`;
+        filesMap[docKey] = { name: row.trat_filename, size: sizeLabel, storagePath: row.trat_storage_path };
+      });
     }
 
     function renderDocRules() {
@@ -291,10 +343,14 @@
 
           <div class="d-flex align-items-center gap-1.5 ms-2 flex-shrink-0">
             ${ok ? `
+              ${file.storagePath ? `
+              <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 btn-open-file" data-open="${d.k}" title="เปิด/ดาวน์โหลดไฟล์" style="font-size: 0.78rem; border-radius: 6px;">
+                <i class="fa-solid fa-eye me-1"></i>เปิด
+              </button>` : ''}
               <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2.5 btn-edit-file" data-up="${d.k}" title="แก้ไข/เปลี่ยนไฟล์" style="font-size: 0.78rem; border-radius: 6px;">
                 <i class="fa-solid fa-pen-to-square me-1"></i>แก้ไข
               </button>
-              <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2.5 btn-del-file" data-del="${d.k}" title="ลบไฟล์แนบ" style="font-size: 0.78rem; border-radius: 6px;">
+              <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2.5 btn-del-file" data-del="${d.k}" title="ลบไฟล์แนบ (ลบเฉพาะในหน้านี้ — ไม่ลบไฟล์จริงในระบบ)" style="font-size: 0.78rem; border-radius: 6px;">
                 <i class="fa-solid fa-trash-can me-1"></i>ลบ
               </button>
             ` : `
@@ -315,17 +371,29 @@
           const input = document.createElement('input');
           input.type = 'file';
           input.accept = '.pdf,.doc,.docx,.jpg,.png';
-          input.onchange = (e) => {
+          input.onchange = async (e) => {
             const selectedFile = e.target.files[0];
-            if (selectedFile) {
-              const szMB = (selectedFile.size / (1024 * 1024)).toFixed(1);
-              filesMap[docKey] = {
-                name: selectedFile.name,
-                size: szMB > 0 ? `${szMB} MB` : `${Math.round(selectedFile.size / 1024)} KB`
-              };
+            if (!selectedFile) return;
+            if (!tccId) { ECMIS.toastWarn('ไม่พบสำนวนนี้ในฐานข้อมูล ไม่สามารถอัปโหลดไฟล์ได้'); return; }
+            ECMIS.toastOk(`กำลังอัปโหลด "${selectedFile.name}"...`);
+            try {
+              const path = `${tccId}/${docKey}/${Date.now()}_${selectedFile.name}`;
+              const { error: upErr } = await sb.storage.from('case-documents').upload(path, selectedFile);
+              if (upErr) throw upErr;
+              const { error: insErr } = await sb.from('tbl_res_attachment').insert({
+                tcc_id: tccId, trr_id: kase.trr_id || null,
+                trat_filename: selectedFile.name, trat_storage_path: path,
+                trat_mime_type: selectedFile.type, trat_size_bytes: selectedFile.size,
+                trat_uploaded_by_role: role.id
+              });
+              if (insErr) throw insErr;
+              await loadAttachments();
               renderDocRules();
               validate();
               ECMIS.toastOk(`แนบไฟล์ "${selectedFile.name}" สำเร็จ`);
+            } catch (err) {
+              console.error('อัปโหลดไฟล์ไม่สำเร็จ:', err);
+              ECMIS.toastWarn('อัปโหลดไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง');
             }
           };
           input.click();
@@ -340,6 +408,17 @@
           renderDocRules();
           validate();
           ECMIS.toastOk(`ลบไฟล์ "${fileName}" เรียบร้อยแล้ว`);
+        });
+      });
+
+      document.querySelectorAll('[data-open]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const docKey = btn.dataset.open;
+          const file = filesMap[docKey];
+          if (!file?.storagePath) return;
+          const { data, error } = await sb.storage.from('case-documents').createSignedUrl(file.storagePath, 3600);
+          if (error) { console.error('เปิดไฟล์ไม่สำเร็จ:', error); ECMIS.toastWarn('เปิดไฟล์ไม่สำเร็จ'); return; }
+          window.open(data.signedUrl, '_blank');
         });
       });
     }
@@ -580,14 +659,6 @@
     });
     document.getElementById('btnDocx')?.addEventListener('click', () =>
       ECMIS.toastOk('ดาวน์โหลด .docx สำหรับแก้ไขใน Word — อัปโหลดกลับเพื่อแปลงเป็น PDF ล็อกลายมือชื่อ'));
-    document.getElementById('btnMerge')?.addEventListener('click', () =>
-      ECMIS.confirmAction({
-        title: 'เสนอรวมสำนวน',
-        html: 'การรวม/แยกสำนวนหลังลงเลขสำนวนแล้ว <strong>ต้องผ่านมติคณะกรรมการ ป.ป.ท.</strong> ระบบจะสร้างเรื่องเสนอเข้าโมดูลมติเรื่องทั่วไป'
-      })
-        .then(r => { if (r.isConfirmed) ECMIS.toastOk('สร้างเรื่องขอรวมสำนวนเข้าโมดูลมติเรื่องทั่วไปแล้ว'); }));
-    document.getElementById('btnSeparate')?.addEventListener('click', () =>
-      ECMIS.toastOk('ยืนยันดำเนินการแยกสำนวน — บันทึกเหตุผลลง Audit Log แล้ว'));
 
     /* ---------- Document workspace: collapsible pane ---------- */
     const docWorkspace = document.getElementById('docWorkspace');
@@ -601,6 +672,19 @@
     document.getElementById('btnPaneExpand').addEventListener('click', () => setPaneCollapsed(false));
 
     renderDocRules(); validate(); renderDoc(); renderTimeline(); renderActions(); renderReRoute();
+
+    (async function initSupabaseFeatures() {
+      try {
+        tccId = await resolveTccId();
+      } catch (err) {
+        console.error('หา tcc_id ไม่สำเร็จ:', err);
+      }
+      if (!tccId) return;
+      await loadAttachments();
+      renderDocRules();
+      validate();
+      await checkDuplicateCase();
+    })();
   </script>
 </body>
 
