@@ -1781,9 +1781,12 @@ const NAV = [
   { href:'13-agenda-registry.html',       icon:'fa-table-list',       label:'ทะเบียนวาระการประชุม',
     visible: role => !!role && role.id !== 'secgen' },
   { href:'dashboard.html',                icon:'fa-chart-pie',        label:'Dashboard สถิติมติ',
-    visible: role => !!role && ['affairs','board_sec','dir_case','chairman','board','secgen','sysadmin','owner'].includes(role.id) },
+    visible: role => !!role && ['affairs','board_sec','chairman','board','secgen'].includes(role.id) },
   { href:'followup-dashboard.html',       icon:'fa-diagram-project',  label:'ติดตามผลมติ',
-    visible: role => !!role && ['affairs','board_sec','dir_case','sysadmin'].includes(role.id) }
+    /* บอร์ด/ประธานฯ ต้องเห็นหน้านี้ด้วย — ตาม design doc (สรุปการเชื่อมโยงกิจกรรมกับกิจกรรมที่7)
+       กจ.8 ป้อน feedback loop กลับเข้า Dashboard เสนอบอร์ด กจ.7 พร้อมแจ้งเตือนคดีล่าช้าให้บอร์ดเร่งรัด
+       ไม่ใช่แค่ฝ่ายปฏิบัติการ (affairs/board_sec) เท่านั้นที่ควรเห็น */
+    visible: role => !!role && ['affairs','board_sec','chairman','board'].includes(role.id) }
 ];
 
 function navLabel(navItem, role){
