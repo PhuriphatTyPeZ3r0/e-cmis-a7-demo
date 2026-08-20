@@ -40,7 +40,37 @@
                     <div class="card-header"><i class="fa-solid fa-calendar-check"></i>
                         บรรจุระเบียบวาระและหนังสือเชิญประชุม</div>
                     <div class="card-body">
-                        <div class="row g-2 mb-3">
+                        <div class="btn-group mb-3" role="group" id="agendaModeGroup">
+                            <input type="radio" class="btn-check" name="agendaMode" id="modeExisting" value="EXISTING" checked>
+                            <label class="btn btn-outline-navy btn-sm" for="modeExisting">
+                                <i class="fa-solid fa-calendar-plus me-1"></i>เพิ่มเข้าวาระที่มีอยู่แล้ว</label>
+                            <input type="radio" class="btn-check" name="agendaMode" id="modeNew" value="NEW">
+                            <label class="btn btn-outline-navy btn-sm" for="modeNew">
+                                <i class="fa-solid fa-calendar-days me-1"></i>ตั้งครั้งประชุมใหม่</label>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="urgentToggle">
+                            <label class="form-check-label" for="urgentToggle">
+                                <span class="badge bg-danger">วาระเร่งด่วน</span>
+                                อนุญาตบรรจุเข้าครั้งประชุมที่ใกล้ถึงวันประชุมแล้ว โดยข้ามการตรวจลำดับวาระปกติ
+                            </label>
+                        </div>
+
+                        <div id="modeExistingBox" class="row g-2 mb-3">
+                            <div class="col-md-6"><label class="form-label field-req">เลือกครั้งที่ประชุมที่ยังไม่ปิดรับวาระ</label>
+                                <select class="form-select" id="meetingPick"></select>
+                                <div class="form-text" id="meetingPickHint"></div>
+                            </div>
+                            <div class="col-md-3"><label class="form-label">วันที่ประชุม</label>
+                                <input class="form-control autofilled" id="meetDateAuto" readonly>
+                            </div>
+                            <div class="col-md-3"><label class="form-label">วาระที่ (ระบบกำหนดให้อัตโนมัติ)</label>
+                                <input class="form-control autofilled" id="agendaNoAuto" readonly>
+                            </div>
+                        </div>
+
+                        <div id="modeNewBox" class="row g-2 mb-3 d-none">
                             <div class="col-md-4"><label class="form-label field-req">ครั้งที่ประชุม</label>
                                 <input class="form-control" id="meetNo" value="39/2569">
                             </div>
@@ -107,35 +137,157 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <script src="assets/ecmis-app.js"></script>
     <script src="assets/ecmis-model.js"></script>
+    <script src="assets/agenda-registry-data.js"></script>
     <script>
         ECMIS.renderShell('10-agenda-set.html');
 
         const params = new URLSearchParams(location.search);
-        const kase = ECMIS.getCase(params.get('case') || '1547/2568');
         const role = ECMIS.currentRole();
 
         const CAN_ACT_ROLE = 'board_sec';
 
-        const docType = ECMIS.DOC_TYPES[kase.docType];
-        const isRuling = docType.code === 'RULING';
+        const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 
-        document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
-        document.getElementById('stepper').innerHTML = isRuling
-            ? ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72)
-            : ECMIS.stepperHtml(kase.status);
+        async function loadCaseFromSupabase(caseId) {
+            const { data, error } = await sb
+                .from('tbl_res_request')
+                .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+                .eq('tbl_cmp_case.tcc_no', caseId)
+                .eq('is_deleted', false)
+                .maybeSingle();
+            if (error) throw error;
+            return data ? ECMIS.supabaseRowToCase(data) : null;
+        }
 
-        if (isRuling) { initAgenda72(); } else { initAgenda71(); }
+        /* บันทึกสถานะจริงกลับ tbl_res_request — เดิมหน้านี้เขียนแค่ ECMIS.Model.CaseStore (mock)
+           ทำให้สำนวนไม่หลุดจากคิวรอบรรจุวาระจริง (13-agenda-registry.html อ่าน trr_status จริง) */
+        async function persistCase(kase, patch) {
+            const dbPatch = {};
+            if ('status' in patch) {
+                const code = ECMIS.STATUS_CODE[patch.status];
+                if (!code) throw new Error(`ไม่พบรหัสสถานะสำหรับ ${patch.status}`);
+                dbPatch.trr_status = code;
+            }
+            if ('urgent' in patch) dbPatch.trr_urgent = patch.urgent;
+            const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
+            if (error) throw error;
+            Object.assign(kase, patch);
+        }
 
-        function initAgenda71(){
+        let kase, docType, isRuling;
+
+        (async function main() {
+            try {
+                kase = await loadCaseFromSupabase(params.get('case') || '1547/2568');
+            } catch (err) {
+                console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+                ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
+                return;
+            }
+            if (!kase) { ECMIS.toastWarn('ไม่พบสำนวนนี้ในระบบ'); return; }
+
+            docType = ECMIS.DOC_TYPES[kase.docType];
+            isRuling = docType.code === 'RULING';
+
+            document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
+            document.getElementById('stepper').innerHTML = isRuling
+                ? ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72)
+                : ECMIS.stepperHtml(kase.status);
+
+            if (isRuling) { initAgenda72(); } else { initAgenda71(); }
+        })();
+
+        async function initAgenda71(){
         let docTab = 'agenda';
+        const AR = window.AgendaRegistry;
+
+        /* ครั้งประชุมจริงจาก tbl_res_calendar (ผ่าน agenda-registry-data.js — module เดียวกับที่
+           13/14-agenda-registry*.html ใช้) เดิมหน้านี้ใช้ mock array ของตัวเอง ทำให้เลขครั้งประชุม/
+           วันที่ที่เห็นในหน้านี้ไม่ตรงกับที่มีอยู่จริงในทะเบียนวาระ — แก้ให้อ่านชุดเดียวกันแทน
+           เฉพาะครั้งที่ยังไม่ประชุม (trc_status='0') เท่านั้นที่เปิดให้เลือกได้ */
+        function meetingsOpen() {
+            let list = AR.MEETINGS.filter(m => m.trc_status === '0').map(m => ({
+                no: m.trc_name, date: m.trc_date, trc_id: m.trc_id,
+                agendaCount: AR.itemsOf(m.trc_id).length,
+                closesInDays: ECMIS.daysUntilFakeIso(m.trc_date)
+            }));
+            if (!list.length) {
+                list = [
+                    { no: '38/2569', date: '2569-06-02', trc_id: 101, agendaCount: 5, closesInDays: 14 },
+                    { no: '39/2569', date: '2569-06-16', trc_id: 102, agendaCount: 2, closesInDays: 28 },
+                    { no: '40/2569 (วาระพิเศษ)', date: '2569-06-23', trc_id: 103, agendaCount: 0, closesInDays: 35 }
+                ];
+            }
+            return list;
+        }
+        const nextAgendaNo = m => `5.${m.agendaCount + 1}`;
+
+        function selectableMeetings() {
+            const urgent = document.getElementById('urgentToggle').checked;
+            const meetings = meetingsOpen();
+            return urgent ? meetings : meetings.filter(m => m.closesInDays > 3);
+        }
+
+        function renderMeetingPick() {
+            const meetings = selectableMeetings();
+            const pick = document.getElementById('meetingPick');
+            const prevVal = pick.value;
+            pick.innerHTML = meetings.map(m =>
+                `<option value="${m.trc_id}">ครั้งที่ ${m.no} — วันที่ ${ECMIS.thaiDate(m.date)} (บรรจุแล้ว ${m.agendaCount} วาระ)</option>`
+            ).join('') || '<option value="">— ไม่มีครั้งประชุมที่เปิดรับวาระ —</option>';
+            if (meetings.some(m => String(m.trc_id) === prevVal)) pick.value = prevVal;
+            document.getElementById('meetingPickHint').textContent =
+                document.getElementById('urgentToggle').checked
+                    ? 'โหมดวาระเร่งด่วน: แสดงทุกครั้งประชุมรวมถึงที่ใกล้ปิดรับวาระ ข้ามการตรวจลำดับวาระปกติ'
+                    : 'แสดงเฉพาะครั้งประชุมที่ยังเปิดรับวาระตามปกติ (เหลือเวลามากกว่า 3 วัน)';
+            syncMeetingAuto();
+        }
+
+        function syncMeetingAuto() {
+            const meetings = meetingsOpen();
+            const m = meetings.find(x => String(x.trc_id) === document.getElementById('meetingPick').value);
+            document.getElementById('meetDateAuto').value = m ? ECMIS.thaiDate(m.date) : '';
+            document.getElementById('agendaNoAuto').value = m ? nextAgendaNo(m) : '';
+            renderDoc();
+        }
+
+        function getActiveAgendaValues() {
+            if (document.querySelector('input[name="agendaMode"]:checked').value === 'EXISTING') {
+                const m = meetingsOpen().find(x => String(x.trc_id) === document.getElementById('meetingPick').value);
+                return m ? { trcId: m.trc_id, meetNo: m.no, meetDate: m.date, agendaNo: nextAgendaNo(m) } : { trcId: null, meetNo: '', meetDate: '', agendaNo: '' };
+            }
+            return {
+                trcId: null,
+                meetNo: document.getElementById('meetNo').value.trim(),
+                meetDate: document.getElementById('meetDate').value.trim(),
+                agendaNo: document.getElementById('agendaNo').value.trim()
+            };
+        }
+
+        function syncModeVisibility() {
+            const existing = document.querySelector('input[name="agendaMode"]:checked').value === 'EXISTING';
+            document.getElementById('modeExistingBox').classList.toggle('d-none', !existing);
+            document.getElementById('modeNewBox').classList.toggle('d-none', existing);
+            renderDoc();
+        }
+
+        await AR.ready;
+        renderMeetingPick();
+        document.querySelectorAll('input[name="agendaMode"]').forEach(r => r.addEventListener('change', syncModeVisibility));
+        document.getElementById('meetingPick').addEventListener('change', syncMeetingAuto);
+        document.getElementById('urgentToggle').addEventListener('change', renderMeetingPick);
 
         function renderDoc() {
             const M = ECMIS.mergeField;
-            const meetNo = document.getElementById('meetNo').value.trim();
-            const meetDate = ECMIS.thaiDate(document.getElementById('meetDate').value.trim());
-            const agendaNo = document.getElementById('agendaNo').value.trim();
+            const active = getActiveAgendaValues();
+            const meetNo = active.meetNo;
+            const meetDate = ECMIS.thaiDate(active.meetDate);
+            const agendaNo = active.agendaNo;
             const secrecy = document.getElementById('secrecy').value;
 
             if (docTab === 'agenda') {
@@ -215,6 +367,7 @@
         ['meetNo', 'meetDate', 'agendaNo'].forEach(id =>
             document.getElementById(id).addEventListener('input', renderDoc));
         document.getElementById('secrecy').addEventListener('change', renderDoc);
+        syncModeVisibility();
 
         function renderActions() {
             const slot = document.getElementById('actionBarSlot');
@@ -236,29 +389,49 @@
                 b.addEventListener('click', () => handle(b.dataset.act)));
         }
 
-        function handle(act) {
+        async function handle(act) {
             if (act === 'save') { ECMIS.toastOk('บันทึกร่างระเบียบวาระเรียบร้อย'); return; }
             if (act === 'submit') {
-                const meetNo = document.getElementById('meetNo').value.trim();
-                const meetDate = document.getElementById('meetDate').value.trim();
-                const agendaNo = document.getElementById('agendaNo').value.trim();
+                const existingMode = document.querySelector('input[name="agendaMode"]:checked').value === 'EXISTING';
+                const { trcId, meetNo, meetDate, agendaNo } = getActiveAgendaValues();
+                const urgent = document.getElementById('urgentToggle').checked;
                 if (!meetNo || !meetDate || !agendaNo) {
                     ECMIS.toastWarn('กรุณาระบุ ครั้งที่ประชุม, วันที่ประชุม และ วาระที่');
                     return;
                 }
-                ECMIS.confirmAction({
+                const r = await ECMIS.confirmAction({
                     title: 'ยืนยันบรรจุระเบียบวาระ',
-                    html: `<p>สำนวน <strong>${kase.id}</strong> จะถูกบรรจุเข้าระเบียบวาระ ครั้งที่ ${meetNo} วาระที่ ${agendaNo}</p>`,
+                    html: `<p>สำนวน <strong>${kase.id}</strong> จะถูกบรรจุเข้าระเบียบวาระ ครั้งที่ ${meetNo} วาระที่ ${agendaNo}${urgent ? ' <span class="badge bg-danger">ด่วน</span>' : ''}</p>`,
                     confirmText: 'ยืนยันบรรจุวาระ'
-                }).then(r => {
-                    if (r.isConfirmed) {
-                        ECMIS.Model.CaseStore.update(kase.id, {
-                            meetingNo: meetNo, agendaNo: agendaNo, status: 'IN_MEETING'
-                        });
-                        ECMIS.toastOk('บรรจุระเบียบวาระเรียบร้อย');
-                        setTimeout(() => location.href = '08-board-resolution.html?case=' + encodeURIComponent(kase.id), 1400);
-                    }
                 });
+                if (!r.isConfirmed) return;
+
+                let trc_id = trcId;
+                try {
+                    if (!existingMode) {
+                        const meeting = await AR.addMeeting({ trc_name: meetNo, trc_date: meetDate, trc_status: '0' });
+                        trc_id = meeting.trc_id;
+                    }
+                    const resolvedLike = ['RESOLVED_PENDING', 'RESOLVED', 'DISPATCHING', 'CLOSED'].includes(kase.status);
+                    await AR.addItem({
+                        trc_id, trci_number: agendaNo,
+                        category: resolvedLike ? 'finding' : 'preliminary',
+                        trci_topic: `รายงานไต่สวน${resolvedLike ? 'เพื่อวินิจฉัยชี้มูล' : 'เบื้องต้น'} กรณี ${kase.subject}`,
+                        case_ref: kase.id,
+                        remark: urgent ? 'วาระเร่งด่วน' : '-'
+                    });
+                    /* ไม่เปลี่ยน trr_status ที่นี่ — สำนวนแค่ถูกบรรจุเข้าระเบียบวาระของครั้งประชุมที่ยัง
+                       ไม่เกิดขึ้นจริง (IN_MEETING หมายถึง "อยู่ระหว่างประชุมบอร์ด" ซึ่งต้องรอ board_sec
+                       เปิดประชุมจริงก่อนตามสถานะ AGENDA_SET→IN_MEETING/OPEN_AGENDA) การมีลิงก์จริงใน
+                       tbl_res_calendar_item_case ก็เพียงพอให้คิวรอบรรจุวาระกรองเรื่องนี้ออกแล้ว */
+                    if (urgent) await persistCase(kase, { urgent });
+                } catch (err) {
+                    console.error('บรรจุระเบียบวาระไม่สำเร็จ:', err);
+                    ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+                    return;
+                }
+                ECMIS.toastOk('บรรจุระเบียบวาระเรียบร้อย — กำลังเปิดรายละเอียดวาระของครั้งประชุมนี้');
+                setTimeout(() => location.href = '14-agenda-registry-detail.html?meet=' + encodeURIComponent(trc_id), 1400);
             }
         }
 
