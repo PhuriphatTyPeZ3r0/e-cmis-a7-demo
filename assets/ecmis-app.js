@@ -2414,6 +2414,64 @@ ${bodyContent}
   }, 300);
 }
 
+/* ---------------------------------------------------------- PRINT DOC (Official A4 Clean Print) */
+function printDoc(containerEl){
+  const target = containerEl || document.getElementById('docPaper');
+  if (!target) {
+    window.print();
+    return;
+  }
+  
+  let printFrame = document.getElementById('ecmisPrintFrame');
+  if (!printFrame) {
+    printFrame = document.createElement('iframe');
+    printFrame.id = 'ecmisPrintFrame';
+    printFrame.style.cssText = 'position:fixed; top:-9999px; left:-9999px; width:0; height:0; border:0;';
+    document.body.appendChild(printFrame);
+  }
+
+  const frameDoc = printFrame.contentWindow.document;
+  frameDoc.open();
+  frameDoc.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>พิมพ์เอกสาร</title>
+<link rel="stylesheet" href="assets/a4-ecmis-workspace.css">
+<link rel="stylesheet" href="assets/ecmis-app.css">
+<style>
+@page { size: A4 portrait; margin: 0; }
+html, body { margin: 0; padding: 0; background: #fff; width: 210mm; }
+.doc-paper, .a4-paper {
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  margin: 0 auto !important;
+  width: 210mm !important;
+  min-height: 297mm !important;
+  box-sizing: border-box !important;
+  padding: 25mm 20mm 20mm 25mm !important;
+  page-break-after: always !important;
+  break-after: page !important;
+}
+.doc-paper:last-child, .a4-paper:last-child {
+  page-break-after: auto !important;
+  break-after: auto !important;
+}
+</style>
+</head>
+<body>
+${target.innerHTML}
+</body>
+</html>`);
+  frameDoc.close();
+
+  setTimeout(() => {
+    printFrame.contentWindow.focus();
+    printFrame.contentWindow.print();
+  }, 300);
+}
+
 /* ---------------------------------------------------------- DIALOGS */
 function confirmAction(opts){
   return Swal.fire({
@@ -4200,7 +4258,7 @@ global.ECMIS = {
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   isAuthed, currentUsername, logout,
   renderShell, stepperHtml, statusBadge, slaBadge, actionBar,
-  mergeField, escapeHtml, fakeTodayIso, daysUntilFakeIso, paginateDoc, paginateResolutionDoc, exportDocToDocx, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
+  mergeField, escapeHtml, fakeTodayIso, daysUntilFakeIso, paginateDoc, paginateResolutionDoc, exportDocToDocx, printDoc, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
 
   ACT7_SECTIONS, ACT7_STATUSES, getAct7Status, act7Badge,
   ACT7_STATUSES_72, getAct7Status72,

@@ -236,7 +236,7 @@ body.walkin-mode{overflow:auto}body.walkin-mode> :not(.a4-walkin-shell):not(scri
   .ws-stagebar:not(.a5) .ws-stage-track > .ws-stage-node small{max-width:none;white-space:normal;text-align:left;font-size:.78rem;padding:0}
 }
 @media(prefers-reduced-motion:reduce){.route-option,.route-exception-panel,.ws-section.needs-attention .approval-readiness{animation:none;transition:none}}
-@media print{body *{visibility:hidden!important}.a4-paper,.a4-paper *,.a5r-paper,.a5r-paper *{visibility:visible!important}.a4-paper,.a5r-paper{position:absolute;inset:0;width:210mm;min-height:297mm;margin:0;padding:16mm;box-shadow:none;transform:none!important;height:auto!important;overflow:visible!important}.a5r-paper .a5r-page{width:210mm;min-height:297mm;aspect-ratio:auto;page-break-after:always}.ws-doc-toolbar,.ws-actions{display:none!important}@page{size:A4;margin:0}}
+
 
 .ws-topbar .ws-brand,
 .ws-topbar .ws-brand:link,
@@ -1316,7 +1316,7 @@ h1,h2,h3,h4,h5,h6{font-weight:700}
 .case-mini-toggle{background:none;border:0;cursor:pointer;color:#5f7180;font-size:.85rem;line-height:1;padding:.3rem .5rem;border-radius:6px}.case-mini-toggle:hover{background:#eef3f8;color:#082b50}.case-mini-toggle:focus-visible{outline:3px solid #c9a227;outline-offset:1px}.case-mini-toggle i{display:inline-block;transition:transform .15s ease}.case-mini-toggle[aria-expanded="true"] i{transform:rotate(180deg)}
 
 /* ==========================================================================
-   ENHANCED A4 PAPER PREVIEW & OFFICIAL PRINT STYLING
+   OFFICIAL A4 PAPER PREVIEW & GUARANTEED CLEAN PRINT STYLING
    ========================================================================== */
 .ws-paper-stage {
   padding: 1.25rem 1rem 3rem !important;
@@ -1355,7 +1355,7 @@ h1,h2,h3,h4,h5,h6{font-weight:700}
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.1) !important;
 }
 
-/* Compact Official Document Spacing to prevent premature page overflow */
+/* Compact Official Document Spacing */
 .doc-paper .doc-title { text-align: center; font-weight: 700; font-size: 17px !important; line-height: 1.4 !important; margin: 6px 0 2px !important; }
 .doc-paper .doc-sub { text-align: center; font-size: 14px !important; margin-bottom: 8px !important; }
 .doc-paper .doc-row { display: flex; gap: 8px; margin-bottom: 2px !important; font-size: 14px !important; line-height: 1.45 !important; }
@@ -1366,7 +1366,7 @@ h1,h2,h3,h4,h5,h6{font-weight:700}
 .doc-paper .doc-run-title { font-size: 11pt; font-weight: 700; text-align: center; line-height: 1.3; margin: 0 0 2px !important; }
 .doc-paper .doc-run-page { font-size: 11pt; font-weight: 400; text-align: center; margin-bottom: 6px !important; }
 
-/* Grid Layout for Board Signatures (2 columns to prevent signature jumping) */
+/* Grid Layout for Board Signatures */
 .doc-paper .doc-sign-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1382,17 +1382,23 @@ h1,h2,h3,h4,h5,h6{font-weight:700}
 }
 
 @media print {
+  *, *::before, *::after {
+    visibility: visible !important;
+  }
+
   html, body {
-    background: #ffffff !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: 210mm !important;
+    background: #ffffff !important;
+    width: 100% !important;
+    min-width: 100% !important;
     height: auto !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* Hide all non-document UI components cleanly */
+  /* Hide all UI components cleanly */
   #sidebar,
   .topbar,
   .ws-topbar,
@@ -1400,9 +1406,12 @@ h1,h2,h3,h4,h5,h6{font-weight:700}
   #stepper,
   #actionBarSlot,
   .ws-actions,
+  .ws-case-head,
+  .ws-card,
   .ws-doc-toolbar,
   .action-bar,
   .document-workspace > div:first-child,
+  .ws-doc-pane-rail,
   .ws-doc-pane-toggle,
   .ws-doc-tabs,
   #splitReportPane,
@@ -1412,48 +1421,59 @@ h1,h2,h3,h4,h5,h6{font-weight:700}
   select,
   textarea {
     display: none !important;
+    visibility: hidden !important;
   }
 
-  .document-workspace {
-    display: block !important;
-    grid-template-columns: 1fr !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
+  .ws-container,
+  .document-workspace,
   .ws-doc-pane {
+    display: block !important;
     position: static !important;
     width: 100% !important;
+    max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    overflow: visible !important;
   }
 
   .ws-paper-stage {
-    position: static !important;
     display: block !important;
-    background: transparent !important;
-    border: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    position: static !important;
+    width: 100% !important;
     max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
     overflow: visible !important;
     gap: 0 !important;
   }
 
   .a4-paper,
   .doc-paper {
-    box-shadow: none !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    margin: 0 auto !important;
+    display: block !important;
+    position: relative !important;
+    inset: auto !important;
+    visibility: visible !important;
     width: 210mm !important;
     min-height: 297mm !important;
-    box-sizing: border-box !important;
+    margin: 0 auto !important;
     padding: 25mm 20mm 20mm 25mm !important;
-    break-after: page !important;
-    page-break-after: always !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+    break-after: page !important;
+    page-break-after: always !important;
   }
 
   .a4-paper:last-child,
