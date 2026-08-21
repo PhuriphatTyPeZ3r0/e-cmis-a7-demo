@@ -234,10 +234,8 @@ function isChairActionable(c) {
          (c.status === 'PENDING_URGENT' && c.urgent);
 }
 
-/* 'RESOLVED' รวมอยู่ด้วย เพราะ กจ. (affairs) ต้องพิจารณาจัดทำคำสั่งแต่งตั้งคณะอนุกรรมการ/พนักงานไต่สวน
-   ตาม ม.24 ต่อจากมติ — ระบบยังไม่มีคอลัมน์แยกประเภทมติ (รับไว้ไต่สวน/ไม่รับไว้/ส่ง ป.ป.ช. ฯลฯ) ใน Supabase
-   จึงต้องแสดงสำนวนที่ "มีมติแล้ว" ทั้งหมดให้ กจ. คัดกรองเองว่าเรื่องใดต้องออกคำสั่ง ม.24 จริง */
-const AFFAIRS_STATUSES = ['DEFERRED', 'RESOLVED_PENDING_72', 'PENDING_DISPATCH_GUILTY_72', 'RESOLVED'];
+/* รายการสถานะงานที่ต้องจัดทำของเจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ (affairs) */
+const AFFAIRS_STATUSES = ['DEFERRED', 'RESOLVED_PENDING_72', 'PENDING_DISPATCH_GUILTY_72'];
 
 let CASES, all, mine;
 
@@ -440,12 +438,10 @@ function renderKPICards() {
     const deferredCount   = allCasesCombined.filter(c => c.status === 'DEFERRED').length;
     const rulingCount     = allCasesCombined.filter(c => c.status === 'RESOLVED_PENDING_72').length;
     const dispatchCount   = allCasesCombined.filter(c => c.status === 'PENDING_DISPATCH_GUILTY_72').length;
-    const order24Count    = allCasesCombined.filter(c => c.status === 'RESOLVED').length;
 
     const kpis = [
       { id:'ALL', n: allCasesCombined.length, l:'รายการทั้งหมด', i:'fa-folder-open', c:'#0F2A62' },
       { id:'DEFERRED', n: deferredCount, l:'เลื่อน/ถอนวาระ — รอเลขวาระใหม่', i:'fa-calendar-plus', c:'#DB2626' },
-      { id:'RESOLVED', n: order24Count, l:'มีมติแล้ว — รอพิจารณาจัดทำคำสั่ง ม.24', i:'fa-gavel', c:'#7C3AED' },
       { id:'RESOLVED_PENDING_72', n: rulingCount, l:'รอจัดทำรายงานวินิจฉัยชี้มูล', i:'fa-file-pen', c:'#D0A830' },
       { id:'PENDING_DISPATCH_GUILTY_72', n: dispatchCount, l:'ชี้มูลความผิดแล้ว รอส่งดำเนินคดี', i:'fa-paper-plane', c:'#0284C7' }
     ];
@@ -453,7 +449,7 @@ function renderKPICards() {
     document.getElementById('kpiRow').innerHTML = kpis.map(k => {
       const isActive = (currentSt === k.id);
       return `
-      <div class="col-12 col-sm-6 col-md-4 col-xl">
+      <div class="col-12 col-sm-6 col-md-3 col-xl">
         <div class="card card-ecmis kpi-card h-100 ${isActive ? 'border-2 shadow-sm' : ''}"
              style="min-height:88px; cursor:pointer; ${isActive ? `border-color:${k.c} !important; background:${k.c}0D;` : ''}"
              onclick="filterByKPI('${k.id}')">
