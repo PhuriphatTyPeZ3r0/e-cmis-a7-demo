@@ -1712,9 +1712,15 @@ function slaLabel(used, limit){
 function getCase(id){ return CASES.find(c => c.id === id) || CASES[0]; }
 function getRole(id){ return ROLES.find(r => r.id === id) || ROLES[0]; }
 
-// เข้าสู่ระบบได้เฉพาะ 6 บทบาทนี้เท่านั้น (ตามที่กำหนดไว้) — บทบาทอื่นๆ ใน ROLES ยังคงอยู่
-// เพราะยังใช้อ้างอิงเจ้าของสถานะ/สิทธิ์ในหน้าจออื่นๆ ทั่วระบบ เพียงแต่ล็อกอินตรงเข้าไม่ได้
-const LOGIN_ALLOWED_ROLE_IDS = ['secgen', 'support_sub', 'chairman', 'board_sec', 'board', 'affairs'];
+// รองรับการเข้าสู่ระบบและสลับบทบาท (Role Switcher) ได้ครอบคลุมทุกบทบาทในกิจกรรมที่ 7
+const LOGIN_ALLOWED_ROLE_IDS = [
+  'chairman', 'board', 'board_ex',
+  'secgen', 'deputy_sg', 'deputy',
+  'support_sub', 'sup_chair', 'subcommittee', 'scr_chair',
+  'dir_case', 'board_sec', 'affairs', 'chair_office', 'track',
+  'director', 'section_head', 'owner', 'suppress',
+  'legal', 'sysadmin'
+];
 
 function roleIdForLogin(username){
   const u = String(username || '').trim().toLowerCase();
@@ -1725,7 +1731,27 @@ function roleIdForLogin(username){
 
 /* current role — เก็บใน sessionStorage เพื่อให้สลับข้ามหน้าได้ */
 function currentRoleId(){ return sessionStorage.getItem('ecmis_role') || 'owner'; }
-function setRole(id){ sessionStorage.setItem('ecmis_role', id); location.reload(); }
+function setRole(id){
+  sessionStorage.setItem('ecmis_role', id);
+  const r = getRole(id);
+  if (r && r.login) {
+    sessionStorage.setItem('ecmis_username', r.login);
+  }
+  const page = (location.pathname.split('/').pop() || '').split('?')[0];
+  if (id === 'board_sec' && page === 'inbox.html') {
+    location.href = resolvePage('resolution-inbox.html');
+    return;
+  }
+  if (id !== 'board_sec' && page === 'resolution-inbox.html') {
+    location.href = resolvePage('inbox.html');
+    return;
+  }
+  if (page === 'meeting-report.html' && !can('compile.minutes', id)) {
+    location.href = homeHref(id);
+    return;
+  }
+  location.reload();
+}
 function currentRole(){ return getRole(currentRoleId()); }
 
 function isAuthed(){ return sessionStorage.getItem('ecmis_authed') === '1'; }
@@ -1842,6 +1868,53 @@ function renderShell(activeHref){
   }).join('');
   const totalNotifCount = notifications.length + deadlineAlerts.length;
 
+  const ROLE_SWITCHER_GROUPS = [
+    {
+      group: 'คณะกรรมการ ป.ป.ท.',
+      roles: ['chairman', 'board', 'board_ex']
+    },
+    {
+      group: 'คณะผู้บริหาร',
+      roles: ['secgen', 'deputy_sg', 'deputy']
+    },
+    {
+      group: 'คณะอนุกรรมการ',
+      roles: ['support_sub', 'sup_chair', 'subcommittee', 'scr_chair']
+    },
+    {
+      group: 'กองบริหารคดี (กบค.)',
+      roles: ['dir_case', 'board_sec', 'affairs', 'chair_office', 'track']
+    },
+    {
+      group: 'กอง / เขตพื้นที่ (สายงานต้นทาง)',
+      roles: ['director', 'section_head', 'owner', 'suppress']
+    },
+    {
+      group: 'กองกฎหมาย / ผู้ดูแลระบบ',
+      roles: ['legal', 'sysadmin']
+    }
+  ];
+
+  const roleMenuHtml = ROLE_SWITCHER_GROUPS.map(g => {
+    const items = g.roles.map(rid => {
+      const r = getRole(rid);
+      if(!r) return '';
+      const isActive = r.id === role.id;
+      return `<li>
+        <a class="dropdown-item py-1 px-3 ${isActive ? 'active' : ''}" href="#" onclick="event.preventDefault(); ECMIS.setRole('${r.id}');" style="font-size:0.8rem">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <div class="fw-semibold">${r.title}</div>
+              <small class="text-muted ${isActive ? 'text-white-50' : ''}">${r.name}</small>
+            </div>
+            ${isActive ? '<i class="fa-solid fa-check ms-2 text-warning"></i>' : ''}
+          </div>
+        </a>
+      </li>`;
+    }).join('');
+    return `<li><h6 class="dropdown-header text-navy fw-bold py-1 px-3 mt-1" style="font-size:0.72rem; letter-spacing:0.5px; background:rgba(15,42,98,0.04);">${g.group}</h6></li>${items}`;
+  }).join('');
+
   /* ---- topbar ---- */
   const topbar = `
   <header class="app-topbar no-print">
@@ -1880,16 +1953,22 @@ function renderShell(activeHref){
         </ul>
       </div>
 
-      <!-- User Role Dropdown Pill -->
+      <!-- User Role Dropdown Pill (Role Switcher) -->
       <div class="dropdown role-switcher ms-1">
-        <button class="btn btn-sm btn-light border rounded-pill px-3 py-1 dropdown-toggle user-pill text-secondary d-inline-flex align-items-center gap-1" data-bs-toggle="dropdown" aria-expanded="false" style="font-size:0.82rem">
+        <button class="btn btn-sm btn-light border rounded-pill px-3 py-1 dropdown-toggle user-pill text-secondary d-inline-flex align-items-center gap-1" data-bs-toggle="dropdown" aria-expanded="false" style="font-size:0.82rem" title="สลับบทบาทการทำงาน">
           <i class="fa-regular fa-user"></i>
           <span>${role.name} — ${role.title}</span>
         </button>
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li><h6 class="dropdown-header">${role.name} — ${role.title}</h6></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item text-danger" href="#" id="btnLogout"><i class="fa-solid fa-right-from-bracket me-2"></i>ออกจากระบบ</a></li>
+        <ul class="dropdown-menu dropdown-menu-end shadow" style="max-height: 480px; overflow-y: auto; min-width: 320px;">
+          <li class="px-3 py-2 border-bottom bg-light">
+            <div class="fw-bold text-dark" style="font-size:0.85rem">${role.name}</div>
+            <div class="text-muted small">${role.title}</div>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle mt-1" style="font-size:0.68rem">บทบาทปัจจุบัน</span>
+          </li>
+          <li><h6 class="dropdown-header text-muted py-1 px-3 mt-2" style="font-size:0.72rem"><i class="fa-solid fa-users me-1"></i>สลับบทบาทการทำงาน (Role Switcher)</h6></li>
+          ${roleMenuHtml}
+          <li><hr class="dropdown-divider my-1"></li>
+          <li><a class="dropdown-item text-danger py-2 px-3 fw-semibold" href="#" id="btnLogout" style="font-size:0.82rem"><i class="fa-solid fa-right-from-bracket me-2"></i>ออกจากระบบ</a></li>
         </ul>
       </div>
     </div>
@@ -1908,20 +1987,26 @@ function renderShell(activeHref){
     </a>`;
   }).join('');
 
-  /* Sidebar-bottom user chip — แสดงเฉพาะผู้ใช้ที่ login เข้ามาจริง (ไม่ใช่ตัวสลับบทบาท) */
+  /* Sidebar-bottom user chip — มี Role Switcher และ Logout */
   const userChip = `
   <div class="dropdown sidebar-user-chip">
-    <button class="sidebar-user-chip-btn" data-bs-toggle="dropdown" aria-expanded="false" title="${role.name} — ${role.title}">
+    <button class="sidebar-user-chip-btn" data-bs-toggle="dropdown" aria-expanded="false" title="${role.name} — ${role.title} (คลิกเพื่อสลับบทบาท)">
       <span class="sidebar-user-chip-avatar">${role.name.charAt(0)}</span>
       <span class="sidebar-user-chip-text">
         <strong>${role.name}</strong>
         <small>${role.title}</small>
       </span>
     </button>
-    <ul class="dropdown-menu">
-      <li><h6 class="dropdown-header">${role.name} — ${role.title}</h6></li>
-      <li><hr class="dropdown-divider"></li>
-      <li><a class="dropdown-item text-danger" href="#" id="btnLogoutSidebar"><i class="fa-solid fa-right-from-bracket me-2"></i>ออกจากระบบ</a></li>
+    <ul class="dropdown-menu shadow" style="max-height: 420px; overflow-y: auto; min-width: 300px;">
+      <li class="px-3 py-2 border-bottom bg-light">
+        <div class="fw-bold text-dark" style="font-size:0.85rem">${role.name}</div>
+        <div class="text-muted small">${role.title}</div>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle mt-1" style="font-size:0.68rem">บทบาทปัจจุบัน</span>
+      </li>
+      <li><h6 class="dropdown-header text-muted py-1 px-3 mt-2" style="font-size:0.72rem"><i class="fa-solid fa-users me-1"></i>สลับบทบาทการทำงาน</h6></li>
+      ${roleMenuHtml}
+      <li><hr class="dropdown-divider my-1"></li>
+      <li><a class="dropdown-item text-danger py-2 px-3 fw-semibold" href="#" id="btnLogoutSidebar" style="font-size:0.82rem"><i class="fa-solid fa-right-from-bracket me-2"></i>ออกจากระบบ</a></li>
     </ul>
   </div>`;
 

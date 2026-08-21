@@ -365,8 +365,13 @@
                     title: 'นำเสนอประธานกรรมการ ป.ป.ท.',
                     html: `สำนวน <strong>${kase.id}</strong> จะถูกส่งเข้าคิวของประธานฯ เพื่อพิจารณาสั่งการ (G4)`
                 })
-                    .then(r => {
+                    .then(async r => {
                         if (r.isConfirmed) {
+                            try {
+                                await persistCase(kase, { status: 'PENDING_CHAIRMAN' });
+                            } catch (err) {
+                                console.error('บันทึกสถานะไม่สำเร็จ:', err);
+                            }
                             ECMIS.toastOk('นำเสนอประธานฯ เรียบร้อย');
                             setTimeout(() => location.href = ECMIS.homeHref(role.id), 1400);
                         }
