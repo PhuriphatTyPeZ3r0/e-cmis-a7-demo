@@ -4,96 +4,29 @@
 'use strict';
 
 const ROLES = [
-
-  { id:'chairman', login:'Wichai.Y', row:1, group:'คณะกรรมการ ป.ป.ท.', title:'ประธานกรรมการ ป.ป.ท.',
-    name:'นายวิชัย ยุติธรรม', org:'คณะกรรมการ ป.ป.ท.', lane:'L5', flow:'G4 / S7', act:'7.1, 7.2, 7.3',
-    perms:['view.all','download','order.agenda','sign.agenda','sign.order24p3','sign.ruling','vote','bypass.approve','return'] },
-  { id:'board', login:'Somboon.T', row:2, group:'คณะกรรมการ ป.ป.ท.', title:'กรรมการ ป.ป.ท.',
-    name:'นายสมบูรณ์ ธรรมรัฐ', org:'คณะกรรมการ ป.ป.ท.', lane:'L8', flow:'S9 / G5', act:'7.1, 7.2, 7.3',
-    perms:['view.all','download','vote','read.agenda.advance'] },
-  { id:'board_ex', login:'BoardEx.Demo', row:3, group:'คณะกรรมการ ป.ป.ท.', title:'กรรมการ ป.ป.ท. โดยตำแหน่ง',
-    name:'พันตำรวจโท วันนพ สมจินตนากุล', org:'คณะกรรมการ ป.ป.ท.', lane:'L8', flow:'S9 / G5', act:'7.1, 7.2, 7.3',
-    perms:['view.all','download','vote','read.agenda.advance'] },
-  { id:'sup_chair', login:'Kitti.P', row:4, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'ประธานคณะอนุสนับสนุนฯ',
-    name:'นายกิตติ พรหมวงศ์', lane:'L2', flow:'S2 / G2', act:'7.1, 7.2',
-    perms:['view.assigned','download','support.opinion','support.certify'] },
-  { id:'support_sub', login:'Jiraporn.N', row:5, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'อนุกรรมการสนับสนุนเลขาธิการฯ',
-    name:'นางสาวจิราพร นิติกิจ', org:'ส่วนกลาง (2 คณะ)', lane:'L2', flow:'S2 / G2', act:'7.1, 7.2',
-    perms:['view.assigned','download','support.opinion'] },
-  { id:'sup_sec', login:'Pongsakorn.T', row:6, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'อนุกรรมการและเลขานุการ (อนุสนับสนุนฯ)',
-    name:'นายพงศกร ธรรมสาร', org:'ส่วนกลาง (2 คณะ)', lane:'L2', flow:'S2', act:'7.1, 7.2',
-    perms:['view.assigned','download','support.opinion','support.minutes','doc.generate'] },
-  { id:'sup_asst', login:'Benjamas.J', row:7, group:'คณะอนุสนับสนุนเลขาธิการฯ', title:'อนุกรรมการและผู้ช่วยเลขานุการ (อนุสนับสนุนฯ)',
-    name:'นางสาวเบญจมาศ ใจดี', org:'ส่วนกลาง (2 คณะ)', lane:'L2', flow:'S2', act:'7.1, 7.2',
-    perms:['view.assigned','download','request.moreinfo'] },
-
-  { id:'scr_chair', login:'Sumet.N', row:8, group:'คณะอนุกลั่นกรองฯ (คณะ 1-8)', title:'ประธานคณะอนุกลั่นกรองฯ',
-    name:'นายสุเมธ นิติธรรม', org:'ส่วนกลาง (คณะ 1-8)', lane:'L6', flow:'S6', act:'7.1, 7.2',
-    perms:['view.assigned','download','screen.vote'] },
-  { id:'subcommittee', login:'Pranee.Y', row:9, group:'คณะอนุกลั่นกรองฯ (คณะ 1-8)', title:'อนุกรรมการกลั่นกรองฯ',
-    name:'นางปราณี ยุติธรรม', org:'ส่วนกลาง (คณะ 1-8)', lane:'L6', flow:'S6', act:'7.1, 7.2',
-    perms:['view.assigned','download','screen.vote'] },
-  { id:'scr_sec', login:'Worawut.N', row:10, group:'คณะอนุกลั่นกรองฯ (คณะ 1-8)', title:'อนุกรรมการและเลขานุการ (อนุกลั่นกรองฯ)',
-    name:'นายวรวุฒิ นิติกร', org:'นิติกร กบค.', lane:'L6', flow:'S6', act:'7.1, 7.2',
-    perms:['view.assigned','download','screen.minutes','doc.generate','present.board'] },
-  { id:'scr_asst', login:'Araya.S', row:11, group:'คณะอนุกลั่นกรองฯ (คณะ 1-8)', title:'อนุกรรมการและผู้ช่วยเลขานุการ (อนุกลั่นกรองฯ)',
-    name:'นางสาวอารยา สุจริต', org:'นิติกร กบค.', lane:'L6', flow:'S6', act:'7.1, 7.2',
-    perms:['view.assigned','download','doc.generate'] },
-
-  { id:'secgen', login:'Apichat.S', row:12, group:'คณะผู้บริหาร', title:'เลขาธิการคณะกรรมการ ป.ป.ท.',
+  { id:'secgen', login:'Apichat.S', row:1, group:'เลขาธิการฯ/รองเลขาธิการ', title:'เลขาธิการคณะกรรมการ ป.ป.ท.',
     name:'นายอภิชาติ สุจริตกุล', org:'สำนักงาน ป.ป.ท.', lane:'L1', flow:'S1 / G1 — จุดเริ่ม กจ.7', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','sign.report213','decide.complex','sign.order24p1','approve.general','return'] },
-  { id:'deputy_sg', login:'Surapong.W', row:13, group:'คณะผู้บริหาร', title:'รองเลขาธิการคณะกรรมการ ป.ป.ท.',
-    name:'นายสุรพงษ์ วัฒนา', org:'สำนักงาน ป.ป.ท.', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2, 7.3', scope:'UPSTREAM',
-    perms:['view.all','download','sign.report213','return'] },
-  { id:'deputy', login:'Pimjai.R', row:14, group:'คณะผู้บริหาร', title:'ผู้ช่วยเลขาธิการคณะกรรมการ ป.ป.ท.',
-    name:'นางสาวพิมพ์ใจ รัตนกุล', org:'สำนักงาน ป.ป.ท.', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2, 7.3', scope:'UPSTREAM',
-    perms:['view.all','download'] },
 
-  { id:'affairs', login:'Siriporn.K', row:15, group:'กองบริหารคดี (กบค.)', title:'เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ',
-    name:'นางสาวศิริพร กิจการ', org:'กองบริหารคดี', lane:'L7', flow:'S7 / S11', act:'7.1, 7.2, 7.3',
-    perms:['view.all','download','EDIT.MASTER','doc.generate','order24.draft','secrecy.set'] },
+  { id:'support_sub', login:'Jiraporn.N', row:2, group:'คณะอนุกรรมการสนับสนุนเลขาธิการฯ', title:'อนุกรรมการสนับสนุนเลขาธิการฯ',
+    name:'นางสาวจิราพร นิติกิจ', org:'คณะอนุกรรมการสนับสนุนเลขาธิการฯ', lane:'L2', flow:'S2 / G2', act:'7.1, 7.2',
+    perms:['view.assigned','download','support.opinion','support.certify','request.moreinfo'] },
 
-  { id:'board_sec', login:'Thanakrit.B', row:16, group:'กองบริหารคดี (กบค.)', title:'เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ',
+  { id:'chairman', login:'Wichai.Y', row:3, group:'ประธานกรรมการ ป.ป.ท.', title:'ประธานกรรมการ ป.ป.ท.',
+    name:'นายวิชัย ยุติธรรม', org:'คณะกรรมการ ป.ป.ท.', lane:'L5', flow:'G4 / S7', act:'7.1, 7.2, 7.3',
+    perms:['view.all','download','order.agenda','sign.agenda','sign.order24p3','sign.ruling','vote','bypass.approve','return'] },
+
+  { id:'board_sec', login:'Thanakrit.B', row:4, group:'กลุ่มงานวินิจฉัยและมติคณะกรรมการ', title:'เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ',
     name:'นายธนกฤต บุญมี', org:'กองบริหารคดี', lane:'L7', flow:'S8 / S10', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','create.agenda','create.invite','record.minutes','lock.pdf','compile.minutes','doc.generate','dispatch.resolution'] },
-  { id:'dir_case', login:'Napat.S', row:20, group:'กองบริหารคดี (กบค.)', title:'ผู้อำนวยการกองบริหารคดี (ผอ.กบค.)',
-    name:'นางสาวณพัสตร์ ศรีสมเกียรติ', org:'กองบริหารคดี', lane:'L3', flow:'S3 / S5', act:'7.1, 7.2',
-    perms:['view.all','download','EDIT.MASTER','certify.urgent','assign.subcommittee','sign.general'] },
-  { id:'track', login:'Chaiwat.T', row:21, group:'กองบริหารคดี (กบค.)', title:'กลุ่มงานบริหารติดตามคดี (กบต.)',
-    name:'นายชัยวัฒน์ ติดตาม', org:'กองบริหารคดี', lane:'—', flow:'เชื่อม กจ.8', act:'7.2',
-    perms:['view.all','download','track.discipline'] },
-  { id:'admin_gen', login:'Wilai.T', row:22, group:'กองบริหารคดี (กบค.)', title:'กลุ่มงานบริหารคดีและบริหารทั่วไป',
-    name:'นางวิไล ธุรการ', org:'กองบริหารคดี', lane:'L3', flow:'S5', act:'7.1',
-    perms:['view.all','download','intake.route'] },
 
-  { id:'owner', login:'Somchai.J', row:17, group:'กอง / สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต', title:'ผู้รับผิดชอบสำนวน / พนักงาน ป.ป.ท. (นักสืบ)',
-    name:'นายสมชาย ใจซื่อ', org:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2, 7.3', scope:'UPSTREAM',
-    perms:['view.own','download.own','ack.resolution','urgent.request','present.board.ruling','dispatch.nacc'] },
-  { id:'section_head', login:'Kanjana.W', row:18, group:'กอง / สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต', title:'หัวหน้ากลุ่มงาน (นสส. / ชพ.)',
-    name:'นางกาญจนา วงศ์ธรรม', org:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2', scope:'UPSTREAM',
-    perms:['view.own','download.own'] },
-  { id:'director', login:'Prasert.M', row:19, group:'กอง / สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต', title:'ผอ.กอง / ผอ.สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต',
-    name:'นายประเสริฐ มั่นคง', org:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1', lane:'—', flow:'ต้นทาง (กจ.5)', act:'7.1, 7.2, 7.3', scope:'UPSTREAM',
-    perms:['view.own','download.own','urgent.endorse'] },
+  { id:'board', login:'Somboon.T', row:5, group:'คณะกรรมการ ป.ป.ท.', title:'กรรมการ ป.ป.ท.',
+    name:'นายสมบูรณ์ ธรรมรัฐ', org:'คณะกรรมการ ป.ป.ท.', lane:'L8', flow:'S9 / G5', act:'7.1, 7.2, 7.3',
+    perms:['view.all','download','vote','read.agenda.advance'] },
 
-  { id:'chair_office', login:'Sunee.T', row:23, group:'สำนักงานเลขาธิการ', title:'หน้าห้องประธานกรรมการ ป.ป.ท.',
-    name:'นางสุนีย์ ธำรงชัย', org:'สำนักงานเลขาธิการ', lane:'L4', flow:'S4', act:'7.1, 7.2',
-    perms:['view.all','download','intake.screen','route.subcommittee'] },
-  { id:'registry', login:'Anucha.S', row:24, group:'สำนักเลขาธิการ', title:'สารบรรณกลางสำนักเลขาธิการ',
-    name:'นายอนุชา สารบรรณ', org:'สำนักเลขาธิการ', lane:'—', flow:'นอก E-CMIS', act:'7.1',
-    perms:['view.all','download','docnumber.issue'] },
-  { id:'suppress', login:'Panu.P', row:25, group:'กองปราบปรามการทุจริตฯ (กปท. 1-5)', title:'เจ้าหน้าที่กองปราบปรามการทุจริตในภาครัฐ',
-    name:'นายภาณุ ปราบทุจริต', org:'กปท. 1-5', lane:'—', flow:'ต้นทางเอกสาร', act:'7.1, 7.2',
-    perms:['view.own','download.own','memo.submit'] },
-
-  { id:'legal', login:'Ekapong.W', row:26, group:'กองกฎหมาย (กกม.)', title:'นิติกร / ผอ.กองกฎหมาย',
-    name:'นายเอกพงศ์ วินิจฉัย', org:'กองกฎหมาย', lane:'—', flow:'เชื่อม กจ.10', act:'7.3',
-    perms:['view.all','download','legal.opinion','doc.generate'] },
-
-  { id:'sysadmin', login:'Kritsana.A', row:27, group:'ผู้ดูแลระบบ E-CMIS', title:'ผู้ดูแลระบบ (System Admin)',
-    name:'นายกฤษณะ แอดมิน', org:'ศูนย์เทคโนโลยีสารสนเทศ', lane:'—', flow:'ทุกขั้น', act:'7.1, 7.2, 7.3',
-    perms:['view.all','download','admin.sla','admin.users','admin.reassign','audit.view'] }
+  { id:'affairs', login:'Siriporn.K', row:6, group:'กลุ่มงานกิจการคณะกรรมการ', title:'เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ',
+    name:'นางสาวศิริพร กิจการ', org:'กองบริหารคดี', lane:'L7', flow:'S7 / S11', act:'7.1, 7.2, 7.3',
+    perms:['view.all','download','EDIT.MASTER','doc.generate','order24.draft','secrecy.set'] }
 ];
 
 const DOC_TYPES = {
@@ -1710,16 +1643,25 @@ function slaLabel(used, limit){
   return `ใช้ไป ${used}/${limit} วัน`;
 }
 function getCase(id){ return CASES.find(c => c.id === id) || CASES[0]; }
-function getRole(id){ return ROLES.find(r => r.id === id) || ROLES[0]; }
+function getRole(id){
+  const found = ROLES.find(r => r.id === id);
+  if (found) return found;
+  if (id === 'chair_office') return ROLES.find(r => r.id === 'chairman') || ROLES[0];
+  if (id === 'board_ex') return ROLES.find(r => r.id === 'board') || ROLES[0];
+  if (id === 'sup_chair' || id === 'sup_sec' || id === 'sup_asst') return ROLES.find(r => r.id === 'support_sub') || ROLES[0];
+  if (id === 'board_sec') return ROLES.find(r => r.id === 'board_sec') || ROLES[0];
+  if (id === 'secgen' || id === 'deputy_sg' || id === 'deputy') return ROLES.find(r => r.id === 'secgen') || ROLES[0];
+  return ROLES.find(r => r.id === 'affairs') || ROLES[0];
+}
 
-// รองรับการเข้าสู่ระบบและสลับบทบาท (Role Switcher) ได้ครอบคลุมทุกบทบาทในกิจกรรมที่ 7
+// ผู้ใช้งานที่ได้รับอนุญาตให้เข้าสู่ระบบ (Cleansed 6 Users)
 const LOGIN_ALLOWED_ROLE_IDS = [
-  'chairman', 'board', 'board_ex',
-  'secgen', 'deputy_sg', 'deputy',
-  'support_sub', 'sup_chair', 'subcommittee', 'scr_chair',
-  'dir_case', 'board_sec', 'affairs', 'chair_office', 'track',
-  'director', 'section_head', 'owner', 'suppress',
-  'legal', 'sysadmin'
+  'secgen',
+  'support_sub',
+  'chairman',
+  'board_sec',
+  'board',
+  'affairs'
 ];
 
 function roleIdForLogin(username){
@@ -1730,7 +1672,7 @@ function roleIdForLogin(username){
 }
 
 /* current role — เก็บใน sessionStorage เพื่อให้สลับข้ามหน้าได้ */
-function currentRoleId(){ return sessionStorage.getItem('ecmis_role') || 'owner'; }
+function currentRoleId(){ return sessionStorage.getItem('ecmis_role') || 'affairs'; }
 function setRole(id){
   sessionStorage.setItem('ecmis_role', id);
   const r = getRole(id);
@@ -1870,28 +1812,24 @@ function renderShell(activeHref){
 
   const ROLE_SWITCHER_GROUPS = [
     {
+      group: 'เลขาธิการฯ/รองเลขาธิการ',
+      roles: ['secgen']
+    },
+    {
+      group: 'คณะอนุกรรมการสนับสนุนเลขาธิการฯ',
+      roles: ['support_sub']
+    },
+    {
       group: 'คณะกรรมการ ป.ป.ท.',
-      roles: ['chairman', 'board', 'board_ex']
+      roles: ['chairman', 'board']
     },
     {
-      group: 'คณะผู้บริหาร',
-      roles: ['secgen', 'deputy_sg', 'deputy']
+      group: 'กลุ่มงานวินิจฉัยและมติคณะกรรมการ',
+      roles: ['board_sec']
     },
     {
-      group: 'คณะอนุกรรมการ',
-      roles: ['support_sub', 'sup_chair', 'subcommittee', 'scr_chair']
-    },
-    {
-      group: 'กองบริหารคดี (กบค.)',
-      roles: ['dir_case', 'board_sec', 'affairs', 'chair_office', 'track']
-    },
-    {
-      group: 'กอง / เขตพื้นที่ (สายงานต้นทาง)',
-      roles: ['director', 'section_head', 'owner', 'suppress']
-    },
-    {
-      group: 'กองกฎหมาย / ผู้ดูแลระบบ',
-      roles: ['legal', 'sysadmin']
+      group: 'กลุ่มงานกิจการคณะกรรมการ',
+      roles: ['affairs']
     }
   ];
 
