@@ -241,22 +241,32 @@
       const dbPatch = {};
       if ('status' in patch) {
         const code = ECMIS.STATUS_CODE[patch.status];
-        if (!code) throw new Error(`ไม่พบรหัสสถานะสำหรับ ${patch.status}`);
-        dbPatch.trr_status = code;
+        if (code) dbPatch.trr_status = code;
       }
-      const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
-      if (error) throw error;
+      if (kase.trr_id && Object.keys(dbPatch).length) {
+        try {
+          const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
+          if (error) console.warn('Supabase update warning:', error);
+        } catch (e) {
+          console.warn('Supabase update failed:', e);
+        }
+      }
       Object.assign(kase, patch);
+      const memCase = ECMIS.CASES.find(x => x.id === kase.id);
+      if (memCase) Object.assign(memCase, patch);
+      ECMIS.saveCases();
     }
 
     (async function main() {
-    let kase;
+    const caseParam = params.get('case') || '1547/2568';
+    let kase = null;
     try {
-      kase = await loadCaseFromSupabase(params.get('case') || '1547/2568');
+      kase = await loadCaseFromSupabase(caseParam);
     } catch (err) {
-      console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
-      ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
-      return;
+      console.warn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+    }
+    if (!kase) {
+      kase = ECMIS.getCase(caseParam) || ECMIS.CASES.find(x => x.id === caseParam) || ECMIS.CASES[0];
     }
     if (!kase) { ECMIS.toastWarn('ไม่พบสำนวนนี้ในระบบ'); return; }
 

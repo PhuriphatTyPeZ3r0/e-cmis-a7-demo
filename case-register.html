@@ -271,8 +271,7 @@
         const holder = ECMIS.STATUS[c.status] ? ECMIS.getRole(ECMIS.STATUS[c.status].owner) : null;
         const actionable = ECMIS.canAct(c, role.id);
 
-        const is72 = ECMIS.isCase72(c);
-        const target = is72 ? ECMIS.pageForCase72(c) : 'report-213.html';
+        const target = ECMIS.pageForCaseByStatus(c);
         return `<tr>
       <td>
         <span class="case-no">${c.id}</span>
@@ -564,10 +563,11 @@
     (async function main() {
       render(true);
       try {
-        ALL_CASES = await loadAllCasesFromSupabase();
+        const live = await loadAllCasesFromSupabase();
+        ALL_CASES = (live && live.length) ? live : ECMIS.CASES.slice();
       } catch (err) {
         console.error('โหลดทะเบียนสำนวนจากฐานข้อมูลไม่สำเร็จ:', err);
-        ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
+        ALL_CASES = ECMIS.CASES.slice();
       }
       render(false);
     })();

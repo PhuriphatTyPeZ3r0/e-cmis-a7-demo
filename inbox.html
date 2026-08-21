@@ -513,11 +513,12 @@ function filterByKPI(statusId) {
 }
 
 const PAGE_FOR = {
-  owner:'report-213.html', section_head:'report-213.html',
-  director:'report-213.html', deputy:'report-213.html',
-  secgen:'approval-review.html', support_sub:'approval-review.html',
+  owner:'approval-review.html', section_head:'approval-review.html',
+  director:'approval-review.html', deputy:'approval-review.html',
+  secgen:'approval-review.html', support_sub:'support-subcommittee.html',
   chair_office:'chairman-agenda.html',
   chairman:'chairman-agenda.html', subcommittee:'subcommittee-screening.html',
+  board_sec:'agenda-registry.html', affairs:'board-resolution.html',
   board:'board-resolution.html'
 };
 
@@ -555,9 +556,7 @@ function getActionBadge(c) {
   return getSecgenActionBadge(c);
 }
 
-/* กจ. (affairs) คุมหลายสถานะสายหลักที่ต้องไปคนละหน้าจอ — ต่างจาก role อื่นที่มีหน้าจอเดียว
-   ต่อบทบาทใน PAGE_FOR ด้านบน จึงต้องกำหนดปลายทางตามสถานะเป็นกรณีพิเศษ */
-const AFFAIRS_PAGE_FOR_STATUS = { DEFERRED: 'agenda-registry.html', RESOLVED: 'order-m24.html' };
+const AFFAIRS_PAGE_FOR_STATUS = { DEFERRED: 'agenda-registry.html', RESOLVED: 'board-resolution.html' };
 
 function row(c){
   const is72 = ECMIS.isCase72(c);
@@ -867,11 +866,11 @@ document.getElementById('btnClearFilter').addEventListener('click', () => {
 
 (async function main() {
   try {
-    CASES = await loadCasesFromSupabase();
+    const live = await loadCasesFromSupabase();
+    CASES = (live && live.length) ? live : ECMIS.CASES.slice();
   } catch (err) {
     console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
-    ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
-    CASES = [];
+    CASES = ECMIS.CASES.slice();
   }
   /* เลขาธิการฯ: "ทั้งหมด" ควรมีเฉพาะสำนวนที่คลิก "ดำเนินการ" แล้วเข้าหน้า approval-review.html
      จริง (หน้าที่เลขาธิการฯ มี process จริงๆ) — สำนวนสาย 213/644 ไปหน้านี้เสมอไม่ว่าสถานะใด

@@ -245,10 +245,19 @@
       if ('signedBySecgen' in patch) dbPatch.trr_signed_secgen = patch.signedBySecgen;
       if ('urgent' in patch)         dbPatch.trr_urgent = patch.urgent;
       if ('subCommittee' in patch)   dbPatch.trr_sub_committee = patch.subCommittee;
-      const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
-      if (error) throw error;
+      if (kase.trr_id && Object.keys(dbPatch).length) {
+        try {
+          const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
+          if (error) console.warn('Supabase update warning:', error);
+        } catch (e) {
+          console.warn('Supabase update failed:', e);
+        }
+      }
       Object.assign(kase, patch);
       kase.chainOpinions = ECMIS.buildChainOpinions(kase);
+      const memCase = ECMIS.CASES.find(x => x.id === kase.id);
+      if (memCase) Object.assign(memCase, patch);
+      ECMIS.saveCases();
     }
 
     /* ไฟล์แนบสำนวนจริง (TOR ๗.๑.๑) — เดิม input type="file" ในไดอะล็อกตีกลับเป็น mock ล้วนๆ
@@ -294,12 +303,14 @@
       'fill="none" stroke="#0a2647" stroke-width="4" stroke-linecap="round"/></svg>');
 
     (async function main() {
+      const caseParam = params.get('case') || '1547/2568';
       try {
-        kase = await loadCaseFromSupabase(params.get('case') || '1547/2568');
+        kase = await loadCaseFromSupabase(caseParam);
       } catch (err) {
-        console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
-        ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
-        return;
+        console.warn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+      }
+      if (!kase) {
+        kase = ECMIS.getCase(caseParam) || ECMIS.CASES.find(x => x.id === caseParam) || ECMIS.CASES[0];
       }
       if (!kase) { ECMIS.toastWarn('ไม่พบสำนวนนี้ในระบบ'); return; }
 

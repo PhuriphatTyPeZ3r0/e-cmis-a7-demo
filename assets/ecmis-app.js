@@ -462,16 +462,35 @@ const PAGE_FOR_72 = {
   IN_SUPPORT_SUB_72:'support-subcommittee.html',
   PENDING_URGENT_72:'urgent-agenda.html', PENDING_CHAIRMAN_URGENT_72:'urgent-agenda.html',
   IN_SCREENING_72:'subcommittee-screening.html',
-  PENDING_INVITE_72:'agenda-set.html',
+  PENDING_INVITE_72:'agenda-registry.html',
   IN_MEETING_72:'board-resolution-72.html',
   RESOLVED_PENDING_72:'ruling-report.html',
   PENDING_SIGN_RULING_72:'ruling-report.html',
   PENDING_AREA_NOTICE_72:'ruling-report.html',
   DISPATCHING_NACC_72:'ruling-report.html',
   PENDING_DISPATCH_GUILTY_72:'ruling-report.html',
-  CLOSED_72:'case-register.html'
+  CLOSED_72:'board-resolution-72.html'
 };
 function pageForCase72(kase){ return resolvePage(PAGE_FOR_72[kase.status] || 'case-register.html'); }
+
+function pageForCaseByStatus(kase) {
+  if (!kase) return resolvePage('case-register.html');
+  if (isCase72(kase)) return pageForCase72(kase);
+  const st = kase.status;
+  if (['PENDING_SECGEN', 'RETURNED', 'DRAFT', 'PENDING_SECTION', 'PENDING_DIRECTOR', 'PENDING_DEPUTY'].includes(st)) {
+    return resolvePage('approval-review.html');
+  }
+  if (st === 'IN_SUPPORT_SUB') return resolvePage('support-subcommittee.html');
+  if (st === 'IN_SCREENING') return resolvePage('subcommittee-screening.html');
+  if (['PENDING_CHAIRMAN', 'PENDING_CHAIR_OF', 'PENDING_URGENT'].includes(st)) {
+    return resolvePage('chairman-agenda.html');
+  }
+  if (st === 'AGENDA_SET') return resolvePage('agenda-registry.html');
+  if (['IN_MEETING', 'RESOLVED_PENDING', 'RESOLVED', 'DEFERRED', 'CLOSED'].includes(st)) {
+    return resolvePage('board-resolution.html');
+  }
+  return resolvePage('approval-review.html');
+}
 
 const OPINION_TYPES = {
   ACCEPT:  { code:'ACCEPT',  label:'เห็นควรรับไว้ไต่สวน' },
@@ -1360,15 +1379,18 @@ function upcomingDeadlines(cases) {
 /* ปลายทางของสำนวนตาม role ปัจจุบัน (สายหลัก 213/644) — คัดลอกจาก mapping เดิมที่ใช้ใน
    command-palette (ค้นหาสำนวนคดี) ด้านล่าง เพื่อให้ badge แจ้งเตือนคลิกแล้วพาไปหน้าเดียวกัน */
 const PAGE_FOR_MAIN = {
-  owner:'report-213.html', section_head:'report-213.html',
-  director:'report-213.html', deputy:'report-213.html',
-  secgen:'approval-review.html', support_sub:'approval-review.html',
+  owner:'approval-review.html', section_head:'approval-review.html',
+  director:'approval-review.html', deputy:'approval-review.html',
+  secgen:'approval-review.html', support_sub:'support-subcommittee.html',
   chair_office:'chairman-agenda.html',
   chairman:'chairman-agenda.html', subcommittee:'subcommittee-screening.html',
-  board_sec:'board-resolution.html', board:'board-resolution.html'
+  board_sec:'agenda-registry.html', affairs:'board-resolution.html',
+  board:'board-resolution.html', board_ex:'board-resolution.html',
+  legal:'board-resolution.html', admin:'case-register.html'
 };
 function pageForCase(kase, roleId) {
-  const target = isCase72(kase) ? pageForCase72(kase) : (PAGE_FOR_MAIN[roleId] || 'case-register.html');
+  if (kase && typeof kase === 'object') return pageForCaseByStatus(kase);
+  const target = isCase72(kase) ? pageForCase72(kase) : (PAGE_FOR_MAIN[roleId] || 'approval-review.html');
   return resolvePage(target);
 }
 
@@ -2794,16 +2816,7 @@ function initCommandPalette() {
       html += `<div style="font-size:0.75rem;font-weight:600;color:var(--ecmis-muted);padding:12px 12px 6px">สำนวนคดี</div>`;
       matchedCases.forEach((c, idx) => {
         const activeClass = !matchedMenus.length && idx === 0 ? 'active' : '';
-        const roleId = currentRoleId();
-        const PAGE_FOR = {
-          owner:'report-213.html', section_head:'report-213.html',
-          director:'report-213.html', deputy:'report-213.html',
-          secgen:'approval-review.html', support_sub:'approval-review.html',
-          chair_office:'chairman-agenda.html',
-          chairman:'chairman-agenda.html', subcommittee:'subcommittee-screening.html',
-          board_sec:'board-resolution.html', board:'board-resolution.html'
-        };
-        const targetPage = resolvePage(PAGE_FOR[roleId] || 'case-register.html');
+        const targetPage = pageForCaseByStatus(c);
         html += `
         <a class="cmd-palette-item ${activeClass}" href="${targetPage}?case=${encodeURIComponent(c.id)}">
           <i class="fa-solid fa-folder-closed"></i>
@@ -4030,7 +4043,7 @@ global.ECMIS = {
   BOARD_MIN_IN_OFFICE, boardQuorum,
   M24P1_MIN_PANEL, M24P1_STAFF_FREE, panelComposition,
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
-  UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72, homeHref, resolvePage,
+  UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72, pageForCaseByStatus, homeHref, resolvePage,
   PERM_DEFS, can, canEditMaster, canViewCase,
   thaiDate, thaiDayName, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole, roleIdForLogin, LOGIN_ALLOWED_ROLE_IDS,
   addBusinessDays, businessDaysBetween, resolutionSlaInfo, SUBCOMMITTEE_ROSTER,

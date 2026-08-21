@@ -837,7 +837,7 @@
       // 2. ลองเชื่อมต่อ tbl_res_request
       const { data: requests, error: rErr } = await sb
         .from('tbl_res_request')
-        .select('trr_id, trr_status, trr_category')
+        .select('trr_id, trr_status, trr_module')
         .limit(50);
 
       if (!rErr && requests) {

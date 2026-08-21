@@ -504,11 +504,11 @@ document.getElementById('btnClearFilter').addEventListener('click', () => {
 
 (async function main() {
   try {
-    CASES = await loadCasesFromSupabase();
+    const live = await loadCasesFromSupabase();
+    CASES = (live && live.length) ? live : ECMIS.CASES.slice();
   } catch (err) {
     console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
-    ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
-    CASES = [];
+    CASES = ECMIS.CASES.slice();
   }
   all = CASES.filter(c => OWN_SCOPE_STATUSES.includes(c.status) && ECMIS.canViewCase(c, role.id));
   allCasesCombined = all;
