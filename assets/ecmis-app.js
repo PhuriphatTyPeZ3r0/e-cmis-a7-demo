@@ -883,15 +883,33 @@ const CASES = [
     docType:'GENERAL', signPhase:'COMPLETE',
     slaDays:1, slaLimit:5, subCommittee:null,
     meetingNo:'37/2569', agendaNo:'4.3', meetingDate:'2569-08-20'
-  }
-];
-
-CASES.push(
+  },
+  {
+    id:'1015/2568',
+    subject:'กล่าวหาเจ้าหน้าที่เทศบาลแห่งหนึ่ง เรียกรับผลประโยชน์จากผู้ขออนุญาตประกอบกิจการ',
+    legalBase:'ม.18/4',
+    status:'RETURNED',
+    procType:'7.1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
+    complainant:'นางสมหญิง ค้าขาย (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายอรรถพล เทศบาล', pos:'หัวหน้าฝ่ายพัฒนารายได้', idcard:'3-1405-0xxxx-xx-x', agency:'เทศบาลแห่งหนึ่ง' } ],
+    allegation:'เรียกรับเงินจากผู้ประกอบการเพื่อแลกกับการออกใบอนุญาตประกอบกิจการที่เป็นอันตรายต่อสุขภาพ',
+    receivedDate:'2568-11-01', deadline60:'2568-12-31', deadline2y:'2570-11-01', prescription:'2570-12-05',
+    docRef:'ปป 0020/0978 ลงวันที่ 28 เมษายน 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:4, slaLimit:5, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    returnedBy:'director', returnedByName:'นายประเสริฐ มั่นคง (ผอ.สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1)',
+    returnReason:'DOC_INCOMPLETE',
+    returnNote:'เอกสารพยานหลักฐานประกอบข้อ 3 (สำเนาใบอนุญาต) ยังไม่ครบถ้วน และยังไม่ได้แนบบันทึกถ้อยคำผู้ร้อง กรุณาแนบเพิ่มเติมแล้วเสนอกลับ',
+    docType:'213', signPhase:'WAIT'
+  },
   {
     id:'0012/2565',
     subject:'กล่าวหาเจ้าหน้าที่สำนักงานเขตแห่งหนึ่ง ละเว้นการบังคับใช้กฎหมายควบคุมอาคาร',
     legalBase:'ม.18/4',
     status:'PENDING_SECGEN',
+    procType:'7.1',
     owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 2',
     complainant:'นายธีรพงษ์ รักษ์เมือง (ผู้ร้อง)',
     accused:[ { no:1, name:'นายฉัตรชัย ตรวจการ', pos:'นายช่างโยธาอาวุโส', idcard:'3-1502-0xxxx-xx-x', agency:'สำนักงานเขตแห่งหนึ่ง' } ],
@@ -902,398 +920,8 @@ CASES.push(
     docType:'644', signPhase:'WAIT',
     slaDays:11, slaLimit:15, subCommittee:null,
     meetingNo:null, agendaNo:null
-  },
-  {
-    id:'0719/2568',
-    subject:'กล่าวหาผู้บริหาร อบจ.แห่งหนึ่ง ปรับปรุงภูมิทัศน์สวนสาธารณะราคาสูงเกินจริง',
-    legalBase:'ม.18/4', status:'PENDING_SECGEN',
-    owner:'นายประเสริฐ มั่นคง', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 3',
-    complainant:'ชมรมตรวจสอบทุจริต',
-    accused:[ { no:1, name:'นายสมศักดิ์ รุ่งเรือง', pos:'นายก อบจ.', idcard:'3-3001-0xxxx-xx-x', agency:'อบจ.แห่งหนึ่ง' } ],
-    allegation:'อนุมัติโครงการปรับปรุงสวนสาธารณะงบประมาณ 12 ล้านบาท สูงกว่าราคากลางกว่า 30%',
-    receivedDate:'2568-12-10', deadline60:'2569-02-08', deadline2y:'2570-12-10', prescription:'2572-06-15',
-    docRef:'ปป 0023/0118 ลงวันที่ 1 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
-    docType:'213', signPhase:'WAIT', slaDays:4, slaLimit:5
-  },
-  {
-    id:'1378/2566',
-    subject:'กล่าวหาเจ้าพนักงานป่าไม้ ออกหนังสือรับรองทำกินในเขตป่าสงวนโดยมิชอบ',
-    legalBase:'ม.62', status:'PENDING_SECGEN',
-    owner:'นายอำนาจ ยุติธรรม', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 5',
-    complainant:'กรมป่าไม้',
-    accused:[ { no:1, name:'นายสุวรรณ ป่าไม้', pos:'เจ้าพนักงานป่าไม้ชำนาญงาน', idcard:'3-5002-0xxxx-xx-x', agency:'สำนักบริหารพื้นที่อนุรักษ์' } ],
-    allegation:'ออกหนังสือ สทก. ทับพื้นที่ป่าสงวนแห่งชาติให้นายทุนเอกชนจำนวน 120 ไร่',
-    receivedDate:'2568-12-12', deadline60:'2569-02-10', deadline2y:'2570-12-12', prescription:'2572-07-20',
-    docRef:'ปป 0025/0220 ลงวันที่ 3 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
-    docType:'213', signPhase:'WAIT', slaDays:2, slaLimit:5
-  },
-  {
-    id:'3648/2558',
-    subject:'กล่าวหาผู้อำนวยการวิทยาลัยเทคนิคแห่งหนึ่ง ยักยอกเงินทุนการศึกษาของนักเรียน',
-    legalBase:'ม.18/4', status:'PENDING_SECGEN',
-    owner:'นายอนุรักษ์ ปราบทุจริต', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
-    complainant:'คณะครูและผู้ปกครอง',
-    accused:[ { no:1, name:'ดร.วิชาญ การศึกษา', pos:'ผู้อำนวยการวิทยาลัยเทคนิค', idcard:'3-2005-0xxxx-xx-x', agency:'วิทยาลัยเทคนิค' } ],
-    allegation:'ถอนเงินบัญชีทุนการศึกษาเพื่อนักเรียนยากจนนำไปใช้ประโยชน์ส่วนตัว รวมเป็นเงิน 650,000 บาท',
-    receivedDate:'2568-12-15', deadline60:'2569-02-13', deadline2y:'2570-12-15', prescription:'2571-11-05',
-    docRef:'ปป 0022/0322 ลงวันที่ 5 มิถุนายน 2569', urgent:true, urgentReason:'ผู้ถูกร้องมีพฤติการณ์ยักย้ายยักยอกพยานหลักฐานทางการเงิน',
-    docType:'213', signPhase:'WAIT', slaDays:5, slaLimit:5
-  },
-  {
-    id:'0818/2568',
-    subject:'กล่าวหาเจ้าหน้าที่แขวงทางหลวง เบิกจ่ายงบประมาณซ่อมแซมทางหลวงอันเป็นเท็จ',
-    legalBase:'ม.18/4', status:'PENDING_SECGEN',
-    owner:'นายชูเกียรติ สุจริต', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 4',
-    complainant:'บัตรสนเท่ห์',
-    accused:[ { no:1, name:'นายเกรียงไกร ทางหลวง', pos:'วิศวกรโยธาชำนาญการ', idcard:'3-4008-0xxxx-xx-x', agency:'แขวงทางหลวง' } ],
-    allegation:'เบิกจ่ายงบประมาณซ่อมบำรุงผิวจราจร 3 โครงการ ทั้งที่ไม่ได้มีการปฏิบัติงานจริง',
-    receivedDate:'2568-12-18', deadline60:'2569-02-16', deadline2y:'2570-12-18', prescription:'2572-08-10',
-    docRef:'ปป 0024/0425 ลงวันที่ 8 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
-    docType:'644', signPhase:'WAIT', slaDays:1, slaLimit:15
-  },
-  {
-    id:'1083/2568',
-    subject:'กล่าวหาคณะกรรมการตรวจรับงานจ้างซ่อมบำรุงระบบประปาหมู่บ้าน ตรวจรับงานเท็จ',
-    legalBase:'ม.18/4', status:'PENDING_SECGEN',
-    owner:'นายสมเกียรติ พัฒนา', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 7',
-    complainant:'ชาวบ้านผู้ใช้ประปา',
-    accused:[ { no:1, name:'นายดนัย ประปาดี', pos:'ประธานกรรมการตรวจรับ', idcard:'3-7001-0xxxx-xx-x', agency:'เทศบาลตำบล' } ],
-    allegation:'ลงนามตรวจรับงานระบบกรองน้ำประปาหมู่บ้านทั้งที่ระบบยังใช้งานไม่ได้ น้ำยังขุ่นข้นไม่ได้มาตรฐาน',
-    receivedDate:'2568-12-20', deadline60:'2569-02-18', deadline2y:'2570-12-20', prescription:'2572-09-01',
-    docRef:'ปป 0027/0528 ลงวันที่ 10 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
-    docType:'213', signPhase:'WAIT', slaDays:3, slaLimit:5
-  },
-  {
-    id:'0674/2568',
-    subject:'กล่าวหาเจ้าหน้าที่กรมการปกครอง ทุจริตการทำบัตรประจำตัวประชาชนให้ต่างด้าว',
-    legalBase:'ม.62', status:'PENDING_SECGEN',
-    owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 1',
-    complainant:'กรมการปกครอง',
-    accused:[ { no:1, name:'นายมนัส ทะเบียนทอง', pos:'เจ้าพนักงานปกครองชำนาญการ', idcard:'3-1001-0xxxx-xx-x', agency:'สถิติทะเบียนราษฎร์' } ],
-    allegation:'เพิ่มชื่อและออกบัตรประชาชนสวมตัวให้สัญชาติอื่นโดยผิดกฎหมาย รายละ 120,000 บาท รวม 8 ราย',
-    receivedDate:'2568-12-22', deadline60:'2569-02-20', deadline2y:'2570-12-22', prescription:'2570-04-12',
-    docRef:'ปป 0021/0630 ลงวันที่ 12 มิถุนายน 2569', urgent:true, urgentReason:'กระทบต่อความมั่นคงแห่งชาติ และเป็นคดีสำคัญ',
-    docType:'213', signPhase:'WAIT', slaDays:7, slaLimit:5
-  },
-  {
-    id:'0773/2568',
-    subject:'กล่าวหาบุคลากรทางการแพทย์ เบิกจ่ายยาและเวชภัณฑ์ออกนอกระบบโรงพยาบาล',
-    legalBase:'ม.18/4', status:'PENDING_SECGEN',
-    owner:'นายวิศรุต สุขเกษม', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 6',
-    complainant:'ผู้อำนวยการโรงพยาบาล',
-    accused:[ { no:1, name:'ภก.พิสิษฐ์ ยาดี', pos:'เภสัชกรชำนาญการ', idcard:'3-6003-0xxxx-xx-x', agency:'โรงพยาบาลประจำจังหวัด' } ],
-    allegation:'ปลอมลายเซ็นแพทย์เพื่อตัดจ่ายยาควบคุมและวัคซีนมูลค่าสูง ออกขายคลินิกเอกชน',
-    receivedDate:'2568-12-25', deadline60:'2569-02-23', deadline2y:'2570-12-25', prescription:'2572-10-15',
-    docRef:'ปป 0026/0733 ลงวันที่ 15 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
-    docType:'213', signPhase:'WAIT', slaDays:4, slaLimit:5
-  },
-  {
-    id:'1180/2568',
-    subject:'กล่าวหาเจ้าหน้าที่ประมง ละเว้นการจับกุมเรือประมงผิดกฎหมาย',
-    legalBase:'ม.62', status:'RESOLVED', signedBySecgen: true, secgenSignedAt:'05 ส.ค. 2569',
-    owner:'นายณัฐพงษ์ ทะเลไทย', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 8',
-    complainant:'สมาคมประมงพื้นบ้าน',
-    accused:[ { no:1, name:'นายสมศักดิ์ วารี', pos:'เจ้าพนักงานประมงชำนาญงาน', idcard:'3-8004-0xxxx-xx-x', agency:'สำนักงานประมงจังหวัด' } ],
-    allegation:'เรียกรับผลประโยชน์รายเดือนจากเรือประมงอวนลากรวดในเขตทะเลชายฝั่ง',
-    receivedDate:'2568-11-10', deadline60:'2569-01-09', deadline2y:'2570-11-10', prescription:'2571-12-01',
-    docRef:'ปป 0028/0835 ลงวันที่ 18 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
-    docType:'213', signPhase:'COMPLETE', slaDays:2, slaLimit:5,
-    resolution:'MORE_INVESTIGATE',
-    resolutionStage: 4, resolvedAtIso: '2026-07-10T03:00:00.000Z'
-  },
-  {
-    id:'1478/2568',
-    subject:'กล่าวหาเจ้าหน้าที่สรรพากร คืนภาษีมูลค่าเพิ่มให้แก่บริษัทนอมินีโดยมิชอบ',
-    legalBase:'ม.18/4', status:'RESOLVED', signedBySecgen: true, secgenSignedAt:'06 ส.ค. 2569',
-    owner:'นายกิตติศักดิ์ ภาษีงาม', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 9',
-    complainant:'กรมสรรพากร',
-    accused:[ { no:1, name:'นายชูชาติ ภาษีดี', pos:'นักตรวจสอบภาษีชำนาญการ', idcard:'3-9005-0xxxx-xx-x', agency:'สำนักงานสรรพากรพื้นที่' } ],
-    allegation:'อนุมัติคืนภาษี VAT ให้แก่บริษัทออกใบกำกับภาษีปลอม รวมมูลค่าความเสียหาย 4.5 ล้านบาท',
-    receivedDate:'2568-11-15', deadline60:'2569-01-14', deadline2y:'2570-11-15', prescription:'2572-11-20',
-    docRef:'ปป 0029/0940 ลงวันที่ 20 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
-    docType:'213', signPhase:'COMPLETE', slaDays:1, slaLimit:5,
-    resolution:'NOT_ACCEPTED'
-  },
-  {
-    id:'681645',
-    subject:'กล่าวหาเจ้าหน้าที่ฝ่ายจัดซื้อจัดจ้าง กำหนดสเปกพัดลมอุตสาหกรรมเอื้อประโยชน์ให้แก่ผู้เสนอราคา',
-    legalBase:'ม.18/4', status:'RETURNED',
-    owner:'นายประเสริฐ มั่นคง', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
-    complainant:'ผู้ร่วมเสนอราคา',
-    accused:[ { no:1, name:'นายสมพงษ์ จัดซื้อ', pos:'นักจัดการงานทั่วไปชำนาญการ', idcard:'3-1002-0xxxx-xx-x', agency:'เทศบาลเมืองแห่งหนึ่ง' } ],
-    allegation:'กำหนดรายละเอียดคุณลักษณะเฉพาะของพัดลมอุตสาหกรรมตรงตามสินค้าของบริษัทตนเองเพียงรายเดียว',
-    receivedDate:'2568-11-20', deadline60:'2569-01-19', deadline2y:'2570-11-20', prescription:'2572-12-10',
-    docRef:'ปป 0021/1045 ลงวันที่ 22 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
-    docType:'213', signPhase:'WAIT', slaDays:8, slaLimit:5
-  },
-  {
-    id:'681650',
-    subject:'กล่าวหาเจ้าหน้าที่บริหารงานคลัง ยักยอกเงินค่าธรรมเนียมการเก็บขยะมูลฝากเข้าบัญชีส่วนตัว',
-    legalBase:'ม.18/4', status:'RETURNED',
-    owner:'นายวิศรุต สุขเกษม', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 6',
-    complainant:'ผลการตรวจสอบภายใน',
-    accused:[ { no:1, name:'นางสาวสิรินธร คลังทอง', pos:'เจ้าพนักงานการเงินและบัญชีชำนาญงาน', idcard:'3-6004-0xxxx-xx-x', agency:'องค์การบริหารส่วนตำบล' } ],
-    allegation:'ไม่นำส่งเงินค่าธรรมเนียมจัดเก็บขยะเข้าบัญชี อบต. แต่โอนเข้าบัญชีส่วนตัวต่อเนื่องกว่า 1 ปี',
-    receivedDate:'2568-11-25', deadline60:'2569-01-24', deadline2y:'2570-11-25', prescription:'2572-12-25',
-    docRef:'ปป 0026/1150 ลงวันที่ 25 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
-    docType:'213', signPhase:'WAIT', slaDays:6, slaLimit:5
-  },
-
-  {
-    id:'0592/2568',
-    subject:'กล่าวหาเจ้าหน้าที่องค์การบริหารส่วนตำบลแห่งหนึ่ง เบิกค่าเบี้ยเลี้ยงเดินทางราชการซ้ำซ้อน',
-    legalBase:'ม.18/4', status:'RESOLVED', signedBySecgen: true, secgenSignedAt:'07 ส.ค. 2569',
-    owner:'นายอนุรักษ์ ปราบทุจริต', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
-    complainant:'บัตรสนเท่ห์',
-    accused:[ { no:1, name:'นายพิพัฒน์ เดินทางไกล', pos:'นักวิเคราะห์นโยบายและแผนชำนาญการ', idcard:'3-2006-0xxxx-xx-x', agency:'อบต.แห่งหนึ่ง' } ],
-    allegation:'ถูกกล่าวหาเบิกค่าเบี้ยเลี้ยงเดินทางราชการซ้ำซ้อนกับหน่วยงานอื่น แต่จากการไต่สวนพบว่าเป็นการเดินทางไปราชการคนละภารกิจในวันเดียวกันจริง มีหลักฐานการอนุมัติและปฏิบัติงานครบถ้วน',
-    receivedDate:'2568-10-20', deadline60:'2568-12-19', deadline2y:'2570-10-20', prescription:'2571-09-05',
-    docRef:'ปป 0022/0760 ลงวันที่ 14 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
-    slaDays:1, slaLimit:5, subCommittee:'คณะที่ 4',
-    meetingNo:'38/2569', agendaNo:'5.15', meetingDate:'2569-06-02',
-    resolution:'NO_GROUND'
   }
-);
-
-CASES.push(
-  {
-    id:'2201/2569', subject:'กล่าวหาผู้บริหารสหกรณ์การเกษตรแห่งหนึ่ง ทุจริตเงินกู้สมาชิก',
-    legalBase:'ม.18/4', status:'PENDING_SECTION_72',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
-    complainant:'สมาชิกสหกรณ์ (ผู้ร้อง)',
-    accused:[ { no:1, name:'นายประกิต มั่งมี', pos:'ผู้จัดการสหกรณ์การเกษตร', idcard:'3-1077-0xxxx-xx-x', agency:'สหกรณ์การเกษตรแห่งหนึ่ง' } ],
-    allegation:'อนุมัติเงินกู้ให้สมาชิกปลอมโดยไม่มีตัวตนจริง แล้วเบิกถอนเงินเข้าบัญชีตนเอง 12 รายการ',
-    receivedDate:'2568-06-10', deadline60:null, deadline2y:null, prescription:'2573-06-10',
-    docRef:'ปป 0022/0512 ลงวันที่ 3 มีนาคม 2569',
-    urgent:false, urgent72:false, complex:false, complex72:false, dupWarning:false,
-    docType:'RULING', signPhase:'WAIT', slaDays:2, slaLimit:15, subCommittee:null,
-    round72:1,
-    orderNo:'ปปท วฉ 12/2569'
-  },
-  {
-    id:'2015/2569', subject:'กล่าวหาเจ้าหน้าที่กรมที่ดินแห่งหนึ่ง ออกโฉนดทับที่สาธารณประโยชน์',
-    legalBase:'ม.18/4', status:'IN_MEETING_72',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
-    complainant:'องค์การบริหารส่วนตำบล (ผู้แจ้งเบาะแส)',
-    accused:[
-      { no:1, name:'นายวิสูตร รังวัด',  pos:'เจ้าพนักงานที่ดินชำนาญงาน', idcard:'3-1201-0xxxx-xx-x', agency:'สำนักงานที่ดินจังหวัดแห่งหนึ่ง' },
-      { no:2, name:'นายอนันต์ ช่างรังวัด', pos:'นายช่างรังวัดอาวุโส',    idcard:'3-1203-0xxxx-xx-x', agency:'สำนักงานที่ดินจังหวัดแห่งหนึ่ง' }
-    ],
-    allegation:'ร่วมกันออกโฉนดที่ดินทับที่สาธารณประโยชน์ (หนองน้ำสาธารณะ) โดยรู้อยู่แล้วว่าที่ดินดังกล่าวเป็นที่หวงห้าม',
-    receivedDate:'2568-02-18', deadline60:null, deadline2y:null, prescription:'2573-02-18',
-    docRef:'ปป 0018/0244 ลงวันที่ 20 มกราคม 2569',
-    urgent:false, urgent72:false, complex:true, complex72:true, dupWarning:false,
-    docType:'RULING', signPhase:'COMPLETE', slaDays:5, slaLimit:15, subCommittee:'คณะที่ 2',
-    meetingNo:'12/2569', agendaNo:'3.4', round72:1, quorumOk72:true,
-    orderNo:'ปปท วฉ 19/2569'
-  },
-  {
-    id:'1988/2568', subject:'กล่าวหาข้าราชการครูแห่งหนึ่ง เรียกรับผลประโยชน์จากผู้ปกครองเพื่อแลกที่นั่งเรียน',
-    legalBase:'ม.18/4', status:'PENDING_AREA_NOTICE_72',
-    owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 2',
-    complainant:'ผู้ปกครองนักเรียน (ผู้ร้อง)',
-    accused:[ { no:1, name:'นางสุพรรณี ครูสอน', pos:'ผู้อำนวยการโรงเรียน', idcard:'3-1330-0xxxx-xx-x', agency:'โรงเรียนสังกัดเขตพื้นที่การศึกษาแห่งหนึ่ง' } ],
-    allegation:'เรียกรับเงินจากผู้ปกครองเพื่อแลกกับการรับนักเรียนเข้าเรียนนอกเขตพื้นที่บริการ',
-    receivedDate:'2567-11-02', deadline60:null, deadline2y:null, prescription:'2572-11-02',
-    docRef:'ปป 0021/1802 ลงวันที่ 30 กรกฎาคม 2568',
-    urgent:false, urgent72:false, complex:false, complex72:false, dupWarning:false,
-    docType:'RULING', signPhase:'COMPLETE', slaDays:14, slaLimit:15, subCommittee:null,
-    meetingNo:'9/2569', agendaNo:'2.1', round72:1, quorumOk72:true,
-    orderNo:'ปปท วฉ 07/2569',
-    resolution72:'NO_MERIT_72', resolutionDate72:'2569-03-20'
-  },
-  {
-    id:'1750/2568', subject:'กล่าวหาผู้อำนวยการกองช่างเทศบาลแห่งหนึ่ง เรียกรับสินบนผู้รับเหมา',
-    legalBase:'ม.18/4', status:'PENDING_DISPATCH_GUILTY_72',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
-    complainant:'ผู้รับเหมาก่อสร้าง (ผู้ร้อง)',
-    accused:[ { no:1, name:'นายก้องภพ ทองแท้', pos:'ผู้อำนวยการกองช่าง', idcard:'3-1009-0xxxx-xx-x', agency:'เทศบาลแห่งหนึ่ง' } ],
-    allegation:'เรียกรับเงินร้อยละ 5 ของมูลค่าสัญญาจากผู้รับเหมาทุกรายที่ชนะการประกวดราคาโครงการก่อสร้างถนนและระบบระบายน้ำ',
-    receivedDate:'2567-08-15', deadline60:null, deadline2y:null, prescription:'2572-08-15',
-    docRef:'ปป 0020/1490 ลงวันที่ 12 มิถุนายน 2568',
-    urgent:false, urgent72:false, complex:true, complex72:true, dupWarning:false,
-    docType:'RULING', signPhase:'COMPLETE', slaDays:3, slaLimit:60, subCommittee:'คณะที่ 5',
-    meetingNo:'7/2569', agendaNo:'1.2', round72:1, quorumOk72:true,
-    orderNo:'ปปท วฉ 03/2569',
-    resolution72:'GUILTY_72', resolutionDate72:'2569-02-10',
-    guiltyCriminal72:true, guiltyDiscipline72:true,
-    criminalTrack72:{ status:'PENDING' },
-    disciplinaryTrack72:{ status:'DISPATCHED', dispatchedDate:'2569-02-18' }
-  },
-  {
-    /* สำนวนตัวอย่างที่ scenario มาถึง ruling-report.html จริง (บอร์ดมีมติชี้มูลแล้ว
-       รอกลุ่มงานกิจการฯ จัดทำร่างรายงานวินิจฉัยชี้มูล) — เข้าถึงหน้านี้ผ่านทะเบียนสำนวนตามปกติ
-       แทนลิงก์เมนูบนสุดที่ถอดออกแล้ว */
-    id:'1855/2568', subject:'กล่าวหาเจ้าหน้าที่กรมที่ดินแห่งหนึ่ง ออกโฉนดทับที่สาธารณประโยชน์',
-    legalBase:'ม.18/4', status:'RESOLVED_PENDING_72',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
-    complainant:'ราษฎรในพื้นที่ (ผู้ร้อง)',
-    accused:[ { no:1, name:'นายวิสูตร รังวัด', pos:'เจ้าพนักงานที่ดินชำนาญการ', idcard:'3-1099-0xxxx-xx-x', agency:'สำนักงานที่ดินจังหวัดแห่งหนึ่ง' } ],
-    allegation:'ร่วมกันออกโฉนดที่ดินทับที่สาธารณประโยชน์ (หนองน้ำสาธารณะ) โดยรู้อยู่แล้วว่าที่ดินดังกล่าวเป็นที่หวงห้าม',
-    receivedDate:'2568-05-12', deadline60:null, deadline2y:null, prescription:'2573-05-12',
-    docRef:'ปป 0018/0980 ลงวันที่ 3 มีนาคม 2569',
-    urgent:false, urgent72:false, complex:true, complex72:true, dupWarning:false,
-    docType:'RULING', signPhase:'DRAFT', slaDays:1, slaLimit:15, subCommittee:null,
-    meetingNo:'12/2569', agendaNo:'3.4', round72:1, quorumOk72:true,
-    resolution72:'GUILTY_72', resolutionDate72:'2569-08-14'
-  },
-  {
-    id:'2041/2569',
-    subject:'กล่าวหาเจ้าหน้าที่กรมศุลกากร หลีกเลี่ยงการเสียภาษีอากรนำเข้าสินค้าประเภทเครื่องใช้ไฟฟ้า',
-    legalBase:'ม.18/4', status:'RESOLVED',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
-    complainant:'กรมศุลกากร (ผู้แจ้งเรื่อง)',
-    accused:[ { no:1, name:'นายภัทร ศุลกากร', pos:'นักวิชาการศุลกากรชำนาญการ', idcard:'3-1004-0xxxx-xx-x', agency:'ด่านศุลกากรแห่งหนึ่ง' } ],
-    allegation:'ร่วมมือกับบริษัทนำเข้าสินค้าประเมินราคาต่ำกว่าความเป็นจริง เสียหายรวม 2.4 ล้านบาท',
-    receivedDate:'2568-11-10', deadline60:'2569-01-09', deadline2y:'2570-11-10', prescription:'2572-04-15',
-    docRef:'ปป 0020/1210 ลงวันที่ 05 สิงหาคม 2569', urgent:false, complex:true, dupWarning:false,
-    slaDays:12, slaLimit:15, subCommittee:'คณะที่ 1',
-    meetingNo:'39/2569', agendaNo:'5.1', meetingDate:'2569-08-01', orderNo:'ปปท 48/2569',
-    resolution:'ACCEPT_S24P1', signedBySecgen:true, secgenSignedAt:'01 ส.ค. 2569',
-    resolutionStage: 1, resolvedAtIso: '2026-08-01T03:00:00.000Z'
-  },
-  {
-    id:'2055/2569',
-    subject:'กล่าวหาผู้บริหาร รพ.สต. แห่งหนึ่ง ทุจริตการจัดซื้อจัดจ้างวัสดุทางการแพทย์',
-    legalBase:'ม.18/4', status:'RESOLVED',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
-    complainant:'ชมรมธรรมาภิบาล',
-    accused:[ { no:1, name:'นายสุพจน์ สุขอนามัย', pos:'ผู้อำนวยการ รพ.สต.', idcard:'3-1205-0xxxx-xx-x', agency:'รพ.สต.แห่งหนึ่ง' } ],
-    allegation:'จัดทำเอกสารจัดซื้อวัสดุการแพทย์ซ้ำซ้อนและเบิกจ่ายเงินเข้าบัญชีตนเอง รวม 450,000 บาท',
-    receivedDate:'2568-10-15', deadline60:'2568-12-14', deadline2y:'2570-10-15', prescription:'2572-03-20',
-    docRef:'ปป 0020/1230 ลงวันที่ 28 กรกฎาคม 2569', urgent:false, complex:false, dupWarning:false,
-    slaDays:8, slaLimit:15, subCommittee:'คณะที่ 2',
-    meetingNo:'39/2569', agendaNo:'5.2', meetingDate:'2569-07-28', orderNo:'ปปท 45/2569',
-    resolution:'ACCEPT_S24P3', signedBySecgen:true, secgenSignedAt:'28 ก.ค. 2569',
-    resolutionStage: 2, resolvedAtIso: '2026-07-28T03:00:00.000Z'
-  },
-  {
-    id:'2078/2569',
-    subject:'กล่าวหาเจ้าหน้าที่กรมทางหลวงชนบท เรียกรับผลประโยชน์จากผู้รับจ้างก่อสร้างสะพาน',
-    legalBase:'ม.18/4', status:'RESOLVED',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
-    complainant:'ผู้รับจ้าง (ผู้ร้อง)',
-    accused:[ { no:1, name:'นายสมศักดิ์ ทางหลวง', pos:'วิศวกรโยธาชำนาญการพิเศษ', idcard:'3-1308-0xxxx-xx-x', agency:'สำนักทางหลวงชนบท' } ],
-    allegation:'เรียกรับเงินสด 5% ของมูลค่าสัญญาจ้างก่อสร้างสะพานคอนกรีตเสริมเหล็ก',
-    receivedDate:'2568-09-20', deadline60:'2568-11-19', deadline2y:'2570-09-20', prescription:'2572-02-10',
-    docRef:'ปป 0020/1250 ลงวันที่ 20 กรกฎาคม 2569', urgent:true, complex:false, dupWarning:false,
-    slaDays:5, slaLimit:15, subCommittee:'คณะที่ 3',
-    meetingNo:'38/2569', agendaNo:'5.3', meetingDate:'2569-07-20', orderNo:'ปปท 42/2569',
-    resolution:'ACCEPT_S24P1', signedBySecgen:true, secgenSignedAt:'20 ก.ค. 2569',
-    resolutionStage: 3, resolvedAtIso: '2026-07-20T03:00:00.000Z'
-  },
-  {
-    id:'2090/2569',
-    subject:'กล่าวหาเจ้าหน้าที่กรมโยธาธิการและผังเมือง ละเว้นการตรวจสอบการก่อสร้างอาคารผิดแบบ',
-    legalBase:'ม.18/4', status:'RESOLVED',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
-    complainant:'ผู้ร้องเรียนไม่ประสงค์ออกนาม',
-    accused:[ { no:1, name:'นายธีระ ก่อสร้างดี', pos:'นายช่างโยธาชำนาญงาน', idcard:'3-1409-0xxxx-xx-x', agency:'สำนักงานโยธาธิการจังหวัด' } ],
-    allegation:'ละเว้นไม่สั่งระงับการก่อสร้างอาคารดัดแปลงผิดแบบทางกฎหมายควบคุมอาคาร',
-    receivedDate:'2568-08-12', deadline60:'2568-10-11', deadline2y:'2570-08-12', prescription:'2572-01-25',
-    docRef:'ปป 0020/1270 ลงวันที่ 15 กรกฎาคม 2569', urgent:false, complex:false, dupWarning:false,
-    slaDays:3, slaLimit:15, subCommittee:'คณะที่ 4',
-    meetingNo:'38/2569', agendaNo:'5.4', meetingDate:'2569-07-15', orderNo:'ปปท 39/2569',
-    resolution:'DISMISS', signedBySecgen:true, secgenSignedAt:'15 ก.ค. 2569',
-    resolutionStage: 4, resolvedAtIso: '2026-07-15T03:00:00.000Z'
-  },
-  {
-    id:'2115/2569',
-    subject:'กล่าวหาเจ้าหน้าที่กรมสรรพากร ละเว้นการเรียกเก็บภาษีอากรจากบริษัทเอกชน',
-    legalBase:'ม.18/4', status:'RESOLVED',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
-    complainant:'บัตรสนเท่ห์',
-    accused:[ { no:1, name:'นางสาววิไล ภาษีเจริญ', pos:'นักตรวจสอบภาษีชำนาญการ', idcard:'3-1511-0xxxx-xx-x', agency:'สำนักงานสรรพากรพื้นที่' } ],
-    allegation:'ตรวจสอบพบความผิดปกติของการยื่นแบบภาษีแต่จงใจละเว้นไม่ประเมินภาษีเพิ่มเติม',
-    receivedDate:'2568-07-18', deadline60:'2568-09-16', deadline2y:'2570-07-18', prescription:'2571-12-18',
-    docRef:'ปป 0020/1290 ลงวันที่ 05 กรกฎาคม 2569', urgent:false, complex:false, dupWarning:false,
-    slaDays:2, slaLimit:15, subCommittee:'คณะที่ 5',
-    meetingNo:'37/2569', agendaNo:'5.5', meetingDate:'2569-07-05', orderNo:'ปปท 36/2569',
-    resolution:'NO_GROUND', signedBySecgen:true, secgenSignedAt:'05 ก.ค. 2569',
-    resolutionStage: 5, resolvedAtIso: '2026-07-05T03:00:00.000Z'
-  },
-  {
-    id:'2130/2569',
-    subject:'กล่าวหาเจ้าหน้าที่กรมชลประทาน ปลอมเอกสารเบิกจ่ายค่าน้ำมันเชื้อเพลิงเครื่องจักรกล',
-    legalBase:'ม.18/4', status:'RESOLVED',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
-    complainant:'ความปรากฏต่อสำนักงาน',
-    accused:[ { no:1, name:'นายอนันต์ ชลประทาน', pos:'นายช่างเครื่องจักรกลชำนาญงาน', idcard:'3-1612-0xxxx-xx-x', agency:'โครงการส่งน้ำและบำรุงรักษา' } ],
-    allegation:'นำใบเสร็จรับเงินค่าน้ำมันเชื้อเพลิงเท็จมาเบิกจ่าย รวมเป็นเงิน 680,000 บาท',
-    receivedDate:'2568-06-25', deadline60:'2568-08-24', deadline2y:'2570-06-25', prescription:'2571-11-30',
-    docRef:'ปป 0020/1310 ลงวันที่ 25 มิถุนายน 2569', urgent:false, complex:false, dupWarning:false,
-    slaDays:1, slaLimit:15, subCommittee:'คณะที่ 6',
-    meetingNo:'36/2569', agendaNo:'5.6', meetingDate:'2569-06-25', orderNo:'ปปท 33/2569',
-    resolution:'FORWARD', signedBySecgen:true, secgenSignedAt:'25 มิ.ย. 2569',
-    resolutionStage: 6, resolvedAtIso: '2026-06-25T03:00:00.000Z'
-  },
-  {
-    id:'2210/2569',
-    subject:'กล่าวหาเจ้าหน้าที่กรมขนส่งทางบก ทุจริตการออกใบอนุญาตขับรถยนต์',
-    legalBase:'ม.18/4', status:'RETURNED',
-    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
-    complainant:'ประชาชนผู้ขอรับบริการ',
-    accused:[ { no:1, name:'นายอนุพงษ์ ขับขี่ปลอดภัย', pos:'เจ้าพนักงานขนส่งชำนาญงาน', idcard:'3-1715-0xxxx-xx-x', agency:'สำนักงานขนส่งจังหวัด' } ],
-    allegation:'เรียกรับเงินแลกกับการให้ออกใบอนุญาตขับรถโดยไม่ต้องผ่านการทดสอบตามขั้นตอนกฎหมาย',
-    receivedDate:'2568-11-05', deadline60:'2569-01-04', deadline2y:'2570-11-05', prescription:'2572-05-10',
-    docRef:'ปป 0020/1350 ลงวันที่ 18 สิงหาคม 2569', urgent:false, complex:false, dupWarning:false,
-    slaDays:0, slaLimit:15, subCommittee:'คณะที่ 1',
-    meetingNo:'39/2569', agendaNo:'5.8', meetingDate:'2569-08-01', orderNo:null,
-    resolution:null, resolutionStage:null
-  }
-);
-
-CASES.push(
-  {
-    id:'1789/2569',
-    subject:'กล่าวหาผู้บริหารเทศบาลนครแห่งหนึ่ง ทุจริตโครงการระบบสมาร์ตซิตี้ มูลค่า 45 ล้านบาท',
-    legalBase:'ม.18/4', status:'PENDING_CHAIRMAN',
-    owner:'นางสาวศิริพร กิจการ', ownerOrg:'กองบริหารคดี (กบค.)',
-    complainant:'ชมรมตรวจสอบทุจริตแห่งประเทศไทย',
-    accused:[
-      { no:1, name:'นายกิตติศักดิ์ นครเมือง', pos:'นายกเทศมนตรี', idcard:'3-1008-0xxxx-xx-x', agency:'เทศบาลนครแห่งหนึ่ง' },
-      { no:2, name:'นายวิชัย เทคโนโลยี', pos:'ผู้อำนวยการสำนักคอมพิวเตอร์', idcard:'3-1009-0xxxx-xx-x', agency:'เทศบาลนครแห่งหนึ่ง' }
-    ],
-    allegation:'กำหนดคุณลักษณะเฉพาะและราคากลางเอื้อประโยชน์ให้บริษัทระบบสื่อสารรายเดียวในการประกวดราคาอิเล็กทรอนิกส์ (e-bidding)',
-    receivedDate:'2568-12-01', deadline60:'2569-01-30', deadline2y:'2570-12-01', prescription:'2573-04-10',
-    docRef:'ปป 0020/1420 ลงวันที่ 10 สิงหาคม 2569', urgent:false, complex:true, dupWarning:false,
-    docType:'213', signPhase:'COMPLETE', slaDays:2, slaLimit:5, subCommittee:null,
-    frontNote:'เลขาธิการฯ ลงนามเห็นชอบแล้ว เสนอประธานฯ พิจารณาสั่งการบรรจุวาระเข้าคณะอนุกลั่นกรองฯ คณะ 1-8'
-  },
-  {
-    id:'1820/2569',
-    subject:'กล่าวหาเจ้าหน้าที่ที่ดิน ทุจริตการออกเอกสารสิทธิ์ในเขตป่าไม้ด่วนพิเศษ (Bypass)',
-    legalBase:'ม.62', status:'PENDING_CHAIRMAN_URGENT_72',
-    owner:'นางสาวศิริพร กิจการ', ownerOrg:'กองบริหารคดี (กบค.)',
-    complainant:'กรมป่าไม้ (มอบหมายเรื่องเร่งด่วน)',
-    accused:[
-      { no:1, name:'นายรังวัด ที่ดินทอง', pos:'เจ้าพนักงานที่ดินอาวุโส', idcard:'3-1011-0xxxx-xx-x', agency:'สำนักงานที่ดินจังหวัด' }
-    ],
-    allegation:'ออกโฉนดที่ดินในเขตป่าสงวนแห่งชาติให้นายทุนเอกชน 150 ไร่ โดยคดีใกล้ขาดอายุความใน 35 วัน',
-    receivedDate:'2568-11-20', deadline60:'2569-01-19', deadline2y:'2570-11-20', prescription:'2569-09-25',
-    docRef:'ปป 0020/1435 ลงวันที่ 12 สิงหาคม 2569', urgent:true, urgent72:true, urgentReason:'ผอ.กบค. ลงนามรับรองใบด่วน — คดีใกล้ขาดอายุความใน 35 วัน เข้าเงื่อนไข Bypass สั่งบรรจุวาระทันที',
-    complex:false, dupWarning:false,
-    docType:'RULING', signPhase:'COMPLETE', slaDays:1, slaLimit:5, subCommittee:null,
-    frontNote:'มีใบด่วนที่ ผอ.กบค. ลงนามรับรองแล้ว — เสนอประธานฯ สั่งบรรจุวาระการประชุมทันที (Bypass)'
-  },
-  {
-    id:'1945/2569',
-    subject:'กล่าวหาผู้บริหารโรงพยาบาลรัฐ ยักยอกเวชภัณฑ์และชี้มูลความผิด ม.24 วรรคท้าย',
-    legalBase:'ม.18/4', status:'PENDING_SIGN_RULING_72',
-    owner:'นางสาวศิริพร กิจการ', ownerOrg:'กองบริหารคดี (กบค.)',
-    complainant:'ผลการไต่สวนข้อเท็จจริง',
-    accused:[
-      { no:1, name:'นพ.สมเกียรติ ยาดี', pos:'ผู้อำนวยการโรงพยาบาล', idcard:'3-1015-0xxxx-xx-x', agency:'โรงพยาบาลศูนย์' }
-    ],
-    allegation:'ยักยอกยาและเวชภัณฑ์ราคาแพงของโรงพยาบาลรัฐออกขายคลินิกส่วนตัว มติบอร์ดชี้มูลความผิดวินัยร้ายแรงและอาญา',
-    receivedDate:'2568-05-15', deadline60:null, deadline2y:null, prescription:'2573-05-15',
-    docRef:'ปป 0020/1480 ลงวันที่ 15 สิงหาคม 2569', urgent:false, complex:true, dupWarning:false,
-    docType:'RULING', signPhase:'COMPLETE', slaDays:3, slaLimit:15, subCommittee:'คณะที่ 2',
-    meetingNo:'38/2569', agendaNo:'3.1', round72:1, quorumOk72:true,
-    orderNo:'ปปท วฉ 25/2569', resolution72:'GUILTY_72', resolutionDate72:'2569-08-15',
-    frontNote:'องค์อนุกรรมการฯ และบอร์ดมีมติชี้มูลความผิดแล้ว เสนอประธานฯ ลงนามในรายงานการไต่สวนวินิจฉัยชี้มูล'
-  }
-);
+];
 
 /* ---------- ที่มาของสำนวน: ความเห็นตามลำดับชั้น (owner→section_head→director→deputy→secgen) ----------
    สร้างจากสถานะปัจจุบันของแต่ละสำนวนแบบเดียวกันทุกสำนวน แทนข้อมูลเดิมที่บางสำนวนมีบันทึกไว้
@@ -1448,21 +1076,6 @@ const M28_LOG = {
 };
 CASES.forEach(c => { if(M28_LOG[c.id]) c.m28 = M28_LOG[c.id]; });
 
-// Filter dataset to a curated mock-case set covering all status categories.
-// 1855/2568 kept in even though it's outside the original "exactly 20" cut —
-// it's the seeded case that keeps ruling-report.html reachable via the
-// normal case-register flow now that it's off the top-level nav.
-const TARGET_20_IDS = [
-  '1547/2568', '1396/2564', '1119/2565', '1525/2558', '1189/2569',
-  '1478/2568', '1015/2568', '0012/2565', '0719/2568', '3648/2558',
-  '0818/2568', '1083/2568', '0674/2568', '0773/2568', '2201/2569',
-  '2015/2569', '1988/2568', '1750/2568', '1820/2569', '1945/2569',
-  '1855/2568'
-];
-const _cases20 = CASES.filter(c => TARGET_20_IDS.includes(c.id));
-CASES.length = 0;
-_cases20.forEach(c => CASES.push(c));
-
 /* ---------- รายชื่อคณะอนุกรรมการกลั่นกรองฯ 1-8 (ฐานข้อมูลบุคลากรจำลอง) ----------
    ใช้ดึงชื่อ-ตำแหน่งอนุกรรมการมาลงแบบฟอร์มคำสั่ง ม.24 โดยอัตโนมัติตาม kase.subCommittee
    แทนการกรอกชื่อซ้ำเดิมทุกสำนวน ตามมติที่ประชุม 13/08/2569 ระเบียบวาระที่ 3 */
@@ -1509,7 +1122,7 @@ const SUBCOMMITTEE_ROSTER = {
   ]
 };
 
-const CASES_VERSION = '2026-08-18-20cases-v6';
+const CASES_VERSION = '2026-08-21-activity7-standard-v1';
 if (typeof sessionStorage !== 'undefined') {
   const savedVersion = sessionStorage.getItem('ecmis_cases_version');
   const savedCases = sessionStorage.getItem('ecmis_cases');
