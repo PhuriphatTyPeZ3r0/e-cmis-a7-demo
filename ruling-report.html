@@ -72,9 +72,15 @@
               <label class="form-label field-req">วัน เวลา สถานที่ เกิดเหตุ</label>
               <textarea class="form-control" id="incidentDetail" rows="2"></textarea>
             </div>
-            <div class="mb-0">
-              <label class="form-label field-req">วันที่เกิดเหตุ</label>
-              <input type="date" class="form-control" id="incidentDate">
+            <div class="row g-2 mb-0">
+              <div class="col-md-6">
+                <label class="form-label field-req">วันที่เกิดเหตุ (หรือเริ่มต้น)</label>
+                <input type="date" class="form-control" id="incidentDate">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">วันที่เกิดเหตุสิ้นสุด (ถ้ามีช่วงเวลา)</label>
+                <input type="date" class="form-control" id="incidentDateEnd">
+              </div>
             </div>
           </div>
         </div>
@@ -372,56 +378,101 @@
       }
     }
 
-    /* สูตรคำนวณวันขาดอายุความ: (วันเกิดเหตุ + ปีอายุความ) + ๑ วัน */
-    function calculatePrescriptionExpiry(incidentDateStr, years) {
-      if (!incidentDateStr || !years) return null;
-      const parts = String(incidentDateStr).split('-');
+    /* ฟังก์ชันคำนวณวันขาดอายุความ 1 จุดเวลา: (วันเกิดเหตุ + ปีอายุความ) + ๑ วัน */
+    function formatSingleDateExpiry(dateStr, years) {
+      if (!dateStr || !years) return '';
+      const parts = String(dateStr).split('-');
       let y = parseInt(parts[0], 10);
-      if (isNaN(y)) return null;
-      if (y > 2400) y -= 543; // normalize to CE for Date calculation
+      if (isNaN(y)) return '';
+      if (y > 2400) y -= 543;
       const m = (parseInt(parts[1], 10) || 1) - 1;
       const day = parseInt(parts[2], 10) || 1;
       const d = new Date(y, m, day);
-      if (isNaN(d.getTime())) return null;
+      if (isNaN(d.getTime())) return '';
       d.setFullYear(d.getFullYear() + parseInt(years, 10));
-      d.setDate(d.getDate() + 1); // นับวันขาดอายุความเป็นวันถัดไป
+      d.setDate(d.getDate() + 1); // นับถัดไปอีก 1 วัน
       const thMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
       const expBE = d.getFullYear() + 543;
-      return {
-        dateObj: d,
-        text: `ขาดอายุความ วันที่ ${ECMIS.toThaiDigits(d.getDate())} ${thMonths[d.getMonth()]} พ.ศ. ${ECMIS.toThaiDigits(expBE)}`,
-        years: parseInt(years, 10)
-      };
+      return `${ECMIS.toThaiDigits(d.getDate())} ${thMonths[d.getMonth()]} ${ECMIS.toThaiDigits(expBE)}`;
+    }
+
+    function getExpiryRangeText(startDateStr, endDateStr, years) {
+      if (!startDateStr) return '';
+      const startExp = formatSingleDateExpiry(startDateStr, years);
+      if (endDateStr) {
+        const endExp = formatSingleDateExpiry(endDateStr, years);
+        if (endExp && endExp !== startExp) {
+          return `ขาดอายุความระหว่างวันที่ ${startExp} ถึงวันที่ ${endExp}`;
+        }
+      }
+      return `ขาดอายุความวันที่ ${startExp}`;
     }
 
     function calculatePrescriptionForAccused(acc) {
-      const incDate = document.getElementById('incidentDate').value || kase.incidentDate72 || '2007-07-01';
+      const incDateStart = document.getElementById('incidentDate').value || kase.incidentDate72 || '2007-07-01';
+      const incDateEnd = document.getElementById('incidentDateEnd') ? document.getElementById('incidentDateEnd').value : (kase.incidentDateEnd72 || '');
       const allOffenses = [...offenseBasisList, ...customOffenses];
       const selArts = allOffenses.filter(b => acc.selected.has(b.trob_id));
       if (!selArts.length) return [];
       return selArts.map(art => {
         const years = acc.roleType === 'ACCESSORY' ? (art.p_accessory || 10) : (art.p_principal || 15);
-        const exp = calculatePrescriptionExpiry(incDate, years);
+        const exp = getExpiryRangeText(incDateStart, incDateEnd, years);
         return {
           article: art.trob_article_no,
           law: art.trob_law_name,
           years,
-          expText: exp ? exp.text : `มีอายุความ ${ECMIS.toThaiDigits(years)} ปี`
+          expText: exp || `มีอายุความ ${ECMIS.toThaiDigits(years)} ปี`
         };
       });
     }
 
     function autoGeneratePrescriptionNote(options = {}) {
-      const incDate = document.getElementById('incidentDate').value || kase.incidentDate72;
-      const incDateThai = incDate ? ECMIS.thaiDate(incDate) : 'วันที่เกิดเหตุ';
+      const incDateStart = document.getElementById('incidentDate').value || kase.incidentDate72;
+      const incDateEnd = document.getElementById('incidentDateEnd') ? document.getElementById('incidentDateEnd').value : (kase.incidentDateEnd72 || '');
+      
       if (!accusedRealList.length) return;
 
-      const lines = accusedRealList.map((acc, idx) => {
-        const roleLabel = acc.roleType === 'ACCESSORY' ? 'ในฐานะผู้สนับสนุน' : 'ในฐานะตัวการ';
-        const calcs = calculatePrescriptionForAccused(acc);
-        if (!calcs.length) return `ผู้ถูกกล่าวหาที่ ${ECMIS.toThaiDigits(idx + 1)} (${acc.name}) ${roleLabel} — ยังไม่ได้เลือกฐานความผิด`;
-        const artsStr = calcs.map(c => `${c.law} ${c.article} (มีอายุความ ${ECMIS.toThaiDigits(c.years)} ปี · ${c.expText})`).join(', ');
-        return `ผู้ถูกกล่าวหาที่ ${ECMIS.toThaiDigits(idx + 1)} (${acc.name}) ${roleLabel} การกระทำความผิดตาม ${artsStr} โดยนับแต่วันที่เกิดเหตุ (${incDateThai})`;
+      const allOffenses = [...offenseBasisList, ...customOffenses];
+      
+      // รวม trob_id ที่ถูกเลือกทั้งหมดจากทุกผู้ถูกกล่าวหา
+      const selectedTrobIds = new Set();
+      accusedRealList.forEach(acc => {
+        acc.selected.forEach(id => selectedTrobIds.add(id));
+      });
+
+      if (selectedTrobIds.size === 0) {
+        document.getElementById('prescriptionNote').value = 'ยังไม่ได้เลือกฐานความผิดและมาตรา';
+        persistForm();
+        renderDoc();
+        return;
+      }
+
+      // เรียงลำดับมาตราตาม trob_sort_order
+      const activeOffenses = allOffenses.filter(b => selectedTrobIds.has(b.trob_id));
+      activeOffenses.sort((a, b) => (a.trob_sort_order || 99) - (b.trob_sort_order || 99));
+
+      const lines = activeOffenses.map(b => {
+        const principals = accusedRealList.filter(a => a.selected.has(b.trob_id) && a.roleType === 'PRINCIPAL');
+        const accessories = accusedRealList.filter(a => a.selected.has(b.trob_id) && a.roleType === 'ACCESSORY');
+
+        const pYears = b.p_principal || 15;
+        const aYears = b.p_accessory || 10;
+
+        const pExpText = getExpiryRangeText(incDateStart, incDateEnd, pYears);
+        const aExpText = getExpiryRangeText(incDateStart, incDateEnd, aYears);
+
+        if (principals.length > 0 && accessories.length > 0) {
+          // รูปแบบ: ตัวการ + ผู้สนับสนุน
+          // ตัวอย่าง: ประมวลกฎหมายอาญา มาตรา ๑๔๙ ตัวการ อายุความ ๒๐ ปี ขาดอายุความวันที่ ๒๐ เมษายน ๒๕๗๗ ผู้สนับสนุน อายุความ ๒๐ ปี ขาดอายุความวันที่ ๒๐ เมษายน ๒๕๗๗
+          return `${b.trob_law_name} ${b.trob_article_no} ตัวการ อายุความ ${ECMIS.toThaiDigits(pYears)} ปี ${pExpText} ผู้สนับสนุน อายุความ ${ECMIS.toThaiDigits(aYears)} ปี ${aExpText}`;
+        } else if (principals.length > 0) {
+          // รูปแบบ: ตัวการอย่างเดียว
+          // ตัวอย่าง: ประมวลกฎหมายอาญา มาตรา ๑๔๗ อายุความ ๒๐ ปี ขาดอายุความระหว่างวันที่ ๑๐ มกราคม ๒๕๗๘ ถึงวันที่ ๑๘ พฤษภาคม ๒๕๘๑
+          return `${b.trob_law_name} ${b.trob_article_no} อายุความ ${ECMIS.toThaiDigits(pYears)} ปี ${pExpText}`;
+        } else {
+          // รูปแบบ: ผู้สนับสนุนอย่างเดียว
+          return `${b.trob_law_name} ${b.trob_article_no} ผู้สนับสนุน อายุความ ${ECMIS.toThaiDigits(aYears)} ปี ${aExpText}`;
+        }
       });
 
       const fullText = lines.join('\n');
@@ -438,6 +489,14 @@
       autoGeneratePrescriptionNote({ silent: true });
     });
     document.getElementById('incidentDate').addEventListener('change', () => {
+      renderOffenseBasisBody();
+      autoGeneratePrescriptionNote({ silent: true });
+    });
+    document.getElementById('incidentDateEnd').addEventListener('input', () => {
+      renderOffenseBasisBody();
+      autoGeneratePrescriptionNote({ silent: true });
+    });
+    document.getElementById('incidentDateEnd').addEventListener('change', () => {
       renderOffenseBasisBody();
       autoGeneratePrescriptionNote({ silent: true });
     });
@@ -661,6 +720,7 @@
     document.getElementById('agendaNo').value = kase.agendaNo || '';
     document.getElementById('orderNo').value = kase.orderNo || '';
     document.getElementById('incidentDate').value = kase.incidentDate72 || '2007-07-01';
+    document.getElementById('incidentDateEnd').value = kase.incidentDateEnd72 || '';
 
     document.getElementById('accusedStatus').value = kase.accusedStatus72 || '';
     document.getElementById('accusedAuthority').value = kase.accusedAuthority72 || '';
@@ -694,6 +754,7 @@
         agendaNo: document.getElementById('agendaNo').value.trim(),
         orderNo: document.getElementById('orderNo').value.trim(),
         incidentDate72: document.getElementById('incidentDate').value,
+        incidentDateEnd72: document.getElementById('incidentDateEnd').value,
         accusedStatus72: document.getElementById('accusedStatus').value.trim(),
         accusedAuthority72: document.getElementById('accusedAuthority').value.trim(),
         factSummary72: document.getElementById('factSummary').value.trim(),
