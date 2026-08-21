@@ -231,14 +231,19 @@ function caseIdSortValue(id) {
 }
 
 function getActionBadge(c) {
+  if (c.status === 'RESOLVED' || BUCKET.done.includes(c.status)) {
+    const stage = c.resolutionStage || 2;
+    if (stage === 1) return `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>อยู่ระหว่างการจัดทำมติ</span>`;
+    if (stage === 2) return `<span class="st st-done"><i class="fa-solid fa-check me-1"></i>จัดทำมติแล้วเสร็จ</span>`;
+    if (stage === 3) return `<span class="st st-done"><i class="fa-solid fa-file-signature me-1"></i>ส่งสำเนามติเพื่อจัดทำคำสั่ง</span>`;
+    if (stage === 4) return `<span class="st st-done"><i class="fa-solid fa-gavel me-1"></i>ส่งมติและเอกสารเพื่อทำความเห็นชี้มูล</span>`;
+    if (stage === 5) return `<span class="st st-done"><i class="fa-solid fa-arrow-rotate-left me-1"></i>ส่งมติและเอกสารคืนเจ้าของสำนวน</span>`;
+    if (stage === 6) return `<span class="st st-done"><i class="fa-solid fa-clipboard-check me-1"></i>จัดทำรายงานประชุมแล้วเสร็จ</span>`;
+    const stageLabel = ECMIS.resolutionStageLabel(stage);
+    return `<span class="st st-done"><i class="fa-solid fa-check me-1"></i>${stageLabel || 'จัดทำมติแล้วเสร็จ'}</span>`;
+  }
   if (BUCKET.pending.includes(c.status)) {
     return `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>อยู่ระหว่างการจัดทำมติ</span>`;
-  }
-  if (BUCKET.done.includes(c.status)) {
-    /* สำนวนที่ RESOLVED แล้วมี resolutionStage (1-6) กำกับความคืบหน้างานเอกสารหลังบอร์ดมีมติ —
-       แสดง label ของ stage นั้นแทนคำกว้างๆ "จัดทำมติแล้วเสร็จ" ให้ตรงกับตัวเลือกใน #statusFilter จริง */
-    const stageLabel = (c.status === 'RESOLVED' && c.resolutionStage) ? ECMIS.resolutionStageLabel(c.resolutionStage) : '';
-    return `<span class="st st-done"><i class="fa-solid fa-check me-1"></i>${stageLabel || 'จัดทำมติแล้วเสร็จ'}</span>`;
   }
   if (BUCKET.returned.includes(c.status)) {
     return `<span class="st st-returned"><i class="fa-solid fa-xmark me-1"></i>ยังไม่บันทึก / ส่งคืน</span>`;
@@ -496,12 +501,12 @@ function applyFilters() {
        (1-6) กำกับอยู่แล้วเท่านั้น ไม่ fallback ไปทั้ง BUCKET เพราะจะกรองกว้างเกินความหมายของ stage นั้นๆ */
     let matchSt = true;
     if (st !== 'ALL') {
-      if (st === 'IN_PROGRESS') matchSt = c.resolutionStage === 1;
-      else if (st === 'COMPLETED') matchSt = c.resolutionStage === 2;
-      else if (st === 'SIGNED') matchSt = c.resolutionStage === 3;
-      else if (st === 'RETURNED') matchSt = c.resolutionStage === 4;
-      else if (st === 'CLOSED') matchSt = c.resolutionStage === 5;
-      else if (st === 'DISPATCHING') matchSt = c.resolutionStage === 6;
+      if (st === 'IN_PROGRESS') matchSt = (c.resolutionStage === 1 || BUCKET.pending.includes(c.status));
+      else if (st === 'COMPLETED') matchSt = (c.resolutionStage === 2);
+      else if (st === 'SIGNED') matchSt = (c.resolutionStage === 3);
+      else if (st === 'RETURNED') matchSt = (c.resolutionStage === 4);
+      else if (st === 'CLOSED') matchSt = (c.resolutionStage === 5);
+      else if (st === 'DISPATCHING') matchSt = (c.resolutionStage === 6);
       else matchSt = (c.status === st);
     }
 

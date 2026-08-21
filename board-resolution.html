@@ -33,8 +33,6 @@
       <div class="card-body pb-1" id="stepper"></div>
     </div>
 
-    <div id="resolutionStageBox"></div>
-
     <div class="document-workspace" id="docWorkspace">
       <div id="formCol">
 
@@ -356,40 +354,6 @@
        renderDoc() จะโชว์ recordedDocHtml ที่บันทึกไว้ตรงๆ แทนการ generate ใหม่จากฟอร์ม
        (ค่าฟอร์มที่โหลดใหม่จะไม่ตรงกับตอนบันทึกจริงอีกต่อไป) และซ่อนปุ่มบันทึกไม่ให้กดซ้ำ */
     const isLocked = kase.status === 'RESOLVED' || kase.status === 'RESOLVED_PENDING';
-
-    /* ---------- สถานะการจัดทำมติ (6 ขั้นตอน) — วิเคราะห์อัตโนมัติตามกระบวนงานจริง ---------- */
-    function renderResolutionStageBox() {
-      const box = document.getElementById('resolutionStageBox');
-      if (!box) return;
-      if (!isLocked) { box.innerHTML = ''; return; }
-      
-      const stage = ECMIS.computeResolutionStage(kase);
-      kase.resolutionStage = stage;
-
-      const stepsHtml = ECMIS.RESOLUTION_STAGES.map(s => {
-        const done = s.n < stage, active = s.n === stage;
-        const cls = done ? 'text-success' : (active ? 'fw-bold text-primary' : 'text-muted');
-        const icon = done ? 'fa-circle-check' : (active ? 'fa-circle-dot text-primary' : 'fa-circle opacity-25');
-        const badge = active ? '<span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-2 py-0 px-2 small">สถานะปัจจุบัน (วิเคราะห์อัตโนมัติ)</span>' : (done ? '<span class="badge bg-success-subtle text-success ms-2 py-0 px-1 small">เสร็จแล้ว</span>' : '');
-        return `<div class="d-flex align-items-center py-1 ${cls}" style="font-size:.84rem">
-          <i class="fa-solid ${icon} me-2" style="font-size:.8rem"></i>
-          <span>${s.n}. ${s.label}</span>
-          ${badge}
-        </div>`;
-      }).join('');
-
-      box.innerHTML = `
-    <div class="ws-card mb-3">
-      <div class="card-header d-flex align-items-center justify-content-between">
-        <span><i class="fa-solid fa-list-check me-1 text-primary"></i>สถานะขั้นตอนการจัดทำมติ</span>
-        <span class="badge bg-light text-secondary border">ขั้นตอนที่ ${stage}/6</span>
-      </div>
-      <div class="card-body">
-        <div class="stage-stepper-list">${stepsHtml}</div>
-      </div>
-    </div>`;
-    }
-    renderResolutionStageBox();
 
     if (!mayView) {
       document.getElementById('content') && (document.getElementById('content').style.display = 'none');
