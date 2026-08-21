@@ -261,7 +261,8 @@
     ECMIS.renderShell('ruling-report.html');
 
     const params = new URLSearchParams(location.search);
-    const kase = ECMIS.getCase(params.get('case') || '2015/2569');
+    const caseParam = params.get('case') || '2015/2569';
+    let kase = ECMIS.getCase(caseParam) || { id: caseParam, accused: [] };
     const role = ECMIS.currentRole();
     let docTab = 'ruling';
     let activeSplitAccusedIndex = null; // null = รวมทุกคน, 0, 1, 2... = รายบุคคล
@@ -280,6 +281,21 @@
     const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function loadCaseFromSupabase(caseId) {
+      try {
+        const { data, error } = await sb
+          .from('tbl_res_request')
+          .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+          .eq('tbl_cmp_case.tcc_no', caseId)
+          .eq('is_deleted', false)
+          .maybeSingle();
+        if (error) return null;
+        return data ? ECMIS.supabaseRowToCase(data) : null;
+      } catch (e) {
+        return null;
+      }
+    }
 
     /* ฐานข้อมูลมาตราและความผิด 44 รายการ พร้อมตารางอายุความ (ตัวการ vs ผู้สนับสนุน)
        อ้างอิงเอกสารการประชุม 20 ส.ค. 2569 */
@@ -746,7 +762,8 @@
     const res = ECMIS.resolution72(kase.resolution72 || 'GUILTY_72');
 
     function syncFromBoardResolution(k, force = false) {
-      const resObj = ECMIS.resolution72(k.resolution72 || 'GUILTY_72');
+      const resCode = k.resolution72 || 'GUILTY_72';
+      const resObj = ECMIS.resolution72(resCode);
       const meetDateStr = k.resolutionDate72 || k.meetingDate || '2569-08-20';
       const meetDateThai = ECMIS.thaiDate(meetDateStr);
 
@@ -770,10 +787,15 @@
       if (resQuorum) resQuorum.textContent = `มาประชุม ${ECMIS.toThaiDigits(presentCount)} / ๗ ท่าน`;
 
       // Tracks
-      const crim = (k.guiltyCriminal72 !== undefined) ? !!k.guiltyCriminal72 : true;
-      const disc = (k.guiltyDiscipline72 !== undefined) ? !!k.guiltyDiscipline72 : true;
+      const crim = (k.guiltyCriminal72 !== undefined) ? !!k.guiltyCriminal72 : (resCode === 'GUILTY_72');
+      const disc = (k.guiltyDiscipline72 !== undefined) ? !!k.guiltyDiscipline72 : (resCode === 'GUILTY_72');
       const trackLabels = [crim ? 'อาญา' : null, disc ? 'วินัย' : null].filter(Boolean);
-      if (resTracks) resTracks.textContent = trackLabels.length > 0 ? trackLabels.join(' + ') : '—';
+      if (resTracks) {
+        if (resCode === 'NO_MERIT_72') resTracks.textContent = 'ข้อกล่าวหาไม่มีมูล';
+        else if (resCode === 'MORE_INVESTIGATE_72') resTracks.textContent = 'ไต่สวนเพิ่มเติม';
+        else if (resCode === 'FORWARD_NACC') resTracks.textContent = 'ส่ง ป.ป.ช.';
+        else resTracks.textContent = trackLabels.length > 0 ? trackLabels.join(' + ') : '—';
+      }
 
       // Witness
       const witMap = k.witnessState72 || {};
@@ -782,7 +804,30 @@
         resWitness.textContent = witNames.length > 0 ? `กันเป็นพยาน (${witNames.join(', ')})` : 'ไม่มีผู้ถูกกันเป็นพยาน';
       }
 
-      // 2. Populate Form Inputs
+      // 2. Smart Context-Aware Mapping for Decision Card
+      let defaultLegalAnalysis = '';
+      let defaultCrimFinding = '';
+      let defaultDiscFinding = '';
+
+      if (resCode === 'GUILTY_72') {
+        defaultLegalAnalysis = 'พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ๑๗ (๓)(๔) มาตรา ๓๘ และมาตรา ๔๔';
+        defaultCrimFinding = crim ? 'มีมูลความผิดทางอาญาฐานเป็นเจ้าพนักงานปฏิบัติหรือละเว้นการปฏิบัติหน้าที่โดยมิชอบ หรือโดยทุจริต ตามประมวลกฎหมายอาญา มาตรา ๑๕๗' : 'ไม่มีมูลความผิดทางอาญา';
+        defaultDiscFinding = disc ? 'มีมูลความผิดทางวินัยอย่างร้ายแรงฐานปฏิบัติหรือละเว้นการปฏิบัติหน้าที่ราชการโดยมิชอบเพื่อให้ตนเองหรือผู้อื่นได้ประโยชน์ที่มิควรได้ เป็นการทุจริตต่อหน้าที่ราชการ' : 'ไม่มีมูลความผิดทางวินัย';
+      } else if (resCode === 'NO_MERIT_72') {
+        defaultLegalAnalysis = 'พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ๓๒ — ข้อกล่าวหาไม่มีมูล ข้อกล่าวหาเป็นอันตกไป';
+        defaultCrimFinding = 'ข้อกล่าวหาไม่มีมูลความผิดทางอาญา';
+        defaultDiscFinding = 'ข้อกล่าวหาไม่มีมูลความผิดทางวินัย';
+      } else if (resCode === 'MORE_INVESTIGATE_72') {
+        defaultLegalAnalysis = `พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ๒๔ วรรคท้าย — มีมติให้ไต่สวนเพิ่มเติมในประเด็น: ${k.moreReason72 || 'ตามที่ระบุในบันทึกมติ'}`;
+        defaultCrimFinding = 'ให้ไต่สวนเพิ่มเติม';
+        defaultDiscFinding = 'ให้ไต่สวนเพิ่มเติม';
+      } else if (resCode === 'FORWARD_NACC') {
+        defaultLegalAnalysis = 'พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ๑๙ (ข)(๑) — ส่งเรื่องให้คณะกรรมการ ป.ป.ช. เนื่องจากอยู่ในหน้าที่และอำนาจของ ป.ป.ช.';
+        defaultCrimFinding = 'ส่งเรื่องให้สำนักงาน ป.ป.ช. ดำเนินการ';
+        defaultDiscFinding = '—';
+      }
+
+      // 3. Populate Form Inputs
       function setVal(id, val) {
         const el = document.getElementById(id);
         if (!el) return;
@@ -805,11 +850,11 @@
       setVal('incidentDetail', k.incidentDetail72 || '');
       setVal('prescriptionNote', k.prescriptionNote72 || (k.prescription ? `มีอายุความถึงวันที่ ${ECMIS.thaiDate(k.prescription)}` : ''));
       
-      // Board Opinion Sync (ซิงค์ตรงจาก boardOpinion72)
+      // Board Opinion & Finding Sync (ซิงค์ตรงจาก boardOpinion72)
       setVal('meetingOpinion', k.meetingOpinion72 || k.boardOpinion72 || '');
-      setVal('legalAnalysis', k.legalAnalysis72 || (resObj ? resObj.legalBasis : 'พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ๓๘ และมาตรา ๔๔'));
-      setVal('criminalFinding', k.criminalFinding72 || (crim ? 'มีมูลความผิดทางอาญาฐานเป็นเจ้าพนักงานปฏิบัติหรือละเว้นการปฏิบัติหน้าที่โดยมิชอบ หรือโดยทุจริต' : ''));
-      setVal('disciplinaryFinding', k.disciplinaryFinding72 || (disc ? 'มีมูลความผิดทางวินัยอย่างร้ายแรงฐานปฏิบัติหรือละเว้นการปฏิบัติหน้าที่ราชการโดยมิชอบเพื่อให้ตนเองหรือผู้อื่นได้ประโยชน์ที่มิควรได้ เป็นการทุจริตต่อหน้าที่ราชการ' : ''));
+      setVal('legalAnalysis', k.legalAnalysis72 || defaultLegalAnalysis);
+      setVal('criminalFinding', k.criminalFinding72 || defaultCrimFinding);
+      setVal('disciplinaryFinding', k.disciplinaryFinding72 || defaultDiscFinding);
 
       setVal('discAgency', k.discAgency72 || (firstAccused ? firstAccused.agency : '') || k.ownerOrg || '');
       setVal('discAccused', k.discAccused72 || (firstAccused ? firstAccused.name : ''));
@@ -820,12 +865,25 @@
       const toggleCrim = document.getElementById('hasCriminalToggle');
       if (toggleCrim) {
         if (force || toggleCrim.dataset.userTouched !== 'true') {
-          toggleCrim.checked = crim;
+          toggleCrim.checked = (resCode === 'GUILTY_72') ? crim : false;
         }
       }
     }
 
     syncFromBoardResolution(kase, false);
+
+    (async function initData() {
+      try {
+        const dbCase = await loadCaseFromSupabase(caseParam);
+        if (dbCase) {
+          Object.assign(kase, dbCase);
+          syncFromBoardResolution(kase, false);
+          renderDoc();
+        }
+      } catch (e) {
+        console.warn('DB load fallback:', e);
+      }
+    })();
 
     const btnResync = document.getElementById('btnResyncResolution');
     if (btnResync) {
