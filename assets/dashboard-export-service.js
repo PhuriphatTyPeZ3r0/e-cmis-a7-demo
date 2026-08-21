@@ -553,7 +553,7 @@
               ${escapeHtml(c.subject)}
             </div>
             <div class="small text-muted text-truncate" style="max-width: 280px;" title="${escapeHtml(accusedText)}">
-              <i class="fa-regular fa-user me-1"></i>${escapeHtml(accusedText)}
+              <i class="fa-solid fa-user me-1"></i>${escapeHtml(accusedText)}
             </div>
           </td>
           <td class="small">${escapeHtml(c.agency)}</td>
@@ -592,7 +592,7 @@
             <!-- Filter & Search bar inside modal -->
             <div class="bg-white p-2 rounded border mb-3 shadow-sm d-flex justify-content-between align-items-center flex-wrap gap-2">
               <div class="input-group input-group-sm" style="max-width: 380px;">
-                <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-search"></i></span>
+                <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
                 <input type="text" class="form-control" id="drilldownCaseSearch" placeholder="ค้นหาเลขสำนวน, ชื่อเรื่อง, ผู้ถูกกล่าวหา, หน่วยงาน...">
               </div>
               <div class="d-flex gap-2">

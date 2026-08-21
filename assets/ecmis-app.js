@@ -1799,7 +1799,7 @@ function renderShell(activeHref){
     <li class="p-2 border-bottom" style="font-size:0.78rem">
       <a href="${href}" class="d-flex gap-2 text-decoration-none">
         <span class="rounded-circle d-flex align-items-center justify-content-center ${urgentCls}" style="width:28px;height:28px;flex:0 0 auto">
-          <i class="fa-regular fa-clock" style="font-size:0.75rem"></i>
+          <i class="fa-solid fa-clock" style="font-size:0.75rem"></i>
         </span>
         <div>
           <strong class="d-block text-dark dark-text-light" style="font-size:0.8rem">${DEADLINE_LABEL[a.deadlineType]}</strong>
@@ -1880,11 +1880,11 @@ function renderShell(activeHref){
       <!-- Notification Bell -->
       <div class="dropdown">
         <button class="btn btn-sm btn-light border-0 rounded-circle position-relative p-2 ms-1" data-bs-toggle="dropdown" aria-expanded="false" title="การแจ้งเตือน" style="width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center">
-          <i class="fa-regular fa-bell text-secondary"></i>
+          <i class="fa-solid fa-bell text-secondary"></i>
           <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-circle bg-danger ${totalNotifCount ? '' : 'd-none'}" style="font-size:.58rem; width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; padding:0">${totalNotifCount}</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end p-0" style="width:290px; max-height:360px; overflow-y:auto">
-          <li id="notifDeadlineSection">${deadlineAlerts.length ? `<h6 class="dropdown-header border-bottom p-2 text-danger" style="font-size: 0.82rem"><i class="fa-regular fa-clock me-1"></i>ใกล้ครบกำหนด (ภายใน 15 วัน)</h6><ul class="list-unstyled m-0">${deadlineNotifItems}</ul>` : ''}</li>
+          <li id="notifDeadlineSection">${deadlineAlerts.length ? `<h6 class="dropdown-header border-bottom p-2 text-danger" style="font-size: 0.82rem"><i class="fa-solid fa-clock me-1"></i>ใกล้ครบกำหนด (ภายใน 15 วัน)</h6><ul class="list-unstyled m-0">${deadlineNotifItems}</ul>` : ''}</li>
           <li><h6 class="dropdown-header border-bottom p-2 text-dark dark-text-light" style="font-size: 0.82rem">การแจ้งเตือนล่าสุด</h6></li>
           ${notifItems}
           <li class="text-center p-2"><a href="#" style="font-size:0.75rem; text-decoration:none; color:var(--ecmis-navy)">ดูการแจ้งเตือนทั้งหมด</a></li>
@@ -1894,7 +1894,7 @@ function renderShell(activeHref){
       <!-- User Role Dropdown Pill (Role Switcher) -->
       <div class="dropdown role-switcher ms-1">
         <button class="btn btn-sm btn-light border rounded-pill px-3 py-1 dropdown-toggle user-pill text-secondary d-inline-flex align-items-center gap-1" data-bs-toggle="dropdown" aria-expanded="false" style="font-size:0.82rem" title="สลับบทบาทการทำงาน">
-          <i class="fa-regular fa-user"></i>
+          <i class="fa-solid fa-user"></i>
           <span>${role.name} — ${role.title}</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow" style="max-height: 480px; overflow-y: auto; min-width: 320px;">
@@ -2068,7 +2068,7 @@ async function refreshDeadlineNotificationsFromSupabase(role) {
       <li class="p-2 border-bottom" style="font-size:0.78rem">
         <a href="${href}" class="d-flex gap-2 text-decoration-none">
           <span class="rounded-circle d-flex align-items-center justify-content-center ${urgentCls}" style="width:28px;height:28px;flex:0 0 auto">
-            <i class="fa-regular fa-clock" style="font-size:0.75rem"></i>
+            <i class="fa-solid fa-clock" style="font-size:0.75rem"></i>
           </span>
           <div>
             <strong class="d-block text-dark dark-text-light" style="font-size:0.8rem">${DEADLINE_LABEL[a.deadlineType]}</strong>
@@ -2081,7 +2081,7 @@ async function refreshDeadlineNotificationsFromSupabase(role) {
     const section = document.getElementById('notifDeadlineSection');
     if (section) {
       section.innerHTML = alerts.length
-        ? `<h6 class="dropdown-header border-bottom p-2 text-danger" style="font-size: 0.82rem"><i class="fa-regular fa-clock me-1"></i>ใกล้ครบกำหนด (ภายใน 15 วัน)</h6><ul class="list-unstyled m-0">${itemsHtml}</ul>`
+        ? `<h6 class="dropdown-header border-bottom p-2 text-danger" style="font-size: 0.82rem"><i class="fa-solid fa-clock me-1"></i>ใกล้ครบกำหนด (ภายใน 15 วัน)</h6><ul class="list-unstyled m-0">${itemsHtml}</ul>`
         : '';
     }
     const badge = document.getElementById('notifBadge');
@@ -2126,11 +2126,11 @@ function slaBadge(kase){
   const resSla = resolutionSlaInfo(kase);
   if (resSla) {
     return `<span class="sla ${slaClass(resSla.used, resSla.limit)}" title="กำหนดออกมติ 15 วันทำการนับจากวันที่บอร์ดมีมติ">
-      <i class="fa-regular fa-clock me-1"></i>${slaLabel(resSla.used, resSla.limit)} (ออกมติ)</span>`;
+      <i class="fa-solid fa-clock me-1"></i>${slaLabel(resSla.used, resSla.limit)} (ออกมติ)</span>`;
   }
   const lim = effectiveSlaLimit(kase);
   return `<span class="sla ${slaClass(kase.slaDays, lim)}">
-    <i class="fa-regular fa-clock me-1"></i>${slaLabel(kase.slaDays, lim)}</span>`;
+    <i class="fa-solid fa-clock me-1"></i>${slaLabel(kase.slaDays, lim)}</span>`;
 }
 
 function actionBar(kase, roleId, buttons, opts){
@@ -2175,7 +2175,7 @@ function actionBar(kase, roleId, buttons, opts){
 
   return `<div class="action-bar" id="caseActionBar">
     <div class="role-hint">
-      <i class="fa-regular fa-user me-1"></i>กำลังดำเนินการในบทบาท:
+      <i class="fa-solid fa-user me-1"></i>กำลังดำเนินการในบทบาท:
       <strong>${role.title}</strong> ${scopeTag} ${editTag}
     </div>${inner}
   </div>`;
@@ -2497,7 +2497,7 @@ function sequentialSignDialog(docName, signers){
         <strong>${s.name}</strong> — ${s.title}
         ${i===0
           ? '<div class="text-muted" style="font-size:.74rem"><i class="fa-solid fa-signature me-1"></i>ลงนามในขั้นตอนนี้</div>'
-          : `<div class="text-muted" style="font-size:.74rem"><i class="fa-regular fa-clock me-1"></i>${s.note || 'รอดำเนินการในขั้นตอนถัดไปของผัง'}</div>`}
+          : `<div class="text-muted" style="font-size:.74rem"><i class="fa-solid fa-clock me-1"></i>${s.note || 'รอดำเนินการในขั้นตอนถัดไปของผัง'}</div>`}
       </div>
     </div>`).join('');
 
@@ -3450,7 +3450,7 @@ function initCharCounterAndCopy() {
     copyBtn.type = 'button';
     copyBtn.className = 'btn btn-xs btn-outline-secondary py-0 px-2';
     copyBtn.style.fontSize = '0.7rem';
-    copyBtn.innerHTML = '<i class="fa-regular fa-copy me-1"></i>คัดลอก';
+    copyBtn.innerHTML = '<i class="fa-solid fa-copy me-1"></i>คัดลอก';
     copyBtn.addEventListener('click', (e) => {
       e.preventDefault();
       navigator.clipboard.writeText(ta.value).then(() => {
@@ -3551,7 +3551,7 @@ function initAuditTrail(containerId, events) {
         <div style="font-size:.82rem;margin:.1rem 0">${e.action||''}</div>
         ${e.detail ? `<div style="font-size:.76rem;color:var(--ecmis-muted)">${e.detail}</div>` : ''}
         <div style="font-size:.72rem;color:var(--ecmis-muted);margin-top:.15rem">
-          <i class="fa-regular fa-clock me-1"></i>${e.date||''}
+          <i class="fa-solid fa-clock me-1"></i>${e.date||''}
         </div>
       </div>
     </li>`).join('') + `</ul>`;
@@ -3623,7 +3623,7 @@ function initDragDropUpload(zoneId, fileListId, allowedTypes, maxMB) {
     row.className = 'd-flex align-items-center gap-2 p-2 border rounded mb-2';
     row.style.fontSize = '0.82rem';
     row.innerHTML = `
-      <i class="fa-regular fa-file-lines text-muted"></i>
+      <i class="fa-solid fa-file-lines text-muted"></i>
       <span class="flex-grow-1">${file.name} <span class="text-muted">(${(file.size/1024).toFixed(0)} KB)</span></span>
       <div class="upload-progress-bar flex-grow-1" style="max-width:120px">
         <div class="upload-progress-fill" style="width:0%"></div>
