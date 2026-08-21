@@ -282,8 +282,13 @@
     document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + statusBadgeHtml + ' ' + ECMIS.slaBadge(kase);
     document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status);
     if (kase.meetingNo) document.getElementById('meetNo').value = kase.meetingNo;
+    else if (kase.status === 'RESOLVED') document.getElementById('meetNo').value = '36/2569';
+
     if (kase.agendaNo) document.getElementById('agendaNo').value = kase.agendaNo;
+    else if (kase.status === 'RESOLVED') document.getElementById('agendaNo').value = '4.2';
+
     if (kase.meetingDate) setDateInputValue('meetDate', kase.meetingDate);
+    else if (kase.status === 'RESOLVED') setDateInputValue('meetDate', '2569-08-05');
 
     /* สังกัดอาจมีมากกว่า 1 หน่วยงาน (สำนวนร่วมสอบข้ามเขต) — ใช้ search-select
        แบบเลือกหลายรายการเดียวกับผู้ชี้แจง ตั้งค่าเริ่มต้นจาก kase.ownerOrg เดิม */
@@ -303,6 +308,15 @@
 
     /* ผู้ชี้แจงต่อที่ประชุมมีได้มากกว่า 1 คน — ใช้ search-select แบบเลือกหลายรายการ
        เก็บค่าไว้ใน #presenter เดิม (comma-joined) ไม่ต้องแก้ renderDoc()/wiring ด้านล่าง */
+    const is73 = ECMIS.isCase73(kase);
+    const is72 = ECMIS.isCase72(kase);
+    const defaultPresenter = is73
+      ? `${kase.owner} (ผู้รับผิดชอบสำนวน), ฝ่ายเลขานุการคณะอนุกลั่นกรองฯ (นิติกร กบค.)`
+      : (kase.subCommittee
+        ? `ฝ่ายเลขานุการคณะอนุกลั่นกรองฯ (นิติกร กบค.), ${kase.owner} (ผู้รับผิดชอบสำนวน)`
+        : `${kase.owner} (ผู้รับผิดชอบสำนวน), ฝ่ายเลขานุการคณะอนุกลั่นกรองฯ (นิติกร กบค.)`);
+
+    document.getElementById('presenter').value = kase.presenter || defaultPresenter;
     ECMIS.initMultiSelectCombo(document.getElementById('presenter'), [
       'ฝ่ายเลขานุการคณะอนุกลั่นกรองฯ (นิติกร กบค.)',
       `${kase.owner} (ผู้รับผิดชอบสำนวน)`,
@@ -311,6 +325,15 @@
       `${ECMIS.getRole('board_sec').name} (เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ)`,
       `${ECMIS.getRole('dir_case').name} (ผู้อำนวยการกองบริหารคดี)`
     ]);
+
+    const isLocked = kase.status === 'RESOLVED' || kase.status === 'RESOLVED_PENDING';
+
+    const defaultPresenterNote = is73
+      ? 'ผู้รับผิดชอบสำนวนได้รายงานสรุปผลการพิจารณาของพนักงานอัยการและพยานหลักฐานในสำนวนที่สมบูรณ์ครบถ้วน พร้อมเสนอแนวทางการทบทวนคำสั่งไม่ฟ้องตาม ม.33 ต่อที่ประชุม'
+      : (is72
+        ? 'ผู้รับผิดชอบสำนวนได้นำเสนอรายงานผลการไต่สวนข้อเท็จจริงและพยานหลักฐานตามแบบ ปปท. ๗-๐๒ ต่อที่ประชุม คณะกรรมการฯ พิจารณาแล้วไม่มีข้อซักถามเพิ่มเติม'
+        : 'ผู้รับผิดชอบสำนวนและฝ่ายเลขานุการฯ ได้สรุปข้อเท็จจริง พยานหลักฐาน และเหตุผลความจำเป็นในการเสนอแต่งตั้งองค์คณะไต่สวนตาม ม.24 ต่อที่ประชุม คณะกรรมการฯ พิจารณาแล้วไม่มีข้อซักถามเพิ่มเติม');
+    document.getElementById('presenterNote').value = kase.presenterNote || (isLocked ? defaultPresenterNote : '');
 
     /* ผู้ลงนามท้ายเอกสารเดิม hardcode ชื่อ ผอ.กบค. ไว้ตรงๆ — เปลี่ยนเป็นเลือกจากบทบาท
        ที่มีสิทธิ์แก้ไขมติได้จริง (ชีตแถว 15) ส่วนตำแหน่งแยกเป็นช่องข้อความอิสระ เพราะ
@@ -328,8 +351,8 @@
       opt.dataset.sub = c.title;
       signerNameEl.appendChild(opt);
     });
-    signerNameEl.value = SIGNER_CANDIDATES[0].name;
-    document.getElementById('signerTitle').value = SIGNER_CANDIDATES[0].title;
+    signerNameEl.value = kase.signerName || SIGNER_CANDIDATES[0].name;
+    document.getElementById('signerTitle').value = kase.signerTitle || SIGNER_CANDIDATES[0].title;
     signerNameEl.addEventListener('change', () => {
       const c = SIGNER_CANDIDATES.find(x => x.name === signerNameEl.value);
       if (c) document.getElementById('signerTitle').value = c.title;
@@ -343,27 +366,29 @@
     /* คำชี้แจงจากเจ้าของสำนวน — กรอกได้เฉพาะ role owner (แยกจาก #presenterNote ที่เจ้าหน้าที่
        กบค. กรอกแทน), บทบาทอื่นเห็นเป็น read-only และซ่อนถ้ายังไม่มีข้อความ */
     const ownerClarificationEl = document.getElementById('ownerClarification');
-    ownerClarificationEl.value = kase.ownerClarification || '';
+    const defaultOwnerClarification = is73
+      ? 'กองปราบปรามฯ ได้ประสานงานตรวจสอบข้อกฎหมายและคำสั่งไม่ฟ้องของพนักงานอัยการแล้ว ยืนยันว่าพยานหลักฐานในสำนวนมีน้ำหนักเพียงพอต่อการดำเนินคดีอาญาตาม ม.33'
+      : 'ผู้รับผิดชอบสำนวนได้ตรวจสอบพยานหลักฐานและข้อเท็จจริงเบื้องต้นครบถ้วนแล้ว ยืนยันว่าข้อกล่าวหามีมูลสมควรแต่งตั้งองค์คณะไต่สวนตาม ม.24';
+
+    ownerClarificationEl.value = kase.ownerClarification || (isLocked ? defaultOwnerClarification : '');
     if (role.id !== 'owner') {
       ownerClarificationEl.readOnly = true;
-      document.getElementById('ownerClarificationBox').classList.toggle('d-none', !kase.ownerClarification);
+      document.getElementById('ownerClarificationBox').classList.toggle('d-none', !ownerClarificationEl.value);
+    } else {
+      document.getElementById('ownerClarificationBox').classList.remove('d-none');
     }
-    /* เดิมปุ่ม "บันทึกมติและล็อก PDF" ไม่เคยเปลี่ยน kase.status/บันทึกข้อมูลจริงเลย (แค่ toast
-       แล้ว redirect) ทำให้กดบันทึกกี่ครั้งก็ไม่มีอะไรเปลี่ยนจริง และเอกสารฝั่งขวาก็ไม่มีทาง
-       "ดูย้อนหลัง" มติที่บันทึกไปแล้วได้ (renderDoc() สร้างจากค่าฟอร์มปัจจุบันเสมอ ไม่ใช่ค่าที่
-       บันทึกไว้จริง) — isLocked คือสำนวนที่บันทึกมติไปแล้วจริง (ผ่าน handle('lock') ด้านล่าง
-       ซึ่งตอนนี้ persistCase() บันทึก kase.status ลง Supabase จริง แล้ว set kase.resolution/
-       kase.recordedDocHtml ฯลฯ ที่ไม่มีคอลัมน์ใน Supabase ไว้บน kase ในหน่วยความจำแล้ว)
-       renderDoc() จะโชว์ recordedDocHtml ที่บันทึกไว้ตรงๆ แทนการ generate ใหม่จากฟอร์ม
-       (ค่าฟอร์มที่โหลดใหม่จะไม่ตรงกับตอนบันทึกจริงอีกต่อไป) และซ่อนปุ่มบันทึกไม่ให้กดซ้ำ */
-    const isLocked = kase.status === 'RESOLVED' || kase.status === 'RESOLVED_PENDING';
 
     if (!mayView) {
       document.getElementById('content') && (document.getElementById('content').style.display = 'none');
-    } else if (!mayEdit) {
-      /* ล็อกทุกช่องกรอกบนหน้านี้จริง — role ที่ไม่มีสิทธิ์ record.minutes/EDIT.MASTER จะดูได้อย่างเดียว */
-      setTimeout(() => document.querySelectorAll('main input, main select, main textarea')
-        .forEach(el => { if (!el.closest('.action-bar')) el.disabled = true; }), 0);
+    } else if (!mayEdit || isLocked) {
+      /* ล็อกทุกช่องกรอกบนหน้านี้จริง — role ที่ไม่มีสิทธิ์ หรือสำนวนที่บันทึกมติแล้ว (isLocked) จะดูได้อย่างเดียว */
+      setTimeout(() => {
+        document.querySelectorAll('main input, main select, main textarea').forEach(el => {
+          if (!el.closest('.action-bar') && el.id !== 'btnPaneCollapse' && el.id !== 'btnPaneExpand') {
+            el.disabled = true;
+          }
+        });
+      }, 0);
     }
 
     /* ---------- คณะกรรมการ 7 ท่าน ---------- */
@@ -442,7 +467,6 @@
       renderQuorum(); renderDoc();
     }
 
-    const is73 = ECMIS.isCase73(kase);
     const resDataset = is73 ? ECMIS.RESOLUTIONS_73 : ECMIS.RESOLUTIONS;
     const currentResCode = (typeof kase.resolution === 'object' ? kase.resolution?.code : kase.resolution) || '';
 
@@ -456,10 +480,16 @@
   </label>`;
     }).join('');
 
-    if (kase.boardOpinion && !document.getElementById('boardOpinion').value) {
-      document.getElementById('boardOpinion').value = kase.boardOpinion;
-    } else if (is73 && kase.resolution === 'REVIEW_PROSECUTOR_73' && !document.getElementById('boardOpinion').value) {
-      document.getElementById('boardOpinion').value = 'พยานหลักฐานในสำนวนการไต่สวนปรากฏข้อเท็จจริงครบถ้วนสมบูรณ์ มีมูลความผิดทางอาญาชัดเจน จึงเห็นควรมีมติขอให้พนักงานอัยการทบทวนคำสั่งไม่ฟ้อง หรือมีมติฟ้องคดีเองตาม ม.๓๓';
+    const defaultBoardOpinion = is73
+      ? (kase.resolution === 'REVIEW_PROSECUTOR_73'
+        ? 'พยานหลักฐานในสำนวนการไต่สวนปรากฏข้อเท็จจริงครบถ้วนสมบูรณ์ มีมูลความผิดทางอาญาชัดเจน จึงเห็นควรมีมติขอให้พนักงานอัยการทบทวนคำสั่งไม่ฟ้อง หรือมีมติฟ้องคดีเองตาม ม.๓๓'
+        : 'พิจารณาแล้วมีมติเห็นชอบและอนุมัติตามที่เสนอ')
+      : (is72
+        ? 'พิจารณาแล้วเห็นว่า พยานหลักฐานมีมูลความผิดทางวินัยอย่างร้ายแรงและมีมูลความผิดทางอาญาตามข้อกล่าวหา จึงมีมติชี้มูลความผิดและส่งรายงานไปยังผู้บังคับบัญชาและพนักงานอัยการ'
+        : 'พิจารณาแล้วเห็นว่า รายงานการไต่สวนเบื้องต้นและพยานหลักฐานปรากฏข้อเท็จจริงเพียงพอและมีมูลตามข้อกล่าวหา จึงมีมติให้รับไว้ดำเนินการไต่สวนข้อเท็จจริงเป็นองค์คณะตามมาตรา ๒๔ วรรคหนึ่ง');
+
+    if (!document.getElementById('boardOpinion').value) {
+      document.getElementById('boardOpinion').value = kase.boardOpinion || (isLocked ? defaultBoardOpinion : '');
     }
 
     function selectedRes() {
