@@ -91,6 +91,23 @@
     return data ? data.trr_id : null;
   }
 
+  /* owner/org overlay from sessionStorage or case metadata */
+  const OWNER_ORG_KEY = 'ecmis_agenda_owner_org_overlay';
+  function loadOwnerOrgOverlay() {
+    try { return JSON.parse(sessionStorage.getItem(OWNER_ORG_KEY) || '{}'); } catch (e) { return {}; }
+  }
+  function saveOwnerOrgOverlay(map) {
+    try { sessionStorage.setItem(OWNER_ORG_KEY, JSON.stringify(map)); } catch (e) { /* ignore */ }
+  }
+  function getOwnerOrg(trciId) {
+    return loadOwnerOrgOverlay()[trciId] || { owner: '', org: '' };
+  }
+  function setOwnerOrg(trciId, owner, org) {
+    const map = loadOwnerOrgOverlay();
+    map[trciId] = { owner: owner || '', org: org || '' };
+    saveOwnerOrgOverlay(map);
+  }
+
   function mapMeetingRow(row) {
     return {
       trc_id: row.trc_id, trc_name: row.trc_name || '',
@@ -100,10 +117,33 @@
     };
   }
   function mapItemRow(row) {
+    const oo = getOwnerOrg(row.trci_id);
+    const caseRef = combinedCaseRef(row.trci_id);
+    let owner = oo.owner || row.owner || '';
+    let org = oo.org || row.org || '';
+
+    // If still empty and there is a case_ref, attempt auto-fill from ECMIS.CASES
+    if ((!owner || !org) && caseRef && caseRef !== '-') {
+      const firstNo = caseRef.split(',')[0].trim();
+      const mock = (global.ECMIS && global.ECMIS.CASES) ? global.ECMIS.CASES.find(c => c.id === firstNo) : null;
+      if (mock) {
+        if (!owner) owner = mock.owner || '';
+        if (!org) org = mock.ownerOrg || '';
+      }
+    }
+    // Fallback for general meeting items (e.g. วาระ 2 หรือ 3)
+    if (!owner && (!caseRef || caseRef === '-')) {
+      owner = 'ฝ่ายเลขานุการคณะกรรมการ ป.ป.ท.';
+      org = 'กองบริหารคดี / ฝ่ายเลขาฯ';
+    }
+
     return {
       trci_id: row.trci_id, trc_id: row.trc_id, trci_number: row.trci_number || '',
       category: row.category || 'finding', trci_topic: row.trci_topic || '',
-      case_ref: combinedCaseRef(row.trci_id), remark: row.remark || '-'
+      case_ref: caseRef,
+      owner: owner || '-',
+      org: org || '-',
+      remark: row.remark || '-'
     };
   }
 
@@ -168,17 +208,38 @@
       .eq('is_deleted', false)
       .maybeSingle();
     if (error) throw error;
-    if (!data) return null;
+    if (!data) {
+      const mock = (global.ECMIS && global.ECMIS.CASES) ? global.ECMIS.CASES.find(c => c.id === trimmed) : null;
+      if (mock) {
+        const resolvedLike = ['RESOLVED_PENDING', 'RESOLVED', 'DISPATCHING', 'CLOSED'].includes(mock.status);
+        const category = mock.docType === 'GENERAL' ? 'policy' : (resolvedLike ? 'finding' : 'preliminary');
+        const topic = mock.docType === 'GENERAL' ? mock.subject : `รายงานไต่สวน${resolvedLike ? 'เพื่อวินิจฉัยชี้มูล' : 'เบื้องต้น'} กรณี ${mock.subject}`;
+        const remarkParts = [];
+        if (mock.prescription && mock.prescription !== '—') remarkParts.push(`ครบอายุความ ${global.ECMIS.thaiDate(mock.prescription)}`);
+        const statusLabel = global.ECMIS.STATUS[mock.status]?.label;
+        if (statusLabel) remarkParts.push(statusLabel);
+        return {
+          category, topic, caseRef: mock.id,
+          owner: mock.owner || '', org: mock.ownerOrg || '',
+          remark: remarkParts.join(' / ') || '-'
+        };
+      }
+      return null;
+    }
     const cc = data.tbl_cmp_case;
     const kase = global.ECMIS.supabaseRowToCase(data);
     const resolvedLike = ['RESOLVED_PENDING', 'RESOLVED', 'DISPATCHING', 'CLOSED'].includes(kase.status);
-    const category = resolvedLike ? 'finding' : 'preliminary';
-    const topic = `รายงานไต่สวน${resolvedLike ? 'เพื่อวินิจฉัยชี้มูล' : 'เบื้องต้น'} กรณี ${kase.subject}`;
+    const category = kase.docType === 'GENERAL' ? 'policy' : (resolvedLike ? 'finding' : 'preliminary');
+    const topic = kase.docType === 'GENERAL' ? kase.subject : `รายงานไต่สวน${resolvedLike ? 'เพื่อวินิจฉัยชี้มูล' : 'เบื้องต้น'} กรณี ${kase.subject}`;
     const remarkParts = [];
-    if (kase.prescription) remarkParts.push(`ครบอายุความ ${global.ECMIS.thaiDate(kase.prescription)}`);
+    if (kase.prescription && kase.prescription !== '—') remarkParts.push(`ครบอายุความ ${global.ECMIS.thaiDate(kase.prescription)}`);
     const statusLabel = global.ECMIS.STATUS[kase.status]?.label;
     if (statusLabel) remarkParts.push(statusLabel);
-    return { category, topic, caseRef: cc.tcc_no, remark: remarkParts.join(' / ') || '-' };
+    return {
+      category, topic, caseRef: cc.tcc_no,
+      owner: kase.owner || '', org: kase.ownerOrg || '',
+      remark: remarkParts.join(' / ') || '-'
+    };
   }
 
   /* ---------- mutations: เขียนลง Supabase จริง แล้วอัปเดต array ในเครื่อง ---------- */
@@ -222,11 +283,15 @@
     if (idx !== -1) MEETINGS.splice(idx, 1);
   }
 
-  async function addItem({ trc_id, trci_number, category, trci_topic, case_ref, remark }) {
+  async function addItem({ trc_id, trci_number, category, trci_topic, case_ref, owner, org, remark }) {
     const { data, error } = await sb.from('tbl_res_calendar_item')
       .insert({ trc_id, trci_number, category, trci_topic, remark })
       .select().single();
     if (error) throw error;
+
+    if (owner || org) {
+      setOwnerOrg(data.trci_id, owner, org);
+    }
 
     /* เชื่อมสำนวนจริงเข้า tbl_res_calendar_item_case ถ้าเลขที่เรื่องมีอยู่จริงในระบบ — เลขที่ไม่พบ
        (พิมพ์เอง/อ้างอิงนอกระบบ) เก็บ fallback เป็น sessionStorage overlay เหมือนพฤติกรรมเดิม */
@@ -295,7 +360,7 @@
   global.AgendaRegistry = {
     sb, MEETINGS, ITEMS, LINKED_TRR_IDS, CATEGORY_LABEL, CATEGORY_CLASS, STATUS_LABEL, STATUS_CLASS,
     ready, meetingOf, itemsOf, isFlagged, isBundled,
-    renderCaseRef, lookupCaseForAgenda, resolveCaseNoToTrrId,
+    renderCaseRef, lookupCaseForAgenda, resolveCaseNoToTrrId, getOwnerOrg, setOwnerOrg,
     addMeeting, deleteMeeting, addItem, deleteItem, updateItemNumber, swapItemNumber, confirmMeeting
   };
 

@@ -112,12 +112,14 @@
               <table class="table table-hover tbl-ecmis mb-0">
                 <thead>
                   <tr>
-                    <th style="width:100px">วาระที่</th>
-                    <th style="width:170px">หมวดหมู่</th>
-                    <th>ลักษณะเรื่อง</th>
-                    <th style="width:200px">เลขที่เรื่อง</th>
-                    <th style="width:230px">หมายเหตุ</th>
-                    <th style="width:90px"></th>
+                    <th style="width:75px">วาระที่</th>
+                    <th style="width:135px">หมวดหมู่</th>
+                    <th>ชื่อเรื่องเสนอพิจารณา</th>
+                    <th style="width:130px">เรื่องเลขคดีที่</th>
+                    <th style="width:160px">ผู้รับผิดชอบ ปราบ/เขต</th>
+                    <th style="width:130px">กอง/สำนัก</th>
+                    <th style="width:170px">หมายเหตุ</th>
+                    <th style="width:70px"></th>
                   </tr>
                 </thead>
                 <tbody id="tb"></tbody>
@@ -205,7 +207,13 @@
         const qCategory = document.getElementById('qCategory').value;
 
         if (qAgendaNo && !item.trci_number.includes(qAgendaNo)) return false;
-        if (q && !(item.trci_topic.includes(q) || item.case_ref.includes(q) || item.remark.includes(q))) return false;
+        if (q && !(
+          item.trci_topic.toLowerCase().includes(q.toLowerCase()) ||
+          item.case_ref.toLowerCase().includes(q.toLowerCase()) ||
+          (item.owner && item.owner.toLowerCase().includes(q.toLowerCase())) ||
+          (item.org && item.org.toLowerCase().includes(q.toLowerCase())) ||
+          item.remark.toLowerCase().includes(q.toLowerCase())
+        )) return false;
         if (qCategory && item.category !== qCategory) return false;
         if (filter === 'flagged' && !AR.isFlagged(item)) return false;
         if (filter === 'bundle' && !AR.isBundled(item)) return false;
@@ -218,25 +226,31 @@
           if (!moved) return;
         } catch (err) {
           console.error('เลื่อนลำดับวาระไม่สำเร็จ:', err);
-          ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+          ECMIS.toastWarn('เลื่อนลำดับไม่สำเร็จ ลองใหม่อีกครั้ง');
           return;
         }
         renderDetail();
       }
 
       function renderDetail() {
-        const tbody = document.getElementById('tb');
-        document.getElementById('confirmedBadge').innerHTML = meeting.trc_confirmed
-          ? '<span class="meet-confirmed"><i class="fa-solid fa-check"></i>จัดวาระแล้ว</span>' : '';
-
         const all = AR.itemsOf(meeting.trc_id);
         const filtered = all.filter(matches);
-        document.getElementById('cnt').textContent = filtered.length;
-        document.getElementById('emptyState').classList.toggle('d-none', filtered.length > 0);
-
-        const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+        const totalPages = Math.ceil(filtered.length / pageSize) || 1;
         if (currentPage > totalPages) currentPage = totalPages;
         const pageRows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+        document.getElementById('cnt').textContent = filtered.length;
+        document.getElementById('confirmedBadge').innerHTML = meeting.trc_confirmed
+          ? '<span class="meet-confirmed"><i class="fa-solid fa-check-circle"></i>จัดวาระแล้ว</span>' : '';
+
+        const tbody = document.getElementById('tb');
+        const emptyState = document.getElementById('emptyState');
+        if (!pageRows.length) {
+          tbody.innerHTML = ''; emptyState.classList.remove('d-none');
+        } else {
+          emptyState.classList.add('d-none');
+        }
+
         const noFilterActive = !document.getElementById('qAgendaNo').value.trim() && !document.getElementById('q').value.trim()
           && !document.getElementById('qCategory').value && filter === 'all';
 
@@ -311,14 +325,33 @@
 
       document.getElementById('btnExportCsv').addEventListener('click', () => {
         const filtered = AR.itemsOf(meeting.trc_id).filter(matches);
-        const header = ['ครั้งที่ประชุม', 'วันที่', 'วาระที่', 'หมวดหมู่', 'ลักษณะเรื่อง', 'เลขที่เรื่อง', 'หมายเหตุ'];
+        const header = [
+          'ที่',
+          'การประชุมครั้งที่',
+          'วัน เดือน ปี ที่ประชุม',
+          'วาระการประชุมที่',
+          'ชื่อเรื่องเสนอพิจารณา',
+          'เรื่องเลขคดีที่',
+          'ผู้รับผิดชอบ ปราบ/เขต',
+          'กอง/สำนัก ที่รับผิดชอบ',
+          'หมายเหตุ/ระบุ รายละเอียดเพิ่มเติม'
+        ];
         const lines = [header.join(',')];
-        filtered.forEach(it => {
-          const row = [meeting.trc_name, meeting.trc_date, it.trci_number, AR.CATEGORY_LABEL[it.category],
-            `"${it.trci_topic.replace(/"/g, '""')}"`, `"${it.case_ref.replace(/"/g, '""')}"`, `"${it.remark.replace(/"/g, '""')}"`];
+        filtered.forEach((it, idx) => {
+          const row = [
+            idx + 1,
+            `"${meeting.trc_name}"`,
+            `"${ECMIS.thaiDate(meeting.trc_date)}"`,
+            `"${it.trci_number}"`,
+            `"${(it.trci_topic || '').replace(/"/g, '""')}"`,
+            `"${(it.case_ref || '').replace(/"/g, '""')}"`,
+            `"${(it.owner && it.owner !== '-' ? it.owner : '').replace(/"/g, '""')}"`,
+            `"${(it.org && it.org !== '-' ? it.org : '').replace(/"/g, '""')}"`,
+            `"${(it.remark && it.remark !== '-' ? it.remark : '').replace(/"/g, '""')}"`
+          ];
           lines.push(row.join(','));
         });
-        const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+        const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url; a.download = `ทะเบียนวาระการประชุม-ครั้งที่${meeting.trc_name}.csv`;
@@ -327,7 +360,7 @@
       });
 
       /* ===================================================================
-         เพิ่มวาระ — บันทึกลง sessionStorage (จำลอง)
+         เพิ่มวาระ — บันทึกลง Supabase จริง
          =================================================================== */
       function nextItemNo() {
         const items = AR.itemsOf(meeting.trc_id);
@@ -345,7 +378,7 @@
         const catOptions = Object.entries(AR.CATEGORY_LABEL).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
         Swal.fire({
           title: `เพิ่มวาระ — ครั้งที่ ${meeting.trc_name}`,
-          width: 560,
+          width: 580,
           html: `
           <div class="row g-2 text-start">
             <div class="col-12">
@@ -360,16 +393,24 @@
               <input type="text" id="swItemNo" class="form-control" value="${nextItemNo()}" placeholder="เช่น 5.31"></div>
             <div class="col-8"><label class="form-label">หมวดหมู่ *</label>
               <select id="swItemCat" class="form-select">${catOptions}</select></div>
-            <div class="col-12"><label class="form-label">ลักษณะเรื่อง *</label>
-              <input type="text" id="swItemTopic" class="form-control" placeholder="เช่น รายงานไต่สวนเพื่อวินิจฉัยชี้มูล"></div>
+            <div class="col-12"><label class="form-label">ชื่อเรื่องเสนอพิจารณา *</label>
+              <input type="text" id="swItemTopic" class="form-control" placeholder="เช่น รายงานไต่สวนข้อเท็จจริงเพื่อวินิจฉัยชี้มูล"></div>
             <div class="col-12">
               <label class="form-label d-flex justify-content-between align-items-center mb-1">
-                <span>เลขที่เรื่อง (เว้นว่างได้ถ้าไม่มี — เพิ่มช่องได้หากวาระนี้รวมหลายสำนวน)</span>
+                <span>เรื่องเลขคดีที่ (เว้นว่างได้ถ้าไม่มี — เพิ่มช่องได้หากวาระนี้รวมหลายสำนวน)</span>
                 <button type="button" id="btnAddCaseRow" class="btn btn-sm btn-link p-0" style="font-size:.8rem"><i class="fa-solid fa-plus me-1"></i>เพิ่มเลขที่เรื่อง</button>
               </label>
               <div id="swItemCaseList"></div>
             </div>
-            <div class="col-12"><label class="form-label">หมายเหตุ</label>
+            <div class="col-6">
+              <label class="form-label">ผู้รับผิดชอบ ปราบ/เขต</label>
+              <input type="text" id="swItemOwner" class="form-control" placeholder="เช่น ฝ่ายเลขาฯ หรือ ชื่อ-สกุล">
+            </div>
+            <div class="col-6">
+              <label class="form-label">กอง/สำนัก ที่รับผิดชอบ</label>
+              <input type="text" id="swItemOrg" class="form-control" placeholder="เช่น กปท. 1 หรือ ปปท. เขต 5">
+            </div>
+            <div class="col-12"><label class="form-label">หมายเหตุ / ระบุรายละเอียดเพิ่มเติม</label>
               <input type="text" id="swItemRemark" class="form-control" placeholder="เช่น ครบอายุความ .../ ผ่านการพิจารณา"></div>
           </div>`,
           focusConfirm: false,
@@ -414,7 +455,9 @@
               document.getElementById('swItemCat').value = hit.category;
               document.getElementById('swItemTopic').value = hit.topic;
               const firstInput = listEl.querySelector('.case-ref-input');
-              firstInput.value = hit.caseRef;
+              if (firstInput) firstInput.value = hit.caseRef;
+              if (hit.owner) document.getElementById('swItemOwner').value = hit.owner;
+              if (hit.org) document.getElementById('swItemOrg').value = hit.org;
               document.getElementById('swItemRemark').value = hit.remark;
               statusEl.innerHTML = '<span style="color:#1e6141"><i class="fa-solid fa-circle-check me-1"></i>ดึงข้อมูลจากระบบแล้ว — ตรวจสอบและแก้ไขได้ก่อนบันทึก</span>';
             });
@@ -435,6 +478,8 @@
               trci_number, trci_topic,
               category: document.getElementById('swItemCat').value,
               case_ref: caseNos.length ? caseNos.join(', ') : '-',
+              owner: document.getElementById('swItemOwner').value.trim() || '-',
+              org: document.getElementById('swItemOrg').value.trim() || '-',
               remark: document.getElementById('swItemRemark').value.trim() || '-'
             };
           }

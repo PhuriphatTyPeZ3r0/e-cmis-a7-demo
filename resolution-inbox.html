@@ -169,10 +169,16 @@ document.getElementById('myRoleLabel').textContent = `บทบาท: ${role.ti
 
 let allCasesCombined = [];
 
+/* KPI card ที่คลิกเลือกภาพรวมตาม BUCKET (pending/done/returned) — แยกจาก #statusFilter ซึ่งเป็น
+   ตัวกรองสถานะย่อยตาม RESOLUTION_STAGES (ใช้ได้เฉพาะสำนวนที่ status==='RESOLVED') เพราะ id ของ
+   KPI (PENDING/DEFERRED) ไม่ใช่ <option> ที่มีอยู่จริงใน #statusFilter การ set select.value ตรงๆ
+   เลยเคย fail เงียบๆ (value เหลือ '' ไม่ตรง option ไหนเลย ทำให้กรองได้ 0 รายการเสมอ) */
+let quickFilter = 'ALL';
+
 function isRowActionable(c) { return BUCKET.pending.includes(c.status); }
 
 function renderKPICards() {
-  const currentSt = document.getElementById('statusFilter')?.value || 'ALL';
+  const currentSt = quickFilter;
 
   const pendingCount = allCasesCombined.filter(c => BUCKET.pending.includes(c.status)).length;
   const signedCount = allCasesCombined.filter(c => BUCKET.done.includes(c.status)).length;
@@ -209,10 +215,9 @@ function renderKPICards() {
 }
 
 function filterByKPI(statusId) {
+  quickFilter = statusId;
   const sf = document.getElementById('statusFilter');
-  if (sf) {
-    sf.value = statusId;
-  }
+  if (sf) sf.value = 'ALL';
   applyFilters();
 }
 
@@ -232,7 +237,10 @@ function getActionBadge(c) {
     return `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>อยู่ระหว่างการจัดทำมติ</span>`;
   }
   if (BUCKET.done.includes(c.status)) {
-    return `<span class="st st-done"><i class="fa-solid fa-check me-1"></i>จัดทำมติแล้วเสร็จ</span>`;
+    /* สำนวนที่ RESOLVED แล้วมี resolutionStage (1-6) กำกับความคืบหน้างานเอกสารหลังบอร์ดมีมติ —
+       แสดง label ของ stage นั้นแทนคำกว้างๆ "จัดทำมติแล้วเสร็จ" ให้ตรงกับตัวเลือกใน #statusFilter จริง */
+    const stageLabel = (c.status === 'RESOLVED' && c.resolutionStage) ? ECMIS.resolutionStageLabel(c.resolutionStage) : '';
+    return `<span class="st st-done"><i class="fa-solid fa-check me-1"></i>${stageLabel || 'จัดทำมติแล้วเสร็จ'}</span>`;
   }
   if (BUCKET.returned.includes(c.status)) {
     return `<span class="st st-returned"><i class="fa-solid fa-xmark me-1"></i>ยังไม่บันทึก / ส่งคืน</span>`;
@@ -477,19 +485,29 @@ function applyFilters() {
         (p.idcard && p.idcard.toLowerCase().includes(q))
       ));
 
+    /* ตัวกรองภาพรวมจาก KPI card (BUCKET-based) — อิสระจาก #statusFilter */
+    let matchQuick = true;
+    if (quickFilter !== 'ALL') {
+      if (quickFilter === 'PENDING') matchQuick = BUCKET.pending.includes(c.status);
+      else if (quickFilter === 'SIGNED') matchQuick = BUCKET.done.includes(c.status);
+      else if (quickFilter === 'DEFERRED' || quickFilter === 'RETURNED') matchQuick = BUCKET.returned.includes(c.status);
+      else matchQuick = (c.status === quickFilter);
+    }
+
+    /* ตัวกรองสถานะย่อยจาก #statusFilter — ใช้ได้เฉพาะสำนวนที่ RESOLVED และมี resolutionStage
+       (1-6) กำกับอยู่แล้วเท่านั้น ไม่ fallback ไปทั้ง BUCKET เพราะจะกรองกว้างเกินความหมายของ stage นั้นๆ */
     let matchSt = true;
     if (st !== 'ALL') {
-      if (st === 'PENDING') matchSt = BUCKET.pending.includes(c.status);
-      else if (st === 'IN_PROGRESS') matchSt = (c.resolutionStage === 1 || c.status === 'IN_PROGRESS');
-      else if (st === 'COMPLETED') matchSt = (c.resolutionStage === 2 || c.status === 'COMPLETED');
-      else if (st === 'SIGNED') matchSt = (c.resolutionStage === 3 || c.status === 'SIGNED' || BUCKET.done.includes(c.status));
-      else if (st === 'RETURNED') matchSt = (c.resolutionStage === 4 || c.status === 'RETURNED' || BUCKET.returned.includes(c.status));
-      else if (st === 'CLOSED') matchSt = (c.resolutionStage === 5 || c.status === 'CLOSED');
-      else if (st === 'DISPATCHING') matchSt = (c.resolutionStage === 6 || c.status === 'DISPATCHING');
+      if (st === 'IN_PROGRESS') matchSt = c.resolutionStage === 1;
+      else if (st === 'COMPLETED') matchSt = c.resolutionStage === 2;
+      else if (st === 'SIGNED') matchSt = c.resolutionStage === 3;
+      else if (st === 'RETURNED') matchSt = c.resolutionStage === 4;
+      else if (st === 'CLOSED') matchSt = c.resolutionStage === 5;
+      else if (st === 'DISPATCHING') matchSt = c.resolutionStage === 6;
       else matchSt = (c.status === st);
     }
 
-    return matchQ && matchSt;
+    return matchQ && matchQuick && matchSt;
   });
 
   currentPage = 1;
@@ -498,10 +516,14 @@ function applyFilters() {
 }
 
 document.getElementById('searchInput').addEventListener('input', applyFilters);
-document.getElementById('statusFilter').addEventListener('change', applyFilters);
+document.getElementById('statusFilter').addEventListener('change', () => {
+  quickFilter = 'ALL';
+  applyFilters();
+});
 document.getElementById('btnClearFilter').addEventListener('click', () => {
   document.getElementById('searchInput').value = '';
   document.getElementById('statusFilter').value = 'ALL';
+  quickFilter = 'ALL';
   applyFilters();
 });
 
