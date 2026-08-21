@@ -26,7 +26,11 @@ const ROLES = [
 
   { id:'affairs', login:'Siriporn.K', row:6, group:'กลุ่มงานกิจการคณะกรรมการ', title:'เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ',
     name:'นางสาวศิริพร กิจการ', org:'กองบริหารคดี', lane:'L7', flow:'S7 / S11', act:'7.1, 7.2, 7.3',
-    perms:['view.all','download','EDIT.MASTER','doc.generate','order24.draft','secrecy.set'] }
+    perms:['view.all','download','EDIT.MASTER','doc.generate','order24.draft','secrecy.set'] },
+
+  { id:'staff', login:'Somchai.P', row:7, group:'เจ้าหน้าที่ผู้รับผิดชอบสำนวน', title:'เจ้าหน้าที่ผู้รับผิดชอบสำนวน (ปราบปราม/เขต)',
+    name:'นายสมชาย ปราบทุจริต', org:'กองปราบปรามการทุจริตในภาครัฐ 1', lane:'L1', flow:'S1', act:'7.1, 7.2, 7.3',
+    perms:['view.assigned','download'] }
 ];
 
 const DOC_TYPES = {
@@ -1267,9 +1271,15 @@ const CHAIN_ROLE_NOTE = {
 const CHAIN_STEP_OFFSET_DAYS = [10, 16, 23, 30, 45];
 
 function addDaysToDateStr(dateStr, days) {
-  const d = new Date(dateStr + 'T00:00:00');
+  if (!dateStr) return '';
+  const parts = String(dateStr).split('-');
+  let yr = parseInt(parts[0], 10);
+  const isBuddhist = yr > 2400;
+  if (isBuddhist) yr -= 543;
+  const d = new Date(yr, parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
   d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const outYr = isBuddhist ? d.getFullYear() + 543 : d.getFullYear();
+  return `${outYr}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function chainStepsDone(status) {
@@ -1330,7 +1340,8 @@ function supabaseRowToCase(row) {
     slaDays: row.trr_sla_days, slaLimit: row.trr_sla_limit,
     urgent: !!row.trr_urgent, urgent72: !!row.trr_urgent,
     signedBySecgen: !!row.trr_signed_secgen, subCommittee: row.trr_sub_committee,
-    signPhase: row.trr_signed_secgen ? 'COMPLETE' : 'WAIT'
+    signPhase: row.trr_signed_secgen ? 'COMPLETE' : 'WAIT',
+    resolutionStage: row.trr_resolution_stage || null
   };
   if (kase.receivedDate) {
     kase.deadline60 = addDaysToDateStr(kase.receivedDate, 60);
@@ -1673,13 +1684,26 @@ function addBusinessDays(startDate, days){
   return d;
 }
 
+function parseIsoToDate(iso) {
+  if (!iso) return null;
+  if (iso instanceof Date) return new Date(iso.getTime());
+  const str = String(iso).split('T')[0];
+  const parts = str.split('-');
+  if (parts.length < 3) return new Date(iso);
+  let yr = parseInt(parts[0], 10);
+  if (yr > 2400) yr -= 543;
+  return new Date(yr, parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+}
+
 function businessDaysBetween(startDate, endDate){
   let count = 0;
-  const d = new Date(startDate.getTime());
-  d.setHours(0, 0, 0, 0);
-  const end = new Date(endDate.getTime());
-  end.setHours(0, 0, 0, 0);
-  while (d < end) {
+  const s = parseIsoToDate(startDate);
+  const e = parseIsoToDate(endDate);
+  if (!s || !e || isNaN(s.getTime()) || isNaN(e.getTime())) return 0;
+  s.setHours(0, 0, 0, 0);
+  e.setHours(0, 0, 0, 0);
+  const d = new Date(s.getTime());
+  while (d < e) {
     d.setDate(d.getDate() + 1);
     if (!isWeekend(d)) count++;
   }
@@ -1692,7 +1716,7 @@ const RESOLUTION_SLA_LIMIT_DAYS = 15;
    คืน null เมื่อไม่เข้าเงื่อนไขนี้ (เช่น จัดทำรายงานเสร็จแล้ว) เพื่อให้ slaBadge() ใช้ SLA ปกติของสำนวนแทน */
 function resolutionSlaInfo(kase){
   if (kase && kase.status === 'RESOLVED' && kase.resolutionStage && kase.resolutionStage < 6 && kase.resolvedAtIso) {
-    const start = new Date(kase.resolvedAtIso);
+    const start = parseIsoToDate(kase.resolvedAtIso);
     return { used: businessDaysBetween(start, DEMO_TODAY), limit: RESOLUTION_SLA_LIMIT_DAYS };
   }
   return null;
@@ -2182,7 +2206,37 @@ async function refreshDeadlineNotificationsFromSupabase(role) {
       badge.classList.toggle('d-none', total === 0);
     }
   } catch (err) {
-    console.error('โหลดแจ้งเตือนใกล้ครบกำหนดจาก Supabase ไม่สำเร็จ:', err);
+    console.warn('โหลดแจ้งเตือนใกล้ครบกำหนดจาก Supabase ไม่สำเร็จ ใช้รายการสำนวนจำลอง:', err);
+    try {
+      const fallbackAlerts = upcomingDeadlines(CASES.filter(c => canViewCase(c, role.id)));
+      const DEADLINE_LABEL = { deadline60: 'ครบกำหนด 60 วัน', deadline2y: 'ครบกำหนด 2 ปี' };
+      const itemsHtml = fallbackAlerts.map(a => {
+        const href = pageForCase(a.kase, role.id) + '?case=' + encodeURIComponent(a.kase.id);
+        const urgentCls = a.daysLeft <= 3 ? 'bg-danger text-white' : 'bg-warning text-dark';
+        return `
+        <li class="p-2 border-bottom" style="font-size:0.78rem">
+          <a href="${href}" class="d-flex gap-2 text-decoration-none">
+            <span class="rounded-circle d-flex align-items-center justify-content-center ${urgentCls}" style="width:28px;height:28px;flex:0 0 auto">
+              <i class="fa-solid fa-clock" style="font-size:0.75rem"></i>
+            </span>
+            <div>
+              <strong class="d-block text-dark dark-text-light" style="font-size:0.8rem">${DEADLINE_LABEL[a.deadlineType]}</strong>
+              <span class="text-muted d-block" style="font-size:0.74rem">สำนวน ${escapeHtml(a.kase.id)} — เหลือ ${a.daysLeft} วัน</span>
+            </div>
+          </a>
+        </li>`;
+      }).join('');
+      const section = document.getElementById('notifDeadlineSection');
+      if (section && fallbackAlerts.length) {
+        section.innerHTML = `<h6 class="dropdown-header border-bottom p-2 text-danger" style="font-size: 0.82rem"><i class="fa-solid fa-clock me-1"></i>ใกล้ครบกำหนด (ภายใน 15 วัน)</h6><ul class="list-unstyled m-0">${itemsHtml}</ul>`;
+      }
+      const badge = document.getElementById('notifBadge');
+      if (badge) {
+        const total = 3 + fallbackAlerts.length;
+        badge.textContent = total;
+        badge.classList.toggle('d-none', total === 0);
+      }
+    } catch (e) { /* ignore fallback error */ }
   }
 }
 

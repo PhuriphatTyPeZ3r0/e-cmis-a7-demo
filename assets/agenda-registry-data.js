@@ -52,11 +52,26 @@
      แล้วไม่พบสำนวนจริงในระบบ (อ้างอิงนอกระบบ) ยังคง fallback เป็น sessionStorage overlay เหมือนเดิม
      — case_ref ที่แสดงผลจึงเป็นการรวมกันของ 2 แหล่งนี้เสมอ ---------- */
   const CASE_REF_KEY = 'ecmis_agenda_case_ref_overlay';
+  function getStorage() {
+    try {
+      if (typeof localStorage !== 'undefined') return localStorage;
+    } catch (e) { /* ignore */ }
+    try {
+      if (typeof sessionStorage !== 'undefined') return sessionStorage;
+    } catch (e) { /* ignore */ }
+    return null;
+  }
   function loadCaseRefOverlay() {
-    try { return JSON.parse(sessionStorage.getItem(CASE_REF_KEY) || '{}'); } catch (e) { return {}; }
+    try {
+      const st = getStorage();
+      return st ? JSON.parse(st.getItem(CASE_REF_KEY) || '{}') : {};
+    } catch (e) { return {}; }
   }
   function saveCaseRefOverlay(map) {
-    try { sessionStorage.setItem(CASE_REF_KEY, JSON.stringify(map)); } catch (e) { /* ignore */ }
+    try {
+      const st = getStorage();
+      if (st) st.setItem(CASE_REF_KEY, JSON.stringify(map));
+    } catch (e) { /* ignore */ }
   }
   function getUnresolvedCaseRef(trciId) {
     return loadCaseRefOverlay()[trciId] || '';
@@ -91,13 +106,19 @@
     return data ? data.trr_id : null;
   }
 
-  /* owner/org overlay from sessionStorage or case metadata */
+  /* owner/org overlay from localStorage or case metadata */
   const OWNER_ORG_KEY = 'ecmis_agenda_owner_org_overlay';
   function loadOwnerOrgOverlay() {
-    try { return JSON.parse(sessionStorage.getItem(OWNER_ORG_KEY) || '{}'); } catch (e) { return {}; }
+    try {
+      const st = getStorage();
+      return st ? JSON.parse(st.getItem(OWNER_ORG_KEY) || '{}') : {};
+    } catch (e) { return {}; }
   }
   function saveOwnerOrgOverlay(map) {
-    try { sessionStorage.setItem(OWNER_ORG_KEY, JSON.stringify(map)); } catch (e) { /* ignore */ }
+    try {
+      const st = getStorage();
+      if (st) st.setItem(OWNER_ORG_KEY, JSON.stringify(map));
+    } catch (e) { /* ignore */ }
   }
   function getOwnerOrg(trciId) {
     return loadOwnerOrgOverlay()[trciId] || { owner: '', org: '' };
@@ -176,8 +197,13 @@
 
   /* ---------- helpers ---------- */
   function itemSortKey(it) {
-    const parts = String(it.trci_number).split('.');
-    return (parseFloat(parts[0]) || 0) * 1000 + (parseFloat(parts[1]) || 0);
+    if (!it || it.trci_number === undefined) return 0;
+    const arabic = (global.ECMIS && global.ECMIS.toArabicDigits) ? global.ECMIS.toArabicDigits(String(it.trci_number)) : String(it.trci_number);
+    const clean = arabic.replace(/[^0-9.]/g, '');
+    const parts = clean.split('.');
+    const maj = parseFloat(parts[0]);
+    const min = parseFloat(parts[1]);
+    return (isNaN(maj) ? 0 : maj) * 1000 + (isNaN(min) ? 0 : min);
   }
   function meetingOf(item) { return MEETINGS.find(m => m.trc_id === item.trc_id); }
   function itemsOf(meetingId) {
