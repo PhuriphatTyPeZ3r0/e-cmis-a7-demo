@@ -546,6 +546,38 @@ function resolutionStageLabel(n) {
   return s ? s.label : '';
 }
 
+function computeResolutionStage(c) {
+  if (!c) return 1;
+  if (c.meetingReportDone || c.status === 'CLOSED' || c.status === 'DISPATCHING') {
+    return 6;
+  }
+  if (c.status !== 'RESOLVED' && !c.recordedDocHtml && !c.resolution) {
+    return 1;
+  }
+  
+  const resCode = (typeof c.resolution === 'object' ? c.resolution?.code : c.resolution) || c.resolutionCode || '';
+  
+  if (resCode.includes('ACCEPT') || resCode.includes('M24') || (c.procType === '7.1' && (resCode === 'ACCEPT_S24P1' || resCode === 'ACCEPT_S24P3' || resCode === 'ACCEPT_PRELIMINARY'))) {
+    if (c.order24Signed || c.order24Done) return 6;
+    return 3;
+  }
+
+  if (c.procType === '7.2' || resCode.includes('RULING') || resCode.includes('DISCIPLINARY') || resCode.includes('CRIMINAL') || resCode.includes('PROSECUTE')) {
+    if (c.rulingDocSigned) return 6;
+    return 4;
+  }
+
+  if (resCode.includes('DISMISS') || resCode.includes('FORWARD') || resCode.includes('NACC') || resCode.includes('MORE') || resCode.includes('NOT_ACCEPTED') || resCode.includes('NO_GROUND')) {
+    return 5;
+  }
+
+  if (c.status === 'RESOLVED' || c.recordedDocHtml) {
+    return 2;
+  }
+
+  return 1;
+}
+
 const ACT7_STATUSES = [
 
   { section: 1, name: 'อยู่ระหว่างกลั่นกรองโดยอนุกรรมการฯ', icon: 'fa-users-gear' },
@@ -4715,7 +4747,7 @@ global.ECMIS = {
 
   ACT7_SECTIONS, ACT7_STATUSES, getAct7Status, act7Badge,
   ACT7_STATUSES_72, getAct7Status72,
-  RESOLUTION_STAGES, resolutionStageLabel,
+  RESOLUTION_STAGES, resolutionStageLabel, computeResolutionStage,
 
   saveCases, toggleColorMode, toggleSidebarCollapse, changeFont, toggleVoiceRecognition,
   initSmartCombobox, initMultiSelectCombo, initRealTimeValidation, initVoiceInput, initSignaturePad,
