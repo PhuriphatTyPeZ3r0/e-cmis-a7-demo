@@ -74,16 +74,12 @@
               <textarea class="form-control" id="incidentDetail" rows="2" placeholder="เช่น ระหว่างวันที่ ๑ กรกฎาคม ๒๕๕๐ ถึง... ณ ที่ทำการ..."></textarea>
             </div>
             
-            <div class="row g-2 mb-3 align-items-end p-2 border rounded" style="background:#F1F5F9">
-              <div class="col-md-6">
-                <label class="form-label field-req mb-1 fw-bold text-navy"><i class="fa-solid fa-calendar-day me-1"></i>วันที่เกิดเหตุ (สำหรับคำนวณอายุความ)</label>
-                <input type="date" class="form-control" id="incidentDate">
+            <div class="mb-3 p-2 border rounded" style="background:#F1F5F9">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label field-req mb-0 fw-bold text-navy"><i class="fa-solid fa-calendar-day me-1"></i>วันที่เกิดเหตุ (คำนวณวันขาดอายุความอัตโนมัติทันทีที่เลือก)</label>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size:.72rem"><i class="fa-solid fa-bolt me-1"></i>คำนวณอัตโนมัติ Real-time</span>
               </div>
-              <div class="col-md-6">
-                <button type="button" class="btn btn-navy d-block w-100" id="btnAutoPrescription">
-                  <i class="fa-solid fa-calculator me-1"></i>ประมวลผลคำนวณวันขาดอายุความอัตโนมัติ
-                </button>
-              </div>
+              <input type="date" class="form-control" id="incidentDate">
             </div>
 
             <div class="mb-3">
@@ -415,7 +411,7 @@
       });
     }
 
-    function autoGeneratePrescriptionNote() {
+    function autoGeneratePrescriptionNote(options = {}) {
       const incDate = document.getElementById('incidentDate').value || kase.incidentDate72;
       const incDateThai = incDate ? ECMIS.thaiDate(incDate) : 'วันที่เกิดเหตุ';
       if (!accusedRealList.length) return;
@@ -432,10 +428,19 @@
       document.getElementById('prescriptionNote').value = fullText;
       persistForm();
       renderDoc();
-      ECMIS.toastOk('คำนวณและสร้างข้อความอายุความเรียบร้อย');
+      if (!options.silent) {
+        ECMIS.toastOk('คำนวณและสร้างข้อความอายุความเรียบร้อย');
+      }
     }
 
-    document.getElementById('btnAutoPrescription').addEventListener('click', autoGeneratePrescriptionNote);
+    document.getElementById('incidentDate').addEventListener('input', () => {
+      renderOffenseBasisBody();
+      autoGeneratePrescriptionNote({ silent: true });
+    });
+    document.getElementById('incidentDate').addEventListener('change', () => {
+      renderOffenseBasisBody();
+      autoGeneratePrescriptionNote({ silent: true });
+    });
 
     function renderOffenseBasisBody() {
       document.getElementById('offenseBasisLoading').classList.add('d-none');
@@ -518,6 +523,7 @@
             if (!kase.accusedRoles72) kase.accusedRoles72 = {};
             kase.accusedRoles72[acc.name] = acc.roleType;
             renderOffenseBasisBody();
+            autoGeneratePrescriptionNote({ silent: true });
             renderDoc();
           }
         });
@@ -543,6 +549,7 @@
         console.warn('บันทึกฐานความผิดลงฐานข้อมูลชั่วคราวไม่ได้:', err);
       }
       renderOffenseBasisBody();
+      autoGeneratePrescriptionNote({ silent: true });
       renderDoc();
     }
 
@@ -1005,6 +1012,10 @@
       if (ok) {
         renderOffenseBasisBody();
         renderSplitReportTabs();
+        const pNote = document.getElementById('prescriptionNote');
+        if (!pNote.value.trim() || pNote.value.includes('ผู้ถูกกล่าวหาที่')) {
+          autoGeneratePrescriptionNote({ silent: true });
+        }
         renderDoc();
       } else {
         document.getElementById('offenseBasisLoading').textContent = 'ไม่สามารถโหลดข้อมูลฐานความผิดได้';
