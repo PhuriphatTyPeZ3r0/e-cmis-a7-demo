@@ -42,6 +42,11 @@ const DOC_TYPES = {
   RULING: {
     code:'RULING', label:'รายงานการไต่สวนวินิจฉัยชี้มูล (ม.24 วรรคท้าย)', short:'รายงานวินิจฉัยชี้มูล',
     sla:{ waitSign:15, completeSign:15 }
+  },
+
+  GENERAL: {
+    code:'GENERAL', label:'บันทึกเสนอเรื่องทั่วไป / ข้อกฎหมาย / กิจการคณะกรรมการ (กิจกรรม 7.3)', short:'เรื่องทั่วไป/ข้อกฎหมาย',
+    sla:{ waitSign:5, completeSign:5 }
   }
 };
 
@@ -376,17 +381,20 @@ function resolvePage(path) {
 }
 
 function isUpstreamRole(roleId){ const r = getRole(roleId); return r.scope === 'UPSTREAM'; }
-/* board_sec has its own dedicated work-inbox (resolution-inbox.html) — every other
+/* board_sec's home page is agenda-registry.html (ทะเบียนวาระการประชุม) — every other
    role still shares inbox.html. This is the one place that decision lives, so
-   every redirect/nav-link/breadcrumb across the app stays correct if that ever changes. */
+   every redirect/nav-link/breadcrumb across the app stays correct if that ever changes.
+   (resolution-inbox.html is still board_sec's work-inbox for the full flow — reachable via
+   its own sidebar item, "รายการรอจัดทำมติ" — it's just no longer the post-login landing page.) */
 function homeHref(roleId){
   const r = roleId || currentRoleId();
-  if (r === 'board_sec') return resolvePage('resolution-inbox.html');
+  if (r === 'board_sec') return resolvePage('agenda-registry.html');
   return resolvePage('inbox.html');
 }
 function isUpstreamCase(kase){ const s = STATUS[kase.status]; return !!(s && s.scope === 'UPSTREAM'); }
 
 function isCase72(kase){ return !!kase && kase.docType === 'RULING'; }
+function isCase73(kase){ return !!kase && (kase.docType === 'GENERAL' || kase.docType === 'GENERAL_MEMO'); }
 
 const PAGE_FOR_72 = {
   PENDING_SECTION_72:'approval-review.html', PENDING_DIRECTOR_72:'approval-review.html',
@@ -657,6 +665,58 @@ function act7Badge(statusName, list) {
 }
 
 const CASES = [
+  {
+    id:'กจ.101/2569',
+    subject:'บันทึกขอความเห็นทางข้อกฎหมายกรณีการบังคับใช้มาตรา ๑๘/๑ แห่ง พ.ร.บ. มาตรการของฝ่ายบริหารฯ',
+    legalBase:'ม.18/1',
+    status:'PENDING_SECGEN',
+    owner:'นางสาวรัชนี นิติการ', ownerOrg:'กองกฎหมาย',
+    complainant:'กองกฎหมาย (เสนอความเห็นข้อกฎหมาย)',
+    accused:[],
+    allegation:'ขอความเห็นทางข้อกฎหมายเกี่ยวกับการคัดสำเนาสำนวนและการส่งเรื่องให้ ป.ป.ช. ตามมาตรา ๑๘/๑ เพื่อเสนอที่ประชุมคณะกรรมการ ป.ป.ท. พิจารณาให้แนวปฏิบัติ',
+    receivedDate:'2569-07-10', deadline60:'2569-09-08', deadline2y:'2571-07-10', prescription:'—',
+    docRef:'ปป 0005/0421 ลงวันที่ 10 กรกฎาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    docType:'GENERAL', signPhase:'WAIT',
+    slaDays:2, slaLimit:5, subCommittee:null,
+    meetingNo:null, agendaNo:null
+  },
+  {
+    id:'กจ.102/2569',
+    subject:'บันทึกขอทบทวนมติพนักงานอัยการสั่งไม่ฟ้องผู้ถูกกล่าวหาในคดีทุจริตจัดซื้อจัดจ้างโครงการก่อสร้างระบบประปา',
+    legalBase:'ม.33',
+    status:'IN_MEETING',
+    owner:'นายวิชาญ ปราบปราม', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 1',
+    complainant:'พนักงานอัยการ (แจ้งคำสั่งไม่ฟ้อง)',
+    accused:[
+      { no:1, name:'นายสมศักดิ์ มั่นคง', pos:'อดีตนายกเทศมนตรี', idcard:'3-1002-0xxxx-xx-x', agency:'เทศบาลตำบลแห่งหนึ่ง' }
+    ],
+    allegation:'พนักงานอัยการมีคำสั่งไม่ฟ้องผู้ถูกกล่าวหา กองปราบปรามฯ พิจารณาแล้วเห็นว่ามีพยานหลักฐานสมบูรณ์ จึงเสนอคณะกรรมการ ป.ป.ท. พิจารณาทบทวนมติหรือมีมติฟ้องคดีเองตาม ม.33',
+    receivedDate:'2569-06-15', deadline60:'2569-08-14', deadline2y:'2571-06-15', prescription:'2573-05-20',
+    docRef:'ปป 0015/0789 ลงวันที่ 15 มิถุนายน 2569',
+    urgent:false, complex:true, dupWarning:false,
+    docType:'GENERAL', signPhase:'COMPLETE',
+    slaDays:3, slaLimit:15, subCommittee:null,
+    meetingNo:'42/2569', agendaNo:'4.2', meetingDate:'2569-08-20'
+  },
+  {
+    id:'กจ.103/2569',
+    subject:'บันทึกขออนุมัติแต่งตั้งคณะทำงานเฉพาะกิจตรวจสอบข้อเท็จจริงกรณีโครงการเร่งด่วนเพื่อความโปร่งใส',
+    legalBase:'ระเบียบฯ',
+    status:'PENDING_CHAIRMAN',
+    signedBySecgen: true, secgenSignedAt:'19 ส.ค. 2569',
+    frontNote:'เลขาธิการฯ ลงนามเห็นชอบแล้ว เสนอประธานกรรมการ ป.ป.ท. พิจารณาสั่งบรรจุวาระเพื่อขอมติแต่งตั้งคณะทำงานเฉพาะกิจ',
+    owner:'นายพงษ์ศักดิ์ ตรวจการ', ownerOrg:'กองบริหารคดี',
+    complainant:'กองบริหารคดี (เสนอตามภารกิจ)',
+    accused:[],
+    allegation:'ขออนุมัติแต่งตั้งคณะทำงานเฉพาะกิจเพื่อสนับสนุนการตรวจสอบข้อมูลเชิงลึกในพื้นที่เสี่ยงสูง',
+    receivedDate:'2569-08-01', deadline60:'2569-09-30', deadline2y:'2571-08-01', prescription:'—',
+    docRef:'ปป 0002/0991 ลงวันที่ 1 สิงหาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    docType:'GENERAL', signPhase:'COMPLETE',
+    slaDays:1, slaLimit:5, subCommittee:null,
+    meetingNo:null, agendaNo:null
+  },
   {
     id:'1547/2568',
     subject:'กล่าวหาเจ้าหน้าที่องค์การบริหารส่วนตำบลแห่งหนึ่ง จัดซื้อจัดจ้างโครงการก่อสร้างถนน คสล. โดยมิชอบ',
@@ -1513,6 +1573,26 @@ const RESOLUTIONS_72 = [
 ];
 function resolution72(code){ return RESOLUTIONS_72.find(r => r.code === code) || null; }
 
+const RESOLUTIONS_73 = [
+  { code:'APPROVE_73', group:'อนุมัติ',
+    label:'อนุมัติ / เห็นชอบตามเสนอ',
+    doc:'บันทึกแจ้งมติอนุมัติ', signer:'ประธานกรรมการ ป.ป.ท.' },
+  { code:'REJECT_73', group:'ไม่อนุมัติ',
+    label:'ไม่อนุมัติ / ให้ยุติเรื่อง',
+    doc:'บันทึกแจ้งมติไม่อนุมัติ', signer:'—' },
+  { code:'REVIEW_PROSECUTOR_73', group:'ทบทวนมติอัยการ',
+    label:'ขอทบทวนมติพนักงานอัยการ (ยืนยันข้อกล่าวหา / มีมติฟ้องคดีเอง)',
+    doc:'หนังสือขอให้ทบทวนมติถึงพนักงานอัยการ', signer:'ประธานกรรมการ ป.ป.ท.',
+    legalBasis:'พ.ร.บ. มาตรการของฝ่ายบริหารฯ ม.๓๓' },
+  { code:'LEGAL_DIVISION_73', group:'ส่งกองกฎหมาย',
+    label:'ส่งกองกฎหมายเพื่อตรวจสอบและให้ความเห็นทางข้อกฎหมายก่อน',
+    doc:'บันทึกส่งกองกฎหมายพิจารณา', signer:'—' },
+  { code:'SPECIAL_TASK_73', group:'เฉพาะกิจอื่น ๆ',
+    label:'แต่งตั้งคณะทำงานเฉพาะกิจ / มอบหมายดำเนินการเฉพาะเรื่อง',
+    doc:'คำสั่งแต่งตั้ง / บันทึกมอบหมายงาน', signer:'ประธานกรรมการ ป.ป.ท.' }
+];
+function resolution73(code){ return RESOLUTIONS_73.find(r => r.code === code) || null; }
+
 /* กิจกรรมที่ 7 (ตาม TOR) เริ่มนับเมื่อรายงานมาถึงเลขาธิการฯ — สาย 3 ชั้น
    (ผอ.กอง/ผอ.สำนักงาน ป.ป.ท. เขต/รองเลขาธิการฯ) เป็นขั้นก่อนหน้านั้น จึงไม่แยก
    เป็นสเต็ปของตัวเอง ให้สเต็ปที่ 1 เริ่มที่ "เลขาธิการฯ ลงนาม" เลย */
@@ -1687,7 +1767,7 @@ function setRole(id){
   }
   const page = (location.pathname.split('/').pop() || '').split('?')[0];
   if (id === 'board_sec' && page === 'inbox.html') {
-    location.href = resolvePage('resolution-inbox.html');
+    location.href = homeHref(id);
     return;
   }
   if (id !== 'board_sec' && page === 'resolution-inbox.html') {
@@ -1732,19 +1812,28 @@ const NAV = [
 
     label: role => {
       if (!role) return 'รายการพิจารณา/ลงนาม';
-      if (role.id === 'board_sec') return 'รายการรอจัดทำมติ';
+      if (role.id === 'board_sec') return 'ทะเบียนวาระการประชุม';
       if (role.id === 'affairs') return 'รายการเรื่องที่ต้องจัดทำ';
       if (isUpstreamRole(role.id)) return 'รายการติดตามสถานะสำนวน';
       return 'รายการพิจารณา/ลงนาม';
     },
-    badge:true },
+    /* board_sec's badge lives on the resolution-inbox.html item below instead — that page
+       (not this home item) is what actually shows the full inboxFor() scope of cases. */
+    badge: role => !role || role.id !== 'board_sec' },
   { href:'case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' },
 
   { section:'การประชุมคณะกรรมการ ป.ป.ท.' },
   { href:'meeting-report.html',        icon:'fa-file-contract',    label:'จัดทำรายงานมติการประชุม',
     visible: role => !!role && can('compile.minutes', role.id) },
   { href:'agenda-registry.html',       icon:'fa-table-list',       label:'ทะเบียนวาระการประชุม',
-    visible: role => !!role && role.id !== 'secgen' },
+    /* board_sec เห็นหน้านี้อยู่แล้วผ่าน item แรก (home/inbox) ด้านบน — ซ่อน static item นี้ไว้
+       เพื่อไม่ให้ sidebar มีลิงก์ซ้ำไปหน้าเดียวกัน 2 ที่ */
+    visible: role => !!role && role.id !== 'secgen' && role.id !== 'board_sec' },
+  { href:'resolution-inbox.html',      icon:'fa-scale-balanced',   label:'รายการรอจัดทำมติ',
+    /* work-inbox เดิมของ board_sec ครอบคลุมทั้ง flow (AGENDA_SET..RESOLVED/RESOLVED_PENDING)
+       กว้างกว่าคิวใน agenda-registry.html (ซึ่งเป็นแค่ AGENDA_SET/PENDING_INVITE_72/DEFERRED)
+       จึงยังต้องมีลิงก์แยกไว้ — badge ของ home item ด้านบนก็ย้ายมาไว้ที่นี่ด้วย */
+    visible: role => !!role && role.id === 'board_sec', badge:true },
   { href:'dashboard.html',                icon:'fa-chart-pie',        label:'Dashboard สถิติมติ',
     visible: role => !!role && ['affairs','board_sec','chairman','board','secgen'].includes(role.id) },
   { href:'followup-dashboard.html',       icon:'fa-diagram-project',  label:'ติดตามผลมติ',
@@ -1920,7 +2009,8 @@ function renderShell(activeHref){
     if(n.section) return `<div class="nav-section">${n.section}</div>`;
     const href = navHref(n, role);
     const active = href === activeHref;
-    const badge = n.badge && inboxCount ? `<span class="badge bg-danger rounded-pill">${inboxCount}</span>` : '';
+    const showBadge = typeof n.badge === 'function' ? n.badge(role) : n.badge;
+    const badge = showBadge && inboxCount ? `<span class="badge bg-danger rounded-pill">${inboxCount}</span>` : '';
     const step  = n.step ? `<span class="step-no">${n.step}</span>` : `<i class="fa-solid ${n.icon}"></i>`;
     const label = navLabel(n, role);
     return `<a class="nav-link ${active?'active':''}" href="${href}" title="${label}" ${n.muted?'style="opacity:.7"':''}>
@@ -4245,6 +4335,7 @@ global.ECMIS = {
   DOC_TYPES, SIGN_PHASE, secgenSlaLimit, FORWARD_TARGETS, forwardTarget,
 
   RESOLUTIONS_72, resolution72, FLOW_STEPS_72, STATUS_STEP_72,
+  RESOLUTIONS_73, resolution73, isCase73,
   trackStatus72, bothTracksDone72,
   OPINION_TYPES, chainDivergence, g1Triggers, M28, M28_ORDERS, m28Order, m28Pending,
   TRANSITIONS, canTransition, nextStates, transitionsBetween,

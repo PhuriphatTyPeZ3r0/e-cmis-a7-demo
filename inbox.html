@@ -77,14 +77,23 @@
   <div class="card card-ecmis mb-4">
     <div class="card-body p-3">
       <div class="row g-3 align-items-end">
-        <div class="col-md-6">
+        <div class="col-md-4">
           <label class="form-label fw-semibold text-dark small mb-1">ค้นหางาน แฟ้ม หรือผู้ต้องหา</label>
           <div class="input-group input-group-sm">
             <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
             <input type="text" id="searchInput" class="form-control" placeholder="เลขสำนวน, ผู้กล่าวหา, ผู้ถูกกล่าวหา, เลขบัตร ปชช., ผู้รับผิดชอบ หรือหน่วยงาน">
           </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
+          <label class="form-label fw-semibold text-dark small mb-1"><i class="fa-solid fa-folder me-1 text-muted"></i>ประเภทเรื่อง</label>
+          <select id="docTypeFilter" class="form-select form-select-sm">
+            <option value="ALL">ทุกประเภทเรื่อง</option>
+            <option value="71">สำนวนไต่สวนเบื้องต้น (7.1)</option>
+            <option value="72">สำนวนไต่สวนชี้มูล (7.2)</option>
+            <option value="73">เรื่องทั่วไป/ข้อกฎหมาย (7.3)</option>
+          </select>
+        </div>
+        <div class="col-md-3">
           <label class="form-label fw-semibold text-dark small mb-1"><i class="fa-solid fa-pen-to-square me-1 text-muted"></i><span id="colStatusFilterLabel">สถานะเสนอ/ลงนาม</span></label>
           <select id="statusFilter" class="form-select form-select-sm">
             <option value="ALL" id="stOptAll">ทั้งหมด</option>
@@ -574,11 +583,15 @@ function row(c){
     else if (c.status === 'PENDING_SIGN_RULING_72') catBadge = `<span class="st st-review"><i class="fa-solid fa-file-signature me-1"></i>รอลงนามรายงานชี้มูล</span>`;
     else catBadge = `<span class="st st-pending"><i class="fa-solid fa-hourglass-half me-1"></i>รอสั่งการวาระปกติ</span>`;
 
+    const typeTag = ECMIS.isCase73(c)
+      ? '<span class="badge bg-info-subtle text-info border border-info-subtle ms-1" style="font-size:0.68rem"><i class="fa-solid fa-scale-balanced me-1"></i>เรื่องทั่วไป 7.3</span>'
+      : (is72 ? '<span class="badge bg-purple-subtle text-purple border border-purple-subtle ms-1" style="font-size:0.68rem">ชี้มูล 7.2</span>' : '');
+
     return `<tr>
       <td class="text-center">
         ${isActionable ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem"></i>'}
       </td>
-      <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
+      <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}${typeTag}</td>
       <td style="max-width:300px">
         <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
         <small class="text-muted d-block" style="font-size:0.75rem">${c.ownerOrg}</small>
@@ -601,6 +614,9 @@ function row(c){
 
   const isPendingAction = isMyPending(c);
   const statusBadgeHtml = getActionBadge(c);
+  const typeTag = ECMIS.isCase73(c)
+    ? '<span class="badge bg-info-subtle text-info border border-info-subtle ms-1" style="font-size:0.68rem"><i class="fa-solid fa-scale-balanced me-1"></i>เรื่องทั่วไป 7.3</span>'
+    : (is72 ? '<span class="badge bg-purple-subtle text-purple border border-purple-subtle ms-1" style="font-size:0.68rem">ชี้มูล 7.2</span>' : '');
   /* งานของ affairs (บรรจุวาระใหม่ / ร่างรายงานวินิจฉัยชี้มูล / ส่งดำเนินคดี) เป็นงานจัดทำที่ต้องพิจารณา
      ทีละเรื่อง ไม่ใช่การอนุมัติแบบ bulk — ไม่แสดง checkbox เพื่อไม่ให้เข้าใจผิดว่าสั่งการกลุ่มได้ */
   const showCheckbox = isPendingAction && role.id !== 'affairs';
@@ -609,7 +625,7 @@ function row(c){
     <td class="text-center">
       ${showCheckbox ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="ไม่มีสิทธิ์สั่งการกลุ่ม"></i>'}
     </td>
-    <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
+    <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}${typeTag}</td>
     <td style="max-width:300px">
       <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
       <small class="text-muted d-block" style="font-size:0.75rem">${c.ownerOrg}</small>
@@ -817,6 +833,7 @@ document.getElementById('btnBulkApprove')?.addEventListener('click', () => {
 function applyFilters() {
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   const st = document.getElementById('statusFilter').value;
+  const docTypeVal = document.getElementById('docTypeFilter')?.value || 'ALL';
 
   filteredCombined = allCasesCombined.filter(c => {
     const matchQ = !q ||
@@ -829,6 +846,11 @@ function applyFilters() {
         (p.name && p.name.toLowerCase().includes(q)) ||
         (p.idcard && p.idcard.toLowerCase().includes(q))
       ));
+
+    let matchDocType = true;
+    if (docTypeVal === '71') matchDocType = (!c.docType || c.docType === '213' || c.docType === '644');
+    else if (docTypeVal === '72') matchDocType = (c.docType === 'RULING');
+    else if (docTypeVal === '73') matchDocType = (c.docType === 'GENERAL' || c.docType === 'GENERAL_MEMO');
 
     let matchSt = true;
     if (role.id === 'chairman') {
@@ -847,7 +869,7 @@ function applyFilters() {
       }
     }
 
-    return matchQ && matchSt;
+    return matchQ && matchDocType && matchSt;
   });
 
   currentPage = 1;
@@ -856,9 +878,12 @@ function applyFilters() {
 }
 
 document.getElementById('searchInput').addEventListener('input', applyFilters);
+document.getElementById('docTypeFilter')?.addEventListener('change', applyFilters);
 document.getElementById('statusFilter').addEventListener('change', applyFilters);
 document.getElementById('btnClearFilter').addEventListener('click', () => {
   document.getElementById('searchInput').value = '';
+  const dtEl = document.getElementById('docTypeFilter');
+  if (dtEl) dtEl.value = 'ALL';
   document.getElementById('statusFilter').value = 'ALL';
   applyFilters();
 });

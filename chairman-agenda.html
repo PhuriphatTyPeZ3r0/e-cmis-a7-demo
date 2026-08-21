@@ -306,27 +306,37 @@
                 </div>
             `).join('');
 
+            const is73 = ECMIS.isCase73(kase);
+            const docTitle = is73
+              ? 'บันทึกข้อความเสนอเรื่องทั่วไป / ข้อกฎหมาย<br>สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ'
+              : 'รายงานการไต่สวนเบื้องต้น (แบบ ปปท. ๒-๑๓)<br>คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ';
+
             document.getElementById('docPaper').innerHTML = `
       <div class="doc-secret">${kase.urgent ? 'ลับ / ด่วนมาก' : 'ลับ'}</div>
-      <div class="doc-title">รายงานการไต่สวนเบื้องต้น (แบบ ปปท. ๒-๑๓)<br>คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
+      <div class="doc-title">${docTitle}</div>
       
       <div style="margin-top:14px">
         <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
-        <div class="doc-row"><span class="k">เรื่องกล่าวหา</span> ${M(kase.subject)}</div>
+        <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
         <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner)}</div>
         <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
       </div>
 
-      <div class="doc-h">ผู้ถูกร้อง / ผู้ถูกกล่าวหา</div>
-      ${(kase.accused || []).map(a => `<div style="padding-left:1em"><strong>${a.no}. ${M(a.name)}</strong> — ${M(a.pos)} (${M(a.agency)})</div>`).join('')}
+      ${is73 ? `
+        <div class="doc-h">หน่วยงานเจ้าของเรื่อง / ผู้เสนอ</div>
+        <div style="padding-left:1em">${M(kase.complainant || kase.ownerOrg)}</div>
+      ` : `
+        <div class="doc-h">ผู้ถูกร้อง / ผู้ถูกกล่าวหา</div>
+        ${(kase.accused || []).map(a => `<div style="padding-left:1em"><strong>${a.no}. ${M(a.name)}</strong> — ${M(a.pos)} (${M(a.agency)})</div>`).join('')}
+      `}
 
-      <div class="doc-h">1. ข้อกล่าวหาและสรุปพฤติการณ์</div>
+      <div class="doc-h">${is73 ? '๑. สาระสำคัญและข้อเสนอเพื่อพิจารณา' : '๑. ข้อกล่าวหาและสรุปพฤติการณ์'}</div>
       <div class="doc-indent">${M(kase.allegation || kase.subject)}</div>
 
-      <div class="doc-h">2. ความเห็นตามลำดับชั้น</div>
-      <div style="padding-left:0.5em">${chainOpinionsHtml}</div>
+      <div class="doc-h">๒. ความเห็นตามลำดับชั้น</div>
+      <div style="padding-left:0.5em">${chainOpinionsHtml || '<div class="text-muted small">— ผ่านการพิจารณาเห็นชอบตามสายงานแล้ว —</div>'}</div>
 
-      <div class="doc-h">3. การลงนามเห็นชอบของเลขาธิการคณะกรรมการ ป.ป.ท.</div>
+      <div class="doc-h">๓. การลงนามเห็นชอบของเลขาธิการคณะกรรมการ ป.ป.ท.</div>
       <div class="p-3 bg-success bg-opacity-10 border border-success rounded text-center mt-3">
         <div class="badge bg-success mb-1" style="font-size:0.8rem"><i class="fa-solid fa-signature me-1"></i>ลงนามดิจิทัลเรียบร้อยแล้ว</div>
         <div class="fw-bold text-dark h6 mb-0" style="margin-top:4px">นายอภิชาติ สุจริตกุล</div>

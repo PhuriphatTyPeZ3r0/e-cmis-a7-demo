@@ -515,16 +515,20 @@
       renderQuorum(); renderDoc();
     }
 
-    document.getElementById('resList').innerHTML = ECMIS.RESOLUTIONS.map((r, i) => `
+    const is73 = ECMIS.isCase73(kase);
+    const resDataset = is73 ? ECMIS.RESOLUTIONS_73 : ECMIS.RESOLUTIONS;
+
+    document.getElementById('resList').innerHTML = resDataset.map((r, i) => `
   <label class="list-group-item d-flex gap-2 align-items-start">
     <input class="form-check-input mt-1" type="radio" name="res" value="${r.code}" ${i === 0 ? 'checked' : ''}>
     <span><strong>${r.label}</strong>
-      <br><small class="text-muted">เอกสารที่ต้องออก: ${r.doc}${r.signer !== '—' ? ` · ผู้ลงนาม: ${r.signer}` : ''}</small></span>
+      <br><small class="text-muted">เอกสารที่ต้องออก: ${r.doc}${r.signer && r.signer !== '—' ? ` · ผู้ลงนาม: ${r.signer}` : ''}</small></span>
   </label>`).join('');
 
     function selectedRes() {
-      const code = document.querySelector('input[name="res"]:checked').value;
-      return ECMIS.RESOLUTIONS.find(r => r.code === code);
+      const checked = document.querySelector('input[name="res"]:checked');
+      const code = checked ? checked.value : (is73 ? 'APPROVE_73' : 'ACCEPT_S24P1');
+      return (is73 ? ECMIS.RESOLUTIONS_73 : ECMIS.RESOLUTIONS).find(r => r.code === code) || resDataset[0];
     }
 
     /* ข้อความ "มติที่ประชุม" ตามประเภทมติที่เลือก — ใช้ร่วมกันทั้ง HTML preview (renderDoc)
@@ -532,6 +536,20 @@
     function computeResolutionText() {
       const opinion = document.getElementById('boardOpinion').value.trim();
       const r = selectedRes();
+      if (!r) return '—';
+      if (is73) {
+        if (r.code === 'APPROVE_73') {
+          return 'อนุมัติและเห็นชอบตามที่เสนอ ' + (opinion ? `โดยมีความเห็นเพิ่มเติมว่า ${opinion}` : '');
+        } else if (r.code === 'REJECT_73') {
+          return 'ไม่อนุมัติและให้ยุติเรื่อง ' + (opinion ? `เนื่องจาก ${opinion}` : '');
+        } else if (r.code === 'REVIEW_PROSECUTOR_73') {
+          return 'มีมติขอให้พนักงานอัยการทบทวนมติสั่งไม่ฟ้อง หรือมอบหมายให้ฟ้องคดีเองตามมาตรา ๓๓ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ ' + (opinion ? `โดยให้มีข้อสังเกตว่า ${opinion}` : '');
+        } else if (r.code === 'LEGAL_DIVISION_73') {
+          return 'ให้ส่งเรื่องให้กองกฎหมายเพื่อตรวจสอบและเสนอความเห็นทางข้อกฎหมายก่อนเสนอคณะกรรมการ ป.ป.ท. พิจารณาอีกครั้ง ' + (opinion ? `ประเด็นข้อหารือ: ${opinion}` : '');
+        } else if (r.code === 'SPECIAL_TASK_73') {
+          return 'เห็นชอบให้แต่งตั้งคณะทำงานเฉพาะกิจเพื่อดำเนินการตรวจสอบข้อเท็จจริง ' + (opinion ? `มอบหมาย: ${opinion}` : '');
+        }
+      }
       if (r.code === 'ACCEPT_S24P1') {
         return 'รับไว้ไต่สวน โดยให้ดำเนินการไต่สวนเป็นองค์คณะ ตามมาตรา ๒๔ วรรคหนึ่ง แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม';
       } else if (r.code === 'ACCEPT_S24P3') {
@@ -612,6 +630,38 @@
       if (!el) return;
       const r = selectedRes();
       const MAP = {
+        APPROVE_73: [
+          ['เอกสารที่ระบบสร้าง', 'บันทึกแจ้งมติอนุมัติ / เห็นชอบตามที่เสนอ'],
+          ['ผู้ลงนาม', 'ประธานกรรมการ ป.ป.ท.'],
+          ['ปลายทาง', 'ส่งแจ้งหน่วยงานเจ้าของเรื่องเพื่อดำเนินการต่อไป'],
+          ['กำหนดเวลา', 'ตามระเบียบงานสารบรรณ']
+        ],
+        REJECT_73: [
+          ['เอกสารที่ระบบสร้าง', 'บันทึกแจ้งมติไม่อนุมัติ / ยุติเรื่อง'],
+          ['ผู้ลงนาม', '—'],
+          ['ปลายทาง', 'ส่งแจ้งหน่วยงานเจ้าของเรื่อง / ยุติเรื่อง'],
+          ['กำหนดเวลา', 'ตามระเบียบงานสารบรรณ']
+        ],
+        REVIEW_PROSECUTOR_73: [
+          ['เอกสารที่ระบบสร้าง', 'หนังสือขอให้ทบทวนมติถึงพนักงานอัยการ (ม.33)'],
+          ['ฐานกฎหมาย', 'พ.ร.บ. มาตรการของฝ่ายบริหารฯ ม.๓๓'],
+          ['ผู้ลงนาม', 'ประธานกรรมการ ป.ป.ท.'],
+          ['ปลายทาง', 'สำนักงานอัยการสูงสุด / พนักงานอัยการผู้มีอำนาจ'],
+          ['กำหนดเวลา', 'ภายใน 30 วันนับแต่วันที่ได้รับแจ้งคำสั่ง']
+        ],
+        LEGAL_DIVISION_73: [
+          ['เอกสารที่ระบบสร้าง', 'บันทึกส่งเรื่องให้กองกฎหมายตรวจสอบและให้ความเห็น'],
+          ['ผู้ลงนาม', '—'],
+          ['ปลายทาง', 'กองกฎหมาย (กกม.) เพื่อจัดทำความเห็นเสนอ'],
+          ['กำหนดเวลา', 'กรอบดำเนินการภายใน 15 วันทำการ']
+        ],
+        SPECIAL_TASK_73: [
+          ['เอกสารที่ระบบสร้าง', 'คำสั่งแต่งตั้งคณะทำงานเฉพาะกิจ / บันทึกมอบหมาย'],
+          ['ผู้ลงนาม', 'ประธานกรรมการ ป.ป.ท.'],
+          ['ปลายทาง', 'คณะทำงานเฉพาะกิจและหน่วยงานที่เกี่ยวข้อง'],
+          ['กำหนดเวลา', 'ตามที่คณะกรรมการ ป.ป.ท. กำหนด']
+        ],
+
         ACCEPT_S24P1: [
           ['เอกสารที่ระบบสร้าง', 'คำสั่งแต่งตั้งองค์คณะพนักงาน ป.ป.ท. (ปปท. ๕-๐๕)'],
           ['ผู้ลงนาม', 'เลขาธิการคณะกรรมการ ป.ป.ท. (ม.24 วรรคแรก)'],
@@ -753,14 +803,19 @@
         เลขาธิการคณะกรรมการ ป.ป.ท. ต่อที่ประชุมคณะกรรมการ ป.ป.ท. ดังนี้
       </div>`),
         bi(`<div style="margin-top:10px">๑. เรื่องที่ ${M(kase.id)}
-        (${M(kase.legalBase === 'ม.62'
+        (${M(is73 ? 'บันทึกเสนอเรื่องทั่วไป / กิจการคณะกรรมการ (กิจกรรม 7.3)' : (kase.legalBase === 'ม.62'
           ? 'รับตามมาตรา ๖๒ พระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑'
-          : 'รับตามมาตรา ๑๘/๔ พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม')})
+          : 'รับตามมาตรา ๑๘/๔ พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม'))})
       </div>`),
-        bi(`<div class="doc-h">ผู้กล่าวหา</div><div>${M(kase.complainant)}</div>`),
-        bi(`<div class="doc-h">ผู้ถูกร้อง</div>`),
-        ...kase.accused.map(a => bi(`<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`)),
-        bi(`<div class="doc-h">ข้อกล่าวหา</div><div class="doc-indent">${M(kase.allegation)}</div>`),
+        ...(is73 ? [
+          bi(`<div class="doc-h">หน่วยงานเจ้าของเรื่อง / ผู้เสนอ</div><div>${M(kase.complainant || kase.ownerOrg)}</div>`),
+          bi(`<div class="doc-h">สาระสำคัญ / ข้อเสนอเพื่อพิจารณา</div><div class="doc-indent">${M(kase.allegation || kase.subject)}</div>`)
+        ] : [
+          bi(`<div class="doc-h">ผู้กล่าวหา</div><div>${M(kase.complainant)}</div>`),
+          bi(`<div class="doc-h">ผู้ถูกร้อง</div>`),
+          ...kase.accused.map(a => bi(`<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`)),
+          bi(`<div class="doc-h">ข้อกล่าวหา</div><div class="doc-indent">${M(kase.allegation)}</div>`)
+        ]),
         bi(`<div class="doc-h">การชี้แจงเพิ่มเติม</div>
       <div class="doc-indent">ผู้ชี้แจง (${M(presenter)}) ชี้แจงเพิ่มเติมว่า
         ${M(presenterNote, '………………………………………………………………………………………………')}</div>`),
