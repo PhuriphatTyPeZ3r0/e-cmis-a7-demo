@@ -117,7 +117,6 @@
                 <input class="form-control" id="forwardToOther" placeholder="เช่น หน่วยงาน/คณะที่ต้องการส่งเรื่องให้">
                 <div class="val-msg val-err" data-for="forwardToOther">กรุณาระบุปลายทาง</div>
               </div>
-              <div class="mt-2" id="forwardRule"></div>
             </div>
 
             <label class="form-label field-req">ความเห็นที่ประชุม</label>
@@ -552,34 +551,6 @@
       const t = ECMIS.forwardTarget(fwdSel.value);
       if (!t) return;
       document.getElementById('forwardOtherBox').classList.toggle('d-none', t.code !== 'OTHER');
-      const destLine = t.code === 'OTHER'
-        ? `<br><strong>ปลายทาง:</strong> ${document.getElementById('forwardToOther').value.trim() || '<span class="text-danger">ยังไม่ได้ระบุ</span>'}`
-        : '';
-      document.getElementById('forwardRule').innerHTML = t.external
-        ? `<div>
-         <strong><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>ปลายทางนอกองค์กร</strong><br>
-         เอกสาร: ${t.doc}${destLine}
-         <div class="rule-panel mt-2">
-           <div class="rule fail"><i class="fa-solid fa-gavel"></i>
-             <span><strong>กำหนดส่งตามกฎหมาย: ${t.statutorySlaDays} วัน</strong> —
-             ${t.statutoryBasis}</span></div>
-           <div class="rule"><i class="fa-solid fa-clock-rotate-left"></i>
-             <span><strong>กรอบกำกับติดตาม: ${t.trackingSlaDays} วัน</strong> —
-             ${t.trackingBasis}<br>
-             <small>คนละเรือนกับกำหนดส่งตามกฎหมาย — ใช้ติดตามผลหลังบอร์ดมีมติ
-             ไม่ใช่ตัวขยายเส้นตาย ${t.statutorySlaDays} วัน</small></span></div>
-           ${t.requireArchiveCopy ? `<div class="rule fail"><i class="fa-solid fa-copy"></i>
-             <span><strong>ต้องคัดสำเนาสำนวนเก็บรักษาไว้เป็นหลักฐาน</strong> — ${t.archiveBasis}<br>
-             <small>ระบบจะไม่ให้ปิดสำนวนจนกว่าจะบันทึกว่าคัดสำเนาเก็บไว้แล้ว</small></span></div>` : ''}
-         </div>
-          <small>เจ้าของสำนวนต้องพิมพ์ ลงนามสด ส่งมอบด้วยตนเอง และ
-          <strong>ระบบบังคับอัปโหลดไฟล์สแกนฉบับลงนามกลับเข้าระบบ</strong></small>
-       </div>`
-        : `<div class="rule-panel"><div class="rule pass"><i class="fa-solid fa-circle-check"></i>
-         <span>ปลายทางภายใน — เอกสาร: ${t.doc} · กรอบกำกับติดตาม ${t.trackingSlaDays} วัน
-         · ส่งต่อในระบบได้ทันที ไม่ต้องอัปโหลดไฟล์สแกน${destLine}
-         <br><small>ไม่มีกำหนดส่งตามกฎหมาย เพราะ ม.18/1 ใช้เฉพาะเส้นทางที่เกี่ยวกับ ป.ป.ช.</small>
-         </span></div></div>`;
     }
     fwdSel.addEventListener('change', renderForwardRule);
     document.getElementById('forwardToOther').addEventListener('input', renderForwardRule);

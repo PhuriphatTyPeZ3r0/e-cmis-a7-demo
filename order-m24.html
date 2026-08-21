@@ -113,9 +113,6 @@
                 <tbody id="memberTb"></tbody>
               </table>
             </div>
-            <div class="card-body">
-              <div class="rule-panel" id="compRules"></div>
-            </div>
           </div>
 
           <div class="ws-card mb-3">
@@ -589,9 +586,7 @@
           { ok: allFilled, t: 'ระบุชื่อ-สกุล ตำแหน่ง และฐานะในคณะของผู้ไต่สวนทุกคน (ห้ามเว้นว่าง)' },
           { ok: members.length >= 3, t: 'คณะอนุกรรมการไต่สวนควรมีองค์ประกอบไม่น้อยกว่า 3 คน (ประธาน / อนุกรรมการ / เลขานุการ)' },
           { ok: members.some(m => m.role.includes('ประธาน')), t: 'ระบุประธานอนุกรรมการไต่สวน' },
-          { ok: members.some(m => m.role.includes('เลขานุการ')), t: 'ระบุอนุกรรมการและเลขานุการ' },
-          { ok: true, t: 'ม.24 ว.3 — แต่งตั้งได้เฉพาะเรื่องสำคัญหรือมีความซับซ้อน ตามข้อเสนอแนะของเลขาธิการฯ' },
-          { ok: true, t: 'องค์ประกอบตาม ม.24 ว.1 (พนักงาน ป.ป.ท. / สัดส่วนเจ้าหน้าที่ ป.ป.ท.) ไม่ใช้บังคับกับคณะอนุกรรมการไต่สวนตามวรรคสาม' }
+          { ok: members.some(m => m.role.includes('เลขานุการ')), t: 'ระบุอนุกรรมการและเลขานุการ' }
         ];
       } else {
         rules = [
@@ -600,9 +595,7 @@
           { ok: members.some(m => m.role.includes('หัวหน้า')), t: 'ระบุหัวหน้าองค์คณะ' }
         ];
       }
-      document.getElementById('compRules').innerHTML = rules.map(r =>
-        `<div class="rule ${r.ok ? 'pass' : 'fail'}"><i class="fa-solid ${r.ok ? 'fa-circle-check' : 'fa-circle-xmark'}"></i><span>${r.t}</span></div>`).join('');
-      return rules.every(r => r.ok);
+      return { ok: rules.every(r => r.ok), errors: rules.filter(r => !r.ok).map(r => r.t) };
     }
 
     document.getElementById('btnAdd').addEventListener('click', () => {
@@ -1092,12 +1085,12 @@
 
       if (act === 'sign') {
         if (!document.getElementById('orderNo').value.trim()) { ECMIS.toastWarn('กรุณากรอกเลขที่คำสั่งที่ขอจากงานสารบรรณ'); return; }
-        const rulesOk = renderRules();
-        if (!rulesOk) {
+        const rulesRes = renderRules();
+        if (!rulesRes.ok) {
           Swal.fire({
             icon: 'error',
             title: isSub ? 'องค์ประกอบคณะอนุกรรมการไต่สวนยังไม่ครบ' : 'องค์ประกอบองค์คณะยังไม่ครบ',
-            html: `<div class="mb-2">องค์ประกอบยังไม่ครบตามที่แบบคำสั่งกำหนด</div>` + document.getElementById('compRules').innerHTML,
+            html: `<div class="mb-2 text-dark">กรุณาตรวจสอบองค์ประกอบตามที่แบบคำสั่งกำหนด:</div><ul class="text-danger ps-3 mb-0">${rulesRes.errors.map(e => `<li>${e}</li>`).join('')}</ul>`,
             confirmButtonColor: '#DB2626', customClass: { popup: 'text-start' }
           });
           return;
