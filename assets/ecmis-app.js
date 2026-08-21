@@ -2158,14 +2158,15 @@ function renderShell(activeHref){
 async function refreshDeadlineNotificationsFromSupabase(role) {
   if (typeof window.supabase === 'undefined') return;
   try {
-    /* persistSession:false — renderShell() รันทุกหน้า จึงมักอยู่ร่วมกับ client อื่นที่หน้านั้นสร้างเอง
-       เสมอ ไม่ปิดตรงนี้จะเจอคำเตือน "Multiple GoTrueClient instances" ทุกหน้าที่ migrate ไป Supabase
-       แล้ว (ระบบไม่มีการ login ผ่าน Supabase Auth จริงอยู่แล้ว persist session จึงไม่มีความหมาย) */
-    const sbShell = window.supabase.createClient(
-      'https://ljhabbwjxnoucrcrsoii.supabase.co',
-      'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd',
-      { auth: { persistSession: false } }
-    );
+    if (!window.__ecmisSupabaseClient && window.supabase && typeof window.supabase.createClient === 'function') {
+      window.__ecmisSupabaseClient = window.supabase.createClient(
+        'https://ljhabbwjxnoucrcrsoii.supabase.co',
+        'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd',
+        { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
+      );
+    }
+    const sbShell = window.__ecmisSupabaseClient || (window.supabase && window.supabase.createClient ? window.supabase.createClient('https://ljhabbwjxnoucrcrsoii.supabase.co', 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd', { auth: { persistSession: false } }) : null);
+    if (!sbShell) throw new Error('Supabase client unavailable');
     const { data, error } = await sbShell
       .from('tbl_res_request')
       .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')

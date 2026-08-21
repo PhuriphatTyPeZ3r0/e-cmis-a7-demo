@@ -19,11 +19,12 @@
 
   const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
-  /* persistSession:false — ระบบนี้ไม่มีการ login ผ่าน Supabase Auth จริงเลย (ใช้ anon key
-     ตายตัวทุกหน้า) การ persist auth session จึงไม่มีความหมาย และเป็นสาเหตุของคำเตือน
-     "Multiple GoTrueClient instances" เมื่อหน้าเดียวกันมีหลาย createClient() (เช่นหน้านี้ +
-     ecmis-app.js ที่สร้าง client แยกสำหรับ notification bell) */
-  const sb = global.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+  if (!global.__ecmisSupabaseClient && global.supabase && typeof global.supabase.createClient === 'function') {
+    global.__ecmisSupabaseClient = global.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    });
+  }
+  const sb = global.__ecmisSupabaseClient || (global.supabase && global.supabase.createClient ? global.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } }) : null);
 
   const MEETINGS = [];
   const ITEMS = [];
@@ -385,7 +386,7 @@
 
   global.AgendaRegistry = {
     sb, MEETINGS, ITEMS, LINKED_TRR_IDS, CATEGORY_LABEL, CATEGORY_CLASS, STATUS_LABEL, STATUS_CLASS,
-    ready, meetingOf, itemsOf, isFlagged, isBundled,
+    ready, meetingOf, itemsOf, isFlagged, isBundled, itemSortKey,
     renderCaseRef, lookupCaseForAgenda, resolveCaseNoToTrrId, getOwnerOrg, setOwnerOrg,
     addMeeting, deleteMeeting, addItem, deleteItem, updateItemNumber, swapItemNumber, confirmMeeting
   };

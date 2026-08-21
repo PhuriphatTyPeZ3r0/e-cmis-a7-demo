@@ -207,6 +207,17 @@
         return activeMeetId === 'ALL' ? null : AR.MEETINGS.find(m => m.trc_id === activeMeetId);
       }
 
+      function safeSortKey(it) {
+        if (typeof AR.itemSortKey === 'function') return AR.itemSortKey(it);
+        if (!it || it.trci_number === undefined) return 0;
+        const arabic = (window.ECMIS && window.ECMIS.toArabicDigits) ? window.ECMIS.toArabicDigits(String(it.trci_number)) : String(it.trci_number);
+        const clean = arabic.replace(/[^0-9.]/g, '');
+        const parts = clean.split('.');
+        const maj = parseFloat(parts[0]);
+        const min = parseFloat(parts[1]);
+        return (isNaN(maj) ? 0 : maj) * 1000 + (isNaN(min) ? 0 : min);
+      }
+
       function getAllActiveItems() {
         if (activeMeetId === 'ALL') {
           return AR.ITEMS.map(it => {
@@ -218,7 +229,7 @@
             };
           }).sort((a, b) => {
             if (b.trc_id !== a.trc_id) return b.trc_id - a.trc_id;
-            return AR.itemSortKey(a) - AR.itemSortKey(b);
+            return safeSortKey(a) - safeSortKey(b);
           });
         } else {
           return AR.itemsOf(activeMeetId);
