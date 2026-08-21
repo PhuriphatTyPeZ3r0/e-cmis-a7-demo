@@ -66,9 +66,6 @@
               </thead>
               <tbody id="boardTb"></tbody>
             </table>
-
-            <div class="rule-panel" id="quorumBox"></div>
-
           </div>
         </div>
 
@@ -469,39 +466,10 @@
 
     function renderQuorum() {
       const t = tally();
-      /* กติกาองค์ประชุมย้ายไปอยู่ในโมเดลกลางแล้ว (ม.10 + ม.12 + ม.15)
-         เดิมหน้านี้คำนวณเอง และตกเงื่อนไข ม.10 (กรรมการเหลือไม่ต่ำกว่า 5 คน) ไป */
       const q = ECMIS.boardQuorum({
         inOffice: TOTAL, present: t.present,
         forV: t.forV, againstV: t.againstV, abstainV: t.abstainV
       });
-      const { quorumMin, quorumOk, majorityMin, majorityOk, tie, boardValid } = q;
-
-      document.getElementById('quorumBox').innerHTML = `
-    ${!boardValid ? `<div class="rule fail"><i class="fa-solid fa-circle-xmark"></i>
-      <span><strong>ม.10:</strong> กรรมการเท่าที่มีอยู่ ${TOTAL} คน — น้อยกว่าขั้นต่ำ
-      ${ECMIS.BOARD_MIN_IN_OFFICE} คน คณะกรรมการยังทำหน้าที่ต่อไม่ได้</span></div>` : ''}
-    <div class="rule ${quorumOk ? 'pass' : 'fail'}">
-      <i class="fa-solid ${quorumOk ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
-      <span><strong>องค์ประชุม (ม.12):</strong> เข้าประชุม ${t.present} จาก ${TOTAL} ท่าน
-        — ต้องไม่น้อยกว่า ${quorumMin} ท่าน
-        ${t.recused ? `<br><small>ถูกกันออกตาม ม.20 จำนวน ${t.recused} ท่าน (ยังเห็นข้อมูลได้ แต่ถูกกันสิทธิ์ลงมติในวาระนี้)</small>` : ''}</span>
-    </div>
-    <div class="rule ${majorityOk ? 'pass' : 'fail'}">
-      <i class="fa-solid ${majorityOk ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
-      <span><strong>เกณฑ์มติ (ม.15):</strong> เห็นด้วย ${t.forV} / ไม่เห็นด้วย ${t.againstV} / งดออกเสียง ${t.abstainV}
-        — ต้องได้เสียงข้างมากของกรรมการทั้งหมดเท่าที่มีอยู่ คือไม่น้อยกว่า ${majorityMin} เสียง</span>
-    </div>
-    ${tie ? `<div class="rule fail"><i class="fa-solid fa-gavel"></i>
-      <span>คะแนนเท่ากัน — ประธานในที่ประชุมออกเสียงเพิ่มอีกหนึ่งเสียงเป็นเสียงชี้ขาด (ม.15 วรรคสอง)</span></div>` : ''}
-    ${!quorumOk ? `<div class="rule fail"><i class="fa-solid fa-ban"></i>
-      <span><strong>ระบบบล็อกการบันทึกมติ</strong> — องค์ประชุมไม่ครบ มติอาจไม่ชอบด้วยกฎหมาย</span></div>` : ''}
-    <div class="rule ${t.againstV > 0 ? 'fail' : 'pass'}">
-      <i class="fa-solid ${t.againstV > 0 ? 'fa-triangle-exclamation' : 'fa-circle-check'}"></i>
-      <span><strong>ม.16:</strong> ${t.againstV > 0
-          ? 'มีความเห็นแย้ง — ระบบบังคับบันทึกความเห็นแย้งพร้อมเหตุผลลงรายงานการประชุม'
-          : 'มติเป็นเอกฉันท์ ไม่มีความเห็นแย้งที่ต้องบันทึก'}</span>
-    </div>`;
       return { ...t, ...q };
     }
 

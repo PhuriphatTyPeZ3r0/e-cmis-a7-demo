@@ -63,8 +63,6 @@
               </thead>
               <tbody id="boardTb"></tbody>
             </table>
-
-            <div class="rule-panel" id="quorumBox"></div>
           </div>
         </div>
 
@@ -419,37 +417,7 @@
     function renderQuorum() {
       const t = tally();
       const q = ECMIS.boardQuorum({ inOffice: TOTAL, present: t.present, forV: t.forV, againstV: t.againstV, abstainV: t.abstainV });
-      const { quorumMin, quorumOk, majorityMin, majorityOk, tie, boardValid } = q;
-      kase.quorumOk72 = quorumOk;
-
-      const nonPresentNotes = [
-        t.leave ? `ลาประชุม ${t.leave} ท่าน` : null,
-        t.duty ? `ติดราชการ ${t.duty} ท่าน` : null,
-        t.recused ? `ถอนตัวตาม ม.20 ${t.recused} ท่าน` : null
-      ].filter(Boolean);
-
-      document.getElementById('quorumBox').innerHTML = `
-    ${!boardValid ? `<div class="rule fail"><i class="fa-solid fa-circle-xmark"></i>
-      <span><strong>ม.10:</strong> กรรมการเท่าที่มีอยู่ ${TOTAL} คน — น้อยกว่าขั้นต่ำ
-      ${ECMIS.BOARD_MIN_IN_OFFICE} คน คณะกรรมการยังทำหน้าที่ต่อไม่ได้</span></div>` : ''}
-    <div class="rule ${quorumOk ? 'pass' : 'fail'}">
-      <i class="fa-solid ${quorumOk ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
-      <span><strong>องค์ประชุม (ม.12):</strong> มาประชุม ${t.present} จาก ${TOTAL} ท่าน — ต้องไม่น้อยกว่า ${quorumMin} ท่าน
-        ${nonPresentNotes.length ? `<br><small class="text-muted">ไม่มาประชุม/ถอนตัว: ${nonPresentNotes.join(', ')}</small>` : ''}</span>
-    </div>
-    <div class="rule ${majorityOk ? 'pass' : 'fail'}">
-      <i class="fa-solid ${majorityOk ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
-      <span><strong>เกณฑ์มติ (ม.15):</strong> เห็นด้วย ${t.forV} / ไม่เห็นด้วย ${t.againstV} / งดออกเสียง ${t.abstainV}
-        — ต้องไม่น้อยกว่า ${majorityMin} เสียง</span>
-    </div>
-    ${tie ? `<div class="rule fail"><i class="fa-solid fa-gavel"></i>
-      <span>คะแนนเท่ากัน — ประธานในที่ประชุมออกเสียงเพิ่มอีกหนึ่งเสียงเป็นเสียงชี้ขาด (ม.15 วรรคสอง)</span></div>` : ''}
-    ${!quorumOk ? `<div class="rule fail"><i class="fa-solid fa-ban"></i>
-      <span><strong>ระบบบล็อกการบันทึกมติ</strong> — องค์ประชุมไม่ครบ มติอาจไม่ชอบด้วยกฎหมาย</span></div>` : ''}
-    <div class="rule ${t.againstV > 0 ? 'fail' : 'pass'}">
-      <i class="fa-solid ${t.againstV > 0 ? 'fa-triangle-exclamation' : 'fa-circle-check'}"></i>
-      <span><strong>ม.16:</strong> ${t.againstV > 0 ? 'มีความเห็นแย้ง — ระบบบังคับบันทึกความเห็นแย้งพร้อมเหตุผล' : 'มติเป็นเอกฉันท์'}</span>
-    </div>`;
+      kase.quorumOk72 = q.quorumOk;
       return { ...t, ...q };
     }
     document.getElementById('boardTb').addEventListener('change', () => { renderQuorum(); renderDoc(); });
