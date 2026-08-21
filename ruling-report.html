@@ -32,8 +32,6 @@
       <div class="card-body pb-1" id="stepper"></div>
     </div>
 
-    <div id="editGate"></div>
-
     <div class="document-workspace" id="docWorkspace">
       <div>
 
@@ -709,9 +707,10 @@
     const maySign = ECMIS.can('sign.ruling', role.id) || role.id === 'chairman';
 
     if (!mayView) {
-      document.getElementById('editGate').innerHTML = '<div class="mb-3"><strong><i class="fa-solid fa-eye-slash me-1"></i>บทบาทนี้ไม่มีสิทธิ์เข้าถึงสำนวนนี้</strong></div>';
+      document.getElementById('content') && (document.getElementById('content').style.display = 'none');
     } else if (!mayEdit && !maySign) {
-      document.getElementById('editGate').innerHTML = '<div class="mb-3"><strong><i class="fa-solid fa-lock me-1"></i>โหมดอ่านอย่างเดียว</strong> — บทบาทนี้ยังไม่สามารถจัดทำหรือลงนามรายงานได้</div>';
+      setTimeout(() => document.querySelectorAll('main input, main select, main textarea')
+        .forEach(el => { if (!el.closest('.action-bar')) el.disabled = true; }), 0);
     }
 
     const res = ECMIS.resolution72(kase.resolution72 || 'GUILTY_72');

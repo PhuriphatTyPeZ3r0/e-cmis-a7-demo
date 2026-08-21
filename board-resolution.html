@@ -33,7 +33,6 @@
       <div class="card-body pb-1" id="stepper"></div>
     </div>
 
-    <div id="editGate"></div>
     <div id="resolutionStageBox"></div>
 
     <div class="document-workspace" id="docWorkspace">
@@ -359,15 +358,6 @@
        renderDoc() จะโชว์ recordedDocHtml ที่บันทึกไว้ตรงๆ แทนการ generate ใหม่จากฟอร์ม
        (ค่าฟอร์มที่โหลดใหม่จะไม่ตรงกับตอนบันทึกจริงอีกต่อไป) และซ่อนปุ่มบันทึกไม่ให้กดซ้ำ */
     const isLocked = kase.status === 'RESOLVED' || kase.status === 'RESOLVED_PENDING';
-    if (mayView && isLocked) {
-      document.getElementById('editGate').innerHTML += `
-    <div class="mb-3" style="background:#EAF7EE;border:1px solid #16A34A;border-radius:8px;padding:.75rem 1rem">
-      <strong><i class="fa-solid fa-lock me-1" style="color:#16A34A"></i>มติสำนวนนี้ถูกบันทึกและล็อกแล้ว</strong><br>
-      บันทึกเมื่อ ${kase.resolvedAt ? ECMIS.toThaiDigits(kase.resolvedAt) : '—'} — เอกสารด้านขวาเป็น
-      <strong>preview ของมติที่บันทึกจริง</strong> ไม่ใช่ค่าที่สร้างจากฟอร์มปัจจุบัน
-      <small class="d-block mt-1 text-muted">แก้ไขมติที่ล็อกแล้วต้องผ่านกระบวนการแก้ไขพิเศษ ไม่ใช่กดบันทึกซ้ำจากหน้านี้</small>
-    </div>`;
-    }
 
     /* ---------- สถานะการจัดทำมติ (6 ขั้นตอน) — เชื่อมกับหน้าติดตามสถานะอัตโนมัติผ่าน getAct7Status() ---------- */
     function renderResolutionStageBox() {
@@ -413,23 +403,9 @@
     renderResolutionStageBox();
 
     if (!mayView) {
-      document.getElementById('editGate').innerHTML = `
-    <div class="mb-3">
-      <strong><i class="fa-solid fa-eye-slash me-1"></i>บทบาท "${role.title}" ไม่มีสิทธิ์เข้าถึงสำนวนนี้</strong><br>
-      ชีตแถว 17 กำหนดให้ผู้รับผิดชอบสำนวนเห็นได้เฉพาะสำนวนของตนเอง
-      และคณะอนุกรรมการเห็นได้เฉพาะสำนวนที่ได้รับมอบหมายให้คณะของตน
-    </div>`;
       document.getElementById('content') && (document.getElementById('content').style.display = 'none');
     } else if (!mayEdit) {
-      document.getElementById('editGate').innerHTML = `
-    <div class="mb-3">
-      <strong><i class="fa-solid fa-lock me-1"></i>โหมดอ่านอย่างเดียว — บทบาทนี้บันทึก/แก้ไขมติไม่ได้</strong><br>
-      ชีตแถว 15 ระบุว่ามีเพียง <strong>เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ 6 คน + ผอ.กบค. 1 คน (รวม 7 คน)</strong>
-      ที่มีสิทธิ์แก้ไขมติ/คำสั่ง/รายงาน และกลุ่มงานคำวินิจฉัยและมติฯ เป็นผู้บันทึกมติเข้าระบบ<br>
-      <small>ชีตแถว 17: ผู้รับผิดชอบสำนวนอ่านและดาวน์โหลดได้ แต่แก้ไขไม่ได้ทั้งส่วนมติและคำสั่ง/รายงาน</small>
-    </div>`;
-      /* ล็อกทุกช่องกรอกบนหน้านี้จริง — role ที่ไม่มีสิทธิ์ record.minutes/EDIT.MASTER (เช่นประธานฯ ที่
-         แค่ผ่านหน้านี้ต่อจากการสั่งบรรจุวาระ) จะดูได้อย่างเดียว ตรงกับข้อความ "โหมดอ่านอย่างเดียว" ด้านบน */
+      /* ล็อกทุกช่องกรอกบนหน้านี้จริง — role ที่ไม่มีสิทธิ์ record.minutes/EDIT.MASTER จะดูได้อย่างเดียว */
       setTimeout(() => document.querySelectorAll('main input, main select, main textarea')
         .forEach(el => { if (!el.closest('.action-bar')) el.disabled = true; }), 0);
     }
