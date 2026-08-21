@@ -1,7 +1,7 @@
 /* ===========================================================================
    agenda-registry-data.js — ข้อมูลและตรรกะที่ใช้ร่วมกันระหว่าง
-   13-agenda-registry.html (ทะเบียน/รายการครั้งที่ประชุม) และ
-   14-agenda-registry-detail.html (รายละเอียดวาระของครั้งที่ประชุมที่เลือก)
+   agenda-registry.html (ทะเบียน/รายการครั้งที่ประชุม) และ
+   agenda-registry-detail.html (รายละเอียดวาระของครั้งที่ประชุมที่เลือก)
 
    เชื่อมต่อฐานข้อมูลจริงแล้ว (Supabase project ljhabbwjxnoucrcrsoii) ตาม
    โครงสร้าง res_db.json: tbl_res_calendar (trc_*) → tbl_res_calendar_item
@@ -148,7 +148,7 @@
 
   function renderCaseRef(text) {
     if (!text || text === '-') return '<span class="text-muted small">—</span>';
-    const target = (global.ECMIS && global.ECMIS.resolvePage) ? global.ECMIS.resolvePage('02-case-register.html') : '02-case-register.html';
+    const target = (global.ECMIS && global.ECMIS.resolvePage) ? global.ECMIS.resolvePage('case-register.html') : 'case-register.html';
     const linked = text.replace(/(\d[\d]{1,6}\/\d{4})/g, m =>
       `<a class="case-chip" href="${target}?q=${encodeURIComponent(m)}" title="ค้นหาในทะเบียนสำนวน">${m}</a>`);
     return `<span class="small">${linked}</span>`;
@@ -197,7 +197,7 @@
     return mapped;
   }
 
-  /* จัดวาระแล้ว (15-agenda-meeting-docs.html) — trc_confirmed เป็นคอลัมน์จริง เขียนกลับ Supabase
+  /* จัดวาระแล้ว (agenda-meeting-docs.html) — trc_confirmed เป็นคอลัมน์จริง เขียนกลับ Supabase
      ทันที ส่วนรายละเอียดหนังสือเชิญประชุม (เลขที่หนังสือ/วันที่ออกหนังสือ/เวลา/สถานที่/ผู้ลงนาม ฯลฯ)
      ยังไม่มีคอลัมน์ใน tbl_res_calendar จึงยังคงเป็น local state บนหน้านั้นเท่านั้น */
   async function confirmMeeting(trcId) {

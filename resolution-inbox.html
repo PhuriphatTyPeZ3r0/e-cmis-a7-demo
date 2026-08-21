@@ -119,17 +119,17 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="assets/ecmis-app.js"></script>
 <script>
-ECMIS.renderShell('08-resolution-inbox.html');
+ECMIS.renderShell('resolution-inbox.html');
 
 const role = ECMIS.currentRole();
 
 /* หน้านี้เฉพาะ board_sec เท่านั้น (เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ) — แยกออกมาจาก
-   01-work-inbox.html เพราะ logic ของบทบาทนี้ (BUCKET/หมวดหมู่มติ/สถานะบันทึกมติ) ต่างจากบทบาทอื่น
+   inbox.html เพราะ logic ของบทบาทนี้ (BUCKET/หมวดหมู่มติ/สถานะบันทึกมติ) ต่างจากบทบาทอื่น
    มากพอที่การฝัง role.id === 'board_sec' ไว้ในไฟล์เดียวกับบทบาทอื่นทำให้เกิด bug ซ้ำๆ หลายครั้ง
    (KPI/badge/ปุ่ม/การเรียงลำดับ/ขอบเขตรายการ ไม่ตรงกัน) — ถ้าไม่ใช่ board_sec ให้กลับไปหน้าเดิม */
 if (role.id !== 'board_sec') { location.href = ECMIS.homeHref(role.id); }
 
-/* ---------- โหลดสำนวนจาก Supabase จริง แทน ECMIS.CASES แบบ mock (เหมือน 01-work-inbox.html) ---------- */
+/* ---------- โหลดสำนวนจาก Supabase จริง แทน ECMIS.CASES แบบ mock (เหมือน inbox.html) ---------- */
 const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -240,7 +240,7 @@ function getActionBadge(c) {
 function row(c){
 
   const is72 = ECMIS.isCase72(c);
-  const page = is72 ? ECMIS.pageForCase72(c) : '08-board-resolution.html';
+  const page = is72 ? ECMIS.pageForCase72(c) : 'board-resolution.html';
   const target = `${page}?case=${encodeURIComponent(c.id)}`;
   const isPendingAction = isRowActionable(c);
 

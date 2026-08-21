@@ -162,18 +162,18 @@
 <script src="assets/ecmis-app.js"></script>
 <script src="assets/ecmis-model.js"></script>
 <script>
-ECMIS.renderShell('01-work-inbox.html');
+ECMIS.renderShell('inbox.html');
 
 const role  = ECMIS.currentRole();
 
-/* board_sec (เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ) มีหน้า work-inbox ของตัวเองแยกต่างหาก (08-resolution-inbox.html) */
+/* board_sec (เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ) มีหน้า work-inbox ของตัวเองแยกต่างหาก (resolution-inbox.html) */
 if (role.id === 'board_sec') { location.href = ECMIS.homeHref(role.id); }
 
 /* ---------- โหลดสำนวนจาก Supabase จริง (tbl_res_request → tbl_cmp_case → tbl_cmp_case_accused)
    แทน ECMIS.CASES แบบ mock — คงรูปร่าง object ให้เหมือนเดิมทุกฟิลด์ที่หน้านี้ใช้ เพื่อไม่ต้อง
    แก้ตรรกะ render/filter/KPI ด้านล่าง ยังไม่ครอบคลุมทุกฟิลด์ของ CASES เดิม (เช่น chainOpinions,
    resolution, meetingNo, m28 รายละเอียด) เพราะหน้านี้ไม่ได้ใช้ — หน้าอื่นที่ต้องใช้ฟิลด์เหล่านั้น
-   (04-approval-review.html ฯลฯ) ยังอ่านจาก ECMIS.CASES เดิมอยู่ จนกว่าจะย้ายเป็นรอบถัดไป */
+   (approval-review.html ฯลฯ) ยังอ่านจาก ECMIS.CASES เดิมอยู่ จนกว่าจะย้ายเป็นรอบถัดไป */
 const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -513,12 +513,12 @@ function filterByKPI(statusId) {
 }
 
 const PAGE_FOR = {
-  owner:'03-report-213.html', section_head:'03-report-213.html',
-  director:'03-report-213.html', deputy:'03-report-213.html',
-  secgen:'04-approval-review.html', support_sub:'04-approval-review.html',
-  chair_office:'06-chairman-agenda.html',
-  chairman:'06-chairman-agenda.html', subcommittee:'07-subcommittee-screening.html',
-  board:'08-board-resolution.html'
+  owner:'report-213.html', section_head:'report-213.html',
+  director:'report-213.html', deputy:'report-213.html',
+  secgen:'approval-review.html', support_sub:'approval-review.html',
+  chair_office:'chairman-agenda.html',
+  chairman:'chairman-agenda.html', subcommittee:'subcommittee-screening.html',
+  board:'board-resolution.html'
 };
 
 let currentPage = 1;
@@ -557,12 +557,12 @@ function getActionBadge(c) {
 
 /* กจ. (affairs) คุมหลายสถานะสายหลักที่ต้องไปคนละหน้าจอ — ต่างจาก role อื่นที่มีหน้าจอเดียว
    ต่อบทบาทใน PAGE_FOR ด้านบน จึงต้องกำหนดปลายทางตามสถานะเป็นกรณีพิเศษ */
-const AFFAIRS_PAGE_FOR_STATUS = { DEFERRED: '13-agenda-registry.html', RESOLVED: '09-order-m24.html' };
+const AFFAIRS_PAGE_FOR_STATUS = { DEFERRED: 'agenda-registry.html', RESOLVED: 'order-m24.html' };
 
 function row(c){
   const is72 = ECMIS.isCase72(c);
   const page = is72 ? ECMIS.pageForCase72(c)
-    : (role.id === 'affairs' && AFFAIRS_PAGE_FOR_STATUS[c.status]) || (PAGE_FOR[role.id] || '02-case-register.html');
+    : (role.id === 'affairs' && AFFAIRS_PAGE_FOR_STATUS[c.status]) || (PAGE_FOR[role.id] || 'case-register.html');
   const target = `${page}?case=${encodeURIComponent(c.id)}`;
 
   if (role.id === 'chairman') {
@@ -589,7 +589,7 @@ function row(c){
       <td>${ECMIS.slaBadge(c)}</td>
       <td class="text-end">
         ${isActionable ? `
-          <a href="06-chairman-agenda.html?case=${encodeURIComponent(c.id)}" class="btn btn-sm btn-gold px-3 shadow-sm" style="background:#D0A830; border-color:#B89224; color:#0F2A62; font-weight:600">
+          <a href="chairman-agenda.html?case=${encodeURIComponent(c.id)}" class="btn btn-sm btn-gold px-3 shadow-sm" style="background:#D0A830; border-color:#B89224; color:#0F2A62; font-weight:600">
             <i class="fa-solid fa-signature me-1"></i>พิจารณาสั่งการ
           </a>
         ` : `
@@ -873,14 +873,14 @@ document.getElementById('btnClearFilter').addEventListener('click', () => {
     ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
     CASES = [];
   }
-  /* เลขาธิการฯ: "ทั้งหมด" ควรมีเฉพาะสำนวนที่คลิก "ดำเนินการ" แล้วเข้าหน้า 04-approval-review.html
+  /* เลขาธิการฯ: "ทั้งหมด" ควรมีเฉพาะสำนวนที่คลิก "ดำเนินการ" แล้วเข้าหน้า approval-review.html
      จริง (หน้าที่เลขาธิการฯ มี process จริงๆ) — สำนวนสาย 213/644 ไปหน้านี้เสมอไม่ว่าสถานะใด
      ส่วนสายรายงานวินิจฉัยชี้มูล (_72) ไปหน้านี้เฉพาะช่วงก่อนถึง/รอเลขาธิการฯ ลงนามเท่านั้น
      (พ้นจากนั้นไปหน้าเฉพาะทาง เช่น 72-08/72-09) จึงตัดออกจากมุมมองนี้เช่นกัน */
   function routesToApprovalReview(c) {
     return ECMIS.isCase72(c)
-      ? ECMIS.pageForCase72(c) === '04-approval-review.html'
-      : (PAGE_FOR['secgen'] === '04-approval-review.html');
+      ? ECMIS.pageForCase72(c) === 'approval-review.html'
+      : (PAGE_FOR['secgen'] === 'approval-review.html');
   }
   /* ประธานฯ: "ทั้งหมด" เหลือเฉพาะสำนวนที่ประธานฯ ต้องดำเนินการ (isChairActionable) เท่านั้น —
      ตัดมุมมองแบบเห็นทุกสำนวนในระบบ (view.all) ออก เพราะไม่ใช่ process ของประธานฯ โดยตรง

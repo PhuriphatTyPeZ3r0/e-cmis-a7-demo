@@ -92,7 +92,7 @@
   <script src="assets/ecmis-app.js"></script>
   <script src="assets/agenda-registry-data.js"></script>
   <script>
-    ECMIS.renderShell('13-agenda-registry.html');
+    ECMIS.renderShell('agenda-registry.html');
     const M = ECMIS.mergeField;
     const AR = AgendaRegistry;
     const role = ECMIS.currentRole();
@@ -108,10 +108,10 @@
       document.getElementById('btnAddMeeting').disabled = true;
     }
 
-    /* คิวรอบรรจุวาระ — เดิมอยู่ที่ 08-resolution-inbox.html แต่ concept นี้ (สำนวนที่รอถูกจัดวาระ
+    /* คิวรอบรรจุวาระ — เดิมอยู่ที่ resolution-inbox.html แต่ concept นี้ (สำนวนที่รอถูกจัดวาระ
        ยังไม่ใช่รายการมติที่บันทึกแล้ว) เข้ากับหน้าทะเบียนวาระนี้มากกว่า จึงย้ายมาไว้ที่นี่ — สถานะที่ใช้
        จัดหมวดอ้างจาก STATUS map จริง (ecmis-app.js): AGENDA_SET/PENDING_INVITE_72 = รอดำเนินการที่
-       10-agenda-set.html, DEFERRED = เคยตีกลับ/เลื่อนวาระ รอเลขวาระใหม่ (จึงจัดเป็น "กลับมาอีก" ไม่ใช่
+       agenda-set.html, DEFERRED = เคยตีกลับ/เลื่อนวาระ รอเลขวาระใหม่ (จึงจัดเป็น "กลับมาอีก" ไม่ใช่
        เรื่องใหม่) — เดิมโค้ดนี้ยังอ้างอิง 'RETURNED' (สถานะต้นทาง ส่งคืน กจ.5 ก่อนถึงชั้นเลขาธิการฯ
        ด้วยซ้ำ ไม่เกี่ยวกับการบรรจุวาระเลย) และ 'MORE_INFO'/'ROUND_REWORK' (ไม่มีอยู่จริงใน
        STATUS_CODE เลยสักคำ) ทำให้คิวนี้แสดงสำนวนที่ยังไม่พร้อมบรรจุวาระปนอยู่ — ตัดออกทั้งหมด */
@@ -190,7 +190,7 @@
           : cat === 'RETURN' ? '<span class="badge bg-purple text-white ms-1" style="background:#6b3fa0">กลับมาอีก</span>'
           : '<span class="badge bg-primary ms-1">เรื่องใหม่</span>';
 
-        /* สาย _72 (วินิจฉัยชี้มูล) ที่ 10-agenda-set.html แสดงเป็น checklist เอกสาร + สถานะเชิญกรรมการ
+        /* สาย _72 (วินิจฉัยชี้มูล) ที่ agenda-set.html แสดงเป็น checklist เอกสาร + สถานะเชิญกรรมการ
            (initAgenda72) ไม่ใช่ฟอร์มเลือกครั้งประชุมแบบสายหลัก — งานนั้นซับซ้อนกว่าที่จะยัดใส่ popup
            ได้พอดี จึงยังคงเปิดเต็มหน้าไว้เหมือนเดิม เฉพาะสายหลัก (AGENDA_SET) เท่านั้นที่แปลงเป็น popup */
         const actionCell = is72
@@ -215,9 +215,9 @@
     }
 
     /* ---------- Popup บรรจุวาระ (สายหลักเท่านั้น — ดู comment ใน renderQueueTable) ----------
-       ย้าย logic หลักมาจาก 10-agenda-set.html (initAgenda71/handle('submit')) ให้เหมือนเดิมทุก
+       ย้าย logic หลักมาจาก agenda-set.html (initAgenda71/handle('submit')) ให้เหมือนเดิมทุก
        ประการ ต่างแค่ตัดแผงพรีวิวเอกสารสด (auto-generate จาก case ไม่ได้แก้ไขที่ขั้นนี้อยู่แล้ว ดูซ้ำ
-       ได้ที่ 14-agenda-registry-detail.html/15-agenda-meeting-docs.html ทีหลัง) ออก เพื่อให้ทำงานจบ
+       ได้ที่ agenda-registry-detail.html/agenda-meeting-docs.html ทีหลัง) ออก เพื่อให้ทำงานจบ
        ในคิวได้เลยโดยไม่ต้องออกจากหน้า */
     function meetingsOpenForPopup(urgent) {
       const list = AR.MEETINGS.filter(m => m.trc_status === '0').map(m => ({
@@ -326,7 +326,7 @@
           renderPick();
 
           /* แถวเลขที่เรื่องแบบเพิ่มได้ — pattern เดียวกับ "เพิ่มวาระ" ใน
-             14-agenda-registry-detail.html (หมวดหมู่เดียวกัน 1 วาระบรรจุได้หลายเรื่อง)
+             agenda-registry-detail.html (หมวดหมู่เดียวกัน 1 วาระบรรจุได้หลายเรื่อง)
              แถวแรก prefill ด้วยเรื่องที่กดมาจากคิว */
           const caseRowHtml = (value = '') => `
             <div class="input-group input-group-sm mb-2 case-ref-row">
@@ -405,7 +405,7 @@
         return;
       }
       ECMIS.toastOk('บรรจุระเบียบวาระเรียบร้อย — กำลังเปิดรายละเอียดวาระของครั้งประชุมนี้');
-      setTimeout(() => { location.href = '14-agenda-registry-detail.html?meet=' + encodeURIComponent(trc_id); }, 1400);
+      setTimeout(() => { location.href = 'agenda-registry-detail.html?meet=' + encodeURIComponent(trc_id); }, 1400);
     }
 
     function setCategoryFilter(id) {
@@ -487,10 +487,10 @@
       </tr>`;
       }).join('');
       tbody.querySelectorAll('.meet-row').forEach(tr =>
-        tr.addEventListener('click', () => { location.href = `14-agenda-registry-detail.html?meet=${tr.dataset.id}`; }));
+        tr.addEventListener('click', () => { location.href = `agenda-registry-detail.html?meet=${tr.dataset.id}`; }));
       tbody.querySelectorAll('.btn-open-meet').forEach(btn => btn.addEventListener('click', e => {
         e.stopPropagation();
-        location.href = `14-agenda-registry-detail.html?meet=${btn.dataset.id}`;
+        location.href = `agenda-registry-detail.html?meet=${btn.dataset.id}`;
       }));
       tbody.querySelectorAll('.btn-delete-meet').forEach(btn => btn.addEventListener('click', async e => {
         e.stopPropagation();
@@ -577,7 +577,7 @@
           return;
         }
         ECMIS.toastOk(`เพิ่มการประชุมครั้งที่ ${res.value.name} เรียบร้อย — กำลังเปิดหน้ารายละเอียด`);
-        setTimeout(() => { location.href = `14-agenda-registry-detail.html?meet=${meeting.trc_id}`; }, 700);
+        setTimeout(() => { location.href = `agenda-registry-detail.html?meet=${meeting.trc_id}`; }, 700);
       });
     });
 

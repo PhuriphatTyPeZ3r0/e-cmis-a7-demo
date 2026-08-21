@@ -435,73 +435,43 @@ const STATUS_STEP = {
   RESOLVED:'resolution', CLOSED:'order'
 };
 
-const IN_RES_DIR = typeof window !== 'undefined' && (
-  (window.location.pathname || '').replace(/\\/g, '/').includes('/res/') ||
-  (window.location.pathname || '').replace(/\\/g, '/').endsWith('/res')
-);
-
+/* Page filenames are the single canonical name across the whole site (no more
+   root/res dual-naming) so this is just an identity pass-through, kept as a
+   function since it's part of the public ECMIS API other modules call. */
 function resolvePage(path) {
-  if (!path) return path;
-  const CLEAN_NAME = {
-    '01-work-inbox.html': 'inbox.html',
-    '02-case-register.html': 'case-register.html',
-    '03-report-213.html': 'report-213.html',
-    '04-approval-review.html': 'approval-review.html',
-    '06-chairman-agenda.html': 'chairman-agenda.html',
-    '07-subcommittee-screening.html': 'subcommittee-screening.html',
-    '08-board-resolution.html': 'board-resolution.html',
-    '08-resolution-inbox.html': 'resolution-inbox.html',
-    '09-order-m24.html': 'order-m24.html',
-    '10-agenda-set.html': 'agenda-set.html',
-    '12-meeting-report.html': 'meeting-report.html',
-    '13-agenda-registry.html': 'agenda-registry.html',
-    '14-agenda-registry-detail.html': 'agenda-registry-detail.html',
-    '15-agenda-meeting-docs.html': 'agenda-meeting-docs.html',
-    'dashboard.html': 'dashboard.html',
-    'followup-dashboard.html': 'followup-dashboard.html',
-    '72-04-support-subcommittee.html': 'support-subcommittee.html',
-    '72-05-urgent-agenda.html': 'urgent-agenda.html',
-    '72-08-board-resolution.html': 'board-resolution-72.html',
-    '72-09-ruling-report.html': 'ruling-report.html',
-    'login.html': 'login.html',
-    'index.html': 'index.html'
-  };
-  if (IN_RES_DIR) {
-    return CLEAN_NAME[path] || path;
-  }
   return path;
 }
 
 function isUpstreamRole(roleId){ const r = getRole(roleId); return r.scope === 'UPSTREAM'; }
-/* board_sec has its own dedicated work-inbox (08-resolution-inbox.html) — every other
-   role still shares 01-work-inbox.html. This is the one place that decision lives, so
+/* board_sec has its own dedicated work-inbox (resolution-inbox.html) — every other
+   role still shares inbox.html. This is the one place that decision lives, so
    every redirect/nav-link/breadcrumb across the app stays correct if that ever changes. */
 function homeHref(roleId){
   const r = roleId || currentRoleId();
-  if (r === 'board_sec') return resolvePage('08-resolution-inbox.html');
-  return resolvePage('01-work-inbox.html');
+  if (r === 'board_sec') return resolvePage('resolution-inbox.html');
+  return resolvePage('inbox.html');
 }
 function isUpstreamCase(kase){ const s = STATUS[kase.status]; return !!(s && s.scope === 'UPSTREAM'); }
 
 function isCase72(kase){ return !!kase && kase.docType === 'RULING'; }
 
 const PAGE_FOR_72 = {
-  PENDING_SECTION_72:'04-approval-review.html', PENDING_DIRECTOR_72:'04-approval-review.html',
-  PENDING_DEPUTY_72:'04-approval-review.html', RETURNED_72:'04-approval-review.html',
-  PENDING_SECGEN_72:'04-approval-review.html',
-  IN_SUPPORT_SUB_72:'72-04-support-subcommittee.html',
-  PENDING_URGENT_72:'72-05-urgent-agenda.html', PENDING_CHAIRMAN_URGENT_72:'72-05-urgent-agenda.html',
-  IN_SCREENING_72:'07-subcommittee-screening.html',
-  PENDING_INVITE_72:'10-agenda-set.html',
-  IN_MEETING_72:'72-08-board-resolution.html',
-  RESOLVED_PENDING_72:'72-09-ruling-report.html',
-  PENDING_SIGN_RULING_72:'72-09-ruling-report.html',
-  PENDING_AREA_NOTICE_72:'72-09-ruling-report.html',
-  DISPATCHING_NACC_72:'72-09-ruling-report.html',
-  PENDING_DISPATCH_GUILTY_72:'72-09-ruling-report.html',
-  CLOSED_72:'02-case-register.html'
+  PENDING_SECTION_72:'approval-review.html', PENDING_DIRECTOR_72:'approval-review.html',
+  PENDING_DEPUTY_72:'approval-review.html', RETURNED_72:'approval-review.html',
+  PENDING_SECGEN_72:'approval-review.html',
+  IN_SUPPORT_SUB_72:'support-subcommittee.html',
+  PENDING_URGENT_72:'urgent-agenda.html', PENDING_CHAIRMAN_URGENT_72:'urgent-agenda.html',
+  IN_SCREENING_72:'subcommittee-screening.html',
+  PENDING_INVITE_72:'agenda-set.html',
+  IN_MEETING_72:'board-resolution-72.html',
+  RESOLVED_PENDING_72:'ruling-report.html',
+  PENDING_SIGN_RULING_72:'ruling-report.html',
+  PENDING_AREA_NOTICE_72:'ruling-report.html',
+  DISPATCHING_NACC_72:'ruling-report.html',
+  PENDING_DISPATCH_GUILTY_72:'ruling-report.html',
+  CLOSED_72:'case-register.html'
 };
-function pageForCase72(kase){ return resolvePage(PAGE_FOR_72[kase.status] || '02-case-register.html'); }
+function pageForCase72(kase){ return resolvePage(PAGE_FOR_72[kase.status] || 'case-register.html'); }
 
 const OPINION_TYPES = {
   ACCEPT:  { code:'ACCEPT',  label:'เห็นควรรับไว้ไต่สวน' },
@@ -1097,7 +1067,7 @@ CASES.push(
     disciplinaryTrack72:{ status:'DISPATCHED', dispatchedDate:'2569-02-18' }
   },
   {
-    /* สำนวนตัวอย่างที่ scenario มาถึง 72-09-ruling-report.html จริง (บอร์ดมีมติชี้มูลแล้ว
+    /* สำนวนตัวอย่างที่ scenario มาถึง ruling-report.html จริง (บอร์ดมีมติชี้มูลแล้ว
        รอกลุ่มงานกิจการฯ จัดทำร่างรายงานวินิจฉัยชี้มูล) — เข้าถึงหน้านี้ผ่านทะเบียนสำนวนตามปกติ
        แทนลิงก์เมนูบนสุดที่ถอดออกแล้ว */
     id:'1855/2568', subject:'กล่าวหาเจ้าหน้าที่กรมที่ดินแห่งหนึ่ง ออกโฉนดทับที่สาธารณประโยชน์',
@@ -1316,8 +1286,8 @@ CASES.forEach(c => {
 });
 
 /* ---------- ตัวช่วยแปลงข้อมูลระหว่าง Supabase (tbl_res_request/tbl_cmp_case) กับรูปแบบ kase
-   ที่หน้าเว็บทุกหน้าใช้ร่วมกัน (เดิมมีสำเนาเฉพาะใน 01-work-inbox.html — ย้ายมาไว้ที่นี่เพื่อให้
-   หน้าอื่น เช่น 04-approval-review.html ใช้ตรรกะเดียวกัน ไม่เขียนซ้ำแยกกัน) ---------- */
+   ที่หน้าเว็บทุกหน้าใช้ร่วมกัน (เดิมมีสำเนาเฉพาะใน inbox.html — ย้ายมาไว้ที่นี่เพื่อให้
+   หน้าอื่น เช่น approval-review.html ใช้ตรรกะเดียวกัน ไม่เขียนซ้ำแยกกัน) ---------- */
 function addYearsToDateStr(dateStr, years) {
   const [y, m, d] = String(dateStr).split('-');
   return `${parseInt(y, 10) + years}-${m}-${d}`;
@@ -1390,15 +1360,15 @@ function upcomingDeadlines(cases) {
 /* ปลายทางของสำนวนตาม role ปัจจุบัน (สายหลัก 213/644) — คัดลอกจาก mapping เดิมที่ใช้ใน
    command-palette (ค้นหาสำนวนคดี) ด้านล่าง เพื่อให้ badge แจ้งเตือนคลิกแล้วพาไปหน้าเดียวกัน */
 const PAGE_FOR_MAIN = {
-  owner:'03-report-213.html', section_head:'03-report-213.html',
-  director:'03-report-213.html', deputy:'03-report-213.html',
-  secgen:'04-approval-review.html', support_sub:'04-approval-review.html',
-  chair_office:'06-chairman-agenda.html',
-  chairman:'06-chairman-agenda.html', subcommittee:'07-subcommittee-screening.html',
-  board_sec:'08-board-resolution.html', board:'08-board-resolution.html'
+  owner:'report-213.html', section_head:'report-213.html',
+  director:'report-213.html', deputy:'report-213.html',
+  secgen:'approval-review.html', support_sub:'approval-review.html',
+  chair_office:'chairman-agenda.html',
+  chairman:'chairman-agenda.html', subcommittee:'subcommittee-screening.html',
+  board_sec:'board-resolution.html', board:'board-resolution.html'
 };
 function pageForCase(kase, roleId) {
-  const target = isCase72(kase) ? pageForCase72(kase) : (PAGE_FOR_MAIN[roleId] || '02-case-register.html');
+  const target = isCase72(kase) ? pageForCase72(kase) : (PAGE_FOR_MAIN[roleId] || 'case-register.html');
   return resolvePage(target);
 }
 
@@ -1413,7 +1383,7 @@ CASES.forEach(c => { if(M28_LOG[c.id]) c.m28 = M28_LOG[c.id]; });
 
 // Filter dataset to a curated mock-case set covering all status categories.
 // 1855/2568 kept in even though it's outside the original "exactly 20" cut —
-// it's the seeded case that keeps 72-09-ruling-report.html reachable via the
+// it's the seeded case that keeps ruling-report.html reachable via the
 // normal case-register flow now that it's off the top-level nav.
 const TARGET_20_IDS = [
   '1547/2568', '1396/2564', '1119/2565', '1525/2558', '1189/2569',
@@ -1772,12 +1742,12 @@ const NAV = [
       return 'รายการพิจารณา/ลงนาม';
     },
     badge:true },
-  { href:'02-case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' },
+  { href:'case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' },
 
   { section:'การประชุมคณะกรรมการ ป.ป.ท.' },
-  { href:'12-meeting-report.html',        icon:'fa-file-contract',    label:'จัดทำรายงานมติการประชุม',
+  { href:'meeting-report.html',        icon:'fa-file-contract',    label:'จัดทำรายงานมติการประชุม',
     visible: role => !!role && can('compile.minutes', role.id) },
-  { href:'13-agenda-registry.html',       icon:'fa-table-list',       label:'ทะเบียนวาระการประชุม',
+  { href:'agenda-registry.html',       icon:'fa-table-list',       label:'ทะเบียนวาระการประชุม',
     visible: role => !!role && role.id !== 'secgen' },
   { href:'dashboard.html',                icon:'fa-chart-pie',        label:'Dashboard สถิติมติ',
     visible: role => !!role && ['affairs','board_sec','chairman','board','secgen'].includes(role.id) },
@@ -2826,14 +2796,14 @@ function initCommandPalette() {
         const activeClass = !matchedMenus.length && idx === 0 ? 'active' : '';
         const roleId = currentRoleId();
         const PAGE_FOR = {
-          owner:'03-report-213.html', section_head:'03-report-213.html',
-          director:'03-report-213.html', deputy:'03-report-213.html',
-          secgen:'04-approval-review.html', support_sub:'04-approval-review.html',
-          chair_office:'06-chairman-agenda.html',
-          chairman:'06-chairman-agenda.html', subcommittee:'07-subcommittee-screening.html',
-          board_sec:'08-board-resolution.html', board:'08-board-resolution.html'
+          owner:'report-213.html', section_head:'report-213.html',
+          director:'report-213.html', deputy:'report-213.html',
+          secgen:'approval-review.html', support_sub:'approval-review.html',
+          chair_office:'chairman-agenda.html',
+          chairman:'chairman-agenda.html', subcommittee:'subcommittee-screening.html',
+          board_sec:'board-resolution.html', board:'board-resolution.html'
         };
-        const targetPage = resolvePage(PAGE_FOR[roleId] || '02-case-register.html');
+        const targetPage = resolvePage(PAGE_FOR[roleId] || 'case-register.html');
         html += `
         <a class="cmd-palette-item ${activeClass}" href="${targetPage}?case=${encodeURIComponent(c.id)}">
           <i class="fa-solid fa-folder-closed"></i>

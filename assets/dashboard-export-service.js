@@ -537,7 +537,7 @@
       const slaClass = c.sla_badge || (c.sla_status === 'OVERDUE' ? 'bg-danger text-white' : (c.sla_status === 'WARNING' ? 'bg-warning text-dark' : 'bg-success text-white'));
       const slaText = c.sla_label || c.slaLabel || 'ปกติ';
       const accusedText = c.accused || (c.accused_name ? `${c.accused_name} (${c.accused_position || 'เจ้าหน้าที่'})` : 'ผู้ถูกกล่าวหา');
-      const targetPage = c.targetPage || '02-case-register.html';
+      const targetPage = c.targetPage || 'case-register.html';
       const resolvedPage = (window.ECMIS && window.ECMIS.resolvePage) ? window.ECMIS.resolvePage(targetPage) : targetPage;
 
       return `

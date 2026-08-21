@@ -32,45 +32,11 @@ class SmartHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     return index_path
             return target_path
         
-        # 2. If path + ".html" exists (e.g. /login -> /login.html, /res/followup-dashboard -> /res/followup-dashboard.html)
+        # 2. If path + ".html" exists (e.g. /login -> /login.html, /case-register -> /case-register.html)
         html_candidate = target_path + ".html"
         if os.path.exists(html_candidate):
             return html_candidate
-            
-        # 3. Clean Name mappings
-        clean_map = {
-            "res/inbox": "res/inbox.html",
-            "res/dashboard": "res/dashboard.html",
-            "res/followup-dashboard": "res/followup-dashboard.html",
-            "res/case-register": "res/case-register.html",
-            "res/report-213": "res/report-213.html",
-            "res/approval-review": "res/approval-review.html",
-            "res/urgent-agenda": "res/urgent-agenda.html",
-            "res/chairman-agenda": "res/chairman-agenda.html",
-            "res/order-m24": "res/order-m24.html",
-            "res/subcommittee-screening": "res/subcommittee-screening.html",
-            "res/support-subcommittee": "res/support-subcommittee.html",
-            "res/resolution-inbox": "res/resolution-inbox.html",
-            "res/board-resolution": "res/board-resolution.html",
-            "res/board-resolution-72": "res/board-resolution-72.html",
-            "res/agenda-set": "res/agenda-set.html",
-            "res/meeting-report": "res/meeting-report.html",
-            "res/agenda-registry": "res/agenda-registry.html",
-            "res/agenda-registry-detail": "res/agenda-registry-detail.html",
-            "res/agenda-meeting-docs": "res/agenda-meeting-docs.html",
-            "res/ruling-report": "res/ruling-report.html",
-            "followup-dashboard": "followup-dashboard.html",
-            "dashboard": "dashboard.html",
-            "login": "login.html",
-            "index": "index.html"
-        }
-        
-        rel = os.path.relpath(target_path, DIRECTORY).replace('\\', '/')
-        if rel in clean_map:
-            mapped = os.path.join(DIRECTORY, clean_map[rel])
-            if os.path.exists(mapped):
-                return mapped
-                
+
         return target_path
 
     def end_headers(self):
