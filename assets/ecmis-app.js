@@ -1624,13 +1624,19 @@ function thaiDate(iso){
   if(!iso || iso === '—') return '—';
   const p = String(iso).split('-');
   if(p.length !== 3) return iso;
-  return `${parseInt(p[2],10)} ${THAI_MONTHS[parseInt(p[1],10)-1]} ${p[0]}`;
+  let year = parseInt(p[0], 10);
+  if (!isNaN(year) && year < 2400) {
+    year += 543; // แปลงปี ค.ศ. เป็น พ.ศ. เสมอ
+  }
+  return `${parseInt(p[2],10)} ${THAI_MONTHS[parseInt(p[1],10)-1]} ${year}`;
 }
 const THAI_DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 function thaiDayName(iso){
   const p = String(iso).split('-');
   if(p.length !== 3) return '';
-  const d = new Date(parseInt(p[0],10) - 543, parseInt(p[1],10) - 1, parseInt(p[2],10));
+  let year = parseInt(p[0], 10);
+  if (year > 2400) year -= 543;
+  const d = new Date(year, parseInt(p[1],10) - 1, parseInt(p[2],10));
   return THAI_DAYS[d.getDay()];
 }
 function slaClass(used, limit){

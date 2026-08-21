@@ -40,16 +40,16 @@
         <div class="ws-card mb-3">
           <div class="card-header"><i class="fa-solid fa-circle-info"></i> สรุปมติที่ประชุมและเลขที่คำสั่ง</div>
           <div class="card-body">
-            <div class="row g-2 mb-2">
+            <div class="row g-2">
               <div class="col-md-4"><label class="form-label field-req">ครั้งที่ประชุม</label><input class="form-control" id="meetNo"></div>
               <div class="col-md-4"><label class="form-label field-req">วาระที่</label><input class="form-control" id="agendaNo"></div>
               <div class="col-md-4"><label class="form-label field-req">เลขที่คำสั่ง / เลขหนังสือ</label><input class="form-control" id="orderNo" placeholder="เช่น ปปท วฉ 19/2569"></div>
             </div>
-            <div class="rule-panel" id="resolutionInfo"></div>
           </div>
         </div>
 
-        <div class="ws-card mb-3" id="rulingCard">
+        <!-- 1. ข้อมูลรายงานวินิจฉัยชี้มูล (ปปท. 7-02) -->
+        <div class="ws-card mb-3 ruling-form-card" id="rulingCard">
           <div class="card-header"><i class="fa-solid fa-file-lines"></i> ข้อมูลรายงานวินิจฉัยชี้มูล (ปปท. 7-02)</div>
           <div class="card-body">
             <div class="mb-3">
@@ -72,22 +72,44 @@
               <label class="form-label field-req">วัน เวลา สถานที่ เกิดเหตุ</label>
               <textarea class="form-control" id="incidentDetail" rows="2"></textarea>
             </div>
-            
-            <div class="mb-3">
+            <div class="mb-0">
               <label class="form-label field-req">วันที่เกิดเหตุ</label>
               <input type="date" class="form-control" id="incidentDate">
             </div>
+          </div>
+        </div>
 
-            <div class="mb-3">
-              <label class="form-label field-req">อายุความ</label>
+        <!-- 2. ฐานความผิด มาตรา และการคำนวณอายุความ (ย้ายมาต่อจากวันเกิดเหตุ เพื่อให้ตรงลำดับเอกสาร 1:1) -->
+        <div class="ws-card mb-3 ruling-form-card" id="offenseBasisCard">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fa-solid fa-scale-balanced"></i> ฐานความผิด มาตรา และอายุความ (แยกรายผู้ถูกกล่าวหา)</span>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddCustomOffense">
+              <i class="fa-solid fa-plus me-1"></i>เพิ่มฐานความผิดอื่น ๆ
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="input-group input-group-sm mb-2">
+              <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+              <input type="text" class="form-control" id="offenseSearch" placeholder="ค้นหามาตราหรือฐานความผิด...">
+            </div>
+            <div id="offenseBasisLoading" class="text-muted small">กำลังโหลดข้อมูล...</div>
+            <div id="offenseBasisBody" class="mb-3"></div>
+
+            <div class="pt-2 border-top">
+              <label class="form-label field-req fw-bold text-navy"><i class="fa-solid fa-clock me-1"></i>สรุปการคำนวณอายุความ</label>
               <textarea class="form-control" id="prescriptionNote" rows="3"></textarea>
             </div>
+          </div>
+        </div>
 
+        <!-- 3. ผลการวินิจฉัยและความเห็นของที่ประชุม -->
+        <div class="ws-card mb-3 ruling-form-card" id="rulingDecisionCard">
+          <div class="card-header"><i class="fa-solid fa-gavel"></i> การวินิจฉัยและความเห็นของที่ประชุม</div>
+          <div class="card-body">
             <div class="mb-3">
               <label class="form-label">ความเห็นของที่ประชุม (ถ้ามี)</label>
               <textarea class="form-control" id="meetingOpinion" rows="4"></textarea>
             </div>
-
             <div class="mb-3">
               <label class="form-label">เหตุผลในการวินิจฉัย</label>
               <textarea class="form-control" id="legalAnalysis" rows="3"></textarea>
@@ -103,6 +125,7 @@
           </div>
         </div>
 
+        <!-- 4. แบบฟอร์มหนังสือลงโทษทางวินัย -->
         <div class="ws-card mb-3" id="disciplineCard">
           <div class="card-header"><i class="fa-solid fa-file-shield"></i> แบบฟอร์มหนังสือลงโทษทางวินัย</div>
           <div class="card-body">
@@ -163,23 +186,6 @@
               </div>
               <div class="col-12"><label class="form-label field-req">พฤติการณ์ความผิดทางวินัย</label><textarea class="form-control" id="discMisconduct" rows="3"></textarea></div>
             </div>
-          </div>
-        </div>
-
-        <div class="ws-card mb-3" id="offenseBasisCard">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="fa-solid fa-scale-balanced"></i> ฐานความผิด มาตรา และอายุความ (แยกรายผู้ถูกกล่าวหา)</span>
-            <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddCustomOffense">
-              <i class="fa-solid fa-plus me-1"></i>เพิ่มฐานความผิดอื่น ๆ
-            </button>
-          </div>
-          <div class="card-body">
-            <div class="input-group input-group-sm mb-2">
-              <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-              <input type="text" class="form-control" id="offenseSearch" placeholder="ค้นหามาตราหรือฐานความผิด...">
-            </div>
-            <div id="offenseBasisLoading" class="text-muted small">กำลังโหลดข้อมูล...</div>
-            <div id="offenseBasisBody"></div>
           </div>
         </div>
       </div>
@@ -369,14 +375,21 @@
     /* สูตรคำนวณวันขาดอายุความ: (วันเกิดเหตุ + ปีอายุความ) + ๑ วัน */
     function calculatePrescriptionExpiry(incidentDateStr, years) {
       if (!incidentDateStr || !years) return null;
-      const d = new Date(incidentDateStr);
+      const parts = String(incidentDateStr).split('-');
+      let y = parseInt(parts[0], 10);
+      if (isNaN(y)) return null;
+      if (y > 2400) y -= 543; // normalize to CE for Date calculation
+      const m = (parseInt(parts[1], 10) || 1) - 1;
+      const day = parseInt(parts[2], 10) || 1;
+      const d = new Date(y, m, day);
       if (isNaN(d.getTime())) return null;
       d.setFullYear(d.getFullYear() + parseInt(years, 10));
-      d.setDate(d.getDate() + 1); // นับถัดไปอีก 1 วัน
+      d.setDate(d.getDate() + 1); // นับวันขาดอายุความเป็นวันถัดไป
       const thMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+      const expBE = d.getFullYear() + 543;
       return {
         dateObj: d,
-        text: `ขาดอายุความ วันที่ ${ECMIS.toThaiDigits(d.getDate())} ${thMonths[d.getMonth()]} ${ECMIS.toThaiDigits(d.getFullYear() + 543)}`,
+        text: `ขาดอายุความ วันที่ ${ECMIS.toThaiDigits(d.getDate())} ${thMonths[d.getMonth()]} พ.ศ. ${ECMIS.toThaiDigits(expBE)}`,
         years: parseInt(years, 10)
       };
     }
@@ -643,10 +656,6 @@
     }
 
     const res = ECMIS.resolution72(kase.resolution72 || 'GUILTY_72');
-    document.getElementById('resolutionInfo').innerHTML = `
-      <div class="rule pass"><i class="fa-solid fa-circle-check"></i><span><strong>มติที่ประชุม:</strong> ${res.label}</span></div>
-      <div class="rule"><i class="fa-solid fa-scale-balanced"></i><span><strong>ฐานกฎหมาย:</strong> ${res.legalBasis}</span></div>
-      <div class="rule"><i class="fa-solid fa-calendar-days"></i><span><strong>รอบรายงาน:</strong> ครั้งที่ ${kase.round72 || 1}</span></div>`;
 
     document.getElementById('meetNo').value = kase.meetingNo || '';
     document.getElementById('agendaNo').value = kase.agendaNo || '';
@@ -674,9 +683,8 @@
     const disciplineVisible = (kase.resolution72 || '') === 'GUILTY_72';
 
     function toggleFormCards() {
-      document.getElementById('rulingCard').classList.toggle('d-none', docTab !== 'ruling');
+      document.querySelectorAll('.ruling-form-card').forEach(el => el.classList.toggle('d-none', docTab !== 'ruling'));
       document.getElementById('disciplineCard').classList.toggle('d-none', docTab !== 'discipline' || !disciplineVisible);
-      document.getElementById('offenseBasisCard').classList.toggle('d-none', docTab !== 'ruling' && (docTab !== 'discipline' || !disciplineVisible));
     }
     toggleFormCards();
 
