@@ -88,6 +88,12 @@
             <label class="form-label field-req">เลือกประเภทผลมติ</label>
             <div class="list-group mb-3" id="resList"></div>
 
+            <div class="mb-3" id="accusedWitnessSection">
+              <label class="form-label fw-bold text-navy"><i class="fa-solid fa-user-shield me-1"></i>พิจารณาชี้มูลรายผู้ถูกกล่าวหา / ขอกันบุคคลไว้เป็นพยาน</label>
+              <div id="accusedWitnessList" class="p-2 border rounded bg-light"></div>
+              <small class="text-muted mt-1 d-block"><i class="fa-solid fa-circle-info me-1"></i>ผู้ที่ถูกมีมติกันไว้เป็นพยาน จะไม่ถูกนำไปออกหนังสือส่งลงโทษทางวินัยหรือส่งพนักงานอัยการดำเนินคดี</small>
+            </div>
+
             <div id="moreBox" class="mb-3 d-none">
               <label class="form-label field-req">ลักษณะการไต่สวนเพิ่มเติม</label>
               <select class="form-select mb-2" id="moreScope">
@@ -315,38 +321,96 @@
     ];
     const TOTAL = BOARD.length;
 
-    document.getElementById('boardTb').innerHTML = BOARD.map((b, i) => `
+    const initialAttendance = kase.boardAttendance72 || {};
+    document.getElementById('boardTb').innerHTML = BOARD.map((b, i) => {
+      const att = initialAttendance[b.n] || 'present';
+      return `
   <tr data-i="${i}">
     <td><strong>${b.n}</strong><br><small class="text-muted">${b.r}</small></td>
     <td>
       <select class="form-select form-select-sm attend">
-        <option value="present" selected>เข้าประชุม</option>
-        <option value="recused">ถอนตัว</option>
+        <option value="present" ${att === 'present' ? 'selected' : ''}>มาประชุม</option>
+        <option value="leave" ${att === 'leave' ? 'selected' : ''}>ลาประชุม</option>
+        <option value="duty" ${att === 'duty' ? 'selected' : ''}>ติดราชการ</option>
+        <option value="recused" ${att === 'recused' ? 'selected' : ''}>ถอนตัว (ม.20)</option>
       </select>
     </td>
     <td>
-      <select class="form-select form-select-sm vote">
+      <select class="form-select form-select-sm vote" ${att !== 'present' ? 'disabled' : ''}>
         <option value="for" selected>เห็นด้วย</option>
         <option value="against">ไม่เห็นด้วย</option>
-        <option value="abstain">งดออกเสียง</option>
+        <option value="abstain" ${att !== 'present' ? 'selected' : ''}>งดออกเสียง</option>
       </select>
     </td>
-  </tr>`).join('');
+  </tr>`;
+    }).join('');
+
+    function renderAccusedWitnessList() {
+      const accList = kase.accused && kase.accused.length ? kase.accused : [
+        { name: kase.accusedName || 'นายสมศักดิ์ ข้าราชการ', pos: 'ผู้อำนวยการกอง', agency: kase.agency || 'กรมชลประทาน' }
+      ];
+      const witMap = kase.witnessState72 || {};
+      const container = document.getElementById('accusedWitnessList');
+      container.innerHTML = accList.map((acc, idx) => {
+        const isWit = !!witMap[acc.name];
+        return `
+        <div class="d-flex align-items-center justify-content-between p-2 mb-1 bg-white border rounded">
+          <div>
+            <span class="badge bg-secondary me-1">ลำดับ ${idx + 1}</span>
+            <strong style="color:var(--ecmis-navy)">${acc.name}</strong>
+            <span class="text-muted small ms-1">${acc.pos || ''} ${acc.agency ? '(' + acc.agency + ')' : ''}</span>
+          </div>
+          <div class="form-check form-switch m-0">
+            <input class="form-check-input witness-switch" type="checkbox" id="wit_${idx}" data-name="${acc.name}" ${isWit ? 'checked' : ''}>
+            <label class="form-check-label small fw-semibold" for="wit_${idx}">
+              ${isWit ? '<span class="badge bg-info text-dark"><i class="fa-solid fa-shield-halved me-1"></i>กันไว้เป็นพยาน</span>' : 'ขอกันเป็นพยาน'}
+            </label>
+          </div>
+        </div>`;
+      }).join('');
+
+      container.querySelectorAll('.witness-switch').forEach(sw => {
+        sw.addEventListener('change', (e) => {
+          if (!kase.witnessState72) kase.witnessState72 = {};
+          kase.witnessState72[e.target.dataset.name] = e.target.checked;
+          renderAccusedWitnessList();
+          renderDoc();
+        });
+      });
+    }
+    renderAccusedWitnessList();
+
+    function getWitnessState() {
+      const state = {};
+      document.querySelectorAll('.witness-switch').forEach(sw => {
+        state[sw.dataset.name] = sw.checked;
+      });
+      return state;
+    }
 
     function tally() {
-      let present = 0, recused = 0, forV = 0, againstV = 0, abstainV = 0;
+      let present = 0, recused = 0, leave = 0, duty = 0, forV = 0, againstV = 0, abstainV = 0;
+      const attendanceMap = {};
       document.querySelectorAll('#boardTb tr').forEach(tr => {
+        const i = parseInt(tr.dataset.i, 10);
+        const b = BOARD[i];
         const a = tr.querySelector('.attend').value;
         const v = tr.querySelector('.vote');
+        attendanceMap[b.n] = a;
         if (a === 'recused') {
           recused++; v.value = 'abstain'; v.disabled = true; abstainV++;
+        } else if (a === 'leave') {
+          leave++; v.value = 'abstain'; v.disabled = true;
+        } else if (a === 'duty') {
+          duty++; v.value = 'abstain'; v.disabled = true;
         } else {
           v.disabled = false;
           present++;
           if (v.value === 'for') forV++; else if (v.value === 'against') againstV++; else if (v.value === 'abstain') abstainV++;
         }
       });
-      return { present, recused, forV, againstV, abstainV };
+      kase.boardAttendance72 = attendanceMap;
+      return { present, recused, leave, duty, forV, againstV, abstainV, attendanceMap };
     }
 
     function renderQuorum() {
@@ -355,14 +419,20 @@
       const { quorumMin, quorumOk, majorityMin, majorityOk, tie, boardValid } = q;
       kase.quorumOk72 = quorumOk;
 
+      const nonPresentNotes = [
+        t.leave ? `ลาประชุม ${t.leave} ท่าน` : null,
+        t.duty ? `ติดราชการ ${t.duty} ท่าน` : null,
+        t.recused ? `ถอนตัวตาม ม.20 ${t.recused} ท่าน` : null
+      ].filter(Boolean);
+
       document.getElementById('quorumBox').innerHTML = `
     ${!boardValid ? `<div class="rule fail"><i class="fa-solid fa-circle-xmark"></i>
       <span><strong>ม.10:</strong> กรรมการเท่าที่มีอยู่ ${TOTAL} คน — น้อยกว่าขั้นต่ำ
       ${ECMIS.BOARD_MIN_IN_OFFICE} คน คณะกรรมการยังทำหน้าที่ต่อไม่ได้</span></div>` : ''}
     <div class="rule ${quorumOk ? 'pass' : 'fail'}">
       <i class="fa-solid ${quorumOk ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
-      <span><strong>องค์ประชุม (ม.12):</strong> เข้าประชุม ${t.present} จาก ${TOTAL} ท่าน — ต้องไม่น้อยกว่า ${quorumMin} ท่าน
-        ${t.recused ? `<br><small>ถูกกันออกตาม ม.20 จำนวน ${t.recused} ท่าน</small>` : ''}</span>
+      <span><strong>องค์ประชุม (ม.12):</strong> มาประชุม ${t.present} จาก ${TOTAL} ท่าน — ต้องไม่น้อยกว่า ${quorumMin} ท่าน
+        ${nonPresentNotes.length ? `<br><small class="text-muted">ไม่มาประชุม/ถอนตัว: ${nonPresentNotes.join(', ')}</small>` : ''}</span>
     </div>
     <div class="rule ${majorityOk ? 'pass' : 'fail'}">
       <i class="fa-solid ${majorityOk ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
@@ -455,9 +525,23 @@
       const r = selectedRes();
       const t = tally();
       const unanimous = t.againstV === 0 && t.abstainV === 0;
-      const attendees = Array.from(document.querySelectorAll('#boardTb tr')).map((tr, i) =>
-        ({ ...BOARD[i], recused: tr.querySelector('.attend').value === 'recused' }));
-      const recusedList = attendees.filter(b => b.recused);
+      const attendees = [];
+      const leaveList = [];
+      const dutyList = [];
+      const recusedList = [];
+      document.querySelectorAll('#boardTb tr').forEach((tr, i) => {
+        const att = tr.querySelector('.attend').value;
+        const b = BOARD[i];
+        if (att === 'present') attendees.push(b);
+        else if (att === 'leave') leaveList.push(b);
+        else if (att === 'duty') dutyList.push(b);
+        else if (att === 'recused') recusedList.push(b);
+      });
+
+      const witMap = getWitnessState();
+      const guiltyAccused = kase.accused.filter(a => !witMap[a.name]);
+      const witnessAccused = kase.accused.filter(a => !!witMap[a.name]);
+
       const crim = document.getElementById('guiltyCriminal').checked;
       const disc = document.getElementById('guiltyDiscipline').checked;
       const flight = document.getElementById('flightRisk') && document.getElementById('flightRisk').checked;
@@ -508,7 +592,7 @@
       </div>`),
         bi(`<div class="doc-h">ผู้กล่าวหา</div><div>${M(kase.complainant)}</div>`),
         bi(`<div class="doc-h">ผู้ถูกกล่าวหา</div>
-      ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}`),
+      ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}${witMap[a.name] ? ' <span style="color:#0369A1;font-weight:600">(กันไว้เป็นพยาน)</span>' : ''}</div>`).join('')}`),
         bi(`<div class="doc-h">พฤติการณ์ที่กล่าวหา</div><div class="doc-indent">${M(kase.allegation)}</div>`),
         bi(`<div class="doc-h">คณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวน แล้วแต่กรณี มีความเห็น ดังนี้</div>
       <div class="doc-indent">${M(investigatorOpinion, '………………………………………………………………………………………………')}</div>
@@ -518,11 +602,11 @@
       </div>`),
         bi(`<div class="doc-indent" style="margin-top:6px">
         ในการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}
-        คณะกรรมการ ป.ป.ท. ที่มาประชุม จำนวน ${attendees.length} คน ประกอบด้วย</div>
-      <div class="doc-indent">${attendees.map((b, i) => `${i + 1}. ${M(b.n)} ${M(b.r)}`).join('<br>')}</div>
-      ${recusedList.length ? `<div class="doc-indent" style="margin-top:6px">
-        กรรมการ ป.ป.ท. ที่ถอนตัวจากการพิจารณาวาระนี้ตามมาตรา ๒๐ จำนวน ${recusedList.length} คน คือ</div>
-      <div class="doc-indent">${recusedList.map((b, i) => `${i + 1}. ${M(b.n)}`).join('<br>')}</div>` : ''}
+        คณะกรรมการ ป.ป.ท. ที่มาประชุม จำนวน ${ECMIS.toThaiDigits(attendees.length)} คน ประกอบด้วย</div>
+      <div class="doc-indent">${attendees.map((b, i) => `(${ECMIS.toThaiDigits(i + 1)}) ${M(b.n)} — ${M(b.r)}`).join('<br>')}</div>
+      ${leaveList.length ? `<div class="doc-indent" style="margin-top:4px"><small>กรรมการ ป.ป.ท. ที่ลาประชุม จำนวน ${ECMIS.toThaiDigits(leaveList.length)} คน ได้แก่ ${leaveList.map(b => b.n).join(', ')}</small></div>` : ''}
+      ${dutyList.length ? `<div class="doc-indent" style="margin-top:4px"><small>กรรมการ ป.ป.ท. ที่ติดราชการ จำนวน ${ECMIS.toThaiDigits(dutyList.length)} คน ได้แก่ ${dutyList.map(b => b.n).join(', ')}</small></div>` : ''}
+      ${recusedList.length ? `<div class="doc-indent" style="margin-top:4px"><small>กรรมการ ป.ป.ท. ที่ถอนตัวจากการพิจารณาวาระนี้ตามมาตรา ๒๐ จำนวน ${ECMIS.toThaiDigits(recusedList.length)} คน ได้แก่ ${recusedList.map(b => b.n).join(', ')}</small></div>` : ''}
       <div class="doc-indent" style="margin-top:6px">
         เหตุผลในการวินิจฉัยคณะกรรมการ ป.ป.ท. มีความเห็นสอดคล้องกับคณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวน แล้วแต่กรณี
       </div>`),
@@ -538,17 +622,19 @@
           ? `<div class="doc-h">มติที่ประชุม</div>
       <div>๑. คณะกรรมการ ป.ป.ท. มีมติ${M(unanimous ? 'เป็นเอกฉันท์' : `ด้วยคะแนนเสียงข้างมาก ${t.forV} ต่อ ${t.againstV} เสียง`)}วินิจฉัยชี้มูลความผิด ดังนี้</div>
       ${crim ? `<div class="doc-h" style="margin-top:6px">ความผิดทางอาญา</div>
-      <div class="doc-indent">การกระทำของ${M(kase.accused[0] ? kase.accused[0].name : '', '(ชื่อผู้ถูกกล่าวหา)')} เป็นความผิดตาม
+      <div class="doc-indent">การกระทำของ${M(guiltyAccused.map(a => a.name).join(', '), '(ชื่อผู้ถูกกล่าวหา)')} เป็นความผิดตาม
         ${M(criminalFinding, '(ฐานความผิด/กฎหมายและมาตรา)')} — ให้ส่งเรื่องพร้อมทั้งสำนวนการไต่สวน รายงาน เอกสาร และความเห็น
         ของคณะกรรมการ ป.ป.ท. ให้พนักงานอัยการดำเนินคดีต่อไป ตามมาตรา ๔๔${flight
               ? ' และเนื่องจากมีเหตุอันควรเชื่อว่าผู้ถูกกล่าวหาจะหลบหนี ให้ดำเนินการขอให้ศาลที่มีเขตอำนาจออกหมายจับและควบคุมตัวผู้ถูกกล่าวหาไว้ตามมาตรา ๑๙/๒'
               : ''}</div>` : ''}
       ${disc ? `<div class="doc-h" style="margin-top:6px">ความผิดทางวินัย</div>
-      <div class="doc-indent">การกระทำของ${M(kase.accused[0] ? kase.accused[0].name : '', '(ชื่อผู้ถูกกล่าวหา)')} เป็นความผิดวินัยอย่างร้ายแรง ฐาน
-        ${M(disciplinaryFinding, '(ฐานความผิด/กฎหมายและมาตรา)')} ตามมาตรา ๓๘</div>` : ''}`
+      <div class="doc-indent">การกระทำของ${M(guiltyAccused.map(a => a.name).join(', '), '(ชื่อผู้ถูกกล่าวหา)')} เป็นความผิดวินัยอย่างร้ายแรง ฐาน
+        ${M(disciplinaryFinding, '(ฐานความผิด/กฎหมายและมาตรา)')} ตามมาตรา ๓๘</div>` : ''}
+      ${witnessAccused.length ? `<div class="doc-indent" style="margin-top:8px;color:#0369A1"><strong>อนึ่ง</strong> สำหรับ ${witnessAccused.map(a => a.name).join(', ')} ที่ประชุมมีมติให้กันบุคคลดังกล่าวไว้เป็นพยานตามกฎหมายและระเบียบ ป.ป.ท. จึงไม่มีการส่งดำเนินคดีหรือลงโทษทางวินัย</div>` : ''}`
           : `<div class="doc-h">มติที่ประชุม</div>
       <div>๑. คณะกรรมการ ป.ป.ท. มีมติ${M(unanimous ? 'เป็นเอกฉันท์' : `ด้วยคะแนนเสียงข้างมาก ${t.forV} ต่อ ${t.againstV} เสียง`)}</div>
-      <div style="padding-left:1.5em">- ${M(resText)}</div>`,
+      <div style="padding-left:1.5em">- ${M(resText)}</div>
+      ${witnessAccused.length ? `<div style="padding-left:1.5em;color:#0369A1">(มีมติกัน ${witnessAccused.map(a => a.name).join(', ')} ไว้เป็นพยาน)</div>` : ''}`,
         ...(t.againstV > 0 ? [`<div style="padding-left:1.5em;color:#DB2626">
       (มีกรรมการเห็นแย้ง ${t.againstV} ท่าน — บันทึกความเห็นแย้งพร้อมเหตุผลไว้ในรายงานการประชุมตาม ม.๑๖)</div>`] : []),
         ...(t.recused > 0 ? [`<div style="padding-left:1.5em;color:#6b3fa0">
@@ -648,7 +734,9 @@
             investigatorRef72: document.getElementById('investigatorRef').value.trim(),
             investigatorOpinion72: document.getElementById('investigatorOpinion').value.trim(),
             presenterNote72: document.getElementById('presenterNote').value.trim(),
-            ownerClarification72: document.getElementById('ownerClarification').value.trim()
+            ownerClarification72: document.getElementById('ownerClarification').value.trim(),
+            boardAttendance72: tally().attendanceMap,
+            witnessState72: getWitnessState()
           };
           if (r.code === 'MORE_INVESTIGATE_72') {
             const reasonText = document.getElementById('moreReason').value.trim();

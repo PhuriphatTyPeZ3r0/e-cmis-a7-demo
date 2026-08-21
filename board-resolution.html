@@ -454,8 +454,10 @@
     <td><strong>${b.n}</strong><br><small class="text-muted">${b.r}</small></td>
     <td>
       <select class="form-select form-select-sm attend">
-        <option value="present" selected>เข้าประชุม</option>
-        <option value="recused">ถอนตัว</option>
+        <option value="present" selected>มาประชุม</option>
+        <option value="leave">ลาประชุม</option>
+        <option value="duty">ติดราชการ</option>
+        <option value="recused">ถอนตัว (ม.20)</option>
       </select>
     </td>
     <td>
@@ -468,24 +470,28 @@
   </tr>`).join('');
 
     function tally() {
-      let present = 0, recused = 0, forV = 0, againstV = 0, abstainV = 0;
-      document.querySelectorAll('#boardTb tr').forEach(tr => {
+      let present = 0, leave = 0, duty = 0, recused = 0, forV = 0, againstV = 0, abstainV = 0;
+      const attendanceMap = {};
+      document.querySelectorAll('#boardTb tr').forEach((tr, i) => {
         const a = tr.querySelector('.attend').value;
         const v = tr.querySelector('.vote');
-        if (a === 'recused') {
-          recused++;
-          v.value = 'abstain';
-          v.disabled = true;
-          abstainV++;
-        } else {
-          v.disabled = false;
+        const b = BOARD[i];
+        attendanceMap[b.n] = a;
+        if (a === 'present') {
           present++;
+          v.disabled = false;
           if (v.value === 'for') forV++;
           else if (v.value === 'against') againstV++;
           else if (v.value === 'abstain') abstainV++;
+        } else {
+          v.disabled = true;
+          v.value = 'abstain';
+          if (a === 'leave') leave++;
+          else if (a === 'duty') duty++;
+          else if (a === 'recused') { recused++; abstainV++; }
         }
       });
-      return { present, recused, forV, againstV, abstainV };
+      return { present, leave, duty, recused, forV, againstV, abstainV, attendanceMap };
     }
 
     function renderQuorum() {
@@ -710,9 +716,18 @@
       const r = selectedRes();
       const t = tally();
       const unanimous = t.againstV === 0 && t.abstainV === 0;
-      const attendees = Array.from(document.querySelectorAll('#boardTb tr')).map((tr, i) =>
-        ({ ...BOARD[i], recused: tr.querySelector('.attend').value === 'recused' }));
-      const recusedList = attendees.filter(b => b.recused);
+      const attendees = [];
+      const leaveList = [];
+      const dutyList = [];
+      const recusedList = [];
+      document.querySelectorAll('#boardTb tr').forEach((tr, i) => {
+        const att = tr.querySelector('.attend').value;
+        const b = BOARD[i];
+        if (att === 'present') attendees.push(b);
+        else if (att === 'leave') leaveList.push(b);
+        else if (att === 'duty') dutyList.push(b);
+        else if (att === 'recused') recusedList.push(b);
+      });
 
       const resText = computeResolutionText();
 
@@ -780,11 +795,11 @@
       <div class="doc-indent">${M(ownerClarification)}</div>`)] : []),
         bi(`<div class="doc-indent" style="margin-top:6px">
         ในการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}
-        คณะกรรมการ ป.ป.ท. ที่มาประชุม จำนวน ${attendees.length} คน ประกอบด้วย</div>
-      <div class="doc-indent">${attendees.map((b, i) => `${i + 1}. ${M(b.n)} ${M(b.r)}`).join('<br>')}</div>
-      ${recusedList.length ? `<div class="doc-indent" style="margin-top:6px">
-        กรรมการ ป.ป.ท. ที่ถอนตัวจากการพิจารณาวาระนี้ตามมาตรา ๒๐ จำนวน ${recusedList.length} คน คือ</div>
-      <div class="doc-indent">${recusedList.map((b, i) => `${i + 1}. ${M(b.n)}`).join('<br>')}</div>` : ''}`),
+        คณะกรรมการ ป.ป.ท. ที่มาประชุม จำนวน ${ECMIS.toThaiDigits(attendees.length)} คน ประกอบด้วย</div>
+      <div class="doc-indent">${attendees.map((b, i) => `(${ECMIS.toThaiDigits(i + 1)}) ${M(b.n)} — ${M(b.r)}`).join('<br>')}</div>
+      ${leaveList.length ? `<div class="doc-indent" style="margin-top:4px"><small>กรรมการ ป.ป.ท. ที่ลาประชุม จำนวน ${ECMIS.toThaiDigits(leaveList.length)} คน ได้แก่ ${leaveList.map(b => b.n).join(', ')}</small></div>` : ''}
+      ${dutyList.length ? `<div class="doc-indent" style="margin-top:4px"><small>กรรมการ ป.ป.ท. ที่ติดราชการ จำนวน ${ECMIS.toThaiDigits(dutyList.length)} คน ได้แก่ ${dutyList.map(b => b.n).join(', ')}</small></div>` : ''}
+      ${recusedList.length ? `<div class="doc-indent" style="margin-top:4px"><small>กรรมการ ป.ป.ท. ที่ถอนตัวจากการพิจารณาวาระนี้ตามมาตรา ๒๐ จำนวน ${ECMIS.toThaiDigits(recusedList.length)} คน ได้แก่ ${recusedList.map(b => b.n).join(', ')}</small></div>` : ''}`),
         bi(`<div class="doc-h">ความเห็นที่ประชุม</div>
       <div class="doc-indent">คณะกรรมการ ป.ป.ท. พิจารณาแล้วเห็นว่า
         ${M(opinion, '………………………………………………………………………………………………')}</div>`),
