@@ -3195,52 +3195,143 @@ function initCommandPalette() {
 function initSmartCombobox(selectEl) {
   if (!selectEl || selectEl.nextElementSibling?.classList.contains('smart-combo-container')) return;
 
-  const options = Array.from(selectEl.options);
   const container = document.createElement('div');
   container.className = 'smart-combo-container';
 
   const toggleBtn = document.createElement('div');
-  toggleBtn.className = 'form-select';
-  toggleBtn.style.cursor = 'pointer';
-  toggleBtn.textContent = selectEl.options[selectEl.selectedIndex]?.text || '— เลือกรายการ —';
+  toggleBtn.className = 'smart-combo-toggle';
+  toggleBtn.setAttribute('tabindex', '0');
+  toggleBtn.setAttribute('role', 'combobox');
+  toggleBtn.setAttribute('aria-expanded', 'false');
+
+  const toggleContent = document.createElement('div');
+  toggleContent.className = 'smart-combo-toggle-text text-truncate';
+  
+  const chevron = document.createElement('i');
+  chevron.className = 'fa-solid fa-chevron-down smart-combo-chevron';
+  
+  toggleBtn.appendChild(toggleContent);
+  toggleBtn.appendChild(chevron);
 
   const dropdown = document.createElement('div');
   dropdown.className = 'smart-combo-dropdown';
 
   const searchBox = document.createElement('div');
   searchBox.className = 'smart-combo-search';
-  const searchInput = document.createElement('input');
-  searchInput.type = 'text';
-  searchInput.className = 'form-control form-control-sm';
-  searchInput.placeholder = 'ค้นหารายการ...';
-  searchBox.appendChild(searchInput);
+  const inputGroup = document.createElement('div');
+  inputGroup.className = 'input-group input-group-sm';
+  inputGroup.innerHTML = `
+    <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+    <input type="text" class="form-control" placeholder="ค้นหารายการ..." autocomplete="off">
+  `;
+  searchBox.appendChild(inputGroup);
+  const searchInput = inputGroup.querySelector('input');
 
   const itemsContainer = document.createElement('div');
   itemsContainer.className = 'smart-combo-items';
 
+  let currentHighlightedIndex = -1;
+  let currentFilteredList = [];
+
+  function getOptions() {
+    return Array.from(selectEl.options).map(opt => {
+      let title = opt.textContent.trim();
+      let sub = opt.dataset.sub || opt.dataset.title || opt.dataset.desc || '';
+      if (!sub && (title.includes(' — ') || title.includes(' - '))) {
+        const parts = title.split(/\s+[—-]\s+/);
+        if (parts.length >= 2) {
+          title = parts[0];
+          sub = parts.slice(1).join(' — ');
+        }
+      }
+      return {
+        value: opt.value,
+        text: opt.textContent.trim(),
+        title: title,
+        sub: sub,
+        selected: opt.selected || opt.value === selectEl.value,
+        disabled: opt.disabled
+      };
+    });
+  }
+
+  function updateToggleDisplay() {
+    const opts = getOptions();
+    const curVal = selectEl.value;
+    const matched = opts.find(o => o.value === curVal) || opts.find(o => o.selected) || opts[0];
+    if (!matched || !matched.value) {
+      toggleContent.innerHTML = `<span class="text-muted">${selectEl.getAttribute('placeholder') || '— เลือกรายการ —'}</span>`;
+    } else {
+      toggleContent.innerHTML = `
+        <span class="smart-combo-toggle-title fw-medium">${matched.title}</span>
+        ${matched.sub ? `<span class="text-muted ms-1 small">(${matched.sub})</span>` : ''}
+      `;
+    }
+  }
+
   function renderItems(filterText) {
     itemsContainer.innerHTML = '';
-    const q = filterText.toLowerCase();
-    const filtered = options.filter(o => o.text.toLowerCase().includes(q) && o.value !== "");
+    const q = (filterText || '').trim().toLowerCase();
+    const opts = getOptions().filter(o => o.value !== "");
+    currentFilteredList = opts.filter(o => 
+      !q || o.text.toLowerCase().includes(q) || o.title.toLowerCase().includes(q) || o.sub.toLowerCase().includes(q)
+    );
 
-    if (!filtered.length) {
-      itemsContainer.innerHTML = `<div class="text-muted text-center py-2" style="font-size:0.8rem">ไม่พบรายการ</div>`;
+    currentHighlightedIndex = -1;
+
+    if (!currentFilteredList.length) {
+      itemsContainer.innerHTML = `<div class="text-muted text-center py-3" style="font-size:0.82rem"><i class="fa-solid fa-circle-question d-block mb-1 opacity-50"></i>ไม่พบข้อมูลที่ค้นหา</div>`;
       return;
     }
 
-    filtered.forEach(o => {
+    currentFilteredList.forEach((o, idx) => {
       const item = document.createElement('div');
       item.className = 'smart-combo-item';
-      if (selectEl.value === o.value) item.classList.add('active');
-      item.textContent = o.text;
-      item.addEventListener('click', () => {
-        selectEl.value = o.value;
-        toggleBtn.textContent = o.text;
-        dropdown.style.display = 'none';
-        selectEl.dispatchEvent(new Event('change'));
+      const isCur = selectEl.value === o.value;
+      if (isCur) {
+        item.classList.add('active');
+        currentHighlightedIndex = idx;
+      }
+      item.dataset.index = idx;
+      item.innerHTML = `
+        <div class="smart-combo-item-content">
+          <div class="smart-combo-item-title">${o.title}</div>
+          ${o.sub ? `<div class="smart-combo-item-sub">${o.sub}</div>` : ''}
+        </div>
+        ${isCur ? `<i class="fa-solid fa-check text-primary ms-2"></i>` : ''}
+      `;
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectOption(o);
       });
       itemsContainer.appendChild(item);
     });
+  }
+
+  function selectOption(opt) {
+    if (!opt) return;
+    selectEl.value = opt.value;
+    updateToggleDisplay();
+    closeDropdown();
+    selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+    selectEl.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function openDropdown() {
+    document.querySelectorAll('.smart-combo-dropdown').forEach(d => d.style.display = 'none');
+    document.querySelectorAll('.smart-combo-toggle').forEach(t => t.classList.remove('is-open'));
+    dropdown.style.display = 'flex';
+    toggleBtn.classList.add('is-open');
+    toggleBtn.setAttribute('aria-expanded', 'true');
+    searchInput.value = '';
+    renderItems('');
+    setTimeout(() => searchInput.focus(), 50);
+  }
+
+  function closeDropdown() {
+    dropdown.style.display = 'none';
+    toggleBtn.classList.remove('is-open');
+    toggleBtn.setAttribute('aria-expanded', 'false');
   }
 
   dropdown.appendChild(searchBox);
@@ -3250,16 +3341,19 @@ function initSmartCombobox(selectEl) {
 
   selectEl.style.display = 'none';
   selectEl.parentNode.insertBefore(container, selectEl.nextSibling);
+  updateToggleDisplay();
 
   toggleBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    const open = dropdown.style.display === 'flex';
-    document.querySelectorAll('.smart-combo-dropdown').forEach(d => d.style.display = 'none');
-    dropdown.style.display = open ? 'none' : 'flex';
-    if (!open) {
-      searchInput.value = '';
-      renderItems('');
-      setTimeout(() => searchInput.focus(), 100);
+    const isOpen = dropdown.style.display === 'flex';
+    if (isOpen) closeDropdown();
+    else openDropdown();
+  });
+
+  toggleBtn.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      openDropdown();
     }
   });
 
@@ -3268,9 +3362,53 @@ function initSmartCombobox(selectEl) {
   });
   searchInput.addEventListener('click', e => e.stopPropagation());
 
-  document.addEventListener('click', () => {
-    dropdown.style.display = 'none';
+  searchInput.addEventListener('keydown', (e) => {
+    const items = itemsContainer.querySelectorAll('.smart-combo-item');
+    if (!items.length) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      currentHighlightedIndex = (currentHighlightedIndex + 1) % items.length;
+      highlightItem(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      currentHighlightedIndex = (currentHighlightedIndex - 1 + items.length) % items.length;
+      highlightItem(items);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (currentHighlightedIndex >= 0 && currentFilteredList[currentHighlightedIndex]) {
+        selectOption(currentFilteredList[currentHighlightedIndex]);
+      } else if (currentFilteredList.length === 1) {
+        selectOption(currentFilteredList[0]);
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      closeDropdown();
+      toggleBtn.focus();
+    }
   });
+
+  function highlightItem(items) {
+    items.forEach((it, idx) => {
+      it.classList.toggle('keyboard-focus', idx === currentHighlightedIndex);
+      if (idx === currentHighlightedIndex) {
+        it.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    });
+  }
+
+  selectEl.addEventListener('change', updateToggleDisplay);
+
+  document.addEventListener('click', (e) => {
+    if (!container.contains(e.target)) {
+      closeDropdown();
+    }
+  });
+
+  container.smartComboRefresh = () => {
+    updateToggleDisplay();
+    renderItems(searchInput.value);
+  };
 }
 
 function initMultiSelectCombo(inputEl, candidates, opts) {
@@ -3294,11 +3432,14 @@ function initMultiSelectCombo(inputEl, candidates, opts) {
 
   const searchBox = document.createElement('div');
   searchBox.className = 'smart-combo-search';
-  const searchInput = document.createElement('input');
-  searchInput.type = 'text';
-  searchInput.className = 'form-control form-control-sm';
-  searchInput.placeholder = searchPlaceholder;
-  searchBox.appendChild(searchInput);
+  const inputGroup = document.createElement('div');
+  inputGroup.className = 'input-group input-group-sm';
+  inputGroup.innerHTML = `
+    <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+    <input type="text" class="form-control" placeholder="${searchPlaceholder}" autocomplete="off">
+  `;
+  searchBox.appendChild(inputGroup);
+  const searchInput = inputGroup.querySelector('input');
 
   const itemsContainer = document.createElement('div');
   itemsContainer.className = 'smart-combo-items';
@@ -3311,29 +3452,37 @@ function initMultiSelectCombo(inputEl, candidates, opts) {
 
   function renderToggle() {
     toggleBtn.innerHTML = '';
+    const tagsWrap = document.createElement('div');
+    tagsWrap.className = 'd-flex flex-wrap align-items-center gap-1 flex-grow-1';
+
     if (!selected.length) {
       const ph = document.createElement('span');
       ph.className = 'text-muted';
       ph.textContent = placeholder;
-      toggleBtn.appendChild(ph);
-      return;
-    }
-    selected.forEach(name => {
-      const tag = document.createElement('span');
-      tag.className = 'smart-combo-tag';
-      tag.textContent = name;
-      const rm = document.createElement('i');
-      rm.className = 'fa-solid fa-xmark';
-      rm.title = 'เอาออก';
-      rm.addEventListener('click', (e) => {
-        e.stopPropagation();
-        selected = selected.filter(s => s !== name);
-        commit();
-        renderItems(searchInput.value);
+      tagsWrap.appendChild(ph);
+    } else {
+      selected.forEach(name => {
+        const tag = document.createElement('span');
+        tag.className = 'smart-combo-tag';
+        tag.textContent = name;
+        const rm = document.createElement('i');
+        rm.className = 'fa-solid fa-xmark';
+        rm.title = 'เอาออก';
+        rm.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selected = selected.filter(s => s !== name);
+          commit();
+          renderItems(searchInput.value);
+        });
+        tag.appendChild(rm);
+        tagsWrap.appendChild(tag);
       });
-      tag.appendChild(rm);
-      toggleBtn.appendChild(tag);
-    });
+    }
+
+    const chevron = document.createElement('i');
+    chevron.className = 'fa-solid fa-chevron-down smart-combo-chevron ms-2';
+    toggleBtn.appendChild(tagsWrap);
+    toggleBtn.appendChild(chevron);
   }
 
   function renderItems(filterText) {
@@ -3404,21 +3553,36 @@ function initMultiSelectCombo(inputEl, candidates, opts) {
 
   renderToggle();
 
+  function openDropdown() {
+    document.querySelectorAll('.smart-combo-dropdown').forEach(d => d.style.display = 'none');
+    document.querySelectorAll('.smart-combo-toggle').forEach(t => t.classList.remove('is-open'));
+    dropdown.style.display = 'flex';
+    toggleBtn.classList.add('is-open');
+    searchInput.value = '';
+    renderItems('');
+    setTimeout(() => searchInput.focus(), 100);
+  }
+
+  function closeDropdown() {
+    dropdown.style.display = 'none';
+    toggleBtn.classList.remove('is-open');
+  }
+
   toggleBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const open = dropdown.style.display === 'flex';
-    document.querySelectorAll('.smart-combo-dropdown').forEach(d => d.style.display = 'none');
-    dropdown.style.display = open ? 'none' : 'flex';
-    if (!open) {
-      searchInput.value = '';
-      renderItems('');
-      setTimeout(() => searchInput.focus(), 100);
-    }
+    if (open) closeDropdown();
+    else openDropdown();
   });
 
   searchInput.addEventListener('input', e => renderItems(e.target.value));
   searchInput.addEventListener('click', e => e.stopPropagation());
   searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeDropdown();
+      return;
+    }
     if (e.key !== 'Enter') return;
     e.preventDefault();
     const val = searchInput.value.trim();
@@ -3430,7 +3594,11 @@ function initMultiSelectCombo(inputEl, candidates, opts) {
     }
   });
 
-  document.addEventListener('click', () => { dropdown.style.display = 'none'; });
+  document.addEventListener('click', (e) => {
+    if (!container.contains(e.target)) {
+      closeDropdown();
+    }
+  });
 }
 
 function initRealTimeValidation(formEl) {
