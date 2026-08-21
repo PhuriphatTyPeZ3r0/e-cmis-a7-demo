@@ -4385,7 +4385,7 @@ if (typeof document !== 'undefined') {
   setTimeout(initSug, 200);
 }
 
-/* ---------- Universal Document Editor (FAB + Toolbar) ---------- */
+/* ---------- Universal Document Editor (Toolbar Button + Rich Text Bar) ---------- */
 function initDocEditor(opts) {
   opts = opts || {};
   const stageId = opts.stageId || 'docPaper';
@@ -4395,8 +4395,52 @@ function initDocEditor(opts) {
   let docPaperWrap = document.getElementById(stageId);
   if (!docPaperWrap) return null;
 
+  const docPane = docPaperWrap.closest('.ws-doc-pane') || docPaperWrap.parentElement;
+  let toolbar = docPane ? docPane.querySelector('.ws-doc-toolbar') : null;
   let docEditBar = document.getElementById('docEditBar');
-  let docEditFab = document.getElementById('docEditFab');
+  let editBtn = document.getElementById('btnDocEdit') || document.getElementById('docEditBtn') || document.getElementById('docEditFab');
+
+  // Clean up any legacy floating FAB from body
+  document.querySelectorAll('body > .doc-edit-fab').forEach(el => el.remove());
+
+  // Attach button into toolbar
+  if (!editBtn) {
+    editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.id = 'btnDocEdit';
+    editBtn.className = 'btn-doc-edit ms-auto me-1';
+    editBtn.title = 'เปิด/ปิดโหมดแก้ไขเอกสาร';
+    editBtn.innerHTML = '<i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>';
+
+    if (toolbar) {
+      const toggle = toolbar.querySelector('.ws-doc-pane-toggle');
+      const printBtn = toolbar.querySelector('[onclick*="print"]');
+      if (printBtn) {
+        toolbar.insertBefore(editBtn, printBtn);
+      } else if (toggle) {
+        toolbar.insertBefore(editBtn, toggle);
+      } else {
+        toolbar.appendChild(editBtn);
+      }
+    } else {
+      docPaperWrap.parentElement.insertBefore(editBtn, docPaperWrap);
+    }
+  } else {
+    // If it was an old fab button, modernize it
+    editBtn.className = 'btn-doc-edit ms-auto me-1';
+    editBtn.innerHTML = '<i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>';
+    if (toolbar && editBtn.parentElement !== toolbar) {
+      const printBtn = toolbar.querySelector('[onclick*="print"]');
+      const toggle = toolbar.querySelector('.ws-doc-pane-toggle');
+      if (printBtn) {
+        toolbar.insertBefore(editBtn, printBtn);
+      } else if (toggle) {
+        toolbar.insertBefore(editBtn, toggle);
+      } else {
+        toolbar.appendChild(editBtn);
+      }
+    }
+  }
 
   if (!docEditBar) {
     const bar = document.createElement('div');
@@ -4423,25 +4467,10 @@ function initDocEditor(opts) {
     docEditBar = bar;
   }
 
-  if (!docEditFab) {
-    const fab = document.createElement('button');
-    fab.type = 'button';
-    fab.className = 'doc-edit-fab d-none';
-    fab.id = 'docEditFab';
-    fab.title = 'เปิด/ปิดโหมดแก้ไขเอกสาร';
-    fab.innerHTML = '<i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>';
-    document.body.appendChild(fab);
-    docEditFab = fab;
-  } else if (docEditFab.parentElement !== document.body) {
-    document.body.appendChild(docEditFab);
-  }
-
-  docEditFab.innerHTML = '<i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>';
-
   if (mayEdit) {
-    docEditFab.classList.remove('d-none');
+    editBtn.classList.remove('d-none');
   } else {
-    docEditFab.classList.add('d-none');
+    editBtn.classList.add('d-none');
   }
 
   function setDocEditMode(on) {
@@ -4451,12 +4480,15 @@ function initDocEditor(opts) {
       if (on) p.setAttribute('contenteditable', 'true');
       else p.removeAttribute('contenteditable');
     });
-    docEditFab.classList.toggle('active', on);
+    editBtn.classList.toggle('active', on);
+    editBtn.innerHTML = on
+      ? '<i class="fa-solid fa-check me-1"></i><span>กำลังแก้ไข</span>'
+      : '<i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>';
     if (docEditBar) docEditBar.classList.toggle('show', on);
   }
 
-  docEditFab.onclick = () => {
-    const on = !docEditFab.classList.contains('active');
+  editBtn.onclick = () => {
+    const on = !editBtn.classList.contains('active');
     setDocEditMode(on);
   };
 
@@ -4484,7 +4516,7 @@ function initDocEditor(opts) {
   return {
     setDocEditMode,
     setMayEdit: (allowed) => {
-      docEditFab.classList.toggle('d-none', !allowed);
+      editBtn.classList.toggle('d-none', !allowed);
     }
   };
 }

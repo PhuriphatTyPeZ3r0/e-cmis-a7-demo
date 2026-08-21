@@ -166,6 +166,9 @@
         <div class="ws-doc-toolbar">
           <span class="name"><i class="fa-solid fa-file-word"></i> มติการประชุม (ไต่สวนเบื้องต้น)
             <span class="badge-tpl">Mail-Merge</span></span>
+          <button type="button" class="btn-doc-edit ms-auto" id="btnDocEdit" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
+            <i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>
+          </button>
           <button class="btn btn-sm btn-light" onclick="window.print()" title="พิมพ์เฉพาะเอกสาร Preview"><i class="fa-solid fa-print"></i></button>
           <button class="btn btn-sm btn-light" id="btnDocx"><i class="fa-solid fa-download me-1"></i>.docx</button>
           <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
@@ -191,9 +194,6 @@
           <button type="button" class="btn btn-sm btn-gold" id="btnSaveDocEdit" style="width:auto;padding:0 .6rem">บันทึกการแก้ไข</button>
         </div>
         <div class="ws-paper-stage" id="docPaper"></div>
-        <button type="button" class="doc-edit-fab d-none" id="docEditFab" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
-          <i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>
-        </button>
       </aside>
     </div>
 
@@ -1059,47 +1059,10 @@
     document.getElementById('btnPaneCollapse').addEventListener('click', () => setPaneCollapsed(true));
     document.getElementById('btnPaneExpand').addEventListener('click', () => setPaneCollapsed(false));
 
-    /* ---------- Document workspace: แก้ไขเอกสารที่ล็อกแล้วแบบ Word (rich-text) ----------
-       เปิดใช้เฉพาะเอกสารที่บันทึก/ล็อกแล้ว (isLocked) และเฉพาะผู้มีสิทธิ์แก้ไขมติ (mayEdit)
-       ตรงกับข้อความ "แก้ไขมติที่ล็อกแล้วต้องผ่านกระบวนการแก้ไขพิเศษ" ด้านบน */
-    const docEditFab = document.getElementById('docEditFab');
-    const docEditBar = document.getElementById('docEditBar');
-    const docPaperWrap = document.getElementById('docPaper');
-    /* ย้าย FAB ไปเป็นลูกตรงของ body — กัน ancestor ที่มี transform/position ทับ z-index ของ
-       position:fixed จนโดนแถบ action-bar ด้านล่างบังปุ่ม (เจอจริงตอนทดสอบ) */
-    document.body.appendChild(docEditFab);
-
-    if (mayEdit) {
-      docEditFab.classList.remove('d-none');
-    }
-
-    function setDocEditMode(on) {
-      docPaperWrap.querySelectorAll('.doc-paper').forEach(p => {
-        if (on) p.setAttribute('contenteditable', 'true');
-        else p.removeAttribute('contenteditable');
-      });
-      docEditFab.classList.toggle('active', on);
-      docEditBar.classList.toggle('show', on);
-    }
-
-    docEditFab.addEventListener('click', () => {
-      const on = !docEditFab.classList.contains('active');
-      setDocEditMode(on);
-    });
-
-    docEditBar.addEventListener('click', e => {
-      const btn = e.target.closest('[data-format]');
-      if (btn) { document.execCommand(btn.dataset.format); docPaperWrap.querySelector('.doc-paper')?.focus(); }
-    });
-    docEditBar.addEventListener('change', e => {
-      const el = e.target.closest('select[data-format]');
-      if (el) { document.execCommand(el.dataset.format, false, el.value); docPaperWrap.querySelector('.doc-paper')?.focus(); }
-    });
-
-    document.getElementById('btnSaveDocEdit').addEventListener('click', () => {
-      Object.assign(kase, { recordedDocHtml: docPaperWrap.innerHTML });
-      setDocEditMode(false);
-      ECMIS.toastOk('บันทึกการแก้ไขเอกสารเรียบร้อย');
+    ECMIS.initDocEditor({
+      stageId: 'docPaper',
+      mayEdit: mayEdit,
+      onSave: (html) => Object.assign(kase, { recordedDocHtml: html })
     });
 
     applyMode(); toggleBoxes(); renderOutcome(); renderDoc();
