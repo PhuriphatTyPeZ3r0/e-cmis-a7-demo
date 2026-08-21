@@ -26,11 +26,7 @@ const ROLES = [
 
   { id:'affairs', login:'Siriporn.K', row:6, group:'กลุ่มงานกิจการคณะกรรมการ', title:'เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ',
     name:'นางสาวศิริพร กิจการ', org:'กองบริหารคดี', lane:'L7', flow:'S7 / S11', act:'7.1, 7.2, 7.3',
-    perms:['view.all','download','EDIT.MASTER','doc.generate','order24.draft','secrecy.set'] },
-
-  { id:'staff', login:'Somchai.P', row:7, group:'เจ้าหน้าที่ผู้รับผิดชอบสำนวน', title:'เจ้าหน้าที่ผู้รับผิดชอบสำนวน (ปราบปราม/เขต)',
-    name:'นายสมชาย ปราบทุจริต', org:'กองปราบปรามการทุจริตในภาครัฐ 1', lane:'L1', flow:'S1', act:'7.1, 7.2, 7.3',
-    perms:['view.assigned','download'] }
+    perms:['view.all','download','EDIT.MASTER','doc.generate','order24.draft','secrecy.set'] }
 ];
 
 const DOC_TYPES = {
@@ -408,13 +404,13 @@ const PAGE_FOR_72 = {
   PENDING_URGENT_72:'urgent-agenda.html', PENDING_CHAIRMAN_URGENT_72:'urgent-agenda.html',
   IN_SCREENING_72:'subcommittee-screening.html',
   PENDING_INVITE_72:'agenda-registry.html',
-  IN_MEETING_72:'board-resolution-72.html',
+  IN_MEETING_72:'board-resolution.html',
   RESOLVED_PENDING_72:'ruling-report.html',
   PENDING_SIGN_RULING_72:'ruling-report.html',
   PENDING_AREA_NOTICE_72:'ruling-report.html',
   DISPATCHING_NACC_72:'ruling-report.html',
   PENDING_DISPATCH_GUILTY_72:'ruling-report.html',
-  CLOSED_72:'board-resolution-72.html'
+  CLOSED_72:'board-resolution.html'
 };
 function pageForCase72(kase){ return resolvePage(PAGE_FOR_72[kase.status] || 'case-register.html'); }
 
@@ -533,17 +529,22 @@ const ACT7_SECTIONS = [
 ];
 
 const RESOLUTION_STAGES = [
-  { n: 1, label: 'อยู่ระหว่างการจัดทำมติ' },
-  { n: 2, label: 'จัดทำมติแล้วเสร็จ' },
-  { n: 3, label: 'ส่งสำเนามติเพื่อจัดทำคำสั่ง' },
-  { n: 4, label: 'ส่งมติและเอกสารที่เกี่ยวข้องเพื่อทำความเห็นชี้มูล (กรณีชี้มูล)' },
-  { n: 5, label: 'ส่งมติและเอกสารที่เกี่ยวข้องคืนเจ้าของสำนวน/ผู้รับผิดชอบ' },
-  { n: 6, label: 'จัดทำรายงานประชุมแล้วเสร็จ' }
+  { n: 1, label: 'อยู่ระหว่างการจัดทำมติ', icon: 'fa-hourglass-half', cls: 'st-stage-1' },
+  { n: 2, label: 'จัดทำมติแล้วเสร็จ', icon: 'fa-circle-check', cls: 'st-stage-2' },
+  { n: 3, label: 'ส่งสำเนามติเพื่อจัดทำคำสั่ง', icon: 'fa-file-signature', cls: 'st-stage-3' },
+  { n: 4, label: 'ส่งมติและเอกสารที่เกี่ยวข้องเพื่อทำความเห็นชี้มูล (กรณีชี้มูล)', icon: 'fa-gavel', cls: 'st-stage-4' },
+  { n: 5, label: 'ส่งมติและเอกสารที่เกี่ยวข้องคืนเจ้าของสำนวน/ผู้รับผิดชอบ', icon: 'fa-arrow-rotate-left', cls: 'st-stage-5' },
+  { n: 6, label: 'จัดทำรายงานประชุมแล้วเสร็จ', icon: 'fa-clipboard-check', cls: 'st-stage-6' }
 ];
 
 function resolutionStageLabel(n) {
   const s = RESOLUTION_STAGES.find(x => x.n === n);
   return s ? s.label : '';
+}
+
+function resolutionStageBadge(n) {
+  const s = RESOLUTION_STAGES.find(x => x.n === n) || RESOLUTION_STAGES[0];
+  return `<span class="st ${s.cls}"><i class="fa-solid ${s.icon} me-1"></i>${s.label}</span>`;
 }
 
 function computeResolutionStage(c) {
@@ -4366,7 +4367,7 @@ global.ECMIS = {
 
   ACT7_SECTIONS, ACT7_STATUSES, getAct7Status, act7Badge,
   ACT7_STATUSES_72, getAct7Status72,
-  RESOLUTION_STAGES, resolutionStageLabel, computeResolutionStage,
+  RESOLUTION_STAGES, resolutionStageLabel, resolutionStageBadge, computeResolutionStage,
 
   saveCases, toggleColorMode, toggleSidebarCollapse, changeFont, toggleVoiceRecognition,
   initSmartCombobox, initMultiSelectCombo, initRealTimeValidation, initVoiceInput, initSignaturePad,

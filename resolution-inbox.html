@@ -226,20 +226,10 @@ function caseIdSortValue(id) {
 function getActionBadge(c) {
   if (c.status === 'RESOLVED' || BUCKET.done.includes(c.status)) {
     const stage = c.resolutionStage || 2;
-    if (stage === 1) return `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>อยู่ระหว่างการจัดทำมติ</span>`;
-    if (stage === 2) return `<span class="st st-done"><i class="fa-solid fa-check me-1"></i>จัดทำมติแล้วเสร็จ</span>`;
-    if (stage === 3) return `<span class="st st-done"><i class="fa-solid fa-file-signature me-1"></i>ส่งสำเนามติเพื่อจัดทำคำสั่ง</span>`;
-    if (stage === 4) return `<span class="st st-done"><i class="fa-solid fa-gavel me-1"></i>ส่งมติและเอกสารเพื่อทำความเห็นชี้มูล</span>`;
-    if (stage === 5) return `<span class="st st-done"><i class="fa-solid fa-arrow-rotate-left me-1"></i>ส่งมติและเอกสารคืนเจ้าของสำนวน</span>`;
-    if (stage === 6) return `<span class="st st-done"><i class="fa-solid fa-clipboard-check me-1"></i>จัดทำรายงานประชุมแล้วเสร็จ</span>`;
-    const stageLabel = ECMIS.resolutionStageLabel(stage);
-    return `<span class="st st-done"><i class="fa-solid fa-check me-1"></i>${stageLabel || 'จัดทำมติแล้วเสร็จ'}</span>`;
+    return ECMIS.resolutionStageBadge(stage);
   }
   if (BUCKET.pending.includes(c.status)) {
-    return `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>อยู่ระหว่างการจัดทำมติ</span>`;
-  }
-  if (BUCKET.returned.includes(c.status)) {
-    return `<span class="st st-returned"><i class="fa-solid fa-xmark me-1"></i>ยังไม่บันทึก / ส่งคืน</span>`;
+    return ECMIS.resolutionStageBadge(1);
   }
   return ECMIS.statusBadge(c.status);
 }
