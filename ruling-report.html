@@ -737,13 +737,13 @@
     document.getElementById('discCharge').value = kase.discCharge72 || 'ทุจริตต่อหน้าที่';
     document.getElementById('discPenalty').value = kase.discPenalty72 || '';
     document.getElementById('discMisconduct').value = kase.discMisconduct72 || kase.allegation || '';
-    document.getElementById('hasCriminalToggle').checked = !!kase.guiltyCriminal72;
-
-    const disciplineVisible = (kase.resolution72 || '') === 'GUILTY_72';
+    document.getElementById('hasCriminalToggle').checked = (kase.guiltyCriminal72 !== undefined) ? !!kase.guiltyCriminal72 : true;
 
     function toggleFormCards() {
       document.querySelectorAll('.ruling-form-card').forEach(el => el.classList.toggle('d-none', docTab !== 'ruling'));
-      document.getElementById('disciplineCard').classList.toggle('d-none', docTab !== 'discipline' || !disciplineVisible);
+      document.getElementById('disciplineCard').classList.toggle('d-none', docTab !== 'discipline');
+      const splitPane = document.getElementById('splitReportPane');
+      if (splitPane) splitPane.classList.toggle('d-none', docTab !== 'ruling');
     }
     toggleFormCards();
 
@@ -897,64 +897,117 @@
         const witMap = kase.witnessState72 || {};
         const isProtectedWitness = !!witMap[discAccused];
         const discCode = hasCriminal ? '8-06' : '8-05';
-        const introBlock = `
-          <div style="text-align:center;margin-bottom:8px"><img src="doc_logo.jpg" alt="ตราครุฑ" style="height:60px"></div>
-          <div class="doc-row" style="text-align:right">${M(orderNo, 'ที่ ปป .../...')} สำนักงาน ป.ป.ท.</div>
-          <div class="doc-row" style="text-align:right">อาคารซอฟต์แวร์ปาร์ค ถนนแจ้งวัฒนะ</div>
-          <div class="doc-row" style="text-align:right; margin-bottom:10px">อำเภอปากเกร็ด จังหวัดนนทบุรี ๑๑๑๒๐</div>
+        const daysLimit = hasCriminal ? '๓๐' : '๖๐';
+        const lawRef = hasCriminal ? 'มาตรา ๓๘ และ ๔๔' : 'มาตรา ๓๘';
+        const docSubtypeTitle = hasCriminal
+          ? 'หนังสือขอให้พิจารณาโทษทางวินัย (กรณีมีมูลทางวินัยและอาญาด้วย)'
+          : 'หนังสือขอให้พิจารณาโทษทางวินัย (กรณีมีมูลทางวินัยอย่างเดียว)';
 
-          <div class="doc-row"><span class="k">เรื่อง</span> ขอให้พิจารณาลงโทษทางวินัย</div>
-          <div class="doc-row"><span class="k">เรียน</span> ${M(discAgency, '(ผู้บังคับบัญชาหรือผู้มีอำนาจแต่งตั้งถอดถอนผู้ถูกกล่าวหา)')}</div>
-          <div class="doc-indent" style="margin-top:6px">
-            สิ่งที่ส่งมาด้วย &nbsp;๑. สำเนารายงานการไต่สวนเพื่อวินิจฉัยชี้มูลของคณะกรรมการ ป.ป.ท. เรื่องที่ ${M(kase.id)} จำนวน ๑ แผ่น<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;๒. สำเนามติคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)} เมื่อวันที่ ${M(meetDateThai)} จำนวน ๑ แผ่น
+        const accusedFullDesc = `${discAccused || 'ผู้ถูกกล่าวหา'}${discAgency ? ` สังกัด ${discAgency}` : ''}`;
+        const accusedNameOnly = discAccused || 'ผู้ถูกกล่าวหา';
+
+        const introBlock = `
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+            <div style="width:33%; font-size:16px; padding-top:20px;">
+              ที่ ${M(orderNo, 'ปป ๐๐.../...')}
+            </div>
+            <div style="width:34%; text-align:center;">
+              <img src="doc_logo.jpg" alt="ตราครุฑ" style="height:60px;">
+            </div>
+            <div style="width:33%; text-align:left; font-size:15px; line-height:1.45; padding-top:10px;">
+              สำนักงาน ป.ป.ท.<br>
+              อาคารซอฟต์แวร์ปาร์ค ถนนแจ้งวัฒนะ<br>
+              อำเภอปากเกร็ด จังหวัดนนทบุรี ๑๑๑๒๐
+            </div>
+          </div>
+
+          <div style="text-align:center; margin:14px 0 16px 0; font-size:16px;">
+            ${M(meetDateThai, '(วัน เดือน ปี)')}
+          </div>
+
+          <div class="doc-row" style="margin-bottom:6px; font-size:16px;"><span class="k" style="display:inline-block; width:90px;">เรื่อง</span> ขอให้พิจารณาลงโทษทางวินัย</div>
+          <div class="doc-row" style="margin-bottom:6px; font-size:16px;"><span class="k" style="display:inline-block; width:90px;">เรียน</span> ${M(discAgency, '(ผู้บังคับบัญชาหรือผู้มีอำนาจแต่งตั้งถอดถอนผู้ถูกกล่าวหา)')}</div>
+          <div style="display:flex; margin-bottom:12px; font-size:16px;">
+            <span class="k" style="display:inline-block; width:90px; flex-shrink:0;">สิ่งที่ส่งมาด้วย</span>
+            <div style="flex-grow:1;">
+              <div>๑. สำเนารายงานการไต่สวนเพื่อวินิจฉัยชี้มูลของคณะกรรมการ ป.ป.ท. เรื่องที่ ${M(kase.id, '.....................')} จำนวน ๑ แผ่น</div>
+              <div>๒. สำเนามติคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo, '...........')} เมื่อวันที่ ${M(meetDateThai, '.................')} จำนวน ๑ แผ่น</div>
+            </div>
           </div>`;
 
         const chargesText = selectedChargesText();
-        const flowBlocks = isProtectedWitness ? [
-          `<div class="doc-indent" style="margin-top:10px;color:#0369A1">
-            <strong>หมายเหตุ:</strong> ผู้ถูกกล่าวหาราย ${discAccused} มีมติให้กันบุคคลดังกล่าวไว้เป็นพยานตามกฎหมาย ป.ป.ท. จึงไม่มีการออกหนังสือส่งลงโทษทางวินัย
-          </div>`
-        ] : [
-          `<div class="doc-indent" style="margin-top:10px">
-            ด้วยคณะกรรมการ ป.ป.ท. ได้ดำเนินการไต่สวนโดยการแต่งตั้งคณะอนุกรรมการไต่สวน/คณะพนักงาน
-            ป.ป.ท. ไต่สวน กรณี ${M(discAccused)} สังกัด ${M(discAgency)}
-            ว่ากระทำความผิดฐาน${M(discCharge)}${chargesText ? ` (ฐานความผิด/มาตรา: ${M(chargesText)})` : ''}
-          </div>`,
-          `<div class="doc-indent" style="margin-top:8px">
-            คณะกรรมการ ป.ป.ท. ได้พิจารณาสำนวนการไต่สวนในคราวประชุม ครั้งที่ ${M(meetNo)}
-            เมื่อวันที่ ${M(meetDateThai)} แล้วมีมติว่า ${M(discMisconduct)}
-          </div>`,
-          `<div class="doc-indent" style="margin-top:8px">
-            ดังนั้น เพื่อปฏิบัติตามมาตรา ๓๘${hasCriminal ? ' และ ๔๔' : ''} แห่งพระราชบัญญัติมาตรการของ
-            ฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม จึงขอส่งรายงาน
-            การไต่สวนและเอกสารที่เกี่ยวข้องมายังท่านเพื่อพิจารณาโทษทางวินัยแก่ ${M(discAccused)}
-            ตามกฎหมาย ระเบียบ หรือข้อบังคับว่าด้วยการบริหารงานบุคคลของ ${M(discAgency)} ภายใน
-            ๖๐ วันนับแต่วันที่ได้รับหนังสือฉบับนี้โดยมิต้องดำเนินการสอบสวนทางวินัยอีก และเมื่อได้
-            ดำเนินการลงโทษทางวินัย${M(discPenalty, '')}แล้ว ขอได้ส่งสำเนาคำสั่งลงโทษดังกล่าวไปให้
-            คณะกรรมการ ป.ป.ท. ทราบภายใน ๑๕ วัน นับแต่วันที่ได้ออกคำสั่งด้วย
-          </div>`,
-          ...(hasCriminal ? [`<div class="doc-indent" style="margin-top:8px">
-            อนึ่ง สำหรับความผิดทางอาญาในเรื่องนี้ ได้ส่งเรื่องให้พนักงานอัยการเพื่อดำเนินคดีอาญาแก่
-            บุคคลดังกล่าวแล้ว
-          </div>`] : [])
-        ];
+        let flowBlocks = [];
+
+        if (isProtectedWitness) {
+          flowBlocks = [
+            `<div class="doc-indent" style="margin-top:10px; color:#0369A1;">
+              <strong>หมายเหตุ:</strong> ผู้ถูกกล่าวหาราย ${discAccused} มีมติให้กันบุคคลดังกล่าวไว้เป็นพยานตามกฎหมาย ป.ป.ท. จึงไม่มีการออกหนังสือส่งลงโทษทางวินัย
+            </div>`
+          ];
+        } else if (hasCriminal) {
+          // แม่แบบ ปปท. 8-06 (กรณีมีมูลทางวินัยและอาญาด้วย)
+          flowBlocks = [
+            `<div class="doc-indent" style="margin-top:10px">
+              ด้วยคณะกรรมการ ป.ป.ท. ได้ดำเนินการไต่สวนโดยการแต่งตั้งคณะอนุกรรมการไต่สวน/คณะพนักงาน ป.ป.ท. ไต่สวน กรณี ${M(accusedFullDesc)} ว่ากระทำความผิดฐาน ${M(discCharge)}${chargesText ? ` (ฐานความผิด/มาตรา: ${M(chargesText)})` : ''}
+            </div>`,
+            `<div class="doc-indent" style="margin-top:8px">
+              คณะกรรมการ ป.ป.ท. ได้พิจารณาสำนวนการไต่สวนในคราวประชุม ครั้งที่ ${M(meetNo, '...........')} เมื่อวันที่ ${M(meetDateThai, '...............................')} แล้วมีมติเอกฉันท์
+            </div>
+            <div style="margin-left:2.5cm; margin-top:4px;">
+              <strong>ความผิดทางอาญา</strong> ${M(criminalFinding, '(ดึงข้อมูลจากมติ)')}
+            </div>
+            <div style="margin-left:2.5cm; margin-top:4px;">
+              <strong>ความผิดทางวินัย</strong> ${M(disciplinaryFinding || discMisconduct, '(ดึงข้อมูลจากมติ)')}
+            </div>`,
+            `<div class="doc-indent" style="margin-top:8px">
+              ดังนั้น เพื่อปฏิบัติตาม${lawRef} แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม จึงขอส่งรายงานการไต่สวนและเอกสารที่เกี่ยวข้องมายังท่านเพื่อพิจารณาโทษทางวินัยแก่ ${M(accusedNameOnly)} ตามกฎหมาย ระเบียบ หรือข้อบังคับว่าด้วยการบริหารงานบุคคลของผู้ถูกกล่าวหา (${M(discAgency)}) ภายใน ${daysLimit} วันนับแต่วันที่ได้รับหนังสือฉบับนี้โดยมิต้องดำเนินการสอบสวนทางวินัยอีก และเมื่อได้ดำเนินการลงโทษทางวินัย${discPenalty ? ` (${discPenalty})` : ''}แล้ว ขอได้ส่งสำเนาคำสั่งลงโทษดังกล่าวไปให้คณะกรรมการ ป.ป.ท. ทราบภายใน ๑๕ วัน นับแต่วันที่ได้ออกคำสั่งด้วย
+            </div>`,
+            `<div class="doc-indent" style="margin-top:8px">
+              อนึ่ง สำหรับความผิดทางอาญาในเรื่องนี้ ได้ส่งเรื่องให้พนักงานอัยการเพื่อดำเนินคดีอาญาแก่บุคคลดังกล่าวแล้ว
+            </div>`
+          ];
+        } else {
+          // แม่แบบ ปปท. 8-05 (กรณีมีมูลทางวินัยอย่างเดียว)
+          flowBlocks = [
+            `<div class="doc-indent" style="margin-top:10px">
+              ด้วยคณะกรรมการ ป.ป.ท. ได้ดำเนินการไต่สวนโดยการแต่งตั้งคณะอนุกรรมการไต่สวน/คณะพนักงาน ป.ป.ท. ไต่สวน กรณี ${M(accusedFullDesc)} ว่ากระทำความผิดฐาน ${M(discCharge)}${chargesText ? ` (ฐานความผิด/มาตรา: ${M(chargesText)})` : ''}
+            </div>`,
+            `<div class="doc-indent" style="margin-top:8px">
+              คณะกรรมการ ป.ป.ท. ได้พิจารณาสำนวนการไต่สวนในคราวประชุม ครั้งที่ ${M(meetNo, '...........')} เมื่อวันที่ ${M(meetDateThai, '...............................')} แล้วมีมติว่า ${M(discMisconduct || disciplinaryFinding, '.................................................................................')}
+            </div>`,
+            `<div class="doc-indent" style="margin-top:8px">
+              ดังนั้น เพื่อปฏิบัติตาม${lawRef} แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม จึงขอส่งรายงานการไต่สวนและเอกสารที่เกี่ยวข้องมายังท่านเพื่อพิจารณาโทษทางวินัยแก่ ${M(accusedNameOnly)} ตามกฎหมาย ระเบียบ หรือข้อบังคับว่าด้วยการบริหารงานบุคคลของ ${M(discAgency)} ภายใน ${daysLimit} วันนับแต่วันที่ได้รับหนังสือฉบับนี้โดยมิต้องดำเนินการสอบสวนทางวินัยอีก และเมื่อได้ดำเนินการลงโทษทางวินัย${discPenalty ? ` (${discPenalty})` : ''}แล้ว ขอได้ส่งสำเนาคำสั่งลงโทษดังกล่าวไปให้คณะกรรมการ ป.ป.ท. ทราบภายใน ๑๕ วัน นับแต่วันที่ได้ออกคำสั่งด้วย
+            </div>`
+          ];
+        }
 
         const signBlock = `
-          <div class="doc-indent" style="margin-top:8px">จึงเรียนมาเพื่อโปรดพิจารณาดำเนินการในส่วนที่เกี่ยวข้องต่อไป</div>
+          <div class="doc-indent" style="margin-top:10px">จึงเรียนมาเพื่อโปรดพิจารณาดำเนินการในส่วนที่เกี่ยวข้องต่อไป</div>
 
-          <div class="doc-sign" style="margin-top:24px">
-            ขอแสดงความนับถือ<br><br>
-            <span class="doc-dots"></span><br>(${M(BOARD[0].n)})<br>ประธานกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ
+          <div style="margin-left:7.5cm; margin-top:24px; text-align:center;">
+            ขอแสดงความนับถือ<br><br><br>
+            (${M(BOARD[0].n)})<br>
+            ประธานกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ
           </div>
 
-          <div class="doc-row" style="margin-top:24px; font-size:.85rem">สำนัก (กปท./ปปท.เขตพื้นที่ ของฝ่ายเลขานุการไต่สวน/พนักงาน ป.ป.ท. เจ้าของสำนวน)</div>
-          <div class="doc-row" style="font-size:.85rem">โทร. ${M(kase.ownerOrgTel, '-')}</div>
-          <div class="doc-row" style="font-size:.85rem">โทรสาร -</div>
-          <div class="doc-row" style="font-size:.85rem">${M(kase.owner)}</div>
-          <div style="text-align:right;margin-top:18px;font-size:14px;color:#555">ปปท. ${discCode}</div>`;
+          <div style="margin-top:28px; display:flex; justify-content:space-between; align-items:flex-end;">
+            <div style="font-size:14px; line-height:1.45;">
+              สำนัก ${M(kase.ownerOrg, '(กปท./ปปท.เขตพื้นที่ ของฝ่ายเลขานุการไต่สวน/พนักงาน ป.ป.ท. เจ้าของสำนวน)')}<br>
+              โทร. ${M(kase.ownerOrgTel, '-')}<br>
+              โทรสาร -<br>
+              ${M(kase.owner, '(ระบุชื่อ-สกุลของอนุกรรมการและเลขานุการไต่สวน/พนักงาน ป.ป.ท. เจ้าของสำนวน)')}
+            </div>
+            <div style="font-size:14px; color:#555; font-weight:600;">
+              ปปท. ${discCode}
+            </div>
+          </div>`;
 
-        ECMIS.paginateDoc(docPaperEl, { introBlock, flowBlocks, signBlock, runningHeaderHtml: runningHeader('หนังสือขอให้พิจารณาโทษทางวินัย') });
+        ECMIS.paginateDoc(docPaperEl, {
+          introBlock,
+          flowBlocks,
+          signBlock,
+          runningHeaderHtml: runningHeader(docSubtypeTitle)
+        });
       }
     }
 
