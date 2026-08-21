@@ -35,143 +35,63 @@
       <div>
         <h1><i class="fa-solid fa-calendar-days me-2"></i>ทะเบียนวาระการประชุม</h1>
       </div>
-      <span class="flow-ref ms-auto">สืบค้นและติดตามวาระการประชุมคณะกรรมการ ป.ป.ท. ทุกครั้ง</span>
+      <div class="d-flex align-items-center gap-2 ms-auto">
+        <a href="agenda-registry-detail.html?meet=ALL" class="btn btn-sm btn-outline-navy fw-semibold">
+          <i class="fa-solid fa-table-list me-1"></i>ทะเบียนคุมวาระรวมทุกครั้ง (Master View)
+        </a>
+      </div>
     </div>
 
-    <!-- Navigation Tabs -->
-    <ul class="nav nav-tabs mb-4 border-bottom" id="viewTabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active fw-semibold" id="tabMeetingsBtn" data-bs-toggle="tab" data-bs-target="#tabMeetings" type="button" role="tab">
-          <i class="fa-solid fa-calendar-check me-2"></i>ครั้งที่ประชุม (แยกรายครั้ง)
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link fw-semibold" id="tabMasterBtn" data-bs-toggle="tab" data-bs-target="#tabMaster" type="button" role="tab">
-          <i class="fa-solid fa-table-list me-2"></i>ทะเบียนคุมวาระรวมทุกครั้ง (Master View)
-        </button>
-      </li>
-    </ul>
-
-    <div class="tab-content" id="viewTabsContent">
-      <!-- Tab 1: Meetings List & Queue -->
-      <div class="tab-pane fade show active" id="tabMeetings" role="tabpanel">
-        <div class="card card-ecmis mb-4">
-          <div class="card-body p-3 pb-2">
-            <label class="form-label fw-semibold text-dark small mb-2"><i class="fa-solid fa-layer-group me-1 text-muted"></i>คิวรอบรรจุวาระ — จัดหมวดตามลักษณะงาน</label>
-            <div class="d-flex flex-wrap gap-2" id="categoryChips"></div>
-            <div class="table-responsive mt-2 d-none" id="queueTableWrap">
-              <table class="table table-hover tbl-ecmis mb-0" style="font-size:.85rem">
-                <thead>
-                  <tr>
-                    <th>เรื่องที่</th>
-                    <th>เรื่องกล่าวหา</th>
-                    <th>สถานะ</th>
-                    <th class="text-end">ดำเนินการ</th>
-                  </tr>
-                </thead>
-                <tbody id="queueTb"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div class="card card-ecmis">
-          <div class="card-header">
-            <i class="fa-solid fa-calendar-check"></i> ครั้งที่ประชุม
-            <span class="badge bg-secondary rounded-pill ms-2" id="meetCnt">0</span>
-            <button class="btn btn-sm btn-navy ms-auto" id="btnAddMeeting"><i class="fa-solid fa-plus me-1"></i>เพิ่มการประชุม</button>
-          </div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-hover tbl-ecmis mb-0" id="meetingList">
-                <thead>
-                  <tr>
-                    <th class="meet-sortable" data-sort-key="name" style="cursor:pointer;user-select:none">ครั้งที่ประชุม <i class="fa-solid fa-sort ms-1 sort-icon"></i></th>
-                    <th class="meet-sortable" data-sort-key="date" style="cursor:pointer;user-select:none">วันที่ <i class="fa-solid fa-sort ms-1 sort-icon"></i></th>
-                    <th class="meet-sortable text-center" data-sort-key="count" style="cursor:pointer;user-select:none">จำนวนวาระ <i class="fa-solid fa-sort ms-1 sort-icon"></i></th>
-                    <th class="meet-sortable" data-sort-key="status" style="cursor:pointer;user-select:none">สถานะ <i class="fa-solid fa-sort ms-1 sort-icon"></i></th>
-                    <th style="width:170px"></th>
-                  </tr>
-                </thead>
-                <tbody id="meetTb"></tbody>
-              </table>
-            </div>
-          </div>
+    <!-- Section 1: Queue of cases waiting for agenda -->
+    <div class="card card-ecmis mb-4">
+      <div class="card-body p-3 pb-2">
+        <label class="form-label fw-semibold text-dark small mb-2"><i class="fa-solid fa-layer-group me-1 text-muted"></i>คิวรอบรรจุวาระ — จัดหมวดตามลักษณะงาน</label>
+        <div class="d-flex flex-wrap gap-2" id="categoryChips"></div>
+        <div class="table-responsive mt-2 d-none" id="queueTableWrap">
+          <table class="table table-hover tbl-ecmis mb-0" style="font-size:.85rem">
+            <thead>
+              <tr>
+                <th>เรื่องที่</th>
+                <th>เรื่องกล่าวหา</th>
+                <th>สถานะ</th>
+                <th class="text-end">ดำเนินการ</th>
+              </tr>
+            </thead>
+            <tbody id="queueTb"></tbody>
+          </table>
         </div>
       </div>
+    </div>
 
-      <!-- Tab 2: Master Registry View (Legacy 9-column style) -->
-      <div class="tab-pane fade" id="tabMaster" role="tabpanel">
-        <div class="card card-ecmis mb-4">
-          <div class="card-body p-3">
-            <div class="row g-2 align-items-end">
-              <div class="col-md-5">
-                <label class="form-label small fw-semibold text-dark mb-1"><i class="fa-solid fa-magnifying-glass me-1 text-muted"></i>คำค้น (ชื่อเรื่อง / เลขคดี / ผู้รับผิดชอบ / กอง)</label>
-                <input type="text" id="mSearch" class="form-control form-control-sm" placeholder="พิมพ์ข้อความค้นหา...">
-              </div>
-              <div class="col-md-3">
-                <label class="form-label small fw-semibold text-dark mb-1"><i class="fa-solid fa-calendar me-1 text-muted"></i>ครั้งที่ประชุม</label>
-                <select id="mMeetingFilter" class="form-select form-select-sm">
-                  <option value="ALL">ทุกครั้งที่ประชุม</option>
-                </select>
-              </div>
-              <div class="col-md-3">
-                <label class="form-label small fw-semibold text-dark mb-1"><i class="fa-solid fa-folder me-1 text-muted"></i>หมวดหมู่วาระ</label>
-                <select id="mCategoryFilter" class="form-select form-select-sm">
-                  <option value="ALL">ทุกหมวดหมู่</option>
-                  <option value="finding">รายงานไต่สวนเพื่อวินิจฉัยชี้มูล</option>
-                  <option value="preliminary">รายงานไต่สวนเบื้องต้น (ชุด/บัญชีแนบ)</option>
-                  <option value="policy">เรื่องเชิงนโยบาย/บริหารงาน</option>
-                  <option value="overdue">รายงานเกินกรอบระยะเวลา</option>
-                  <option value="prosecutor">ความเห็นอัยการ / กันบุคคลไว้เป็นพยาน</option>
-                </select>
-              </div>
-              <div class="col-md-1 text-end">
-                <button type="button" class="btn btn-sm btn-outline-secondary w-100" id="mBtnClear" title="ล้างตัวกรอง"><i class="fa-solid fa-rotate-left"></i></button>
-              </div>
-            </div>
-          </div>
+    <!-- Section 2: Meetings list -->
+    <div class="card card-ecmis">
+      <div class="card-header d-flex align-items-center">
+        <i class="fa-solid fa-calendar-check me-2 text-primary"></i> 
+        <span class="fw-bold">ครั้งที่ประชุม</span>
+        <span class="badge bg-secondary rounded-pill ms-2" id="meetCnt">0</span>
+        <div class="ms-auto d-flex gap-2">
+          <a href="agenda-registry-detail.html?meet=ALL" class="btn btn-sm btn-outline-secondary">
+            <i class="fa-solid fa-file-excel me-1"></i>ส่งออก Excel ทะเบียนคุมวาระรวม (๙ คอลัมน์)
+          </a>
+          <button class="btn btn-sm btn-navy" id="btnAddMeeting">
+            <i class="fa-solid fa-plus me-1"></i>เพิ่มการประชุม
+          </button>
         </div>
-
-        <div class="card card-ecmis">
-          <div class="card-header d-flex align-items-center flex-wrap gap-2">
-            <i class="fa-solid fa-table-list text-primary"></i>
-            <span class="fw-bold">ทะเบียนคุมเลขคดีและวาระการประชุมคณะกรรมการ ป.ป.ท. (รวมทุกครั้ง)</span>
-            <span class="badge bg-secondary rounded-pill ms-1" id="mTotalCnt">0</span>
-            <div class="ms-auto">
-              <button class="btn btn-sm btn-outline-success" id="mBtnExportCsv"><i class="fa-solid fa-file-excel me-1"></i>ส่งออก Excel (9 คอลัมน์ตามแบบฟอร์มเดิม)</button>
-            </div>
-          </div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-hover tbl-ecmis mb-0 align-middle" style="font-size:0.83rem">
-                <thead class="table-light">
-                  <tr>
-                    <th style="width:45px" class="text-center">ที่</th>
-                    <th style="width:95px">ครั้งที่ประชุม</th>
-                    <th style="width:105px">วันที่ประชุม</th>
-                    <th style="width:75px">วาระที่</th>
-                    <th>ชื่อเรื่องเสนอพิจารณา</th>
-                    <th style="width:125px">เรื่องเลขคดีที่</th>
-                    <th style="width:155px">ผู้รับผิดชอบ ปราบ/เขต</th>
-                    <th style="width:120px">กอง/สำนัก</th>
-                    <th style="width:150px">หมายเหตุ</th>
-                  </tr>
-                </thead>
-                <tbody id="mTb"></tbody>
-              </table>
-            </div>
-            <div class="text-center text-muted p-4 d-none" id="mEmptyState">
-              <i class="fa-solid fa-folder-open fa-2x mb-2 d-block"></i>
-              ไม่พบวาระตามเงื่อนไขที่ค้นหา
-            </div>
-            <div class="p-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2">
-              <span class="small text-muted" id="mPageIndicator">กำลังแสดงหน้า 1 จาก 1</span>
-              <nav aria-label="Page navigation">
-                <ul class="pagination pagination-sm m-0" id="mPager" style="display:flex; list-style:none; gap:4px"></ul>
-              </nav>
-            </div>
-          </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover tbl-ecmis mb-0" id="meetingList">
+            <thead>
+              <tr>
+                <th class="meet-sortable" data-sort-key="name" style="cursor:pointer;user-select:none">ครั้งที่ประชุม <i class="fa-solid fa-sort ms-1 sort-icon"></i></th>
+                <th class="meet-sortable" data-sort-key="date" style="cursor:pointer;user-select:none">วันที่ <i class="fa-solid fa-sort ms-1 sort-icon"></i></th>
+                <th class="meet-sortable text-center" data-sort-key="count" style="cursor:pointer;user-select:none">จำนวนวาระ <i class="fa-solid fa-sort ms-1 sort-icon"></i></th>
+                <th class="meet-sortable" data-sort-key="status" style="cursor:pointer;user-select:none">สถานะ <i class="fa-solid fa-sort ms-1 sort-icon"></i></th>
+                <th style="width:170px"></th>
+              </tr>
+            </thead>
+            <tbody id="meetTb"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -660,155 +580,8 @@
       });
     });
 
-    /* ===================================================================
-       Master Registry View Logic (ทะเบียนคุมวาระรวมทุกครั้ง — 9 คอลัมน์)
-       =================================================================== */
-    let mCurrentPage = 1;
-    const mPageSize = 15;
-
-    function getMasterItems() {
-      return AR.ITEMS.map(it => {
-        const m = AR.meetingOf(it) || { trc_name: '-', trc_date: '' };
-        return {
-          ...it,
-          meetingName: m.trc_name,
-          meetingDate: m.trc_date
-        };
-      }).sort((a, b) => {
-        if (b.trc_id !== a.trc_id) return b.trc_id - a.trc_id;
-        const [aMaj, aMin] = String(a.trci_number).split('.').map(Number);
-        const [bMaj, bMin] = String(b.trci_number).split('.').map(Number);
-        return (aMaj || 0) * 1000 + (aMin || 0) - ((bMaj || 0) * 1000 + (bMin || 0));
-      });
-    }
-
-    function matchesMaster(it) {
-      const q = document.getElementById('mSearch').value.trim().toLowerCase();
-      const meet = document.getElementById('mMeetingFilter').value;
-      const cat = document.getElementById('mCategoryFilter').value;
-
-      if (meet !== 'ALL' && String(it.trc_id) !== meet) return false;
-      if (cat !== 'ALL' && it.category !== cat) return false;
-      if (q && !(
-        (it.trci_topic && it.trci_topic.toLowerCase().includes(q)) ||
-        (it.case_ref && it.case_ref.toLowerCase().includes(q)) ||
-        (it.owner && it.owner.toLowerCase().includes(q)) ||
-        (it.org && it.org.toLowerCase().includes(q)) ||
-        (it.remark && it.remark.toLowerCase().includes(q)) ||
-        (it.meetingName && it.meetingName.toLowerCase().includes(q)) ||
-        (it.trci_number && it.trci_number.includes(q))
-      )) return false;
-
-      return true;
-    }
-
-    function renderMasterRegistry() {
-      const mSel = document.getElementById('mMeetingFilter');
-      if (mSel && mSel.options.length <= 1) {
-        mSel.innerHTML = '<option value="ALL">ทุกครั้งที่ประชุม</option>' +
-          AR.MEETINGS.map(m => `<option value="${m.trc_id}">ครั้งที่ ${m.trc_name} (${ECMIS.thaiDate(m.trc_date)})</option>`).join('');
-      }
-
-      const all = getMasterItems();
-      const filtered = all.filter(matchesMaster);
-      const totalPages = Math.ceil(filtered.length / mPageSize) || 1;
-      if (mCurrentPage > totalPages) mCurrentPage = totalPages;
-      const pageRows = filtered.slice((mCurrentPage - 1) * mPageSize, mCurrentPage * mPageSize);
-
-      document.getElementById('mTotalCnt').textContent = filtered.length;
-      const tbody = document.getElementById('mTb');
-      const emptyState = document.getElementById('mEmptyState');
-      if (!pageRows.length) {
-        tbody.innerHTML = ''; emptyState.classList.remove('d-none');
-      } else {
-        emptyState.classList.add('d-none');
-        tbody.innerHTML = pageRows.map((it, idx) => {
-          const globalIdx = (mCurrentPage - 1) * mPageSize + idx + 1;
-          return `
-          <tr>
-            <td class="text-center text-muted fw-semibold">${globalIdx}</td>
-            <td><a href="agenda-registry-detail.html?meet=${it.trc_id}" class="fw-bold text-decoration-none" title="คลิกดูรายละเอียดครั้งที่ ${it.meetingName}">${it.meetingName}</a></td>
-            <td class="text-nowrap small text-muted">${ECMIS.thaiDate(it.meetingDate)}</td>
-            <td class="fw-semibold">${it.trci_number}</td>
-            <td>
-              <div class="fw-medium">${it.trci_topic}</div>
-              <span class="cat-badge ${AR.CATEGORY_CLASS[it.category]}" style="font-size:0.68rem; padding:0.1rem 0.45rem">${AR.CATEGORY_LABEL[it.category]}</span>
-            </td>
-            <td>${AR.renderCaseRef(it.case_ref)}</td>
-            <td><span class="small fw-medium">${it.owner && it.owner !== '-' ? it.owner : '<span class="text-muted">—</span>'}</span></td>
-            <td><span class="small text-muted">${it.org && it.org !== '-' ? it.org : '—'}</span></td>
-            <td class="remark-cell">${it.remark && it.remark !== '-' ? it.remark : '<span class="text-muted">—</span>'}</td>
-          </tr>`;
-        }).join('');
-      }
-
-      document.getElementById('mPageIndicator').textContent = `กำลังแสดงหน้า ${mCurrentPage} จาก ${totalPages}`;
-      const pager = document.getElementById('mPager');
-      pager.innerHTML = '';
-      for (let p = 1; p <= totalPages; p++) {
-        const li = document.createElement('li');
-        li.innerHTML = `<button class="btn btn-sm ${p === mCurrentPage ? 'btn-navy' : 'btn-outline-secondary'}" style="min-width:32px">${p}</button>`;
-        li.querySelector('button').addEventListener('click', () => { mCurrentPage = p; renderMasterRegistry(); });
-        pager.appendChild(li);
-      }
-    }
-
-    document.getElementById('mSearch')?.addEventListener('input', () => { mCurrentPage = 1; renderMasterRegistry(); });
-    document.getElementById('mMeetingFilter')?.addEventListener('change', () => { mCurrentPage = 1; renderMasterRegistry(); });
-    document.getElementById('mCategoryFilter')?.addEventListener('change', () => { mCurrentPage = 1; renderMasterRegistry(); });
-    document.getElementById('mBtnClear')?.addEventListener('click', () => {
-      document.getElementById('mSearch').value = '';
-      document.getElementById('mMeetingFilter').value = 'ALL';
-      document.getElementById('mCategoryFilter').value = 'ALL';
-      mCurrentPage = 1;
-      renderMasterRegistry();
-    });
-
-    document.getElementById('mBtnExportCsv')?.addEventListener('click', () => {
-      const all = getMasterItems();
-      const filtered = all.filter(matchesMaster);
-      const header = [
-        'ที่',
-        'การประชุมครั้งที่',
-        'วัน เดือน ปี ที่ประชุม',
-        'วาระการประชุมที่',
-        'ชื่อเรื่องเสนอพิจารณา',
-        'เรื่องเลขคดีที่',
-        'ผู้รับผิดชอบ ปราบ/เขต',
-        'กอง/สำนัก ที่รับผิดชอบ',
-        'หมายเหตุ/ระบุ รายละเอียดเพิ่มเติม'
-      ];
-      const lines = [header.join(',')];
-      filtered.forEach((it, idx) => {
-        const row = [
-          idx + 1,
-          `"${it.meetingName}"`,
-          `"${ECMIS.thaiDate(it.meetingDate)}"`,
-          `"${it.trci_number}"`,
-          `"${(it.trci_topic || '').replace(/"/g, '""')}"`,
-          `"${(it.case_ref || '').replace(/"/g, '""')}"`,
-          `"${(it.owner && it.owner !== '-' ? it.owner : '').replace(/"/g, '""')}"`,
-          `"${(it.org && it.org !== '-' ? it.org : '').replace(/"/g, '""')}"`,
-          `"${(it.remark && it.remark !== '-' ? it.remark : '').replace(/"/g, '""')}"`
-        ];
-        lines.push(row.join(','));
-      });
-      const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ทะเบียนคุมเลขคดีและวาระประชุมกรรมการ(รวม).csv`;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-    });
-
-    document.getElementById('tabMasterBtn')?.addEventListener('shown.bs.tab', () => {
-      renderMasterRegistry();
-    });
-
     AR.ready.then(() => {
       renderMeetingList();
-      renderMasterRegistry();
     }).catch(err => {
       console.error('โหลดทะเบียนวาระการประชุมไม่สำเร็จ:', err);
       ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');

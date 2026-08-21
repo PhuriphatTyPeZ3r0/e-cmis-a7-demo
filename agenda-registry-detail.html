@@ -70,34 +70,38 @@
 
       <div class="card card-ecmis">
         <div class="card-header">
-          <i class="fa-solid fa-list-ol"></i> รายการวาระ
+          <i class="fa-solid fa-list-ol"></i> <span id="cardHeaderTitle">รายการวาระ</span>
           <span class="badge bg-secondary rounded-pill ms-2" id="cnt">0</span>
           <span id="confirmedBadge"></span>
           <div class="btn-group ms-auto">
-            <button class="btn btn-sm btn-outline-secondary" id="btnExportCsv"><i class="fa-solid fa-file-excel me-1"></i>Excel/CSV</button>
+            <button class="btn btn-sm btn-outline-secondary" id="btnExportCsv"><i class="fa-solid fa-file-excel me-1"></i>Excel/CSV (๙ คอลัมน์)</button>
             <button class="btn btn-sm btn-navy" id="btnAddItem"><i class="fa-solid fa-plus me-1"></i>เพิ่มวาระ</button>
           </div>
         </div>
-        <div class="detail-tabs">
-          <button type="button" class="detail-tab active" data-tab="items">รายการวาระ</button>
+        <div class="detail-tabs" id="tabWrap">
+          <button type="button" class="detail-tab active" data-tab="items" id="tabItemsBtn">รายการวาระ</button>
           <a href="#" id="linkDocs" class="detail-tab text-decoration-none">เอกสารการประชุม <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size:.7em"></i></a>
         </div>
 
         <div id="paneItems">
           <div class="card-body border-bottom border-top" id="filterBar">
             <div class="row g-2 align-items-end">
-              <div class="col-lg-3 col-md-6">
+              <div class="col-lg-4 col-md-12">
+                <label class="form-label fw-bold text-dark"><i class="fa-solid fa-calendar-check me-1 text-primary"></i>เลือกครั้งที่ประชุม</label>
+                <select class="form-select form-select-sm fw-semibold" id="qMeeting"></select>
+              </div>
+              <div class="col-lg-2 col-md-4">
                 <label class="form-label">วาระที่</label>
-                <input class="form-control" id="qAgendaNo" placeholder="เช่น 5.12">
+                <input class="form-control form-control-sm" id="qAgendaNo" placeholder="เช่น 5.12">
               </div>
-              <div class="col-lg-5 col-md-6">
-                <label class="form-label">คำค้น (ชื่อเรื่อง / เลขที่เรื่อง)</label>
-                <input class="form-control" id="q" placeholder="เช่น ไต่สวนเบื้องต้น หรือ 1402/2569">
+              <div class="col-lg-3 col-md-4">
+                <label class="form-label">คำค้น (ชื่อเรื่อง/เลขคดี/ผู้รับผิดชอบ/กอง)</label>
+                <input class="form-control form-control-sm" id="q" placeholder="พิมพ์คำค้น...">
               </div>
-              <div class="col-lg-4 col-md-6">
+              <div class="col-lg-3 col-md-4">
                 <label class="form-label">หมวดหมู่วาระ</label>
-                <select class="form-select" id="qCategory">
-                  <option value="">— ทั้งหมด —</option>
+                <select class="form-select form-select-sm" id="qCategory">
+                  <option value="">— ทุกหมวดหมู่ —</option>
                   <option value="finding">รายงานไต่สวนเพื่อวินิจฉัยชี้มูล</option>
                   <option value="preliminary">รายงานไต่สวนเบื้องต้น (ชุด/บัญชีแนบ)</option>
                   <option value="policy">เรื่องเชิงนโยบาย/บริหารงาน</option>
@@ -109,8 +113,8 @@
           </div>
           <div class="card-body p-0">
             <div class="table-responsive">
-              <table class="table table-hover tbl-ecmis mb-0">
-                <thead>
+              <table class="table table-hover tbl-ecmis mb-0 align-middle">
+                <thead id="tblHead">
                   <tr>
                     <th style="width:75px">วาระที่</th>
                     <th style="width:135px">หมวดหมู่</th>
@@ -168,30 +172,67 @@
     });
 
     function main() {
-    const params = new URLSearchParams(location.search);
-    const meetId = +params.get('meet');
-    const meeting = AR.MEETINGS.find(m => m.trc_id === meetId);
+      const params = new URLSearchParams(location.search);
+      let rawMeet = params.get('meet');
+      let activeMeetId = (rawMeet && rawMeet.toUpperCase() === 'ALL') ? 'ALL' : (rawMeet ? +rawMeet : 'ALL');
 
-    if (!meeting) {
-      document.getElementById('notFoundBox').classList.remove('d-none');
-      document.getElementById('detailWrap').classList.add('d-none');
-      document.getElementById('pageTitle').textContent = 'ไม่พบครั้งที่ประชุม';
-    } else {
-      document.getElementById('pageTitle').textContent = `รายละเอียดวาระ — ครั้งที่ ${meeting.trc_name}`;
-      document.getElementById('meetSubline').textContent = `วันที่ ${ECMIS.thaiDate(meeting.trc_date)}`;
-      document.getElementById('btnAddItem').disabled = !mayEdit;
+      // Populate qMeeting select dropdown
+      const qMeetingEl = document.getElementById('qMeeting');
+      let optionsHtml = '<option value="ALL">📋 ทะเบียนคุมวาระรวมทุกครั้ง (Master View)</option>';
+      AR.MEETINGS.forEach(m => {
+        optionsHtml += `<option value="${m.trc_id}">ครั้งที่ ${m.trc_name} (${ECMIS.thaiDate(m.trc_date)})</option>`;
+      });
+      qMeetingEl.innerHTML = optionsHtml;
+
+      // Validate activeMeetId
+      if (activeMeetId !== 'ALL' && !AR.MEETINGS.some(m => m.trc_id === activeMeetId)) {
+        activeMeetId = 'ALL';
+      }
+      qMeetingEl.value = String(activeMeetId);
 
       let filter = 'all';
       let currentPage = 1;
-      const pageSize = 10;
+      const pageSize = 15;
+
+      qMeetingEl.addEventListener('change', () => {
+        activeMeetId = qMeetingEl.value === 'ALL' ? 'ALL' : +qMeetingEl.value;
+        const newUrl = 'agenda-registry-detail.html?meet=' + activeMeetId;
+        history.replaceState(null, '', newUrl);
+        currentPage = 1;
+        filter = 'all';
+        renderView();
+      });
+
+      function getActiveMeeting() {
+        return activeMeetId === 'ALL' ? null : AR.MEETINGS.find(m => m.trc_id === activeMeetId);
+      }
+
+      function getAllActiveItems() {
+        if (activeMeetId === 'ALL') {
+          return AR.ITEMS.map(it => {
+            const m = AR.meetingOf(it) || { trc_name: '-', trc_date: '' };
+            return {
+              ...it,
+              meetingName: m.trc_name,
+              meetingDate: m.trc_date
+            };
+          }).sort((a, b) => {
+            if (b.trc_id !== a.trc_id) return b.trc_id - a.trc_id;
+            return AR.itemSortKey(a) - AR.itemSortKey(b);
+          });
+        } else {
+          return AR.itemsOf(activeMeetId);
+        }
+      }
 
       function renderStats() {
-        const all = AR.itemsOf(meeting.trc_id);
+        const all = getAllActiveItems();
         const flaggedCount = all.filter(AR.isFlagged).length;
         const bundledCount = all.filter(AR.isBundled).length;
+        const isMaster = activeMeetId === 'ALL';
         const cls = f => `agenda-stat clickable${filter === f ? ' active' : ''}`;
         document.getElementById('statsBox').innerHTML = `
-        <div class="${cls('all')}" data-f="all"><span>จำนวนวาระในการประชุมนี้</span><strong>${all.length}</strong><small>อนุวาระ</small></div>
+        <div class="${cls('all')}" data-f="all"><span>${isMaster ? 'จำนวนวาระรวมทุกครั้ง' : 'จำนวนวาระในการประชุมนี้'}</span><strong>${all.length}</strong><small>อนุวาระ</small></div>
         <div class="${cls('flagged')}" data-f="flagged"><span>อนุกรรมการเห็นแย้ง / ไม่ผ่าน</span><strong style="color:#8c261f">${flaggedCount}</strong><small>อนุวาระ</small></div>
         <div class="${cls('bundle')}" data-f="bundle"><span>รวมหลายสำนวนในวาระเดียว</span><strong style="color:#174e80">${bundledCount}</strong><small>อนุวาระ</small></div>`;
         document.querySelectorAll('#statsBox .agenda-stat.clickable').forEach(el => el.addEventListener('click', () => {
@@ -206,13 +247,14 @@
         const q = document.getElementById('q').value.trim();
         const qCategory = document.getElementById('qCategory').value;
 
-        if (qAgendaNo && !item.trci_number.includes(qAgendaNo)) return false;
+        if (qAgendaNo && !String(item.trci_number).includes(qAgendaNo)) return false;
         if (q && !(
-          item.trci_topic.toLowerCase().includes(q.toLowerCase()) ||
-          item.case_ref.toLowerCase().includes(q.toLowerCase()) ||
+          (item.trci_topic && item.trci_topic.toLowerCase().includes(q.toLowerCase())) ||
+          (item.case_ref && item.case_ref.toLowerCase().includes(q.toLowerCase())) ||
           (item.owner && item.owner.toLowerCase().includes(q.toLowerCase())) ||
           (item.org && item.org.toLowerCase().includes(q.toLowerCase())) ||
-          item.remark.toLowerCase().includes(q.toLowerCase())
+          (item.meetingName && item.meetingName.toLowerCase().includes(q.toLowerCase())) ||
+          (item.remark && item.remark.toLowerCase().includes(q.toLowerCase()))
         )) return false;
         if (qCategory && item.category !== qCategory) return false;
         if (filter === 'flagged' && !AR.isFlagged(item)) return false;
@@ -232,16 +274,74 @@
         renderDetail();
       }
 
+      function renderView() {
+        const isMaster = activeMeetId === 'ALL';
+        const meeting = getActiveMeeting();
+
+        if (isMaster) {
+          document.getElementById('pageTitle').textContent = 'ทะเบียนคุมเลขคดีและวาระการประชุม (รวมทุกครั้ง)';
+          document.getElementById('meetSubline').textContent = 'สืบค้นและติดตามวาระการประชุมคณะกรรมการ ป.ป.ท. ทุกครั้ง';
+          document.getElementById('cardHeaderTitle').textContent = 'ทะเบียนคุมวาระรวมทุกครั้ง (Master View)';
+          document.getElementById('confirmedBadge').innerHTML = '';
+          document.getElementById('btnAddItem').style.display = 'none';
+          document.getElementById('linkDocs').style.display = 'none';
+          document.getElementById('tabItemsBtn').textContent = 'ทะเบียนคุมวาระ (รวม)';
+        } else {
+          document.getElementById('pageTitle').textContent = `รายละเอียดวาระ — ครั้งที่ ${meeting.trc_name}`;
+          document.getElementById('meetSubline').textContent = `วันที่ ${ECMIS.thaiDate(meeting.trc_date)}`;
+          document.getElementById('cardHeaderTitle').textContent = `รายการวาระ — ครั้งที่ ${meeting.trc_name}`;
+          document.getElementById('confirmedBadge').innerHTML = meeting.trc_confirmed
+            ? '<span class="meet-confirmed"><i class="fa-solid fa-check-circle"></i>จัดวาระแล้ว</span>' : '';
+          document.getElementById('btnAddItem').style.display = '';
+          document.getElementById('btnAddItem').disabled = !mayEdit;
+          document.getElementById('linkDocs').style.display = '';
+          document.getElementById('linkDocs').href = `agenda-meeting-docs.html?meet=${meeting.trc_id}`;
+          document.getElementById('tabItemsBtn').textContent = 'รายการวาระ';
+        }
+
+        // Render Table Header
+        const thead = document.getElementById('tblHead');
+        if (isMaster) {
+          thead.innerHTML = `
+            <tr>
+              <th style="width:45px" class="text-center">ที่</th>
+              <th style="width:95px">ครั้งที่ประชุม</th>
+              <th style="width:105px">วันที่ประชุม</th>
+              <th style="width:75px">วาระที่</th>
+              <th>ชื่อเรื่องเสนอพิจารณา</th>
+              <th style="width:125px">เรื่องเลขคดีที่</th>
+              <th style="width:155px">ผู้รับผิดชอบ ปราบ/เขต</th>
+              <th style="width:120px">กอง/สำนัก</th>
+              <th style="width:150px">หมายเหตุ</th>
+            </tr>`;
+        } else {
+          thead.innerHTML = `
+            <tr>
+              <th style="width:75px">วาระที่</th>
+              <th style="width:135px">หมวดหมู่</th>
+              <th>ชื่อเรื่องเสนอพิจารณา</th>
+              <th style="width:130px">เรื่องเลขคดีที่</th>
+              <th style="width:160px">ผู้รับผิดชอบ ปราบ/เขต</th>
+              <th style="width:130px">กอง/สำนัก</th>
+              <th style="width:170px">หมายเหตุ</th>
+              <th style="width:70px"></th>
+            </tr>`;
+        }
+
+        renderStats();
+        renderDetail();
+      }
+
       function renderDetail() {
-        const all = AR.itemsOf(meeting.trc_id);
+        const isMaster = activeMeetId === 'ALL';
+        const meeting = getActiveMeeting();
+        const all = getAllActiveItems();
         const filtered = all.filter(matches);
         const totalPages = Math.ceil(filtered.length / pageSize) || 1;
         if (currentPage > totalPages) currentPage = totalPages;
         const pageRows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
         document.getElementById('cnt').textContent = filtered.length;
-        document.getElementById('confirmedBadge').innerHTML = meeting.trc_confirmed
-          ? '<span class="meet-confirmed"><i class="fa-solid fa-check-circle"></i>จัดวาระแล้ว</span>' : '';
 
         const tbody = document.getElementById('tb');
         const emptyState = document.getElementById('emptyState');
@@ -254,60 +354,88 @@
         const noFilterActive = !document.getElementById('qAgendaNo').value.trim() && !document.getElementById('q').value.trim()
           && !document.getElementById('qCategory').value && filter === 'all';
 
-        tbody.innerHTML = pageRows.map((it) => {
-          const flagged = AR.isFlagged(it);
-          const idx = all.indexOf(it);
-          const canReorder = mayEdit && noFilterActive;
-          return `
-      <tr data-trci="${it.trci_id}">
-        <td class="fw-semibold">${mayEdit
-              ? `<input class="form-control form-control-sm agenda-no-input" data-trci="${it.trci_id}" value="${it.trci_number}">`
-              : MS(it.trci_number)}</td>
-        <td><span class="cat-badge ${AR.CATEGORY_CLASS[it.category]}">${AR.CATEGORY_LABEL[it.category]}</span></td>
-        <td>${it.trci_topic}</td>
-        <td>${AR.renderCaseRef(it.case_ref)}</td>
-        <td class="remark-cell">${it.remark && it.remark !== '-' ? it.remark : '<span class="text-muted">—</span>'}
-          ${flagged ? '<div class="mt-1"><span class="flag-badge"><i class="fa-solid fa-triangle-exclamation"></i>อนุกรรมการเห็นแย้ง/ไม่ผ่าน</span></div>' : ''}</td>
-        <td class="text-end">
-          ${canReorder ? `
-          <button type="button" class="move-btn move-up" data-trci="${it.trci_id}" title="เลื่อนขึ้น" ${idx === 0 ? 'disabled' : ''}><i class="fa-solid fa-arrow-up"></i></button>
-          <button type="button" class="move-btn move-down" data-trci="${it.trci_id}" title="เลื่อนลง" ${idx === all.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-arrow-down"></i></button>` : ''}
-          ${mayEdit ? `<button type="button" class="move-btn text-danger btn-delete-item" data-trci="${it.trci_id}" data-no="${it.trci_number}" title="ลบวาระนี้"><i class="fa-solid fa-trash-can"></i></button>` : ''}
-        </td>
-      </tr>`;
-        }).join('');
+        if (isMaster) {
+          tbody.innerHTML = pageRows.map((it, idx) => {
+            const globalIdx = (currentPage - 1) * pageSize + idx + 1;
+            return `
+            <tr>
+              <td class="text-center text-muted fw-semibold">${globalIdx}</td>
+              <td><a href="javascript:void(0)" class="fw-bold text-decoration-none link-jump-meet" data-meet="${it.trc_id}" title="คลิกดูเฉพาะครั้งที่ ${it.meetingName}">${it.meetingName}</a></td>
+              <td class="text-nowrap small text-muted">${ECMIS.thaiDate(it.meetingDate)}</td>
+              <td class="fw-semibold">${it.trci_number}</td>
+              <td>
+                <div class="fw-medium">${it.trci_topic}</div>
+                <span class="cat-badge ${AR.CATEGORY_CLASS[it.category]}" style="font-size:0.68rem; padding:0.1rem 0.45rem">${AR.CATEGORY_LABEL[it.category]}</span>
+              </td>
+              <td>${AR.renderCaseRef(it.case_ref)}</td>
+              <td><span class="small fw-medium">${it.owner && it.owner !== '-' ? it.owner : '<span class="text-muted">—</span>'}</span></td>
+              <td><span class="small text-muted">${it.org && it.org !== '-' ? it.org : '—'}</span></td>
+              <td class="remark-cell">${it.remark && it.remark !== '-' ? it.remark : '<span class="text-muted">—</span>'}</td>
+            </tr>`;
+          }).join('');
 
-        tbody.querySelectorAll('.agenda-no-input').forEach(el => el.addEventListener('change', async e => {
-          const trciId = +e.target.dataset.trci;
-          const newNumber = e.target.value.trim();
-          try {
-            await AR.updateItemNumber(trciId, newNumber);
-          } catch (err) {
-            console.error('แก้ไขวาระที่ไม่สำเร็จ:', err);
-            ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
-          }
-        }));
-        tbody.querySelectorAll('.move-up').forEach(el => el.addEventListener('click', e => moveItem(+e.currentTarget.dataset.trci, -1)));
-        tbody.querySelectorAll('.move-down').forEach(el => el.addEventListener('click', e => moveItem(+e.currentTarget.dataset.trci, 1)));
-        tbody.querySelectorAll('.btn-delete-item').forEach(el => el.addEventListener('click', async e => {
-          const trciId = +e.currentTarget.dataset.trci;
-          const no = e.currentTarget.dataset.no;
-          const confirmed = await ECMIS.confirmAction({
-            title: `ลบวาระที่ ${no}?`,
-            html: 'ระบบจะซ่อนรายการนี้ออกจากรายการวาระ (ข้อมูลยังอยู่ในฐานข้อมูล)',
-            confirmText: 'ลบ', danger: true
-          });
-          if (!confirmed.isConfirmed) return;
-          try {
-            await AR.deleteItem(trciId);
-          } catch (err) {
-            console.error('ลบวาระไม่สำเร็จ:', err);
-            ECMIS.toastWarn('ลบไม่สำเร็จ ลองใหม่อีกครั้ง');
-            return;
-          }
-          ECMIS.toastOk(`ลบวาระที่ ${no} เรียบร้อย`);
-          renderStats(); renderDetail();
-        }));
+          tbody.querySelectorAll('.link-jump-meet').forEach(el => el.addEventListener('click', e => {
+            qMeetingEl.value = e.currentTarget.dataset.meet;
+            qMeetingEl.dispatchEvent(new Event('change'));
+          }));
+        } else {
+          tbody.innerHTML = pageRows.map((it) => {
+            const flagged = AR.isFlagged(it);
+            const idx = all.indexOf(it);
+            const canReorder = mayEdit && noFilterActive;
+            return `
+        <tr data-trci="${it.trci_id}">
+          <td class="fw-semibold">${mayEdit
+                ? `<input class="form-control form-control-sm agenda-no-input" data-trci="${it.trci_id}" value="${it.trci_number}">`
+                : MS(it.trci_number)}</td>
+          <td><span class="cat-badge ${AR.CATEGORY_CLASS[it.category]}">${AR.CATEGORY_LABEL[it.category]}</span></td>
+          <td>${it.trci_topic}</td>
+          <td>${AR.renderCaseRef(it.case_ref)}</td>
+          <td><span class="small fw-medium">${it.owner && it.owner !== '-' ? it.owner : '<span class="text-muted">—</span>'}</span></td>
+          <td><span class="small text-muted">${it.org && it.org !== '-' ? it.org : '—'}</span></td>
+          <td class="remark-cell">${it.remark && it.remark !== '-' ? it.remark : '<span class="text-muted">—</span>'}
+            ${flagged ? '<div class="mt-1"><span class="flag-badge"><i class="fa-solid fa-triangle-exclamation"></i>อนุกรรมการเห็นแย้ง/ไม่ผ่าน</span></div>' : ''}</td>
+          <td class="text-end">
+            ${canReorder ? `
+            <button type="button" class="move-btn move-up" data-trci="${it.trci_id}" title="เลื่อนขึ้น" ${idx === 0 ? 'disabled' : ''}><i class="fa-solid fa-arrow-up"></i></button>
+            <button type="button" class="move-btn move-down" data-trci="${it.trci_id}" title="เลื่อนลง" ${idx === all.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-arrow-down"></i></button>` : ''}
+            ${mayEdit ? `<button type="button" class="move-btn text-danger btn-delete-item" data-trci="${it.trci_id}" data-no="${it.trci_number}" title="ลบวาระนี้"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+          </td>
+        </tr>`;
+          }).join('');
+
+          tbody.querySelectorAll('.agenda-no-input').forEach(el => el.addEventListener('change', async e => {
+            const trciId = +e.target.dataset.trci;
+            const newNumber = e.target.value.trim();
+            try {
+              await AR.updateItemNumber(trciId, newNumber);
+            } catch (err) {
+              console.error('แก้ไขวาระที่ไม่สำเร็จ:', err);
+              ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+            }
+          }));
+          tbody.querySelectorAll('.move-up').forEach(el => el.addEventListener('click', e => moveItem(+e.currentTarget.dataset.trci, -1)));
+          tbody.querySelectorAll('.move-down').forEach(el => el.addEventListener('click', e => moveItem(+e.currentTarget.dataset.trci, 1)));
+          tbody.querySelectorAll('.btn-delete-item').forEach(el => el.addEventListener('click', async e => {
+            const trciId = +e.currentTarget.dataset.trci;
+            const no = e.currentTarget.dataset.no;
+            const confirmed = await ECMIS.confirmAction({
+              title: `ลบวาระที่ ${no}?`,
+              html: 'ระบบจะซ่อนรายการนี้ออกจากรายการวาระ (ข้อมูลยังอยู่ในฐานข้อมูล)',
+              confirmText: 'ลบ', danger: true
+            });
+            if (!confirmed.isConfirmed) return;
+            try {
+              await AR.deleteItem(trciId);
+            } catch (err) {
+              console.error('ลบวาระไม่สำเร็จ:', err);
+              ECMIS.toastWarn('ลบไม่สำเร็จ ลองใหม่อีกครั้ง');
+              return;
+            }
+            ECMIS.toastOk(`ลบวาระที่ ${no} เรียบร้อย`);
+            renderStats(); renderDetail();
+          }));
+        }
 
         document.getElementById('pageIndicator').textContent = `กำลังแสดงหน้า ${currentPage} จาก ${totalPages}`;
         const pager = document.getElementById('pager');
@@ -324,7 +452,10 @@
         document.getElementById(id).addEventListener('input', () => { currentPage = 1; renderDetail(); }));
 
       document.getElementById('btnExportCsv').addEventListener('click', () => {
-        const filtered = AR.itemsOf(meeting.trc_id).filter(matches);
+        const isMaster = activeMeetId === 'ALL';
+        const meeting = getActiveMeeting();
+        const all = getAllActiveItems();
+        const filtered = all.filter(matches);
         const header = [
           'ที่',
           'การประชุมครั้งที่',
@@ -338,10 +469,12 @@
         ];
         const lines = [header.join(',')];
         filtered.forEach((it, idx) => {
+          const mName = isMaster ? it.meetingName : meeting.trc_name;
+          const mDate = isMaster ? it.meetingDate : meeting.trc_date;
           const row = [
             idx + 1,
-            `"${meeting.trc_name}"`,
-            `"${ECMIS.thaiDate(meeting.trc_date)}"`,
+            `"${mName}"`,
+            `"${ECMIS.thaiDate(mDate)}"`,
             `"${it.trci_number}"`,
             `"${(it.trci_topic || '').replace(/"/g, '""')}"`,
             `"${(it.case_ref || '').replace(/"/g, '""')}"`,
@@ -354,15 +487,22 @@
         const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = `ทะเบียนวาระการประชุม-ครั้งที่${meeting.trc_name}.csv`;
+        a.href = url;
+        a.download = isMaster
+          ? 'ทะเบียนคุมเลขคดีและวาระประชุมกรรมการ(รวม).csv'
+          : `ทะเบียนวาระการประชุม-ครั้งที่${meeting.trc_name}.csv`;
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 5000);
       });
+
+      renderView();
 
       /* ===================================================================
          เพิ่มวาระ — บันทึกลง Supabase จริง
          =================================================================== */
       function nextItemNo() {
+        const meeting = getActiveMeeting();
+        if (!meeting) return '5.1';
         const items = AR.itemsOf(meeting.trc_id);
         let major = 5, minor = 0;
         items.forEach(it => {
@@ -375,6 +515,8 @@
       }
 
       document.getElementById('btnAddItem').addEventListener('click', () => {
+        const meeting = getActiveMeeting();
+        if (!meeting) return;
         const catOptions = Object.entries(AR.CATEGORY_LABEL).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
         Swal.fire({
           title: `เพิ่มวาระ — ครั้งที่ ${meeting.trc_name}`,
@@ -497,12 +639,6 @@
           ECMIS.toastOk(`เพิ่มวาระที่ ${res.value.trci_number} เรียบร้อย`);
         });
       });
-
-      document.getElementById('linkDocs').href = `agenda-meeting-docs.html?meet=${meetId}`;
-
-      renderStats();
-      renderDetail();
-    }
     }
   </script>
 </body>
