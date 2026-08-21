@@ -2228,9 +2228,6 @@ function paginateDoc(containerEl, opts){
   const { introBlock, flowBlocks, signBlock, runningHeaderHtml, docClass } = opts;
   const pageClass = `doc-paper${docClass ? ' ' + docClass : ''} a4-paper`;
 
-  /* probe ใช้วัดความสูงเนื้อหาจริงที่ความกว้างหน้ากระดาษจริง (210mm) — ไม่ใช้ % ของ container
-     เพราะต้องได้ค่าคงที่ไม่ขึ้นกับขนาดจอ ใช้ visibility:hidden (ไม่ใช่ display:none) เพื่อให้ยัง
-     layout จริงและอ่าน scrollHeight ได้ */
   let probe = document.getElementById('docPaperProbe');
   if(!probe){
     probe = document.createElement('div');
@@ -2245,6 +2242,8 @@ function paginateDoc(containerEl, opts){
   const PAGE_BUDGET = mmProbe.getBoundingClientRect().height;
   mmProbe.remove();
 
+  const FIT_TOLERANCE = 14;
+
   function measure(html){ probe.innerHTML = html; return probe.scrollHeight; }
 
   const pages = [];
@@ -2256,8 +2255,8 @@ function paginateDoc(containerEl, opts){
 
   flowBlocks.forEach(block => {
     const mandatoryOnly = pageBlocks.length === (isFirst ? 1 : 0);
-    const candidate = prefixFor(pages.length + 2) + pageBlocks.join('') + block;
-    if(mandatoryOnly || measure(candidate) <= PAGE_BUDGET){
+    const candidate = prefixFor(pages.length + (isFirst ? 1 : 2)) + pageBlocks.join('') + block;
+    if(mandatoryOnly || measure(candidate) <= (PAGE_BUDGET + FIT_TOLERANCE)){
       pageBlocks.push(block);
     } else {
       pushPage();
@@ -2265,9 +2264,9 @@ function paginateDoc(containerEl, opts){
     }
   });
 
-  const withSign = prefixFor(pages.length + 2) + pageBlocks.join('') + signBlock;
+  const withSign = prefixFor(pages.length + (isFirst ? 1 : 2)) + pageBlocks.join('') + signBlock;
   const mandatoryOnly = pageBlocks.length === (isFirst ? 1 : 0);
-  if(mandatoryOnly || measure(withSign) <= PAGE_BUDGET){
+  if(mandatoryOnly || measure(withSign) <= (PAGE_BUDGET + FIT_TOLERANCE + 8)){
     pageBlocks.push(signBlock);
     pushPage();
   } else {
@@ -2285,6 +2284,134 @@ function paginateDoc(containerEl, opts){
 
 function paginateResolutionDoc(containerEl, opts){
   return paginateDoc(containerEl, { ...opts, docClass: 'doc-resolution' });
+}
+
+/* ---------------------------------------------------------- EXPORT DOCX (Word Document Export) */
+function exportDocToDocx(containerEl, filename = 'document.docx'){
+  if (!containerEl) return;
+  const pages = containerEl.querySelectorAll('.doc-paper, .a4-paper');
+  let bodyContent = '';
+  
+  if (pages.length > 0) {
+    pages.forEach((p, idx) => {
+      const clone = p.cloneNode(true);
+      clone.querySelectorAll('.doc-run-title, .doc-run-page').forEach(el => el.remove());
+      bodyContent += clone.innerHTML;
+      if (idx < pages.length - 1) {
+        bodyContent += '<br clear="all" style="page-break-before:always; mso-break-type:section-break">';
+      }
+    });
+  } else {
+    bodyContent = containerEl.innerHTML;
+  }
+
+  const wordHtml = `<!DOCTYPE html>
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset="utf-8">
+<title>${escapeHtml(filename.replace(/\\.docx$/i, ''))}</title>
+<!--[if gte mso 9]>
+<xml>
+ <w:WordDocument>
+  <w:View>Print</w:View>
+  <w:Zoom>100</w:Zoom>
+  <w:DoNotOptimizeForBrowser/>
+ </w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+@page Section1 {
+  size: 595.3pt 841.9pt; /* A4 210mm x 297mm */
+  margin: 70.85pt 56.7pt 56.7pt 70.85pt; /* Top 2.5cm, Right 2cm, Bottom 2cm, Left 2.5cm */
+  mso-header-margin: 35.4pt;
+  mso-footer-margin: 35.4pt;
+  mso-paper-source: 0;
+}
+div.Section1 {
+  page: Section1;
+}
+body {
+  font-family: 'TH Sarabun New', 'TH Sarabun PSK', 'Sarabun', 'Cordia New', serif;
+  font-size: 16pt;
+  line-height: 1.25;
+  color: #000000;
+}
+p {
+  margin: 4pt 0;
+  line-height: 1.25;
+  text-align: justify;
+  text-justify: inter-cluster;
+}
+.doc-title {
+  text-align: center;
+  font-size: 18pt;
+  font-weight: bold;
+  margin: 6pt 0 2pt;
+}
+.doc-sub {
+  text-align: center;
+  font-size: 16pt;
+  margin-bottom: 8pt;
+}
+.doc-h {
+  font-size: 16pt;
+  font-weight: bold;
+  margin-top: 10pt;
+  margin-bottom: 2pt;
+}
+.doc-indent {
+  text-indent: 2.5em;
+  text-align: justify;
+  text-justify: inter-cluster;
+  font-size: 16pt;
+  margin-bottom: 4pt;
+}
+.doc-row {
+  font-size: 16pt;
+  margin-bottom: 2pt;
+}
+.doc-sign {
+  text-align: center;
+  font-size: 16pt;
+  margin-top: 16pt;
+  line-height: 1.35;
+}
+.doc-dots {
+  border-bottom: 1px dotted #000;
+  display: inline-block;
+  min-width: 140px;
+}
+.doc-sign-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  margin-top: 16pt;
+}
+img {
+  max-width: 100%;
+}
+</style>
+</head>
+<body>
+<div class="Section1">
+${bodyContent}
+</div>
+</body>
+</html>`;
+
+  const blob = new Blob(['\\ufeff' + wordHtml], {
+    type: 'application/msword;charset=utf-8'
+  });
+  
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename.endsWith('.docx') ? filename : filename + '.docx';
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(() => {
+    link.remove();
+    URL.revokeObjectURL(link.href);
+  }, 300);
 }
 
 /* ---------------------------------------------------------- DIALOGS */
@@ -4073,7 +4200,7 @@ global.ECMIS = {
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   isAuthed, currentUsername, logout,
   renderShell, stepperHtml, statusBadge, slaBadge, actionBar,
-  mergeField, escapeHtml, fakeTodayIso, daysUntilFakeIso, paginateDoc, paginateResolutionDoc, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
+  mergeField, escapeHtml, fakeTodayIso, daysUntilFakeIso, paginateDoc, paginateResolutionDoc, exportDocToDocx, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
 
   ACT7_SECTIONS, ACT7_STATUSES, getAct7Status, act7Badge,
   ACT7_STATUSES_72, getAct7Status72,

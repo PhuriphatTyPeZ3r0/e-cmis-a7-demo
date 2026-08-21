@@ -203,8 +203,9 @@
                 <button class="ws-doc-tab active" data-doc="ruling">รายงานวินิจฉัยชี้มูล</button>
                 <button class="ws-doc-tab" data-doc="discipline">หนังสือลงโทษทางวินัย</button>
               </div>
-              <div class="d-flex gap-1">
-                <button class="btn btn-sm btn-light" onclick="window.print()" title="พิมพ์เอกสารปัจจุบัน"><i class="fa-solid fa-print"></i></button>
+              <div class="d-flex gap-1 align-items-center">
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btnExportDocx" title="ส่งออกเป็นเอกสาร Microsoft Word (.docx)"><i class="fa-solid fa-file-word me-1"></i>ส่งออก DOCX</button>
+                <button type="button" class="btn btn-sm btn-light border" onclick="window.print()" title="พิมพ์เอกสารปัจจุบัน"><i class="fa-solid fa-print"></i></button>
                 <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
               </div>
             </div>
@@ -895,28 +896,28 @@
         const targetName = targetAccused ? targetAccused.name : ((kase.accused && kase.accused[0] ? kase.accused[0].name : 'ผู้ถูกกล่าวหา') + (accusedRealList.length > 1 ? ' กับพวก' : ''));
 
         const introBlock = `
-          <div style="text-align:center;margin-bottom:8px"><img src="doc_logo.jpg" alt="ตราครุฑ" style="height:52px"></div>
+          <div style="text-align:center;margin-bottom:4px"><img src="doc_logo.jpg" alt="ตราครุฑ" style="height:48px"></div>
           <div class="doc-title">รายงานการไต่สวนเพื่อวินิจฉัยชี้มูล${isSingleAccused ? ` (เฉพาะราย ${targetAccused.name})` : ''}</div>
           <div class="doc-sub" style="text-align:center">คณะกรรมการ ป.ป.ท.</div>
-          <div class="doc-row" style="margin-top:6px"><span class="k">เรื่องที่:</span> ${M(kase.id)}${isSingleAccused ? `/${activeSplitAccusedIndex + 1}` : ''}</div>
+          <div class="doc-row" style="margin-top:4px"><span class="k">เรื่องที่:</span> ${M(kase.id)}${isSingleAccused ? `/${activeSplitAccusedIndex + 1}` : ''}</div>
           <div class="doc-row"><span class="k">วันที่:</span> ${M(meetDateThai)}</div>
 
-          <div class="doc-indent" style="margin-top:10px">
+          <div class="doc-indent" style="margin-top:6px">
             ในคราวการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)} เมื่อวันที่ ${M(meetDateThai)}
             เพื่อพิจารณาและวินิจฉัยชี้มูลความผิด เรื่องที่ ${M(kase.id)} ของคณะอนุกรรมการไต่สวน/
             คณะพนักงานไต่สวน ตามคำสั่งคณะกรรมการ ป.ป.ท./สำนักงาน ป.ป.ท. ลับ ที่ ${M(orderNo, '.../...')}
             ลงวันที่ ${M(meetDateThai)} กรณีกล่าวหา <strong>${M(targetName)}</strong> ผู้ถูกกล่าวหา
           </div>
 
-          <div class="doc-indent" style="margin-top:10px">กรรมการ ป.ป.ท. ที่มาประชุม จำนวน ${ECMIS.toThaiDigits(presentMembers.length)} คน ประกอบด้วย</div>
-          <div style="margin-top:4px">
+          <div class="doc-indent" style="margin-top:6px">กรรมการ ป.ป.ท. ที่มาประชุม จำนวน ${ECMIS.toThaiDigits(presentMembers.length)} คน ประกอบด้วย</div>
+          <div style="margin-top:2px">
             ${presentMembers.map((b, i) => `<div class="doc-row"><span class="k">(${ECMIS.toThaiDigits(i + 1)})</span> ${b.n} — ${b.r}</div>`).join('')}
           </div>
-          ${leaveMembers.length ? `<div class="doc-indent mt-1" style="font-size:.84rem;color:#475569">กรรมการ ป.ป.ท. ที่ลาประชุม จำนวน ${ECMIS.toThaiDigits(leaveMembers.length)} คน ได้แก่ ${leaveMembers.map(b => b.n).join(', ')}</div>` : ''}
-          ${dutyMembers.length ? `<div class="doc-indent mt-1" style="font-size:.84rem;color:#475569">กรรมการ ป.ป.ท. ที่ติดราชการ จำนวน ${ECMIS.toThaiDigits(dutyMembers.length)} คน ได้แก่ ${dutyMembers.map(b => b.n).join(', ')}</div>` : ''}
-          ${recusedMembers.length ? `<div class="doc-indent mt-1" style="font-size:.84rem;color:#475569">กรรมการ ป.ป.ท. ที่ถอนตัวตาม ม.๒๐ จำนวน ${ECMIS.toThaiDigits(recusedMembers.length)} คน ได้แก่ ${recusedMembers.map(b => b.n).join(', ')}</div>` : ''}
+          ${leaveMembers.length ? `<div class="doc-indent mt-1" style="font-size:.82rem;color:#475569">กรรมการ ป.ป.ท. ที่ลาประชุม จำนวน ${ECMIS.toThaiDigits(leaveMembers.length)} คน ได้แก่ ${leaveMembers.map(b => b.n).join(', ')}</div>` : ''}
+          ${dutyMembers.length ? `<div class="doc-indent mt-1" style="font-size:.82rem;color:#475569">กรรมการ ป.ป.ท. ที่ติดราชการ จำนวน ${ECMIS.toThaiDigits(dutyMembers.length)} คน ได้แก่ ${dutyMembers.map(b => b.n).join(', ')}</div>` : ''}
+          ${recusedMembers.length ? `<div class="doc-indent mt-1" style="font-size:.82rem;color:#475569">กรรมการ ป.ป.ท. ที่ถอนตัวตาม ม.๒๐ จำนวน ${ECMIS.toThaiDigits(recusedMembers.length)} คน ได้แก่ ${recusedMembers.map(b => b.n).join(', ')}</div>` : ''}
 
-          <div class="doc-indent" style="margin-top:10px">
+          <div class="doc-indent" style="margin-top:6px">
             คณะกรรมการ ป.ป.ท. ได้พิจารณาข้อเท็จจริงและพยานหลักฐานตามรายงานการไต่สวนของ
             คณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวนแล้ว ฟังได้ว่า
           </div>`;
@@ -924,44 +925,51 @@
         const chargesText = selectedChargesText(targetAccused);
 
         const flowBlocks = [
-          `<div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับการดำเนินการไต่สวนของคณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวน</div>
+          `<div class="doc-h" style="margin-top:6px">ประเด็นเกี่ยวกับการดำเนินการไต่สวนของคณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวน</div>
           <div class="doc-indent">คณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวน ได้ดำเนินการไต่สวนและรวบรวมพยานหลักฐาน
             ถูกต้องตามกฎหมายและระเบียบที่เกี่ยวข้องเรียบร้อยแล้ว</div>`,
-          `<div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับสถานะของผู้ถูกกล่าวหา</div>
+          `<div class="doc-h" style="margin-top:6px">ประเด็นเกี่ยวกับสถานะของผู้ถูกกล่าวหา</div>
           <div class="doc-indent">${isSingleAccused ? `${targetAccused.name} ตำแหน่ง ${targetAccused.pos || ''} สังกัด ${targetAccused.agency || ''} ในฐานะ${targetAccused.roleType === 'ACCESSORY' ? 'ผู้สนับสนุน' : 'ตัวการ'}` : M(accusedStatus)}</div>`,
-          `<div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับอำนาจหน้าที่ของผู้ถูกกล่าวหา</div>
+          `<div class="doc-h" style="margin-top:6px">ประเด็นเกี่ยวกับอำนาจหน้าที่ของผู้ถูกกล่าวหา</div>
           <div class="doc-indent">${M(accusedAuthority)}</div>`,
-          `<div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับการกระทำความผิดของผู้ถูกกล่าวหา</div>
+          `<div class="doc-h" style="margin-top:6px">ประเด็นเกี่ยวกับการกระทำความผิดของผู้ถูกกล่าวหา</div>
           <div class="doc-indent">${M(factSummary)}</div>`,
-          `<div class="doc-h" style="margin-top:10px">ประเด็นเกี่ยวกับความเสียหาย</div>
+          `<div class="doc-h" style="margin-top:6px">ประเด็นเกี่ยวกับความเสียหาย</div>
           <div class="doc-indent">${M(damageDetail)}</div>`,
-          `<div class="doc-h" style="margin-top:10px">วัน เวลา สถานที่ เกิดเหตุ</div>
+          `<div class="doc-h" style="margin-top:6px">วัน เวลา สถานที่ เกิดเหตุ</div>
           <div class="doc-indent">${M(incidentDetail)}</div>`,
-          `<div class="doc-h" style="margin-top:10px">อายุความ</div>
+          `<div class="doc-h" style="margin-top:6px">อายุความ</div>
           <div class="doc-indent">${M(prescriptionNote)}</div>`,
           ...(meetingOpinion ? [
-            `<div class="doc-h" style="margin-top:10px">ความเห็นของที่ประชุม</div>
+            `<div class="doc-h" style="margin-top:6px">ความเห็นของที่ประชุม</div>
              <div class="doc-indent">${M(meetingOpinion)}</div>`
           ] : []),
-          `<div class="doc-indent" style="margin-top:10px">
+          `<div class="doc-indent" style="margin-top:6px">
             คณะกรรมการ ป.ป.ท. มีมติเป็นเอกฉันท์วินิจฉัยชี้มูลความผิดทางอาญา และความผิดทางวินัย
             ผู้ถูกกล่าวหา${isSingleAccused ? ` (${targetAccused.name})` : ''} ดังนี้
           </div>`,
           ...(legalAnalysis ? [
-            `<div class="doc-h" style="margin-top:10px">เหตุผลในการวินิจฉัย (การปรับข้อเท็จจริงประกอบเข้ากับข้อกฎหมาย)</div>
+            `<div class="doc-h" style="margin-top:6px">เหตุผลในการวินิจฉัย (การปรับข้อเท็จจริงประกอบเข้ากับข้อกฎหมาย)</div>
              <div class="doc-indent">${M(legalAnalysis)}</div>`
           ] : []),
-          `<div class="doc-h" style="margin-top:10px">ความผิดทางอาญา</div>
+          `<div class="doc-h" style="margin-top:6px">ความผิดทางอาญา</div>
           <div class="doc-indent">${M(criminalFinding, 'ไม่มีมูลความผิดทางอาญา')}${chargesText ? `<br><small class="text-muted">ฐานความผิดและมาตรา: ${chargesText}</small>` : ''}</div>`,
-          `<div class="doc-h" style="margin-top:10px">ความผิดทางวินัย</div>
+          `<div class="doc-h" style="margin-top:6px">ความผิดทางวินัย</div>
           <div class="doc-indent">${M(disciplinaryFinding, 'ไม่มีมูลความผิดทางวินัย')}</div>`
         ];
 
-        /* ลายเซ็นเฉพาะกรรมการที่มาประชุมจริง */
+        /* ลายเซ็นเฉพาะกรรมการที่มาประชุมจริง จัดเรียง 2 คอลัมน์กะทัดรัด */
+        const chair = presentMembers.find(b => b.r.includes('ประธาน')) || presentMembers[0];
+        const others = presentMembers.filter(b => b !== chair);
+
         const signBlock = `
-          <div style="margin-top:24px">
-            ${presentMembers.map(b => `<div class="doc-sign" style="margin-top:18px">
-              <span class="doc-dots"></span><br>(${b.n})<br>${b.r}</div>`).join('')}
+          <div style="margin-top:14px;page-break-inside:avoid;break-inside:avoid;">
+            ${chair ? `<div class="doc-sign" style="margin-top:10px;margin-bottom:8px">
+              <span class="doc-dots"></span><br>(${chair.n})<br>${chair.r}</div>` : ''}
+            <div class="doc-sign-grid">
+              ${others.map(b => `<div class="doc-sign" style="margin-top:6px">
+                <span class="doc-dots"></span><br>(${b.n})<br>${b.r}</div>`).join('')}
+            </div>
           </div>`;
 
         ECMIS.paginateDoc(docPaperEl, {
@@ -1197,6 +1205,24 @@
     if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
     document.getElementById('btnPaneCollapse').addEventListener('click', () => setPaneCollapsed(true));
     document.getElementById('btnPaneExpand').addEventListener('click', () => setPaneCollapsed(false));
+
+    const btnExportDocx = document.getElementById('btnExportDocx');
+    if (btnExportDocx) {
+      btnExportDocx.addEventListener('click', () => {
+        const isSingleAccused = activeSplitAccusedIndex !== null && accusedRealList[activeSplitAccusedIndex];
+        const targetAccused = isSingleAccused ? accusedRealList[activeSplitAccusedIndex] : null;
+        let filename = '';
+        const caseSafeId = (kase.id || '2015-2569').replace(/[\/\\:]/g, '-');
+        if (docTab === 'ruling') {
+          filename = `ปปท_7-02_รายงานวินิจฉัยชี้มูล_เรื่องที่_${caseSafeId}${targetAccused ? `_${targetAccused.name}` : ''}.docx`;
+        } else {
+          const hasCriminal = document.getElementById('hasCriminalToggle').checked;
+          filename = `ปปท_${hasCriminal ? '8-06' : '8-05'}_หนังสือลงโทษทางวินัย_เรื่องที่_${caseSafeId}.docx`;
+        }
+        ECMIS.exportDocToDocx(document.getElementById('docPaper'), filename);
+        ECMIS.toastOk('ส่งออกไฟล์ Word (.docx) เรียบร้อย');
+      });
+    }
 
     renderDoc();
     renderActions();
