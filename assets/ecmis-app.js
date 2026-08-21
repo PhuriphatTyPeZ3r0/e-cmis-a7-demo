@@ -1341,7 +1341,10 @@ function supabaseRowToCase(row) {
     urgent: !!row.trr_urgent, urgent72: !!row.trr_urgent,
     signedBySecgen: !!row.trr_signed_secgen, subCommittee: row.trr_sub_committee,
     signPhase: row.trr_signed_secgen ? 'COMPLETE' : 'WAIT',
-    resolutionStage: row.trr_resolution_stage || null
+    resolutionStage: row.trr_resolution_stage || null,
+    recordedDocHtml: row.trr_recorded_doc_html || null,
+    meetingNo: row.trr_meeting_no || null, agendaNo: row.trr_agenda_no || null,
+    meetingDate: toBuddhistFakeIso(row.trr_meeting_date)
   };
   if (kase.receivedDate) {
     kase.deadline60 = addDaysToDateStr(kase.receivedDate, 60);
@@ -4382,6 +4385,110 @@ if (typeof document !== 'undefined') {
   setTimeout(initSug, 200);
 }
 
+/* ---------- Universal Document Editor (FAB + Toolbar) ---------- */
+function initDocEditor(opts) {
+  opts = opts || {};
+  const stageId = opts.stageId || 'docPaper';
+  const mayEdit = opts.mayEdit !== undefined ? opts.mayEdit : true;
+  const onSave = opts.onSave;
+  
+  let docPaperWrap = document.getElementById(stageId);
+  if (!docPaperWrap) return null;
+
+  let docEditBar = document.getElementById('docEditBar');
+  let docEditFab = document.getElementById('docEditFab');
+
+  if (!docEditBar) {
+    const bar = document.createElement('div');
+    bar.className = 'doc-edit-bar';
+    bar.id = 'docEditBar';
+    bar.innerHTML = `
+      <span class="doc-edit-bar-label"><i class="fa-solid fa-pen-to-square me-1"></i>แก้ไขเอกสาร</span>
+      <span class="doc-edit-bar-sep"></span>
+      <button type="button" data-format="bold" title="ตัวหนา"><b>B</b></button>
+      <button type="button" data-format="italic" title="ตัวเอียง"><i>I</i></button>
+      <button type="button" data-format="underline" title="ขีดเส้นใต้"><u>U</u></button>
+      <span class="doc-edit-bar-sep"></span>
+      <button type="button" data-format="justifyLeft" title="ชิดซ้าย"><i class="fa-solid fa-align-left"></i></button>
+      <button type="button" data-format="justifyCenter" title="กึ่งกลาง"><i class="fa-solid fa-align-center"></i></button>
+      <button type="button" data-format="justifyRight" title="ชิดขวา"><i class="fa-solid fa-align-right"></i></button>
+      <span class="doc-edit-bar-sep"></span>
+      <button type="button" data-format="undo" title="เลิกทำ"><i class="fa-solid fa-rotate-left"></i></button>
+      <button type="button" data-format="redo" title="ทำซ้ำ"><i class="fa-solid fa-rotate-right"></i></button>
+      <span class="doc-edit-bar-sep"></span>
+      <button type="button" class="btn btn-sm btn-gold" id="btnSaveDocEdit" style="width:auto;padding:0 .6rem">บันทึกการแก้ไข</button>
+    `;
+    const host = docPaperWrap.parentElement;
+    if (host) host.insertBefore(bar, docPaperWrap);
+    docEditBar = bar;
+  }
+
+  if (!docEditFab) {
+    const fab = document.createElement('button');
+    fab.type = 'button';
+    fab.className = 'doc-edit-fab d-none';
+    fab.id = 'docEditFab';
+    fab.title = 'เปิด/ปิดโหมดแก้ไขเอกสาร';
+    fab.innerHTML = '<i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>';
+    document.body.appendChild(fab);
+    docEditFab = fab;
+  } else if (docEditFab.parentElement !== document.body) {
+    document.body.appendChild(docEditFab);
+  }
+
+  docEditFab.innerHTML = '<i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>';
+
+  if (mayEdit) {
+    docEditFab.classList.remove('d-none');
+  } else {
+    docEditFab.classList.add('d-none');
+  }
+
+  function setDocEditMode(on) {
+    docPaperWrap = document.getElementById(stageId);
+    if (!docPaperWrap) return;
+    docPaperWrap.querySelectorAll('.doc-paper, .a4-paper, .a4-page').forEach(p => {
+      if (on) p.setAttribute('contenteditable', 'true');
+      else p.removeAttribute('contenteditable');
+    });
+    docEditFab.classList.toggle('active', on);
+    if (docEditBar) docEditBar.classList.toggle('show', on);
+  }
+
+  docEditFab.onclick = () => {
+    const on = !docEditFab.classList.contains('active');
+    setDocEditMode(on);
+  };
+
+  if (docEditBar) {
+    docEditBar.onclick = e => {
+      const btn = e.target.closest('[data-format]');
+      if (btn) {
+        document.execCommand(btn.dataset.format);
+        docPaperWrap.querySelector('.doc-paper, .a4-paper, .a4-page')?.focus();
+      }
+    };
+  }
+
+  const saveBtn = document.getElementById('btnSaveDocEdit') || (docEditBar && docEditBar.querySelector('#btnSaveDocEdit'));
+  if (saveBtn) {
+    saveBtn.onclick = () => {
+      setDocEditMode(false);
+      if (typeof onSave === 'function') {
+        onSave(docPaperWrap.innerHTML);
+      }
+      toastOk('บันทึกการแก้ไขเอกสารเรียบร้อย');
+    };
+  }
+
+  return {
+    setDocEditMode,
+    setMayEdit: (allowed) => {
+      docEditFab.classList.toggle('d-none', !allowed);
+    }
+  };
+}
+
 global.ECMIS = {
   ROLES, STATUS, STATUS_CODE, CODE_STATUS, STATUS_STEP, FLOW_STEPS, APPROVAL_CHAIN,
   buildChainOpinions, supabaseRowToCase, toBuddhistFakeIso, addDaysToDateStr, addYearsToDateStr,
@@ -4416,7 +4523,7 @@ global.ECMIS = {
   initAutoSave, initCharCounterAndCopy,
 
   initAuditTrail, initChecklistGatekeeper, initBulkActions, initDragDropUpload,
-  initDocPaneToggle, initRichTextBox,
+  initDocPaneToggle, initRichTextBox, initDocEditor,
 
   getSuggestionsData, saveSuggestionsData, openSuggestionsModal, initWritingSuggestions
 };

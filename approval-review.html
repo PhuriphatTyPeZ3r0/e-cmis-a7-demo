@@ -195,9 +195,28 @@
           <button class="btn btn-sm btn-light" onclick="window.print()" title="พิมพ์เฉพาะเอกสาร Preview"><i class="fa-solid fa-print"></i></button>
           <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
         </div>
+        <div class="doc-edit-bar" id="docEditBar">
+          <span class="doc-edit-bar-label"><i class="fa-solid fa-pen-to-square me-1"></i>แก้ไขเอกสาร</span>
+          <span class="doc-edit-bar-sep"></span>
+          <button type="button" data-format="bold" title="ตัวหนา"><b>B</b></button>
+          <button type="button" data-format="italic" title="ตัวเอียง"><i>I</i></button>
+          <button type="button" data-format="underline" title="ขีดเส้นใต้"><u>U</u></button>
+          <span class="doc-edit-bar-sep"></span>
+          <button type="button" data-format="justifyLeft" title="ชิดซ้าย"><i class="fa-solid fa-align-left"></i></button>
+          <button type="button" data-format="justifyCenter" title="กึ่งกลาง"><i class="fa-solid fa-align-center"></i></button>
+          <button type="button" data-format="justifyRight" title="ชิดขวา"><i class="fa-solid fa-align-right"></i></button>
+          <span class="doc-edit-bar-sep"></span>
+          <button type="button" data-format="undo" title="เลิกทำ"><i class="fa-solid fa-rotate-left"></i></button>
+          <button type="button" data-format="redo" title="ทำซ้ำ"><i class="fa-solid fa-rotate-right"></i></button>
+          <span class="doc-edit-bar-sep"></span>
+          <button type="button" class="btn btn-sm btn-gold" id="btnSaveDocEdit" style="width:auto;padding:0 .6rem">บันทึกการแก้ไข</button>
+        </div>
         <div class="ws-paper-stage">
           <div class="doc-paper a4-paper" id="docPaper"></div>
         </div>
+        <button type="button" class="doc-edit-fab d-none" id="docEditFab" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
+          <i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>
+        </button>
       </aside>
     </div>
 
@@ -1210,6 +1229,7 @@
 
       if (role.id === 'secgen') { renderRouteOutcome(); }
       renderDoc();
+      ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: ECMIS.canAct(kase, role.id) });
 
       function updateSigBoxUI(isSigned){
         const nowStr = new Date().toLocaleString('th-TH');
