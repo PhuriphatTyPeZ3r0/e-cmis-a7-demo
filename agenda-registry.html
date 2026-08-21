@@ -184,20 +184,12 @@
       if (!filtered.length) { wrap.classList.add('d-none'); tbody.innerHTML = ''; return; }
       wrap.classList.remove('d-none');
       tbody.innerHTML = filtered.map(c => {
-        const is72 = ECMIS.isCase72(c);
         const cat = getQueueCaseCategory(c);
         const catBadge = cat === 'URGENT' ? '<span class="badge bg-danger ms-1">เร่งด่วน</span>'
           : cat === 'RETURN' ? '<span class="badge bg-purple text-white ms-1" style="background:#6b3fa0">กลับมาอีก</span>'
           : '<span class="badge bg-primary ms-1">เรื่องใหม่</span>';
 
-        /* สาย _72 (วินิจฉัยชี้มูล) ที่ agenda-set.html แสดงเป็น checklist เอกสาร + สถานะเชิญกรรมการ
-           (initAgenda72) ไม่ใช่ฟอร์มเลือกครั้งประชุมแบบสายหลัก — งานนั้นซับซ้อนกว่าที่จะยัดใส่ popup
-           ได้พอดี จึงยังคงเปิดเต็มหน้าไว้เหมือนเดิม เฉพาะสายหลัก (AGENDA_SET) เท่านั้นที่แปลงเป็น popup */
-        const actionCell = is72
-          ? `<a href="${ECMIS.pageForCase72(c)}?case=${encodeURIComponent(c.id)}" class="btn btn-sm btn-navy px-3">
-               <i class="fa-solid fa-pen-to-square me-1"></i>บรรจุวาระ
-             </a>`
-          : mayEdit
+        const actionCell = mayEdit
           ? `<button type="button" class="btn btn-sm btn-navy px-3" onclick="openAgendaSetPopup('${encodeURIComponent(c.id)}')">
                <i class="fa-solid fa-pen-to-square me-1"></i>บรรจุวาระ
              </button>`
@@ -234,7 +226,8 @@
       const caseId = decodeURIComponent(encodedCaseId);
       const c = queueCases.find(x => x.id === caseId);
       if (!c) { ECMIS.toastWarn('ไม่พบสำนวนนี้ในคิว'); return; }
-      const resolvedLike = ['RESOLVED_PENDING', 'RESOLVED', 'DISPATCHING', 'CLOSED'].includes(c.status);
+      const resolvedLike = ['RESOLVED_PENDING', 'RESOLVED', 'DISPATCHING', 'CLOSED'].includes(c.status) || c.docType === 'RULING' || ECMIS.isCase72(c);
+      const isUrgent = !!(c.urgent || c.urgent72);
 
       const defaultTopic = `รายงานไต่สวน${resolvedLike ? 'เพื่อวินิจฉัยชี้มูล' : 'เบื้องต้น'} กรณี ${c.subject}`;
 
@@ -254,7 +247,7 @@
               <label class="btn btn-outline-navy btn-sm" for="swModeNew"><i class="fa-solid fa-calendar-days me-1"></i>ตั้งครั้งประชุมใหม่</label>
             </div>
             <div class="form-check form-switch mb-3">
-              <input class="form-check-input" type="checkbox" id="swUrgentToggle">
+              <input class="form-check-input" type="checkbox" id="swUrgentToggle"${isUrgent ? ' checked' : ''}>
               <label class="form-check-label" for="swUrgentToggle"><span class="badge bg-danger">วาระเร่งด่วน</span> ข้ามการตรวจลำดับวาระปกติ</label>
             </div>
             <div id="swExistingBox" class="row g-2 mb-2">
