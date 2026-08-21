@@ -156,10 +156,9 @@ async function updateCaseStatus(kase, newStatus) {
 
 const BUCKET = {
   pending:  ['AGENDA_SET', 'IN_MEETING', 'PENDING_INVITE_72', 'IN_MEETING_72'],
-  done:     ['RESOLVED_PENDING', 'RESOLVED', 'RESOLVED_PENDING_72'],
-  returned: ['DEFERRED']
+  done:     ['RESOLVED_PENDING', 'RESOLVED', 'RESOLVED_PENDING_72']
 };
-const OWN_SCOPE_STATUSES = [...BUCKET.pending, ...BUCKET.done, ...BUCKET.returned];
+const OWN_SCOPE_STATUSES = [...BUCKET.pending, ...BUCKET.done];
 
 let CASES = [];
 let all = [];
@@ -169,10 +168,6 @@ document.getElementById('myRoleLabel').textContent = `บทบาท: ${role.ti
 
 let allCasesCombined = [];
 
-/* KPI card ที่คลิกเลือกภาพรวมตาม BUCKET (pending/done/returned) — แยกจาก #statusFilter ซึ่งเป็น
-   ตัวกรองสถานะย่อยตาม RESOLUTION_STAGES (ใช้ได้เฉพาะสำนวนที่ status==='RESOLVED') เพราะ id ของ
-   KPI (PENDING/DEFERRED) ไม่ใช่ <option> ที่มีอยู่จริงใน #statusFilter การ set select.value ตรงๆ
-   เลยเคย fail เงียบๆ (value เหลือ '' ไม่ตรง option ไหนเลย ทำให้กรองได้ 0 รายการเสมอ) */
 let quickFilter = 'ALL';
 
 function isRowActionable(c) { return BUCKET.pending.includes(c.status); }
@@ -182,19 +177,17 @@ function renderKPICards() {
 
   const pendingCount = allCasesCombined.filter(c => BUCKET.pending.includes(c.status)).length;
   const signedCount = allCasesCombined.filter(c => BUCKET.done.includes(c.status)).length;
-  const returnedCount = allCasesCombined.filter(c => BUCKET.returned.includes(c.status)).length;
 
   const kpis = [
     { id:'ALL', n: allCasesCombined.length, l:'รายการทั้งหมด', i:'fa-folder-open', c:'#0F2A62' },
     { id:'PENDING', n: pendingCount, l:'อยู่ระหว่างการจัดทำมติ', i:'fa-hourglass-half', c:'#D0A830' },
-    { id:'SIGNED', n: signedCount, l:'จัดทำมติแล้วเสร็จ', i:'fa-circle-check', c:'#16A34A' },
-    { id:'DEFERRED', n: returnedCount, l:'ยังไม่บันทึก / ส่งคืน', i:'fa-circle-xmark', c:'#DB2626' }
+    { id:'SIGNED', n: signedCount, l:'จัดทำมติแล้วเสร็จ', i:'fa-circle-check', c:'#16A34A' }
   ];
 
   document.getElementById('kpiRow').innerHTML = kpis.map(k => {
     const isActive = (currentSt === k.id);
     return `
-    <div class="col-12 col-sm-6 col-xl">
+    <div class="col-12 col-md-4">
       <div class="card card-ecmis kpi-card h-100 ${isActive ? 'border-2 shadow-sm' : ''}"
            style="min-height:88px; cursor:pointer; ${isActive ? `border-color:${k.c} !important; background:${k.c}0D;` : ''}"
            onclick="filterByKPI('${k.id}')">
@@ -493,7 +486,6 @@ function applyFilters() {
     if (quickFilter !== 'ALL') {
       if (quickFilter === 'PENDING') matchQuick = BUCKET.pending.includes(c.status);
       else if (quickFilter === 'SIGNED') matchQuick = BUCKET.done.includes(c.status);
-      else if (quickFilter === 'DEFERRED' || quickFilter === 'RETURNED') matchQuick = BUCKET.returned.includes(c.status);
       else matchQuick = (c.status === quickFilter);
     }
 
