@@ -35,8 +35,38 @@
     <div class="document-workspace" id="docWorkspace">
       <div>
 
+        <!-- Resolution Summary Card (เชื่อมโยงข้อมูลจาก board-resolution-72) -->
+        <div class="ws-card mb-3" id="resolutionSummaryCard" style="border-left: 4px solid #1a73e8; background: #f8fafc;">
+          <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+              <div>
+                <span class="badge bg-primary px-2 py-1 mb-1" style="font-size:.78rem"><i class="fa-solid fa-gavel me-1"></i>มติที่ประชุมคณะกรรมการ ป.ป.ท.</span>
+                <h6 class="fw-bold text-navy mb-1" id="resSummaryTitle">มติ: วินิจฉัยชี้มูลความผิด (อาญา และ/หรือ วินัย)</h6>
+                <div class="text-muted small" id="resSummaryMeta">การประชุมครั้งที่ ๑๒/๒๕๖๙ เมื่อวันที่ ๑๕ สิงหาคม ๒๕๖๙ (วาระที่ ๓.๒)</div>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-primary" id="btnResyncResolution" title="ดึงข้อมูลล่าสุดจากบันทึกมติ (board-resolution-72)">
+                <i class="fa-solid fa-arrows-rotate me-1"></i>ดึงข้อมูลจากมติใหม่
+              </button>
+            </div>
+            <div class="row g-2 pt-2 border-top small" id="resSummaryDetails">
+              <div class="col-md-4">
+                <span class="text-muted">องค์ประชุม:</span> <strong id="resSummaryQuorum">มาประชุม ๗ / ๗ ท่าน</strong>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted">สายดำเนินคดี:</span> <strong id="resSummaryTracks">อาญา + วินัย</strong>
+              </div>
+              <div class="col-md-4">
+                <span class="text-muted">การกันเป็นพยาน:</span> <strong id="resSummaryWitness">ไม่มีผู้ถูกกันเป็นพยาน</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="ws-card mb-3">
-          <div class="card-header"><i class="fa-solid fa-circle-info"></i> สรุปมติที่ประชุมและเลขที่คำสั่ง</div>
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fa-solid fa-circle-info"></i> ข้อมูลการประชุมและเลขที่คำสั่ง</span>
+            <span class="badge bg-light text-dark border" style="font-size:.72rem"><i class="fa-solid fa-link me-1 text-primary"></i>เชื่อมโยงจากมติ</span>
+          </div>
           <div class="card-body">
             <div class="row g-2">
               <div class="col-md-4"><label class="form-label field-req">ครั้งที่ประชุม</label><input class="form-control" id="meetNo"></div>
@@ -715,29 +745,96 @@
 
     const res = ECMIS.resolution72(kase.resolution72 || 'GUILTY_72');
 
-    document.getElementById('meetNo').value = kase.meetingNo || '';
-    document.getElementById('agendaNo').value = kase.agendaNo || '';
-    document.getElementById('orderNo').value = kase.orderNo || '';
-    document.getElementById('incidentDate').value = kase.incidentDate72 || '2007-07-01';
-    document.getElementById('incidentDateEnd').value = kase.incidentDateEnd72 || '';
+    function syncFromBoardResolution(k, force = false) {
+      const resObj = ECMIS.resolution72(k.resolution72 || 'GUILTY_72');
+      const meetDateStr = k.resolutionDate72 || k.meetingDate || '2569-08-20';
+      const meetDateThai = ECMIS.thaiDate(meetDateStr);
 
-    document.getElementById('accusedStatus').value = kase.accusedStatus72 || '';
-    document.getElementById('accusedAuthority').value = kase.accusedAuthority72 || '';
-    document.getElementById('factSummary').value = kase.factSummary72 || kase.allegation || '';
-    document.getElementById('damageDetail').value = kase.damageDetail72 || '';
-    document.getElementById('incidentDetail').value = kase.incidentDetail72 || '';
-    document.getElementById('prescriptionNote').value = kase.prescriptionNote72 || (kase.prescription ? `มีอายุความถึงวันที่ ${ECMIS.thaiDate(kase.prescription)}` : '');
-    document.getElementById('meetingOpinion').value = kase.meetingOpinion72 || '';
-    document.getElementById('legalAnalysis').value = kase.legalAnalysis72 || (res.legalBasis || '');
-    document.getElementById('criminalFinding').value = kase.criminalFinding72 || '';
-    document.getElementById('disciplinaryFinding').value = kase.disciplinaryFinding72 || '';
+      // 1. Update Resolution Summary Card
+      const resTitle = document.getElementById('resSummaryTitle');
+      const resMeta = document.getElementById('resSummaryMeta');
+      const resQuorum = document.getElementById('resSummaryQuorum');
+      const resTracks = document.getElementById('resSummaryTracks');
+      const resWitness = document.getElementById('resSummaryWitness');
 
-    document.getElementById('discAgency').value = kase.discAgency72 || kase.ownerOrg || '';
-    document.getElementById('discAccused').value = kase.discAccused72 || (kase.accused && kase.accused[0] ? kase.accused[0].name : '');
-    document.getElementById('discCharge').value = kase.discCharge72 || 'ทุจริตต่อหน้าที่';
-    document.getElementById('discPenalty').value = kase.discPenalty72 || '';
-    document.getElementById('discMisconduct').value = kase.discMisconduct72 || kase.allegation || '';
-    document.getElementById('hasCriminalToggle').checked = (kase.guiltyCriminal72 !== undefined) ? !!kase.guiltyCriminal72 : true;
+      if (resTitle) {
+        resTitle.textContent = `มติ: ${resObj ? resObj.label : 'วินิจฉัยชี้มูลความผิด'}`;
+      }
+      if (resMeta) {
+        resMeta.textContent = `การประชุมครั้งที่ ${k.meetingNo || '๑๒/๒๕๖๙'} เมื่อวันที่ ${meetDateThai} (วาระที่ ${k.agendaNo || '๓.๒'})`;
+      }
+
+      // Quorum calculation
+      const attMap = k.boardAttendance72 || {};
+      const presentCount = BOARD.filter(b => (attMap[b.n] || 'present') === 'present').length;
+      if (resQuorum) resQuorum.textContent = `มาประชุม ${ECMIS.toThaiDigits(presentCount)} / ๗ ท่าน`;
+
+      // Tracks
+      const crim = (k.guiltyCriminal72 !== undefined) ? !!k.guiltyCriminal72 : true;
+      const disc = (k.guiltyDiscipline72 !== undefined) ? !!k.guiltyDiscipline72 : true;
+      const trackLabels = [crim ? 'อาญา' : null, disc ? 'วินัย' : null].filter(Boolean);
+      if (resTracks) resTracks.textContent = trackLabels.length > 0 ? trackLabels.join(' + ') : '—';
+
+      // Witness
+      const witMap = k.witnessState72 || {};
+      const witNames = Object.keys(witMap).filter(name => witMap[name]);
+      if (resWitness) {
+        resWitness.textContent = witNames.length > 0 ? `กันเป็นพยาน (${witNames.join(', ')})` : 'ไม่มีผู้ถูกกันเป็นพยาน';
+      }
+
+      // 2. Populate Form Inputs
+      function setVal(id, val) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (force || !el.value.trim()) {
+          el.value = val || '';
+        }
+      }
+
+      setVal('meetNo', k.meetingNo || '๑๒/๒๕๖๙');
+      setVal('agendaNo', k.agendaNo || '๓.๒');
+      setVal('orderNo', k.orderNo || 'ปปท วฉ ๑๙/๒๕๖๙');
+      setVal('incidentDate', k.incidentDate72 || '2007-07-01');
+      setVal('incidentDateEnd', k.incidentDateEnd72 || '');
+
+      const firstAccused = (k.accused && k.accused[0]) ? k.accused[0] : null;
+      setVal('accusedStatus', k.accusedStatus72 || (firstAccused ? `เป็นเจ้าหน้าที่ของรัฐ ตำแหน่ง ${firstAccused.pos || ''} สังกัด ${firstAccused.agency || ''}` : ''));
+      setVal('accusedAuthority', k.accusedAuthority72 || (firstAccused ? `มีหน้าที่และอำนาจตามที่ระเบียบและกฎหมายกำหนดในฐานะ ${firstAccused.pos || ''} ${firstAccused.agency || ''}` : ''));
+      setVal('factSummary', k.factSummary72 || k.allegation || '');
+      setVal('damageDetail', k.damageDetail72 || '');
+      setVal('incidentDetail', k.incidentDetail72 || '');
+      setVal('prescriptionNote', k.prescriptionNote72 || (k.prescription ? `มีอายุความถึงวันที่ ${ECMIS.thaiDate(k.prescription)}` : ''));
+      
+      // Board Opinion Sync (ซิงค์ตรงจาก boardOpinion72)
+      setVal('meetingOpinion', k.meetingOpinion72 || k.boardOpinion72 || '');
+      setVal('legalAnalysis', k.legalAnalysis72 || (resObj ? resObj.legalBasis : 'พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ๓๘ และมาตรา ๔๔'));
+      setVal('criminalFinding', k.criminalFinding72 || (crim ? 'มีมูลความผิดทางอาญาฐานเป็นเจ้าพนักงานปฏิบัติหรือละเว้นการปฏิบัติหน้าที่โดยมิชอบ หรือโดยทุจริต' : ''));
+      setVal('disciplinaryFinding', k.disciplinaryFinding72 || (disc ? 'มีมูลความผิดทางวินัยอย่างร้ายแรงฐานปฏิบัติหรือละเว้นการปฏิบัติหน้าที่ราชการโดยมิชอบเพื่อให้ตนเองหรือผู้อื่นได้ประโยชน์ที่มิควรได้ เป็นการทุจริตต่อหน้าที่ราชการ' : ''));
+
+      setVal('discAgency', k.discAgency72 || (firstAccused ? firstAccused.agency : '') || k.ownerOrg || '');
+      setVal('discAccused', k.discAccused72 || (firstAccused ? firstAccused.name : ''));
+      setVal('discCharge', k.discCharge72 || 'ทุจริตต่อหน้าที่');
+      setVal('discPenalty', k.discPenalty72 || 'ไล่ออก');
+      setVal('discMisconduct', k.discMisconduct72 || k.disciplinaryFinding72 || k.allegation || '');
+
+      const toggleCrim = document.getElementById('hasCriminalToggle');
+      if (toggleCrim) {
+        if (force || toggleCrim.dataset.userTouched !== 'true') {
+          toggleCrim.checked = crim;
+        }
+      }
+    }
+
+    syncFromBoardResolution(kase, false);
+
+    const btnResync = document.getElementById('btnResyncResolution');
+    if (btnResync) {
+      btnResync.addEventListener('click', () => {
+        syncFromBoardResolution(kase, true);
+        renderDoc();
+        ECMIS.toastOk('ดึงข้อมูลล่าสุดจากมติคณะกรรมการเรียบร้อย');
+      });
+    }
 
     function toggleFormCards() {
       document.querySelectorAll('.ruling-form-card').forEach(el => el.classList.toggle('d-none', docTab !== 'ruling'));
@@ -1021,12 +1118,20 @@
       });
     });
 
-    ['meetNo', 'agendaNo', 'orderNo', 'incidentDate', 'accusedStatus', 'accusedAuthority', 'factSummary', 'damageDetail', 'incidentDetail', 'prescriptionNote', 'meetingOpinion', 'legalAnalysis', 'criminalFinding', 'disciplinaryFinding', 'discAgency', 'discAccused', 'discCharge', 'discPenalty', 'discMisconduct', 'hasCriminalToggle']
+    ['meetNo', 'agendaNo', 'orderNo', 'incidentDate', 'incidentDateEnd', 'accusedStatus', 'accusedAuthority', 'factSummary', 'damageDetail', 'incidentDetail', 'prescriptionNote', 'meetingOpinion', 'legalAnalysis', 'criminalFinding', 'disciplinaryFinding', 'discAgency', 'discAccused', 'discCharge', 'discPenalty', 'discMisconduct', 'hasCriminalToggle']
       .forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
-        el.addEventListener('input', () => { persistForm(); renderDoc(); });
-        el.addEventListener('change', () => { persistForm(); renderDoc(); });
+        el.addEventListener('input', () => {
+          if (id === 'hasCriminalToggle') el.dataset.userTouched = 'true';
+          persistForm();
+          renderDoc();
+        });
+        el.addEventListener('change', () => {
+          if (id === 'hasCriminalToggle') el.dataset.userTouched = 'true';
+          persistForm();
+          renderDoc();
+        });
       });
 
     function nextStatusPatchByResolution() {
