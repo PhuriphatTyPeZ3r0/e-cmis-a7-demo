@@ -1897,21 +1897,18 @@ function renderShell(activeHref){
         </ul>
       </div>
 
-      <!-- User Role Dropdown Pill (Role Switcher) -->
-      <div class="dropdown role-switcher ms-1">
-        <button class="btn btn-sm btn-light border rounded-pill px-3 py-1 dropdown-toggle user-pill text-secondary d-inline-flex align-items-center gap-1" data-bs-toggle="dropdown" aria-expanded="false" style="font-size:0.82rem" title="สลับบทบาทการทำงาน">
+      <!-- User Profile Dropdown Pill -->
+      <div class="dropdown user-profile ms-1">
+        <button class="btn btn-sm btn-light border rounded-pill px-3 py-1 dropdown-toggle user-pill text-secondary d-inline-flex align-items-center gap-1" data-bs-toggle="dropdown" aria-expanded="false" style="font-size:0.82rem" title="ข้อมูลผู้ใช้งาน">
           <i class="fa-solid fa-user"></i>
           <span>${role.name} — ${role.title}</span>
         </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow" style="max-height: 480px; overflow-y: auto; min-width: 320px;">
+        <ul class="dropdown-menu dropdown-menu-end shadow" style="min-width: 260px;">
           <li class="px-3 py-2 border-bottom bg-light">
             <div class="fw-bold text-dark" style="font-size:0.85rem">${role.name}</div>
             <div class="text-muted small">${role.title}</div>
-            <span class="badge bg-primary-subtle text-primary border border-primary-subtle mt-1" style="font-size:0.68rem">บทบาทปัจจุบัน</span>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle mt-1" style="font-size:0.68rem">ผู้ใช้งานปัจจุบัน</span>
           </li>
-          <li><h6 class="dropdown-header text-muted py-1 px-3 mt-2" style="font-size:0.72rem"><i class="fa-solid fa-users me-1"></i>สลับบทบาทการทำงาน (Role Switcher)</h6></li>
-          ${roleMenuHtml}
-          <li><hr class="dropdown-divider my-1"></li>
           <li><a class="dropdown-item text-danger py-2 px-3 fw-semibold" href="#" id="btnLogout" style="font-size:0.82rem"><i class="fa-solid fa-right-from-bracket me-2"></i>ออกจากระบบ</a></li>
         </ul>
       </div>
@@ -1931,25 +1928,22 @@ function renderShell(activeHref){
     </a>`;
   }).join('');
 
-  /* Sidebar-bottom user chip — มี Role Switcher และ Logout */
+  /* Sidebar-bottom user chip — ข้อมูลผู้ใช้งานปัจจุบัน และ Logout */
   const userChip = `
   <div class="dropdown sidebar-user-chip">
-    <button class="sidebar-user-chip-btn" data-bs-toggle="dropdown" aria-expanded="false" title="${role.name} — ${role.title} (คลิกเพื่อสลับบทบาท)">
+    <button class="sidebar-user-chip-btn" data-bs-toggle="dropdown" aria-expanded="false" title="${role.name} — ${role.title}">
       <span class="sidebar-user-chip-avatar">${role.name.charAt(0)}</span>
       <span class="sidebar-user-chip-text">
         <strong>${role.name}</strong>
         <small>${role.title}</small>
       </span>
     </button>
-    <ul class="dropdown-menu shadow" style="max-height: 420px; overflow-y: auto; min-width: 300px;">
+    <ul class="dropdown-menu shadow" style="min-width: 240px;">
       <li class="px-3 py-2 border-bottom bg-light">
         <div class="fw-bold text-dark" style="font-size:0.85rem">${role.name}</div>
         <div class="text-muted small">${role.title}</div>
-        <span class="badge bg-primary-subtle text-primary border border-primary-subtle mt-1" style="font-size:0.68rem">บทบาทปัจจุบัน</span>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle mt-1" style="font-size:0.68rem">ผู้ใช้งานปัจจุบัน</span>
       </li>
-      <li><h6 class="dropdown-header text-muted py-1 px-3 mt-2" style="font-size:0.72rem"><i class="fa-solid fa-users me-1"></i>สลับบทบาทการทำงาน</h6></li>
-      ${roleMenuHtml}
-      <li><hr class="dropdown-divider my-1"></li>
       <li><a class="dropdown-item text-danger py-2 px-3 fw-semibold" href="#" id="btnLogoutSidebar" style="font-size:0.82rem"><i class="fa-solid fa-right-from-bracket me-2"></i>ออกจากระบบ</a></li>
     </ul>
   </div>`;
