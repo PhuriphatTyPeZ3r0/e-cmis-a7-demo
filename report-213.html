@@ -172,9 +172,7 @@
           <button class="btn btn-sm btn-light" id="btnDocx"><i class="fa-solid fa-download me-1"></i>.docx</button>
           <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
         </div>
-        <div class="ws-paper-stage">
-          <div class="doc-paper a4-paper" id="docPaper"></div>
-        </div>
+        <div class="ws-paper-stage" id="docPaper"></div>
       </aside>
     </div>
 
@@ -517,46 +515,49 @@
         ACCEPT: 'เห็นควรรับไว้ไต่สวน', REJECT: 'เห็นควรไม่รับไว้ไต่สวน',
         FORWARD: 'เห็นควรส่งเรื่องให้สำนักงาน ป.ป.ช.'
       };
-      document.getElementById('docPaper').innerHTML = `
-    <div class="doc-secret">ลับ</div>
-    <div class="doc-title">รายงานการไต่สวนเบื้องต้น</div>
-    <div class="doc-sub">คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
 
-    <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}
-      (${M(kase.legalBase === 'ม.62'
-        ? 'รับตามมาตรา 62 พระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. 2561'
-        : 'รับตามมาตรา 18/4 พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม')})</div>
-    <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
-    <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner)}</div>
-    <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
-    <div class="doc-row"><span class="k">เอกสารอ้างอิง</span> ${M(kase.docRef !== '—' ? kase.docRef : '', 'เลขที่หนังสือ (ขอจากงานสารบรรณ)')}</div>
+      const introBlock = `
+        <div class="doc-secret">ลับ</div>
+        <div class="doc-title">รายงานการไต่สวนเบื้องต้น</div>
+        <div class="doc-sub">คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
 
-    <div class="doc-h">ผู้กล่าวหา</div>
-    <div>${M(kase.complainant)}</div>
+        <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}
+          (${M(kase.legalBase === 'ม.62'
+            ? 'รับตามมาตรา 62 พระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. 2561'
+            : 'รับตามมาตรา 18/4 พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม')})</div>
+        <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+        <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner)}</div>
+        <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
+        <div class="doc-row"><span class="k">เอกสารอ้างอิง</span> ${M(kase.docRef !== '—' ? kase.docRef : '', 'เลขที่หนังสือ (ขอจากงานสารบรรณ)')}</div>
+      `;
 
-    <div class="doc-h">ผู้ถูกร้อง</div>
-    ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}
+      const flowBlocks = [
+        `<div class="doc-h">ผู้กล่าวหา</div><div>${M(kase.complainant)}</div>`,
+        `<div class="doc-h">ผู้ถูกร้อง</div>${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}`,
+        `<div class="doc-h">ข้อกล่าวหา</div><div class="doc-indent">${M(v('f_allegation'), '……………………………………………… (กรอกในฟอร์มด้านซ้าย) ………………………………………………')}</div>`,
+        `<div class="doc-h">ผลการแสวงหาข้อเท็จจริงและพยานหลักฐาน</div><div class="doc-indent">${M(v('f_finding'), '……………………………………………… (กรอกในฟอร์มด้านซ้าย) ………………………………………………')}</div>`,
+        `<div class="doc-h">ความเห็นของผู้รับผิดชอบสำนวน</div><div class="doc-indent">
+          ผู้รับผิดชอบสำนวนพิจารณาแล้ว ${M(opinionMap[v('f_opinionType')] || '', 'เห็นควร………………')}
+          ${v('f_opinionType') === 'REJECT' && v('f_rejectLaw')
+              ? ` ตามพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ${M(v('f_rejectLaw'))}` : ''}
+          โดยมีเหตุผล ${M(v('f_opinion'), '………………………………………………')}
+        </div>`
+      ];
 
-    <div class="doc-h">ข้อกล่าวหา</div>
-    <div class="doc-indent">${M(v('f_allegation'), '……………………………………………… (กรอกในฟอร์มด้านซ้าย) ………………………………………………')}</div>
+      const signBlock = `
+        <div class="doc-sign">
+          ลงชื่อ <span class="doc-dots"></span> ผู้รับผิดชอบสำนวน<br>
+          (${M(kase.owner)})<br>
+          ${M(kase.ownerOrg)}<br>
+          วันที่ <span class="doc-dots" style="min-width:70px"></span>
+        </div>`;
 
-    <div class="doc-h">ผลการแสวงหาข้อเท็จจริงและพยานหลักฐาน</div>
-    <div class="doc-indent">${M(v('f_finding'), '……………………………………………… (กรอกในฟอร์มด้านซ้าย) ………………………………………………')}</div>
-
-    <div class="doc-h">ความเห็นของผู้รับผิดชอบสำนวน</div>
-    <div class="doc-indent">
-      ผู้รับผิดชอบสำนวนพิจารณาแล้ว ${M(opinionMap[v('f_opinionType')] || '', 'เห็นควร………………')}
-      ${v('f_opinionType') === 'REJECT' && v('f_rejectLaw')
-          ? ` ตามพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ${M(v('f_rejectLaw'))}` : ''}
-      โดยมีเหตุผล ${M(v('f_opinion'), '………………………………………………')}
-    </div>
-
-    <div class="doc-sign">
-      ลงชื่อ <span class="doc-dots"></span> ผู้รับผิดชอบสำนวน<br>
-      (${M(kase.owner)})<br>
-      ${M(kase.ownerOrg)}<br>
-      วันที่ <span class="doc-dots" style="min-width:70px"></span>
-    </div>`;
+      ECMIS.paginateDoc(document.getElementById('docPaper'), {
+        introBlock,
+        flowBlocks,
+        signBlock,
+        runningHeaderHtml: (pNo) => `<div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:12px; border-bottom:1px solid #ccc; padding-bottom:4px;"><span>รายงานการไต่สวนเบื้องต้น เรื่องที่ ${M(kase.id)}</span><span>หน้า -${pNo}-</span></div>`
+      });
     }
 
     function renderTimeline() {
