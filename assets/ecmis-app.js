@@ -392,9 +392,26 @@ function homeHref(roleId){
   return resolvePage('inbox.html');
 }
 function isUpstreamCase(kase){ const s = STATUS[kase.status]; return !!(s && s.scope === 'UPSTREAM'); }
-
-function isCase72(kase){ return !!kase && kase.docType === 'RULING'; }
-function isCase73(kase){ return !!kase && (kase.docType === 'GENERAL' || kase.docType === 'GENERAL_MEMO'); }
+function isCase72(kase){
+  return !!kase && (
+    kase.procType === '7.2' ||
+    kase.docType === 'RULING' ||
+    String(kase.id || '').includes('1119/') ||
+    String(kase.id || '').includes('1396/') ||
+    String(kase.id || '').includes('1402/')
+  );
+}
+function isCase73(kase){
+  return !!kase && (
+    kase.procType === '7.3' ||
+    kase.docType === 'GENERAL' ||
+    kase.docType === 'GENERAL_MEMO' ||
+    String(kase.id || '').startsWith('กจ.') ||
+    String(kase.legalBase || '').includes('ม.33') ||
+    String(kase.legalBase || '').includes('ระเบียบ') ||
+    String(kase.legalBase || '').includes('นโยบาย')
+  );
+}
 
 const PAGE_FOR_72 = {
   PENDING_SECTION_72:'approval-review.html', PENDING_DIRECTOR_72:'approval-review.html',
@@ -1016,6 +1033,25 @@ function supabaseRowToCase(row) {
   if (kase.receivedDate) {
     kase.deadline60 = addDaysToDateStr(kase.receivedDate, 60);
     kase.deadline2y = addYearsToDateStr(kase.receivedDate, 2);
+  }
+  const memCase = (Array.isArray(CASES) ? CASES : []).find(x => x.id === cc.tcc_no);
+  if (memCase) {
+    if (memCase.procType) kase.procType = memCase.procType;
+    if (memCase.docType) kase.docType = memCase.docType;
+    if (memCase.legalBase) kase.legalBase = memCase.legalBase;
+    if (memCase.resolution) kase.resolution = memCase.resolution;
+    if (memCase.boardOpinion) kase.boardOpinion = memCase.boardOpinion;
+    if (memCase.resolvedAtIso) kase.resolvedAtIso = memCase.resolvedAtIso;
+    if (memCase.ownerClarification) kase.ownerClarification = memCase.ownerClarification;
+    if (memCase.order24Members) kase.order24Members = memCase.order24Members;
+    if (memCase.order24Done) kase.order24Done = memCase.order24Done;
+    if (memCase.order24Signed) kase.order24Signed = memCase.order24Signed;
+    if (memCase.recordedDocHtml && !kase.recordedDocHtml) kase.recordedDocHtml = memCase.recordedDocHtml;
+  }
+  if (!kase.procType) {
+    if (isCase73(kase)) kase.procType = '7.3';
+    else if (isCase72(kase)) kase.procType = '7.2';
+    else kase.procType = '7.1';
   }
   kase.chainOpinions = buildChainOpinions(kase);
   return kase;

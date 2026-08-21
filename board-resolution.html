@@ -276,7 +276,10 @@
       el.value = normalizeDateInputValue(value);
     }
 
-    document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
+    const statusBadgeHtml = (kase.status === 'RESOLVED' && kase.resolutionStage)
+      ? ECMIS.resolutionStageBadge(kase.resolutionStage)
+      : ECMIS.statusBadge(kase.status);
+    document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + statusBadgeHtml + ' ' + ECMIS.slaBadge(kase);
     document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status);
     if (kase.meetingNo) document.getElementById('meetNo').value = kase.meetingNo;
     if (kase.agendaNo) document.getElementById('agendaNo').value = kase.agendaNo;
@@ -441,13 +444,23 @@
 
     const is73 = ECMIS.isCase73(kase);
     const resDataset = is73 ? ECMIS.RESOLUTIONS_73 : ECMIS.RESOLUTIONS;
+    const currentResCode = (typeof kase.resolution === 'object' ? kase.resolution?.code : kase.resolution) || '';
 
-    document.getElementById('resList').innerHTML = resDataset.map((r, i) => `
+    document.getElementById('resList').innerHTML = resDataset.map((r, i) => {
+      const isChecked = currentResCode ? (r.code === currentResCode) : (i === 0);
+      return `
   <label class="list-group-item d-flex gap-2 align-items-start">
-    <input class="form-check-input mt-1" type="radio" name="res" value="${r.code}" ${i === 0 ? 'checked' : ''}>
+    <input class="form-check-input mt-1" type="radio" name="res" value="${r.code}" ${isChecked ? 'checked' : ''}>
     <span><strong>${r.label}</strong>
       <br><small class="text-muted">เอกสารที่ต้องออก: ${r.doc}${r.signer && r.signer !== '—' ? ` · ผู้ลงนาม: ${r.signer}` : ''}</small></span>
-  </label>`).join('');
+  </label>`;
+    }).join('');
+
+    if (kase.boardOpinion && !document.getElementById('boardOpinion').value) {
+      document.getElementById('boardOpinion').value = kase.boardOpinion;
+    } else if (is73 && kase.resolution === 'REVIEW_PROSECUTOR_73' && !document.getElementById('boardOpinion').value) {
+      document.getElementById('boardOpinion').value = 'พยานหลักฐานในสำนวนการไต่สวนปรากฏข้อเท็จจริงครบถ้วนสมบูรณ์ มีมูลความผิดทางอาญาชัดเจน จึงเห็นควรมีมติขอให้พนักงานอัยการทบทวนคำสั่งไม่ฟ้อง หรือมีมติฟ้องคดีเองตาม ม.๓๓';
+    }
 
     function selectedRes() {
       const checked = document.querySelector('input[name="res"]:checked');
