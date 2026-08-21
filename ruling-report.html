@@ -70,15 +70,9 @@
               <label class="form-label field-req">วัน เวลา สถานที่ เกิดเหตุ</label>
               <textarea class="form-control" id="incidentDetail" rows="2"></textarea>
             </div>
-            <div class="row g-2 mb-0">
-              <div class="col-md-6">
-                <label class="form-label field-req">วันที่เกิดเหตุ (หรือเริ่มต้น)</label>
-                <input type="date" class="form-control" id="incidentDate">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">วันที่เกิดเหตุสิ้นสุด (ถ้ามีช่วงเวลา)</label>
-                <input type="date" class="form-control" id="incidentDateEnd">
-              </div>
+            <div class="mb-0">
+              <label class="form-label field-req">วันที่เกิดเหตุ</label>
+              <input type="date" class="form-control" id="incidentDate">
             </div>
           </div>
         </div>
@@ -425,13 +419,12 @@
 
     function calculatePrescriptionForAccused(acc) {
       const incDateStart = document.getElementById('incidentDate').value || kase.incidentDate72 || '2007-07-01';
-      const incDateEnd = document.getElementById('incidentDateEnd') ? document.getElementById('incidentDateEnd').value : (kase.incidentDateEnd72 || '');
       const allOffenses = [...offenseBasisList, ...customOffenses];
       const selArts = allOffenses.filter(b => acc.selected.has(b.trob_id));
       if (!selArts.length) return [];
       return selArts.map(art => {
         const years = acc.roleType === 'ACCESSORY' ? (art.p_accessory || 10) : (art.p_principal || 15);
-        const exp = getExpiryRangeText(incDateStart, incDateEnd, years);
+        const exp = getExpiryRangeText(incDateStart, '', years);
         return {
           article: art.trob_article_no,
           law: art.trob_law_name,
@@ -443,7 +436,6 @@
 
     function autoGeneratePrescriptionNote(options = {}) {
       const incDateStart = document.getElementById('incidentDate').value || kase.incidentDate72;
-      const incDateEnd = document.getElementById('incidentDateEnd') ? document.getElementById('incidentDateEnd').value : (kase.incidentDateEnd72 || '');
       
       if (!accusedRealList.length) return;
 
@@ -504,14 +496,6 @@
       autoGeneratePrescriptionNote({ silent: true });
     });
     document.getElementById('incidentDate').addEventListener('change', () => {
-      renderOffenseBasisBody();
-      autoGeneratePrescriptionNote({ silent: true });
-    });
-    document.getElementById('incidentDateEnd').addEventListener('input', () => {
-      renderOffenseBasisBody();
-      autoGeneratePrescriptionNote({ silent: true });
-    });
-    document.getElementById('incidentDateEnd').addEventListener('change', () => {
       renderOffenseBasisBody();
       autoGeneratePrescriptionNote({ silent: true });
     });
@@ -773,7 +757,6 @@
       setVal('agendaNo', k.agendaNo || '๓.๒');
       setVal('orderNo', k.orderNo || 'ปปท วฉ ๑๙/๒๕๖๙');
       setVal('incidentDate', k.incidentDate72 || '2007-07-01');
-      setVal('incidentDateEnd', k.incidentDateEnd72 || '');
 
       const firstAccused = (k.accused && k.accused[0]) ? k.accused[0] : null;
       setVal('accusedStatus', k.accusedStatus72 || (firstAccused ? `เป็นเจ้าหน้าที่ของรัฐ ตำแหน่ง ${firstAccused.pos || ''} สังกัด ${firstAccused.agency || ''}` : ''));
@@ -832,7 +815,6 @@
         agendaNo: document.getElementById('agendaNo').value.trim(),
         orderNo: document.getElementById('orderNo').value.trim(),
         incidentDate72: document.getElementById('incidentDate').value,
-        incidentDateEnd72: document.getElementById('incidentDateEnd').value,
         accusedStatus72: document.getElementById('accusedStatus').value.trim(),
         accusedAuthority72: document.getElementById('accusedAuthority').value.trim(),
         factSummary72: document.getElementById('factSummary').value.trim(),
@@ -1115,7 +1097,7 @@
       });
     });
 
-    ['meetNo', 'agendaNo', 'orderNo', 'incidentDate', 'incidentDateEnd', 'accusedStatus', 'accusedAuthority', 'factSummary', 'damageDetail', 'incidentDetail', 'prescriptionNote', 'meetingOpinion', 'legalAnalysis', 'criminalFinding', 'disciplinaryFinding', 'discAgency', 'discAccused', 'discCharge', 'discPenalty', 'discMisconduct', 'hasCriminalToggle']
+    ['meetNo', 'agendaNo', 'orderNo', 'incidentDate', 'accusedStatus', 'accusedAuthority', 'factSummary', 'damageDetail', 'incidentDetail', 'prescriptionNote', 'meetingOpinion', 'legalAnalysis', 'criminalFinding', 'disciplinaryFinding', 'discAgency', 'discAccused', 'discCharge', 'discPenalty', 'discMisconduct', 'hasCriminalToggle']
       .forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
