@@ -34,7 +34,7 @@
     <span class="flow-ref ms-auto"><strong>กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ (กบค.)</strong></span>
   </div>
 
-  <!-- KPI Cards (6 Resolution Stages) -->
+  <!-- KPI Cards (Clean Original Text) -->
   <div class="row g-2 mb-4" id="kpiRow"></div>
 
   <!-- Filter & Search Panel -->
@@ -51,22 +51,22 @@
         <div class="col-md-3">
           <label class="form-label fw-semibold text-dark small mb-1"><i class="fa-solid fa-pen-to-square me-1 text-muted"></i>สถานะมติ</label>
           <select id="statusFilter" class="form-select form-select-sm">
-            <option value="ALL">ทั้งหมด (ทุกสถานะมติ)</option>
-            <option value="IN_PROGRESS">1. อยู่ระหว่างการจัดทำมติ (Stage 1)</option>
-            <option value="COMPLETED">2. จัดทำมติแล้วเสร็จ (Stage 2)</option>
-            <option value="SIGNED">3. ส่งสำเนามติเพื่อจัดทำคำสั่ง (ม.24) (Stage 3)</option>
-            <option value="RETURNED">4. ส่งมติเพื่อทำความเห็นชี้มูล (กรณีชี้มูล) (Stage 4)</option>
-            <option value="CLOSED">5. ส่งมติคืนเจ้าของสำนวน/ผู้รับผิดชอบ (Stage 5)</option>
-            <option value="DISPATCHING">6. จัดทำรายงานประชุมแล้วเสร็จ (Stage 6)</option>
+            <option value="ALL">ทั้งหมด</option>
+            <option value="IN_PROGRESS">อยู่ระหว่างการจัดทำมติ</option>
+            <option value="COMPLETED">จัดทำมติแล้วเสร็จ</option>
+            <option value="SIGNED">ส่งสำเนามติเพื่อจัดทำคำสั่ง</option>
+            <option value="RETURNED">ส่งมติและเอกสารที่เกี่ยวข้องเพื่อทำความเห็นชี้มูล</option>
+            <option value="CLOSED">ส่งมติและเอกสารที่เกี่ยวข้องคืนเจ้าของสำนวน/ผู้รับผิดชอบ</option>
+            <option value="DISPATCHING">จัดทำรายงานประชุมแล้วเสร็จ</option>
           </select>
         </div>
         <div class="col-md-3">
           <label class="form-label fw-semibold text-dark small mb-1"><i class="fa-solid fa-filter me-1 text-muted"></i>ประเภทเรื่อง</label>
           <select id="typeFilter" class="form-select form-select-sm">
-            <option value="ALL">ทั้งหมด (7.1, 7.2, 7.3)</option>
-            <option value="7.1">ไต่สวนเบื้องต้น (7.1)</option>
-            <option value="7.2">วินิจฉัยชี้มูล (7.2)</option>
-            <option value="7.3">เรื่องทั่วไป (7.3)</option>
+            <option value="ALL">ทั้งหมด</option>
+            <option value="7.1">ไต่สวนเบื้องต้น</option>
+            <option value="7.2">วินิจฉัยชี้มูล</option>
+            <option value="7.3">เรื่องทั่วไป</option>
           </select>
         </div>
         <div class="col-md-2 text-end">
@@ -135,7 +135,7 @@
             <div id="bulkActionsBox" class="d-none align-items-center gap-2">
               <span class="small text-muted me-1" id="bulkSelectCount">เลือกแล้ว 0 รายการ</span>
               <button type="button" class="btn btn-xs btn-navy py-1 px-2" style="font-size:0.78rem" id="btnBulkApprove">
-                <i class="fa-solid fa-check-double me-1"></i>บันทึกมติรายการที่เลือก (Bulk Action)
+                <i class="fa-solid fa-check-double me-1"></i>บันทึกมติรายการที่เลือก
               </button>
             </div>
             <nav aria-label="Queue navigation" class="ms-auto">
@@ -201,7 +201,7 @@ async function updateCaseStatus(kase, newStatus) {
   ECMIS.saveCases();
 }
 
-let currentTab = 'pending'; // 'pending' (Stage 1-2) | 'dispatched' (Stage 3-6)
+let currentTab = 'pending'; // 'pending' | 'dispatched'
 let CASES = [];
 let allCasesCombined = [];
 let quickFilter = 'ALL';
@@ -218,7 +218,7 @@ function isRowActionable(c) {
   return stg === 1 || stg === 2;
 }
 
-/* ---------- 6-Stage KPI Cards ---------- */
+/* ---------- KPI Cards (Clean Text) ---------- */
 function renderKPICards() {
   const currentSt = quickFilter;
 
@@ -233,13 +233,13 @@ function renderKPICards() {
   };
 
   const kpis = [
-    { id:'ALL',         n: countByStage.ALL,         l:'ทั้งหมดในความรับผิดชอบ', i:'fa-folder-open',      c:'#0F2A62' },
-    { id:'IN_PROGRESS', n: countByStage.IN_PROGRESS, l:'1. อยู่ระหว่างจัดทำมติ', i:'fa-hourglass-half',   c:'#D0A830' },
-    { id:'COMPLETED',   n: countByStage.COMPLETED,   l:'2. จัดทำมติแล้วเสร็จ',   i:'fa-circle-check',     c:'#16A34A' },
-    { id:'SIGNED',      n: countByStage.SIGNED,      l:'3. รอจัดทำคำสั่ง ม.24',  i:'fa-file-signature',   c:'#0284C7' },
-    { id:'RETURNED',    n: countByStage.RETURNED,    l:'4. รอทำความเห็นชี้มูล',  i:'fa-gavel',            c:'#7C3AED' },
-    { id:'CLOSED',      n: countByStage.CLOSED,      l:'5. รอส่งคืนเจ้าของสำนวน', i:'fa-arrow-rotate-left', c:'#64748B' },
-    { id:'DISPATCHING', n: countByStage.DISPATCHING, l:'6. รายงานประชุมเสร็จ',  i:'fa-clipboard-check',  c:'#059669' }
+    { id:'ALL',         n: countByStage.ALL,         l:'ทั้งหมด',                                           i:'fa-folder-open',      c:'#0F2A62' },
+    { id:'IN_PROGRESS', n: countByStage.IN_PROGRESS, l:'อยู่ระหว่างการจัดทำมติ',                            i:'fa-hourglass-half',   c:'#D0A830' },
+    { id:'COMPLETED',   n: countByStage.COMPLETED,   l:'จัดทำมติแล้วเสร็จ',                                 i:'fa-circle-check',     c:'#16A34A' },
+    { id:'SIGNED',      n: countByStage.SIGNED,      l:'ส่งสำเนามติเพื่อจัดทำคำสั่ง',                       i:'fa-file-signature',   c:'#0284C7' },
+    { id:'RETURNED',    n: countByStage.RETURNED,    l:'ส่งมติและเอกสารเพื่อทำความเห็นชี้มูล',             i:'fa-gavel',            c:'#7C3AED' },
+    { id:'CLOSED',      n: countByStage.CLOSED,      l:'ส่งมติและเอกสารคืนเจ้าของสำนวน',                   i:'fa-arrow-rotate-left', c:'#64748B' },
+    { id:'DISPATCHING', n: countByStage.DISPATCHING, l:'จัดทำรายงานประชุมแล้วเสร็จ',                        i:'fa-clipboard-check',  c:'#059669' }
   ];
 
   document.getElementById('kpiRow').innerHTML = kpis.map(k => {
@@ -297,8 +297,8 @@ function switchViewTab(tab, resetFilter = true) {
     if (titleEl) titleEl.textContent = 'คิวงานรอบันทึกมติคณะกรรมการ ป.ป.ท.';
     if (instEl) instEl.innerHTML = '<i class="fa-solid fa-circle-info me-1"></i>คลิก "บันทึกมติ" เพื่อบันทึกองค์ประชุม คะแนนเสียง และสรุปมติ';
   } else {
-    if (titleEl) titleEl.textContent = 'ทะเบียนมติและสถานะส่งต่อ (ส่งต่อกลุ่มงานกิจการฯ / สายงานต้นทาง)';
-    if (instEl) instEl.innerHTML = '<i class="fa-solid fa-circle-check text-success me-1"></i>สำนวนที่มีมติแล้วเสร็จและส่งมอบให้กลุ่มงานที่เกี่ยวข้องดำเนินการต่อ (Read-Only)';
+    if (titleEl) titleEl.textContent = 'ทะเบียนมติและสถานะส่งต่อ';
+    if (instEl) instEl.innerHTML = '<i class="fa-solid fa-circle-check text-success me-1"></i>สำนวนที่มีมติแล้วเสร็จและส่งมอบให้กลุ่มงานที่เกี่ยวข้องดำเนินการต่อ';
   }
 
   if (resetFilter) {
@@ -324,35 +324,35 @@ function caseIdSortValue(id) {
 function getActionBadge(c) {
   const stg = getStage(c);
   if (stg === 1) {
-    return '<span class="st st-pending"><i class="fa-solid fa-hourglass-half me-1"></i>1. อยู่ระหว่างจัดทำมติ</span>';
+    return '<span class="st st-pending"><i class="fa-solid fa-hourglass-half me-1"></i>อยู่ระหว่างการจัดทำมติ</span>';
   }
   if (stg === 2) {
-    return '<span class="st st-done"><i class="fa-solid fa-circle-check me-1"></i>2. จัดทำมติแล้วเสร็จ</span>';
+    return '<span class="st st-done"><i class="fa-solid fa-circle-check me-1"></i>จัดทำมติแล้วเสร็จ</span>';
   }
   if (stg === 3) {
-    return '<span class="st st-stage-3" style="background:#E0F2FE;color:#0369A1;border:1px solid #BAE6FD"><i class="fa-solid fa-file-signature me-1"></i>ส่งต่อกลุ่มกิจการฯ (รอคำสั่ง ม.24)</span>';
+    return '<span class="st st-stage-3" style="background:#E0F2FE;color:#0369A1;border:1px solid #BAE6FD"><i class="fa-solid fa-file-signature me-1"></i>ส่งสำเนามติเพื่อจัดทำคำสั่ง</span>';
   }
   if (stg === 4) {
-    return '<span class="st st-stage-4" style="background:#F3E8FF;color:#7E22CE;border:1px solid #E9D5FF"><i class="fa-solid fa-gavel me-1"></i>ส่งต่อกลุ่มกิจการฯ (รอรายงานชี้มูล)</span>';
+    return '<span class="st st-stage-4" style="background:#F3E8FF;color:#7E22CE;border:1px solid #E9D5FF"><i class="fa-solid fa-gavel me-1"></i>ส่งมติและเอกสารที่เกี่ยวข้องเพื่อทำความเห็นชี้มูล</span>';
   }
   if (stg === 5) {
-    return '<span class="st st-stage-5" style="background:#F1F5F9;color:#475569;border:1px solid #CBD5E1"><i class="fa-solid fa-arrow-rotate-left me-1"></i>ส่งคืนเจ้าของสำนวนแล้ว</span>';
+    return '<span class="st st-stage-5" style="background:#F1F5F9;color:#475569;border:1px solid #CBD5E1"><i class="fa-solid fa-arrow-rotate-left me-1"></i>ส่งมติและเอกสารที่เกี่ยวข้องคืนเจ้าของสำนวน/ผู้รับผิดชอบ</span>';
   }
   if (stg === 6) {
-    return '<span class="st st-stage-6" style="background:#ECFDF5;color:#047857;border:1px solid #A7F3D0"><i class="fa-solid fa-clipboard-check me-1"></i>รวมรายงานประชุมแล้วเสร็จ</span>';
+    return '<span class="st st-stage-6" style="background:#ECFDF5;color:#047857;border:1px solid #A7F3D0"><i class="fa-solid fa-clipboard-check me-1"></i>จัดทำรายงานประชุมแล้วเสร็จ</span>';
   }
   return ECMIS.resolutionStageBadge(stg);
 }
 
-/* ป้ายประเภทเรื่อง (7.1, 7.2, 7.3) */
+/* ป้ายประเภทเรื่อง (Clean Text) */
 function typeBadge(c, is72){
   if (ECMIS.isCase73(c)) {
-    return '<span class="meet-badge meet-type-general"><i class="fa-solid fa-scale-balanced me-1"></i>เรื่องทั่วไป (7.3)</span>';
+    return '<span class="meet-badge meet-type-general"><i class="fa-solid fa-scale-balanced me-1"></i>เรื่องทั่วไป</span>';
   }
   if (is72) {
-    return '<span class="meet-badge meet-type-ruling"><i class="fa-solid fa-gavel me-1"></i>วินิจฉัยชี้มูล (7.2)</span>';
+    return '<span class="meet-badge meet-type-ruling"><i class="fa-solid fa-gavel me-1"></i>วินิจฉัยชี้มูล</span>';
   }
-  return '<span class="meet-badge meet-type-inquiry"><i class="fa-solid fa-file-lines me-1"></i>ไต่สวนเบื้องต้น (7.1)</span>';
+  return '<span class="meet-badge meet-type-inquiry"><i class="fa-solid fa-file-lines me-1"></i>ไต่สวนเบื้องต้น</span>';
 }
 
 function row(c){
@@ -606,7 +606,7 @@ function applyFilters() {
       else matchSt = (c.status === st);
     }
 
-    // Type filter match (7.1, 7.2, 7.3)
+    // Type filter match
     let matchType = true;
     if (typ === '7.1') matchType = (!is72 && !is73);
     else if (typ === '7.2') matchType = is72;
