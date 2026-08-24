@@ -349,6 +349,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="../assets/ecmis-app.js"></script>
   <script src="../assets/ecmis-model.js"></script>
   <script>
@@ -360,6 +361,21 @@
     const resCode = params.get('res') || 'ACCEPT_S24P1';
     const isSub = resCode === 'ACCEPT_S24P3';
     const M = ECMIS.mergeField;
+
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function loadCaseFromSupabase(caseId) {
+      const { data, error } = await sb
+        .from('tbl_res_request')
+        .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+        .eq('tbl_cmp_case.tcc_no', caseId)
+        .eq('is_deleted', false)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? ECMIS.supabaseRowToCase(data) : null;
+    }
 
     /* เอกสารในหน้านี้ยาวและมีหลายโหมด (แต่งตั้ง/บันทึกเสนอ/แก้ไของค์ประกอบ) — แทนที่จะแยก
        introBlock/flowBlocks/signBlock ด้วยมือทีละโหมด ใช้ตัวตัดหน้าอัตโนมัติ: รับ HTML เดิมที่มีอยู่แล้ว
@@ -448,7 +464,7 @@
        (ตรรกะเดิมทั้งหมด ย้ายมาไว้ในไฟล์รวม ไม่มีการเปลี่ยนพฤติกรรม)
        =================================================================== */
     const BASE_SIGNER = isSub
-      ? { name: 'นายอำนาจ พวงชมภู', title: 'ประธานกรรมการ ป.ป.ท.', roleId: 'chairman' }
+      ? { name: 'นายวิชัย ยุติธรรม', title: 'ประธานกรรมการ ป.ป.ท.', roleId: 'chairman' }
       : { name: 'นายอภิชาติ สุจริตกุล', title: 'เลขาธิการคณะกรรมการ ป.ป.ท.', roleId: 'secgen' };
     const DELEGATE_SIGNER = {
       name: 'นายอภิชาติ สุจริตกุล',
@@ -746,7 +762,7 @@
        MODE: MEMO — ปปท. 5-01 / 5-04 (บันทึกเสนอเพื่อลงนามในคำสั่งแต่งตั้ง)
        =================================================================== */
     const MEMO_SIGNER = {
-      sub: { name: 'นายอำนาจ พวงชมภู', title: 'ประธานกรรมการ ป.ป.ท.', roleId: 'chairman' },
+      sub: { name: 'นายวิชัย ยุติธรรม', title: 'ประธานกรรมการ ป.ป.ท.', roleId: 'chairman' },
       base: { name: 'นายอภิชาติ สุจริตกุล', title: 'เลขาธิการคณะกรรมการ ป.ป.ท.', roleId: 'secgen' }
     };
     let memoMembers = isSub ? [
@@ -959,7 +975,7 @@
     }
     function amendSigner() {
       return amendLevel() === 'sub'
-        ? { name: 'นายอำนาจ พวงชมภู', title: 'ประธานกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ', roleId: 'chairman' }
+        ? { name: 'นายวิชัย ยุติธรรม', title: 'ประธานกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ', roleId: 'chairman' }
         : { name: 'นายอภิชาติ สุจริตกุล', title: 'เลขาธิการคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ', roleId: 'secgen' };
     }
     function refreshAmendSigner() {
@@ -1243,6 +1259,30 @@
     renderMemoMembers();
     renderAmendTable();
     setMode('appoint');
+
+    /* โหลดข้อมูลจริงจาก Supabase แบบ background หลังเรนเดอร์ด้วย mock data ไปก่อนแล้ว (เหมือน
+       res/inbox.html) — ถ้าได้ข้อมูลจริงมา mutate kase object เดิม (คนละ binding แต่ object เดียวกัน
+       จึง closure ทุกจุดที่จับ kase ไว้เห็นค่าที่อัปเดตด้วย) แล้ว re-render ส่วนที่ผูกกับข้อมูลสำนวน */
+    (async function refreshFromSupabase() {
+      let live;
+      try {
+        live = await loadCaseFromSupabase(params.get('case') || '1547/2568');
+      } catch (err) {
+        console.warn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ ใช้ข้อมูลจำลองต่อไป:', err);
+        return;
+      }
+      if (!live) return;
+      Object.assign(kase, live);
+
+      document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status);
+      const allegationBoxEl = document.getElementById('allegationBox');
+      if (allegationBoxEl) allegationBoxEl.innerHTML = kase.allegation ? `<p>${kase.allegation}</p>` : '';
+
+      renderMembers(); renderRules();
+      renderMemoMembers();
+      renderAmendTable();
+      setMode(currentMode);
+    })();
   </script>
 </body>
 
