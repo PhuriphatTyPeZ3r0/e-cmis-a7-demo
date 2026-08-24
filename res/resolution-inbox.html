@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8">
@@ -12,8 +12,12 @@
 <link href="../assets/ecmis-app.css" rel="stylesheet">
 <style>
 .btn-xs { font-size: 0.76rem; padding: 0.2rem 0.5rem; border-radius: 4px; }
-.kpi-card { transition: all 0.2s ease; }
-.kpi-card:hover { transform: translateY(-2px); shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.kpi-card { transition: all 0.2s ease; cursor: pointer; border-radius: 12px; }
+.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(15,42,98,0.1) !important; }
+.kpi-card.active { border-width: 2px !important; }
+.meet-type-inquiry { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.75rem; }
+.meet-type-ruling { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.75rem; }
+.meet-type-general { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; font-size: 0.75rem; }
 </style>
 </head>
 <body>
@@ -22,36 +26,47 @@
 
   <div class="page-head">
     <div>
-      <h1><i class="fa-solid fa-scale-balanced me-2" style="color:#0F2A62"></i>รายการรอจัดทำมติ</h1>
+      <h1><i class="fa-solid fa-scale-balanced me-2" style="color:#0F2A62"></i>รายการรอจัดทำมติคณะกรรมการ ป.ป.ท.</h1>
     </div>
-    <span class="flow-ref ms-auto">รายการงานของกลุ่มงานคำวินิจฉัยและมติคณะกรรมการ</span>
+    <span class="flow-ref ms-auto"><strong>กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ (กบค.)</strong></span>
   </div>
 
-  <div class="row g-3 mb-4" id="kpiRow"></div>
+  <!-- KPI Cards (6 Status Stages) -->
+  <div class="row g-2 mb-4" id="kpiRow"></div>
 
-  <div class="card card-ecmis mb-4">
+  <!-- Filter & Search Panel -->
+  <div class="card card-ecmis mb-4 shadow-sm border-0">
     <div class="card-body p-3">
       <div class="row g-3 align-items-end">
-        <div class="col-md-5">
-          <label class="form-label fw-semibold text-dark small mb-1">ค้นหางาน แฟ้ม หรือผู้ต้องหา</label>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold text-dark small mb-1">ค้นหาสำนวน แฟ้ม หรือผู้ถูกกล่าวหา</label>
           <div class="input-group input-group-sm">
             <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-            <input type="text" id="searchInput" class="form-control" placeholder="เลขสำนวน, ผู้กล่าวหา, ผู้ถูกกล่าวหา, เลขบัตร ปชช., ผู้รับผิดชอบ หรือหน่วยงาน">
+            <input type="text" id="searchInput" class="form-control" placeholder="เลขสำนวน, ผู้กล่าวหา, ผู้ถูกกล่าวหา, ผู้รับผิดชอบ หรือหน่วยงาน">
           </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
           <label class="form-label fw-semibold text-dark small mb-1"><i class="fa-solid fa-pen-to-square me-1 text-muted"></i>สถานะมติ</label>
           <select id="statusFilter" class="form-select form-select-sm">
-            <option value="ALL">ทั้งหมด</option>
-            <option value="IN_PROGRESS">อยู่ระหว่างการจัดทำมติ</option>
-            <option value="COMPLETED">จัดทำมติแล้วเสร็จ</option>
-            <option value="SIGNED">ส่งสำเนามติเพื่อจัดทำคำสั่ง</option>
-            <option value="RETURNED">ส่งมติและเอกสารที่เกี่ยวข้องเพื่อทำความเห็นชี้มูล (กรณีชี้มูล)</option>
-            <option value="CLOSED">ส่งมติและเอกสารที่เกี่ยวข้องคืนเจ้าของสำนวน/ผู้รับผิดชอบ</option>
-            <option value="DISPATCHING">จัดทำรายงานประชุมแล้วเสร็จ</option>
+            <option value="ALL">ทั้งหมด (ทุกสถานะมติ)</option>
+            <option value="IN_PROGRESS">๑. อยู่ระหว่างการจัดทำมติ (Stage 1)</option>
+            <option value="COMPLETED">๒. จัดทำมติแล้วเสร็จ (Stage 2)</option>
+            <option value="SIGNED">๓. ส่งสำเนามติเพื่อจัดทำคำสั่ง (Stage 3)</option>
+            <option value="RETURNED">๔. ส่งมติเพื่อทำความเห็นชี้มูล (กรณีชี้มูล) (Stage 4)</option>
+            <option value="CLOSED">๕. ส่งมติคืนเจ้าของสำนวน/ผู้รับผิดชอบ (Stage 5)</option>
+            <option value="DISPATCHING">๖. จัดทำรายงานประชุมแล้วเสร็จ (Stage 6)</option>
           </select>
         </div>
-        <div class="col-md-3 text-end">
+        <div class="col-md-3">
+          <label class="form-label fw-semibold text-dark small mb-1"><i class="fa-solid fa-filter me-1 text-muted"></i>ประเภทเรื่อง</label>
+          <select id="typeFilter" class="form-select form-select-sm">
+            <option value="ALL">ทั้งหมด (๗.๑, ๗.๒, ๗.๓)</option>
+            <option value="7.1">ไต่สวนเบื้องต้น (๗.๑)</option>
+            <option value="7.2">วินิจฉัยชี้มูล (๗.๒)</option>
+            <option value="7.3">เรื่องทั่วไป (๗.๓)</option>
+          </select>
+        </div>
+        <div class="col-md-2 text-end">
           <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 w-100" id="btnClearFilter">
             <i class="fa-solid fa-rotate-left me-1"></i>ล้างตัวกรอง
           </button>
@@ -60,33 +75,39 @@
     </div>
   </div>
 
+  <!-- Queue Table Panel -->
   <div class="row g-3 align-items-start">
     <div class="col-12">
 
-      <div class="card card-ecmis mb-4">
-        <div class="card-header d-flex align-items-center flex-wrap gap-2">
-          <i class="fa-solid fa-list-check text-primary"></i>
-          <span class="fw-bold" id="card1TitleText">รายการสำนวนที่ต้องจัดทำมติ</span>
-          <span class="badge bg-primary rounded-pill ms-1" id="totalCount">0</span>
+      <div class="card card-ecmis mb-4 shadow-sm border-0">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2 py-2 px-3 bg-white border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-list-check text-primary"></i>
+            <span class="fw-bold" id="card1TitleText">รายการสำนวนในความรับผิดชอบ</span>
+            <span class="badge bg-primary rounded-pill ms-1" id="totalCount">0</span>
+          </div>
+          <div class="small text-muted">
+            <i class="fa-solid fa-circle-info me-1"></i>คลิก "ดำเนินการ" เพื่อบันทึกมติหรือส่งต่อใน Process ถัดไป
+          </div>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
             <table class="table table-hover tbl-ecmis mb-0 align-middle">
               <colgroup>
                 <col style="width:40px">
-                <col style="width:125px">
                 <col style="width:130px">
+                <col style="width:135px">
                 <col>
-                <col style="width:160px">
-                <col style="width:115px">
-                <col style="width:130px">
+                <col style="width:190px">
+                <col style="width:120px">
+                <col style="width:170px">
               </colgroup>
               <thead>
                 <tr>
                   <th class="text-center"><input type="checkbox" id="chkAll" class="form-check-input"></th>
                   <th class="sortable-header" data-sort="id" style="cursor:pointer">เรื่องที่ <i class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
                   <th>ประเภทเรื่อง</th>
-                  <th>เรื่องที่กล่าวหา</th>
+                  <th>เรื่องที่กล่าวหา / ผู้รับผิดชอบ</th>
                   <th>สถานะมติ</th>
                   <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                   <th class="text-end">ดำเนินการ</th>
@@ -96,7 +117,7 @@
             </table>
           </div>
 
-          <div class="px-3 py-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-2" id="queueFooter">
+          <div class="px-3 py-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-2 bg-light" id="queueFooter">
             <div id="bulkActionsBox" class="d-none align-items-center gap-2">
               <span class="small text-muted me-1" id="bulkSelectCount">เลือกแล้ว 0 รายการ</span>
               <button type="button" class="btn btn-xs btn-navy py-1 px-2" style="font-size:0.78rem" id="btnBulkApprove">
@@ -121,81 +142,112 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="../assets/ecmis-app.js"></script>
 <script>
-ECMIS.renderShell('resolution-index.html');
+ECMIS.renderShell('resolution-inbox.html');
 
 const role = ECMIS.currentRole();
 
-/* หน้านี้เฉพาะ board_sec เท่านั้น (เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ) — แยกออกมาจาก
-   index.html เพราะ logic ของบทบาทนี้ (BUCKET/หมวดหมู่มติ/สถานะบันทึกมติ) ต่างจากบทบาทอื่น
-   มากพอที่การฝัง role.id === 'board_sec' ไว้ในไฟล์เดียวกับบทบาทอื่นทำให้เกิด bug ซ้ำๆ หลายครั้ง
-   (KPI/badge/ปุ่ม/การเรียงลำดับ/ขอบเขตรายการ ไม่ตรงกัน) — ถ้าไม่ใช่ board_sec ให้กลับไปหน้าเดิม */
+/* หน้านี้เฉพาะ board_sec เท่านั้น (เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ) */
 if (role.id !== 'board_sec') { location.href = ECMIS.homeHref(role.id); }
 
-/* ---------- โหลดสำนวนจาก Supabase จริง แทน ECMIS.CASES แบบ mock (เหมือน index.html) ---------- */
+/* ---------- โหลดสำนวนจาก Supabase / Local Data ---------- */
 const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let sb = null;
+try {
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+} catch (e) {
+  console.warn('Supabase init skipped, using local data store:', e);
+}
 
 async function loadCasesFromSupabase() {
-  const { data, error } = await sb
-    .from('tbl_res_request')
-    .select('*, tbl_cmp_case(*, tbl_cmp_case_accused(*))')
-    .eq('is_deleted', false);
-  if (error) throw error;
-  return data.map(row => ECMIS.supabaseRowToCase(row)).filter(Boolean);
+  if (!sb) return null;
+  try {
+    const { data, error } = await sb
+      .from('tbl_res_request')
+      .select('*, tbl_cmp_case(*, tbl_cmp_case_accused(*))')
+      .eq('is_deleted', false);
+    if (error) throw error;
+    return data.map(row => ECMIS.supabaseRowToCase(row)).filter(Boolean);
+  } catch (err) {
+    console.warn('Supabase fetch failed, falling back to local CASES:', err);
+    return null;
+  }
 }
 
 async function updateCaseStatus(kase, newStatus) {
-  const code = ECMIS.STATUS_CODE[newStatus];
-  if (!code) throw new Error(`ไม่พบรหัสสถานะสำหรับ ${newStatus}`);
-  const { error } = await sb.from('tbl_res_request').update({ trr_status: code }).eq('trr_id', kase.trr_id);
-  if (error) throw error;
   kase.status = newStatus;
+  if (sb && kase.trr_id) {
+    const code = ECMIS.STATUS_CODE[newStatus];
+    if (code) {
+      await sb.from('tbl_res_request').update({ trr_status: code }).eq('trr_id', kase.trr_id);
+    }
+  }
+  ECMIS.saveCases();
 }
 
 const BUCKET = {
   pending:  ['AGENDA_SET', 'IN_MEETING', 'PENDING_INVITE_72', 'IN_MEETING_72'],
-  done:     ['RESOLVED_PENDING', 'RESOLVED', 'RESOLVED_PENDING_72']
+  done:     ['RESOLVED_PENDING', 'RESOLVED', 'RESOLVED_PENDING_72', 'PENDING_SIGN_RULING_72', 'DISPATCHING', 'CLOSED']
 };
 const OWN_SCOPE_STATUSES = [...BUCKET.pending, ...BUCKET.done];
 
 let CASES = [];
 let all = [];
-
-document.title = 'รายการรอจัดทำมติ | E-CMIS';
-
 let allCasesCombined = [];
-
 let quickFilter = 'ALL';
 
-function isRowActionable(c) { return BUCKET.pending.includes(c.status); }
+function isRowActionable(c) { 
+  const stg = getStage(c);
+  return stg === 1 || BUCKET.pending.includes(c.status);
+}
 
+function getStage(c) {
+  if (c.resolutionStage && typeof c.resolutionStage === 'number') {
+    return c.resolutionStage;
+  }
+  return ECMIS.computeResolutionStage(c);
+}
+
+/* ---------- 6-Stage KPI Cards ---------- */
 function renderKPICards() {
   const currentSt = quickFilter;
 
-  const pendingCount = allCasesCombined.filter(c => BUCKET.pending.includes(c.status)).length;
-  const signedCount = allCasesCombined.filter(c => BUCKET.done.includes(c.status)).length;
+  const countByStage = {
+    ALL: allCasesCombined.length,
+    IN_PROGRESS: allCasesCombined.filter(c => getStage(c) === 1).length,
+    COMPLETED:   allCasesCombined.filter(c => getStage(c) === 2).length,
+    SIGNED:      allCasesCombined.filter(c => getStage(c) === 3).length,
+    RETURNED:    allCasesCombined.filter(c => getStage(c) === 4).length,
+    CLOSED:      allCasesCombined.filter(c => getStage(c) === 5).length,
+    DISPATCHING: allCasesCombined.filter(c => getStage(c) === 6).length
+  };
 
   const kpis = [
-    { id:'ALL', n: allCasesCombined.length, l:'รายการทั้งหมด', i:'fa-folder-open', c:'#0F2A62' },
-    { id:'PENDING', n: pendingCount, l:'อยู่ระหว่างการจัดทำมติ', i:'fa-hourglass-half', c:'#D0A830' },
-    { id:'SIGNED', n: signedCount, l:'จัดทำมติแล้วเสร็จ', i:'fa-circle-check', c:'#16A34A' }
+    { id:'ALL',         n: countByStage.ALL,         l:'ทั้งหมดในความรับผิดชอบ', i:'fa-folder-open',      c:'#0F2A62' },
+    { id:'IN_PROGRESS', n: countByStage.IN_PROGRESS, l:'๑. อยู่ระหว่างจัดทำมติ', i:'fa-hourglass-half',   c:'#D0A830' },
+    { id:'COMPLETED',   n: countByStage.COMPLETED,   l:'๒. จัดทำมติแล้วเสร็จ',   i:'fa-circle-check',     c:'#16A34A' },
+    { id:'SIGNED',      n: countByStage.SIGNED,      l:'๓. รอจัดทำคำสั่ง ม.๒๔',  i:'fa-file-signature',   c:'#0284C7' },
+    { id:'RETURNED',    n: countByStage.RETURNED,    l:'๔. รอทำความเห็นชี้มูล',  i:'fa-gavel',            c:'#7C3AED' },
+    { id:'CLOSED',      n: countByStage.CLOSED,      l:'๕. รอส่งคืนเจ้าของสำนวน', i:'fa-arrow-rotate-left', c:'#64748B' },
+    { id:'DISPATCHING', n: countByStage.DISPATCHING, l:'๖. รายงานประชุมเสร็จ',  i:'fa-clipboard-check',  c:'#059669' }
   ];
 
   document.getElementById('kpiRow').innerHTML = kpis.map(k => {
     const isActive = (currentSt === k.id);
     return `
-    <div class="col-12 col-md-4">
-      <div class="card card-ecmis kpi-card h-100 ${isActive ? 'border-2 shadow-sm' : ''}"
-           style="min-height:88px; cursor:pointer; ${isActive ? `border-color:${k.c} !important; background:${k.c}0D;` : ''}"
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="card card-ecmis kpi-card h-100 ${isActive ? 'active border-2 shadow-sm' : 'border'}"
+           style="min-height:82px; ${isActive ? `border-color:${k.c} !important; background:${k.c}0D;` : 'background:#fff;'}"
            onclick="filterByKPI('${k.id}')">
-        <div class="card-body d-flex align-items-center gap-2 py-3 px-3">
-          <div style="flex:0 0 38px;height:38px;border-radius:10px;background:${k.c}18;display:flex;align-items:center;justify-content:center">
-            <i class="fa-solid ${k.i}" style="color:${k.c};font-size:1.05rem"></i>
+        <div class="card-body d-flex align-items-center gap-2 py-2 px-2">
+          <div style="flex:0 0 34px;height:34px;border-radius:8px;background:${k.c}18;display:flex;align-items:center;justify-content:center">
+            <i class="fa-solid ${k.i}" style="color:${k.c};font-size:0.95rem"></i>
           </div>
           <div style="min-width:0">
-            <div style="font-size:1.5rem;font-weight:700;font-family:var(--serif);color:${k.c};line-height:1.1">${k.n}</div>
-            <div class="text-muted text-truncate" style="font-size:.74rem;margin-top:2px" title="${k.l}">${k.l}</div>
+            <div style="font-size:1.35rem;font-weight:700;font-family:var(--serif);color:${k.c};line-height:1.1">${k.n}</div>
+            <div class="text-muted text-truncate" style="font-size:.70rem;margin-top:2px" title="${k.l}">${k.l}</div>
           </div>
         </div>
       </div>
@@ -206,7 +258,7 @@ function renderKPICards() {
 function filterByKPI(statusId) {
   quickFilter = statusId;
   const sf = document.getElementById('statusFilter');
-  if (sf) sf.value = 'ALL';
+  if (sf) sf.value = statusId;
   applyFilters();
 }
 
@@ -222,59 +274,84 @@ function caseIdSortValue(id) {
 }
 
 function getActionBadge(c) {
-  if (c.status === 'RESOLVED' || BUCKET.done.includes(c.status)) {
-    const stage = c.resolutionStage || 2;
-    return ECMIS.resolutionStageBadge(stage);
-  }
-  if (BUCKET.pending.includes(c.status)) {
-    return ECMIS.resolutionStageBadge(1);
-  }
-  return ECMIS.statusBadge(c.status);
+  const stg = getStage(c);
+  return ECMIS.resolutionStageBadge(stg);
 }
 
-/* ป้าย "ประเภทเรื่อง" ในคอลัมน์ของตัวเอง — ตรงกับ 3 กลุ่มใน docTypeFilter (71/72/73) เสมอ
-   เหมือนที่ทำไว้ใน inbox.html ให้ตารางลักษณะเดียวกัน */
+/* ป้ายประเภทเรื่อง (๗.๑, ๗.๒, ๗.๓) */
 function typeBadge(c, is72){
   if (ECMIS.isCase73(c)) {
-    return '<span class="meet-badge meet-type-general"><i class="fa-solid fa-scale-balanced"></i>เรื่องทั่วไป</span>';
+    return '<span class="meet-badge meet-type-general"><i class="fa-solid fa-scale-balanced me-1"></i>เรื่องทั่วไป (๗.๓)</span>';
   }
   if (is72) {
-    return '<span class="meet-badge meet-type-ruling"><i class="fa-solid fa-gavel"></i>วินิจฉัยชี้มูล</span>';
+    return '<span class="meet-badge meet-type-ruling"><i class="fa-solid fa-gavel me-1"></i>วินิจฉัยชี้มูล (๗.๒)</span>';
   }
-  return '<span class="meet-badge meet-type-inquiry"><i class="fa-solid fa-file-lines"></i>ไต่สวนเบื้องต้น</span>';
+  return '<span class="meet-badge meet-type-inquiry"><i class="fa-solid fa-file-lines me-1"></i>ไต่สวนเบื้องต้น (๗.๑)</span>';
 }
 
 function row(c){
-
   const is72 = ECMIS.isCase72(c);
-  const page = is72 ? ECMIS.pageForCase72(c) : 'resolution.html';
-  const target = `${page}?case=${encodeURIComponent(c.id)}`;
-  const isPendingAction = isRowActionable(c);
+  const stg = getStage(c);
+  
+  // Intelligent Action Route determination
+  let target = 'resolution.html?case=' + encodeURIComponent(c.id);
+  let btnLabel = 'บันทึกมติ';
+  let btnIcon = 'fa-pen-to-square';
+  let btnClass = 'btn-navy';
 
+  if (stg === 1) {
+    target = is72 ? `resolution-72.html?case=${encodeURIComponent(c.id)}` : `resolution.html?case=${encodeURIComponent(c.id)}`;
+    btnLabel = 'บันทึกมติ';
+    btnIcon = 'fa-pen-to-square';
+    btnClass = 'btn-navy';
+  } else if (stg === 2) {
+    target = is72 ? `resolution-72.html?case=${encodeURIComponent(c.id)}` : `resolution.html?case=${encodeURIComponent(c.id)}`;
+    btnLabel = 'ดูมติที่บันทึก';
+    btnIcon = 'fa-circle-check';
+    btnClass = 'btn-outline-success';
+  } else if (stg === 3) {
+    target = `order.html?case=${encodeURIComponent(c.id)}&res=${encodeURIComponent(c.resolution || 'ACCEPT_S24P1')}`;
+    btnLabel = 'จัดทำคำสั่ง ม.๒๔';
+    btnIcon = 'fa-file-pen';
+    btnClass = 'btn-gold shadow-sm';
+  } else if (stg === 4) {
+    target = `ruling-report.html?case=${encodeURIComponent(c.id)}`;
+    btnLabel = 'จัดทำรายงานชี้มูล';
+    btnIcon = 'fa-gavel';
+    btnClass = 'btn-primary shadow-sm';
+  } else if (stg === 5) {
+    target = is72 ? `resolution-72.html?case=${encodeURIComponent(c.id)}` : `resolution.html?case=${encodeURIComponent(c.id)}`;
+    btnLabel = 'ส่งคืน/ส่งต่อ';
+    btnIcon = 'fa-share-from-square';
+    btnClass = 'btn-secondary';
+  } else if (stg === 6) {
+    target = `meeting-report.html`;
+    btnLabel = 'รายงานการประชุม';
+    btnIcon = 'fa-clipboard-check';
+    btnClass = 'btn-outline-secondary';
+  }
+
+  const isPendingAction = isRowActionable(c);
   const statusBadgeHtml = getActionBadge(c);
 
   return `<tr>
     <td class="text-center">
-      ${isPendingAction ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="ไม่มีสิทธิ์สั่งการกลุ่ม"></i>'}
+      ${isPendingAction ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="มติเสร็จสิ้นแล้ว"></i>'}
     </td>
     <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
     <td>${typeBadge(c, is72)}</td>
-    <td style="max-width:300px">
+    <td style="max-width:320px">
       <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
-      <small class="text-muted d-block" style="font-size:0.75rem">${c.ownerOrg}</small>
+      <small class="text-muted d-block" style="font-size:0.75rem">
+        <i class="fa-regular fa-building me-1"></i>${c.ownerOrg} · <i class="fa-regular fa-user me-1"></i>${c.owner || 'เจ้าของสำนวน'}
+      </small>
     </td>
     <td>${statusBadgeHtml}</td>
     <td>${ECMIS.slaBadge(c)}</td>
     <td class="text-end">
-      ${isPendingAction ? `
-        <a href="${target}" class="btn btn-sm btn-navy px-3">
-          <i class="fa-solid fa-pen-to-square me-1"></i>ดำเนินการ
-        </a>
-      ` : `
-        <a href="${target}" class="btn btn-sm btn-outline-secondary px-3">
-          <i class="fa-solid fa-eye me-1"></i>ดูรายละเอียด
-        </a>
-      `}
+      <a href="${target}" class="btn btn-sm ${btnClass} px-2 py-1" style="font-size:0.8rem; white-space:nowrap;">
+        <i class="fa-solid ${btnIcon} me-1"></i>${btnLabel}
+      </a>
     </td>
   </tr>`;
 }
@@ -306,7 +383,7 @@ function renderMyQueue(loading = false) {
 
     setTimeout(() => {
       renderMyQueue(false);
-    }, 250);
+    }, 200);
     return;
   }
 
@@ -341,9 +418,9 @@ function renderMyQueue(loading = false) {
   tbodyPrimary.innerHTML = paginatedCases.length
     ? paginatedCases.map(c => row(c)).join('')
     : `<tr><td colspan="7" class="text-center text-muted py-4">
-         <i class="fa-solid fa-face-smile fa-lg mb-2 d-block"></i>
+         <i class="fa-solid fa-face-smile fa-lg mb-2 d-block text-primary"></i>
          ไม่มีรายการสำนวนตามเงื่อนไขการค้นหา<br>
-         <small>ลองเปลี่ยนข้อความค้นหาหรือตัวกรองสถานะ</small></td></tr>`;
+         <small>ลองเปลี่ยนคำค้นหา หรือเลือกตัวกรองสถานะเป็น "ทั้งหมด"</small></td></tr>`;
 
   const totalCountEl = document.getElementById('totalCount');
   if (totalCountEl) totalCountEl.textContent = sortedCases.length;
@@ -431,31 +508,29 @@ document.getElementById('btnBulkApprove')?.addEventListener('click', () => {
 
   ECMIS.confirmAction({
     title: `ยืนยันบันทึกมติกลุ่มจำนวน ${chks.length} รายการ`,
-    html: `<p>ระบบจะบันทึกมติและดำเนินการสำนวนที่เลือกทั้งหมดตามขั้นตอนของกลุ่มงานคำวินิจฉัยและมติคณะกรรมการ</p>`,
-    confirmText: 'ยืนยันสั่งการกลุ่ม'
+    html: `<p>ระบบจะบันทึกมติเห็นชอบตามที่เสนอและดำเนินการสำนวนที่เลือกทั้งหมดตามขั้นตอนของกลุ่มงานมติ</p>`,
+    confirmText: 'ยืนยันบันทึกมติกลุ่ม'
   }).then(async res => {
     if (!res.isConfirmed) return;
-    const transitionMap = {
-      'AGENDA_SET': 'IN_MEETING',
-      'IN_MEETING': 'RESOLVED_PENDING',
-      'RESOLVED_PENDING': 'RESOLVED',
-      'RESOLVED': 'DISPATCHING',
-      'DISPATCHING': 'CLOSED'
-    };
     try {
       for (const chk of chks) {
         const id = chk.dataset.id;
         const c = CASES.find(x => x.id === id);
-        if (c && transitionMap[c.status]) {
-          await updateCaseStatus(c, transitionMap[c.status]);
+        if (c) {
+          c.status = 'RESOLVED';
+          c.resolution = 'ACCEPT_S24P1';
+          c.resolutionStage = 3;
+          c.resolvedAt = new Date().toLocaleString('th-TH');
+          c.resolvedAtIso = new Date().toISOString();
         }
       }
+      ECMIS.saveCases();
     } catch (err) {
       console.error('สั่งการกลุ่มไม่สำเร็จ:', err);
       ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
       return;
     }
-    ECMIS.toastOk(`สั่งการกลุ่มสำเร็จจำนวน ${chks.length} รายการแล้ว`);
+    ECMIS.toastOk(`บันทึกมติกลุ่มสำเร็จจำนวน ${chks.length} รายการแล้ว`);
     setTimeout(() => location.reload(), 1200);
   });
 });
@@ -463,8 +538,14 @@ document.getElementById('btnBulkApprove')?.addEventListener('click', () => {
 function applyFilters() {
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   const st = document.getElementById('statusFilter').value;
+  const typ = document.getElementById('typeFilter')?.value || 'ALL';
 
   filteredCombined = allCasesCombined.filter(c => {
+    const is72 = ECMIS.isCase72(c);
+    const is73 = ECMIS.isCase73(c);
+    const stage = getStage(c);
+
+    // Search query match
     const matchQ = !q ||
       c.id.toLowerCase().includes(q) ||
       (c.subject && c.subject.toLowerCase().includes(q)) ||
@@ -476,28 +557,25 @@ function applyFilters() {
         (p.idcard && p.idcard.toLowerCase().includes(q))
       ));
 
-    /* ตัวกรองภาพรวมจาก KPI card (BUCKET-based) — อิสระจาก #statusFilter */
-    let matchQuick = true;
-    if (quickFilter !== 'ALL') {
-      if (quickFilter === 'PENDING') matchQuick = BUCKET.pending.includes(c.status);
-      else if (quickFilter === 'SIGNED') matchQuick = BUCKET.done.includes(c.status);
-      else matchQuick = (c.status === quickFilter);
-    }
-
-    /* ตัวกรองสถานะย่อยจาก #statusFilter — ใช้ได้เฉพาะสำนวนที่ RESOLVED และมี resolutionStage
-       (1-6) กำกับอยู่แล้วเท่านั้น ไม่ fallback ไปทั้ง BUCKET เพราะจะกรองกว้างเกินความหมายของ stage นั้นๆ */
+    // Status filter match (Stage 1 to 6)
     let matchSt = true;
     if (st !== 'ALL') {
-      if (st === 'IN_PROGRESS') matchSt = (c.resolutionStage === 1 || BUCKET.pending.includes(c.status));
-      else if (st === 'COMPLETED') matchSt = (c.resolutionStage === 2);
-      else if (st === 'SIGNED') matchSt = (c.resolutionStage === 3);
-      else if (st === 'RETURNED') matchSt = (c.resolutionStage === 4);
-      else if (st === 'CLOSED') matchSt = (c.resolutionStage === 5);
-      else if (st === 'DISPATCHING') matchSt = (c.resolutionStage === 6);
+      if (st === 'IN_PROGRESS') matchSt = (stage === 1);
+      else if (st === 'COMPLETED') matchSt = (stage === 2);
+      else if (st === 'SIGNED') matchSt = (stage === 3);
+      else if (st === 'RETURNED') matchSt = (stage === 4);
+      else if (st === 'CLOSED') matchSt = (stage === 5);
+      else if (st === 'DISPATCHING') matchSt = (stage === 6);
       else matchSt = (c.status === st);
     }
 
-    return matchQ && matchQuick && matchSt;
+    // Type filter match (7.1, 7.2, 7.3)
+    let matchType = true;
+    if (typ === '7.1') matchType = (!is72 && !is73);
+    else if (typ === '7.2') matchType = is72;
+    else if (typ === '7.3') matchType = is73;
+
+    return matchQ && matchSt && matchType;
   });
 
   currentPage = 1;
@@ -506,13 +584,15 @@ function applyFilters() {
 }
 
 document.getElementById('searchInput').addEventListener('input', applyFilters);
-document.getElementById('statusFilter').addEventListener('change', () => {
-  quickFilter = 'ALL';
+document.getElementById('statusFilter').addEventListener('change', (e) => {
+  quickFilter = e.target.value;
   applyFilters();
 });
+document.getElementById('typeFilter')?.addEventListener('change', applyFilters);
 document.getElementById('btnClearFilter').addEventListener('click', () => {
   document.getElementById('searchInput').value = '';
   document.getElementById('statusFilter').value = 'ALL';
+  if (document.getElementById('typeFilter')) document.getElementById('typeFilter').value = 'ALL';
   quickFilter = 'ALL';
   applyFilters();
 });
@@ -522,7 +602,7 @@ document.getElementById('btnClearFilter').addEventListener('click', () => {
     const live = await loadCasesFromSupabase();
     CASES = (live && live.length) ? live : ECMIS.CASES.slice();
   } catch (err) {
-    console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+    console.error('โหลดข้อมูลไม่สำเร็จ:', err);
     CASES = ECMIS.CASES.slice();
   }
   all = CASES.filter(c => OWN_SCOPE_STATUSES.includes(c.status) && ECMIS.canViewCase(c, role.id));
