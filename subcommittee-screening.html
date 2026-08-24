@@ -1,0 +1,743 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>คณะอนุกลั่นกรองฯ คณะที่ 1–8 | E-CMIS</title>
+    <link rel="icon" type="image/png" href="../assets/pacc_logo.png">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="../assets/ecmis-app.css" rel="stylesheet">
+    <link href="../assets/a4-ecmis-workspace.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <main class="app-main">
+        <div class="page-head">
+            <div>
+                <h1><i class="fa-solid fa-users-viewfinder me-2"></i>คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง</h1>
+            </div>
+            <div class="ms-auto text-end">
+                <span class="flow-ref">กระจายงานอัตโนมัติและบันทึกมติอนุฯ</span>
+                <div class="mt-1" id="stBadge"></div>
+            </div>
+        </div>
+
+        <div class="ws-card mb-3">
+            <div class="card-body pb-1" id="stepper"></div>
+        </div>
+
+        <div class="document-workspace" id="docWorkspace">
+            <div>
+
+                <div class="ws-card mb-3">
+                    <div class="card-header"><i class="fa-solid fa-shuffle"></i> การกระจายสำนวนเข้าคณะ (Auto Routing)</div>
+                    <div class="card-body">
+                        <div class="row g-2 mb-3" id="quotaGrid"></div>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-6">
+                                <label class="form-label">คณะที่ระบบจัดสรรให้</label>
+                                <input class="form-control autofilled" id="assignedTeam" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Manual Assign (ผอ.กบค. เท่านั้น)</label>
+                                <select class="form-select" id="manualTeam"></select>
+                            </div>
+                        </div>
+                        <div class="mt-2 d-none" id="manualReasonBox">
+                            <label class="form-label field-req">เหตุผลการ Manual Assign</label>
+                            <textarea class="form-control" id="manualReason" rows="2"
+                                placeholder="เช่น คณะที่ 3 มีความเชี่ยวชาญด้านการจัดซื้อจัดจ้าง"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ws-card mb-3">
+                    <div class="card-header"><i class="fa-solid fa-clipboard-check"></i> บันทึกมติและข้อสังเกตของคณะอนุกลั่นกรองฯ</div>
+                    <div class="card-body">
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-4"><label class="form-label field-req">ครั้งที่ประชุมคณะอนุฯ</label>
+                                <input class="form-control" id="subMeetNo" value="12/2569">
+                            </div>
+                            <div class="col-md-4"><label class="form-label field-req">วันที่ประชุม</label>
+                                <input class="form-control" id="subMeetDate" value="2569-05-28">
+                            </div>
+                            <div class="col-md-4"><label class="form-label">จำนวนอนุกรรมการที่เข้าประชุม</label>
+                                <input class="form-control" id="subQuorum" value="5" type="number" min="1">
+                            </div>
+                        </div>
+
+                        <div class="rule-panel mb-3" id="subQuorumBox"></div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">จำนวนอนุกรรมการทั้งคณะ (ตั้งค่าโดย Admin)</label>
+                                <input class="form-control" id="subTotal" type="number" min="1" value="7">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">องค์ประชุมขั้นต่ำที่ระบบใช้</label>
+                                <input class="form-control autofilled" id="subMin" readonly>
+                            </div>
+                        </div>
+
+                        <label class="form-label field-req">มติของคณะอนุกลั่นกรองฯ</label>
+                        <div class="list-group mb-3">
+                            <label class="list-group-item d-flex gap-2 align-items-start">
+                                <input class="form-check-input mt-1" type="radio" name="subRes" value="AGREE" checked>
+                                <span><strong>เห็นพ้องกับความเห็นของผู้รับผิดชอบสำนวน</strong>
+                                    <br><small class="text-muted">เสนอบอร์ดพิจารณาตามที่เสนอ</small></span>
+                            </label>
+                            <label class="list-group-item d-flex gap-2 align-items-start">
+                                <input class="form-check-input mt-1" type="radio" name="subRes" value="DIFFER">
+                                <span><strong>เห็นต่างจากความเห็นของผู้รับผิดชอบสำนวน</strong>
+                                    <br><small class="text-muted">เสนอบอร์ดพร้อมความเห็นแย้งของคณะอนุฯ</small></span>
+                            </label>
+                            <label class="list-group-item d-flex gap-2 align-items-start">
+                                <input class="form-check-input mt-1" type="radio" name="subRes" value="MORE">
+                                <span><strong>ขอให้แสวงหาข้อเท็จจริงเพิ่มเติมก่อนเสนอบอร์ด</strong>
+                                    <br><small
+                                        class="text-muted">ส่งกลับเจ้าของสำนวนพร้อมประเด็นที่ต้องดำเนินการ</small></span>
+                            </label>
+                            <label class="list-group-item d-flex gap-2 align-items-start">
+                                <input class="form-check-input mt-1" type="radio" name="subRes" value="NOT_ACCEPT">
+                                <span><strong>ไม่รับเรื่องไว้พิจารณา</strong>
+                                    <br><small class="text-muted">แจ้งมติและความเห็นกลับผู้รับผิดชอบสำนวน</small></span>
+                            </label>
+                        </div>
+
+                        <label class="form-label field-req">ความเห็น / ข้อสังเกตของคณะอนุกลั่นกรองฯ</label>
+                        <textarea class="form-control" id="subOpinion" rows="4"
+                            placeholder="ระบุความเห็นและข้อสังเกตประกอบการพิจารณาของบอร์ด"></textarea>
+                        <div class="val-msg val-err" data-for="subOpinion">กรุณาระบุความเห็นของคณะอนุกลั่นกรองฯ</div>
+                    </div>
+                </div>
+
+                <!-- Card 4: Digital Signature -->
+                <div class="ws-card mb-3" id="sigCard">
+                    <div class="card-header"><i class="fa-solid fa-signature"></i> ลายมือชื่อดิจิทัลรับรองมติคณะอนุกรรมการฯ</div>
+                    <div class="card-body">
+                        <div id="sigBox" class="sig-box">
+                            <i class="fa-solid fa-file-signature fa-2x mb-2" style="color:#7C8CA3"></i>
+                            <div class="sig-name">ยังไม่ได้ลงนาม</div>
+                            <div class="sig-meta">กดปุ่ม "ลงนามดิจิทัลรับรองมติ" ที่แถบด้านล่าง</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="ws-doc-pane" style="top:calc(var(--topbar-h) + 14px)">
+                <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
+                <div class="ws-doc-toolbar">
+                    <span class="name"><i class="fa-solid fa-file-word"></i> มติการประชุม (ผ่านอนุกลั่นกรองคณะฯ)
+                        <span class="badge-tpl">Mail-Merge</span></span>
+                    <button class="btn btn-sm btn-light" onclick="window.print()"><i class="fa-solid fa-print"></i></button>
+                    <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
+                </div>
+                <div class="ws-paper-stage">
+                    <div class="doc-paper doc-resolution a4-paper" id="docPaper"></div>
+                </div>
+            </aside>
+        </div>
+
+        <div id="actionBarSlot"></div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../assets/ecmis-app.js"></script>
+    <script src="../assets/ecmis-model.js"></script>
+    <script>
+        ECMIS.renderShell('screening.html');
+
+        const params = new URLSearchParams(location.search);
+        const kase = ECMIS.getCase(params.get('case') || '1547/2568');
+        const role = ECMIS.currentRole();
+
+        const docType = ECMIS.DOC_TYPES[kase.docType];
+        const isRuling = docType.code === 'RULING';
+
+        document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
+        document.getElementById('stepper').innerHTML = isRuling
+            ? ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72)
+            : ECMIS.stepperHtml(kase.status);
+
+        if (isRuling) {
+            document.querySelector('.page-head h1').innerHTML =
+                '<i class="fa-solid fa-users-viewfinder me-2"></i>คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง พิจารณา';
+            document.querySelector('.flow-ref').innerHTML = 'คณะอนุกลั่นกรองฯ พิจารณาและส่งต่อเพื่อเตรียมประชุม';
+        }
+
+        if (isRuling) { initScreening72(); } else { initScreening71(); }
+
+        /* ---------- Document workspace: collapsible pane ---------- */
+        const docWorkspace = document.getElementById('docWorkspace');
+        const PANE_KEY = 'ecmis-subcommittee-screening-docpane-collapsed';
+        function setPaneCollapsed(collapsed) {
+            docWorkspace.classList.toggle('pane-collapsed', collapsed);
+            localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
+        }
+        if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
+        document.getElementById('btnPaneCollapse').addEventListener('click', () => setPaneCollapsed(true));
+        document.getElementById('btnPaneExpand').addEventListener('click', () => setPaneCollapsed(false));
+
+        function initScreening71(){
+
+        const QUOTA = [
+            { n: 1, used: 40 }, { n: 2, used: 38 }, { n: 3, used: 22 }, { n: 4, used: 31 },
+            { n: 5, used: 40 }, { n: 6, used: 19 }, { n: 7, used: 27 }, { n: 8, used: 35 }
+        ];
+        const assigned = kase.subCommittee || ('คณะที่ ' + QUOTA.filter(q => q.used < 40).sort((a, b) => a.used - b.used)[0].n);
+
+        document.getElementById('quotaGrid').innerHTML = QUOTA.map(q => {
+            const full = q.used >= 40;
+            const isAssigned = assigned === ('คณะที่ ' + q.n);
+            const pct = Math.round(q.used / 40 * 100);
+            return `<div class="col-6 col-md-3">
+    <div class="ws-card h-100 ${isAssigned ? 'border-2' : ''}"
+         style="${isAssigned ? 'border-color:#D0A830' : ''}">
+      <div class="card-body p-2 text-center">
+        <div style="font-size:.78rem;font-weight:600;color:var(--ecmis-navy)">
+          คณะที่ ${q.n} ${isAssigned ? '<i class="fa-solid fa-star" style="color:#D0A830"></i>' : ''}
+        </div>
+        <div style="font-size:1.05rem;font-weight:700;color:${full ? '#DB2626' : '#166434'}">${q.used}<span style="font-size:.7rem;color:#7C8CA3">/40</span></div>
+        <div class="progress" style="height:5px">
+          <div class="progress-bar ${full ? 'bg-danger' : 'bg-success'}" style="width:${pct}%"></div>
+        </div>
+        ${full ? '<div style="font-size:.66rem;color:#DB2626;margin-top:2px">เต็มโควตา</div>' : ''}
+      </div>
+    </div>
+  </div>`;
+        }).join('');
+
+        document.getElementById('assignedTeam').value = assigned + ' (Round-Robin อัตโนมัติ)';
+        document.getElementById('manualTeam').innerHTML =
+            '<option value="">— ไม่เปลี่ยนแปลง —</option>' +
+            QUOTA.map(q => `<option value="คณะที่ ${q.n}" ${q.used >= 40 ? 'disabled' : ''}>คณะที่ ${q.n}${q.used >= 40 ? ' (เต็มโควตา)' : ''}</option>`).join('');
+        document.getElementById('manualTeam').disabled = role.id !== 'dir_case';
+        document.getElementById('manualTeam').addEventListener('change', e => {
+            document.getElementById('manualReasonBox').classList.toggle('d-none', !e.target.value);
+            renderDoc();
+        });
+
+        document.getElementById('subTotal').value = ECMIS.CONFIG.subMemberCount;
+
+        function renderSubQuorum() {
+            const total = Math.max(1, +document.getElementById('subTotal').value || ECMIS.CONFIG.subMemberCount);
+            const min = Math.ceil(total * ECMIS.CONFIG.subQuorumRatio);
+            const att = +document.getElementById('subQuorum').value || 0;
+            const ok = att >= min;
+            document.getElementById('subMin').value = `${min} คน (กึ่งหนึ่งของ ${total})`;
+            document.getElementById('subQuorumBox').innerHTML = `
+    <div class="rule ${ok ? 'pass' : 'fail'}">
+      <i class="fa-solid ${ok ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
+      <span><strong>องค์ประชุมคณะอนุกลั่นกรองฯ:</strong> เข้าประชุม ${att} จาก ${total} คน
+        — ต้องไม่น้อยกว่า ${min} คน (กึ่งหนึ่งโดยอนุโลมจาก ม.12)</span>
+    </div>
+    ${!ok ? `<div class="rule fail"><i class="fa-solid fa-ban"></i>
+      <span><strong>ระบบเตือน (ไม่บล็อก)</strong> — เนื่องจากเกณฑ์นี้ยังไม่มีฐานกฎหมายโดยตรง
+      ต่างจากบอร์ดใหญ่ที่ระบบบล็อกตาม ม.12</span></div>` : ''}`;
+            return ok;
+        }
+        ['subTotal', 'subQuorum'].forEach(id =>
+            document.getElementById(id).addEventListener('input', renderSubQuorum));
+
+        let signed = false;
+        let pendingSigData = null;
+        const SIGNER_NAME = 'นางสาวกานดา วิเชียรศรี';
+        const SIGNER_CERT = 'PACC-SUBCOMM-2569-001';
+
+        function updateSigBoxUI(isSigned, sigData, dateStr) {
+            const sigBoxEl = document.getElementById('sigBox');
+            if (!sigBoxEl) return;
+            const team = document.getElementById('manualTeam')?.value || assigned;
+            const title = `อนุกรรมการและเลขานุการ คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${team}`;
+            if (isSigned) {
+                sigBoxEl.className = 'sig-box signed';
+                sigBoxEl.innerHTML = `
+                    ${sigData && sigData.sig ? `<img src="${sigData.sig}" style="max-height:60px; max-width:180px; margin-bottom:6px; object-fit:contain;" alt="ลายเซ็น"><br>` : `<i class="fa-solid fa-circle-check fa-2x mb-2" style="color:#16A34A"></i><br>`}
+                    <div class="sig-name">${SIGNER_NAME}</div>
+                    <div class="sig-meta">${title}</div>
+                    <div class="sig-meta" style="color:#16A34A; margin-top:4px;"><i class="fa-solid fa-shield-halved me-1"></i>ลงนามดิจิทัลแล้วเมื่อ ${dateStr}</div>`;
+            } else {
+                sigBoxEl.className = 'sig-box';
+                sigBoxEl.innerHTML = `
+                    <i class="fa-solid fa-file-signature fa-2x mb-2" style="color:#7C8CA3"></i>
+                    <div class="sig-name">ยังไม่ได้ลงนาม</div>
+                    <div class="sig-meta">กดปุ่ม "ลงนามดิจิทัลรับรองมติ" ที่แถบด้านล่าง</div>`;
+            }
+        }
+
+        function renderDoc() {
+            const M = ECMIS.mergeField;
+            const team = document.getElementById('manualTeam').value || assigned;
+            const meetNo = document.getElementById('subMeetNo').value.trim();
+            const meetDate = ECMIS.thaiDate(document.getElementById('subMeetDate').value.trim());
+            const opinion = document.getElementById('subOpinion').value.trim();
+            const res = document.querySelector('input[name="subRes"]:checked').value;
+            const RES_TXT = {
+                AGREE: 'เห็นพ้องกับความเห็นของผู้รับผิดชอบสำนวน และเห็นควรเสนอคณะกรรมการ ป.ป.ท. พิจารณาตามที่เสนอ',
+                DIFFER: 'เห็นต่างจากความเห็นของผู้รับผิดชอบสำนวน และเห็นควรเสนอคณะกรรมการ ป.ป.ท. พิจารณาพร้อมความเห็นของคณะอนุกรรมการ',
+                MORE: 'เห็นควรให้ผู้รับผิดชอบสำนวนแสวงหาข้อเท็จจริงเพิ่มเติมก่อนเสนอคณะกรรมการ ป.ป.ท.',
+                NOT_ACCEPT: 'ไม่รับเรื่องไว้พิจารณา และให้แจ้งมติพร้อมความเห็นกลับไปยังผู้รับผิดชอบสำนวน'
+            };
+
+            document.getElementById('docPaper').innerHTML = `
+    <div class="doc-secret">ลับ</div>
+    <div class="doc-title">
+      <div class="doc-title-l1">มติการประชุม</div>
+      <div class="doc-title-l2">คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}</div>
+    </div>
+    <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}</div>
+
+    <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
+    <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+    <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner)}</div>
+    <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
+
+    <div class="doc-body-indent">
+      <div class="doc-h">ผู้ถูกร้อง</div>
+      ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} — ${M(a.pos)}</div>`).join('')}
+
+      <div class="doc-h">ข้อกล่าวหา</div>
+      <div class="doc-indent">${M(kase.allegation)}</div>
+
+      <div class="doc-h">ความเห็นและข้อสังเกตของคณะอนุกรรมการ</div>
+      <div class="doc-indent">${M(opinion, '……………………………………………………………………………………')}</div>
+    </div>
+
+    <div class="doc-h">มติคณะอนุกรรมการ</div>
+    <div class="doc-indent">คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}
+      พิจารณาแล้วมีมติ ${M(RES_TXT[res])}</div>
+
+    <div class="doc-sign">
+      ${signed && pendingSigData && pendingSigData.sig ? `<img class="doc-sig-img" src="${pendingSigData.sig}" alt="ลายมือชื่อ"><br>` : (signed ? `<span style="display:inline-block;padding:4px 8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:4px;color:#065f46;font-size:0.8rem;margin-bottom:6px"><i class="fa-solid fa-certificate me-1"></i>Digital Signature Verified (${pendingSigData?.certCode || SIGNER_CERT})</span><br>` : '<span class="doc-dots"></span><br>')}
+      (${SIGNER_NAME})<br>
+      อนุกรรมการและเลขานุการ<br>
+      คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}
+      ${signed ? `<br><span style="font-size:0.75rem;color:#16A34A"><i class="fa-solid fa-circle-check"></i> ลงนามดิจิทัลเมื่อ ${new Date().toLocaleString('th-TH')}</span>` : ''}
+    </div>
+    <div class="doc-secret-foot">ลับ</div>`;
+        }
+
+        ['subMeetNo', 'subMeetDate', 'subOpinion'].forEach(id =>
+            document.getElementById(id).addEventListener('input', renderDoc));
+        document.querySelectorAll('input[name="subRes"]').forEach(r =>
+            r.addEventListener('change', renderDoc));
+
+        function buildButtons() {
+            if (signed) {
+                return [
+                    { act: 'edit_sign', label: 'แก้ไข / ลงนามใหม่', icon: 'fa-pen-to-square', cls: 'btn-outline-warning' },
+                    { act: 'clear_sign', label: 'ลบลายเซ็น', icon: 'fa-trash-can', cls: 'btn-outline-danger' },
+                    { act: 'save_status', label: 'บันทึกเพื่อส่งมติ', icon: 'fa-paper-plane', cls: 'btn-success' }
+                ];
+            }
+            return [
+                { act: 'save', label: 'บันทึกร่างมติ', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' },
+                { act: 'sign', label: 'ลงนามดิจิทัลรับรองมติ', icon: 'fa-signature', cls: 'btn-gold' }
+            ];
+        }
+
+        function renderActionButtons() {
+            document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons());
+            document.querySelectorAll('.action-bar [data-act]').forEach(b =>
+                b.addEventListener('click', () => handle(b.dataset.act)));
+        }
+        renderActionButtons();
+
+        function validateScreening() {
+            const subMeetNo = document.getElementById('subMeetNo').value.trim();
+            const subMeetDate = document.getElementById('subMeetDate').value.trim();
+            if (!subMeetNo || !subMeetDate) {
+                ECMIS.toastWarn('กรุณาระบุ ครั้งที่ประชุม และ วันที่ประชุมคณะอนุฯ');
+                return false;
+            }
+            const manualTeam = document.getElementById('manualTeam').value;
+            const manualReason = document.getElementById('manualReason').value.trim();
+            if (manualTeam && !manualReason) {
+                ECMIS.toastWarn('กรุณาระบุเหตุผลการ Manual Assign');
+                return false;
+            }
+            const op = document.getElementById('subOpinion');
+            if (op.value.trim().length === 0) {
+                op.classList.add('is-invalid-ecmis');
+                document.querySelector('.val-msg[data-for="subOpinion"]').classList.add('show');
+                ECMIS.toastWarn('กรุณาระบุความเห็นของคณะอนุกลั่นกรองฯ');
+                return false;
+            } else {
+                op.classList.remove('is-invalid-ecmis');
+                document.querySelector('.val-msg[data-for="subOpinion"]').classList.remove('show');
+            }
+            return true;
+        }
+
+        function handle(act) {
+            if (act === 'save') {
+                ECMIS.toastOk('บันทึกร่างมติคณะอนุฯ เรียบร้อย');
+                return;
+            }
+            if (act === 'edit_sign') {
+                handle('sign');
+                return;
+            }
+            if (act === 'clear_sign') {
+                ECMIS.confirmAction({
+                    title: 'ยืนยันการลบลายเซ็น',
+                    html: '<p>คุณต้องการยกเลิกลายเซ็นรับรองมตินี้ใช่หรือไม่?</p>',
+                    confirmText: 'ยืนยันลบลายเซ็น',
+                    danger: true
+                }).then(r => {
+                    if (r.isConfirmed) {
+                        signed = false;
+                        pendingSigData = null;
+                        updateSigBoxUI(false);
+                        renderDoc();
+                        renderActionButtons();
+                        ECMIS.toastOk('ลบลายเซ็นเรียบร้อยแล้ว');
+                    }
+                });
+                return;
+            }
+            if (act === 'sign') {
+                if (!validateScreening()) return;
+                const team = document.getElementById('manualTeam').value || assigned;
+                const signerTitle = `อนุกรรมการและเลขานุการ คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${team}`;
+
+                ECMIS.signDialog(`มติการประชุมคณะอนุกรรมการกลั่นกรองฯ ${team} — เรื่องที่ ${kase.id}`,
+                    `${SIGNER_NAME} — ${signerTitle}`, SIGNER_CERT)
+                    .then(res => {
+                        if (!res.isConfirmed) return;
+                        signed = true;
+                        pendingSigData = res.value;
+                        const now = new Date();
+                        updateSigBoxUI(true, res.value, now.toLocaleString('th-TH'));
+                        renderDoc();
+                        renderActionButtons();
+                        ECMIS.toastOk('ลงนามรับรองมติเรียบร้อยแล้ว กรุณากดปุ่ม "บันทึกเพื่อส่งมติ"');
+                    });
+                return;
+            }
+            if (act === 'save_status') {
+                if (!validateScreening()) return;
+                const res = document.querySelector('input[name="subRes"]:checked').value;
+                const team = document.getElementById('manualTeam').value || assigned;
+                const signerTitle = `อนุกรรมการและเลขานุการ คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${team}`;
+                const next = (res === 'MORE' || res === 'NOT_ACCEPT')
+                    ? { p: ECMIS.homeHref(role.id), t: 'ส่งกลับผู้รับผิดชอบสำนวน' }
+                    : { p: 'agenda.html', t: 'ส่งฝ่ายเจ้าหน้าที่กิจการฯ เพื่อบรรจุระเบียบวาระ' };
+
+                ECMIS.Model.CaseStore.update(kase.id, Object.assign(
+                    { subCommittee: team, signedBySubSec: true, subSecSignedAt: new Date().toISOString() },
+                    (res === 'AGREE' || res === 'DIFFER') ? { status: 'AGENDA_SET' } : {}
+                ));
+
+                if (ECMIS.Model && ECMIS.Model.SignatureStore) {
+                    ECMIS.Model.SignatureStore.create({
+                        caseId: kase.id,
+                        docType: `มติคณะอนุกรรมการกลั่นกรองฯ ${team}`,
+                        signerRole: 'subcommittee_sec',
+                        signerName: `${SIGNER_NAME} — ${signerTitle}`,
+                        method: pendingSigData?.mode || 'cert',
+                        signedAt: new Date().toISOString()
+                    });
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'ส่งมติคณะอนุกลั่นกรองฯ เรียบร้อย',
+                    html: `<div class="text-start">
+                        สำนวน <strong>${kase.id}</strong> — ${next.t}<br>
+                        <span class="st st-done mt-2 d-inline-block"><i class="fa-solid fa-signature me-1"></i>ลงนามรับรองมติแล้ว</span>
+                    </div>`,
+                    confirmButtonColor: '#0F2A62',
+                    confirmButtonText: 'ตกลง'
+                }).then(() => location.href = next.p + '?case=' + encodeURIComponent(kase.id));
+            }
+        }
+
+        renderSubQuorum(); renderDoc();
+        }
+
+        function initScreening72(){
+            const M = ECMIS.mergeField;
+
+            const QUOTA = [
+                { n: 1, used: 40 }, { n: 2, used: 38 }, { n: 3, used: 22 }, { n: 4, used: 31 },
+                { n: 5, used: 40 }, { n: 6, used: 19 }, { n: 7, used: 27 }, { n: 8, used: 35 }
+            ];
+            const assigned = kase.subCommittee || ('คณะที่ ' + QUOTA.filter(q => q.used < 40).sort((a, b) => a.used - b.used)[0].n);
+
+            document.getElementById('quotaGrid').innerHTML = QUOTA.map(q => {
+                const full = q.used >= 40;
+                const isAssigned = assigned === ('คณะที่ ' + q.n);
+                const pct = Math.round(q.used / 40 * 100);
+                return `<div class="col-6 col-md-3">
+    <div class="ws-card h-100 ${isAssigned ? 'border-2' : ''}"
+         style="${isAssigned ? 'border-color:#D0A830' : ''}">
+      <div class="card-body p-2 text-center">
+        <div style="font-size:.78rem;font-weight:600;color:var(--ecmis-navy)">
+          คณะที่ ${q.n} ${isAssigned ? '<i class="fa-solid fa-star" style="color:#D0A830"></i>' : ''}
+        </div>
+        <div style="font-size:1.05rem;font-weight:700;color:${full ? '#DB2626' : '#166434'}">${q.used}<span style="font-size:.7rem;color:#7C8CA3">/40</span></div>
+        <div class="progress" style="height:5px">
+          <div class="progress-bar ${full ? 'bg-danger' : 'bg-success'}" style="width:${pct}%"></div>
+        </div>
+        ${full ? '<div style="font-size:.66rem;color:#DB2626;margin-top:2px">เต็มโควตา</div>' : ''}
+      </div>
+    </div>
+  </div>`;
+            }).join('');
+
+            document.getElementById('assignedTeam').value = assigned + ' (Round-Robin อัตโนมัติ)';
+            document.getElementById('manualTeam').innerHTML =
+                '<option value="">— ไม่เปลี่ยนแปลง —</option>' +
+                QUOTA.map(q => `<option value="คณะที่ ${q.n}" ${q.used >= 40 ? 'disabled' : ''}>คณะที่ ${q.n}${q.used >= 40 ? ' (เต็มโควตา)' : ''}</option>`).join('');
+            document.getElementById('manualTeam').disabled = role.id !== 'dir_case';
+            document.getElementById('manualTeam').addEventListener('change', e => {
+                document.getElementById('manualReasonBox').classList.toggle('d-none', !e.target.value);
+                renderDoc();
+            });
+
+            document.getElementById('subTotal').value = ECMIS.CONFIG.subMemberCount;
+            function renderSubQuorum(){
+                const total = Math.max(1, +document.getElementById('subTotal').value || ECMIS.CONFIG.subMemberCount);
+                const min = Math.ceil(total * ECMIS.CONFIG.subQuorumRatio);
+                const att = +document.getElementById('subQuorum').value || 0;
+                const ok = att >= min;
+                document.getElementById('subMin').value = `${min} คน (กึ่งหนึ่งของ ${total})`;
+                document.getElementById('subQuorumBox').innerHTML = `
+    <div class="rule ${ok ? 'pass' : 'fail'}">
+      <i class="fa-solid ${ok ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
+      <span><strong>องค์ประชุมคณะอนุกลั่นกรองฯ:</strong> เข้าประชุม ${att} จาก ${total} คน
+        — ต้องไม่น้อยกว่า ${min} คน (กึ่งหนึ่งโดยอนุโลมจาก ม.12)</span>
+    </div>
+    ${!ok ? `<div class="rule fail"><i class="fa-solid fa-ban"></i>
+      <span><strong>ระบบเตือน (ไม่บล็อก)</strong> — เนื่องจากเกณฑ์นี้ยังไม่มีฐานกฎหมายโดยตรง
+      ต่างจากบอร์ดใหญ่ที่ระบบบล็อกตาม ม.12</span></div>` : ''}`;
+            }
+            ['subTotal', 'subQuorum'].forEach(id => document.getElementById(id).addEventListener('input', renderSubQuorum));
+
+            const resBoxEl = document.querySelector('input[name="subRes"]').closest('.list-group');
+            if (resBoxEl) resBoxEl.previousElementSibling.classList.add('d-none');
+            if (resBoxEl) resBoxEl.classList.add('d-none');
+
+            let signed72 = false;
+            let pendingSigData72 = null;
+            const SIGNER_NAME72 = 'นางสาวกานดา วิเชียรศรี';
+            const SIGNER_CERT72 = 'PACC-SUBCOMM-2569-001';
+
+            function updateSigBoxUI72(isSigned, sigData, dateStr) {
+                const sigBoxEl = document.getElementById('sigBox');
+                if (!sigBoxEl) return;
+                const team = document.getElementById('manualTeam')?.value || assigned;
+                const title = `อนุกรรมการและเลขานุการ คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${team}`;
+                if (isSigned) {
+                    sigBoxEl.className = 'sig-box signed';
+                    sigBoxEl.innerHTML = `
+                        ${sigData && sigData.sig ? `<img src="${sigData.sig}" style="max-height:60px; max-width:180px; margin-bottom:6px; object-fit:contain;" alt="ลายเซ็น"><br>` : `<i class="fa-solid fa-circle-check fa-2x mb-2" style="color:#16A34A"></i><br>`}
+                        <div class="sig-name">${SIGNER_NAME72}</div>
+                        <div class="sig-meta">${title}</div>
+                        <div class="sig-meta" style="color:#16A34A; margin-top:4px;"><i class="fa-solid fa-shield-halved me-1"></i>ลงนามดิจิทัลแล้วเมื่อ ${dateStr}</div>`;
+                } else {
+                    sigBoxEl.className = 'sig-box';
+                    sigBoxEl.innerHTML = `
+                        <i class="fa-solid fa-file-signature fa-2x mb-2" style="color:#7C8CA3"></i>
+                        <div class="sig-name">ยังไม่ได้ลงนาม</div>
+                        <div class="sig-meta">กดปุ่ม "ลงนามดิจิทัลรับรองความเห็น" ที่แถบด้านล่าง</div>`;
+                }
+            }
+
+            function renderDoc(){
+                const team = document.getElementById('manualTeam').value || assigned;
+                const meetNo = document.getElementById('subMeetNo').value.trim();
+                const meetDate = ECMIS.thaiDate(document.getElementById('subMeetDate').value.trim());
+                const opinion = document.getElementById('subOpinion').value.trim();
+
+                document.getElementById('docPaper').innerHTML = `
+    <div class="doc-secret">ลับ</div>
+    <div class="doc-title">
+      <div class="doc-title-l1">รายงานความเห็น</div>
+      <div class="doc-title-l2">คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}</div>
+    </div>
+    <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}</div>
+
+    <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
+    <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+    <div class="doc-row"><span class="k">ผู้รับผิดชอบสำนวน</span> ${M(kase.owner)}</div>
+    <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
+
+    <div class="doc-body-indent">
+      <div class="doc-h">ผู้ถูกกล่าวหา</div>
+      ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}
+
+      <div class="doc-h">ข้อกล่าวหา</div>
+      <div class="doc-indent">${M(kase.allegation)}</div>
+
+      <div class="doc-h">ความเห็นของคณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง</div>
+      <div class="doc-indent">${M(opinion, '……………………………………………………………………………………')}</div>
+    </div>
+
+    <div class="doc-sign">
+      ${signed72 && pendingSigData72 && pendingSigData72.sig ? `<img class="doc-sig-img" src="${pendingSigData72.sig}" alt="ลายมือชื่อ"><br>` : (signed72 ? `<span style="display:inline-block;padding:4px 8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:4px;color:#065f46;font-size:0.8rem;margin-bottom:6px"><i class="fa-solid fa-certificate me-1"></i>Digital Signature Verified (${pendingSigData72?.certCode || SIGNER_CERT72})</span><br>` : '<span class="doc-dots"></span><br>')}
+      (${SIGNER_NAME72})<br>
+      อนุกรรมการและเลขานุการ<br>
+      คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}
+      ${signed72 ? `<br><span style="font-size:0.75rem;color:#16A34A"><i class="fa-solid fa-circle-check"></i> ลงนามดิจิทัลเมื่อ ${new Date().toLocaleString('th-TH')}</span>` : ''}
+    </div>
+    <div class="doc-secret-foot">ลับ</div>`;
+            }
+            ['subMeetNo', 'subMeetDate', 'subOpinion'].forEach(id =>
+                document.getElementById(id).addEventListener('input', renderDoc));
+
+            function buildButtons(){
+                if (signed72) {
+                    return [
+                        { act: 'edit_sign', label: 'แก้ไข / ลงนามใหม่', icon: 'fa-pen-to-square', cls: 'btn-outline-warning' },
+                        { act: 'clear_sign', label: 'ลบลายเซ็น', icon: 'fa-trash-can', cls: 'btn-outline-danger' },
+                        { act: 'save_status', label: 'บันทึกเพื่อส่งบรรจุวาระ', icon: 'fa-check', cls: 'btn-success' }
+                    ];
+                }
+                return [
+                    { act: 'more', label: 'ขอข้อมูลเพิ่มเติม', icon: 'fa-circle-question', cls: 'btn-outline-secondary' },
+                    { act: 'sign', label: 'ลงนามดิจิทัลรับรองความเห็น', icon: 'fa-signature', cls: 'btn-gold' }
+                ];
+            }
+
+            function renderActionButtons72(){
+                document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons());
+                document.querySelectorAll('.action-bar [data-act]').forEach(b =>
+                    b.addEventListener('click', () => handle(b.dataset.act)));
+            }
+            renderActionButtons72();
+
+            function validateOpinion(){
+                const op = document.getElementById('subOpinion');
+                if (!op.value.trim()) {
+                    op.classList.add('is-invalid-ecmis');
+                    document.querySelector('.val-msg[data-for="subOpinion"]').classList.add('show');
+                    ECMIS.toastWarn('กรุณาระบุความเห็นกลั่นกรองก่อนบันทึก');
+                    return false;
+                }
+                op.classList.remove('is-invalid-ecmis');
+                document.querySelector('.val-msg[data-for="subOpinion"]').classList.remove('show');
+                return true;
+            }
+
+            function handle(act){
+                if (act === 'edit_sign') {
+                    handle('sign');
+                    return;
+                }
+                if (act === 'clear_sign') {
+                    ECMIS.confirmAction({
+                        title: 'ยืนยันการลบลายเซ็น',
+                        html: '<p>คุณต้องการยกเลิกลายเซ็นรับรองความเห็นนี้ใช่หรือไม่?</p>',
+                        confirmText: 'ยืนยันลบลายเซ็น',
+                        danger: true
+                    }).then(r => {
+                        if (r.isConfirmed) {
+                            signed72 = false;
+                            pendingSigData72 = null;
+                            updateSigBoxUI72(false);
+                            renderDoc();
+                            renderActionButtons72();
+                            ECMIS.toastOk('ลบลายเซ็นเรียบร้อยแล้ว');
+                        }
+                    });
+                    return;
+                }
+                if (act === 'more') {
+                    if (!validateOpinion()) return;
+                    const opinion = document.getElementById('subOpinion').value.trim();
+                    const team = document.getElementById('manualTeam').value || assigned;
+                    ECMIS.confirmAction({
+                        title: 'ขอข้อมูลเพิ่มเติม',
+                        html: `<p>สำนวน <strong>${kase.id}</strong> — คณะอนุกลั่นกรองฯ ขอข้อมูล/เอกสารเพิ่มเติมจากผู้รับผิดชอบสำนวน</p>`,
+                        confirmText: 'ยืนยันขอข้อมูลเพิ่มเติม'
+                    }).then(res => {
+                        if (!res.isConfirmed) return;
+                        ECMIS.Model.CaseStore.update(kase.id, {
+                            screeningOpinion72: opinion,
+                            subCommittee: team,
+                            moreInfoRequested72: { date: new Date().toISOString().slice(0, 10), note: opinion }
+                        });
+                        ECMIS.toastOk('บันทึกคำขอข้อมูลเพิ่มเติม และแจ้งเตือนผู้รับผิดชอบสำนวนแล้ว');
+                    });
+                    return;
+                }
+
+                if (act === 'sign') {
+                    if (!validateOpinion()) return;
+                    const team = document.getElementById('manualTeam').value || assigned;
+                    const signerTitle = `อนุกรรมการและเลขานุการ คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${team}`;
+
+                    ECMIS.signDialog(`รายงานความเห็นคณะอนุกลั่นกรองฯ ${team} — เรื่องที่ ${kase.id}`,
+                        `${SIGNER_NAME72} — ${signerTitle}`, SIGNER_CERT72)
+                        .then(res => {
+                            if (!res.isConfirmed) return;
+                            signed72 = true;
+                            pendingSigData72 = res.value;
+                            const now = new Date();
+                            updateSigBoxUI72(true, res.value, now.toLocaleString('th-TH'));
+                            renderDoc();
+                            renderActionButtons72();
+                            ECMIS.toastOk('ลงนามรับรองความเห็นเรียบร้อยแล้ว กรุณากดปุ่ม "บันทึกเพื่อส่งบรรจุวาระ"');
+                        });
+                    return;
+                }
+
+                if (act === 'save_status') {
+                    if (!validateOpinion()) return;
+                    const opinion = document.getElementById('subOpinion').value.trim();
+                    const meetNo = document.getElementById('subMeetNo').value.trim();
+                    const meetDate = document.getElementById('subMeetDate').value.trim();
+                    const team = document.getElementById('manualTeam').value || assigned;
+                    const signerTitle = `อนุกรรมการและเลขานุการ คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${team}`;
+
+                    ECMIS.Model.CaseStore.update(kase.id, {
+                        screeningOpinion72: opinion,
+                        screeningMeetNo72: meetNo,
+                        screeningMeetDate72: meetDate,
+                        subCommittee: team,
+                        signedBySubSec72: true,
+                        subSecSignedAt72: new Date().toISOString(),
+                        status: 'PENDING_INVITE_72'
+                    });
+
+                    if (ECMIS.Model && ECMIS.Model.SignatureStore) {
+                        ECMIS.Model.SignatureStore.create({
+                            caseId: kase.id,
+                            docType: `รายงานความเห็นคณะอนุกลั่นกรองฯ ${team}`,
+                            signerRole: 'subcommittee_sec',
+                            signerName: `${SIGNER_NAME72} — ${signerTitle}`,
+                            method: pendingSigData72?.mode || 'cert',
+                            signedAt: new Date().toISOString()
+                        });
+                    }
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'บันทึกความเห็นและส่งบรรจุวาระเรียบร้อย',
+                        html: `<div class="text-start">
+                            สำนวน <strong>${kase.id}</strong> — ส่งฝ่ายจัดประชุมเพื่อจัดพิมพ์หนังสือเชิญประชุม (T11_72)<br>
+                            <span class="st st-done mt-2 d-inline-block"><i class="fa-solid fa-signature me-1"></i>ลงนามรับรองความเห็นแล้ว</span>
+                        </div>`,
+                        confirmButtonColor: '#0F2A62',
+                        confirmButtonText: 'ตกลง'
+                    }).then(() => location.href = ECMIS.pageForCase72(kase) + '?case=' + encodeURIComponent(kase.id));
+                }
+            }
+
+            renderSubQuorum(); renderDoc();
+        }
+    </script>
+</body>
+
+</html>
