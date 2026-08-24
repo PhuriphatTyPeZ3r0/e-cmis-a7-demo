@@ -265,7 +265,10 @@ function isChairActionable(c) {
 }
 
 /* รายการสถานะงานที่ต้องจัดทำของเจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ (affairs) */
-const AFFAIRS_STATUSES = ['DEFERRED', 'RESOLVED_PENDING_72', 'PENDING_DISPATCH_GUILTY_72'];
+/* 'RESOLVED' รวมอยู่ด้วย เพราะ กจ. (affairs) ต้องพิจารณาจัดทำคำสั่งแต่งตั้งคณะอนุกรรมการ/พนักงานไต่สวน
+   ตาม ม.24 ต่อจากมติ — ระบบยังไม่มีคอลัมน์แยกประเภทมติ (รับไว้ไต่สวน/ไม่รับไว้/ส่ง ป.ป.ช. ฯลฯ) ใน Supabase
+   จึงต้องแสดงสำนวนที่ "มีมติแล้ว" ทั้งหมดให้ กจ. คัดกรองเองว่าเรื่องใดต้องออกคำสั่ง ม.24 จริง */
+const AFFAIRS_STATUSES = ['DEFERRED', 'RESOLVED_PENDING_72', 'PENDING_DISPATCH_GUILTY_72', 'RESOLVED'];
 
 let CASES, all, mine;
 
@@ -408,6 +411,7 @@ if(ECMIS.isUpstreamRole(role.id)){
     sf.innerHTML = `
       <option value="ALL">ทั้งหมด</option>
       <option value="DEFERRED">เลื่อน/ถอนวาระ — รอเลขวาระใหม่</option>
+      <option value="RESOLVED">มีมติแล้ว — รอพิจารณาจัดทำคำสั่ง ม.24</option>
       <option value="RESOLVED_PENDING_72">รอจัดทำรายงานวินิจฉัยชี้มูล</option>
       <option value="PENDING_DISPATCH_GUILTY_72">ชี้มูลความผิดแล้ว รอส่งดำเนินคดี</option>
     `;
@@ -468,10 +472,12 @@ function renderKPICards() {
     const deferredCount   = allCasesCombined.filter(c => c.status === 'DEFERRED').length;
     const rulingCount     = allCasesCombined.filter(c => c.status === 'RESOLVED_PENDING_72').length;
     const dispatchCount   = allCasesCombined.filter(c => c.status === 'PENDING_DISPATCH_GUILTY_72').length;
+    const order24Count    = allCasesCombined.filter(c => c.status === 'RESOLVED').length;
 
     const kpis = [
       { id:'ALL', n: allCasesCombined.length, l:'รายการทั้งหมด', i:'fa-folder-open', c:'#0F2A62' },
       { id:'DEFERRED', n: deferredCount, l:'เลื่อน/ถอนวาระ — รอเลขวาระใหม่', i:'fa-calendar-plus', c:'#DB2626' },
+      { id:'RESOLVED', n: order24Count, l:'มีมติแล้ว — รอพิจารณาจัดทำคำสั่ง ม.24', i:'fa-gavel', c:'#7C3AED' },
       { id:'RESOLVED_PENDING_72', n: rulingCount, l:'รอจัดทำรายงานวินิจฉัยชี้มูล', i:'fa-file-pen', c:'#D0A830' },
       { id:'PENDING_DISPATCH_GUILTY_72', n: dispatchCount, l:'ชี้มูลความผิดแล้ว รอส่งดำเนินคดี', i:'fa-paper-plane', c:'#0284C7' }
     ];
@@ -584,7 +590,7 @@ function getActionBadge(c) {
   return getSecgenActionBadge(c);
 }
 
-const AFFAIRS_PAGE_FOR_STATUS = { DEFERRED: 'agenda-registry.html', RESOLVED: 'resolution.html' };
+const AFFAIRS_PAGE_FOR_STATUS = { DEFERRED: 'agenda-registry.html', RESOLVED: 'order.html' };
 
 function row(c){
   const is72 = ECMIS.isCase72(c);
