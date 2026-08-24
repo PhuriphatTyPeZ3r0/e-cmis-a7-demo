@@ -389,11 +389,14 @@ function isInResDir() {
 
 function isUpstreamRole(roleId){ const r = getRole(roleId); return r.scope === 'UPSTREAM'; }
 /* board_sec's home page is agenda-registry.html (ทะเบียนวาระการประชุม) — every other
-   role shares index.html. This is the single source of truth for navigation. */
+   role shares res/inbox.html. This is the single source of truth for navigation.
+   ตั้งใจตั้งชื่อ inbox.html (ไม่ใช่ index.html) เพื่อไม่ให้ชนกับ index.html ที่ root ซึ่งเป็น
+   หน้า marketing คนละหน้ากับ work-queue นี้ — ทั้งสองหน้าอยู่ใน res/ เท่านั้น (ไม่มีคู่แฝดที่
+   root) จึงต้อง prefix ด้วย res/ เมื่อเรียกจากนอก res/ (เช่นจาก login.html หรือหน้า root เดิม) */
 function homeHref(roleId){
   const r = roleId || currentRoleId();
-  if (r === 'board_sec') return resolvePage('agenda-registry.html');
-  return resolvePage('index.html');
+  const target = (r === 'board_sec') ? 'agenda-registry.html' : 'inbox.html';
+  return isInResDir() ? target : `res/${target}`;
 }
 function isUpstreamCase(kase){ const s = STATUS[kase.status]; return !!(s && s.scope === 'UPSTREAM'); }
 function isCase72(kase){
@@ -1490,7 +1493,7 @@ function setRole(id){
     return;
   }
   if (id !== 'board_sec' && page === 'resolution-inbox.html') {
-    location.href = resolvePage('index.html');
+    location.href = homeHref(id);
     return;
   }
   if (page === 'meeting-report.html' && !can('compile.minutes', id)) {
