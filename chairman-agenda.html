@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ประธานฯ สั่งการ / บรรจุวาระ | E-CMIS</title>
+    <link rel="icon" type="image/png" href="pacc_logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="assets/ecmis-app.css" rel="stylesheet">
+    <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
+    <style>
+    .document-workspace {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+        gap: 1.25rem !important;
+        align-items: start !important;
+    }
+    .ws-doc-pane {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .doc-paper.a4-paper {
+        max-width: 100% !important;
+    }
+    @media (max-width: 1100px) {
+        .document-workspace {
+            grid-template-columns: minmax(0, 1fr) !important;
+        }
+    }
+    </style>
+</head>
+
+<body>
+
+    <main class="app-main">
+        <div class="page-head">
+            <div>
+                <div class="mb-1">
+                    <a href="inbox.html" class="text-decoration-none small text-muted"><i class="fa-solid fa-arrow-left me-1"></i>กลับไปยัง รายการพิจารณา/สั่งการ</a>
+                </div>
+                <h1><i class="fa-solid fa-gavel me-2" style="color:#0F2A62"></i>ประธานกรรมการ ป.ป.ท. พิจารณาสั่งการและบรรจุวาระ</h1>
+            </div>
+            <div class="ms-auto text-end">
+                <span class="flow-ref"><strong>จุดสั่งการและบรรจุวาระ (G4 / S7)</strong></span>
+                <div class="mt-1" id="stBadge"></div>
+            </div>
+        </div>
+
+        <div class="ws-card mb-3">
+            <div class="card-body pb-1" id="stepper"></div>
+        </div>
+
+        <div class="document-workspace" id="docWorkspace">
+            <div>
+                <!-- Card 1: Upstream Chain Timeline -->
+                <div class="ws-card mb-3">
+                    <div class="card-header"><i class="fa-solid fa-list-ol"></i> ที่มาของสำนวน — การเสนอตามลำดับชั้นภายในกอง/เขต (ต้นทาง กว.5)</div>
+                    <div class="card-body">
+                        <ul class="tl mb-0" id="chain"></ul>
+                    </div>
+                </div>
+
+                <!-- Card 2: Case Summary -->
+                <div class="ws-card mb-3">
+                    <div class="card-header"><i class="fa-solid fa-circle-info"></i> สรุปสำนวนสำหรับผู้พิจารณา</div>
+                    <div class="card-body">
+                        <div class="row g-2 kv" id="summary"></div>
+                        <hr>
+                        <div class="mb-2"><span class="k text-muted">ข้อกล่าวหา</span>
+                            <div class="v" id="sAllegation"></div>
+                        </div>
+                        <div><span class="k text-muted">ผู้ถูกกล่าวหา / ผู้ถูกร้อง</span>
+                            <div class="v" id="sAccused"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Front Note -->
+                <div class="ws-card mb-3">
+                    <div class="card-header"><i class="fa-solid fa-comment-dots"></i> หมายเหตุจากหน้าห้องประธานฯ</div>
+                    <div class="card-body">
+                        <textarea class="form-control" id="frontNote" rows="3" placeholder="ระบุหมายเหตุหรือข้อสังเกตจากหน้าห้องประธานฯ"></textarea>
+                    </div>
+                </div>
+
+                <!-- Card 4: Chairman Order Selection -->
+                <div class="ws-card mb-3">
+                    <div class="card-header"><i class="fa-solid fa-code-branch"></i> คำสั่งของประธานกรรมการ ป.ป.ท.</div>
+                    <div class="card-body">
+                        <div id="bypassBanner"></div>
+                        <label class="form-label field-req fw-bold">เลือกคำสั่งประธานกรรมการ ป.ป.ท.</label>
+                        <div class="list-group mb-3" id="orderList">
+                            <label class="list-group-item d-flex gap-2 align-items-start" style="cursor:pointer">
+                                <input class="form-check-input mt-1" type="radio" name="order" value="SCREEN" checked>
+                                <span><strong>ส่งคณะอนุกรรมการกลั่นกรองฯ พิจารณาก่อน</strong> (เส้นทางปกติ)
+                                    <br><small class="text-muted">→ กบค. กระจายเข้าคณะที่ 1–8 แบบ Round-Robin (T9)</small></span>
+                            </label>
+                            <label class="list-group-item d-flex gap-2 align-items-start" style="cursor:pointer">
+                                <input class="form-check-input mt-1" type="radio" name="order" value="AGENDA">
+                                <span><strong>สั่งบรรจุวาระการประชุมทันที</strong> (เร่งด่วน / Bypass)
+                                    <br><small class="text-muted">→ ข้ามคณะอนุกลั่นกรองฯ เข้า T11 บรรจุวาระโดยตรง</small></span>
+                            </label>
+                            <label class="list-group-item d-flex gap-2 align-items-start" style="cursor:pointer">
+                                <input class="form-check-input mt-1" type="radio" name="order" value="LEGAL">
+                                <span><strong>ส่งกองกฎหมายพิจารณาก่อน</strong>
+                                    <br><small class="text-muted">→ เชื่อมกิจกรรมที่ 10 แล้วเสนอกลับเข้าวาระอีกครั้ง</small></span>
+                            </label>
+                            <label class="list-group-item d-flex gap-2 align-items-start" style="cursor:pointer">
+                                <input class="form-check-input mt-1" type="radio" name="order" value="RETURN">
+                                <span><strong>ตีกลับให้แก้ไข</strong>
+                                    <br><small class="text-muted">→ ส่งคืนเจ้าของสำนวนพร้อมระบุ Reason Code</small></span>
+                            </label>
+                        </div>
+                        <label class="form-label fw-bold">ข้อสั่งการเพิ่มเติมของประธานฯ</label>
+                        <textarea class="form-control" id="chairNote" rows="2" placeholder="ระบุคำสั่งการหรือข้อสังเกตเพิ่มเติม (ถ้ามี)"></textarea>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column Document Viewer -->
+            <aside class="ws-doc-pane" style="top:calc(var(--topbar-h) + 14px)">
+                <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
+                <div class="ws-doc-toolbar">
+                    <div class="ws-doc-tabs" id="docTabs">
+                        <button class="ws-doc-tab active" data-doc="report213"><i class="fa-solid fa-file-contract me-1"></i>รายงาน 213 (เลขาฯ ลงนามแล้ว)</button>
+                    </div>
+                    <button type="button" class="btn-doc-edit ms-auto me-1" id="btnDocEdit" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
+                        <i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>
+                    </button>
+                    <button class="btn btn-sm btn-light" onclick="window.print()" title="พิมพ์เอกสาร"><i class="fa-solid fa-print"></i></button>
+                    <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
+                </div>
+                <div class="doc-edit-bar" id="docEditBar">
+                    <span class="doc-edit-bar-label"><i class="fa-solid fa-pen-to-square me-1"></i>แก้ไขเอกสาร</span>
+                    <span class="doc-edit-bar-sep"></span>
+                    <button type="button" data-format="bold" title="ตัวหนา"><b>B</b></button>
+                    <button type="button" data-format="italic" title="ตัวเอียง"><i>I</i></button>
+                    <button type="button" data-format="underline" title="ขีดเส้นใต้"><u>U</u></button>
+                    <span class="doc-edit-bar-sep"></span>
+                    <button type="button" data-format="justifyLeft" title="ชิดซ้าย"><i class="fa-solid fa-align-left"></i></button>
+                    <button type="button" data-format="justifyCenter" title="กึ่งกลาง"><i class="fa-solid fa-align-center"></i></button>
+                    <button type="button" data-format="justifyRight" title="ชิดขวา"><i class="fa-solid fa-align-right"></i></button>
+                    <span class="doc-edit-bar-sep"></span>
+                    <button type="button" data-format="undo" title="เลิกทำ"><i class="fa-solid fa-rotate-left"></i></button>
+                    <button type="button" data-format="redo" title="ทำซ้ำ"><i class="fa-solid fa-rotate-right"></i></button>
+                    <span class="doc-edit-bar-sep"></span>
+                    <button type="button" class="btn btn-sm btn-gold" id="btnSaveDocEdit" style="width:auto;padding:0 .6rem">บันทึกการแก้ไข</button>
+                </div>
+                <div class="ws-paper-stage">
+                    <div class="doc-paper a4-paper" id="docPaper"></div>
+                </div>
+            </aside>
+        </div>
+
+        <div id="actionBarSlot"></div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="assets/ecmis-app.js"></script>
+    <script src="assets/ecmis-model.js"></script>
+    <script>
+        ECMIS.renderShell('chairman-agenda.html');
+
+        const params = new URLSearchParams(location.search);
+        const role = ECMIS.currentRole();
+        let docTab = 'report213';
+
+        const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function loadCaseFromSupabase(caseId) {
+            const { data, error } = await sb
+                .from('tbl_res_request')
+                .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+                .eq('tbl_cmp_case.tcc_no', caseId)
+                .eq('is_deleted', false)
+                .maybeSingle();
+            if (error) throw error;
+            return data ? ECMIS.supabaseRowToCase(data) : null;
+        }
+
+        /* signedByChair/chairSignedAt ไม่มีคอลัมน์ใน Supabase (มีเฉพาะ trr_signed_secgen สำหรับเลขาธิการฯ)
+           จึงคง set บน kase ไว้ให้แสดงผลในหน้านี้ได้ตามเดิม เพียงแต่ไม่ถูกบันทึกข้ามหน้า/ข้ามอุปกรณ์ —
+           ตามรูปแบบเดียวกับฟิลด์ที่ไม่มีคอลัมน์จริงใน subcommittee-screening.html */
+        async function persistCase(kase, patch) {
+            const dbPatch = {};
+            if ('status' in patch) {
+                const code = ECMIS.STATUS_CODE[patch.status];
+                if (code) dbPatch.trr_status = code;
+            }
+            if (kase.trr_id && Object.keys(dbPatch).length) {
+                try {
+                    const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
+                    if (error) console.warn('Supabase update warning:', error);
+                } catch (e) {
+                    console.warn('Supabase update failed:', e);
+                }
+            }
+            Object.assign(kase, patch);
+            const memCase = ECMIS.CASES.find(x => x.id === kase.id);
+            if (memCase) Object.assign(memCase, patch);
+            ECMIS.saveCases();
+        }
+
+        let kase = null;
+
+        (async function main() {
+            const caseParam = params.get('case') || '1547/2568';
+            try {
+                kase = await loadCaseFromSupabase(caseParam);
+            } catch (err) {
+                console.warn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+            }
+            if (!kase) {
+                kase = ECMIS.getCase(caseParam) || ECMIS.CASES.find(x => x.id === caseParam) || ECMIS.CASES[0];
+            }
+            if (!kase) { ECMIS.toastWarn('ไม่พบสำนวนนี้ในระบบ'); return; }
+
+            renderPage();
+        })();
+
+        function renderPage() {
+        document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
+        document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status);
+
+        // Render Upstream Chain Timeline
+        const FULL_CHAIN = ECMIS.UPSTREAM_CHAIN.concat(['secgen', 'chairman']);
+        const opByRole = Object.fromEntries((kase.chainOpinions || []).map(o => [o.roleId, o]));
+        document.getElementById('chain').innerHTML = FULL_CHAIN.map((rid, i) => {
+            const r = ECMIS.getRole(rid);
+            const op = opByRole[rid];
+            let cls = 'ok', note = '';
+            
+            if (rid === 'chairman') {
+                cls = 'now';
+                note = '<strong>อยู่ระหว่างประธานกรรมการ ป.ป.ท. พิจารณาสั่งการ (คุณ)</strong>';
+            } else if (op) {
+                cls = 'ok';
+                note = `เห็นชอบแล้ว · <span class="text-success fw-medium"><i class="fa-solid fa-check me-1"></i>ลงนามเมื่อ ${ECMIS.thaiDate(op.date)}</span>`;
+            } else if (rid === 'secgen') {
+                cls = 'ok';
+                note = `เห็นชอบแล้ว · <span class="text-success fw-medium"><i class="fa-solid fa-signature me-1"></i>ลงนามดิจิทัลโดย นายอภิชาติ สุจริตกุล (เลขาธิการฯ)</span>`;
+            } else {
+                cls = 'ok';
+                note = 'เห็นชอบแล้วตามลำดับชั้น';
+            }
+
+            let opHtml = '';
+            if (op) {
+                opHtml = `<div class="tl-m mt-1">
+                    <span class="st st-done" style="font-size:.68rem">${ECMIS.OPINION_TYPES[op.type]?.label || 'เห็นชอบ'}</span>
+                    <span class="text-muted ms-1" style="font-size:.75rem">${op.note}</span>
+                </div>`;
+            } else if (rid === 'secgen') {
+                opHtml = `<div class="tl-m mt-1">
+                    <span class="st st-done" style="font-size:.68rem">เห็นชอบ</span>
+                    <span class="text-muted ms-1" style="font-size:.75rem">เสนอประธานกรรมการ ป.ป.ท. พิจารณาสั่งการและบรรจุวาระ</span>
+                </div>`;
+            }
+
+            return `<li class="${cls}"><span class="tl-dot"></span>
+                <div class="tl-t">${r.title} ${rid === 'chairman' ? '<span class="chip ms-1">คุณ</span>' : ''}</div>
+                <div class="tl-m">${r.name} · ${note}</div>${opHtml}
+            </li>`;
+        }).join('');
+
+        // Render Summary Card
+        document.getElementById('summary').innerHTML = [
+            ['เลขสำนวน', kase.id],
+            ['ฐานการรับเรื่อง', kase.legalBase || 'ม.18/4'],
+            ['เจ้าของสำนวน', kase.owner],
+            ['หน่วยงาน', kase.ownerOrg],
+            ['วันที่รับเรื่อง', ECMIS.thaiDate(kase.receivedDate)],
+            ['เลขาธิการฯ ลงนามเมื่อ', kase.secgenSignedAt || '04 ส.ค. 2569']
+        ].map(([k, v]) => `<div class="col-md-6"><span class="k">${k}:</span> <span class="v">${v}</span></div>`).join('');
+
+        document.getElementById('sAllegation').textContent = kase.allegation || kase.subject;
+        document.getElementById('sAccused').innerHTML = (kase.accused || []).map(a => `<div><strong>${a.no}. ${a.name}</strong> — ${a.pos} (${a.agency})</div>`).join('') || '—';
+
+        if (kase.urgent) {
+            document.getElementById('bypassBanner').innerHTML = `
+    <div class="alert alert-warning border-0 shadow-sm mb-3 py-2 px-3">
+      <strong><i class="fa-solid fa-bolt me-1"></i>สำนวนนี้มีใบด่วนที่ ผอ.กบค. ลงนามรับรองแล้ว</strong><br>
+      เหตุผล: ${kase.urgentReason || 'เป็นกรณีเร่งด่วนใกล้ขาดอายุความ'}<br>
+      <small class="text-dark">ระบบเปิดสิทธิ์ให้เลือก "สั่งบรรจุวาระทันที (Bypass)" ได้</small>
+    </div>`;
+            document.querySelector('input[value="AGENDA"]').checked = true;
+        }
+
+        /* ---------- documents ---------- */
+        function renderDoc() {
+            const M = ECMIS.mergeField;
+            const chainOpinionsHtml = (kase.chainOpinions || []).map(o => `
+                <div class="mb-2 p-2 bg-light rounded border">
+                    <strong>${ECMIS.getRole(o.roleId)?.title || o.roleId}:</strong> ${o.note}
+                    <div class="small text-muted text-end">(${ECMIS.thaiDate(o.date)})</div>
+                </div>
+            `).join('');
+
+            const is73 = ECMIS.isCase73(kase);
+            const docTitle = is73
+              ? 'บันทึกข้อความเสนอเรื่องทั่วไป / ข้อกฎหมาย<br>สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ'
+              : 'รายงานการไต่สวนเบื้องต้น (แบบ ปปท. ๒-๑๓)<br>คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ';
+
+            document.getElementById('docPaper').innerHTML = `
+      <div class="doc-secret">${kase.urgent ? 'ลับ / ด่วนมาก' : 'ลับ'}</div>
+      <div class="doc-title">${docTitle}</div>
+      
+      <div style="margin-top:14px">
+        <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
+        <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+        <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner)}</div>
+        <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
+      </div>
+
+      ${is73 ? `
+        <div class="doc-h">หน่วยงานเจ้าของเรื่อง / ผู้เสนอ</div>
+        <div style="padding-left:1em">${M(kase.complainant || kase.ownerOrg)}</div>
+      ` : `
+        <div class="doc-h">ผู้ถูกร้อง / ผู้ถูกกล่าวหา</div>
+        ${(kase.accused || []).map(a => `<div style="padding-left:1em"><strong>${a.no}. ${M(a.name)}</strong> — ${M(a.pos)} (${M(a.agency)})</div>`).join('')}
+      `}
+
+      <div class="doc-h">${is73 ? '๑. สาระสำคัญและข้อเสนอเพื่อพิจารณา' : '๑. ข้อกล่าวหาและสรุปพฤติการณ์'}</div>
+      <div class="doc-indent">${M(kase.allegation || kase.subject)}</div>
+
+      <div class="doc-h">๒. ความเห็นตามลำดับชั้น</div>
+      <div style="padding-left:0.5em">${chainOpinionsHtml || '<div class="text-muted small">— ผ่านการพิจารณาเห็นชอบตามสายงานแล้ว —</div>'}</div>
+
+      <div class="doc-h">๓. การลงนามเห็นชอบของเลขาธิการคณะกรรมการ ป.ป.ท.</div>
+      <div class="p-3 bg-success bg-opacity-10 border border-success rounded text-center mt-3">
+        <div class="badge bg-success mb-1" style="font-size:0.8rem"><i class="fa-solid fa-signature me-1"></i>ลงนามดิจิทัลเรียบร้อยแล้ว</div>
+        <div class="fw-bold text-dark h6 mb-0" style="margin-top:4px">นายอภิชาติ สุจริตกุล</div>
+        <div class="small text-muted">เลขาธิการคณะกรรมการ ป.ป.ท.</div>
+        <div class="small text-success mt-1"><i class="fa-solid fa-shield-check me-1"></i>Digital Certificate Verified · ${kase.secgenSignedAt || '04 ส.ค. 2569'}</div>
+      </div>`;
+        }
+
+        /* ---------- Document workspace: collapsible pane ---------- */
+        const docWorkspace = document.getElementById('docWorkspace');
+        const PANE_KEY = 'ecmis-chairman-agenda-docpane-collapsed';
+        function setPaneCollapsed(collapsed) {
+            docWorkspace.classList.toggle('pane-collapsed', collapsed);
+            localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
+        }
+        if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
+        document.getElementById('btnPaneCollapse').addEventListener('click', () => setPaneCollapsed(true));
+        document.getElementById('btnPaneExpand').addEventListener('click', () => setPaneCollapsed(false));
+
+        function buildButtons() {
+            if (role.id === 'chair_office') {
+                return [{ act: 'toChair', label: 'นำเสนอประธานกรรมการ ป.ป.ท.', icon: 'fa-share', cls: 'btn-navy' }];
+            }
+            return [
+                { act: 'return', label: 'ตีกลับให้แก้ไข', icon: 'fa-rotate-left', cls: 'btn-outline-danger' },
+                { act: 'command', label: 'ลงนามสั่งการและบรรจุวาระ', icon: 'fa-signature', cls: 'btn-gold' }
+            ];
+        }
+        document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons());
+        document.querySelectorAll('.action-bar [data-act]').forEach(b =>
+            b.addEventListener('click', () => handle(b.dataset.act)));
+
+        function handle(act) {
+            if (act === 'toChair') {
+                ECMIS.confirmAction({
+                    title: 'นำเสนอประธานกรรมการ ป.ป.ท.',
+                    html: `สำนวน <strong>${kase.id}</strong> จะถูกส่งเข้าคิวของประธานฯ เพื่อพิจารณาสั่งการ (G4)`
+                })
+                    .then(async r => {
+                        if (r.isConfirmed) {
+                            try {
+                                await persistCase(kase, { status: 'PENDING_CHAIRMAN' });
+                            } catch (err) {
+                                console.error('บันทึกสถานะไม่สำเร็จ:', err);
+                            }
+                            ECMIS.toastOk('นำเสนอประธานฯ เรียบร้อย');
+                            setTimeout(() => location.href = ECMIS.homeHref(role.id), 1400);
+                        }
+                    });
+                return;
+            }
+            if (act === 'return') {
+                ECMIS.confirmAction({
+                    title: 'ตีกลับให้แก้ไข', danger: true, icon: 'warning',
+                    html: `<label class="form-label">เหตุผลการตีกลับ <span style="color:#DB2626">*</span></label>
+            <textarea id="swal-note" class="form-control" rows="3" placeholder="ระบุเหตุผลที่ตีกลับสำนวน"></textarea>`,
+                    confirmText: 'ยืนยันตีกลับ'
+                })
+                    .then(async r => {
+                        if (r.isConfirmed) {
+                            try {
+                                await persistCase(kase, { status: 'RETURNED' });
+                            } catch (err) {
+                                console.error('บันทึกการตีกลับไม่สำเร็จ:', err);
+                                ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+                                return;
+                            }
+                            ECMIS.toastOk('ตีกลับเรียบร้อย');
+                            setTimeout(() => location.href = ECMIS.homeHref(role.id), 1400);
+                        }
+                    });
+                return;
+            }
+            if (act === 'command') {
+                const order = document.querySelector('input[name="order"]:checked').value;
+                const MAP = {
+                    SCREEN: {
+                        t: 'ส่งคณะอนุกรรมการกลั่นกรองฯ', nextStatus: 'IN_SCREENING', next: 'subcommittee-screening.html',
+                        d: 'กบค. จะกระจายสำนวนเข้าคณะที่ 1–8 แบบ Round-Robin (T9)'
+                    },
+                    AGENDA: {
+                        t: 'สั่งบรรจุวาระการประชุมทันที (Bypass)', nextStatus: 'AGENDA_SET', next: 'board-resolution.html',
+                        d: 'ข้ามคณะอนุกลั่นกรองฯ — ฝ่ายเลขานุการบอร์ดจัดระเบียบวาระต่อ (T11–T12)'
+                    },
+                    LEGAL: {
+                        t: 'ส่งกองกฎหมายพิจารณาก่อน', nextStatus: 'IN_SCREENING', next: ECMIS.homeHref(role.id),
+                        d: 'เชื่อมกิจกรรมที่ 10 — กองกฎหมายประมวลเรื่องแล้วเสนอกลับเข้าวาระอีกครั้ง'
+                    },
+                    RETURN: {
+                        t: 'ตีกลับให้แก้ไข', nextStatus: 'RETURNED', next: ECMIS.homeHref(role.id),
+                        d: 'ส่งคืนเจ้าของสำนวนพร้อม Reason Code'
+                    }
+                };
+                const sel = MAP[order];
+                ECMIS.signDialog(`คำสั่งประธานกรรมการ ป.ป.ท. — ${sel.t} (เรื่องที่ ${kase.id})`,
+                    'นายวิชัย ยุติธรรม — ประธานกรรมการ ป.ป.ท.')
+                    .then(async res => {
+                        if (!res.isConfirmed) return;
+
+                        try {
+                            await persistCase(kase, { status: sel.nextStatus });
+                        } catch (err) {
+                            console.error('บันทึกคำสั่งประธานฯ ไม่สำเร็จ:', err);
+                            ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+                            return;
+                        }
+                        /* signedByChair/chairSignedAt ไม่มีคอลัมน์ใน Supabase — คงไว้เป็น local state
+                           สำหรับแสดงผลหน้านี้เท่านั้น (ดูหมายเหตุที่ persistCase ด้านบน) */
+                        kase.signedByChair = true;
+                        kase.chairSignedAt = new Date().toISOString();
+
+                        if (res.value && res.value.sig) {
+                            const sigEl = document.querySelector('.doc-sign');
+                            if (sigEl) sigEl.insertAdjacentHTML('afterbegin', `<img class="doc-sig-img" src="${res.value.sig}" alt="ลายมือชื่อ">`);
+                        }
+                        if (ECMIS.Model && ECMIS.Model.SignatureStore) {
+                            ECMIS.Model.SignatureStore.create({
+                                caseId: kase.id, docType: `คำสั่งประธานกรรมการ ป.ป.ท. — ${sel.t}`,
+                                signerRole: 'chairman', signerName: 'นายวิชัย ยุติธรรม — ประธานกรรมการ ป.ป.ท.',
+                                method: res.value.mode, signedAt: new Date().toISOString()
+                            });
+                        }
+                        ECMIS.toastOk('ลงนามสั่งการเรียบร้อย');
+                        setTimeout(() => Swal.fire({
+                            icon: 'success', title: 'ลงนามสั่งการเรียบร้อย',
+                            html: `<div class="text-start">
+                                      สำนวนเรื่องที่ <strong>${kase.id}</strong><br>
+                                      คำสั่ง: <strong>${sel.t}</strong><br><br>
+                                      <span style="font-size:.85rem;color:#7C8CA3">${sel.d}</span>
+                                   </div>`,
+                            confirmButtonColor: '#0F2A62'
+                        }).then(() => location.href = ECMIS.homeHref(role.id)), 800);
+                    });
+            }
+        }
+
+        ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: ECMIS.canAct(kase, role.id) });
+        renderDoc();
+        }
+    </script>
+</body>
+
+</html>
