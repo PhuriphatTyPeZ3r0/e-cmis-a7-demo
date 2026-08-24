@@ -390,6 +390,7 @@ function homeHref(roleId){
   const r = roleId || currentRoleId();
   if (r === 'board_sec') return resolvePage('agenda-registry.html');
   if (r === 'support_sub' || r === 'sup_chair' || r === 'sup_sec' || r === 'sup_asst') return resolvePage('support-subcommittee-inbox.html');
+  if (r === 'board' || r === 'board_ex') return resolvePage('board-inbox.html');
   return resolvePage('inbox.html');
 }
 function isUpstreamCase(kase){ const s = STATUS[kase.status]; return !!(s && s.scope === 'UPSTREAM'); }
@@ -1532,6 +1533,7 @@ const NAV = [
     label: role => {
       if (!role) return 'รายการพิจารณา/ลงนาม';
       if (role.id === 'board_sec') return 'ทะเบียนวาระการประชุม';
+      if (role.id === 'board' || role.id === 'board_ex') return 'รอบการประชุมและอ่านวาระล่วงหน้า';
       if (role.id === 'affairs') return 'รายการเรื่องที่ต้องจัดทำ';
       if (role.id === 'support_sub' || role.id === 'sup_chair') return 'รายการสำนวนรอกลั่นกรอง';
       if (isUpstreamRole(role.id)) return 'รายการติดตามสถานะสำนวน';
@@ -1554,6 +1556,8 @@ const NAV = [
        กว้างกว่าคิวใน agenda-registry.html (ซึ่งเป็นแค่ AGENDA_SET/PENDING_INVITE_72/DEFERRED)
        จึงยังต้องมีลิงก์แยกไว้ — badge ของ home item ด้านบนก็ย้ายมาไว้ที่นี่ด้วย */
     visible: role => !!role && role.id === 'board_sec', badge:true },
+  { href:'board-room.html',               icon:'fa-gavel',            label:'ห้องประชุมและลงมติ',
+    visible: role => !!role && (role.id === 'board' || role.id === 'board_ex') },
   { href:'dashboard.html',                icon:'fa-chart-pie',        label:'Dashboard สถิติมติ',
     visible: role => !!role && ['affairs','board_sec','chairman','board','secgen'].includes(role.id) },
   { href:'followup-dashboard.html',       icon:'fa-diagram-project',  label:'ติดตามผลมติ',
