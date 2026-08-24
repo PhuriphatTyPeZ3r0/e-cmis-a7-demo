@@ -1560,8 +1560,8 @@ const NAV = [
   { href:'agenda-registry.html',       icon:'fa-table-list',       label:'ทะเบียนวาระการประชุม',
     /* board_sec เห็นหน้านี้อยู่แล้วผ่าน item แรก (home/inbox) ด้านบน — ซ่อน static item นี้ไว้
        เพื่อไม่ให้ sidebar มีลิงก์ซ้ำไปหน้าเดียวกัน 2 ที่ — chairman ซ่อนไว้เหมือน secgen ตามที่ตกลง
-       ให้สิทธิ์การมองเห็นเมนูของประธานฯ ตรงกับเลขาธิการฯ ทุกจุด */
-    visible: role => !!role && role.id !== 'secgen' && role.id !== 'board_sec' && role.id !== 'chairman' },
+       ให้สิทธิ์การมองเห็นเมนูของประธานฯ ตรงกับเลขาธิการฯ ทุกจุด — affairs ตัดออกตามที่ตกลงด้วย */
+    visible: role => !!role && !['secgen', 'board_sec', 'chairman', 'affairs'].includes(role.id) },
   { href:'resolution-inbox.html',      icon:'fa-scale-balanced',   label:'รายการรอจัดทำมติ',
     /* work-inbox เดิมของ board_sec ครอบคลุมทั้ง flow (AGENDA_SET..RESOLVED/RESOLVED_PENDING)
        กว้างกว่าคิวใน agenda-registry.html (ซึ่งเป็นแค่ AGENDA_SET/PENDING_INVITE_72/DEFERRED)
@@ -1572,9 +1572,9 @@ const NAV = [
   { href:'followup-dashboard.html',       icon:'fa-diagram-project',  label:'ติดตามผลมติ',
     /* บอร์ดต้องเห็นหน้านี้ด้วย — ตาม design doc (สรุปการเชื่อมโยงกิจกรรมกับกิจกรรมที่7)
        กจ.8 ป้อน feedback loop กลับเข้า Dashboard เสนอบอร์ด กจ.7 พร้อมแจ้งเตือนคดีล่าช้าให้บอร์ดเร่งรัด
-       ไม่ใช่แค่ฝ่ายปฏิบัติการ (affairs/board_sec) เท่านั้นที่ควรเห็น — chairman ตัดออกแล้วตามที่ตกลง
-       ให้สิทธิ์การมองเห็นเมนูของประธานฯ ตรงกับเลขาธิการฯ ทุกจุด (เดิม design doc ให้ประธานฯ เห็นด้วย) */
-    visible: role => !!role && ['affairs','board_sec','board'].includes(role.id) }
+       เดิม design doc ให้ affairs/board_sec/chairman เห็นด้วยเช่นกัน แต่ chairman ตัดออกแล้วให้ตรงกับ
+       เลขาธิการฯ และตอนนี้ตัด affairs ออกด้วยตามที่ตกลง เหลือเฉพาะ board_sec/board */
+    visible: role => !!role && ['board_sec','board'].includes(role.id) }
 ];
 
 function navLabel(navItem, role){
