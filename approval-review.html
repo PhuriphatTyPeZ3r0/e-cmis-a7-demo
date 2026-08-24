@@ -89,6 +89,13 @@
           </div>
         </div>
 
+        <div class="ws-card mb-3 d-none border-primary" id="supportSubResultCard">
+          <div class="card-header bg-light text-primary">
+            <i class="fa-solid fa-users-gear me-1"></i><strong>ความเห็นและผลการกลั่นกรองของคณะอนุกรรมการสนับสนุนเลขาธิการฯ</strong>
+          </div>
+          <div class="card-body" id="supportSubResultBody"></div>
+        </div>
+
         <div class="ws-card mb-3" id="opinionCard">
           <div class="card-header"><i class="fa-solid fa-pen-nib"></i> ความเห็นของผู้พิจารณาชั้นนี้</div>
           <div class="card-body">
@@ -449,6 +456,37 @@
       ? `<span class="chip">${ECMIS.OPINION_TYPES[ownerOp.type].label}</span> — ${ownerOp.note}`
       : '<span class="text-muted">— ยังไม่มีการบันทึกความเห็นของผู้รับผิดชอบสำนวน —</span>';
 
+    if (kase.supportOpinion || kase.supportOpinion72 || kase.supportTeam) {
+      const resCard = document.getElementById('supportSubResultCard');
+      const resBody = document.getElementById('supportSubResultBody');
+      if (resCard && resBody) {
+        resCard.classList.remove('d-none');
+        const teamLbl = (kase.supportTeam === 'TEAM2' || kase.supportTeam72 === 'TEAM2') ? 'คณะที่ 2' : 'คณะที่ 1';
+        const dec = kase.supportDecision || 'AGREE';
+        const decBadge = dec === 'AGREE'
+          ? '<span class="badge bg-success">๑. เห็นพ้องกับความเห็นเดิม (มีมูลความผิด)</span>'
+          : (dec === 'DIFFER'
+              ? '<span class="badge bg-danger">๒. เห็นต่าง / มีความเห็นแย้ง</span>'
+              : '<span class="badge bg-info">๓. ขอข้อมูลเพิ่มเติม</span>');
+        
+        resBody.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div><strong>คณะผู้กลั่นกรอง:</strong> ${teamLbl}</div>
+            <div>${decBadge}</div>
+          </div>
+          ${kase.dissentReason ? `
+          <div class="mb-2 p-2 bg-light border-start border-danger border-3 rounded">
+            <strong class="text-danger small">เหตุผลในการแย้งความเห็น:</strong>
+            <div class="small">${kase.dissentReason}</div>
+          </div>` : ''}
+          <div class="mb-1">
+            <strong class="small text-muted">ความเห็นและข้อสังเกตประกอบ:</strong>
+            <div class="p-2 bg-light rounded small">${kase.supportOpinion || kase.supportOpinion72 || 'เห็นควรเสนอประธานกรรมการ ป.ป.ท. สั่งบรรจุวาระการประชุมต่อไป'}</div>
+          </div>
+        `;
+      }
+    }
+
     if (role.id === 'secgen') {
       document.getElementById('m28Card').classList.remove('d-none');
       document.getElementById('g1Box').classList.remove('d-none');
@@ -669,8 +707,16 @@
         return `<div>${r.title}: ${ECMIS.OPINION_TYPES[o.type].label} — ${o.note}
             <span style="font-size:11px;color:#666">(${ECMIS.toThaiDigits(ECMIS.thaiDate(o.date))})</span></div>`;
       }).join('');
+
+      let supportTxt = '';
+      if (kase.supportOpinion || kase.supportOpinion72) {
+        const teamLbl = (kase.supportTeam === 'TEAM2' || kase.supportTeam72 === 'TEAM2') ? 'คณะที่ 2' : 'คณะที่ 1';
+        const decTxt = kase.supportDecision === 'AGREE' ? 'เห็นพ้อง' : (kase.supportDecision === 'DIFFER' ? 'เห็นต่าง' : 'ขอข้อมูลเพิ่ม');
+        supportTxt = `<div><strong>คณะอนุกรรมการสนับสนุนเลขาธิการฯ (${teamLbl}):</strong> [${decTxt}] ${kase.supportOpinion || kase.supportOpinion72}</div>`;
+      }
+
       document.getElementById('docOpinions').innerHTML =
-        prior + `<div>${role.title}: ${M(mine, '……………………………………')}</div>`;
+        prior + supportTxt + `<div>${role.title}: ${M(mine, '……………………………………')}</div>`;
     }
     document.getElementById('myOpinion').addEventListener('input', () => {
       const el = document.getElementById('myOpinion');
@@ -704,14 +750,13 @@
         const m28 = m28Selected();
         if (m28 === 'ACCEPT') {
           const complex = g1Yes();
-          if (complex) {
-
+          const hasSupportOpinion = !!(kase.supportOpinion || kase.supportOpinion72);
+          if (complex && !hasSupportOpinion) {
             b.push({
-              act: 'assign', label: 'มอบหมายเข้าคณะอนุสนับสนุนฯ', icon: 'fa-people-arrows',
-              cls: 'btn-outline-primary'
+              act: 'assign', label: 'ส่งคณะอนุกรรมการสนับสนุนเลขาธิการฯ', icon: 'fa-people-arrows',
+              cls: 'btn-navy'
             });
           } else {
-
             b.push({ act: 'sign', label: 'ลงนามดิจิทัลและส่งต่อ', icon: 'fa-signature', cls: 'btn-gold' });
           }
         } else {

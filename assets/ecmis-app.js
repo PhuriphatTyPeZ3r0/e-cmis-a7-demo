@@ -393,6 +393,7 @@ function isUpstreamRole(roleId){ const r = getRole(roleId); return r.scope === '
 function homeHref(roleId){
   const r = roleId || currentRoleId();
   if (r === 'board_sec') return resolvePage('agenda-registry.html');
+  if (r === 'support_sub' || r === 'sup_chair' || r === 'sup_sec' || r === 'sup_asst') return resolvePage('support-subcommittee-inbox.html');
   return resolvePage('inbox.html');
 }
 function isUpstreamCase(kase){ const s = STATUS[kase.status]; return !!(s && s.scope === 'UPSTREAM'); }
@@ -1825,6 +1826,9 @@ function inboxFor(roleId){
 function canAct(kase, roleId){
   const st = STATUS[kase.status];
   if(!st || st.scope === 'UPSTREAM') return false;
+  if(roleId === 'support_sub' || roleId === 'sup_chair' || roleId === 'sup_sec' || roleId === 'sup_asst') {
+    return st.owner === 'support_sub' || kase.status === 'IN_SUPPORT_SUB' || kase.status === 'IN_SUPPORT_SUB_72';
+  }
   return st.owner === roleId;
 }
 
@@ -1841,6 +1845,7 @@ const NAV = [
       if (!role) return 'รายการพิจารณา/ลงนาม';
       if (role.id === 'board_sec') return 'ทะเบียนวาระการประชุม';
       if (role.id === 'affairs') return 'รายการเรื่องที่ต้องจัดทำ';
+      if (role.id === 'support_sub' || role.id === 'sup_chair') return 'รายการสำนวนรอกลั่นกรอง';
       if (isUpstreamRole(role.id)) return 'รายการติดตามสถานะสำนวน';
       return 'รายการพิจารณา/ลงนาม';
     },
