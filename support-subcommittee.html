@@ -272,6 +272,13 @@
 
     const params = new URLSearchParams(location.search);
     const role = ECMIS.currentRole();
+    const groupParam = params.get('group');
+    if (groupParam) {
+      sessionStorage.setItem('ecmis_support_sub_group', groupParam);
+      localStorage.setItem('ecmis_support_sub_group', groupParam);
+    }
+    const currentGroup = groupParam || sessionStorage.getItem('ecmis_support_sub_group') || localStorage.getItem('ecmis_support_sub_group') || 'group1';
+    const returnInboxUrl = `support-subcommittee-inbox.html?group=${encodeURIComponent(currentGroup)}`;
     let kase = null, docType, isRuling;
     let isReadOnly = false;
 
@@ -757,7 +764,7 @@
 
     async function handle(act) {
       if (act === 'back') {
-        location.href = 'support-subcommittee-inbox.html';
+        location.href = returnInboxUrl;
         return;
       }
       if (act === 'print') {
@@ -810,7 +817,7 @@
             status: 'IN_SUPPORT_SUB'
           });
           ECMIS.toastOk('ส่งคำขอข้อมูลเพิ่มเติมเรียบร้อย');
-          setTimeout(() => location.href = 'support-subcommittee-inbox.html', 1400);
+          setTimeout(() => location.href = returnInboxUrl, 1400);
         });
         return;
       }
@@ -837,7 +844,7 @@
             status: isRuling ? 'RETURNED_72' : 'RETURNED'
           });
           ECMIS.toastOk('ส่งคืนสำนวนเรียบร้อย');
-          setTimeout(() => location.href = 'support-subcommittee-inbox.html', 1400);
+          setTimeout(() => location.href = returnInboxUrl, 1400);
         });
         return;
       }

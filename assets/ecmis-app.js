@@ -10,7 +10,7 @@ const ROLES = [
 
   { id:'support_sub', login:'Jiraporn.N', row:2, group:'คณะอนุกรรมการสนับสนุนเลขาธิการฯ', title:'อนุกรรมการสนับสนุนเลขาธิการฯ',
     name:'นางสาวจิราพร นิติกิจ', org:'คณะอนุกรรมการสนับสนุนเลขาธิการฯ', lane:'L2', flow:'S2 / G2', act:'7.1, 7.2',
-    perms:['view.assigned','download','support.opinion','support.certify','request.moreinfo'] },
+    perms:['view.assigned','download','support.opinion','support.certify','request.moreinfo'], defaultGroup:'group1' },
 
   { id:'chairman', login:'Wichai.Y', row:3, group:'ประธานกรรมการ ป.ป.ท.', title:'ประธานกรรมการ ป.ป.ท.',
     name:'นายวิชัย ยุติธรรม', org:'คณะกรรมการ ป.ป.ท.', lane:'L5', flow:'G4 / S7', act:'7.1, 7.2, 7.3',
