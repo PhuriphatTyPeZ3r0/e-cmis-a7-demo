@@ -4291,10 +4291,14 @@ function initDocEditor(opts) {
     if (toolbar) {
       const toggle = toolbar.querySelector('.ws-doc-pane-toggle');
       const printBtn = toolbar.querySelector('[onclick*="print"]');
+      /* insertBefore ต้องเรียกจาก parent จริงของ reference node — บางหน้า (เช่น ruling-report.html)
+         ปุ่มพิมพ์/toggle ซ้อนอยู่ใน wrapper อีกชั้นใต้ .ws-doc-toolbar ไม่ใช่ direct child เรียกจาก
+         printBtn.parentElement เองจึงถูกต้องเสมอไม่ว่าจะซ้อนกี่ชั้น (เดิมเรียกจาก toolbar ตรงๆ
+         ทำให้โยน NotFoundError เมื่อ printBtn ไม่ใช่ direct child ของ toolbar) */
       if (printBtn) {
-        toolbar.insertBefore(editBtn, printBtn);
+        printBtn.parentElement.insertBefore(editBtn, printBtn);
       } else if (toggle) {
-        toolbar.insertBefore(editBtn, toggle);
+        toggle.parentElement.insertBefore(editBtn, toggle);
       } else {
         toolbar.appendChild(editBtn);
       }
@@ -4302,16 +4306,18 @@ function initDocEditor(opts) {
       docPaperWrap.parentElement.insertBefore(editBtn, docPaperWrap);
     }
   } else {
-    // If it was an old fab button, modernize it
-    editBtn.className = 'btn-doc-edit ms-auto me-1';
-    editBtn.innerHTML = '<i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>';
-    if (toolbar && editBtn.parentElement !== toolbar) {
+    /* บางหน้า (เช่น ruling-report.html) มีปุ่มแก้ไขเอกสารอยู่ในตำแหน่งที่เหมาะสมแล้วในมาร์กอัพ
+       ของตัวเอง เพียงแต่ซ้อนอยู่ใน wrapper อีกชั้นใต้ .ws-doc-toolbar ไม่ใช่ direct child — เช็คว่า
+       อยู่ใน subtree ของ toolbar อยู่แล้วหรือไม่แทน parentElement !== toolbar ตรงๆ ถ้าอยู่แล้วไม่ต้อง
+       ย้าย (เดิมพยายามย้ายโดยเรียก toolbar.insertBefore(editBtn, printBtn) ซึ่ง printBtn ก็ซ้อนอยู่
+       ใน wrapper เหมือนกัน ไม่ใช่ direct child ของ toolbar ทำให้โยน NotFoundError) */
+    if (toolbar && !toolbar.contains(editBtn)) {
       const printBtn = toolbar.querySelector('[onclick*="print"]');
       const toggle = toolbar.querySelector('.ws-doc-pane-toggle');
       if (printBtn) {
-        toolbar.insertBefore(editBtn, printBtn);
+        printBtn.parentElement.insertBefore(editBtn, printBtn);
       } else if (toggle) {
-        toolbar.insertBefore(editBtn, toggle);
+        toggle.parentElement.insertBefore(editBtn, toggle);
       } else {
         toolbar.appendChild(editBtn);
       }
