@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 
 <head>
@@ -448,9 +448,16 @@
       const r = selectedRes();
       const t = tally();
       const unanimous = t.againstV === 0 && t.abstainV === 0;
-      const attendees = Array.from(document.querySelectorAll('#boardTb tr')).map((tr, i) =>
-        ({ ...BOARD[i], recused: tr.querySelector('.attend').value === 'recused' }));
-      const recusedList = attendees.filter(b => b.recused);
+      const allBoardRows = Array.from(document.querySelectorAll('#boardTb tr')).map((tr, i) => {
+        const attVal = tr.querySelector('.attend').value;
+        return {
+          ...BOARD[i],
+          attend: attVal,
+          recused: attVal === 'recused'
+        };
+      });
+      const attendees = allBoardRows.filter(b => b.attend === 'present');
+      const recusedList = allBoardRows.filter(b => b.recused);
       const crim = document.getElementById('guiltyCriminal').checked;
       const disc = document.getElementById('guiltyDiscipline').checked;
       const flight = document.getElementById('flightRisk') && document.getElementById('flightRisk').checked;
@@ -708,7 +715,7 @@
       const opinion = document.getElementById('boardOpinion').value.trim();
       const presenter = document.getElementById('presenter').value.trim();
       const ac = kase.accused || [];
-      const attendeeCount = document.querySelectorAll('#boardTb tr').length;
+      const attendeeCount = Array.from(document.querySelectorAll('#boardTb tr')).filter(tr => tr.querySelector('.attend').value === 'present').length;
       const crim = document.getElementById('guiltyCriminal').checked;
       const disc = document.getElementById('guiltyDiscipline').checked;
       const legalBaseClause = kase.legalBase === 'ม.62'
@@ -729,7 +736,7 @@
         investigatorPanel: P(document.getElementById('investigatorRef').value,
           'คณะพนักงานไต่สวน/คณะอนุกรรมการไต่สวน แล้วแต่กรณี ตามคำสั่งแต่งตั้งเรื่องที่ ' + kase.id),
         investigatorMembers: P(''), investigatorOpinion: P(document.getElementById('investigatorOpinion').value),
-        presentCount: String(attendeeCount || BOARD.length),
+        presentCount: String(attendeeCount),
         criminalBasis: crim ? 'มาตรา ๔๔ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม (ส่งพนักงานอัยการดำเนินคดีต่อไป)' : 'ไม่มีมูลความผิดทางอาญา',
         disciplinaryBasis: disc ? 'มาตรา ๓๘ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม' : 'ไม่มีมูลความผิดทางวินัย',
         nacc65Clause,

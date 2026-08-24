@@ -680,9 +680,16 @@
       const r = selectedRes();
       const t = tally();
       const unanimous = t.againstV === 0 && t.abstainV === 0;
-      const attendees = Array.from(document.querySelectorAll('#boardTb tr')).map((tr, i) =>
-        ({ ...BOARD[i], recused: tr.querySelector('.attend').value === 'recused' }));
-      const recusedList = attendees.filter(b => b.recused);
+      const allBoardRows = Array.from(document.querySelectorAll('#boardTb tr')).map((tr, i) => {
+        const attVal = tr.querySelector('.attend').value;
+        return {
+          ...BOARD[i],
+          attend: attVal,
+          recused: attVal === 'recused'
+        };
+      });
+      const attendees = allBoardRows.filter(b => b.attend === 'present');
+      const recusedList = allBoardRows.filter(b => b.recused);
 
       const resText = computeResolutionText();
 
