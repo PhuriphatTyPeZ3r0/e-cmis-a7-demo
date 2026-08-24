@@ -10,7 +10,7 @@ const ROLES = [
 
   { id:'support_sub', login:'Jiraporn.N', row:2, group:'คณะอนุกรรมการสนับสนุนเลขาธิการฯ', title:'อนุกรรมการสนับสนุนเลขาธิการฯ',
     name:'นางสาวจิราพร นิติกิจ', org:'คณะอนุกรรมการสนับสนุนเลขาธิการฯ', lane:'L2', flow:'S2 / G2', act:'7.1, 7.2',
-    perms:['view.assigned','download','support.opinion','support.certify','request.moreinfo'] },
+    perms:['view.assigned','download','support.opinion','support.certify','request.moreinfo'], defaultGroup:'group1' },
 
   { id:'chairman', login:'Wichai.Y', row:3, group:'ประธานกรรมการ ป.ป.ท.', title:'ประธานกรรมการ ป.ป.ท.',
     name:'นายวิชัย ยุติธรรม', org:'คณะกรรมการ ป.ป.ท.', lane:'L5', flow:'G4 / S7', act:'7.1, 7.2, 7.3',
@@ -144,6 +144,7 @@ const STATUS = {
   PENDING_SECGEN:   { label:'รอเลขาธิการฯ ลงนาม',         cls:'st-pending',  owner:'secgen' },
   IN_SUPPORT_SUB:   { label:'ส่งให้คณะอนุสนับสนุนฯ พิจารณาแล้ว', cls:'st-review', owner:'support_sub' },
   PENDING_URGENT:   { label:'รอ ผอ.กบค. รับรองใบด่วน',     cls:'st-urgent',   owner:'dir_case' },
+  PENDING_CHAIR_OF: { label:'รอหน้าห้องประธานฯ คัดกรอง',   cls:'st-pending',  owner:'chair_office' },
   PENDING_CHAIRMAN: { label:'รอประธานฯ สั่งการ',           cls:'st-pending',  owner:'chairman' },
   IN_SCREENING:     { label:'อยู่อนุกลั่นกรองฯ',           cls:'st-review',   owner:'subcommittee' },
   AGENDA_SET:       { label:'รอบรรจุวาระ',                cls:'st-agenda',   owner:'board_sec' },
@@ -178,7 +179,7 @@ const STATUS = {
 // บล็อก 000-099 = สายงานหลัก, บล็อก 100-199 = สายรายงานวินิจฉัยชี้มูล (คีย์ลงท้าย _72)
 const STATUS_CODE = {
   DRAFT:'000', RETURNED:'001', PENDING_SECTION:'002', PENDING_DIRECTOR:'003', PENDING_DEPUTY:'004',
-  PENDING_SECGEN:'005', IN_SUPPORT_SUB:'006', PENDING_URGENT:'007',
+  PENDING_SECGEN:'005', IN_SUPPORT_SUB:'006', PENDING_URGENT:'007', PENDING_CHAIR_OF:'008',
   PENDING_CHAIRMAN:'009', IN_SCREENING:'010', AGENDA_SET:'011', IN_MEETING:'012', DEFERRED:'013',
   RESOLVED_PENDING:'014', RESOLVED:'015', DISPATCHING:'016', CLOSED:'017',
 
@@ -198,24 +199,27 @@ const TRANSITIONS = [
   { from:'PENDING_SECGEN', to:'PENDING_URGENT', event:'SIGN_URGENT', actor:'secgen',
     ref:'เสนอขอเพิ่มวาระด่วน', guard:k => !g1Triggers(k).required && !!k.urgent,
     note:'กรณีไม่ใช่เรื่องซับซ้อน และมีใบด่วน' },
-  { from:'PENDING_SECGEN', to:'PENDING_CHAIRMAN', event:'SIGN_NORMAL', actor:'secgen',
+  { from:'PENDING_SECGEN', to:'PENDING_CHAIR_OF', event:'SIGN_NORMAL', actor:'secgen',
     ref:'เสนอตามขั้นตอนปกติ', guard:k => !g1Triggers(k).required && !k.urgent,
     note:'กรณีไม่ใช่เรื่องซับซ้อน และไม่มีใบด่วน' },
   { from:'PENDING_SECGEN', to:'RETURNED', event:'RETURN_TO_SOURCE', actor:'secgen',
     ref:'ส่งคืนสายงานต้นทาง', note:'ส่งคืนเรื่องกลับสายงานต้นทาง' },
 
-  { from:'IN_SUPPORT_SUB', to:'PENDING_CHAIRMAN', event:'SUPPORT_ALIGNED', actor:'support_sub',
+  { from:'IN_SUPPORT_SUB', to:'PENDING_CHAIR_OF', event:'SUPPORT_ALIGNED', actor:'support_sub',
     ref:'อนุกรรมการฯ เห็นชอบตามเสนอ', note:'ความเห็นสอดคล้อง — เสนอประธานฯ สั่งการ' },
   { from:'IN_SUPPORT_SUB', to:'PENDING_URGENT', event:'SUPPORT_DIVERGED_URGENT', actor:'support_sub',
     ref:'อนุกรรมการฯ เห็นชอบวาระด่วน', guard:k => !!k.urgent,
     note:'ความเห็นไม่ตรงกัน — เสนอพิจารณาวาระด่วน' },
-  { from:'IN_SUPPORT_SUB', to:'PENDING_CHAIRMAN', event:'SUPPORT_DIVERGED', actor:'support_sub',
+  { from:'IN_SUPPORT_SUB', to:'PENDING_CHAIR_OF', event:'SUPPORT_DIVERGED', actor:'support_sub',
     ref:'อนุกรรมการฯ เห็นชอบวาระปกติ', guard:k => !k.urgent, note:'ความเห็นไม่ตรงกัน — เสนอเข้าการกลั่นกรองปกติ' },
 
-  { from:'PENDING_URGENT', to:'PENDING_CHAIRMAN', event:'URGENT_CERTIFY', actor:'dir_case',
+  { from:'PENDING_URGENT', to:'PENDING_CHAIR_OF', event:'URGENT_CERTIFY', actor:'dir_case',
     ref:'รับรองเหตุผลเร่งด่วน', note:'ผอ.กบค. ลงนามรับรองเหตุผลเร่งด่วน' },
   { from:'PENDING_URGENT', to:'IN_SCREENING', event:'URGENT_REJECT', actor:'dir_case',
     ref:'ไม่รับรองเหตุผลเร่งด่วน', note:'ไม่รับรองใบด่วน — ปรับเข้าสู่เส้นทางกลั่นกรองปกติ' },
+
+  { from:'PENDING_CHAIR_OF', to:'PENDING_CHAIRMAN', event:'INTAKE_SCREEN', actor:'chair_office',
+    ref:'เสนอประธานฯ สั่งการ' },
   { from:'PENDING_CHAIRMAN', to:'IN_SCREENING', event:'ORDER_SCREENING', actor:'chairman',
     ref:'ประธานฯ สั่งส่งกลั่นกรอง', note:'สั่งส่งกลั่นกรองตามปกติ' },
   { from:'PENDING_CHAIRMAN', to:'AGENDA_SET', event:'ORDER_AGENDA_URGENT', actor:'chairman',
@@ -363,7 +367,7 @@ const STATUS_STEP = {
   PENDING_SECTION:'secgen', PENDING_DIRECTOR:'secgen', PENDING_DEPUTY:'secgen',
   PENDING_SECGEN:'secgen', IN_SUPPORT_SUB:'secgen',
   PENDING_URGENT:'urgent',
-  PENDING_CHAIRMAN:'chairman',
+  PENDING_CHAIR_OF:'chairman', PENDING_CHAIRMAN:'chairman',
   IN_SCREENING:'screening',
   AGENDA_SET:'agenda',
   RESOLVED:'resolution', CLOSED:'order'
@@ -376,23 +380,18 @@ function resolvePage(path) {
   return path;
 }
 
-/* true when the current page is served from the res/ subdirectory — used to
-   pick the right relative path (../assets/pacc_logo.png, ../login.html, ...)
-   back up to assets that live at the project root. */
-function isInResDir() {
-  return /\/res\//.test(location.pathname);
-}
-
 function isUpstreamRole(roleId){ const r = getRole(roleId); return r.scope === 'UPSTREAM'; }
 /* board_sec's home page is agenda-registry.html (ทะเบียนวาระการประชุม) — every other
-   role shares res/inbox.html. This is the single source of truth for navigation.
-   ตั้งใจตั้งชื่อ inbox.html (ไม่ใช่ index.html) เพื่อไม่ให้ชนกับ index.html ที่ root ซึ่งเป็น
-   หน้า marketing คนละหน้ากับ work-queue นี้ — ทั้งสองหน้าอยู่ใน res/ เท่านั้น (ไม่มีคู่แฝดที่
-   root) จึงต้อง prefix ด้วย res/ เมื่อเรียกจากนอก res/ (เช่นจาก login.html หรือหน้า root เดิม) */
+   role still shares inbox.html. This is the one place that decision lives, so
+   every redirect/nav-link/breadcrumb across the app stays correct if that ever changes.
+   (resolution-inbox.html is still board_sec's work-inbox for the full flow — reachable via
+   its own sidebar item, "รายการรอจัดทำมติ" — it's just no longer the post-login landing page.) */
 function homeHref(roleId){
   const r = roleId || currentRoleId();
-  const target = (r === 'board_sec') ? 'agenda-registry.html' : 'inbox.html';
-  return isInResDir() ? target : `res/${target}`;
+  if (r === 'board_sec') return resolvePage('agenda-registry.html');
+  if (r === 'support_sub' || r === 'sup_chair' || r === 'sup_sec' || r === 'sup_asst') return resolvePage('support-subcommittee-inbox.html');
+  if (r === 'board' || r === 'board_ex') return resolvePage('board-inbox.html');
+  return resolvePage('inbox.html');
 }
 function isUpstreamCase(kase){ const s = STATUS[kase.status]; return !!(s && s.scope === 'UPSTREAM'); }
 function isCase72(kase){
@@ -417,47 +416,40 @@ function isCase73(kase){
 }
 
 const PAGE_FOR_72 = {
-  PENDING_SECTION_72:'review.html', PENDING_DIRECTOR_72:'review.html',
-  PENDING_DEPUTY_72:'review.html', RETURNED_72:'review.html',
-  PENDING_SECGEN_72:'review.html',
+  PENDING_SECTION_72:'approval-review.html', PENDING_DIRECTOR_72:'approval-review.html',
+  PENDING_DEPUTY_72:'approval-review.html', RETURNED_72:'approval-review.html',
+  PENDING_SECGEN_72:'approval-review.html',
   IN_SUPPORT_SUB_72:'support-subcommittee.html',
   PENDING_URGENT_72:'urgent-agenda.html', PENDING_CHAIRMAN_URGENT_72:'urgent-agenda.html',
-  IN_SCREENING_72:'screening.html',
+  IN_SCREENING_72:'subcommittee-screening.html',
   PENDING_INVITE_72:'agenda-registry.html',
-  IN_MEETING_72:'resolution.html',
+  IN_MEETING_72:'board-resolution.html',
   RESOLVED_PENDING_72:'ruling-report.html',
   PENDING_SIGN_RULING_72:'ruling-report.html',
   PENDING_AREA_NOTICE_72:'ruling-report.html',
   DISPATCHING_NACC_72:'ruling-report.html',
   PENDING_DISPATCH_GUILTY_72:'ruling-report.html',
-  CLOSED_72:'resolution.html'
+  CLOSED_72:'board-resolution.html'
 };
-function pageForMainFlowStatus(st) {
-  if (['PENDING_SECGEN', 'RETURNED', 'DRAFT', 'PENDING_SECTION', 'PENDING_DIRECTOR', 'PENDING_DEPUTY'].includes(st)) {
-    return 'review.html';
-  }
-  if (st === 'IN_SUPPORT_SUB') return 'support-subcommittee.html';
-  if (st === 'IN_SCREENING') return 'screening.html';
-  if (['PENDING_CHAIRMAN', 'PENDING_URGENT'].includes(st)) return 'chairman.html';
-  if (st === 'AGENDA_SET') return 'agenda-registry.html';
-  if (['IN_MEETING', 'RESOLVED_PENDING', 'RESOLVED', 'DEFERRED', 'CLOSED'].includes(st)) return 'resolution.html';
-  return 'review.html';
-}
-
-/* isCase72() ตัดสินจาก docType/เลขที่สำนวน (เช่น 1119/, 1396/, 1402/) ซึ่งเป็นคุณสมบัติถาวรของ
-   สำนวน — แต่สถานะจริงในฐานข้อมูลอาจยังเป็นรหัสสายหลัก (บล็อก 000-099) ถ้าข้อมูลยังไม่ได้อัปเดต
-   เข้าสาย _72 จริง (เช่น บอร์ดมีมติแล้วแต่สถานะยังไม่เปลี่ยนเป็น RESOLVED_PENDING_72) เดิม fallback
-   ไปหน้าทะเบียนสำนวนเฉยๆ ทำให้กดดำเนินการแล้วไปหน้าที่ไม่มีบริบท ใช้ routing สายหลักแทนสมเหตุสมผลกว่า
-   — แก้ที่รหัสสถานะในฐานข้อมูลให้ตรงกับที่ควรจะเป็นต่างหากคือทางแก้ที่ถูกต้องจริง ๆ */
-function pageForCase72(kase){
-  const mapped = PAGE_FOR_72[kase.status];
-  return resolvePage(mapped || pageForMainFlowStatus(kase.status));
-}
+function pageForCase72(kase){ return resolvePage(PAGE_FOR_72[kase.status] || 'case-register.html'); }
 
 function pageForCaseByStatus(kase) {
-  if (!kase) return resolvePage('register.html');
+  if (!kase) return resolvePage('case-register.html');
   if (isCase72(kase)) return pageForCase72(kase);
-  return resolvePage(pageForMainFlowStatus(kase.status));
+  const st = kase.status;
+  if (['PENDING_SECGEN', 'RETURNED', 'DRAFT', 'PENDING_SECTION', 'PENDING_DIRECTOR', 'PENDING_DEPUTY'].includes(st)) {
+    return resolvePage('approval-review.html');
+  }
+  if (st === 'IN_SUPPORT_SUB') return resolvePage('support-subcommittee.html');
+  if (st === 'IN_SCREENING') return resolvePage('subcommittee-screening.html');
+  if (['PENDING_CHAIRMAN', 'PENDING_CHAIR_OF', 'PENDING_URGENT'].includes(st)) {
+    return resolvePage('chairman-agenda.html');
+  }
+  if (st === 'AGENDA_SET') return resolvePage('agenda-registry.html');
+  if (['IN_MEETING', 'RESOLVED_PENDING', 'RESOLVED', 'DEFERRED', 'CLOSED'].includes(st)) {
+    return resolvePage('board-resolution.html');
+  }
+  return resolvePage('approval-review.html');
 }
 
 const OPINION_TYPES = {
@@ -650,7 +642,7 @@ function getAct7Status(c) {
   if (st === 'AGENDA_SET') {
     return 'บรรจุระเบียบวาระการประชุมแล้ว';
   }
-  if (st === 'PENDING_CHAIRMAN') {
+  if (st === 'PENDING_CHAIR_OF' || st === 'PENDING_CHAIRMAN') {
     return 'รอประธานอนุมัติบรรจุวาระ';
   }
   if (st === 'IN_SCREENING') {
@@ -750,7 +742,7 @@ const CASES = [
     id:'1547/2568',
     subject:'กล่าวหาเจ้าหน้าที่องค์การบริหารส่วนตำบลแห่งหนึ่ง จัดซื้อจัดจ้างโครงการก่อสร้างถนน คสล. โดยมิชอบ',
     legalBase:'ม.18/4',
-    status:'PENDING_CHAIRMAN',
+    status:'IN_MEETING',
     procType:'7.1',
     owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'นายวิรัตน์ ศรีสุข (ผู้ร้อง)',
@@ -789,7 +781,7 @@ const CASES = [
     id:'1609/2568',
     subject:'กล่าวหาพนักงานรัฐวิสาหกิจแห่งหนึ่ง ทุจริตการเบิกจ่ายค่าน้ำมันเชื้อเพลิง',
     legalBase:'ม.18/4',
-    status:'PENDING_CHAIRMAN',
+    status:'IN_MEETING',
     procType:'7.1',
     owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'ความปรากฏต่อสำนักงาน',
@@ -797,8 +789,7 @@ const CASES = [
     allegation:'เบิกจ่ายค่าน้ำมันเชื้อเพลิงโดยใช้ใบเสร็จรับเงินอันเป็นเท็จ',
     receivedDate:'2568-12-20', deadline60:'2569-02-18', deadline2y:'2570-12-20', prescription:'2573-02-01',
     docRef:'ปป 0020/1380 ลงวันที่ 12 สิงหาคม 2569',
-    urgent:true, urgentReason:'คดีเร่งด่วนใกล้กรอบเวลา ผอ.กบค. รับรองใบด่วนแล้ว เสนอประธานฯ สั่งการ',
-    complex:false, dupWarning:false,
+    urgent:false, complex:false, dupWarning:false,
     slaDays:5, slaLimit:15, subCommittee:'คณะที่ 3',
     meetingNo:'37/2569', agendaNo:'5.3', meetingDate:'2569-08-20',
     docType:'213', signPhase:'COMPLETE'
@@ -825,7 +816,7 @@ const CASES = [
     id:'1119/2565',
     subject:'กล่าวหาเจ้าหน้าที่โรงพยาบาลรัฐแห่งหนึ่ง เบิกจ่ายค่าตอบแทนล่วงเวลาอันเป็นเท็จ',
     legalBase:'ม.18/4',
-    status:'RESOLVED_PENDING_72',
+    status:'RESOLVED',
     procType:'7.2',
     owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 2',
     complainant:'บัตรสนเท่ห์ (ความปรากฏต่อสำนักงาน)',
@@ -846,7 +837,7 @@ const CASES = [
     id:'1402/2565',
     subject:'กล่าวหาเจ้าหน้าที่ด่านศุลกากร ตรวจปล่อยสินค้าโดยมิชอบ',
     legalBase:'ม.18/4',
-    status:'PENDING_SIGN_RULING_72',
+    status:'IN_MEETING_72',
     procType:'7.2',
     owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
     complainant:'กรมศุลกากร (ผู้แจ้งเรื่อง)',
@@ -863,7 +854,7 @@ const CASES = [
     id:'กจ.101/2569',
     subject:'บันทึกขอความเห็นทางข้อกฎหมายกรณีการบังคับใช้มาตรา ๑๘/๑ แห่ง พ.ร.บ. มาตรการของฝ่ายบริหารฯ',
     legalBase:'ม.18/1',
-    status:'PENDING_CHAIRMAN',
+    status:'AGENDA_SET',
     procType:'7.3',
     owner:'นางสาวรัชนี นิติการ', ownerOrg:'กองกฎหมาย',
     complainant:'กองกฎหมาย (เสนอความเห็นข้อกฎหมาย)',
@@ -1100,17 +1091,18 @@ function upcomingDeadlines(cases) {
 /* ปลายทางของสำนวนตาม role ปัจจุบัน (สายหลัก 213/644) — คัดลอกจาก mapping เดิมที่ใช้ใน
    command-palette (ค้นหาสำนวนคดี) ด้านล่าง เพื่อให้ badge แจ้งเตือนคลิกแล้วพาไปหน้าเดียวกัน */
 const PAGE_FOR_MAIN = {
-  owner:'review.html', section_head:'review.html',
-  director:'review.html', deputy:'review.html',
-  secgen:'review.html', support_sub:'support-subcommittee.html',
-  chairman:'chairman.html', subcommittee:'screening.html',
-  board_sec:'agenda-registry.html', affairs:'resolution.html',
-  board:'resolution.html', board_ex:'resolution.html',
-  legal:'resolution.html', admin:'register.html'
+  owner:'approval-review.html', section_head:'approval-review.html',
+  director:'approval-review.html', deputy:'approval-review.html',
+  secgen:'approval-review.html', support_sub:'support-subcommittee.html',
+  chair_office:'chairman-agenda.html',
+  chairman:'chairman-agenda.html', subcommittee:'subcommittee-screening.html',
+  board_sec:'agenda-registry.html', affairs:'board-resolution.html',
+  board:'board-resolution.html', board_ex:'board-resolution.html',
+  legal:'board-resolution.html', admin:'case-register.html'
 };
 function pageForCase(kase, roleId) {
   if (kase && typeof kase === 'object') return pageForCaseByStatus(kase);
-  const target = isCase72(kase) ? pageForCase72(kase) : (PAGE_FOR_MAIN[roleId] || 'review.html');
+  const target = isCase72(kase) ? pageForCase72(kase) : (PAGE_FOR_MAIN[roleId] || 'approval-review.html');
   return resolvePage(target);
 }
 
@@ -1491,12 +1483,12 @@ function setRole(id){
     sessionStorage.setItem('ecmis_username', r.login);
   }
   const page = (location.pathname.split('/').pop() || '').split('?')[0];
-  if (id === 'board_sec' && (page === 'index.html' || page === 'inbox.html')) {
+  if (id === 'board_sec' && page === 'inbox.html') {
     location.href = homeHref(id);
     return;
   }
   if (id !== 'board_sec' && page === 'resolution-inbox.html') {
-    location.href = homeHref(id);
+    location.href = resolvePage('inbox.html');
     return;
   }
   if (page === 'meeting-report.html' && !can('compile.minutes', id)) {
@@ -1507,21 +1499,13 @@ function setRole(id){
 }
 function currentRole(){ return getRole(currentRoleId()); }
 
-function isAuthed(){
-  if (sessionStorage.getItem('ecmis_authed') === null) {
-    sessionStorage.setItem('ecmis_authed', '1');
-    if (!sessionStorage.getItem('ecmis_role')) {
-      sessionStorage.setItem('ecmis_role', 'secgen');
-    }
-  }
-  return sessionStorage.getItem('ecmis_authed') === '1';
-}
-function currentUsername(){ return sessionStorage.getItem('ecmis_username') || 'secgen'; }
+function isAuthed(){ return sessionStorage.getItem('ecmis_authed') === '1'; }
+function currentUsername(){ return sessionStorage.getItem('ecmis_username') || ''; }
 function logout(){
   sessionStorage.removeItem('ecmis_authed');
   sessionStorage.removeItem('ecmis_role');
   sessionStorage.removeItem('ecmis_username');
-  location.href = isInResDir() ? '../login.html' : 'login.html';
+  location.href = resolvePage('login.html');
 }
 
 function inboxFor(roleId){
@@ -1531,6 +1515,9 @@ function inboxFor(roleId){
 function canAct(kase, roleId){
   const st = STATUS[kase.status];
   if(!st || st.scope === 'UPSTREAM') return false;
+  if(roleId === 'support_sub' || roleId === 'sup_chair' || roleId === 'sup_sec' || roleId === 'sup_asst') {
+    return st.owner === 'support_sub' || kase.status === 'IN_SUPPORT_SUB' || kase.status === 'IN_SUPPORT_SUB_72';
+  }
   return st.owner === roleId;
 }
 
@@ -1546,36 +1533,38 @@ const NAV = [
     label: role => {
       if (!role) return 'รายการพิจารณา/ลงนาม';
       if (role.id === 'board_sec') return 'ทะเบียนวาระการประชุม';
+      if (role.id === 'board' || role.id === 'board_ex') return 'รอบการประชุมและอ่านวาระล่วงหน้า';
       if (role.id === 'affairs') return 'รายการเรื่องที่ต้องจัดทำ';
+      if (role.id === 'support_sub' || role.id === 'sup_chair') return 'รายการสำนวนรอกลั่นกรอง';
       if (isUpstreamRole(role.id)) return 'รายการติดตามสถานะสำนวน';
       return 'รายการพิจารณา/ลงนาม';
     },
     /* board_sec's badge lives on the resolution-inbox.html item below instead — that page
        (not this home item) is what actually shows the full inboxFor() scope of cases. */
     badge: role => !role || role.id !== 'board_sec' },
-  { href:'register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' },
+  { href:'case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' },
 
   { section:'การประชุมคณะกรรมการ ป.ป.ท.' },
   { href:'meeting-report.html',        icon:'fa-file-contract',    label:'จัดทำรายงานมติการประชุม',
     visible: role => !!role && can('compile.minutes', role.id) },
   { href:'agenda-registry.html',       icon:'fa-table-list',       label:'ทะเบียนวาระการประชุม',
     /* board_sec เห็นหน้านี้อยู่แล้วผ่าน item แรก (home/inbox) ด้านบน — ซ่อน static item นี้ไว้
-       เพื่อไม่ให้ sidebar มีลิงก์ซ้ำไปหน้าเดียวกัน 2 ที่ — chairman ซ่อนไว้เหมือน secgen ตามที่ตกลง
-       ให้สิทธิ์การมองเห็นเมนูของประธานฯ ตรงกับเลขาธิการฯ ทุกจุด — affairs ตัดออกตามที่ตกลงด้วย */
-    visible: role => !!role && !['secgen', 'board_sec', 'chairman', 'affairs'].includes(role.id) },
+       เพื่อไม่ให้ sidebar มีลิงก์ซ้ำไปหน้าเดียวกัน 2 ที่ */
+    visible: role => !!role && role.id !== 'secgen' && role.id !== 'board_sec' },
   { href:'resolution-inbox.html',      icon:'fa-scale-balanced',   label:'รายการรอจัดทำมติ',
     /* work-inbox เดิมของ board_sec ครอบคลุมทั้ง flow (AGENDA_SET..RESOLVED/RESOLVED_PENDING)
        กว้างกว่าคิวใน agenda-registry.html (ซึ่งเป็นแค่ AGENDA_SET/PENDING_INVITE_72/DEFERRED)
        จึงยังต้องมีลิงก์แยกไว้ — badge ของ home item ด้านบนก็ย้ายมาไว้ที่นี่ด้วย */
     visible: role => !!role && role.id === 'board_sec', badge:true },
+  { href:'board-room.html',               icon:'fa-gavel',            label:'ห้องประชุมและลงมติ',
+    visible: role => !!role && (role.id === 'board' || role.id === 'board_ex') },
   { href:'dashboard.html',                icon:'fa-chart-pie',        label:'Dashboard สถิติมติ',
     visible: role => !!role && ['affairs','board_sec','chairman','board','secgen'].includes(role.id) },
   { href:'followup-dashboard.html',       icon:'fa-diagram-project',  label:'ติดตามผลมติ',
-    /* บอร์ดต้องเห็นหน้านี้ด้วย — ตาม design doc (สรุปการเชื่อมโยงกิจกรรมกับกิจกรรมที่7)
+    /* บอร์ด/ประธานฯ ต้องเห็นหน้านี้ด้วย — ตาม design doc (สรุปการเชื่อมโยงกิจกรรมกับกิจกรรมที่7)
        กจ.8 ป้อน feedback loop กลับเข้า Dashboard เสนอบอร์ด กจ.7 พร้อมแจ้งเตือนคดีล่าช้าให้บอร์ดเร่งรัด
-       เดิม design doc ให้ affairs/board_sec/chairman เห็นด้วยเช่นกัน แต่ chairman ตัดออกแล้วให้ตรงกับ
-       เลขาธิการฯ และตอนนี้ตัด affairs ออกด้วยตามที่ตกลง เหลือเฉพาะ board_sec/board */
-    visible: role => !!role && ['board_sec','board'].includes(role.id) }
+       ไม่ใช่แค่ฝ่ายปฏิบัติการ (affairs/board_sec) เท่านั้นที่ควรเห็น */
+    visible: role => !!role && ['affairs','board_sec','chairman','board'].includes(role.id) }
 ];
 
 function navLabel(navItem, role){
@@ -1773,11 +1762,10 @@ function renderShell(activeHref){
     </ul>
   </div>`;
 
-  const logoSrc = isInResDir() ? '../assets/pacc_logo.png' : 'assets/pacc_logo.png';
   const sidebar = `
   <nav class="app-sidebar no-print" id="appSidebar">
     <a class="brand text-decoration-none" href="${homeHref(role.id)}">
-      <img src="${logoSrc}" alt="ตราสำนักงาน ป.ป.ท.">
+      <img src="pacc_logo.png" alt="ตราสำนักงาน ป.ป.ท.">
       <span>E-CMIS
         <small>สำนักงาน ป.ป.ท.</small>
       </span>
@@ -2099,7 +2087,7 @@ function paginateDoc(containerEl, opts){
   const PAGE_BUDGET = mmProbe.getBoundingClientRect().height;
   mmProbe.remove();
 
-  const FIT_TOLERANCE = 20;
+  const FIT_TOLERANCE = 14;
 
   function measure(html){ probe.innerHTML = html; return probe.scrollHeight; }
 
@@ -2123,25 +2111,13 @@ function paginateDoc(containerEl, opts){
 
   const withSign = prefixFor(pages.length + (isFirst ? 1 : 2)) + pageBlocks.join('') + signBlock;
   const mandatoryOnly = pageBlocks.length === (isFirst ? 1 : 0);
-  
-  // Auto-fit check: if signatures fit within reasonable tolerance (up to 35px), keep on same page
-  if(mandatoryOnly || measure(withSign) <= (PAGE_BUDGET + FIT_TOLERANCE + 35)){
+  if(mandatoryOnly || measure(withSign) <= (PAGE_BUDGET + FIT_TOLERANCE + 8)){
     pageBlocks.push(signBlock);
     pushPage();
   } else {
-    // Orphan / Widow Protection: Never leave signature block alone on the new page!
-    // If pageBlocks has more than 1 block, pull the last concluding flowBlock to accompany signatures
-    const minBlocksToKeepOnPrevPage = isFirst ? 2 : 1;
-    if (pageBlocks.length > minBlocksToKeepOnPrevPage) {
-      const pulledConcludeBlock = pageBlocks.pop();
-      pushPage();
-      pageBlocks = [pulledConcludeBlock, signBlock];
-      pushPage();
-    } else {
-      pushPage();
-      pageBlocks = [signBlock];
-      pushPage();
-    }
+    pushPage();
+    pageBlocks = [signBlock];
+    pushPage();
   }
 
   containerEl.innerHTML = pages.map((p, i) => {
@@ -2200,14 +2176,14 @@ div.Section1 {
   page: Section1;
 }
 body {
-  font-family: 'TH Sarabun IT9', 'TH Sarabun New', 'TH Sarabun PSK', 'Sarabun', 'Cordia New', serif;
+  font-family: 'TH Sarabun New', 'TH Sarabun PSK', 'Sarabun', 'Cordia New', serif;
   font-size: 16pt;
-  line-height: 1.3;
+  line-height: 1.25;
   color: #000000;
 }
 p {
-  margin: 2pt 0;
-  line-height: 1.3;
+  margin: 4pt 0;
+  line-height: 1.25;
   text-align: justify;
   text-justify: inter-cluster;
 }
@@ -2215,17 +2191,17 @@ p {
   text-align: center;
   font-size: 18pt;
   font-weight: bold;
-  margin: 4pt 0 2pt;
+  margin: 6pt 0 2pt;
 }
 .doc-sub {
   text-align: center;
   font-size: 16pt;
-  margin-bottom: 6pt;
+  margin-bottom: 8pt;
 }
 .doc-h {
   font-size: 16pt;
   font-weight: bold;
-  margin-top: 6pt;
+  margin-top: 10pt;
   margin-bottom: 2pt;
 }
 .doc-indent {
@@ -2233,7 +2209,7 @@ p {
   text-align: justify;
   text-justify: inter-cluster;
   font-size: 16pt;
-  margin-bottom: 3pt;
+  margin-bottom: 4pt;
 }
 .doc-row {
   font-size: 16pt;
@@ -2242,8 +2218,8 @@ p {
 .doc-sign {
   text-align: center;
   font-size: 16pt;
-  margin-top: 12pt;
-  line-height: 1.3;
+  margin-top: 16pt;
+  line-height: 1.35;
 }
 .doc-dots {
   border-bottom: 1px dotted #000;
@@ -2254,7 +2230,7 @@ p {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-around;
-  margin-top: 12pt;
+  margin-top: 16pt;
 }
 img {
   max-width: 100%;
@@ -4304,14 +4280,10 @@ function initDocEditor(opts) {
     if (toolbar) {
       const toggle = toolbar.querySelector('.ws-doc-pane-toggle');
       const printBtn = toolbar.querySelector('[onclick*="print"]');
-      /* insertBefore ต้องเรียกจาก parent จริงของ reference node — บางหน้า (เช่น ruling-report.html)
-         ปุ่มพิมพ์/toggle ซ้อนอยู่ใน wrapper อีกชั้นใต้ .ws-doc-toolbar ไม่ใช่ direct child เรียกจาก
-         printBtn.parentElement เองจึงถูกต้องเสมอไม่ว่าจะซ้อนกี่ชั้น (เดิมเรียกจาก toolbar ตรงๆ
-         ทำให้โยน NotFoundError เมื่อ printBtn ไม่ใช่ direct child ของ toolbar) */
       if (printBtn) {
-        printBtn.parentElement.insertBefore(editBtn, printBtn);
+        toolbar.insertBefore(editBtn, printBtn);
       } else if (toggle) {
-        toggle.parentElement.insertBefore(editBtn, toggle);
+        toolbar.insertBefore(editBtn, toggle);
       } else {
         toolbar.appendChild(editBtn);
       }
@@ -4319,18 +4291,16 @@ function initDocEditor(opts) {
       docPaperWrap.parentElement.insertBefore(editBtn, docPaperWrap);
     }
   } else {
-    /* บางหน้า (เช่น ruling-report.html) มีปุ่มแก้ไขเอกสารอยู่ในตำแหน่งที่เหมาะสมแล้วในมาร์กอัพ
-       ของตัวเอง เพียงแต่ซ้อนอยู่ใน wrapper อีกชั้นใต้ .ws-doc-toolbar ไม่ใช่ direct child — เช็คว่า
-       อยู่ใน subtree ของ toolbar อยู่แล้วหรือไม่แทน parentElement !== toolbar ตรงๆ ถ้าอยู่แล้วไม่ต้อง
-       ย้าย (เดิมพยายามย้ายโดยเรียก toolbar.insertBefore(editBtn, printBtn) ซึ่ง printBtn ก็ซ้อนอยู่
-       ใน wrapper เหมือนกัน ไม่ใช่ direct child ของ toolbar ทำให้โยน NotFoundError) */
-    if (toolbar && !toolbar.contains(editBtn)) {
+    // If it was an old fab button, modernize it
+    editBtn.className = 'btn-doc-edit ms-auto me-1';
+    editBtn.innerHTML = '<i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>';
+    if (toolbar && editBtn.parentElement !== toolbar) {
       const printBtn = toolbar.querySelector('[onclick*="print"]');
       const toggle = toolbar.querySelector('.ws-doc-pane-toggle');
       if (printBtn) {
-        printBtn.parentElement.insertBefore(editBtn, printBtn);
+        toolbar.insertBefore(editBtn, printBtn);
       } else if (toggle) {
-        toggle.parentElement.insertBefore(editBtn, toggle);
+        toolbar.insertBefore(editBtn, toggle);
       } else {
         toolbar.appendChild(editBtn);
       }
@@ -4416,74 +4386,11 @@ function initDocEditor(opts) {
   };
 }
 
-const OFFENSE_BASIS = [
-  // ๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ
-  { trob_id: 101, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๔๗', trob_article_label: 'เจ้าพนักงานยักยอกทรัพย์', p_principal: 20, p_accessory: 20, trob_sort_order: 1 },
-  { trob_id: 102, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๔๘', trob_article_label: 'เจ้าพนักงานกรรโชกทรัพย์', p_principal: 20, p_accessory: 20, trob_sort_order: 2 },
-  { trob_id: 103, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๔๙', trob_article_label: 'เจ้าพนักงานเรียก รับ หรือยอมจะรับสินบน', p_principal: 20, p_accessory: 20, trob_sort_order: 3 },
-  { trob_id: 104, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๕๐', trob_article_label: 'เจ้าพนักงานกระทำการหรือไม่กระทำการอย่างใดโดยเห็นแก่ทรัพย์สินซึ่งเรียกหรือรับไว้ก่อนได้รับแต่งตั้งในตำแหน่งนั้น', p_principal: 20, p_accessory: 20, trob_sort_order: 4 },
-  { trob_id: 105, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๕๑', trob_article_label: 'เจ้าพนักงานใช้อำนาจในตำแหน่งโดยทุจริต จัดการทรัพย์ อันเป็นการเสียหาย', p_principal: 20, p_accessory: 20, trob_sort_order: 5 },
-  { trob_id: 106, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๕๒', trob_article_label: 'เจ้าพนักงานมีส่วนได้เสียเนื่องด้วยกิจการที่ตนมีหน้าที่จัดการหรือดูแล', p_principal: 15, p_accessory: 10, trob_sort_order: 6 },
-  { trob_id: 107, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๕๓', trob_article_label: 'เจ้าพนักงานจ่ายทรัพย์เกินกว่าที่ควรจ่าย', p_principal: 15, p_accessory: 10, trob_sort_order: 7 },
-  { trob_id: 108, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๕๔', trob_article_label: 'เจ้าพนักงานเรียกเก็บหรือไม่เรียกเก็บภาษี/ค่าธรรมเนียม/เงินอื่นใดโดยทุจริต หรือโดยทุจริตกระทำหรือไม่กระทำการอย่างใดเพื่อให้ผู้มีหน้าที่ไม่ต้องเสียหรือเสียน้อย', p_principal: 20, p_accessory: 20, trob_sort_order: 8 },
-  { trob_id: 109, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๕๕', trob_article_label: 'เจ้าพนักงานโดยทุจริตกำหนดราคาทรัพย์สินหรือสินค้าเพื่อให้ผู้ต้องเสียภาษี หรือค่าธรรมเนียมไม่ต้องเสียหรือเสียน้อย', p_principal: 20, p_accessory: 20, trob_sort_order: 9 },
-  { trob_id: 110, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๕๖', trob_article_label: 'เจ้าพนักงานโดยทุจริตแนะนำเกี่ยวกับการลงบัญชี ทำให้มิต้องเสียภาษีหรือค่าธรรมเนียม หรือเสียน้อย', p_principal: 20, p_accessory: 20, trob_sort_order: 10 },
-  { trob_id: 111, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๕๗', trob_article_label: 'เจ้าพนักงานปฏิบัติหรือละเว้นการปฏิบัติหน้าที่โดยมิชอบเพื่อให้เกิดความเสียหายแก่ผู้หนึ่งผู้ใดหรือปฏิบัติหรือละเว้นการปฏิบัติหน้าที่โดยทุจริต', p_principal: 15, p_accessory: 10, trob_sort_order: 11 },
-  { trob_id: 112, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๕๘', trob_article_label: 'เจ้าพนักงานทำให้เสียหาย ซ่อนเร้น เอาไปเสียซึ่งทรัพย์หรือเอกสาร ซึ่งตนมีหน้าที่ปกครองหรือรักษา', p_principal: 10, p_accessory: 10, trob_sort_order: 12 },
-  { trob_id: 113, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๕๙', trob_article_label: 'เจ้าพนักงานถอน ทำให้เสียหาย ซึ่งตราหรือเครื่องหมาย อันเจ้าพนักงานได้ประทับไว้ที่ทรัพย์หรือเอกสารเพื่อเป็นหลักฐานในการยึดหรือรักษาสิ่งนั้น', p_principal: 10, p_accessory: 10, trob_sort_order: 13 },
-  { trob_id: 114, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๖๐', trob_article_label: 'เจ้าพนักงานใช้ดวงตราหรือรอยตราอันมิชอบด้วยหน้าที่ซึ่งทำให้ผู้อื่นเสียหาย', p_principal: 10, p_accessory: 10, trob_sort_order: 14 },
-  { trob_id: 115, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๖๑', trob_article_label: 'เจ้าพนักงานปลอมเอกสาร', p_principal: 15, p_accessory: 10, trob_sort_order: 15 },
-  { trob_id: 116, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๖๒', trob_article_label: 'เจ้าพนักงานทำเอกสารเท็จ', p_principal: 10, p_accessory: 10, trob_sort_order: 16 },
-  { trob_id: 117, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๖๓', trob_article_label: 'เจ้าพนักงานทำให้เสียหายซึ่งจดหมายหรือสิ่งอื่นที่ส่งทางไปรษณีย์ หรือโทรเลข', p_principal: 10, p_accessory: 10, trob_sort_order: 17 },
-  { trob_id: 118, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๖๔', trob_article_label: 'เจ้าพนักงานเปิดเผยความลับ', p_principal: 10, p_accessory: 10, trob_sort_order: 18 },
-  { trob_id: 119, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๖๕', trob_article_label: 'เจ้าพนักงานป้องกันหรือขัดขวางมิให้การเป็นไปตามกฎหมายหรือคำสั่ง', p_principal: 5, p_accessory: 5, trob_sort_order: 19 },
-  { trob_id: 120, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๖๖ ว.๑', trob_article_label: 'เจ้าพนักงานละทิ้งงาน หรือกระทำการใด ๆ เพื่อให้งานเสียหาย', p_principal: 10, p_accessory: 10, trob_sort_order: 20 },
-  { trob_id: 121, trob_group: '๑. ประมวลกฎหมายอาญา หมวดความผิดต่อตำแหน่งหน้าที่ราชการ', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๑๖๖ ว.๒', trob_article_label: 'เพื่อให้เกิดการเปลี่ยนแปลงกฎหมาย บังคับรัฐบาล ข่มขู่ประชาชน', p_principal: 15, p_accessory: 10, trob_sort_order: 21 },
-
-  // หมวดความผิดต่อตำแหน่งหน้าที่ในการยุติธรรม
-  { trob_id: 201, trob_group: 'หมวดความผิดต่อตำแหน่งหน้าที่ในการยุติธรรม (ป.อาญา)', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๒๐๐ ว.๑', trob_article_label: 'เจ้าพนักงานในการยุติธรรมกระทำหรือไม่กระทำการในตำแหน่งเพื่อจะช่วยบุคคลใดมิให้ต้องโทษ หรือได้รับโทษน้อยลง', p_principal: 10, p_accessory: 10, trob_sort_order: 22 },
-  { trob_id: 202, trob_group: 'หมวดความผิดต่อตำแหน่งหน้าที่ในการยุติธรรม (ป.อาญา)', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๒๐๐ ว.๒', trob_article_label: 'เพื่อจะแกล้งบุคคลใดให้ต้องรับโทษหรือรับโทษหนักขึ้น', p_principal: 20, p_accessory: 20, trob_sort_order: 23 },
-  { trob_id: 203, trob_group: 'หมวดความผิดต่อตำแหน่งหน้าที่ในการยุติธรรม (ป.อาญา)', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๒๐๑', trob_article_label: 'เจ้าพนักงานในการยุติธรรมรับสินบน', p_principal: 20, p_accessory: 20, trob_sort_order: 24 },
-  { trob_id: 204, trob_group: 'หมวดความผิดต่อตำแหน่งหน้าที่ในการยุติธรรม (ป.อาญา)', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๒๐๒', trob_article_label: 'เจ้าพนักงานในการยุติธรรมกระทำหรือไม่กระทำการอย่างใดโดยเห็นแก่ทรัพย์สินซึ่งได้เรียก/รับไว้ก่อนได้รับแต่งตั้งในตำแหน่งนั้น', p_principal: 20, p_accessory: 20, trob_sort_order: 25 },
-  { trob_id: 205, trob_group: 'หมวดความผิดต่อตำแหน่งหน้าที่ในการยุติธรรม (ป.อาญา)', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๒๐๓', trob_article_label: 'เจ้าพนักงานป้องกันหรือขัดขวางมิให้การเป็นไปตามคำพิพากษาหรือคำสั่งของศาล', p_principal: 10, p_accessory: 10, trob_sort_order: 26 },
-  { trob_id: 206, trob_group: 'หมวดความผิดต่อตำแหน่งหน้าที่ในการยุติธรรม (ป.อาญา)', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๒๐๔ ว.๑', trob_article_label: 'เจ้าพนักงานผู้ควบคุมผู้ต้องขัง ทำให้ผู้ต้องขังหลุดพ้นจากการคุมขัง', p_principal: 10, p_accessory: 10, trob_sort_order: 27 },
-  { trob_id: 207, trob_group: 'หมวดความผิดต่อตำแหน่งหน้าที่ในการยุติธรรม (ป.อาญา)', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๒๐๔ ว.๒', trob_article_label: 'ผู้หลุดพ้นจากการคุมขังโทษหนัก หรือ ๓ คน ขึ้นไป', p_principal: 15, p_accessory: 10, trob_sort_order: 28 },
-  { trob_id: 208, trob_group: 'หมวดความผิดต่อตำแหน่งหน้าที่ในการยุติธรรม (ป.อาญา)', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๒๐๕ ว.๑', trob_article_label: 'เจ้าพนักงานทำให้ผู้ต้องขังหลุดพ้นจากการคุมขังโดยประมาท', p_principal: 10, p_accessory: 10, trob_sort_order: 29 },
-  { trob_id: 209, trob_group: 'หมวดความผิดต่อตำแหน่งหน้าที่ในการยุติธรรม (ป.อาญา)', trob_law_name: 'ประมวลกฎหมายอาญา', trob_article_no: 'มาตรา ๒๐๕ ว.๒', trob_article_label: 'ผู้หลุดพ้นจากการคุมขังโทษหนัก หรือ ๓ คน ขึ้นไป (โดยประมาท)', p_principal: 10, p_accessory: 10, trob_sort_order: 30 },
-
-  // ๒. พระราชบัญญัติว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒
-  { trob_id: 301, trob_group: '๒. พ.ร.บ. ว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒', trob_law_name: 'พ.ร.บ. ว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒', trob_article_no: 'มาตรา ๔', trob_article_label: 'พนักงานยักยอกทรัพย์', p_principal: 20, p_accessory: 20, trob_sort_order: 31 },
-  { trob_id: 302, trob_group: '๒. พ.ร.บ. ว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒', trob_law_name: 'พ.ร.บ. ว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒', trob_article_no: 'มาตรา ๕', trob_article_label: 'พนักงานใช้อำนาจหน้าที่โดยมิชอบ ข่มขืนใจผู้อื่นให้มอบทรัพย์สิน หรือประโยชน์อื่นใดแก่ตนหรือผู้อื่น', p_principal: 20, p_accessory: 20, trob_sort_order: 32 },
-  { trob_id: 303, trob_group: '๒. พ.ร.บ. ว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒', trob_law_name: 'พ.ร.บ. ว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒', trob_article_no: 'มาตรา ๖', trob_article_label: 'พนักงานเรียกรับหรือรับสินบน', p_principal: 20, p_accessory: 20, trob_sort_order: 33 },
-  { trob_id: 304, trob_group: '๒. พ.ร.บ. ว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒', trob_law_name: 'พ.ร.บ. ว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒', trob_article_no: 'มาตรา ๗', trob_article_label: 'พนักงานกระทำการหรือไม่กระทำการอย่างใดโดยเห็นแก่ทรัพย์สินซึ่งได้เรียกหรือรับไว้ก่อนได้รับแต่งตั้งเป็นพนักงานในหน้าที่นั้น', p_principal: 20, p_accessory: 20, trob_sort_order: 34 },
-  { trob_id: 305, trob_group: '๒. พ.ร.บ. ว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒', trob_law_name: 'พ.ร.บ. ว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒', trob_article_no: 'มาตรา ๘', trob_article_label: 'พนักงานใช้อำนาจในหน้าที่โดยทุจริต จัดการทรัพย์อันเป็นการเสียหาย', p_principal: 20, p_accessory: 20, trob_sort_order: 35 },
-  { trob_id: 306, trob_group: '๒. พ.ร.บ. ว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒', trob_law_name: 'พ.ร.บ. ว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒', trob_article_no: 'มาตรา ๙', trob_article_label: 'พนักงานมีส่วนได้เสียเนื่องด้วยกิจการที่ตนมีหน้าที่จัดการ หรือดูแล', p_principal: 15, p_accessory: 10, trob_sort_order: 36 },
-  { trob_id: 307, trob_group: '๒. พ.ร.บ. ว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒', trob_law_name: 'พ.ร.บ. ว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒', trob_article_no: 'มาตรา ๑๐', trob_article_label: 'พนักงานจ่ายทรัพย์เกิน เพื่อประโยชน์ของตนเองหรือผู้อื่น', p_principal: 15, p_accessory: 10, trob_sort_order: 37 },
-  { trob_id: 308, trob_group: '๒. พ.ร.บ. ว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒', trob_law_name: 'พ.ร.บ. ว่าด้วยความผิดของพนักงานในองค์การหรือหน่วยงานของรัฐ พ.ศ. ๒๕๐๒', trob_article_no: 'มาตรา ๑๑', trob_article_label: 'พนักงานปฏิบัติหรือละเว้นการปฏิบัติหน้าที่โดยมิชอบเพื่อให้เกิดความเสียหายแก่ผู้หนึ่งผู้ใดหรือปฏิบัติหรือละเว้นการปฏิบัติหน้าที่โดยทุจริต', p_principal: 15, p_accessory: 10, trob_sort_order: 38 },
-
-  // ๓. พระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๔๒ และที่แก้ไขเพิ่มเติม
-  { trob_id: 401, trob_group: '๓. พ.ร.ป. ป.ป.ช. พ.ศ. ๒๕๔๒ (และแก้ไขเพิ่มเติม ฉบับ ๒, ๓)', trob_law_name: 'พ.ร.บ. ประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๔๒', trob_article_no: 'มาตรา ๑๒๓ (๔๒)', trob_article_label: 'เจ้าหน้าที่ของรัฐปฏิบัติหรือละเว้นการปฏิบัติอย่างใด เพื่อให้ผู้อื่นเชื่อว่ามีตำแหน่งหน้าที่ เพื่อแสวงหาประโยชน์ที่มิควรได้ (ใช้บังคับ ๑๘ พ.ย. ๒๕๔๒ ถึง ๒๑ ก.ค. ๒๕๖๑)', p_principal: 15, p_accessory: 10, trob_sort_order: 39 },
-  { trob_id: 402, trob_group: '๓. พ.ร.ป. ป.ป.ช. พ.ศ. ๒๕๔๒ (และแก้ไขเพิ่มเติม ฉบับ ๒, ๓)', trob_law_name: 'พ.ร.บ. ประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๔๒', trob_article_no: 'มาตรา ๑๒๓/๑ (๔๒)', trob_article_label: 'เจ้าหน้าที่ของรัฐปฏิบัติหรือละเว้นการปฏิบัติหน้าที่หรือใช้อำนาจในตำแหน่งหน้าที่โดยมิชอบเพื่อให้เกิดความเสียหายแก่ผู้หนึ่งผู้ใดหรือปฏิบัติหรือละเว้นการปฏิบัติหน้าที่โดยทุจริต (ใช้บังคับ ๑๙ เม.ย. ๒๕๕๔ ถึง ๒๑ ก.ค. ๒๕๖๑)', p_principal: 15, p_accessory: 10, trob_sort_order: 40 },
-  { trob_id: 403, trob_group: '๓. พ.ร.ป. ป.ป.ช. พ.ศ. ๒๕๔๒ (และแก้ไขเพิ่มเติม ฉบับ ๒, ๓)', trob_law_name: 'พ.ร.บ. ประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๔๒', trob_article_no: 'มาตรา ๑๒๓/๒ (๔๒)', trob_article_label: 'เจ้าหน้าที่ของรัฐเรียกรับสินบน (ใช้บังคับ ๑๐ ก.ค. ๒๕๕๘ ถึง ๒๑ ก.ค. ๒๕๖๑)', p_principal: 20, p_accessory: 20, trob_sort_order: 41 },
-  { trob_id: 404, trob_group: '๓. พ.ร.ป. ป.ป.ช. พ.ศ. ๒๕๔๒ (และแก้ไขเพิ่มเติม ฉบับ ๒, ๓)', trob_law_name: 'พ.ร.บ. ประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๔๒', trob_article_no: 'มาตรา ๑๒๓/๓ (๔๒)', trob_article_label: 'เจ้าหน้าที่ของรัฐปฏิบัติหน้าที่ไม่ชอบโดยเห็นแก่รับสินบนที่เรียกรับ ก่อนรับตำแหน่ง (ใช้บังคับ ๑๐ ก.ค. ๒๕๕๘ ถึง ๒๑ ก.ค. ๒๕๖๑)', p_principal: 20, p_accessory: 20, trob_sort_order: 42 },
-
-  // ๔. พระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑
-  { trob_id: 405, trob_group: '๔. พ.ร.ป. ป.ป.ช. พ.ศ. ๒๕๖๑ (บังคับใช้ ๒๒ ก.ค. ๒๕๖๑ เป็นต้นไป)', trob_law_name: 'พ.ร.บ. ประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑', trob_article_no: 'มาตรา ๑๗๑ (๖๑)', trob_article_label: 'เจ้าพนักงานของรัฐปฏิบัติหรือละเว้นการปฏิบัติอย่างใด เพื่อให้ผู้อื่นเชื่อว่ามีตำแหน่งหน้าที่ เพื่อแสวงหาประโยชน์ที่มิควรได้', p_principal: 15, p_accessory: 10, trob_sort_order: 43 },
-  { trob_id: 406, trob_group: '๔. พ.ร.ป. ป.ป.ช. พ.ศ. ๒๕๖๑ (บังคับใช้ ๒๒ ก.ค. ๒๕๖๑ เป็นต้นไป)', trob_law_name: 'พ.ร.บ. ประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑', trob_article_no: 'มาตรา ๑๗๒ (๖๑)', trob_article_label: 'เจ้าพนักงานของรัฐปฏิบัติหรือละเว้นการปฏิบัติหน้าที่หรือใช้อำนาจในตำแหน่งหน้าที่โดยมิชอบเพื่อให้เกิดความเสียหายแก่ผู้หนึ่งผู้ใดหรือปฏิบัติหรือละเว้นการปฏิบัติหน้าที่โดยทุจริต', p_principal: 15, p_accessory: 10, trob_sort_order: 44 },
-  { trob_id: 407, trob_group: '๔. พ.ร.ป. ป.ป.ช. พ.ศ. ๒๕๖๑ (บังคับใช้ ๒๒ ก.ค. ๒๕๖๑ เป็นต้นไป)', trob_law_name: 'พ.ร.บ. ประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑', trob_article_no: 'มาตรา ๑๗๓ (๖๑)', trob_article_label: 'เจ้าพนักงานของรัฐเรียกรับสินบน', p_principal: 20, p_accessory: 20, trob_sort_order: 45 },
-  { trob_id: 408, trob_group: '๔. พ.ร.ป. ป.ป.ช. พ.ศ. ๒๕๖๑ (บังคับใช้ ๒๒ ก.ค. ๒๕๖๑ เป็นต้นไป)', trob_law_name: 'พ.ร.บ. ประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑', trob_article_no: 'มาตรา ๑๗๔ (๖๑)', trob_article_label: 'เจ้าพนักงานของรัฐปฏิบัติหน้าที่ไม่ชอบโดยเห็นแก่รับสินบนที่เรียกรับ ก่อนรับตำแหน่ง', p_principal: 20, p_accessory: 20, trob_sort_order: 46 },
-
-  // ๕. พระราชบัญญัติการจัดซื้อจัดจ้างฯ ๒๕๖๐ และ พ.ร.บ. ฮั้วประมูล ๒๕๔๒
-  { trob_id: 501, trob_group: '๕. พ.ร.บ. จัดซื้อจัดจ้างฯ ๒๕๖๐ และ ฮั้วประมูล ๒๕๔๒', trob_law_name: 'พ.ร.บ. การจัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ พ.ศ. ๒๕๖๐', trob_article_no: 'มาตรา ๑๒๐', trob_article_label: 'ผู้มีหน้าที่ปฏิบัติการจัดซื้อจัดจ้างปฏิบัติหรือละเว้นการปฏิบัติโดยมิชอบ', p_principal: 15, p_accessory: 10, trob_sort_order: 47 },
-  { trob_id: 502, trob_group: '๕. พ.ร.บ. จัดซื้อจัดจ้างฯ ๒๕๖๐ และ ฮั้วประมูล ๒๕๔๒', trob_law_name: 'พ.ร.บ. ว่าด้วยความผิดเกี่ยวกับการเสนอราคาต่อหน่วยงานของรัฐ พ.ศ. ๒๕๔๒', trob_article_no: 'มาตรา ๑๐', trob_article_label: 'เจ้าหน้าที่ใช้อำนาจเอื้อประโยชน์ในการเสนอราคา', p_principal: 20, p_accessory: 20, trob_sort_order: 48 },
-  { trob_id: 503, trob_group: '๕. พ.ร.บ. จัดซื้อจัดจ้างฯ ๒๕๖๐ และ ฮั้วประมูล ๒๕๔๒', trob_law_name: 'พ.ร.บ. ว่าด้วยความผิดเกี่ยวกับการเสนอราคาต่อหน่วยงานของรัฐ พ.ศ. ๒๕๔๒', trob_article_no: 'มาตรา ๑๒', trob_article_label: 'เจ้าหน้าที่ละเว้นมิให้มีการแข่งขันราคาอย่างเป็นธรรม', p_principal: 20, p_accessory: 15, trob_sort_order: 49 }
-];
-
 global.ECMIS = {
   ROLES, STATUS, STATUS_CODE, CODE_STATUS, STATUS_STEP, FLOW_STEPS, APPROVAL_CHAIN,
   buildChainOpinions, supabaseRowToCase, toBuddhistFakeIso, addDaysToDateStr, addYearsToDateStr,
   upcomingDeadlines, pageForCase,
-  CASES, RETURN_REASONS, RESOLUTIONS, resolutionOf, OFFENSE_BASIS,
+  CASES, RETURN_REASONS, RESOLUTIONS, resolutionOf,
   DOC_TYPES, SIGN_PHASE, secgenSlaLimit, FORWARD_TARGETS, forwardTarget,
 
   RESOLUTIONS_72, resolution72, FLOW_STEPS_72, STATUS_STEP_72,
