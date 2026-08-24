@@ -76,7 +76,7 @@
               <colgroup>
                 <col style="width:40px">
                 <col style="width:125px">
-                <col style="width:120px">
+                <col style="width:130px">
                 <col>
                 <col style="width:160px">
                 <col style="width:115px">
@@ -86,8 +86,8 @@
                 <tr>
                   <th class="text-center"><input type="checkbox" id="chkAll" class="form-check-input"></th>
                   <th class="sortable-header" data-sort="id" style="cursor:pointer">เรื่องที่ <i class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
-                  <th>หมวดหมู่มติ</th>
-                  <th>เรื่องกล่าวหา</th>
+                  <th>ประเภทเรื่อง</th>
+                  <th>เรื่องที่กล่าวหา</th>
                   <th>สถานะมติ</th>
                   <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                   <th class="text-end">ดำเนินการ</th>
@@ -234,6 +234,18 @@ function getActionBadge(c) {
   return ECMIS.statusBadge(c.status);
 }
 
+/* ป้าย "ประเภทเรื่อง" ในคอลัมน์ของตัวเอง — ตรงกับ 3 กลุ่มใน docTypeFilter (71/72/73) เสมอ
+   เหมือนที่ทำไว้ใน inbox.html ให้ตารางลักษณะเดียวกัน */
+function typeBadge(c, is72){
+  if (ECMIS.isCase73(c)) {
+    return '<span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size:0.68rem"><i class="fa-solid fa-scale-balanced me-1"></i>เรื่องทั่วไป</span>';
+  }
+  if (is72) {
+    return '<span class="badge bg-purple-subtle text-purple border border-purple-subtle" style="font-size:0.68rem"><i class="fa-solid fa-gavel me-1"></i>วินิจฉัยชี้มูล</span>';
+  }
+  return '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size:0.68rem"><i class="fa-solid fa-file-lines me-1"></i>ไต่สวนเบื้องต้น</span>';
+}
+
 function row(c){
 
   const is72 = ECMIS.isCase72(c);
@@ -243,17 +255,12 @@ function row(c){
 
   const statusBadgeHtml = getActionBadge(c);
 
-  const resGroup = c.resolution
-    ? (is72 ? ECMIS.resolution72(c.resolution) : ECMIS.resolutionOf(c.resolution))?.group
-    : null;
-  const resGroupCellHtml = `<td>${resGroup ? `<span class="chip">${resGroup}</span>` : '<span class="text-muted" style="font-size:0.78rem">— ยังไม่มีมติ —</span>'}</td>`;
-
   return `<tr>
     <td class="text-center">
       ${isPendingAction ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="ไม่มีสิทธิ์สั่งการกลุ่ม"></i>'}
     </td>
     <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
-    ${resGroupCellHtml}
+    <td>${typeBadge(c, is72)}</td>
     <td style="max-width:300px">
       <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
       <small class="text-muted d-block" style="font-size:0.75rem">${c.ownerOrg}</small>
