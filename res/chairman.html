@@ -81,11 +81,9 @@
 
                 <!-- Card 3: Screen Rules Checklist -->
                 <div class="ws-card mb-3">
-                    <div class="card-header"><i class="fa-solid fa-inbox"></i> ผลการตรวจสอบเงื่อนไขหน้าห้องประธานฯ</div>
+                    <div class="card-header"><i class="fa-solid fa-inbox"></i> ผลการตรวจสอบเงื่อนไขก่อนสั่งการ</div>
                     <div class="card-body">
                         <div class="rule-panel mb-3" id="screenRules"></div>
-                        <label class="form-label">หมายเหตุจากหน้าห้องประธานฯ</label>
-                        <textarea class="form-control" id="frontNote" rows="2" placeholder="สรุปประเด็นสำคัญเพื่อนำเสนอประธานฯ"></textarea>
                     </div>
                 </div>
 
@@ -435,9 +433,6 @@
         }
 
         function buildButtons() {
-            if (role.id === 'chair_office') {
-                return [{ act: 'toChair', label: 'นำเสนอประธานกรรมการ ป.ป.ท.', icon: 'fa-share', cls: 'btn-navy' }];
-            }
             if (signed) {
                 return [
                     { act: 'edit_sign', label: 'แก้ไข / ลงนามใหม่', icon: 'fa-pen-to-square', cls: 'btn-outline-warning' },
@@ -477,18 +472,6 @@
                         renderDoc();
                         renderActionButtons();
                         ECMIS.toastOk('ลบลายเซ็นเรียบร้อยแล้ว');
-                    }
-                });
-                return;
-            }
-            if (act === 'toChair') {
-                ECMIS.confirmAction({
-                    title: 'นำเสนอประธานกรรมการ ป.ป.ท.',
-                    html: `สำนวน <strong>${kase.id}</strong> จะถูกส่งเข้าคิวของประธานฯ เพื่อพิจารณาสั่งการ (G4)`
-                }).then(r => {
-                    if (r.isConfirmed) {
-                        ECMIS.toastOk('นำเสนอประธานฯ เรียบร้อย');
-                        setTimeout(() => location.href = ECMIS.homeHref(role.id), 1400);
                     }
                 });
                 return;
