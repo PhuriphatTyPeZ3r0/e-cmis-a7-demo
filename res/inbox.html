@@ -129,6 +129,7 @@
               <colgroup>
                 <col style="width:40px">
                 <col style="width:140px">
+                <col style="width:130px">
                 <col>
                 <col style="width:200px">
                 <col style="width:130px">
@@ -138,7 +139,8 @@
                 <tr>
                   <th class="text-center"><input type="checkbox" id="chkAll" class="form-check-input"></th>
                   <th class="sortable-header" data-sort="id" style="cursor:pointer">เรื่องที่ <i class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
-                  <th>เรื่องกล่าวหา</th>
+                  <th>ประเภทเรื่อง</th>
+                  <th>เรื่องที่กล่าวหา</th>
                   <th id="colStatusHeader">สถานะเสนอ/ลงนาม</th>
                   <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                   <th class="text-end">ดำเนินการ</th>
@@ -411,7 +413,7 @@ if(ECMIS.isUpstreamRole(role.id)){
     sf.innerHTML = `
       <option value="ALL">ทั้งหมด</option>
       <option value="DEFERRED">เลื่อน/ถอนวาระ — รอเลขวาระใหม่</option>
-      <option value="RESOLVED">มีมติแล้ว — รอพิจารณาจัดทำคำสั่ง ม.24</option>
+      <option value="RESOLVED">รอจัดทำคำสั่ง ม.24</option>
       <option value="RESOLVED_PENDING_72">รอจัดทำรายงานวินิจฉัยชี้มูล</option>
       <option value="PENDING_DISPATCH_GUILTY_72">ชี้มูลความผิดแล้ว รอส่งดำเนินคดี</option>
     `;
@@ -477,7 +479,7 @@ function renderKPICards() {
     const kpis = [
       { id:'ALL', n: allCasesCombined.length, l:'รายการทั้งหมด', i:'fa-folder-open', c:'#0F2A62' },
       { id:'DEFERRED', n: deferredCount, l:'เลื่อน/ถอนวาระ — รอเลขวาระใหม่', i:'fa-calendar-plus', c:'#DB2626' },
-      { id:'RESOLVED', n: order24Count, l:'มีมติแล้ว — รอพิจารณาจัดทำคำสั่ง ม.24', i:'fa-gavel', c:'#7C3AED' },
+      { id:'RESOLVED', n: order24Count, l:'รอจัดทำคำสั่ง ม.24', i:'fa-gavel', c:'#7C3AED' },
       { id:'RESOLVED_PENDING_72', n: rulingCount, l:'รอจัดทำรายงานวินิจฉัยชี้มูล', i:'fa-file-pen', c:'#D0A830' },
       { id:'PENDING_DISPATCH_GUILTY_72', n: dispatchCount, l:'ชี้มูลความผิดแล้ว รอส่งดำเนินคดี', i:'fa-paper-plane', c:'#0284C7' }
     ];
@@ -587,24 +589,37 @@ function getSecgenActionBadge(c) {
 
 /* ป้ายสถานะในตารางของ กจ. (affairs) ต้องใช้คำเดียวกับตัวเลือกใน statusFilter ด้านบนเป๊ะ ๆ —
    ไม่ใช้ ECMIS.statusBadge() ตรงๆ เพราะ label ทั่วไปใน STATUS สั้น/ใช้คำต่างจากบริบทงาน กจ.
-   (เช่น RESOLVED ทั่วไปคือ "มีมติแล้ว" แต่ กจ. ต้องเห็น "มีมติแล้ว — รอพิจารณาจัดทำคำสั่ง ม.24") */
+   (เช่น RESOLVED ทั่วไปคือ "มีมติแล้ว" แต่ กจ. ต้องเห็น "รอจัดทำคำสั่ง ม.24") */
+/* สไตล์ badge สถานะของ กจ. (affairs) ต้องเหมือน .meet-badge (pill มีสี/ขอบ/เงา) และสีต้องตรงกับ
+   สี KPI การ์ดด้านบนของบทบาทนี้เป๊ะๆ (#DB2626/#7C3AED/#D0A830/#0284C7) — ไม่ใช้ .st ทั่วไปอีกต่อไป */
 const AFFAIRS_STATUS_LABEL = {
-  DEFERRED: 'เลื่อน/ถอนวาระ — รอเลขวาระใหม่',
-  RESOLVED: 'มีมติแล้ว — รอพิจารณาจัดทำคำสั่ง ม.24',
-  RESOLVED_PENDING_72: 'รอจัดทำรายงานวินิจฉัยชี้มูล',
-  PENDING_DISPATCH_GUILTY_72: 'ชี้มูลความผิดแล้ว รอส่งดำเนินคดี'
+  DEFERRED: { label: 'เลื่อน/ถอนวาระ — รอเลขวาระใหม่', cls: 'meet-affairs-deferred', icon: 'fa-calendar-plus' },
+  RESOLVED: { label: 'รอจัดทำคำสั่ง ม.24', cls: 'meet-affairs-order24', icon: 'fa-gavel' },
+  RESOLVED_PENDING_72: { label: 'รอจัดทำรายงานวินิจฉัยชี้มูล', cls: 'meet-affairs-ruling', icon: 'fa-file-pen' },
+  PENDING_DISPATCH_GUILTY_72: { label: 'ชี้มูลความผิดแล้ว รอส่งดำเนินคดี', cls: 'meet-affairs-guilty', icon: 'fa-paper-plane' }
 };
 function getActionBadge(c) {
   if (role.id === 'affairs') {
-    const label = AFFAIRS_STATUS_LABEL[c.status];
-    if (!label) return ECMIS.statusBadge(c.status);
-    const cls = (ECMIS.STATUS[c.status] || {}).cls || 'st-pending';
-    return `<span class="st ${cls}"><i class="fa-solid fa-circle-dot me-1" style="font-size:0.65rem"></i>${label}</span>`;
+    const s = AFFAIRS_STATUS_LABEL[c.status];
+    if (!s) return ECMIS.statusBadge(c.status);
+    return `<span class="meet-badge ${s.cls}"><i class="fa-solid ${s.icon}"></i>${s.label}</span>`;
   }
   return getSecgenActionBadge(c);
 }
 
 const AFFAIRS_PAGE_FOR_STATUS = { DEFERRED: 'agenda-registry.html', RESOLVED: 'order.html' };
+
+/* ป้าย "ประเภทเรื่อง" ในคอลัมน์ของตัวเอง — ตรงกับ 3 กลุ่มใน docTypeFilter (71/72/73) เสมอ
+   แม้เป็นสำนวนไต่สวนเบื้องต้น (7.1) ก็ยังต้องมีป้ายให้เห็น ไม่ปล่อยช่องว่าง */
+function typeBadge(c, is72){
+  if (ECMIS.isCase73(c)) {
+    return '<span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size:0.68rem"><i class="fa-solid fa-scale-balanced me-1"></i>เรื่องทั่วไป</span>';
+  }
+  if (is72) {
+    return '<span class="badge bg-purple-subtle text-purple border border-purple-subtle" style="font-size:0.68rem"><i class="fa-solid fa-gavel me-1"></i>วินิจฉัยชี้มูล</span>';
+  }
+  return '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size:0.68rem"><i class="fa-solid fa-file-lines me-1"></i>ไต่สวนเบื้องต้น</span>';
+}
 
 function row(c){
   const is72 = ECMIS.isCase72(c);
@@ -623,15 +638,14 @@ function row(c){
     else if (c.status === 'PENDING_SIGN_RULING_72') catBadge = `<span class="st st-review"><i class="fa-solid fa-file-signature me-1"></i>รอลงนามรายงานชี้มูล</span>`;
     else catBadge = `<span class="st st-pending"><i class="fa-solid fa-hourglass-half me-1"></i>รอสั่งการวาระปกติ</span>`;
 
-    const typeTag = ECMIS.isCase73(c)
-      ? '<span class="badge bg-info-subtle text-info border border-info-subtle ms-1" style="font-size:0.68rem"><i class="fa-solid fa-scale-balanced me-1"></i>เรื่องทั่วไป</span>'
-      : (is72 ? '<span class="badge bg-purple-subtle text-purple border border-purple-subtle ms-1" style="font-size:0.68rem">วินิจฉัยชี้มูล</span>' : '');
+    const typeTag = typeBadge(c, is72);
 
     return `<tr>
       <td class="text-center">
         ${isActionable ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem"></i>'}
       </td>
-      <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}${typeTag}</td>
+      <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
+      <td>${typeTag}</td>
       <td style="max-width:300px">
         <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
         <small class="text-muted d-block" style="font-size:0.75rem">${c.ownerOrg}</small>
@@ -654,9 +668,7 @@ function row(c){
 
   const isPendingAction = isMyPending(c);
   const statusBadgeHtml = getActionBadge(c);
-  const typeTag = ECMIS.isCase73(c)
-    ? '<span class="badge bg-info-subtle text-info border border-info-subtle ms-1" style="font-size:0.68rem"><i class="fa-solid fa-scale-balanced me-1"></i>เรื่องทั่วไป</span>'
-    : (is72 ? '<span class="badge bg-purple-subtle text-purple border border-purple-subtle ms-1" style="font-size:0.68rem">วินิจฉัยชี้มูล</span>' : '');
+  const typeTag = typeBadge(c, is72);
   /* งานของ affairs (บรรจุวาระใหม่ / ร่างรายงานวินิจฉัยชี้มูล / ส่งดำเนินคดี) เป็นงานจัดทำที่ต้องพิจารณา
      ทีละเรื่อง ไม่ใช่การอนุมัติแบบ bulk — ไม่แสดง checkbox เพื่อไม่ให้เข้าใจผิดว่าสั่งการกลุ่มได้ */
   const showCheckbox = isPendingAction && role.id !== 'affairs';
@@ -665,7 +677,8 @@ function row(c){
     <td class="text-center">
       ${showCheckbox ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="ไม่มีสิทธิ์สั่งการกลุ่ม"></i>'}
     </td>
-    <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}${typeTag}</td>
+    <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
+    <td>${typeTag}</td>
     <td style="max-width:300px">
       <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
       <small class="text-muted d-block" style="font-size:0.75rem">${c.ownerOrg}</small>
@@ -698,6 +711,7 @@ function renderMyQueue(loading = false) {
         <tr class="skeleton-row">
           <td><div class="skeleton-box" style="width:20px"></div></td>
           <td><div class="skeleton-box" style="width:80px"></div></td>
+          <td><div class="skeleton-box" style="width:90px"></div></td>
           <td><div class="skeleton-box" style="width:200px"></div></td>
           <td><div class="skeleton-box" style="width:110px"></div></td>
           <td><div class="skeleton-box" style="width:80px"></div></td>
@@ -746,7 +760,7 @@ function renderMyQueue(loading = false) {
 
   tbodyPrimary.innerHTML = paginatedCases.length
     ? paginatedCases.map(c => row(c)).join('')
-    : `<tr><td colspan="6" class="text-center text-muted py-4">
+    : `<tr><td colspan="7" class="text-center text-muted py-4">
          <i class="fa-solid fa-face-smile fa-lg mb-2 d-block"></i>
          ไม่มีรายการสำนวนตามเงื่อนไขการค้นหา<br>
          <small>ลองเปลี่ยนข้อความค้นหาหรือตัวกรองสถานะ</small></td></tr>`;
