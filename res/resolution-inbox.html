@@ -1,0 +1,533 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>รายการรอจัดทำมติ | E-CMIS</title>
+<link rel="icon" type="image/png" href="../pacc_logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<link href="../assets/ecmis-app.css" rel="stylesheet">
+<style>
+.btn-xs { font-size: 0.76rem; padding: 0.2rem 0.5rem; border-radius: 4px; }
+.kpi-card { transition: all 0.2s ease; }
+.kpi-card:hover { transform: translateY(-2px); shadow: 0 4px 12px rgba(0,0,0,0.08); }
+</style>
+</head>
+<body>
+
+<main class="app-main">
+
+  <div class="page-head">
+    <div>
+      <h1><i class="fa-solid fa-scale-balanced me-2" style="color:#0F2A62"></i>รายการรอจัดทำมติ</h1>
+    </div>
+    <span class="flow-ref ms-auto">รายการงานของกลุ่มงานคำวินิจฉัยและมติคณะกรรมการ</span>
+  </div>
+
+  <div class="row g-3 mb-4" id="kpiRow"></div>
+
+  <div class="card card-ecmis mb-4">
+    <div class="card-body p-3">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-5">
+          <label class="form-label fw-semibold text-dark small mb-1">ค้นหางาน แฟ้ม หรือผู้ต้องหา</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+            <input type="text" id="searchInput" class="form-control" placeholder="เลขสำนวน, ผู้กล่าวหา, ผู้ถูกกล่าวหา, เลขบัตร ปชช., ผู้รับผิดชอบ หรือหน่วยงาน">
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold text-dark small mb-1"><i class="fa-solid fa-pen-to-square me-1 text-muted"></i>สถานะมติ</label>
+          <select id="statusFilter" class="form-select form-select-sm">
+            <option value="ALL">ทั้งหมด</option>
+            <option value="IN_PROGRESS">อยู่ระหว่างการจัดทำมติ</option>
+            <option value="COMPLETED">จัดทำมติแล้วเสร็จ</option>
+            <option value="SIGNED">ส่งสำเนามติเพื่อจัดทำคำสั่ง</option>
+            <option value="RETURNED">ส่งมติและเอกสารที่เกี่ยวข้องเพื่อทำความเห็นชี้มูล (กรณีชี้มูล)</option>
+            <option value="CLOSED">ส่งมติและเอกสารที่เกี่ยวข้องคืนเจ้าของสำนวน/ผู้รับผิดชอบ</option>
+            <option value="DISPATCHING">จัดทำรายงานประชุมแล้วเสร็จ</option>
+          </select>
+        </div>
+        <div class="col-md-3 text-end">
+          <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 w-100" id="btnClearFilter">
+            <i class="fa-solid fa-rotate-left me-1"></i>ล้างตัวกรอง
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 align-items-start">
+    <div class="col-12">
+
+      <div class="card card-ecmis mb-4">
+        <div class="card-header d-flex align-items-center flex-wrap gap-2">
+          <i class="fa-solid fa-list-check text-primary"></i>
+          <span class="fw-bold" id="card1TitleText">รายการสำนวนที่ต้องจัดทำมติ</span>
+          <span class="badge bg-primary rounded-pill ms-1" id="totalCount">0</span>
+          <span class="ms-auto small text-muted" id="myRoleLabel"></span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover tbl-ecmis mb-0 align-middle">
+              <colgroup>
+                <col style="width:40px">
+                <col style="width:125px">
+                <col style="width:120px">
+                <col>
+                <col style="width:160px">
+                <col style="width:115px">
+                <col style="width:130px">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th class="text-center"><input type="checkbox" id="chkAll" class="form-check-input"></th>
+                  <th class="sortable-header" data-sort="id" style="cursor:pointer">เรื่องที่ <i class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
+                  <th>หมวดหมู่มติ</th>
+                  <th>เรื่องกล่าวหา</th>
+                  <th>สถานะมติ</th>
+                  <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
+                  <th class="text-end">ดำเนินการ</th>
+                </tr>
+              </thead>
+              <tbody id="myQueue"></tbody>
+            </table>
+          </div>
+
+          <div class="px-3 py-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-2" id="queueFooter">
+            <div id="bulkActionsBox" class="d-none align-items-center gap-2">
+              <span class="small text-muted me-1" id="bulkSelectCount">เลือกแล้ว 0 รายการ</span>
+              <button type="button" class="btn btn-xs btn-navy py-1 px-2" style="font-size:0.78rem" id="btnBulkApprove">
+                <i class="fa-solid fa-check-double me-1"></i>บันทึกมติรายการที่เลือก (Bulk Action)
+              </button>
+            </div>
+            <nav aria-label="Queue navigation" class="ms-auto">
+              <ul class="pagination pagination-sm m-0" id="queuePagination"></ul>
+            </nav>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../assets/ecmis-app.js"></script>
+<script>
+ECMIS.renderShell('resolution-index.html');
+
+const role = ECMIS.currentRole();
+
+/* หน้านี้เฉพาะ board_sec เท่านั้น (เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ) — แยกออกมาจาก
+   index.html เพราะ logic ของบทบาทนี้ (BUCKET/หมวดหมู่มติ/สถานะบันทึกมติ) ต่างจากบทบาทอื่น
+   มากพอที่การฝัง role.id === 'board_sec' ไว้ในไฟล์เดียวกับบทบาทอื่นทำให้เกิด bug ซ้ำๆ หลายครั้ง
+   (KPI/badge/ปุ่ม/การเรียงลำดับ/ขอบเขตรายการ ไม่ตรงกัน) — ถ้าไม่ใช่ board_sec ให้กลับไปหน้าเดิม */
+if (role.id !== 'board_sec') { location.href = ECMIS.homeHref(role.id); }
+
+/* ---------- โหลดสำนวนจาก Supabase จริง แทน ECMIS.CASES แบบ mock (เหมือน index.html) ---------- */
+const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function loadCasesFromSupabase() {
+  const { data, error } = await sb
+    .from('tbl_res_request')
+    .select('*, tbl_cmp_case(*, tbl_cmp_case_accused(*))')
+    .eq('is_deleted', false);
+  if (error) throw error;
+  return data.map(row => ECMIS.supabaseRowToCase(row)).filter(Boolean);
+}
+
+async function updateCaseStatus(kase, newStatus) {
+  const code = ECMIS.STATUS_CODE[newStatus];
+  if (!code) throw new Error(`ไม่พบรหัสสถานะสำหรับ ${newStatus}`);
+  const { error } = await sb.from('tbl_res_request').update({ trr_status: code }).eq('trr_id', kase.trr_id);
+  if (error) throw error;
+  kase.status = newStatus;
+}
+
+const BUCKET = {
+  pending:  ['AGENDA_SET', 'IN_MEETING', 'PENDING_INVITE_72', 'IN_MEETING_72'],
+  done:     ['RESOLVED_PENDING', 'RESOLVED', 'RESOLVED_PENDING_72']
+};
+const OWN_SCOPE_STATUSES = [...BUCKET.pending, ...BUCKET.done];
+
+let CASES = [];
+let all = [];
+
+document.title = 'รายการรอจัดทำมติ | E-CMIS';
+document.getElementById('myRoleLabel').textContent = `บทบาท: ${role.title}`;
+
+let allCasesCombined = [];
+
+let quickFilter = 'ALL';
+
+function isRowActionable(c) { return BUCKET.pending.includes(c.status); }
+
+function renderKPICards() {
+  const currentSt = quickFilter;
+
+  const pendingCount = allCasesCombined.filter(c => BUCKET.pending.includes(c.status)).length;
+  const signedCount = allCasesCombined.filter(c => BUCKET.done.includes(c.status)).length;
+
+  const kpis = [
+    { id:'ALL', n: allCasesCombined.length, l:'รายการทั้งหมด', i:'fa-folder-open', c:'#0F2A62' },
+    { id:'PENDING', n: pendingCount, l:'อยู่ระหว่างการจัดทำมติ', i:'fa-hourglass-half', c:'#D0A830' },
+    { id:'SIGNED', n: signedCount, l:'จัดทำมติแล้วเสร็จ', i:'fa-circle-check', c:'#16A34A' }
+  ];
+
+  document.getElementById('kpiRow').innerHTML = kpis.map(k => {
+    const isActive = (currentSt === k.id);
+    return `
+    <div class="col-12 col-md-4">
+      <div class="card card-ecmis kpi-card h-100 ${isActive ? 'border-2 shadow-sm' : ''}"
+           style="min-height:88px; cursor:pointer; ${isActive ? `border-color:${k.c} !important; background:${k.c}0D;` : ''}"
+           onclick="filterByKPI('${k.id}')">
+        <div class="card-body d-flex align-items-center gap-2 py-3 px-3">
+          <div style="flex:0 0 38px;height:38px;border-radius:10px;background:${k.c}18;display:flex;align-items:center;justify-content:center">
+            <i class="fa-solid ${k.i}" style="color:${k.c};font-size:1.05rem"></i>
+          </div>
+          <div style="min-width:0">
+            <div style="font-size:1.5rem;font-weight:700;font-family:var(--serif);color:${k.c};line-height:1.1">${k.n}</div>
+            <div class="text-muted text-truncate" style="font-size:.74rem;margin-top:2px" title="${k.l}">${k.l}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterByKPI(statusId) {
+  quickFilter = statusId;
+  const sf = document.getElementById('statusFilter');
+  if (sf) sf.value = 'ALL';
+  applyFilters();
+}
+
+let currentPage = 1;
+const pageSize = 10;
+let sortField = 'id';
+let sortOrder = 'desc';
+
+function caseIdSortValue(id) {
+  const m = /^(\d+)\/(\d+)$/.exec(id || '');
+  if (!m) return 0;
+  return parseInt(m[2], 10) * 100000 + parseInt(m[1], 10);
+}
+
+function getActionBadge(c) {
+  if (c.status === 'RESOLVED' || BUCKET.done.includes(c.status)) {
+    const stage = c.resolutionStage || 2;
+    return ECMIS.resolutionStageBadge(stage);
+  }
+  if (BUCKET.pending.includes(c.status)) {
+    return ECMIS.resolutionStageBadge(1);
+  }
+  return ECMIS.statusBadge(c.status);
+}
+
+function row(c){
+
+  const is72 = ECMIS.isCase72(c);
+  const page = is72 ? ECMIS.pageForCase72(c) : 'resolution.html';
+  const target = `${page}?case=${encodeURIComponent(c.id)}`;
+  const isPendingAction = isRowActionable(c);
+
+  const statusBadgeHtml = getActionBadge(c);
+
+  const resGroup = c.resolution
+    ? (is72 ? ECMIS.resolution72(c.resolution) : ECMIS.resolutionOf(c.resolution))?.group
+    : null;
+  const resGroupCellHtml = `<td>${resGroup ? `<span class="chip">${resGroup}</span>` : '<span class="text-muted" style="font-size:0.78rem">— ยังไม่มีมติ —</span>'}</td>`;
+
+  return `<tr>
+    <td class="text-center">
+      ${isPendingAction ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="ไม่มีสิทธิ์สั่งการกลุ่ม"></i>'}
+    </td>
+    <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
+    ${resGroupCellHtml}
+    <td style="max-width:300px">
+      <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
+      <small class="text-muted d-block" style="font-size:0.75rem">${c.ownerOrg}</small>
+    </td>
+    <td>${statusBadgeHtml}</td>
+    <td>${ECMIS.slaBadge(c)}</td>
+    <td class="text-end">
+      ${isPendingAction ? `
+        <a href="${target}" class="btn btn-sm btn-navy px-3">
+          <i class="fa-solid fa-pen-to-square me-1"></i>ดำเนินการ
+        </a>
+      ` : `
+        <a href="${target}" class="btn btn-sm btn-outline-secondary px-3">
+          <i class="fa-solid fa-eye me-1"></i>ดูรายละเอียด
+        </a>
+      `}
+    </td>
+  </tr>`;
+}
+
+let filteredCombined = [...allCasesCombined];
+
+function renderMyQueue(loading = false) {
+  const tbodyPrimary = document.getElementById('myQueue');
+
+  if (loading) {
+    let skeletons = '';
+    for(let i=0; i<Math.min(pageSize, filteredCombined.length || 3); i++) {
+      skeletons += `
+        <tr class="skeleton-row">
+          <td><div class="skeleton-box" style="width:20px"></div></td>
+          <td><div class="skeleton-box" style="width:80px"></div></td>
+          <td><div class="skeleton-box" style="width:100px"></div></td>
+          <td><div class="skeleton-box" style="width:200px"></div></td>
+          <td><div class="skeleton-box" style="width:110px"></div></td>
+          <td><div class="skeleton-box" style="width:80px"></div></td>
+          <td class="text-end"><div class="skeleton-box ms-auto" style="width:80px"></div></td>
+        </tr>`;
+    }
+    tbodyPrimary.innerHTML = skeletons;
+
+    document.getElementById('bulkActionsBox').className = 'd-none';
+    const chkAll = document.getElementById('chkAll');
+    if (chkAll) chkAll.checked = false;
+
+    setTimeout(() => {
+      renderMyQueue(false);
+    }, 250);
+    return;
+  }
+
+  const sortedCases = [...filteredCombined].sort((a, b) => {
+    const isPendingA = isRowActionable(a) ? 1 : 0;
+    const isPendingB = isRowActionable(b) ? 1 : 0;
+
+    if (isPendingA !== isPendingB) {
+      return isPendingB - isPendingA;
+    }
+
+    let valA = a[sortField];
+    let valB = b[sortField];
+    if (sortField === 'id') {
+      valA = caseIdSortValue(a.id);
+      valB = caseIdSortValue(b.id);
+    } else if (sortField === 'slaDays') {
+      valA = a.slaDays;
+      valB = b.slaDays;
+    }
+    if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+    if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const totalItems = sortedCases.length;
+  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+  if (currentPage > totalPages) currentPage = totalPages;
+  const startIdx = (currentPage - 1) * pageSize;
+  const paginatedCases = sortedCases.slice(startIdx, startIdx + pageSize);
+
+  tbodyPrimary.innerHTML = paginatedCases.length
+    ? paginatedCases.map(c => row(c)).join('')
+    : `<tr><td colspan="7" class="text-center text-muted py-4">
+         <i class="fa-solid fa-face-smile fa-lg mb-2 d-block"></i>
+         ไม่มีรายการสำนวนตามเงื่อนไขการค้นหา<br>
+         <small>ลองเปลี่ยนข้อความค้นหาหรือตัวกรองสถานะ</small></td></tr>`;
+
+  const totalCountEl = document.getElementById('totalCount');
+  if (totalCountEl) totalCountEl.textContent = sortedCases.length;
+
+  const paginUl = document.getElementById('queuePagination');
+  let paginHtml = `
+    <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+      <a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;">«</a>
+    </li>`;
+  for (let i = 1; i <= totalPages; i++) {
+    paginHtml += `
+      <li class="page-item ${currentPage === i ? 'active' : ''}">
+        <a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>
+      </li>`;
+  }
+  paginHtml += `
+    <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+      <a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">»</a>
+    </li>`;
+  paginUl.innerHTML = paginHtml;
+
+  initCheckboxHandlers();
+}
+
+function changePage(p) {
+  currentPage = p;
+  renderMyQueue(true);
+}
+
+document.querySelectorAll('.sortable-header').forEach(header => {
+  header.addEventListener('click', () => {
+    const field = header.dataset.sort;
+    if (sortField === field) {
+      sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortField = field;
+      sortOrder = 'asc';
+    }
+
+    document.querySelectorAll('.sortable-header i').forEach(icon => {
+      icon.className = 'fa-solid fa-sort text-muted';
+    });
+    const activeIcon = header.querySelector('i');
+    if (activeIcon) activeIcon.className = `fa-solid fa-sort-${sortOrder === 'asc' ? 'up' : 'down'}`;
+
+    renderMyQueue(true);
+  });
+});
+
+function initCheckboxHandlers() {
+  const chkAll = document.getElementById('chkAll');
+  const chks = document.querySelectorAll('.case-chk');
+
+  if (!chkAll) return;
+  chkAll.addEventListener('change', () => {
+    chks.forEach(chk => chk.checked = chkAll.checked);
+    updateBulkActionsState();
+  });
+
+  chks.forEach(chk => {
+    chk.addEventListener('change', () => {
+      chkAll.checked = Array.from(chks).every(c => c.checked);
+      updateBulkActionsState();
+    });
+  });
+}
+
+function updateBulkActionsState() {
+  const chks = document.querySelectorAll('.case-chk:checked');
+  const bulkBox = document.getElementById('bulkActionsBox');
+  const bulkCount = document.getElementById('bulkSelectCount');
+
+  if (!bulkBox) return;
+  if (chks.length > 0) {
+    bulkBox.className = 'd-flex align-items-center gap-2';
+    if (bulkCount) bulkCount.textContent = `เลือกแล้ว ${chks.length} รายการ`;
+  } else {
+    bulkBox.className = 'd-none';
+  }
+}
+
+document.getElementById('btnBulkApprove')?.addEventListener('click', () => {
+  const chks = document.querySelectorAll('.case-chk:checked');
+  if (!chks.length) return;
+
+  ECMIS.confirmAction({
+    title: `ยืนยันบันทึกมติกลุ่มจำนวน ${chks.length} รายการ`,
+    html: `<p>ระบบจะบันทึกมติและดำเนินการสำนวนที่เลือกทั้งหมดตามขั้นตอนของกลุ่มงานคำวินิจฉัยและมติคณะกรรมการ</p>`,
+    confirmText: 'ยืนยันสั่งการกลุ่ม'
+  }).then(async res => {
+    if (!res.isConfirmed) return;
+    const transitionMap = {
+      'AGENDA_SET': 'IN_MEETING',
+      'IN_MEETING': 'RESOLVED_PENDING',
+      'RESOLVED_PENDING': 'RESOLVED',
+      'RESOLVED': 'DISPATCHING',
+      'DISPATCHING': 'CLOSED'
+    };
+    try {
+      for (const chk of chks) {
+        const id = chk.dataset.id;
+        const c = CASES.find(x => x.id === id);
+        if (c && transitionMap[c.status]) {
+          await updateCaseStatus(c, transitionMap[c.status]);
+        }
+      }
+    } catch (err) {
+      console.error('สั่งการกลุ่มไม่สำเร็จ:', err);
+      ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+      return;
+    }
+    ECMIS.toastOk(`สั่งการกลุ่มสำเร็จจำนวน ${chks.length} รายการแล้ว`);
+    setTimeout(() => location.reload(), 1200);
+  });
+});
+
+function applyFilters() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const st = document.getElementById('statusFilter').value;
+
+  filteredCombined = allCasesCombined.filter(c => {
+    const matchQ = !q ||
+      c.id.toLowerCase().includes(q) ||
+      (c.subject && c.subject.toLowerCase().includes(q)) ||
+      (c.ownerOrg && c.ownerOrg.toLowerCase().includes(q)) ||
+      (c.owner && c.owner.toLowerCase().includes(q)) ||
+      (c.complainant && c.complainant.toLowerCase().includes(q)) ||
+      (Array.isArray(c.accused) && c.accused.some(p =>
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.idcard && p.idcard.toLowerCase().includes(q))
+      ));
+
+    /* ตัวกรองภาพรวมจาก KPI card (BUCKET-based) — อิสระจาก #statusFilter */
+    let matchQuick = true;
+    if (quickFilter !== 'ALL') {
+      if (quickFilter === 'PENDING') matchQuick = BUCKET.pending.includes(c.status);
+      else if (quickFilter === 'SIGNED') matchQuick = BUCKET.done.includes(c.status);
+      else matchQuick = (c.status === quickFilter);
+    }
+
+    /* ตัวกรองสถานะย่อยจาก #statusFilter — ใช้ได้เฉพาะสำนวนที่ RESOLVED และมี resolutionStage
+       (1-6) กำกับอยู่แล้วเท่านั้น ไม่ fallback ไปทั้ง BUCKET เพราะจะกรองกว้างเกินความหมายของ stage นั้นๆ */
+    let matchSt = true;
+    if (st !== 'ALL') {
+      if (st === 'IN_PROGRESS') matchSt = (c.resolutionStage === 1 || BUCKET.pending.includes(c.status));
+      else if (st === 'COMPLETED') matchSt = (c.resolutionStage === 2);
+      else if (st === 'SIGNED') matchSt = (c.resolutionStage === 3);
+      else if (st === 'RETURNED') matchSt = (c.resolutionStage === 4);
+      else if (st === 'CLOSED') matchSt = (c.resolutionStage === 5);
+      else if (st === 'DISPATCHING') matchSt = (c.resolutionStage === 6);
+      else matchSt = (c.status === st);
+    }
+
+    return matchQ && matchQuick && matchSt;
+  });
+
+  currentPage = 1;
+  renderKPICards();
+  renderMyQueue(true);
+}
+
+document.getElementById('searchInput').addEventListener('input', applyFilters);
+document.getElementById('statusFilter').addEventListener('change', () => {
+  quickFilter = 'ALL';
+  applyFilters();
+});
+document.getElementById('btnClearFilter').addEventListener('click', () => {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('statusFilter').value = 'ALL';
+  quickFilter = 'ALL';
+  applyFilters();
+});
+
+(async function main() {
+  try {
+    const live = await loadCasesFromSupabase();
+    CASES = (live && live.length) ? live : ECMIS.CASES.slice();
+  } catch (err) {
+    console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+    CASES = ECMIS.CASES.slice();
+  }
+  all = CASES.filter(c => OWN_SCOPE_STATUSES.includes(c.status) && ECMIS.canViewCase(c, role.id));
+  allCasesCombined = all;
+  filteredCombined = [...allCasesCombined];
+
+  renderKPICards();
+  applyFilters();
+})();
+
+</script>
+</body>
+</html>

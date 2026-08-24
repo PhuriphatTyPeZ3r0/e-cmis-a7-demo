@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>บันทึกมติที่ประชุมคณะกรรมการ ป.ป.ท. | E-CMIS</title>
+  <link rel="icon" type="image/png" href="../pacc_logo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="../assets/ecmis-app.css" rel="stylesheet">
+  <link href="../assets/a4-ecmis-workspace.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <main class="app-main">
+    <div class="page-head">
+      <div>
+        <h1><i class="fa-solid fa-scale-balanced me-2"></i>บันทึกมติที่ประชุมคณะกรรมการ ป.ป.ท.</h1>
+      </div>
+      <div class="ms-auto text-end">
+        <span class="flow-ref">บันทึกผลมติที่ประชุม</span>
+        <div class="mt-1" id="stBadge"></div>
+      </div>
+    </div>
+
+    <div class="ws-card mb-3">
+      <div class="card-body pb-1" id="stepper"></div>
+    </div>
+
+    <div id="editGate"></div>
+    <div id="resolutionStageBox"></div>
+
+    <div class="document-workspace" id="docWorkspace">
+      <div id="formCol">
+
+        <div class="ws-card mb-3">
+          <div class="card-header"><i class="fa-solid fa-users-rectangle"></i> องค์ประชุมและการลงคะแนน (ม.12 / ม.15 /
+            ม.20)</div>
+          <div class="card-body">
+            <div id="modeBanner" class="mb-3"></div>
+            <div class="row g-2 mb-3">
+              <div class="col-md-4"><label class="form-label field-req">ครั้งที่ประชุม</label>
+                <input class="form-control" id="meetNo" value="38/2569">
+              </div>
+              <div class="col-md-4"><label class="form-label field-req">วันที่ประชุม</label>
+                <input class="form-control" id="meetDate" type="date" value="2569-06-02">
+              </div>
+              <div class="col-md-4"><label class="form-label field-req">วาระที่</label>
+                <input class="form-control" id="agendaNo" value="5.12">
+              </div>
+            </div>
+
+            <label class="form-label">รายชื่อกรรมการและการลงคะแนน</label>
+            <table class="table tbl-ecmis mb-2">
+              <thead>
+                <tr>
+                  <th>กรรมการ</th>
+                  <th style="width:110px">เข้าประชุม</th>
+                  <th style="width:140px">การลงคะแนน</th>
+                </tr>
+              </thead>
+              <tbody id="boardTb"></tbody>
+            </table>
+
+            <div class="rule-panel" id="quorumBox"></div>
+
+          </div>
+        </div>
+
+        <div class="ws-card mb-3">
+          <div class="card-header"><i class="fa-solid fa-code-branch"></i> ผลมติของที่ประชุม</div>
+          <div class="card-body">
+            <label class="form-label field-req">เลือกประเภทผลมติ</label>
+            <div class="list-group mb-3" id="resList"></div>
+
+            <div id="rejectLawBox" class="mb-3 d-none">
+              <label class="form-label field-req">มาตราที่ใช้อ้างอิงกรณีไม่รับเรื่องไว้พิจารณา / จำหน่ายเรื่อง</label>
+              <select class="form-select" id="rejectLaw">
+                <option value="">— เลือกมาตรา —</option>
+                <option value="๒๕ (๑)">ม.25(1) ป.ป.ช. รับไว้พิจารณา/วินิจฉัยเสร็จเด็ดขาดแล้ว</option>
+                <option value="๒๕ (๒)">ม.25(2) บอร์ดวินิจฉัยเสร็จเด็ดขาดแล้ว ไม่มีพยานหลักฐานใหม่</option>
+                <option value="๒๕ (๓)">ม.25(3) ศาลประทับฟ้อง/พิพากษาเสร็จเด็ดขาดแล้ว</option>
+                <option value="๒๕ (๔)">ม.25(4) ผู้ถูกร้องตาย</option>
+                <option value="๒๕ (๕)">ม.25(5) พ้นจากเจ้าหน้าที่ของรัฐก่อนถูกกล่าวหาเกิน 5 ปี</option>
+                <option value="๒๖ (๑)">ม.26(1) ไม่ระบุพยานหลักฐาน/พฤติการณ์ชัดเจนเพียงพอ</option>
+                <option value="๒๖ (๒)">ม.26(2) ล่วงเลยเกิน 5 ปีนับแต่วันเกิดเหตุ</option>
+                <option value="๒๖ (๓)">ม.26(3) ไม่ใช่ความผิดวินัยอย่างร้ายแรง</option>
+                <option value="๒๖ (๔)">ม.26(4) ประพฤติมิชอบที่ไม่เสียหายแก่ราชการอย่างร้ายแรง</option>
+                <option value="๒๖ (๕)">ม.26(5) องค์กรบริหารงานบุคคลกำลังพิจารณา/ยุติแล้ว</option>
+              </select>
+            </div>
+
+            <div id="noGroundBox" class="mb-3 d-none">
+
+            </div>
+
+            <div id="moreBox" class="mb-3 d-none">
+              <label class="form-label field-req">สิ่งที่ต้องดำเนินการเพิ่มเติม</label>
+              <textarea class="form-control mb-2" id="moreTask" rows="2"></textarea>
+              <div class="row g-2">
+                <div class="col-md-6"><label class="form-label field-req">ผู้รับผิดชอบ</label>
+                  <input class="form-control" id="moreOwner">
+                </div>
+                <div class="col-md-6"><label class="form-label field-req">กำหนดส่งกลับ</label>
+                  <input class="form-control" id="moreDue" value="2569-08-02">
+                </div>
+              </div>
+            </div>
+
+            <div id="forwardBox" class="mb-3 d-none">
+              <label class="form-label field-req">ส่งเรื่องให้</label>
+              <select class="form-select" id="forwardTo"></select>
+              <div class="mt-2 d-none" id="forwardOtherBox">
+                <label class="form-label field-req">ระบุปลายทาง</label>
+                <input class="form-control" id="forwardToOther" placeholder="เช่น หน่วยงาน/คณะที่ต้องการส่งเรื่องให้">
+                <div class="val-msg val-err" data-for="forwardToOther">กรุณาระบุปลายทาง</div>
+              </div>
+              <div class="mt-2" id="forwardRule"></div>
+            </div>
+
+            <label class="form-label field-req">ความเห็นที่ประชุม</label>
+            <textarea class="form-control" id="boardOpinion" rows="4"
+              placeholder="คณะกรรมการ ป.ป.ท. พิจารณาแล้วเห็นว่า..."></textarea>
+            <div class="val-msg val-err" data-for="boardOpinion">กรุณาระบุความเห็นที่ประชุม</div>
+
+            <div class="mt-3">
+              <label class="form-label field-req">เรื่องกล่าวหา (แก้ไขได้)</label>
+              <input class="form-control" id="caseSubject">
+            </div>
+
+            <div class="mt-3">
+              <label class="form-label field-req">ผู้รับผิดชอบสำนวน (มีได้มากกว่า 1 ท่าน / พิมพ์เพิ่มชื่อได้)</label>
+              <input class="form-control" id="caseOwnersField">
+            </div>
+
+            <div class="mt-3">
+              <label class="form-label">สังกัด</label>
+              <input class="form-control" id="ownerOrgField">
+            </div>
+
+            <div class="mt-3">
+              <label class="form-label">ผู้ชี้แจงต่อที่ประชุม</label>
+              <input class="form-control" id="presenter" value="ฝ่ายเลขานุการคณะอนุกลั่นกรองฯ (นิติกร กบค.)">
+            </div>
+
+            <div class="mt-3">
+              <label class="form-label">การชี้แจงเพิ่มเติม (ถ้ามี)</label>
+              <textarea class="form-control" id="presenterNote" rows="3"
+                placeholder="ผู้ชี้แจงเพิ่มเติมว่า..."></textarea>
+            </div>
+
+            <div class="mt-3">
+              <label class="form-label">ผู้ลงนามท้ายเอกสาร</label>
+              <select class="form-select" id="signerName"></select>
+            </div>
+
+            <div class="mt-3">
+              <label class="form-label">ตำแหน่งผู้ลงนาม</label>
+              <input class="form-control" id="signerTitle">
+            </div>
+          </div>
+        </div>
+
+        <!-- Card: Digital Signature -->
+        <div class="ws-card mb-3" id="sigCard">
+          <div class="card-header"><i class="fa-solid fa-signature"></i> ลายมือชื่อดิจิทัลรับรองมติที่ประชุม</div>
+          <div class="card-body">
+            <div id="sigBox" class="sig-box">
+              <i class="fa-solid fa-file-signature fa-2x mb-2" style="color:#7C8CA3"></i>
+              <div class="sig-name">ยังไม่ได้ลงนาม</div>
+              <div class="sig-meta">กดปุ่ม "ลงนามดิจิทัลรับรองมติ" ที่แถบด้านล่าง</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <aside class="ws-doc-pane" id="docCol" style="top:calc(var(--topbar-h) + 14px)">
+        <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
+        <div class="ws-doc-toolbar">
+          <span class="name"><i class="fa-solid fa-file-word"></i> มติการประชุม (ไต่สวนเบื้องต้น)
+            <span class="badge-tpl">Mail-Merge</span></span>
+          <button class="btn btn-sm btn-light" onclick="window.print()" title="พิมพ์เฉพาะเอกสาร Preview"><i class="fa-solid fa-print"></i></button>
+          <button class="btn btn-sm btn-light" id="btnDocx"><i class="fa-solid fa-download me-1"></i>.docx</button>
+          <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
+        </div>
+        <div class="doc-edit-bar" id="docEditBar" aria-label="แถบจัดรูปแบบ">
+          <select class="doc-edit-size" data-format="fontSize" title="ขนาดตัวอักษร">
+            <option value="">ขนาด</option>
+            <option value="3">16</option><option value="4">18</option>
+            <option value="5">20</option><option value="6">24</option>
+          </select>
+          <span class="doc-edit-bar-sep"></span>
+          <button type="button" data-format="bold" title="ตัวหนา"><b>B</b></button>
+          <button type="button" data-format="italic" title="ตัวเอียง"><i>I</i></button>
+          <button type="button" data-format="underline" title="ขีดเส้นใต้"><u>U</u></button>
+          <span class="doc-edit-bar-sep"></span>
+          <button type="button" data-format="justifyLeft" title="ชิดซ้าย"><i class="fa-solid fa-align-left"></i></button>
+          <button type="button" data-format="justifyCenter" title="กึ่งกลาง"><i class="fa-solid fa-align-center"></i></button>
+          <button type="button" data-format="justifyRight" title="ชิดขวา"><i class="fa-solid fa-align-right"></i></button>
+          <span class="doc-edit-bar-sep"></span>
+          <button type="button" data-format="undo" title="เลิกทำ"><i class="fa-solid fa-rotate-left"></i></button>
+          <button type="button" data-format="redo" title="ทำซ้ำ"><i class="fa-solid fa-rotate-right"></i></button>
+          <span class="doc-edit-bar-sep"></span>
+          <button type="button" class="btn btn-sm btn-gold" id="btnSaveDocEdit" style="width:auto;padding:0 .6rem">บันทึกการแก้ไข</button>
+        </div>
+        <div class="ws-paper-stage" id="docPaper"></div>
+        <button type="button" class="doc-edit-fab d-none" id="docEditFab" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
+          <span aria-hidden="true">✏️</span><span>แก้ไขเอกสาร</span>
+        </button>
+      </aside>
+    </div>
+
+    <div id="actionBarSlot"></div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pizzip@3/dist/pizzip.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/build/docxtemplater.js"></script>
+  <script src="../assets/ecmis-app.js"></script>
+  <script src="../assets/ecmis-model.js"></script>
+  <script>
+    ECMIS.renderShell('resolution.html');
+
+    const params = new URLSearchParams(location.search);
+    const kase = ECMIS.getCase(params.get('case') || '1547/2568');
+    const role = ECMIS.currentRole();
+
+    function normalizeDateInputValue(value) {
+      const v = String(value || '').trim();
+      if (!v) return '';
+      const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+      if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+      const thai = /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/.exec(v);
+      if (thai) return `${thai[3]}-${String(thai[2]).padStart(2, '0')}-${String(thai[1]).padStart(2, '0')}`;
+      return v;
+    }
+
+    function setDateInputValue(id, value) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.value = normalizeDateInputValue(value);
+    }
+
+    document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
+    document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status);
+    if (kase.meetingNo) document.getElementById('meetNo').value = kase.meetingNo;
+    if (kase.agendaNo) document.getElementById('agendaNo').value = kase.agendaNo;
+    if (kase.meetingDate) setDateInputValue('meetDate', kase.meetingDate);
+
+    /* เรื่องกล่าวหา (แก้ไขได้) */
+    document.getElementById('caseSubject').value = kase.subject;
+    document.getElementById('caseSubject').addEventListener('input', renderDoc);
+
+    /* ผู้รับผิดชอบสำนวนมีได้มากกว่า 1 ท่าน (คีย์เพิ่มชื่อได้) */
+    document.getElementById('caseOwnersField').value = kase.owner;
+    ECMIS.initMultiSelectCombo(document.getElementById('caseOwnersField'), [
+      kase.owner,
+      'นายสมชาย ใจซื่อ (นิติกรชำนาญการ)',
+      'นางสาวปรียา ตั้งมั่น (นักสืบสวนสอบสวนชำนาญการ)',
+      'นายวรพล ตรวจสอบ (เจ้าพนักงานป้องกันการทุจริต)',
+      'นายอภิสิทธิ์ สุจริตกร (นิติกรปฏิบัติการ)'
+    ], {
+      selectAll: false,
+      placeholder: '— เลือกหรือพิมพ์ผู้รับผิดชอบสำนวน (เลือกได้มากกว่า 1) —',
+      searchPlaceholder: 'พิมพ์ชื่อ-นามสกุลเพิ่ม แล้วกด Enter...'
+    });
+
+    /* สังกัดอาจมีมากกว่า 1 หน่วยงาน (สำนวนร่วมสอบข้ามเขต) — ใช้ search-select
+       แบบเลือกหลายรายการเดียวกับผู้ชี้แจง ตั้งค่าเริ่มต้นจาก kase.ownerOrg เดิม */
+    document.getElementById('ownerOrgField').value = kase.ownerOrg;
+    ECMIS.initMultiSelectCombo(document.getElementById('ownerOrgField'), [
+      'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1', 'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2', 'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 3', 'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 4',
+      'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 5', 'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 6', 'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 7', 'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 8',
+      'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 9',
+      'กองปราบปรามการทุจริตในภาครัฐ 1', 'กองปราบปรามการทุจริตในภาครัฐ 2',
+      'กองปราบปรามการทุจริตในภาครัฐ 3', 'กองปราบปรามการทุจริตในภาครัฐ 4',
+      'กองปราบปรามการทุจริตในภาครัฐ 5', 'กองอำนวยการต่อต้านการทุจริต'
+    ], {
+      selectAll: true,
+      placeholder: '— เลือกสังกัด (เลือกได้มากกว่า 1) —',
+      searchPlaceholder: 'ค้นหาหรือพิมพ์สังกัดเพิ่ม แล้วกด Enter...'
+    });
+
+    /* ผู้ชี้แจงต่อที่ประชุมมีได้มากกว่า 1 คน — ใช้ search-select แบบเลือกหลายรายการ
+       เก็บค่าไว้ใน #presenter เดิม (comma-joined) ไม่ต้องแก้ renderDoc()/wiring ด้านล่าง */
+    ECMIS.initMultiSelectCombo(document.getElementById('presenter'), [
+      'ฝ่ายเลขานุการคณะอนุกลั่นกรองฯ (นิติกร กบค.)',
+      `${kase.owner} (ผู้รับผิดชอบสำนวน)`,
+      `${ECMIS.getRole('scr_sec').name} (อนุกรรมการและเลขานุการ คณะอนุกลั่นกรองฯ)`,
+      `${ECMIS.getRole('scr_asst').name} (อนุกรรมการและผู้ช่วยเลขานุการ คณะอนุกลั่นกรองฯ)`,
+      `${ECMIS.getRole('board_sec').name} (เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ)`,
+      `${ECMIS.getRole('dir_case').name} (ผู้อำนวยการกองบริหารคดี)`
+    ]);
+
+    /* ผู้ลงนามท้ายเอกสารเดิม hardcode ชื่อ ผอ.กบค. ไว้ตรงๆ — เปลี่ยนเป็นเลือกจากบทบาท
+       ที่มีสิทธิ์แก้ไขมติได้จริง (ชีตแถว 15) ส่วนตำแหน่งแยกเป็นช่องข้อความอิสระ เพราะ
+       ถ้อยคำตำแหน่งเปลี่ยนได้ตามสถานการณ์จริง (เช่น "รักษาการแทน") ไม่ผูกตายตัวกับชื่อ */
+    const SIGNER_CANDIDATES = [
+      { name: ECMIS.getRole('dir_case').name, title: 'ผู้อำนวยการกองบริหารคดี ปฏิบัติหน้าที่เลขานุการคณะกรรมการ ป.ป.ท.' },
+      { name: ECMIS.getRole('board_sec').name, title: 'เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ ปฏิบัติหน้าที่เลขานุการคณะกรรมการ ป.ป.ท.' },
+      { name: ECMIS.getRole('secgen').name, title: 'เลขาธิการคณะกรรมการ ป.ป.ท.' }
+    ];
+    const signerNameEl = document.getElementById('signerName');
+    SIGNER_CANDIDATES.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.name; opt.textContent = c.name;
+      signerNameEl.appendChild(opt);
+    });
+    signerNameEl.value = SIGNER_CANDIDATES[0].name;
+    document.getElementById('signerTitle').value = SIGNER_CANDIDATES[0].title;
+    signerNameEl.addEventListener('change', () => {
+      const c = SIGNER_CANDIDATES.find(x => x.name === signerNameEl.value);
+      if (c) document.getElementById('signerTitle').value = c.title;
+    });
+    ECMIS.initSmartCombobox(signerNameEl);
+
+    /* ---------- Q: สิทธิ์แก้ไขมติ (ชีตแถว 15) ---------- */
+    const mayEdit = ECMIS.canEditMaster(role.id) || ECMIS.can('record.minutes', role.id);
+    const mayView = ECMIS.canViewCase(kase, role.id);
+    /* เดิมปุ่ม "บันทึกมติและล็อก PDF" ไม่เคยเปลี่ยน kase.status/บันทึกข้อมูลจริงเลย (แค่ toast
+       แล้ว redirect) ทำให้กดบันทึกกี่ครั้งก็ไม่มีอะไรเปลี่ยนจริง และเอกสารฝั่งขวาก็ไม่มีทาง
+       "ดูย้อนหลัง" มติที่บันทึกไปแล้วได้ (renderDoc() สร้างจากค่าฟอร์มปัจจุบันเสมอ ไม่ใช่ค่าที่
+       บันทึกไว้จริง) — isLocked คือสำนวนที่บันทึกมติไปแล้วจริง (ผ่าน handle('lock') ด้านล่าง
+       ซึ่งตอนนี้ set kase.status/kase.resolution/kase.recordedDocHtml + ECMIS.saveCases() แล้ว)
+       renderDoc() จะโชว์ recordedDocHtml ที่บันทึกไว้ตรงๆ แทนการ generate ใหม่จากฟอร์ม
+       (ค่าฟอร์มที่โหลดใหม่จะไม่ตรงกับตอนบันทึกจริงอีกต่อไป) และซ่อนปุ่มบันทึกไม่ให้กดซ้ำ */
+    const isLocked = kase.status === 'RESOLVED' || kase.status === 'RESOLVED_PENDING';
+    if (mayView && isLocked) {
+      document.getElementById('editGate').innerHTML += `
+    <div class="mb-3" style="background:#EAF7EE;border:1px solid #16A34A;border-radius:8px;padding:.75rem 1rem">
+      <strong><i class="fa-solid fa-lock me-1" style="color:#16A34A"></i>มติสำนวนนี้ถูกบันทึกและล็อกแล้ว</strong><br>
+      บันทึกเมื่อ ${kase.resolvedAt ? ECMIS.toThaiDigits(kase.resolvedAt) : '—'} — เอกสารด้านขวาเป็น
+      <strong>preview ของมติที่บันทึกจริง</strong> ไม่ใช่ค่าที่สร้างจากฟอร์มปัจจุบัน
+      <small class="d-block mt-1 text-muted">แก้ไขมติที่ล็อกแล้วต้องผ่านกระบวนการแก้ไขพิเศษ ไม่ใช่กดบันทึกซ้ำจากหน้านี้</small>
+    </div>`;
+    }
+
+    /* ---------- สถานะการจัดทำมติ (6 ขั้นตอน) — เชื่อมกับหน้าติดตามสถานะอัตโนมัติผ่าน getAct7Status() ---------- */
+    function renderResolutionStageBox() {
+      const box = document.getElementById('resolutionStageBox');
+      if (!isLocked) { box.innerHTML = ''; return; }
+      if (!kase.resolutionStage) kase.resolutionStage = 1;
+      const stage = kase.resolutionStage;
+
+      const stepsHtml = ECMIS.RESOLUTION_STAGES.map(s => {
+        const done = s.n < stage, active = s.n === stage;
+        const cls = done ? 'text-success' : (active ? 'fw-bold text-navy' : 'text-muted');
+        const icon = done ? 'fa-circle-check' : (active ? 'fa-circle-dot' : 'fa-circle');
+        return `<div class="${cls}" style="font-size:.82rem"><i class="fa-solid ${icon} me-1" style="font-size:.7rem"></i>${s.n}. ${s.label}</div>`;
+      }).join('');
+
+      const controlsHtml = mayEdit ? `
+        <div class="d-flex align-items-center gap-2 mt-2">
+          <select class="form-select form-select-sm" id="resStageSelect" style="max-width:420px">
+            ${ECMIS.RESOLUTION_STAGES.map(s => `<option value="${s.n}" ${s.n === stage ? 'selected' : ''}>${s.n}. ${s.label}</option>`).join('')}
+          </select>
+          <button type="button" class="ws-button primary" style="min-height:32px;padding:.4rem .8rem" id="btnSaveResStage"><i class="fa-solid fa-floppy-disk me-1"></i>บันทึกสถานะ</button>
+        </div>` : '';
+
+      box.innerHTML = `
+    <div class="ws-card mb-3">
+      <div class="card-header"><i class="fa-solid fa-list-check me-1"></i>สถานะการจัดทำมติ (6 ขั้นตอน)</div>
+      <div class="card-body">
+        <div class="mb-2">${stepsHtml}</div>
+        ${controlsHtml}
+      </div>
+    </div>`;
+
+      const btn = document.getElementById('btnSaveResStage');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const val = parseInt(document.getElementById('resStageSelect').value, 10);
+          ECMIS.Model.CaseStore.update(kase.id, { resolutionStage: val });
+          ECMIS.toastOk('บันทึกสถานะการจัดทำมติเรียบร้อย');
+          renderResolutionStageBox();
+        });
+      }
+    }
+    renderResolutionStageBox();
+
+    if (!mayView) {
+      document.getElementById('editGate').innerHTML = `
+    <div class="mb-3">
+      <strong><i class="fa-solid fa-eye-slash me-1"></i>บทบาท "${role.title}" ไม่มีสิทธิ์เข้าถึงสำนวนนี้</strong><br>
+      ชีตแถว 17 กำหนดให้ผู้รับผิดชอบสำนวนเห็นได้เฉพาะสำนวนของตนเอง
+      และคณะอนุกรรมการเห็นได้เฉพาะสำนวนที่ได้รับมอบหมายให้คณะของตน
+    </div>`;
+      document.getElementById('content') && (document.getElementById('content').style.display = 'none');
+    } else if (!mayEdit) {
+      document.getElementById('editGate').innerHTML = `
+    <div class="mb-3">
+      <strong><i class="fa-solid fa-lock me-1"></i>โหมดอ่านอย่างเดียว — บทบาทนี้บันทึก/แก้ไขมติไม่ได้</strong><br>
+      ชีตแถว 15 ระบุว่ามีเพียง <strong>เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ 6 คน + ผอ.กบค. 1 คน (รวม 7 คน)</strong>
+      ที่มีสิทธิ์แก้ไขมติ/คำสั่ง/รายงาน และกลุ่มงานคำวินิจฉัยและมติฯ เป็นผู้บันทึกมติเข้าระบบ<br>
+      <small>ชีตแถว 17: ผู้รับผิดชอบสำนวนอ่านและดาวน์โหลดได้ แต่แก้ไขไม่ได้ทั้งส่วนมติและคำสั่ง/รายงาน</small>
+    </div>`;
+      /* ปืนแก้ไขทุกช่องบนหน้านี้ปิดใช้งานเพื่อให้ Demo สามารถแก้ไขได้ทุกบทบาท */
+      // setTimeout(() => document.querySelectorAll('#pane, main input, main select, main textarea')
+      //   .forEach(el => { if(!el.closest('.action-bar')) el.disabled = true; }), 0);
+    }
+
+    /* ---------- คณะกรรมการ 7 ท่าน ---------- */
+    const BOARD = [
+      { n: 'นายอำนาจ พวงชมภู', r: 'ประธานกรรมการ ป.ป.ท.', chair: true },
+      { n: 'พลเอก จิระ โกมุทพงศ์', r: 'กรรมการ ป.ป.ท.' },
+      { n: 'พันตำรวจโท วันนพ สมจินตนากุล', r: 'กรรมการ ป.ป.ท.' },
+      { n: 'นายวิเชียร จันทรโณทัย', r: 'กรรมการ ป.ป.ท.' },
+      { n: 'นายพรเทพ อัมพรกลิ่นแก้ว', r: 'กรรมการ ป.ป.ท.' },
+      { n: 'นายกมล สกลเดชา', r: 'กรรมการ ป.ป.ท.' },
+      { n: 'นายสุรพงษ์ อินทรถาวร', r: 'กรรมการ ป.ป.ท.' }
+    ];
+    const TOTAL = BOARD.length;
+
+    document.getElementById('boardTb').innerHTML = BOARD.map((b, i) => `
+  <tr data-i="${i}">
+    <td><strong>${b.n}</strong><br><small class="text-muted">${b.r}</small></td>
+    <td>
+      <select class="form-select form-select-sm attend">
+        <option value="present" selected>เข้าประชุม</option>
+        <option value="recused">ถอนตัว</option>
+      </select>
+    </td>
+    <td>
+      <select class="form-select form-select-sm vote">
+        <option value="for" selected>เห็นด้วย</option>
+        <option value="against">ไม่เห็นด้วย</option>
+        <option value="abstain">งดออกเสียง</option>
+      </select>
+    </td>
+  </tr>`).join('');
+
+    function tally() {
+      let present = 0, recused = 0, forV = 0, againstV = 0, abstainV = 0;
+      document.querySelectorAll('#boardTb tr').forEach(tr => {
+        const a = tr.querySelector('.attend').value;
+        const v = tr.querySelector('.vote');
+        if (a === 'recused') {
+          recused++;
+          v.value = 'abstain';
+          v.disabled = true;
+          abstainV++;
+        } else {
+          v.disabled = false;
+          present++;
+          if (v.value === 'for') forV++;
+          else if (v.value === 'against') againstV++;
+          else if (v.value === 'abstain') abstainV++;
+        }
+      });
+      return { present, recused, forV, againstV, abstainV };
+    }
+
+    function renderQuorum() {
+      const t = tally();
+      /* กติกาองค์ประชุมย้ายไปอยู่ในโมเดลกลางแล้ว (ม.10 + ม.12 + ม.15)
+         เดิมหน้านี้คำนวณเอง และตกเงื่อนไข ม.10 (กรรมการเหลือไม่ต่ำกว่า 5 คน) ไป */
+      const q = ECMIS.boardQuorum({
+        inOffice: TOTAL, present: t.present,
+        forV: t.forV, againstV: t.againstV, abstainV: t.abstainV
+      });
+      const { quorumMin, quorumOk, majorityMin, majorityOk, tie, boardValid } = q;
+
+      document.getElementById('quorumBox').innerHTML = `
+    ${!boardValid ? `<div class="rule fail"><i class="fa-solid fa-circle-xmark"></i>
+      <span><strong>ม.10:</strong> กรรมการเท่าที่มีอยู่ ${TOTAL} คน — น้อยกว่าขั้นต่ำ
+      ${ECMIS.BOARD_MIN_IN_OFFICE} คน คณะกรรมการยังทำหน้าที่ต่อไม่ได้</span></div>` : ''}
+    <div class="rule ${quorumOk ? 'pass' : 'fail'}">
+      <i class="fa-solid ${quorumOk ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
+      <span><strong>องค์ประชุม (ม.12):</strong> เข้าประชุม ${t.present} จาก ${TOTAL} ท่าน
+        — ต้องไม่น้อยกว่า ${quorumMin} ท่าน
+        ${t.recused ? `<br><small>ถูกกันออกตาม ม.20 จำนวน ${t.recused} ท่าน (ยังเห็นข้อมูลได้ แต่ถูกกันสิทธิ์ลงมติในวาระนี้)</small>` : ''}</span>
+    </div>
+    <div class="rule ${majorityOk ? 'pass' : 'fail'}">
+      <i class="fa-solid ${majorityOk ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
+      <span><strong>เกณฑ์มติ (ม.15):</strong> เห็นด้วย ${t.forV} / ไม่เห็นด้วย ${t.againstV} / งดออกเสียง ${t.abstainV}
+        — ต้องได้เสียงข้างมากของกรรมการทั้งหมดเท่าที่มีอยู่ คือไม่น้อยกว่า ${majorityMin} เสียง</span>
+    </div>
+    ${tie ? `<div class="rule fail"><i class="fa-solid fa-gavel"></i>
+      <span>คะแนนเท่ากัน — ประธานในที่ประชุมออกเสียงเพิ่มอีกหนึ่งเสียงเป็นเสียงชี้ขาด (ม.15 วรรคสอง)</span></div>` : ''}
+    ${!quorumOk ? `<div class="rule fail"><i class="fa-solid fa-ban"></i>
+      <span><strong>ระบบบล็อกการบันทึกมติ</strong> — องค์ประชุมไม่ครบ มติอาจไม่ชอบด้วยกฎหมาย</span></div>` : ''}
+    <div class="rule ${t.againstV > 0 ? 'fail' : 'pass'}">
+      <i class="fa-solid ${t.againstV > 0 ? 'fa-triangle-exclamation' : 'fa-circle-check'}"></i>
+      <span><strong>ม.16:</strong> ${t.againstV > 0
+          ? 'มีความเห็นแย้ง — ระบบบังคับบันทึกความเห็นแย้งพร้อมเหตุผลลงรายงานการประชุม'
+          : 'มติเป็นเอกฉันท์ ไม่มีความเห็นแย้งที่ต้องบันทึก'}</span>
+    </div>`;
+      return { ...t, ...q };
+    }
+
+    document.getElementById('boardTb').addEventListener('change', () => { renderQuorum(); renderDoc(); });
+
+    function currentMode() { return 'AFTER'; }
+
+    function applyMode() {
+      const live = false;
+      document.querySelectorAll('#boardTb .vote').forEach(v => v.classList.toggle('border-warning', live));
+      renderQuorum(); renderDoc();
+    }
+
+    document.getElementById('resList').innerHTML = ECMIS.RESOLUTIONS.map((r, i) => `
+  <label class="list-group-item d-flex gap-2 align-items-start">
+    <input class="form-check-input mt-1" type="radio" name="res" value="${r.code}" ${i === 0 ? 'checked' : ''}>
+    <span><strong>${r.label}</strong>
+      <br><small class="text-muted">เอกสารที่ต้องออก: ${r.doc}${r.signer !== '—' ? ` · ผู้ลงนาม: ${r.signer}` : ''}</small></span>
+  </label>`).join('');
+
+    function selectedRes() {
+      const code = document.querySelector('input[name="res"]:checked').value;
+      return ECMIS.RESOLUTIONS.find(r => r.code === code);
+    }
+
+    /* ข้อความ "มติที่ประชุม" ตามประเภทมติที่เลือก — ใช้ร่วมกันทั้ง HTML preview (renderDoc)
+       และตอนสร้างไฟล์ .docx จริง (generateDocx) เพื่อไม่ให้ข้อความเพี้ยนไปคนละทางกัน */
+    function computeResolutionText() {
+      const opinion = document.getElementById('boardOpinion').value.trim();
+      const r = selectedRes();
+      if (r.code === 'ACCEPT_S24P1') {
+        return 'รับไว้ไต่สวน โดยให้ดำเนินการไต่สวนเป็นองค์คณะ ตามมาตรา ๒๔ วรรคหนึ่ง แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม';
+      } else if (r.code === 'ACCEPT_S24P3') {
+        return 'รับไว้ไต่สวน โดยให้ดำเนินการไต่สวนเป็นคณะอนุกรรมการไต่สวน ตามมาตรา ๒๔ วรรคสาม แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม';
+      } else if (r.code === 'NOT_ACCEPTED') {
+        const law = document.getElementById('rejectLaw').value;
+        return `ไม่รับไว้ไต่สวน เนื่องจาก ${opinion || '……………………'} ตามพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ${law || '…………'}`;
+      } else if (r.code === 'DISMISS') {
+        const law = document.getElementById('rejectLaw').value;
+        return `ให้จำหน่ายเรื่องออกจากสารบบ เนื่องจาก ${opinion || '……………………'} ตามพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม มาตรา ${law || '…………'}`;
+      } else if (r.code === 'NO_GROUND') {
+        return `ข้อกล่าวหาไม่มีมูล ให้ข้อกล่าวหานั้นเป็นอันตกไป ตามมาตรา ๓๒ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม และให้แจ้งผู้ถูกกล่าวหาทราบไม่ช้ากว่าสิบห้าวันนับแต่วันที่คณะกรรมการ ป.ป.ท. มีมติ`;
+      } else if (r.code === 'MORE_INVESTIGATE') {
+        const task = document.getElementById('moreTask').value.trim();
+        return `ให้ผู้รับผิดชอบสำนวนไต่สวนเบื้องต้นเพิ่มเติม ดังนี้ ${task || '……………………………………'}`;
+      } else {
+        const fwd = ECMIS.forwardTarget(fwdSel.value);
+        const fwdLabel = fwd?.code === 'OTHER'
+          ? (document.getElementById('forwardToOther').value.trim() || 'อื่นๆ (ยังไม่ได้ระบุปลายทาง)')
+          : fwd?.label;
+        return `ส่งเรื่องให้ ${fwdLabel || '—'}`;
+      }
+    }
+
+    const fwdSel = document.getElementById('forwardTo');
+    fwdSel.innerHTML = ECMIS.FORWARD_TARGETS
+      .map(t => `<option value="${t.code}">${t.label}</option>`).join('');
+
+    function renderForwardRule() {
+      const t = ECMIS.forwardTarget(fwdSel.value);
+      if (!t) return;
+      document.getElementById('forwardOtherBox').classList.toggle('d-none', t.code !== 'OTHER');
+      const destLine = t.code === 'OTHER'
+        ? `<br><strong>ปลายทาง:</strong> ${document.getElementById('forwardToOther').value.trim() || '<span class="text-danger">ยังไม่ได้ระบุ</span>'}`
+        : '';
+      document.getElementById('forwardRule').innerHTML = t.external
+        ? `<div>
+         <strong><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>ปลายทางนอกองค์กร</strong><br>
+         เอกสาร: ${t.doc}${destLine}
+         <div class="rule-panel mt-2">
+           <div class="rule fail"><i class="fa-solid fa-gavel"></i>
+             <span><strong>กำหนดส่งตามกฎหมาย: ${t.statutorySlaDays} วัน</strong> —
+             ${t.statutoryBasis}</span></div>
+           <div class="rule"><i class="fa-solid fa-clock-rotate-left"></i>
+             <span><strong>กรอบกำกับติดตาม: ${t.trackingSlaDays} วัน</strong> —
+             ${t.trackingBasis}<br>
+             <small>คนละเรือนกับกำหนดส่งตามกฎหมาย — ใช้ติดตามผลหลังบอร์ดมีมติ
+             ไม่ใช่ตัวขยายเส้นตาย ${t.statutorySlaDays} วัน</small></span></div>
+           ${t.requireArchiveCopy ? `<div class="rule fail"><i class="fa-solid fa-copy"></i>
+             <span><strong>ต้องคัดสำเนาสำนวนเก็บรักษาไว้เป็นหลักฐาน</strong> — ${t.archiveBasis}<br>
+             <small>ระบบจะไม่ให้ปิดสำนวนจนกว่าจะบันทึกว่าคัดสำเนาเก็บไว้แล้ว</small></span></div>` : ''}
+         </div>
+          <small>เจ้าของสำนวนต้องพิมพ์ ลงนามสด ส่งมอบด้วยตนเอง และ
+          <strong>ระบบบังคับอัปโหลดไฟล์สแกนฉบับลงนามกลับเข้าระบบ</strong></small>
+       </div>`
+        : `<div class="rule-panel"><div class="rule pass"><i class="fa-solid fa-circle-check"></i>
+         <span>ปลายทางภายใน — เอกสาร: ${t.doc} · กรอบกำกับติดตาม ${t.trackingSlaDays} วัน
+         · ส่งต่อในระบบได้ทันที ไม่ต้องอัปโหลดไฟล์สแกน${destLine}
+         <br><small>ไม่มีกำหนดส่งตามกฎหมาย เพราะ ม.18/1 ใช้เฉพาะเส้นทางที่เกี่ยวกับ ป.ป.ช.</small>
+         </span></div></div>`;
+    }
+    fwdSel.addEventListener('change', renderForwardRule);
+    document.getElementById('forwardToOther').addEventListener('input', renderForwardRule);
+    renderForwardRule();
+
+    const LAWREF_CODES = ['NOT_ACCEPTED', 'DISMISS'];
+
+    function toggleBoxes() {
+      const code = selectedRes().code;
+      document.getElementById('rejectLawBox').classList.toggle('d-none', !LAWREF_CODES.includes(code));
+      document.getElementById('noGroundBox').classList.toggle('d-none', code !== 'NO_GROUND');
+      document.getElementById('moreBox').classList.toggle('d-none', code !== 'MORE_INVESTIGATE');
+      document.getElementById('forwardBox').classList.toggle('d-none', code !== 'FORWARD');
+    }
+
+    function renderOutcome() {
+      const el = document.getElementById('outcomeBox');
+      if (!el) return;
+      const r = selectedRes();
+      const MAP = {
+        ACCEPT_S24P1: [
+          ['เอกสารที่ระบบสร้าง', 'คำสั่งแต่งตั้งองค์คณะพนักงาน ป.ป.ท. (ปปท. ๕-๐๕)'],
+          ['ผู้ลงนาม', 'เลขาธิการคณะกรรมการ ป.ป.ท. (ม.24 วรรคแรก)'],
+          ['ปลายทาง', 'ยิงมติ + คำสั่งกลับ กิจกรรมที่ 5 → เปลี่ยนสถานะเป็น "อยู่ระหว่างไต่สวน"'],
+          ['กำหนดเวลา', 'ออกคำสั่ง 5 วันทำการ / ส่งคืนหน่วยงาน 3 วันทำการ']
+        ],
+        ACCEPT_S24P3: [
+          ['เอกสารที่ระบบสร้าง', 'คำสั่งแต่งตั้งคณะอนุกรรมการไต่สวน (ปปท. ๕-๐๒)'],
+          ['ผู้ลงนาม', 'ประธานกรรมการ ป.ป.ท. (ม.24 วรรคสาม — เฉพาะเรื่องสำคัญ/ซับซ้อน ตามข้อเสนอแนะเลขาธิการฯ)'],
+          ['ปลายทาง', 'ยิงมติ + คำสั่งกลับ กิจกรรมที่ 5'],
+          ['กำหนดเวลา', 'ออกคำสั่ง 5 วันทำการ / ส่งคืนหน่วยงาน 3 วันทำการ']
+        ],
+
+        NOT_ACCEPTED: [
+          ['เอกสารที่ระบบสร้าง', 'หนังสือแจ้งผลการพิจารณา (ไม่รับเรื่องไว้พิจารณา)'],
+          ['ฐานกฎหมาย', 'ม.25 — ห้ามรับไว้พิจารณาโดยเด็ดขาด / ม.26 — ดุลพินิจไม่รับเรื่องไว้พิจารณา'],
+          ['ปลายทาง', 'กิจกรรมที่ 5 → อัปเดตสถานะเป็น Closed Case'],
+          ['กำหนดเวลา', 'ไม่มีกรอบ 15 วันตาม ม.32 — ม.32 ใช้เฉพาะกรณีข้อกล่าวหาไม่มีมูล ใช้กำหนดเวลางานสารบรรณตามปกติ']
+        ],
+        DISMISS: [
+          ['เอกสารที่ระบบสร้าง', 'หนังสือแจ้งคำสั่งจำหน่ายเรื่อง'],
+          ['ฐานกฎหมาย', 'ม.26 (ประกอบ ม.28 ที่ให้สั่งได้ 3 ทาง: รับ / ไม่รับ / สั่งจำหน่ายเรื่อง)'],
+          ['ปลายทาง', 'กิจกรรมที่ 5 → อัปเดตสถานะเป็น Closed Case'],
+          ['กำหนดเวลา', 'ไม่มีกรอบ 15 วันตาม ม.32 — ใช้กำหนดเวลางานสารบรรณตามปกติ']
+        ],
+
+        NO_GROUND: [
+          ['เอกสารที่ระบบสร้าง', 'หนังสือแจ้งผลการพิจารณาถึงผู้ถูกกล่าวหา'],
+          ['ฐานกฎหมาย', 'ม.32 — บอร์ดมีมติว่าข้อกล่าวหาไม่มีมูล ข้อกล่าวหาเป็นอันตกไป'],
+          ['ปลายทาง', 'กิจกรรมที่ 5 → อัปเดตสถานะเป็น Closed Case'],
+          ['กำหนดเวลา', 'แจ้งผู้ถูกกล่าวหาไม่ช้ากว่า 15 วันนับแต่วันที่บอร์ดมีมติ (แจ้งเตือนล่วงหน้า 3 วัน และ 1 วัน)']
+        ],
+        MORE_INVESTIGATE: [
+          ['เอกสารที่ระบบสร้าง', 'บันทึกแจ้งมติให้ไต่สวนเพิ่มเติม'],
+          ['ฐานกฎหมาย', 'ม.24 วรรคสี่ — ต้องระบุเหตุผลของการสั่งไต่สวนเพิ่มเติม'],
+          ['ปลายทาง', 'ส่งกลับเจ้าของสำนวน → รายงานความคืบหน้าเพื่อบรรจุวาระอีกครั้ง (ได้เลขวาระใหม่)'],
+          ['กำหนดเวลา', 'ตามกำหนดส่งกลับที่ระบุ — ระบบสร้างงานติดตามใน Work Inbox']
+        ],
+
+        FORWARD: [
+          ['เอกสารที่ระบบสร้าง', 'หนังสือนำส่งเรื่อง + มติที่ประชุม'],
+          ['ปลายทาง', 'ตามหน่วยงานที่เลือก — กรณีส่ง ป.ป.ช. เจ้าของสำนวนต้องทำหนังสือนำส่งเอง'],
+          ['ข้อบังคับ', 'ระบบบังคับอัปโหลดไฟล์สแกนฉบับลงนามกลับเข้าระบบ ' +
+            'และกรณีส่ง ป.ป.ช. ต้องคัดสำเนาสำนวนเก็บรักษาไว้เป็นหลักฐานตาม ม.18/1'],
+          ['กำหนดส่งตามกฎหมาย', 'กรณีส่ง ป.ป.ช. — 15 วันตาม ม.18/1 (ก)(3)/(ข)(1)/(ข)(3) · เส้นตาย ขยายไม่ได้'],
+          ['กรอบกำกับติดตาม', 'กรณีส่ง ป.ป.ช. — 30 วันตามเล่ม 6 กิจกรรมที่ 8 CHK011 นับแต่วันที่ได้รับมติ (มิใช่กำหนดส่ง)']
+        ]
+      };
+      el.innerHTML =
+        (MAP[r.code] || []).map(([k, v]) =>
+          `<div class="kv mb-2"><span class="k">${k}:</span> <span class="v">${v}</span></div>`).join('');
+    }
+
+    /* ---------- document (มติการประชุม ไต่สวนเบื้องต้น) ---------- */
+    function renderDoc() {
+      /* สำนวนที่บันทึกมติล็อกแล้ว — โชว์ HTML ที่บันทึกไว้จริงตอนกดล็อก (preview) แทนการ
+         generate จากค่าฟอร์มปัจจุบัน ซึ่งไม่ตรงกับตอนบันทึกจริงอีกต่อไป (ผู้ใช้คนอื่น/โหลด
+         หน้าใหม่ ฟอร์มจะกลับไปเป็นค่าเริ่มต้น ไม่ใช่ค่าที่บันทึกไว้) */
+      if (isLocked && kase.recordedDocHtml) {
+        document.getElementById('docPaper').innerHTML = kase.recordedDocHtml;
+        return;
+      }
+      const M = ECMIS.mergeField;
+      const meetNo = document.getElementById('meetNo').value.trim();
+      const meetDateValue = normalizeDateInputValue(document.getElementById('meetDate').value.trim());
+      const meetDate = ECMIS.thaiDate(meetDateValue);
+      const agendaNo = document.getElementById('agendaNo').value.trim();
+      const opinion = document.getElementById('boardOpinion').value.trim();
+      const ownerOrg = document.getElementById('ownerOrgField').value.trim() || kase.ownerOrg;
+      const presenter = document.getElementById('presenter').value.trim();
+      const presenterNote = document.getElementById('presenterNote').value.trim();
+      const signerName = document.getElementById('signerName').value.trim();
+      const signerTitle = document.getElementById('signerTitle').value.trim();
+      const r = selectedRes();
+      const t = tally();
+      const unanimous = t.againstV === 0 && t.abstainV === 0;
+      const attendees = Array.from(document.querySelectorAll('#boardTb tr')).map((tr, i) =>
+        ({ ...BOARD[i], recused: tr.querySelector('.attend').value === 'recused' }));
+      const recusedList = attendees.filter(b => b.recused);
+
+      const resText = computeResolutionText();
+
+      const s65 = kase.legalBase === 'ม.62'
+        ? `<div style="margin-top:6px">๒. ให้ผู้รับผิดชอบสำนวนดำเนินการรายงานผลการดำเนินการตามพระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑ มาตรา ๖๕</div>`
+        : '';
+      const lastNo = kase.legalBase === 'ม.62' ? '๓' : '๒';
+
+      function runningHeaderHtml(pageNo) {
+        return `
+    <div class="doc-run-title">มติการประชุมคณะกรรมการ ป.ป.ท.<br>
+      ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}<br>วาระที่ ${M(agendaNo)}</div>
+    <div class="doc-secret">ลับ</div>
+    <div class="doc-run-page">- ${ECMIS.toThaiDigits(pageNo)} -</div>`;
+      }
+
+      const curSubject = document.getElementById('caseSubject')?.value?.trim() || kase.subject;
+      const curOwners = document.getElementById('caseOwnersField')?.value?.trim() || kase.owner;
+
+      const introBlock = `
+    <div class="doc-secret">ลับ</div>
+    <div class="doc-title">
+      <div class="doc-title-l1">มติการประชุม</div>
+      <div class="doc-title-l2">คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
+    </div>
+    <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}<br>วาระที่ ${M(agendaNo)}</div>
+
+    <div class="doc-row"><span class="k">เรื่อง</span> ${M(curSubject)}</div>
+    <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(curOwners)}</div>
+    <div class="doc-row"><span class="k">สังกัด</span> ${M(ownerOrg)}</div>
+    <div class="doc-row"><span class="k">ผู้ชี้แจง</span> ${M(presenter)}</div>
+    <div class="doc-row"><span class="k">เอกสารอ้างอิง</span> หนังสือหน่วยงานที่รับผิดชอบตามเอกสาร
+      ${M(kase.docRef !== '—' ? kase.docRef : '', 'ที่ ปป …………/……… ลงวันที่ ……………')} และเอกสารประกอบการประชุม</div>`;
+
+      const signBlock = `
+    <div class="doc-sign">
+      ${signed && pendingSigData && pendingSigData.sig ? `<img class="doc-sig-img" src="${pendingSigData.sig}" alt="ลายมือชื่อ"><br>` : (signed ? `<span style="display:inline-block;padding:4px 8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:4px;color:#065f46;font-size:0.8rem;margin-bottom:6px"><i class="fa-solid fa-certificate me-1"></i>Digital Signature Verified (${pendingSigData?.certCode || SIGNER_CERT})</span><br>` : '<span class="doc-dots"></span><br>')}
+      (${M(signerName)})<br>
+      ${M(signerTitle)}
+      ${signed ? `<br><span style="font-size:0.75rem;color:#16A34A"><i class="fa-solid fa-circle-check"></i> ลงนามดิจิทัลเมื่อ ${new Date().toLocaleString('th-TH')}</span>` : ''}
+    </div>
+    <div class="doc-secret-foot">ลับ</div>`;
+
+      const bi = html => `<div class="doc-body-indent">${html}</div>`;
+      const flowBlocks = [
+        bi(kase.subCommittee ? `<div class="doc-indent" style="margin-top:12px">
+        ${M(presenter)} ในฐานะฝ่ายเลขานุการคณะอนุกรรมการกลั่นกรอง เรื่อง รายงานผลการรวบรวมพยานหลักฐาน
+        ไต่สวนเบื้องต้นและรายงานการไต่สวนเพื่อวินิจฉัยชี้มูลเพื่อเสนอคณะกรรมการ ป.ป.ท. ${M(kase.subCommittee)}
+        เสนอรายงานการไต่สวนเบื้องต้นที่ผ่านการพิจารณาของคณะอนุกรรมการกลั่นกรอง เรื่อง รายงานผลการรวบรวม
+        พยานหลักฐานไต่สวนเบื้องต้นและรายงานการไต่สวนเพื่อวินิจฉัยชี้มูลเพื่อเสนอคณะกรรมการ ป.ป.ท. ${M(kase.subCommittee)}
+        ต่อที่ประชุมคณะกรรมการ ป.ป.ท. ดังนี้
+      </div>` : `<div class="doc-indent" style="margin-top:12px">
+        ${M(presenter)} ${M(ownerOrg)} เสนอรายงานการไต่สวนเบื้องต้นที่ผ่านการพิจารณา
+        เลขาธิการคณะกรรมการ ป.ป.ท. ต่อที่ประชุมคณะกรรมการ ป.ป.ท. ดังนี้
+      </div>`),
+        bi(`<div style="margin-top:10px">๑. เรื่องที่ ${M(kase.id)}
+        (${M(kase.legalBase === 'ม.62'
+          ? 'รับตามมาตรา ๖๒ พระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑'
+          : 'รับตามมาตรา ๑๘/๔ พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม')})
+      </div>`),
+        bi(`<div class="doc-h">ผู้กล่าวหา</div><div>${M(kase.complainant)}</div>`),
+        bi(`<div class="doc-h">ผู้ถูกร้อง</div>`),
+        ...kase.accused.map(a => bi(`<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`)),
+        bi(`<div class="doc-h">ข้อกล่าวหา</div><div class="doc-indent">${M(kase.allegation)}</div>`),
+        bi(`<div class="doc-h">การชี้แจงเพิ่มเติม</div>
+      <div class="doc-indent">ผู้ชี้แจง (${M(presenter)}) ชี้แจงเพิ่มเติมว่า
+        ${M(presenterNote, '………………………………………………………………………………………………')}</div>`),
+        bi(`<div class="doc-indent" style="margin-top:6px">
+        ในการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}
+        คณะกรรมการ ป.ป.ท. ที่มาประชุม จำนวน ${attendees.length} คน ประกอบด้วย</div>
+      <div class="doc-indent">${attendees.map((b, i) => `${i + 1}. ${M(b.n)} ${M(b.r)}`).join('<br>')}</div>
+      ${recusedList.length ? `<div class="doc-indent" style="margin-top:6px">
+        กรรมการ ป.ป.ท. ที่ถอนตัวจากการพิจารณาวาระนี้ตามมาตรา ๒๐ จำนวน ${recusedList.length} คน คือ</div>
+      <div class="doc-indent">${recusedList.map((b, i) => `${i + 1}. ${M(b.n)}`).join('<br>')}</div>` : ''}`),
+        bi(`<div class="doc-h">ความเห็นที่ประชุม</div>
+      <div class="doc-indent">คณะกรรมการ ป.ป.ท. พิจารณาแล้วเห็นว่า
+        ${M(opinion, '………………………………………………………………………………………………')}</div>`),
+        ...(kase.subCommittee ? [bi(`<div class="doc-indent" style="margin-top:6px">
+        เหตุผลในการวินิจฉัยคณะกรรมการ ป.ป.ท. มีความเห็นสอดคล้องกับผู้รับผิดชอบสำนวนและคณะอนุกรรมการกลั่นกรอง
+        เรื่อง รายงานผลการรวบรวมพยานหลักฐานไต่สวนเบื้องต้นและรายงานการไต่สวนเพื่อวินิจฉัยชี้มูล
+        เพื่อเสนอคณะกรรมการ ป.ป.ท. ${M(kase.subCommittee)}</div>`)] : []),
+        `<div class="doc-h">มติที่ประชุม</div>
+    <div>๑. คณะกรรมการ ป.ป.ท. มีมติ${M(unanimous ? 'เป็นเอกฉันท์' : `ด้วยคะแนนเสียงข้างมาก ${t.forV} ต่อ ${t.againstV} เสียง`)}</div>`,
+        `<div style="padding-left:1.5em">- ${M(resText)}</div>`,
+        ...(t.againstV > 0 ? [`<div style="padding-left:1.5em;color:#DB2626">
+      (มีกรรมการเห็นแย้ง ${t.againstV} ท่าน — บันทึกความเห็นแย้งพร้อมเหตุผลไว้ในรายงานการประชุมตาม ม.๑๖)</div>`] : []),
+        ...(t.recused > 0 ? [`<div style="padding-left:1.5em;color:#6b3fa0">
+      (กรรมการที่ถูกกันออกจากการพิจารณาวาระนี้ตาม ม.๒๐ จำนวน ${t.recused} ท่าน)</div>`] : []),
+        ...(s65 ? [s65] : []),
+        `<div style="margin-top:6px">${lastNo}. รับรองมติการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)}
+      วันที่ ${M(meetDate)} วาระที่ ${M(agendaNo)}</div>`
+      ];
+
+      ECMIS.paginateResolutionDoc(document.getElementById('docPaper'),
+        { introBlock, flowBlocks, signBlock, runningHeaderHtml });
+    }
+
+    document.getElementById('resList').addEventListener('change', () => { toggleBoxes(); renderOutcome(); renderDoc(); });
+    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'ownerOrgField', 'presenter', 'presenterNote', 'signerName', 'signerTitle', 'rejectLaw', 'moreTask', 'moreOwner', 'moreDue', 'forwardTo', 'forwardToOther']
+      .forEach(id => {
+        const el = document.getElementById(id); if (el) {
+          el.addEventListener('input', renderDoc); el.addEventListener('change', renderDoc);
+        }
+      });
+    /* ---------- สร้างไฟล์ .docx จริงจาก template ต้นฉบับ (assets/templates/order-preliminary.docx)
+       ด้วย docxtemplater — แทนที่ปุ่ม .docx เดิมซึ่งเป็นแค่ toast จำลอง ไม่ได้สร้างไฟล์จริง ---------- */
+    async function generateDocx(templateUrl, tags, filename) {
+      const resp = await fetch(templateUrl);
+      if (!resp.ok) throw new Error('โหลด template ไม่สำเร็จ: ' + templateUrl);
+      const buf = await resp.arrayBuffer();
+      const zip = new PizZip(buf);
+      const doc = new window.docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+      doc.render(tags);
+      const out = doc.getZip().generate({
+        type: 'blob',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      });
+      const url = URL.createObjectURL(out);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
+    function docxTags() {
+      const P = (v, ph) => (v && String(v).trim()) ? String(v).trim() : (ph || '…………');
+      const meetNo = document.getElementById('meetNo').value.trim();
+      const meetDateValue = normalizeDateInputValue(document.getElementById('meetDate').value.trim());
+      const meetDate = ECMIS.thaiDate(meetDateValue);
+      const agendaNo = document.getElementById('agendaNo').value.trim();
+      const ownerOrg = document.getElementById('ownerOrgField').value.trim() || kase.ownerOrg;
+      const presenter = document.getElementById('presenter').value.trim();
+      const presenterNote = document.getElementById('presenterNote').value.trim();
+      const opinion = document.getElementById('boardOpinion').value.trim();
+      const ac = kase.accused || [];
+      const legalBaseClause = kase.legalBase === 'ม.62'
+        ? '(รับตามมาตรา 62 พระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. 2561)'
+        : '(รับตามมาตรา 18/4 พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม)';
+      const nacc65Clause = kase.legalBase === 'ม.62'
+        ? '2. ให้ผู้รับผิดชอบสำนวนดำเนินการรายงานผลการดำเนินการตามพระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. 2561 มาตรา 65'
+        : '';
+      const curSubject = document.getElementById('caseSubject')?.value?.trim() || kase.subject;
+      const curOwners = document.getElementById('caseOwnersField')?.value?.trim() || kase.owner;
+      return {
+        meetNo: P(meetNo), meetDate: P(meetDate), agendaNo: P(agendaNo),
+        subject: P(curSubject), ownerName: P(curOwners), ownerOrg: P(ownerOrg),
+        explainer: P(presenter), refDoc: P(kase.docRef !== '—' ? kase.docRef : ''),
+        caseId: P(kase.id), legalBaseClause,
+        complainant: P(kase.complainant),
+        accused1: ac[0] ? P(`${ac[0].name} ${ac[0].pos}`) : '',
+        accused2: ac[1] ? P(`${ac[1].name} ${ac[1].pos}`) : '',
+        accused3: ac[2] ? P(`${ac[2].name} ${ac[2].pos}`) : '',
+        allegation: P(kase.allegation), explainNote: P(presenterNote),
+        boardOpinion: P(opinion), resolutionText: computeResolutionText(),
+        nacc65Clause,
+        ratifyMeetNo: P(meetNo), ratifyMeetDate: P(meetDate), ratifyAgendaNo: P(agendaNo),
+        lastClauseNo: kase.legalBase === 'ม.62' ? '3' : '2'
+      };
+    }
+
+    document.getElementById('btnDocx').addEventListener('click', async () => {
+      try {
+        await generateDocx('assets/templates/order-preliminary.docx', docxTags(),
+          `มติที่ประชุม-${kase.id.replace('/', '_')}.docx`);
+        ECMIS.toastOk('ดาวน์โหลด .docx เรียบร้อย — แก้ไขใน Word ได้ตามปกติ');
+      } catch (e) {
+        console.error(e);
+        ECMIS.toastWarn('สร้างไฟล์ .docx ไม่สำเร็จ: ' + e.message);
+      }
+    });
+
+    let signed = false;
+    let pendingSigData = null;
+    const SIGNER_CERT = 'PACC-DIRCASE-2569-001';
+
+    function updateSigBoxUI(isSigned, sigData, dateStr) {
+      const sigBoxEl = document.getElementById('sigBox');
+      if (!sigBoxEl) return;
+      const signerName = document.getElementById('signerName')?.value || 'นางสาวณพัสตร์ ศรีสมเกียรติ';
+      const signerTitle = document.getElementById('signerTitle')?.value || 'ผู้อำนวยการกองบริหารคดี';
+      if (isSigned) {
+        sigBoxEl.className = 'sig-box signed';
+        sigBoxEl.innerHTML = `
+          ${sigData && sigData.sig ? `<img src="${sigData.sig}" style="max-height:60px; max-width:180px; margin-bottom:6px; object-fit:contain;" alt="ลายเซ็น"><br>` : `<i class="fa-solid fa-circle-check fa-2x mb-2" style="color:#16A34A"></i><br>`}
+          <div class="sig-name">${signerName}</div>
+          <div class="sig-meta">${signerTitle}</div>
+          <div class="sig-meta" style="color:#16A34A; margin-top:4px;"><i class="fa-solid fa-shield-halved me-1"></i>ลงนามดิจิทัลแล้วเมื่อ ${dateStr}</div>`;
+      } else {
+        sigBoxEl.className = 'sig-box';
+        sigBoxEl.innerHTML = `
+          <i class="fa-solid fa-file-signature fa-2x mb-2" style="color:#7C8CA3"></i>
+          <div class="sig-name">ยังไม่ได้ลงนาม</div>
+          <div class="sig-meta">กดปุ่ม "ลงนามดิจิทัลรับรองมติ" ที่แถบด้านล่าง</div>`;
+      }
+    }
+
+    function buildButtons() {
+      if (!mayEdit) return [];
+      if (isLocked) return [];
+      if (signed) {
+        return [
+          { act: 'edit_sign', label: 'แก้ไข / ลงนามใหม่', icon: 'fa-pen-to-square', cls: 'btn-outline-warning' },
+          { act: 'clear_sign', label: 'ลบลายเซ็น', icon: 'fa-trash-can', cls: 'btn-outline-danger' },
+          { act: 'lock', label: 'บันทึกมติและล็อก PDF', icon: 'fa-lock', cls: 'btn-success' }
+        ];
+      }
+      return [
+        { act: 'save', label: 'บันทึกร่างมติ', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' },
+        { act: 'sign', label: 'ลงนามดิจิทัลรับรองมติ', icon: 'fa-signature', cls: 'btn-gold' }
+      ];
+    }
+
+    function renderActionButtons() {
+      document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons());
+      document.querySelectorAll('.action-bar [data-act]').forEach(b =>
+        b.addEventListener('click', () => handle(b.dataset.act)));
+    }
+    renderActionButtons();
+
+    function validateResolutionForm() {
+      const q = renderQuorum();
+      const r = selectedRes();
+      const meetNoVal = document.getElementById('meetNo').value.trim();
+      const meetDateVal = normalizeDateInputValue(document.getElementById('meetDate').value.trim());
+      const agendaNoVal = document.getElementById('agendaNo').value.trim();
+      if (!meetNoVal || !meetDateVal || !agendaNoVal) {
+        ECMIS.toastWarn('กรุณาระบุ ครั้งที่ประชุม, วันที่ประชุม และ วาระที่ ให้ครบถ้วน');
+        return false;
+      }
+
+      if (!q.quorumOk) {
+        Swal.fire({
+          icon: 'error', title: 'องค์ประชุมไม่ครบ — บันทึกมติไม่ได้',
+          html: `<div class="text-start">ตาม <strong>ม.12</strong> การประชุมต้องมีกรรมการมาประชุม
+            ไม่น้อยกว่ากึ่งหนึ่งของจำนวนกรรมการทั้งหมดเท่าที่มีอยู่<br><br>
+            <span style="color:#DB2626">มติที่บันทึกในสภาพนี้อาจไม่ชอบด้วยกฎหมาย
+            ระบบจึงบล็อกการบันทึกและแนะนำให้เลื่อนวาระไปครั้งถัดไป</span></div>`,
+          confirmButtonColor: '#DB2626'
+        });
+        return false;
+      }
+      if (!q.majorityOk) {
+        ECMIS.toastWarn('คะแนนเห็นด้วยยังไม่ถึงเสียงข้างมากของกรรมการทั้งหมดเท่าที่มีอยู่ (ม.15)');
+        return false;
+      }
+      const op = document.getElementById('boardOpinion');
+      if (op.value.trim().length === 0) {
+        op.classList.add('is-invalid-ecmis');
+        document.querySelector('.val-msg[data-for="boardOpinion"]').classList.add('show');
+        ECMIS.toastWarn('กรุณาระบุความเห็นที่ประชุม');
+        return false;
+      } else {
+        op.classList.remove('is-invalid-ecmis');
+        document.querySelector('.val-msg[data-for="boardOpinion"]').classList.remove('show');
+      }
+
+      if (LAWREF_CODES.includes(r.code) && !document.getElementById('rejectLaw').value) {
+        ECMIS.toastWarn('กรุณาเลือกมาตราอ้างอิงตาม ม.25 / ม.26');
+        return false;
+      }
+      if (r.code === 'MORE_INVESTIGATE') {
+        const miss = ['moreTask', 'moreOwner', 'moreDue'].filter(id => !document.getElementById(id).value.trim());
+        if (miss.length) {
+          ECMIS.toastWarn('ม.24 ว.4 บังคับระบุ: สิ่งที่ต้องดำเนินการ + ผู้รับผิดชอบ + กำหนดส่งกลับ');
+          return false;
+        }
+      }
+      if (r.code === 'FORWARD' && fwdSel.value === 'OTHER') {
+        const otherEl = document.getElementById('forwardToOther');
+        if (!otherEl.value.trim()) {
+          otherEl.classList.add('is-invalid-ecmis');
+          document.querySelector('.val-msg[data-for="forwardToOther"]').classList.add('show');
+          ECMIS.toastWarn('กรุณาระบุปลายทางที่ต้องการส่งเรื่องให้');
+          return false;
+        } else {
+          otherEl.classList.remove('is-invalid-ecmis');
+          document.querySelector('.val-msg[data-for="forwardToOther"]').classList.remove('show');
+        }
+      }
+      return true;
+    }
+
+    function handle(act) {
+      if (act === 'save') { ECMIS.toastOk('บันทึกร่างมติเรียบร้อย'); return; }
+
+      if (act === 'edit_sign') {
+        handle('sign');
+        return;
+      }
+
+      if (act === 'clear_sign') {
+        ECMIS.confirmAction({
+          title: 'ยืนยันการลบลายเซ็น',
+          html: '<p>คุณต้องการยกเลิกลายเซ็นรับรองมตินี้ใช่หรือไม่?</p>',
+          confirmText: 'ยืนยันลบลายเซ็น',
+          danger: true
+        }).then(r => {
+          if (r.isConfirmed) {
+            signed = false;
+            pendingSigData = null;
+            updateSigBoxUI(false);
+            renderDoc();
+            renderActionButtons();
+            ECMIS.toastOk('ลบลายเซ็นเรียบร้อยแล้ว');
+          }
+        });
+        return;
+      }
+
+      if (act === 'sign') {
+        if (!validateResolutionForm()) return;
+        const signerName = document.getElementById('signerName')?.value || 'นางสาวณพัสตร์ ศรีสมเกียรติ';
+        const signerTitle = document.getElementById('signerTitle')?.value || 'ผู้อำนวยการกองบริหารคดี';
+
+        ECMIS.signDialog(`มติที่ประชุมคณะกรรมการ ป.ป.ท. (เรื่องที่ ${kase.id})`,
+          `${signerName} — ${signerTitle}`, SIGNER_CERT)
+          .then(res => {
+            if (!res.isConfirmed) return;
+            signed = true;
+            pendingSigData = res.value;
+            const now = new Date();
+            updateSigBoxUI(true, res.value, now.toLocaleString('th-TH'));
+            renderDoc();
+            renderActionButtons();
+            ECMIS.toastOk('ลงนามรับรองมติเรียบร้อยแล้ว กรุณากดปุ่ม "บันทึกมติและล็อก PDF"');
+          });
+        return;
+      }
+
+      if (act === 'lock') {
+        if (!validateResolutionForm()) return;
+        const r = selectedRes();
+        const signerName = document.getElementById('signerName')?.value || 'นางสาวณพัสตร์ ศรีสมเกียรติ';
+        const signerTitle = document.getElementById('signerTitle')?.value || 'ผู้อำนวยการกองบริหารคดี';
+
+        ECMIS.confirmAction({
+          title: 'บันทึกมติและล็อกไฟล์ PDF',
+          html: `<div class="text-start">
+        <p class="mb-2">สำนวน <strong>${kase.id}</strong> — มติ: <strong>${r.label}</strong></p>
+        <div style="background:#fdf7e8;border-left:4px solid #D0A830;padding:.6rem .8rem;border-radius:0 6px 6px 0;font-size:.83rem">
+          เมื่อบันทึกแล้วระบบจะ:<br>
+          • ล็อกเอกสารมติเป็น PDF (แก้ไขได้เฉพาะ 6 เจ้าหน้าที่กลุ่มงานกิจการฯ + ผอ.กบค.)<br>
+          • บันทึกลายมือชื่อดิจิทัลรับรองมติ (${signerName})<br>
+          • สร้าง <strong>${r.doc}</strong> จาก Template อัตโนมัติ<br>
+          • ยิงมติกลับ <strong>กิจกรรมที่ 5</strong> และเริ่มนับกำหนดเวลาปลายทาง<br>
+          • Auto-compile รายงานการประชุมรวมทุกเรื่องในวันประชุมเดียวกัน
+        </div></div>`,
+          confirmText: 'ยืนยันบันทึกมติ'
+        }).then(res => {
+          if (!res.isConfirmed) return;
+
+          if (r.code === 'MORE_INVESTIGATE') {
+            const priorRounds = ECMIS.Model.RoundStore.list(kase.id).filter(rr => rr.phase === '7.1');
+            ECMIS.Model.RoundStore.create({
+              caseId: kase.id, phase: '7.1', roundNumber: priorRounds.length + 1,
+              reasonText: document.getElementById('moreTask').value.trim(),
+              owner: document.getElementById('moreOwner').value.trim(),
+              dueDate: document.getElementById('moreDue').value.trim(),
+              triggeredBy: 'BOARD_RESOLUTION'
+            });
+          }
+
+          ECMIS.Model.CaseStore.update(kase.id, {
+            status: 'RESOLVED',
+            resolution: r.code,
+            resolvedAt: new Date().toLocaleString('th-TH'),
+            resolvedAtIso: new Date().toISOString(),
+            recordedDocHtml: document.getElementById('docPaper').innerHTML,
+            resolutionStage: 1,
+            signedByBoardSec: true,
+            boardSecSignedAt: new Date().toISOString()
+          });
+
+          if (ECMIS.Model && ECMIS.Model.SignatureStore) {
+            ECMIS.Model.SignatureStore.create({
+              caseId: kase.id,
+              docType: `มติที่ประชุมคณะกรรมการ ป.ป.ท. — ${r.label}`,
+              signerRole: 'dir_case',
+              signerName: `${signerName} — ${signerTitle}`,
+              method: pendingSigData?.mode || 'cert',
+              signedAt: new Date().toISOString()
+            });
+          }
+
+          ECMIS.toastOk('บันทึกมติและล็อก PDF เรียบร้อย');
+          const next = (r.code === 'ACCEPT_S24P1' || r.code === 'ACCEPT_S24P3')
+            ? 'order.html?case=' + encodeURIComponent(kase.id) + '&res=' + r.code
+            : ECMIS.homeHref(role.id);
+          setTimeout(() => location.href = next, 1400);
+        });
+      }
+    }
+
+    /* ---------- Document workspace: collapsible pane (ws-doc-pane-toggle/-rail จาก a4-ecmis-workspace.css) ---------- */
+    const docWorkspace = document.getElementById('docWorkspace');
+    const PANE_KEY = 'ecmis-board-resolution-docpane-collapsed';
+    function setPaneCollapsed(collapsed) {
+      docWorkspace.classList.toggle('pane-collapsed', collapsed);
+      localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
+    }
+    if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
+    document.getElementById('btnPaneCollapse').addEventListener('click', () => setPaneCollapsed(true));
+    document.getElementById('btnPaneExpand').addEventListener('click', () => setPaneCollapsed(false));
+
+    /* ---------- Document workspace: แก้ไขเอกสารที่ล็อกแล้วแบบ Word (rich-text) ----------
+       เปิดใช้เฉพาะเอกสารที่บันทึก/ล็อกแล้ว (isLocked) และเฉพาะผู้มีสิทธิ์แก้ไขมติ (mayEdit)
+       ตรงกับข้อความ "แก้ไขมติที่ล็อกแล้วต้องผ่านกระบวนการแก้ไขพิเศษ" ด้านบน */
+    const docEditFab = document.getElementById('docEditFab');
+    const docEditBar = document.getElementById('docEditBar');
+    const docPaperWrap = document.getElementById('docPaper');
+    /* ย้าย FAB ไปเป็นลูกตรงของ body — กัน ancestor ที่มี transform/position ทับ z-index ของ
+       position:fixed จนโดนแถบ action-bar ด้านล่างบังปุ่ม (เจอจริงตอนทดสอบ) */
+    document.body.appendChild(docEditFab);
+
+    if (isLocked && mayEdit) {
+      docEditFab.classList.remove('d-none');
+    }
+
+    function setDocEditMode(on) {
+      docPaperWrap.querySelectorAll('.doc-paper').forEach(p => {
+        if (on) p.setAttribute('contenteditable', 'true');
+        else p.removeAttribute('contenteditable');
+      });
+      docEditFab.classList.toggle('active', on);
+      docEditBar.classList.toggle('show', on);
+    }
+
+    docEditFab.addEventListener('click', () => {
+      const on = !docEditFab.classList.contains('active');
+      setDocEditMode(on);
+    });
+
+    docEditBar.addEventListener('click', e => {
+      const btn = e.target.closest('[data-format]');
+      if (btn) { document.execCommand(btn.dataset.format); docPaperWrap.querySelector('.doc-paper')?.focus(); }
+    });
+    docEditBar.addEventListener('change', e => {
+      const el = e.target.closest('select[data-format]');
+      if (el) { document.execCommand(el.dataset.format, false, el.value); docPaperWrap.querySelector('.doc-paper')?.focus(); }
+    });
+
+    document.getElementById('btnSaveDocEdit').addEventListener('click', () => {
+      ECMIS.Model.CaseStore.update(kase.id, { recordedDocHtml: docPaperWrap.innerHTML });
+      setDocEditMode(false);
+      ECMIS.toastOk('บันทึกการแก้ไขเอกสารเรียบร้อย');
+    });
+
+    applyMode(); toggleBoxes(); renderOutcome(); renderDoc();
+  </script>
+</body>
+
+</html>
