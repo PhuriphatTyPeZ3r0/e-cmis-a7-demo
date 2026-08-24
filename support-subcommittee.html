@@ -55,21 +55,39 @@
             <div class="mb-2"><span class="k text-muted">ข้อกล่าวหา</span>
               <div class="v" id="sAllegation"></div>
             </div>
-            <div class="mb-2"><span class="k text-muted">จุดสังเกตความยุ่งยากซับซ้อน / ความเห็นแย้ง</span>
-              <div class="v text-danger fw-semibold" id="sComplex">
-                <i class="fa-solid fa-triangle-exclamation me-1"></i>พนักงานไต่สวนเห็นควรมีมูลความผิด แต่ ผอ.กอง มีความเห็นแย้งว่าพยานหลักฐานยังไม่เพียงพอ เห็นควรยุติเรื่อง
-              </div>
-            </div>
             <div><span class="k text-muted">ความเห็นของผู้รับผิดชอบสำนวน</span>
               <div class="v" id="sOpinion"></div>
             </div>
           </div>
         </div>
 
-        <!-- Card 3: Attachments (Identical to approval-review.html) -->
+        <!-- Card 3: Attachments with Upload Feature -->
         <div class="ws-card mb-3">
-          <div class="card-header"><i class="fa-solid fa-paperclip"></i> ไฟล์แนบสำนวน</div>
+          <div class="card-header d-flex align-items-center justify-content-between">
+            <span><i class="fa-solid fa-paperclip"></i> ไฟล์แนบสำนวน</span>
+            <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 rounded-pill no-print" id="btnToggleUpload" style="font-size:0.75rem" title="อัปโหลดไฟล์แนบเพิ่มเติม">
+              <i class="fa-solid fa-cloud-arrow-up me-1"></i>อัปโหลดไฟล์
+            </button>
+          </div>
           <div class="card-body">
+            <!-- Dropzone / Upload Box -->
+            <div id="uploadBox" class="mb-3 p-3 border border-dashed rounded bg-light d-none no-print">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="small fw-semibold text-primary"><i class="fa-solid fa-file-arrow-up me-1"></i>แนบไฟล์ประกอบการกลั่นกรอง</span>
+                <button type="button" class="btn-close btn-sm" id="btnCloseUpload" aria-label="Close" style="font-size:0.65rem"></button>
+              </div>
+              <div class="input-group input-group-sm mb-2">
+                <input type="file" class="form-control" id="fileInputAttach" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.rar,.png,.jpg,.jpeg">
+                <button class="btn btn-navy" type="button" id="btnUploadSubmit">
+                  <i class="fa-solid fa-upload me-1"></i>อัปโหลด
+                </button>
+              </div>
+              <small class="text-muted d-block" style="font-size:0.72rem">
+                รองรับไฟล์ PDF, Word, Excel, ZIP, รูปภาพ (ขนาดไม่เกิน 50MB ต่อไฟล์)
+              </small>
+            </div>
+
+            <!-- Attachment List -->
             <div id="attachmentList" class="small text-muted">กำลังโหลด...</div>
           </div>
         </div>
@@ -83,29 +101,28 @@
               <span><strong>สำนวนนี้กลั่นกรองแล้วเสร็จ (โหมดดูรายละเอียด / อ่านอย่างเดียว)</strong> ระบบล็อกข้อมูลไม่ให้แก้ไข</span>
             </div>
 
-            <label class="form-label field-req">คณะอนุกรรมการสนับสนุนเลขาธิการฯ ที่รับผิดชอบกลั่นกรอง</label>
-            <div class="list-group mb-3" id="teamList"></div>
+
 
             <label class="form-label field-req">มติของคณะอนุกรรมการสนับสนุนเลขาธิการฯ</label>
             <div class="list-group mb-3">
               <label class="list-group-item d-flex gap-2 align-items-start">
                 <input class="form-check-input mt-1" type="radio" name="supportDecision" value="AGREE" checked>
-                <span><strong>๑. เห็นพ้องกับความเห็นเดิมของผู้รับผิดชอบสำนวน (มีมูลความผิด)</strong>
+                <span><strong>เห็นพ้องกับความเห็นเดิมของผู้รับผิดชอบสำนวน (มีมูลความผิด)</strong>
                   <br><small class="text-muted">อ้างอิง ม.24 / ม.28 — ข้อเท็จจริงและพยานหลักฐานครบถ้วน เสนอเลขาธิการฯ เพื่อ Fast-track บรรจุวาระด่วนได้</small></span>
               </label>
               <label class="list-group-item d-flex gap-2 align-items-start">
                 <input class="form-check-input mt-1" type="radio" name="supportDecision" value="DIFFER">
-                <span><strong class="text-danger">๒. เห็นต่าง / มีความเห็นแย้ง (ไม่มีมูล หรือเห็นควรไม่รับ/สั่งจำหน่ายเรื่อง)</strong>
+                <span><strong>เห็นต่าง / มีความเห็นแย้ง (ไม่มีมูล หรือเห็นควรไม่รับ/สั่งจำหน่ายเรื่อง)</strong>
                   <br><small class="text-muted">อ้างอิง ม.28 ประกอบ ม.25 / ม.26 — มีความเห็นแย้งในข้อกฎหมาย/ข้อเท็จจริง (ระบบจะเปิดช่องเลือกมาตราและระบุเหตุผลแย้ง)</small></span>
               </label>
               <label class="list-group-item d-flex gap-2 align-items-start">
                 <input class="form-check-input mt-1" type="radio" name="supportDecision" value="MORE_INFO">
-                <span><strong class="text-info">๓. ขอให้แสวงหาข้อเท็จจริง/พยานหลักฐานเพิ่มเติม</strong>
+                <span><strong>ขอให้แสวงหาข้อเท็จจริง/พยานหลักฐานเพิ่มเติม</strong>
                   <br><small class="text-muted">อ้างอิง ม.18 / ม.23 — แจ้งเจ้าของสำนวนขอเอกสารหรือสอบพยานเพิ่มเติมก่อนสรุปผล</small></span>
               </label>
               <label class="list-group-item d-flex gap-2 align-items-start">
                 <input class="form-check-input mt-1" type="radio" name="supportDecision" value="RETURN">
-                <span><strong class="text-secondary">๔. ส่งคืนสายงานต้นทาง (กจ.5) เพื่อปรับปรุงสำนวน</strong>
+                <span><strong>ส่งคืนสายงานต้นทาง (กจ.5) เพื่อปรับปรุงสำนวน</strong>
                   <br><small class="text-muted">สำนวนไม่สมบูรณ์ตามระเบียบ ส่งคืนให้กอง/เขตดำเนินการใหม่</small></span>
               </label>
             </div>
@@ -408,6 +425,7 @@
           <div class="col-sm-6"><span class="k">ผู้รับผิดชอบ:</span> <span class="v">${kase.owner || '-'}</span></div>
           <div class="col-sm-6"><span class="k">สังกัด:</span> <span class="v">${kase.ownerOrg || '-'}</span></div>
           <div class="col-12"><span class="k">ผู้ถูกร้อง:</span> <span class="v">${(kase.accused || []).map(a => a.name).join(', ') || '-'}</span></div>
+          <div class="col-12"><span class="k">ผู้รับผิดชอบกลั่นกรอง:</span> <span class="v fw-medium text-navy"><i class="fa-solid fa-users-gear me-1"></i>คณะอนุกรรมการสนับสนุนเลขาธิการฯ</span></div>
         `;
       }
 
@@ -415,27 +433,10 @@
       document.getElementById('sOpinion').textContent = kase.ownerOpinion || 'เห็นควรชี้มูลความผิดทางวินัยอย่างร้ายแรงและดำเนินคดีอาญา';
       document.getElementById('moreInfoAssignee').value = `${kase.owner || 'ผู้รับผิดชอบสำนวน'} (${kase.ownerOrg || '-'})`;
 
-      // Attachments list
-      document.getElementById('attachmentList').innerHTML = `
-        <ul class="list-unstyled mb-0">
-          <li class="mb-1"><a href="javascript:void(0)" class="text-primary text-decoration-none"><i class="fa-solid fa-file-pdf text-danger me-1"></i>รายงานการไต่สวน_สำนวน_${kase.id.replace('/', '_')}.pdf</a></li>
-          <li class="mb-1"><a href="javascript:void(0)" class="text-primary text-decoration-none"><i class="fa-solid fa-file-lines text-secondary me-1"></i>บันทึกความเห็นแย้ง_ผอกอง.pdf</a></li>
-          <li><a href="javascript:void(0)" class="text-primary text-decoration-none"><i class="fa-solid fa-file-zipper text-warning me-1"></i>พยานหลักฐานประกอบสำนวน.zip</a></li>
-        </ul>
-      `;
+      // Render attachment list with Upload & Delete capability
+      renderAttachments();
 
-      // Render Team List
-      const chair = ECMIS.getRole('sup_chair') || { name: 'นายเกรียงไกร นิติกุล', title: 'ประธานอนุกรรมการ' };
-      const sec = ECMIS.getRole('sup_sec') || { name: 'นางสาวจิราพร นิติกิจ', title: 'เลขานุการ' };
-      const asst = ECMIS.getRole('sup_asst') || { name: 'นายสิทธิชัย สุขใจ', title: 'ผู้ช่วยเลขานุการ' };
-      const savedTeam = kase.supportTeam72 || kase.supportTeam || 'TEAM1';
 
-      document.getElementById('teamList').innerHTML = TEAMS.map(t => `
-        <label class="list-group-item d-flex gap-2 align-items-start">
-          <input class="form-check-input mt-1" type="radio" name="supportTeam" value="${t.code}" ${t.code === savedTeam ? 'checked' : ''}>
-          <span><strong>${t.label}</strong>
-            <br><small class="text-muted">ประธาน: ${chair.name} · เลขานุการ: ${sec.name} · ผู้ช่วยเลขานุการ: ${asst.name}</small></span>
-        </label>`).join('');
 
       if (kase.supportOpinion72 || kase.supportOpinion) {
         document.getElementById('supportOpinion').value = kase.supportOpinion72 || kase.supportOpinion;
@@ -452,7 +453,7 @@
       }
 
       // Event listeners
-      document.querySelectorAll('input[name="supportTeam"], input[name="supportDecision"]').forEach(r => {
+      document.querySelectorAll('input[name="supportDecision"]').forEach(r => {
         r.addEventListener('change', () => {
           onDecisionChange();
           renderDoc();
@@ -512,14 +513,151 @@
           banner.innerHTML = `<i class="fa-solid fa-lock text-secondary"></i><span><strong>สำนวนนี้กลั่นกรองแล้วเสร็จ (โหมดดูรายละเอียด / อ่านอย่างเดียว)</strong> ระบบล็อกข้อมูลไม่ให้แก้ไข</span>`;
         }
 
-        document.querySelectorAll('input[name="supportTeam"], input[name="supportDecision"], #supportLaw, #dissentReason, #moreInfoItems, #moreInfoDays, #supportOpinion').forEach(el => {
+        document.querySelectorAll('input[name="supportDecision"], #supportLaw, #dissentReason, #moreInfoItems, #moreInfoDays, #supportOpinion').forEach(el => {
           el.disabled = true;
         });
+      }
+
+
+      // Upload box listeners
+      const btnToggle = document.getElementById('btnToggleUpload');
+      const uploadBox = document.getElementById('uploadBox');
+      const btnClose = document.getElementById('btnCloseUpload');
+      const btnSubmit = document.getElementById('btnUploadSubmit');
+
+      if (btnToggle && uploadBox) {
+        btnToggle.addEventListener('click', () => {
+          uploadBox.classList.toggle('d-none');
+        });
+      }
+      if (btnClose && uploadBox) {
+        btnClose.addEventListener('click', () => {
+          uploadBox.classList.add('d-none');
+        });
+      }
+      if (btnSubmit) {
+        btnSubmit.addEventListener('click', handleFileUpload);
+      }
+
+      if (isReadOnly) {
+        if (btnToggle) btnToggle.classList.add('d-none');
+        if (uploadBox) uploadBox.classList.add('d-none');
       }
 
       onDecisionChange();
       renderDoc();
       renderActionButtons();
+    }
+
+
+    function getFileIcon(filename) {
+      const ext = filename.split('.').pop().toLowerCase();
+      if (ext === 'pdf') return 'fa-file-pdf text-danger';
+      if (['doc', 'docx'].includes(ext)) return 'fa-file-word text-primary';
+      if (['xls', 'xlsx', 'csv'].includes(ext)) return 'fa-file-excel text-success';
+      if (['zip', 'rar', '7z'].includes(ext)) return 'fa-file-zipper text-warning';
+      if (['png', 'jpg', 'jpeg'].includes(ext)) return 'fa-file-image text-info';
+      return 'fa-file-lines text-secondary';
+    }
+
+    function renderAttachments() {
+      const el = document.getElementById('attachmentList');
+      if (!el) return;
+
+      if (!kase.attachments) {
+        kase.attachments = [];
+      }
+
+      if (!kase.attachments.length) {
+        el.innerHTML = '<div class="text-muted py-3 text-center" style="font-size:0.8rem"><i class="fa-solid fa-folder-open fa-lg d-block mb-1 text-secondary" style="font-size:1.4rem"></i>ยังไม่มีไฟล์แนบในสำนวนนี้</div>';
+        return;
+      }
+
+      const rows = kase.attachments.map((a, idx) => {
+        const icon = getFileIcon(a.name);
+        const delBtn = !isReadOnly
+          ? `<button type="button" class="btn btn-link text-danger p-0 ms-auto text-decoration-none btn-del-file" data-idx="${idx}" title="ลบไฟล์"><i class="fa-solid fa-trash-can" style="font-size:0.75rem"></i></button>`
+          : '';
+
+        return `
+          <li class="d-flex align-items-center justify-content-between py-1 border-bottom border-light">
+            <div class="d-flex align-items-center gap-2 text-truncate me-2">
+              <i class="fa-solid ${icon}" style="font-size:1.1rem; flex-shrink:0"></i>
+              <div class="text-truncate">
+                <a href="javascript:void(0)" onclick="previewOrDownloadFile('${ECMIS.escapeHtml(a.name)}')" class="text-primary text-decoration-none fw-medium text-truncate d-block" title="${ECMIS.escapeHtml(a.name)}">
+                  ${ECMIS.escapeHtml(a.name)}
+                </a>
+                <small class="text-muted" style="font-size:0.72rem">${a.size} · ${a.date} ${a.uploader ? `(${a.uploader})` : ''}</small>
+              </div>
+            </div>
+            ${delBtn}
+          </li>
+        `;
+      }).join('');
+
+      el.innerHTML = `<ul class="list-unstyled mb-0">${rows}</ul>`;
+
+      el.querySelectorAll('.btn-del-file').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = parseInt(btn.dataset.idx, 10);
+          deleteAttachment(idx);
+        });
+      });
+    }
+
+    function previewOrDownloadFile(fileName) {
+      ECMIS.toastOk(`เปิดดูไฟล์แนบ: ${fileName}`);
+    }
+
+    function deleteAttachment(index) {
+      Swal.fire({
+        title: 'ยืนยันลบไฟล์แนบ?',
+        text: `คุณต้องการลบไฟล์ "${kase.attachments[index].name}" ออกจากสำนวนใช่หรือไม่?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ลบไฟล์',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#DC2626'
+      }).then(res => {
+        if (res.isConfirmed) {
+          kase.attachments.splice(index, 1);
+          ECMIS.saveCases();
+          renderAttachments();
+          ECMIS.toastOk('ลบไฟล์แนบเรียบร้อยแล้ว');
+        }
+      });
+    }
+
+    function handleFileUpload() {
+      const input = document.getElementById('fileInputAttach');
+      if (!input.files || !input.files.length) {
+        ECMIS.toastWarn('กรุณาเลือกไฟล์ที่ต้องการอัปโหลด');
+        return;
+      }
+
+      const files = Array.from(input.files);
+      const subLabel = 'คณะอนุกรรมการสนับสนุนเลขาธิการฯ';
+
+      files.forEach(f => {
+        const sizeStr = f.size > 1024 * 1024
+          ? (f.size / (1024 * 1024)).toFixed(1) + ' MB'
+          : (f.size / 1024).toFixed(0) + ' KB';
+
+        kase.attachments.push({
+          name: f.name,
+          size: sizeStr,
+          date: 'วันนี้',
+          uploader: `คณะอนุกรรมการฯ (${'คณะอนุกรรมการสนับสนุนเลขาธิการฯ'})`,
+          isDefault: false
+        });
+      });
+
+      ECMIS.saveCases();
+      renderAttachments();
+      input.value = '';
+      document.getElementById('uploadBox').classList.add('d-none');
+      ECMIS.toastOk(`อัปโหลดไฟล์แนบ ${files.length} รายการเรียบร้อยแล้ว`);
     }
 
     function onDecisionChange() {
@@ -535,7 +673,7 @@
 
     function renderDoc() {
       const M = ECMIS.mergeField;
-      const team = TEAMS.find(t => t.code === selectedTeam()) || TEAMS[0];
+      const subLabel = 'คณะอนุกรรมการสนับสนุนเลขาธิการฯ';
       const dec = document.querySelector('input[name="supportDecision"]:checked')?.value || 'AGREE';
       const opinion = document.getElementById('supportOpinion').value.trim();
       const dissent = document.getElementById('dissentReason').value.trim();
@@ -553,7 +691,7 @@
         <div class="doc-secret">ลับ</div>
         <div class="doc-title">
           <div class="doc-title-l1">บันทึกข้อความความเห็นการกลั่นกรอง</div>
-          <div class="doc-title-l2">คณะอนุกรรมการสนับสนุนเลขาธิการฯ (${M(team.label)})</div>
+          <div class="doc-title-l2">คณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
         </div>
         <div class="doc-sub">สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
 
@@ -582,7 +720,7 @@
 
         <div class="doc-sign" style="margin-top:2rem">
           (นางสาวจิราพร นิติกิจ)<br>
-          ประธานคณะอนุกรรมการสนับสนุนเลขาธิการฯ (${M(team.label)})
+          ประธานคณะอนุกรรมการสนับสนุนเลขาธิการฯ
         </div>
       `;
     }
@@ -627,7 +765,7 @@
         return;
       }
 
-      const team = TEAMS.find(t => t.code === selectedTeam()) || TEAMS[0];
+      const subLabel = 'คณะอนุกรรมการสนับสนุนเลขาธิการฯ';
       const dec = document.querySelector('input[name="supportDecision"]:checked')?.value || 'AGREE';
       const op = document.getElementById('supportOpinion');
       const dissent = document.getElementById('dissentReason');
@@ -636,8 +774,8 @@
 
       if (act === 'save') {
         await persistCase(kase, {
-          supportTeam72: team.code,
-          supportTeam: team.code,
+          supportTeam72: 'SUB_COMMITTEE',
+          supportTeam: 'SUB_COMMITTEE',
           supportOpinion72: op.value.trim(),
           supportOpinion: op.value.trim(),
           supportDecision: dec,
@@ -661,8 +799,8 @@
         }).then(async res => {
           if (!res.isConfirmed) return;
           await persistCase(kase, {
-            supportTeam72: team.code,
-            supportTeam: team.code,
+            supportTeam72: 'SUB_COMMITTEE',
+            supportTeam: 'SUB_COMMITTEE',
             supportOpinion72: op.value.trim(),
             supportOpinion: op.value.trim(),
             supportDecision: dec,
@@ -691,8 +829,8 @@
         }).then(async res => {
           if (!res.isConfirmed) return;
           await persistCase(kase, {
-            supportTeam72: team.code,
-            supportTeam: team.code,
+            supportTeam72: 'SUB_COMMITTEE',
+            supportTeam: 'SUB_COMMITTEE',
             supportOpinion72: op.value.trim(),
             supportOpinion: op.value.trim(),
             supportDecision: dec,
@@ -741,13 +879,13 @@
 
         ECMIS.confirmAction({
           title: 'เสนอความเห็นคืนเลขาธิการ ป.ป.ท.',
-          html: `<p>สำนวน <strong>${kase.id}</strong> — กลั่นกรองโดย <strong>${team.label}</strong><br><small class="text-muted">${nextMsg}</small></p>`,
+          html: `<p>สำนวน <strong>${kase.id}</strong> — กลั่นกรองโดย <strong>${'คณะอนุกรรมการสนับสนุนเลขาธิการฯ'}</strong><br><small class="text-muted">${nextMsg}</small></p>`,
           confirmText: 'ยืนยันเสนอความเห็นคืนเลขาธิการฯ'
         }).then(async res => {
           if (!res.isConfirmed) return;
           await persistCase(kase, {
-            supportTeam72: team.code,
-            supportTeam: team.code,
+            supportTeam72: 'SUB_COMMITTEE',
+            supportTeam: 'SUB_COMMITTEE',
             supportOpinion72: op.value.trim(),
             supportOpinion: op.value.trim(),
             supportDecision: dec,
