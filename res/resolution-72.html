@@ -88,6 +88,12 @@
             <label class="form-label field-req">เลือกประเภทผลมติ</label>
             <div class="list-group mb-3" id="resList"></div>
 
+            <div class="mb-3" id="accusedWitnessSection">
+              <label class="form-label fw-bold text-navy"><i class="fa-solid fa-user-shield me-1"></i>พิจารณาชี้มูลรายผู้ถูกกล่าวหา / ขอกันบุคคลไว้เป็นพยาน</label>
+              <div id="accusedWitnessList" class="p-2 border rounded bg-light"></div>
+              <small class="text-muted mt-1 d-block"><i class="fa-solid fa-circle-info me-1"></i>ผู้ที่ถูกมีมติกันไว้เป็นพยาน จะไม่ถูกนำไปออกหนังสือส่งลงโทษทางวินัยหรือส่งพนักงานอัยการดำเนินคดี</small>
+            </div>
+
             <div id="moreBox" class="mb-3 d-none">
               <label class="form-label field-req">ลักษณะการไต่สวนเพิ่มเติม</label>
               <select class="form-select mb-2" id="moreScope">
@@ -234,7 +240,7 @@
     }
 
     const BOARD = [
-      { n: 'นายอำนาจ พวงชมภู', r: 'ประธานกรรมการ ป.ป.ท.', chair: true },
+      { n: 'นายวิชัย ยุติธรรม', r: 'ประธานกรรมการ ป.ป.ท.', chair: true },
       { n: 'พลเอก จิระ โกมุทพงศ์', r: 'กรรมการ ป.ป.ท.' },
       { n: 'พันตำรวจโท วันนพ สมจินตนากุล', r: 'กรรมการ ป.ป.ท.' },
       { n: 'นายวิเชียร จันทรโณทัย', r: 'กรรมการ ป.ป.ท.' },
@@ -244,38 +250,90 @@
     ];
     const TOTAL = BOARD.length;
 
-    document.getElementById('boardTb').innerHTML = BOARD.map((b, i) => `
+    const initialAttendance = kase.boardAttendance72 || {};
+    document.getElementById('boardTb').innerHTML = BOARD.map((b, i) => {
+      const att = initialAttendance[b.n] || 'present';
+      return `
   <tr data-i="${i}">
     <td><strong>${b.n}</strong><br><small class="text-muted">${b.r}</small></td>
     <td>
       <select class="form-select form-select-sm attend">
-        <option value="present" selected>เข้าประชุม</option>
-        <option value="recused">ถอนตัว</option>
+        <option value="present" ${att === 'present' ? 'selected' : ''}>มาประชุม</option>
+        <option value="leave" ${att === 'leave' ? 'selected' : ''}>ลาประชุม</option>
+        <option value="duty" ${att === 'duty' ? 'selected' : ''}>ติดราชการ</option>
+        <option value="recused" ${att === 'recused' ? 'selected' : ''}>ถอนตัว (ม.20)</option>
       </select>
     </td>
     <td>
-      <select class="form-select form-select-sm vote">
+      <select class="form-select form-select-sm vote" ${att !== 'present' ? 'disabled' : ''}>
         <option value="for" selected>เห็นด้วย</option>
         <option value="against">ไม่เห็นด้วย</option>
-        <option value="abstain">งดออกเสียง</option>
+        <option value="abstain" ${att !== 'present' ? 'selected' : ''}>งดออกเสียง</option>
       </select>
     </td>
-  </tr>`).join('');
+  </tr>`;
+    }).join('');
+
+    /* กันบุคคลไว้เป็นพยาน — ผูกกับ kase.witnessState72 เพื่อให้ ruling-report.html
+       (72-09) อ่านไปกรองผู้ถูกกล่าวหาที่ถูกกันไว้ออกจากการออกหนังสือส่งลงโทษ/ส่งอัยการ */
+    function renderAccusedWitnessList() {
+      const accList = kase.accused && kase.accused.length ? kase.accused : [
+        { name: kase.accusedName || 'นายสมศักดิ์ ข้าราชการ', pos: 'ผู้อำนวยการกอง', agency: kase.agency || 'กรมชลประทาน' }
+      ];
+      const witMap = kase.witnessState72 || {};
+      const container = document.getElementById('accusedWitnessList');
+      container.innerHTML = accList.map((acc, idx) => {
+        const isWit = !!witMap[acc.name];
+        return `
+        <div class="d-flex align-items-center justify-content-between p-2 mb-1 bg-white border rounded">
+          <div>
+            <span class="badge bg-secondary me-1">ลำดับ ${idx + 1}</span>
+            <strong style="color:var(--ecmis-navy)">${acc.name}</strong>
+            <span class="text-muted small ms-1">${acc.pos || ''} ${acc.agency ? '(' + acc.agency + ')' : ''}</span>
+          </div>
+          <div class="form-check form-switch m-0">
+            <input class="form-check-input witness-switch" type="checkbox" id="wit_${idx}" data-name="${acc.name}" ${isWit ? 'checked' : ''}>
+            <label class="form-check-label small fw-semibold" for="wit_${idx}">
+              ${isWit ? '<span class="badge bg-info text-dark"><i class="fa-solid fa-shield-halved me-1"></i>กันไว้เป็นพยาน</span>' : 'ขอกันเป็นพยาน'}
+            </label>
+          </div>
+        </div>`;
+      }).join('');
+
+      container.querySelectorAll('.witness-switch').forEach(sw => {
+        sw.addEventListener('change', (e) => {
+          if (!kase.witnessState72) kase.witnessState72 = {};
+          kase.witnessState72[e.target.dataset.name] = e.target.checked;
+          renderAccusedWitnessList();
+          renderDoc();
+        });
+      });
+    }
+    renderAccusedWitnessList();
 
     function tally() {
-      let present = 0, recused = 0, forV = 0, againstV = 0, abstainV = 0;
+      let present = 0, recused = 0, leave = 0, duty = 0, forV = 0, againstV = 0, abstainV = 0;
+      const attendanceMap = {};
       document.querySelectorAll('#boardTb tr').forEach(tr => {
+        const i = parseInt(tr.dataset.i, 10);
+        const b = BOARD[i];
         const a = tr.querySelector('.attend').value;
         const v = tr.querySelector('.vote');
+        attendanceMap[b.n] = a;
         if (a === 'recused') {
           recused++; v.value = 'abstain'; v.disabled = true; abstainV++;
+        } else if (a === 'leave') {
+          leave++; v.value = 'abstain'; v.disabled = true;
+        } else if (a === 'duty') {
+          duty++; v.value = 'abstain'; v.disabled = true;
         } else {
           v.disabled = false;
           present++;
           if (v.value === 'for') forV++; else if (v.value === 'against') againstV++; else if (v.value === 'abstain') abstainV++;
         }
       });
-      return { present, recused, forV, againstV, abstainV };
+      kase.boardAttendance72 = attendanceMap;
+      return { present, recused, leave, duty, forV, againstV, abstainV, attendanceMap };
     }
 
     function renderQuorum() {
@@ -284,14 +342,20 @@
       const { quorumMin, quorumOk, majorityMin, majorityOk, tie, boardValid } = q;
       kase.quorumOk72 = quorumOk;
 
-      document.getElementById('quorumBox').innerHTML = `
+      const nonPresentNotes = [
+      t.leave ? `ลาประชุม ${t.leave} ท่าน` : null,
+      t.duty ? `ติดราชการ ${t.duty} ท่าน` : null,
+      t.recused ? `ถอนตัวตาม ม.20 ${t.recused} ท่าน` : null
+    ].filter(Boolean);
+
+    document.getElementById('quorumBox').innerHTML = `
     ${!boardValid ? `<div class="rule fail"><i class="fa-solid fa-circle-xmark"></i>
       <span><strong>ม.10:</strong> กรรมการเท่าที่มีอยู่ ${TOTAL} คน — น้อยกว่าขั้นต่ำ
       ${ECMIS.BOARD_MIN_IN_OFFICE} คน คณะกรรมการยังทำหน้าที่ต่อไม่ได้</span></div>` : ''}
     <div class="rule ${quorumOk ? 'pass' : 'fail'}">
       <i class="fa-solid ${quorumOk ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
-      <span><strong>องค์ประชุม (ม.12):</strong> เข้าประชุม ${t.present} จาก ${TOTAL} ท่าน — ต้องไม่น้อยกว่า ${quorumMin} ท่าน
-        ${t.recused ? `<br><small>ถูกกันออกตาม ม.20 จำนวน ${t.recused} ท่าน</small>` : ''}</span>
+      <span><strong>องค์ประชุม (ม.12):</strong> มาประชุม ${t.present} จาก ${TOTAL} ท่าน — ต้องไม่น้อยกว่า ${quorumMin} ท่าน
+        ${nonPresentNotes.length ? `<br><small class="text-muted">ไม่มาประชุม/ถอนตัว: ${nonPresentNotes.join(', ')}</small>` : ''}</span>
     </div>
     <div class="rule ${majorityOk ? 'pass' : 'fail'}">
       <i class="fa-solid ${majorityOk ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
