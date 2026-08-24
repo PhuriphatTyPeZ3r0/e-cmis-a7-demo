@@ -585,8 +585,22 @@ function getSecgenActionBadge(c) {
   return `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>รอเลขาพิจารณาลงนาม</span>`;
 }
 
+/* ป้ายสถานะในตารางของ กจ. (affairs) ต้องใช้คำเดียวกับตัวเลือกใน statusFilter ด้านบนเป๊ะ ๆ —
+   ไม่ใช้ ECMIS.statusBadge() ตรงๆ เพราะ label ทั่วไปใน STATUS สั้น/ใช้คำต่างจากบริบทงาน กจ.
+   (เช่น RESOLVED ทั่วไปคือ "มีมติแล้ว" แต่ กจ. ต้องเห็น "มีมติแล้ว — รอพิจารณาจัดทำคำสั่ง ม.24") */
+const AFFAIRS_STATUS_LABEL = {
+  DEFERRED: 'เลื่อน/ถอนวาระ — รอเลขวาระใหม่',
+  RESOLVED: 'มีมติแล้ว — รอพิจารณาจัดทำคำสั่ง ม.24',
+  RESOLVED_PENDING_72: 'รอจัดทำรายงานวินิจฉัยชี้มูล',
+  PENDING_DISPATCH_GUILTY_72: 'ชี้มูลความผิดแล้ว รอส่งดำเนินคดี'
+};
 function getActionBadge(c) {
-  if (role.id === 'affairs') return ECMIS.statusBadge(c.status);
+  if (role.id === 'affairs') {
+    const label = AFFAIRS_STATUS_LABEL[c.status];
+    if (!label) return ECMIS.statusBadge(c.status);
+    const cls = (ECMIS.STATUS[c.status] || {}).cls || 'st-pending';
+    return `<span class="st ${cls}"><i class="fa-solid fa-circle-dot me-1" style="font-size:0.65rem"></i>${label}</span>`;
+  }
   return getSecgenActionBadge(c);
 }
 
