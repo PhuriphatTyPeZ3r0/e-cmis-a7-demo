@@ -986,19 +986,25 @@
           <div class="doc-indent">${M(disciplinaryFinding, 'ไม่มีมูลความผิดทางวินัย')}</div>`
         ];
 
-        /* ลายเซ็นเฉพาะกรรมการที่มาประชุมจริง จัดเรียง 2 คอลัมน์กะทัดรัดตามแบบฟอร์ม ปปท. ๗-๐๒ */
+        /* ลายเซ็นเฉพาะกรรมการที่มาประชุมจริง เรียงชิดขวาตามแบบฟอร์ม ปปท. ๗-๐๒ ใน template docx */
         const chair = presentMembers.find(b => b.r.includes('ประธาน')) || presentMembers[0];
         const others = presentMembers.filter(b => b !== chair);
 
         const signBlock = `
-          <div style="margin-top:14px;page-break-inside:avoid;break-inside:avoid;">
-            ${chair ? `<div class="doc-sign" style="margin-top:8px;margin-bottom:8px">
-              ลงชื่อ................................................ประธานกรรมการ ป.ป.ท.<br>(${chair.n})</div>` : ''}
-            <div class="doc-sign-grid">
-              ${others.map(b => `<div class="doc-sign" style="margin-top:6px">
-                ลงชื่อ................................................กรรมการ ป.ป.ท.<br>(${b.n})</div>`).join('')}
+          <div style="margin-top:16px;page-break-inside:avoid;break-inside:avoid;">
+            <div style="width:62%; margin-left:auto; text-align:left;">
+              ${chair ? `
+                <div style="margin-top:12px; margin-bottom:10px; line-height:1.4;">
+                  <div>ลงชื่อ................................................ประธานกรรมการ ป.ป.ท.</div>
+                  <div style="text-align:center; width:220px; margin-top:2px;">(${chair.n})</div>
+                </div>` : ''}
+              ${others.map(b => `
+                <div style="margin-top:12px; margin-bottom:10px; line-height:1.4;">
+                  <div>ลงชื่อ................................................กรรมการ ป.ป.ท.</div>
+                  <div style="text-align:center; width:220px; margin-top:2px;">(${b.n})</div>
+                </div>`).join('')}
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:14px; font-size:12.5px; font-weight:700; color:#334155;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:18px; font-size:13pt; font-weight:700; color:#334155;">
               <div>ปปท. ๗-๐๒</div>
             </div>
           </div>`;
