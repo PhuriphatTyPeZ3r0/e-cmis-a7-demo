@@ -385,7 +385,16 @@
       const tmp = document.createElement('div');
       tmp.innerHTML = html;
       const blocks = Array.from(tmp.children).map(el => el.outerHTML);
-      if (blocks.length < 3) { containerEl.innerHTML = `<div class="doc-paper a4-paper">${html}</div>`; return; }
+      if (blocks.length === 0) { containerEl.innerHTML = ''; return; }
+      if (blocks.length === 1) {
+        ECMIS.paginateDoc(containerEl, {
+          introBlock: blocks[0], flowBlocks: [], signBlock: '',
+          runningHeaderHtml: pageNo => `
+        <div class="doc-run-title">${runningTitle} (ต่อ)</div>
+        <div class="doc-run-page">- ${ECMIS.toThaiDigits(pageNo)} -</div>`
+        });
+        return;
+      }
       const introBlock = blocks[0];
       const signBlock = blocks[blocks.length - 1];
       const flowBlocks = blocks.slice(1, -1);

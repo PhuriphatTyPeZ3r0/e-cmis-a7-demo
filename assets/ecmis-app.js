@@ -2098,7 +2098,7 @@ function paginateDoc(containerEl, opts){
   const PAGE_BUDGET = mmProbe.getBoundingClientRect().height;
   mmProbe.remove();
 
-  const FIT_TOLERANCE = 14;
+  const FIT_TOLERANCE = 20;
 
   function measure(html){ probe.innerHTML = html; return probe.scrollHeight; }
 
@@ -2122,13 +2122,25 @@ function paginateDoc(containerEl, opts){
 
   const withSign = prefixFor(pages.length + (isFirst ? 1 : 2)) + pageBlocks.join('') + signBlock;
   const mandatoryOnly = pageBlocks.length === (isFirst ? 1 : 0);
-  if(mandatoryOnly || measure(withSign) <= (PAGE_BUDGET + FIT_TOLERANCE + 8)){
+  
+  // Auto-fit check: if signatures fit within reasonable tolerance (up to 35px), keep on same page
+  if(mandatoryOnly || measure(withSign) <= (PAGE_BUDGET + FIT_TOLERANCE + 35)){
     pageBlocks.push(signBlock);
     pushPage();
   } else {
-    pushPage();
-    pageBlocks = [signBlock];
-    pushPage();
+    // Orphan / Widow Protection: Never leave signature block alone on the new page!
+    // If pageBlocks has more than 1 block, pull the last concluding flowBlock to accompany signatures
+    const minBlocksToKeepOnPrevPage = isFirst ? 2 : 1;
+    if (pageBlocks.length > minBlocksToKeepOnPrevPage) {
+      const pulledConcludeBlock = pageBlocks.pop();
+      pushPage();
+      pageBlocks = [pulledConcludeBlock, signBlock];
+      pushPage();
+    } else {
+      pushPage();
+      pageBlocks = [signBlock];
+      pushPage();
+    }
   }
 
   containerEl.innerHTML = pages.map((p, i) => {
@@ -2187,14 +2199,14 @@ div.Section1 {
   page: Section1;
 }
 body {
-  font-family: 'TH Sarabun New', 'TH Sarabun PSK', 'Sarabun', 'Cordia New', serif;
+  font-family: 'TH Sarabun IT9', 'TH Sarabun New', 'TH Sarabun PSK', 'Sarabun', 'Cordia New', serif;
   font-size: 16pt;
-  line-height: 1.25;
+  line-height: 1.3;
   color: #000000;
 }
 p {
-  margin: 4pt 0;
-  line-height: 1.25;
+  margin: 2pt 0;
+  line-height: 1.3;
   text-align: justify;
   text-justify: inter-cluster;
 }
@@ -2202,17 +2214,17 @@ p {
   text-align: center;
   font-size: 18pt;
   font-weight: bold;
-  margin: 6pt 0 2pt;
+  margin: 4pt 0 2pt;
 }
 .doc-sub {
   text-align: center;
   font-size: 16pt;
-  margin-bottom: 8pt;
+  margin-bottom: 6pt;
 }
 .doc-h {
   font-size: 16pt;
   font-weight: bold;
-  margin-top: 10pt;
+  margin-top: 6pt;
   margin-bottom: 2pt;
 }
 .doc-indent {
@@ -2220,7 +2232,7 @@ p {
   text-align: justify;
   text-justify: inter-cluster;
   font-size: 16pt;
-  margin-bottom: 4pt;
+  margin-bottom: 3pt;
 }
 .doc-row {
   font-size: 16pt;
@@ -2229,8 +2241,8 @@ p {
 .doc-sign {
   text-align: center;
   font-size: 16pt;
-  margin-top: 16pt;
-  line-height: 1.35;
+  margin-top: 12pt;
+  line-height: 1.3;
 }
 .doc-dots {
   border-bottom: 1px dotted #000;
@@ -2241,7 +2253,7 @@ p {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-around;
-  margin-top: 16pt;
+  margin-top: 12pt;
 }
 img {
   max-width: 100%;
