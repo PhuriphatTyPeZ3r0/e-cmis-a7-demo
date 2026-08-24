@@ -377,8 +377,8 @@ function resolvePage(path) {
 }
 
 /* true when the current page is served from the res/ subdirectory — used to
-   pick the right relative path (../pacc_logo.png, ../login.html, ...) back
-   up to assets that live at the project root. */
+   pick the right relative path (../assets/pacc_logo.png, ../login.html, ...)
+   back up to assets that live at the project root. */
 function isInResDir() {
   return /\/res\//.test(location.pathname);
 }
@@ -1763,7 +1763,7 @@ function renderShell(activeHref){
     </ul>
   </div>`;
 
-  const logoSrc = isInResDir() ? '../pacc_logo.png' : 'pacc_logo.png';
+  const logoSrc = isInResDir() ? '../assets/pacc_logo.png' : 'assets/pacc_logo.png';
   const sidebar = `
   <nav class="app-sidebar no-print" id="appSidebar">
     <a class="brand text-decoration-none" href="${homeHref(role.id)}">
