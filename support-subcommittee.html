@@ -24,6 +24,7 @@
         <h1><i class="fa-solid fa-user-tie me-2"></i>คณะอนุกรรมการสนับสนุนเลขาธิการฯ กลั่นกรองสำนวนซับซ้อน</h1>
       </div>
       <div class="ms-auto text-end">
+        <button type="button" class="btn btn-sm btn-outline-primary btn-manage-sug rounded-pill px-3 py-1 me-2 no-print" title="จัดการข้อความคำแนะนำและเหตุผลมาตรฐาน"><i class="fa-solid fa-lightbulb text-warning me-1"></i>จัดการคำแนะนำ</button>
         <span class="flow-ref">กลั่นกรองสำนวนซับซ้อน / ความเห็นแย้งก่อนส่งต่อเลขาธิการฯ</span>
         <div class="mt-1" id="stBadge"></div>
       </div>
@@ -167,7 +168,7 @@
 
       </div>
 
-      <!-- Right Pane: Standard Document Workspace (Identical to approval-review & screening) -->
+      <!-- Right Pane: Standard Document Workspace -->
       <aside class="ws-doc-pane" style="top:calc(var(--topbar-h) + 14px)">
         <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
         <div class="ws-doc-toolbar">
@@ -205,9 +206,52 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/ecmis-app.js"></script>
+  <script src="assets/ecmis-model.js"></script>
   <script>
     ECMIS.renderShell('support-subcommittee.html');
+
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    async function loadCaseFromSupabase(caseId) {
+      if (!sb) return null;
+      try {
+        const { data, error } = await sb
+          .from('tbl_res_request')
+          .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+          .eq('tbl_cmp_case.tcc_no', caseId)
+          .eq('is_deleted', false)
+          .maybeSingle();
+        if (error) throw error;
+        return data ? ECMIS.supabaseRowToCase(data) : null;
+      } catch (e) {
+        console.warn('Supabase load error:', e);
+        return null;
+      }
+    }
+
+    async function persistCase(kase, patch) {
+      const dbPatch = {};
+      if ('status' in patch) {
+        const code = ECMIS.STATUS_CODE[patch.status];
+        if (code) dbPatch.trr_status = code;
+      }
+      if (sb && kase.trr_id && Object.keys(dbPatch).length) {
+        try {
+          const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
+          if (error) console.warn('Supabase update warning:', error);
+        } catch (e) {
+          console.warn('Supabase update failed:', e);
+        }
+      }
+      Object.assign(kase, patch);
+      const memCase = ECMIS.CASES.find(x => x.id === kase.id);
+      if (memCase) Object.assign(memCase, patch);
+      ECMIS.saveCases();
+    }
 
     const params = new URLSearchParams(location.search);
     const role = ECMIS.currentRole();
@@ -222,14 +266,25 @@
     (async function main() {
       const caseParam = params.get('case') || '2015/2569';
       isReadOnly = (params.get('readonly') === 'true');
-      kase = ECMIS.getCase(caseParam) || ECMIS.CASES.find(x => x.id === caseParam) || ECMIS.CASES[0];
+
+      // ลองโหลดจาก Supabase ก่อน ถ้าไม่มี fallback เป็น mock
+      try {
+        kase = await loadCaseFromSupabase(caseParam);
+      } catch (err) {
+        console.warn('Fallback to local storage cases:', err);
+      }
+
+      if (!kase) {
+        kase = ECMIS.getCase(caseParam) || (ECMIS.CASES && ECMIS.CASES.find(x => x.id === caseParam)) || (ECMIS.CASES && ECMIS.CASES[0]);
+      }
+
       if (!kase) { ECMIS.toastWarn('ไม่พบสำนวนนี้ในระบบ'); return; }
 
       docType = ECMIS.DOC_TYPES[kase.docType] || ECMIS.DOC_TYPES['213'];
       isRuling = (kase.docType === 'RULING');
 
-      // ตรวจสอบว่าสำนวนได้รับการกลั่นกรองและส่งต่อแล้วหรือไม่ ถ้าส่งแล้วให้เปิดโหมด Read-only ล็อกข้อมูล
-      if (kase.status === 'PENDING_SECGEN' || kase.status === 'PENDING_SECGEN_72' || kase.status === 'SIGNED' || kase.status === 'DONE' || isReadOnly) {
+      // ตรวจสอบว่าสำนวนได้รับการกลั่นกรองและส่งต่อแล้ว หรือส่งคืนต้นทางแล้วหรือไม่ ถ้าส่งแล้วให้เปิดโหมด Read-only ล็อกข้อมูล
+      if (kase.status === 'PENDING_SECGEN' || kase.status === 'PENDING_SECGEN_72' || kase.status === 'SIGNED' || kase.status === 'DONE' || kase.status === 'RETURNED' || kase.status === 'RETURNED_72' || isReadOnly) {
         isReadOnly = true;
       } else if (kase.status !== 'IN_SUPPORT_SUB' && kase.status !== 'IN_SUPPORT_SUB_72') {
         kase.status = isRuling ? 'IN_SUPPORT_SUB_72' : 'IN_SUPPORT_SUB';
@@ -350,15 +405,15 @@
         sumEl.innerHTML = `
           <div class="col-sm-6"><span class="k">เรื่องที่:</span> <span class="v">${kase.id}</span></div>
           <div class="col-sm-6"><span class="k">ประเภท:</span> <span class="v">${docType.label}</span></div>
-          <div class="col-sm-6"><span class="k">ผู้รับผิดชอบ:</span> <span class="v">${kase.owner}</span></div>
-          <div class="col-sm-6"><span class="k">สังกัด:</span> <span class="v">${kase.ownerOrg}</span></div>
-          <div class="col-12"><span class="k">ผู้ถูกร้อง:</span> <span class="v">${(kase.accused || []).map(a => a.name).join(', ')}</span></div>
+          <div class="col-sm-6"><span class="k">ผู้รับผิดชอบ:</span> <span class="v">${kase.owner || '-'}</span></div>
+          <div class="col-sm-6"><span class="k">สังกัด:</span> <span class="v">${kase.ownerOrg || '-'}</span></div>
+          <div class="col-12"><span class="k">ผู้ถูกร้อง:</span> <span class="v">${(kase.accused || []).map(a => a.name).join(', ') || '-'}</span></div>
         `;
       }
 
       document.getElementById('sAllegation').textContent = kase.allegation || '-';
       document.getElementById('sOpinion').textContent = kase.ownerOpinion || 'เห็นควรชี้มูลความผิดทางวินัยอย่างร้ายแรงและดำเนินคดีอาญา';
-      document.getElementById('moreInfoAssignee').value = `${kase.owner} (${kase.ownerOrg})`;
+      document.getElementById('moreInfoAssignee').value = `${kase.owner || 'ผู้รับผิดชอบสำนวน'} (${kase.ownerOrg || '-'})`;
 
       // Attachments list
       document.getElementById('attachmentList').innerHTML = `
@@ -384,6 +439,16 @@
 
       if (kase.supportOpinion72 || kase.supportOpinion) {
         document.getElementById('supportOpinion').value = kase.supportOpinion72 || kase.supportOpinion;
+      }
+      if (kase.supportLaw) {
+        document.getElementById('supportLaw').value = kase.supportLaw;
+      }
+      if (kase.dissentReason) {
+        document.getElementById('dissentReason').value = kase.dissentReason;
+      }
+      if (kase.supportDecision) {
+        const decRadio = document.querySelector(`input[name="supportDecision"][value="${kase.supportDecision}"]`);
+        if (decRadio) decRadio.checked = true;
       }
 
       // Event listeners
@@ -422,8 +487,31 @@
         renderDoc();
       });
 
+      if (kase.moreInfoItems) {
+        document.getElementById('moreInfoItems').value = kase.moreInfoItems;
+      }
+      if (kase.moreInfoDays) {
+        document.getElementById('moreInfoDays').value = kase.moreInfoDays;
+      }
+      if (kase.statusCat === 'MORE_INFO' || kase.triggerType === 'MORE_INFO' || (kase.moreInfoItems && !kase.supportDecision)) {
+        const moreRadio = document.querySelector('input[name="supportDecision"][value="MORE_INFO"]');
+        if (moreRadio) moreRadio.checked = true;
+      }
+
       if (isReadOnly) {
-        document.getElementById('readOnlyBanner').classList.remove('d-none');
+        const banner = document.getElementById('readOnlyBanner');
+        banner.classList.remove('d-none');
+        if (kase.statusCat === 'MORE_INFO' || kase.triggerType === 'MORE_INFO') {
+          banner.className = 'alert alert-info d-flex align-items-center gap-2 mb-3 py-2 px-3';
+          banner.innerHTML = `<i class="fa-solid fa-file-circle-question text-info"></i><span><strong>สำนวนนี้อยู่ระหว่างรอข้อมูลเพิ่มเติมจากเจ้าของสำนวน (โหมดดูรายละเอียด / อ่านอย่างเดียว)</strong> ระบบล็อกข้อมูลไม่ให้แก้ไข</span>`;
+        } else if (kase.status === 'RETURNED' || kase.status === 'RETURNED_72' || kase.statusCat === 'RETURNED') {
+          banner.className = 'alert alert-danger d-flex align-items-center gap-2 mb-3 py-2 px-3';
+          banner.innerHTML = `<i class="fa-solid fa-arrow-left-long text-danger"></i><span><strong>สำนวนนี้ส่งคืนสายงานต้นทาง (กจ.5) แล้ว (โหมดดูรายละเอียด / อ่านอย่างเดียว)</strong> ระบบล็อกข้อมูลไม่ให้แก้ไข</span>`;
+        } else {
+          banner.className = 'alert alert-secondary d-flex align-items-center gap-2 mb-3 py-2 px-3';
+          banner.innerHTML = `<i class="fa-solid fa-lock text-secondary"></i><span><strong>สำนวนนี้กลั่นกรองแล้วเสร็จ (โหมดดูรายละเอียด / อ่านอย่างเดียว)</strong> ระบบล็อกข้อมูลไม่ให้แก้ไข</span>`;
+        }
+
         document.querySelectorAll('input[name="supportTeam"], input[name="supportDecision"], #supportLaw, #dissentReason, #moreInfoItems, #moreInfoDays, #supportOpinion').forEach(el => {
           el.disabled = true;
         });
@@ -447,7 +535,7 @@
 
     function renderDoc() {
       const M = ECMIS.mergeField;
-      const team = TEAMS.find(t => t.code === selectedTeam());
+      const team = TEAMS.find(t => t.code === selectedTeam()) || TEAMS[0];
       const dec = document.querySelector('input[name="supportDecision"]:checked')?.value || 'AGREE';
       const opinion = document.getElementById('supportOpinion').value.trim();
       const dissent = document.getElementById('dissentReason').value.trim();
@@ -471,7 +559,7 @@
 
         <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
         <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
-        <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner)} (${M(kase.ownerOrg)})</div>
+        <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner || '-')} (${M(kase.ownerOrg || '-')})</div>
 
         <div class="doc-body-indent">
           <div class="doc-h">ผู้ถูกร้อง</div>
@@ -539,7 +627,7 @@
         return;
       }
 
-      const team = TEAMS.find(t => t.code === selectedTeam());
+      const team = TEAMS.find(t => t.code === selectedTeam()) || TEAMS[0];
       const dec = document.querySelector('input[name="supportDecision"]:checked')?.value || 'AGREE';
       const op = document.getElementById('supportOpinion');
       const dissent = document.getElementById('dissentReason');
@@ -547,11 +635,15 @@
       const lawVal = lawEl ? lawEl.value : '';
 
       if (act === 'save') {
-        kase.supportTeam72 = team.code;
-        kase.supportOpinion72 = op.value.trim();
-        kase.supportDecision = dec;
-        kase.supportLaw = lawVal;
-        kase.dissentReason = dissent.value.trim();
+        await persistCase(kase, {
+          supportTeam72: team.code,
+          supportTeam: team.code,
+          supportOpinion72: op.value.trim(),
+          supportOpinion: op.value.trim(),
+          supportDecision: dec,
+          supportLaw: lawVal,
+          dissentReason: dissent.value.trim()
+        });
         ECMIS.toastOk('บันทึกร่างความเห็นเรียบร้อย');
         return;
       }
@@ -566,8 +658,19 @@
           title: 'ส่งคำขอข้อมูลเพิ่มเติม',
           html: `<p>สำนวน <strong>${kase.id}</strong> — แจ้งเจ้าของสำนวนจัดส่งข้อมูลเพิ่มเติมภายใน ${document.getElementById('moreInfoDays').value} วัน</p>`,
           confirmText: 'ยืนยันส่งคำขอ'
-        }).then(res => {
+        }).then(async res => {
           if (!res.isConfirmed) return;
+          await persistCase(kase, {
+            supportTeam72: team.code,
+            supportTeam: team.code,
+            supportOpinion72: op.value.trim(),
+            supportOpinion: op.value.trim(),
+            supportDecision: dec,
+            supportLaw: lawVal,
+            dissentReason: dissent.value.trim(),
+            moreInfoItems: items,
+            status: 'IN_SUPPORT_SUB'
+          });
           ECMIS.toastOk('ส่งคำขอข้อมูลเพิ่มเติมเรียบร้อย');
           setTimeout(() => location.href = 'support-subcommittee-inbox.html', 1400);
         });
@@ -585,8 +688,16 @@
           title: 'ส่งคืนสายงานต้นทาง (กจ.5)',
           html: `<p>สำนวน <strong>${kase.id}</strong> จะถูกตีกลับไปยังหน่วยงานต้นทาง</p>`,
           confirmText: 'ยืนยันส่งคืน'
-        }).then(res => {
+        }).then(async res => {
           if (!res.isConfirmed) return;
+          await persistCase(kase, {
+            supportTeam72: team.code,
+            supportTeam: team.code,
+            supportOpinion72: op.value.trim(),
+            supportOpinion: op.value.trim(),
+            supportDecision: dec,
+            status: isRuling ? 'RETURNED_72' : 'RETURNED'
+          });
           ECMIS.toastOk('ส่งคืนสำนวนเรียบร้อย');
           setTimeout(() => location.href = 'support-subcommittee-inbox.html', 1400);
         });
@@ -632,17 +743,18 @@
           title: 'เสนอความเห็นคืนเลขาธิการ ป.ป.ท.',
           html: `<p>สำนวน <strong>${kase.id}</strong> — กลั่นกรองโดย <strong>${team.label}</strong><br><small class="text-muted">${nextMsg}</small></p>`,
           confirmText: 'ยืนยันเสนอความเห็นคืนเลขาธิการฯ'
-        }).then(res => {
+        }).then(async res => {
           if (!res.isConfirmed) return;
-          kase.supportTeam72 = team.code;
-          kase.supportTeam = team.code;
-          kase.supportOpinion72 = op.value.trim();
-          kase.supportOpinion = op.value.trim();
-          kase.supportDecision = dec;
-          kase.supportLaw = lawVal;
-          kase.dissentReason = dissent.value.trim();
-          kase.status = isRuling ? 'PENDING_SECGEN_72' : 'PENDING_SECGEN';
-          ECMIS.saveCases();
+          await persistCase(kase, {
+            supportTeam72: team.code,
+            supportTeam: team.code,
+            supportOpinion72: op.value.trim(),
+            supportOpinion: op.value.trim(),
+            supportDecision: dec,
+            supportLaw: lawVal,
+            dissentReason: dissent.value.trim(),
+            status: isRuling ? 'PENDING_SECGEN_72' : 'PENDING_SECGEN'
+          });
 
           ECMIS.toastOk('เสนอความเห็นคืนเลขาธิการฯ เรียบร้อย — ส่งกลับเข้าคิวพิจารณาของเลขาธิการฯ แล้ว');
           setTimeout(() => location.href = 'approval-review.html?case=' + encodeURIComponent(kase.id), 1400);

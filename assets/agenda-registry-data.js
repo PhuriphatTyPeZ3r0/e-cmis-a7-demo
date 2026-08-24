@@ -36,6 +36,19 @@
   const CATEGORY_CLASS = { finding: 'cat-finding', preliminary: 'cat-preliminary', policy: 'cat-policy', overdue: 'cat-overdue', prosecutor: 'cat-prosecutor' };
   const STATUS_LABEL = { '0': 'กำหนดการแล้ว — รอประชุม', '1': 'ประชุมแล้ว', '2': 'ยกเลิก/เลื่อน' };
   const STATUS_CLASS = { '0': 'meet-scheduled', '1': 'meet-active', '2': 'meet-cancel' };
+  const STATUS_ICON = { '0': 'fa-calendar-days', '1': 'fa-circle-check', '2': 'fa-circle-xmark' };
+
+  function meetingBadge(status, confirmed) {
+    const st = String(status ?? '0');
+    const label = STATUS_LABEL[st] || STATUS_LABEL['0'];
+    const cls = STATUS_CLASS[st] || STATUS_CLASS['0'];
+    const icon = STATUS_ICON[st] || STATUS_ICON['0'];
+    let html = `<span class="meet-badge ${cls}"><i class="fa-solid ${icon} me-1"></i>${label}</span>`;
+    if (confirmed) {
+      html += ` <span class="meet-confirmed"><i class="fa-solid fa-clipboard-check me-1"></i>จัดวาระแล้ว</span>`;
+    }
+    return html;
+  }
 
   /* trc_date เก็บเป็นปี ค.ศ. จริงใน Supabase (คอลัมน์ type DATE) — โค้ดฝั่งนี้
      (และ ECMIS.thaiDate ที่ใช้ร่วมกันทั้งระบบ) คาดหวัง fake-ISO ปี พ.ศ. เสมอ
@@ -385,7 +398,7 @@
   }
 
   global.AgendaRegistry = {
-    sb, MEETINGS, ITEMS, LINKED_TRR_IDS, CATEGORY_LABEL, CATEGORY_CLASS, STATUS_LABEL, STATUS_CLASS,
+    sb, MEETINGS, ITEMS, LINKED_TRR_IDS, CATEGORY_LABEL, CATEGORY_CLASS, STATUS_LABEL, STATUS_CLASS, STATUS_ICON, meetingBadge,
     ready, meetingOf, itemsOf, isFlagged, isBundled, itemSortKey,
     renderCaseRef, lookupCaseForAgenda, resolveCaseNoToTrrId, getOwnerOrg, setOwnerOrg,
     addMeeting, deleteMeeting, addItem, deleteItem, updateItemNumber, swapItemNumber, confirmMeeting
