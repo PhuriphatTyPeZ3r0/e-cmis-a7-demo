@@ -432,25 +432,32 @@ const PAGE_FOR_72 = {
   PENDING_DISPATCH_GUILTY_72:'ruling-report.html',
   CLOSED_72:'resolution.html'
 };
-function pageForCase72(kase){ return resolvePage(PAGE_FOR_72[kase.status] || 'register.html'); }
+function pageForMainFlowStatus(st) {
+  if (['PENDING_SECGEN', 'RETURNED', 'DRAFT', 'PENDING_SECTION', 'PENDING_DIRECTOR', 'PENDING_DEPUTY'].includes(st)) {
+    return 'review.html';
+  }
+  if (st === 'IN_SUPPORT_SUB') return 'support-subcommittee.html';
+  if (st === 'IN_SCREENING') return 'screening.html';
+  if (['PENDING_CHAIRMAN', 'PENDING_URGENT'].includes(st)) return 'chairman.html';
+  if (st === 'AGENDA_SET') return 'agenda-registry.html';
+  if (['IN_MEETING', 'RESOLVED_PENDING', 'RESOLVED', 'DEFERRED', 'CLOSED'].includes(st)) return 'resolution.html';
+  return 'review.html';
+}
+
+/* isCase72() ตัดสินจาก docType/เลขที่สำนวน (เช่น 1119/, 1396/, 1402/) ซึ่งเป็นคุณสมบัติถาวรของ
+   สำนวน — แต่สถานะจริงในฐานข้อมูลอาจยังเป็นรหัสสายหลัก (บล็อก 000-099) ถ้าข้อมูลยังไม่ได้อัปเดต
+   เข้าสาย _72 จริง (เช่น บอร์ดมีมติแล้วแต่สถานะยังไม่เปลี่ยนเป็น RESOLVED_PENDING_72) เดิม fallback
+   ไปหน้าทะเบียนสำนวนเฉยๆ ทำให้กดดำเนินการแล้วไปหน้าที่ไม่มีบริบท ใช้ routing สายหลักแทนสมเหตุสมผลกว่า
+   — แก้ที่รหัสสถานะในฐานข้อมูลให้ตรงกับที่ควรจะเป็นต่างหากคือทางแก้ที่ถูกต้องจริง ๆ */
+function pageForCase72(kase){
+  const mapped = PAGE_FOR_72[kase.status];
+  return resolvePage(mapped || pageForMainFlowStatus(kase.status));
+}
 
 function pageForCaseByStatus(kase) {
   if (!kase) return resolvePage('register.html');
   if (isCase72(kase)) return pageForCase72(kase);
-  const st = kase.status;
-  if (['PENDING_SECGEN', 'RETURNED', 'DRAFT', 'PENDING_SECTION', 'PENDING_DIRECTOR', 'PENDING_DEPUTY'].includes(st)) {
-    return resolvePage('review.html');
-  }
-  if (st === 'IN_SUPPORT_SUB') return resolvePage('support-subcommittee.html');
-  if (st === 'IN_SCREENING') return resolvePage('screening.html');
-  if (['PENDING_CHAIRMAN', 'PENDING_URGENT'].includes(st)) {
-    return resolvePage('chairman.html');
-  }
-  if (st === 'AGENDA_SET') return resolvePage('agenda-registry.html');
-  if (['IN_MEETING', 'RESOLVED_PENDING', 'RESOLVED', 'DEFERRED', 'CLOSED'].includes(st)) {
-    return resolvePage('resolution.html');
-  }
-  return resolvePage('review.html');
+  return resolvePage(pageForMainFlowStatus(kase.status));
 }
 
 const OPINION_TYPES = {
