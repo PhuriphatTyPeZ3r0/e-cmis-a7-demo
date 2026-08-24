@@ -1,448 +1,514 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>รายการสำนวนรอกลั่นกรอง | คณะอนุกรรมการสนับสนุนเลขาธิการฯ | E-CMIS</title>
-<link rel="icon" type="image/png" href="pacc_logo.png">
-<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-<link href="assets/ecmis-app.css" rel="stylesheet">
-<link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
-<style>
-.kpi-card { transition: all 0.2s ease; cursor: pointer; }
-.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(15,42,98,0.12); }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รายการสำนวนรอกลั่นกรอง | คณะอนุกรรมการสนับสนุนเลขาธิการฯ | E-CMIS</title>
+  <link rel="icon" type="image/png" href="pacc_logo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="assets/ecmis-app.css" rel="stylesheet">
+  <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
+  <style>
+    .kpi-card {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(15, 42, 98, 0.12);
+    }
+  </style>
 </head>
+
 <body>
 
-<main class="app-main">
+  <main class="app-main">
 
-  <div class="page-head">
-    <div>
-      <h1><i class="fa-solid fa-users-gear me-2" style="color:#0F2A62"></i><span>รายการสำนวนรอกลั่นกรอง (คณะอนุกรรมการสนับสนุนเลขาธิการฯ)</span></h1>
-    </div>
-    <span class="flow-ref ms-auto">กลั่นกรองสำนวนยุ่งยากซับซ้อน / ความเห็นแย้งในสายงาน</span>
-  </div>
-
-  <!-- KPI Cards Row -->
-  <div class="row g-3 mb-4" id="kpiRow"></div>
-
-  <!-- Filter Bar -->
-  <div class="card card-ecmis mb-4">
-    <div class="card-body p-3">
-      <div class="row g-3 align-items-end">
-        <div class="col-md-4">
-          <label class="form-label fw-semibold text-dark small mb-1">ค้นหางาน แฟ้ม หรือผู้ต้องหา</label>
-          <div class="input-group input-group-sm">
-            <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-            <input type="text" id="searchInput" class="form-control" placeholder="เลขสำนวน, ผู้กล่าวหา, ผู้ถูกกล่าวหา, ผู้รับผิดชอบ หรือหน่วยงาน">
-          </div>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label fw-semibold text-dark small mb-1"><i class="fa-solid fa-people-group me-1 text-muted"></i>คณะที่รับผิดชอบ</label>
-          <select id="teamFilter" class="form-select form-select-sm">
-            <option value="ALL">ทุกคณะอนุกรรมการ</option>
-            <option value="TEAM1">คณะที่ 1 (กลุ่มงานสนับสนุนฯ 1)</option>
-            <option value="TEAM2">คณะที่ 2 (กลุ่มงานสนับสนุนฯ 2)</option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label fw-semibold text-dark small mb-1"><i class="fa-solid fa-pen-to-square me-1 text-muted"></i>สถานะกลั่นกรอง</label>
-          <select id="statusFilter" class="form-select form-select-sm">
-            <option value="ALL">ทั้งหมด</option>
-            <option value="PENDING">รอกลั่นกรอง</option>
-            <option value="MORE_INFO">ขอข้อมูลเพิ่มเติม</option>
-            <option value="DONE">กลั่นกรองแล้วเสร็จ</option>
-          </select>
-        </div>
-        <div class="col-md-2 text-end">
-          <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 w-100" id="btnClearFilter">
-            <i class="fa-solid fa-rotate-left me-1"></i>ล้างตัวกรอง
-          </button>
-        </div>
+    <div class="page-head">
+      <div>
+        <h1><i class="fa-solid fa-users-gear me-2" style="color:#0F2A62"></i><span>รายการสำนวนรอกลั่นกรอง (คณะอนุกรรมการสนับสนุนเลขาธิการฯ)</span></h1>
       </div>
+      <span class="flow-ref ms-auto">กลั่นกรองสำนวนยุ่งยากซับซ้อน / ความเห็นแย้งในสายงาน</span>
     </div>
-  </div>
 
-  <!-- Table Queue List (Matching Secretary 6-column standard pattern) -->
-  <div class="row g-3 align-items-start">
-    <div class="col-12">
+    <!-- 5 KPI Cards Row (รวมสถานะส่งคืนต้นทาง กจ.5) -->
+    <div class="row g-3 mb-4" id="kpiRow"></div>
 
-      <div class="card card-ecmis mb-4">
-        <div class="card-header d-flex align-items-center flex-wrap gap-2">
-          <i class="fa-solid fa-list-check text-primary"></i>
-          <span class="fw-bold" id="card1TitleText">รายการสำนวนในคิวกลั่นกรอง</span>
-          <span class="badge bg-primary rounded-pill ms-1" id="totalCount">0</span>
-          <span class="ms-auto small text-muted" id="myRoleLabel">บทบาท: คณะอนุกรรมการสนับสนุนเลขาธิการฯ</span>
-        </div>
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-hover tbl-ecmis mb-0 align-middle">
-              <colgroup>
-                <col style="width:40px">
-                <col style="width:140px">
-                <col>
-                <col style="width:200px">
-                <col style="width:130px">
-                <col style="width:160px">
-              </colgroup>
-              <thead>
-                <tr>
-                  <th class="text-center"><input type="checkbox" id="chkAll" class="form-check-input"></th>
-                  <th class="sortable-header" data-sort="id" style="cursor:pointer">เรื่องที่ <i class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
-                  <th>เรื่องกล่าวหา</th>
-                  <th id="colStatusHeader">สถานะกลั่นกรอง</th>
-                  <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
-                  <th class="text-end">ดำเนินการ</th>
-                </tr>
-              </thead>
-              <tbody id="myQueue"></tbody>
-            </table>
-          </div>
-
-          <div class="px-3 py-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-2" id="queueFooter">
-            <div id="bulkActionsBox" class="d-none align-items-center gap-2">
-              <span class="small text-muted me-1" id="bulkSelectCount">เลือกแล้ว 0 รายการ</span>
-              <button type="button" class="btn btn-xs btn-navy py-1 px-2" style="font-size:0.78rem" id="btnBulkApprove">
-                <i class="fa-solid fa-check-double me-1"></i><span id="bulkBtnText">บันทึกผลกลั่นกรองรายการที่เลือก (Bulk Action)</span>
-              </button>
+    <!-- Filter Bar -->
+    <div class="card card-ecmis mb-4">
+      <div class="card-body p-3">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold text-dark small mb-1">ค้นหางาน แฟ้ม หรือผู้ต้องหา</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+              <input type="text" id="searchInput" class="form-control"
+                placeholder="เลขสำนวน, ผู้กล่าวหา, ผู้ถูกกล่าวหา, ผู้รับผิดชอบ หรือหน่วยงาน">
             </div>
-            <div class="small text-muted ms-auto me-3" id="tableSummaryText">แสดง 0 ถึง 0 จาก 0 รายการ</div>
-            <nav aria-label="Queue navigation">
-              <ul class="pagination pagination-sm m-0" id="queuePagination"></ul>
-            </nav>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold text-dark small mb-1"><i
+                class="fa-solid fa-people-group me-1 text-muted"></i>คณะที่รับผิดชอบ</label>
+            <select id="teamFilter" class="form-select form-select-sm">
+              <option value="ALL">ทุกคณะอนุกรรมการ</option>
+              <option value="TEAM1">คณะที่ 1 (กลุ่มงานสนับสนุนฯ 1)</option>
+              <option value="TEAM2">คณะที่ 2 (กลุ่มงานสนับสนุนฯ 2)</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold text-dark small mb-1"><i
+                class="fa-solid fa-pen-to-square me-1 text-muted"></i>สถานะกลั่นกรอง</label>
+            <select id="statusFilter" class="form-select form-select-sm">
+              <option value="ALL">ทั้งหมด</option>
+              <option value="PENDING">รอกลั่นกรอง</option>
+              <option value="MORE_INFO">ขอข้อมูลเพิ่มเติม</option>
+              <option value="RETURNED">ส่งคืนต้นทาง (กจ.5)</option>
+              <option value="DONE">กลั่นกรองแล้วเสร็จ</option>
+            </select>
+          </div>
+          <div class="col-md-2 text-end">
+            <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 w-100" id="btnClearFilter">
+              <i class="fa-solid fa-rotate-left me-1"></i>ล้างตัวกรอง
+            </button>
           </div>
         </div>
       </div>
-
     </div>
-  </div>
 
-</main>
+    <!-- Table Queue List (Matching Secretary 6-column standard pattern) -->
+    <div class="row g-3 align-items-start">
+      <div class="col-12">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="assets/ecmis-app.js"></script>
-<script>
-  ECMIS.renderShell('support-subcommittee-inbox.html');
+        <div class="card card-ecmis mb-4">
+          <div class="card-header d-flex align-items-center flex-wrap gap-2">
+            <i class="fa-solid fa-list-check text-primary"></i>
+            <span class="fw-bold" id="card1TitleText">รายการสำนวนในคิวกลั่นกรอง</span>
+            <span class="badge bg-primary rounded-pill ms-1" id="totalCount">0</span>
+            <span class="ms-auto small text-muted" id="myRoleLabel">บทบาท: คณะอนุกรรมการสนับสนุนเลขาธิการฯ</span>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover tbl-ecmis mb-0 align-middle">
+                <colgroup>
+                  <col style="width:40px">
+                  <col style="width:140px">
+                  <col>
+                  <col style="width:200px">
+                  <col style="width:130px">
+                  <col style="width:160px">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th class="text-center"><input type="checkbox" id="chkAll" class="form-check-input"></th>
+                    <th class="sortable-header" data-sort="id" style="cursor:pointer">เรื่องที่ <i
+                        class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
+                    <th>เรื่องกล่าวหา</th>
+                    <th id="colStatusHeader">สถานะกลั่นกรอง</th>
+                    <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i
+                        class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
+                    <th class="text-end">ดำเนินการ</th>
+                  </tr>
+                </thead>
+                <tbody id="myQueue"></tbody>
+              </table>
+            </div>
 
-  const role = ECMIS.currentRole();
+            <div class="px-3 py-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-2"
+              id="queueFooter">
+              <div id="bulkActionsBox" class="d-none align-items-center gap-2">
+                <span class="small text-muted me-1" id="bulkSelectCount">เลือกแล้ว 0 รายการ</span>
+                <button type="button" class="btn btn-xs btn-navy py-1 px-2" style="font-size:0.78rem"
+                  id="btnBulkApprove">
+                  <i class="fa-solid fa-check-double me-1"></i><span id="bulkBtnText">บันทึกผลกลั่นกรองรายการที่เลือก (Bulk Action)</span>
+                </button>
+              </div>
+              <div class="small text-muted ms-auto me-3" id="tableSummaryText">แสดง 0 ถึง 0 จาก 0 รายการ</div>
+              <nav aria-label="Queue navigation">
+                <ul class="pagination pagination-sm m-0" id="queuePagination"></ul>
+              </nav>
+            </div>
+          </div>
+        </div>
 
-  const SUPPORT_CASES = [
-    {
-      id: '2015/2569',
-      subject: 'กล่าวหาเจ้าหน้าที่โครงการชลประทานทุจริตจัดซื้อจัดจ้างระบบสูบน้ำพลังงานแสงอาทิตย์',
-      allegation: 'จัดทำเอกสารประมาณราคาโครงการจัดซื้อระบบสูบน้ำพลังงานแสงอาทิตย์สูงกว่าราคากลางท้องตลาด และตรวจรับพัสดุไม่ตรงสเปก',
-      docType: '213',
-      owner: 'นายสมชาย ปราบทุจริต',
-      ownerOrg: 'กองปราบปรามการทุจริตในภาครัฐ 1',
-      team: 'TEAM1',
-      teamLabel: 'คณะที่ 1',
-      triggerType: 'DIFFER',
-      triggerBadgeText: 'ความเห็นแย้งในสายงาน',
-      triggerText: 'ความเห็นแย้งในสายงาน (พงส. ชี้มูล vs ผอ.กอง ยุติเรื่อง)',
-      status: 'IN_SUPPORT_SUB',
-      statusText: 'รอกลั่นกรอง',
-      statusCat: 'PENDING',
-      slaDays: 2,
-      slaLimit: 5,
-      accused: [{ no: 1, name: 'นายสมศักดิ์ สุขใจ', pos: 'วิศวกรชลประทานชำนาญการ' }]
-    },
-    {
-      id: '2018/2569',
-      subject: 'กล่าวหาผู้บริหารองค์กรปกครองส่วนท้องถิ่นจัดทำโครงการฝึกอบรมดูงานอันเป็นเท็จ',
-      allegation: 'จัดทำโครงการอบรมสัมมนาโดยไม่มีการจัดกิจกรรมจริง และเบิกจ่ายงบประมาณอันเป็นเท็จ',
-      docType: '644',
-      owner: 'นายประสิทธิ์ นิติกุล',
-      ownerOrg: 'สำนักงาน ป.ป.ท. เขต 3',
-      team: 'TEAM1',
-      teamLabel: 'คณะที่ 1',
-      triggerType: 'COMPLEX',
-      triggerBadgeText: 'ประเด็นซับซ้อน',
-      triggerText: 'ประเด็นข้อกฎหมายซับซ้อน / พยานเอกสาร 1,200 แผ่น',
-      status: 'IN_SUPPORT_SUB',
-      statusText: 'รอกลั่นกรอง',
-      statusCat: 'PENDING',
-      slaDays: 3,
-      slaLimit: 5,
-      accused: [{ no: 1, name: 'นางกาญจนา นามสมมุติ', pos: 'นายก อบต.' }]
-    },
-    {
-      id: '2022/2569',
-      subject: 'กล่าวหาเจ้าหน้าที่จัดสรรที่ดิน ส.ป.ก. ออกเอกสารสิทธิ์ทับซ้อนพื้นที่ป่าสงวนแห่งชาติ',
-      allegation: 'รังวัดและออกหนังสืออนุญาตให้เข้าทำประโยชน์ในเขตปฏิรูปที่ดินทับซ้อนเขตป่าสงวนแห่งชาติ',
-      docType: '213',
-      owner: 'นางสาววิไลลักษณ์ ยุติธรรม',
-      ownerOrg: 'สำนักงาน ป.ป.ท. เขต 5',
-      team: 'TEAM2',
-      teamLabel: 'คณะที่ 2',
-      triggerType: 'MORE_INFO',
-      triggerBadgeText: 'ขอเอกสารเพิ่ม',
-      triggerText: 'ขอเอกสารตรวจสอบแนวเขตเพิ่มเติมจากกรมป่าไม้',
-      status: 'IN_SUPPORT_SUB',
-      statusText: 'รอข้อมูลเพิ่ม',
-      statusCat: 'MORE_INFO',
-      slaDays: 4,
-      slaLimit: 5,
-      accused: [{ no: 1, name: 'นายอำนาจ รักษ์ถิ่น', pos: 'นายช่างรังวัดอาวุโส' }]
-    },
-    {
-      id: '1984/2569',
-      subject: 'กล่าวหาเจ้าหน้าที่เบิกจ่ายงบประมาณสนับสนุนศูนย์พัฒนาเด็กเล็กโดยมิชอบ (ม.24)',
-      allegation: 'เบิกจ่ายเงินงบประมาณอุดหนุนศูนย์พัฒนาเด็กเล็กไม่เป็นไปตามระเบียบ',
-      docType: 'RULING',
-      owner: 'นายธนาธิป สุจริต',
-      ownerOrg: 'กองปราบปรามการทุจริตในภาครัฐ 3',
-      team: 'TEAM2',
-      teamLabel: 'คณะที่ 2',
-      triggerType: 'DONE',
-      triggerBadgeText: 'กลั่นกรองแล้วเสร็จ',
-      triggerText: 'กลั่นกรองแล้วเสร็จ (ส่งผลกลับเลขาธิการฯ แล้ว)',
-      status: 'PENDING_SECGEN',
-      statusText: 'กลั่นกรองแล้วเสร็จ',
-      statusCat: 'DONE',
-      slaDays: 5,
-      slaLimit: 5,
-      accused: [{ no: 1, name: 'นางสาวพิมพ์ใจ ชื่นจิต', pos: 'หัวหน้าศูนย์พัฒนาเด็กเล็ก' }]
-    }
-  ];
+      </div>
+    </div>
 
-  let currentCases = [...SUPPORT_CASES];
-  let activeKpi = 'ALL';
-  let sortField = 'id';
-  let sortOrder = 'desc';
+  </main>
 
-  function renderKPI() {
-    const total = currentCases.length;
-    const pending = currentCases.filter(c => c.statusCat === 'PENDING').length;
-    const moreInfo = currentCases.filter(c => c.statusCat === 'MORE_INFO').length;
-    const done = currentCases.filter(c => c.statusCat === 'DONE').length;
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="assets/ecmis-app.js"></script>
+  <script>
+    ECMIS.renderShell('support-subcommittee-inbox.html');
 
-    const kpis = [
-      { id: 'ALL', n: total, l: 'สำนวนทั้งหมดในคิว', i: 'fa-folder-open', c: '#0F2A62' },
-      { id: 'PENDING', n: pending, l: 'รอกลั่นกรอง', i: 'fa-hourglass-half', c: '#D0A830' },
-      { id: 'MORE_INFO', n: moreInfo, l: 'รอข้อมูลเพิ่มเติม', i: 'fa-file-circle-question', c: '#0284C7' },
-      { id: 'DONE', n: done, l: 'กลั่นกรองแล้วเสร็จ', i: 'fa-circle-check', c: '#166434' }
+    const role = ECMIS.currentRole();
+
+    const SUPPORT_CASES = [
+      {
+        id: '2015/2569',
+        subject: 'กล่าวหาเจ้าหน้าที่โครงการชลประทานทุจริตจัดซื้อจัดจ้างระบบสูบน้ำพลังงานแสงอาทิตย์',
+        allegation: 'จัดทำเอกสารประมาณราคาโครงการจัดซื้อระบบสูบน้ำพลังงานแสงอาทิตย์สูงกว่าราคากลางท้องตลาด และตรวจรับพัสดุไม่ตรงสเปก',
+        docType: '213',
+        owner: 'นายสมชาย ปราบทุจริต',
+        ownerOrg: 'กองปราบปรามการทุจริตในภาครัฐ 1',
+        team: 'TEAM1',
+        teamLabel: 'คณะที่ 1',
+        triggerType: 'DIFFER',
+        triggerBadgeText: 'ความเห็นแย้งในสายงาน',
+        triggerText: 'ความเห็นแย้งในสายงาน (พงส. ชี้มูล vs ผอ.กอง ยุติเรื่อง)',
+        status: 'IN_SUPPORT_SUB',
+        statusText: 'รอกลั่นกรอง',
+        statusCat: 'PENDING',
+        slaDays: 2,
+        slaLimit: 5,
+        accused: [{ no: 1, name: 'นายสมศักดิ์ สุขใจ', pos: 'วิศวกรชลประทานชำนาญการ' }]
+      },
+      {
+        id: '2018/2569',
+        subject: 'กล่าวหาผู้บริหารองค์กรปกครองส่วนท้องถิ่นจัดทำโครงการฝึกอบรมดูงานอันเป็นเท็จ',
+        allegation: 'จัดทำโครงการอบรมสัมมนาโดยไม่มีการจัดกิจกรรมจริง และเบิกจ่ายงบประมาณอันเป็นเท็จ',
+        docType: '644',
+        owner: 'นายประสิทธิ์ นิติกุล',
+        ownerOrg: 'สำนักงาน ป.ป.ท. เขต 3',
+        team: 'TEAM1',
+        teamLabel: 'คณะที่ 1',
+        triggerType: 'COMPLEX',
+        triggerBadgeText: 'ประเด็นซับซ้อน',
+        triggerText: 'ประเด็นข้อกฎหมายซับซ้อน / พยานเอกสาร 1,200 แผ่น',
+        status: 'IN_SUPPORT_SUB',
+        statusText: 'รอกลั่นกรอง',
+        statusCat: 'PENDING',
+        slaDays: 3,
+        slaLimit: 5,
+        accused: [{ no: 1, name: 'นางกาญจนา นามสมมุติ', pos: 'นายก อบต.' }]
+      },
+      {
+        id: '2022/2569',
+        subject: 'กล่าวหาเจ้าหน้าที่จัดสรรที่ดิน ส.ป.ก. ออกเอกสารสิทธิ์ทับซ้อนพื้นที่ป่าสงวนแห่งชาติ',
+        allegation: 'รังวัดและออกหนังสืออนุญาตให้เข้าทำประโยชน์ในเขตปฏิรูปที่ดินทับซ้อนเขตป่าสงวนแห่งชาติ',
+        docType: '213',
+        owner: 'นางสาววิไลลักษณ์ ยุติธรรม',
+        ownerOrg: 'สำนักงาน ป.ป.ท. เขต 5',
+        team: 'TEAM2',
+        teamLabel: 'คณะที่ 2',
+        triggerType: 'MORE_INFO',
+        triggerBadgeText: 'ขอเอกสารเพิ่ม',
+        triggerText: 'ขอเอกสารตรวจสอบแนวเขตเพิ่มเติมจากกรมป่าไม้',
+        status: 'IN_SUPPORT_SUB',
+        statusText: 'รอข้อมูลเพิ่ม',
+        statusCat: 'MORE_INFO',
+        moreInfoItems: '1. ขอสำเนารายงานการตรวจสอบแนวเขตป่าไม้ฉบับจริงจากกรมป่าไม้ 2. ขอถ้อยคำพยานบุคคลเพิ่มเติม',
+        moreInfoDays: 7,
+        slaDays: 4,
+        slaLimit: 7,
+        accused: [{ no: 1, name: 'นายอำนาจ รักษ์ถิ่น', pos: 'นายช่างรังวัดอาวุโส' }]
+      },
+      {
+        id: '2004/2569',
+        subject: 'กล่าวหาเจ้าหน้าที่แขวงทางหลวงจัดทำสัญญาปรับปรุงผิวจราจรไม่ถูกต้องตามระเบียบ',
+        allegation: 'สำนวนไต่สวนไม่ปรากฏพยานหลักฐานการตรวจรับพัสดุฉบับจริง ส่งคืนสายงานต้นทาง กจ.5 เพื่อรวบรวมเอกสารใหม่',
+        docType: '213',
+        owner: 'นายวิเชียร มุ่งมั่น',
+        ownerOrg: 'กองปราบปรามการทุจริตในภาครัฐ 2',
+        team: 'TEAM1',
+        teamLabel: 'คณะที่ 1',
+        triggerType: 'RETURN',
+        triggerBadgeText: 'ส่งคืนสายงานต้นทาง',
+        triggerText: 'สำนวนไม่สมบูรณ์ ส่งคืนสายงานต้นทาง (กจ.5) ดำเนินการใหม่',
+        status: 'RETURNED',
+        statusText: 'ส่งคืนต้นทาง (กจ.5)',
+        statusCat: 'RETURNED',
+        slaDays: 3,
+        slaLimit: 5,
+        accused: [{ no: 1, name: 'นายชูเกียรติ ก่อสร้าง', pos: 'นายช่างโยธาอาวุโส' }]
+      },
+      {
+        id: '1984/2569',
+        subject: 'กล่าวหาเจ้าหน้าที่เบิกจ่ายงบประมาณสนับสนุนศูนย์พัฒนาเด็กเล็กโดยมิชอบ (ม.24)',
+        allegation: 'เบิกจ่ายเงินงบประมาณอุดหนุนศูนย์พัฒนาเด็กเล็กไม่เป็นไปตามระเบียบ',
+        docType: 'RULING',
+        owner: 'นายธนาธิป สุจริต',
+        ownerOrg: 'กองปราบปรามการทุจริตในภาครัฐ 3',
+        team: 'TEAM2',
+        teamLabel: 'คณะที่ 2',
+        triggerType: 'DONE',
+        triggerBadgeText: 'กลั่นกรองแล้วเสร็จ',
+        triggerText: 'กลั่นกรองแล้วเสร็จ (ส่งผลกลับเลขาธิการฯ แล้ว)',
+        status: 'PENDING_SECGEN',
+        statusText: 'กลั่นกรองแล้วเสร็จ',
+        statusCat: 'DONE',
+        slaDays: 5,
+        slaLimit: 5,
+        accused: [{ no: 1, name: 'นางสาวพิมพ์ใจ ชื่นจิต', pos: 'หัวหน้าศูนย์พัฒนาเด็กเล็ก' }]
+      }
     ];
 
-    document.getElementById('kpiRow').innerHTML = kpis.map(k => {
-      const isActive = (activeKpi === k.id);
-      return `
-      <div class="col-12 col-sm-6 col-md-3">
-        <div class="card card-ecmis kpi-card h-100 ${isActive ? 'border-2 shadow-sm' : ''}"
-             style="min-height:88px; cursor:pointer; ${isActive ? `border-color:${k.c} !important; background:${k.c}0D;` : ''}"
-             onclick="filterByKPI('${k.id}')">
-          <div class="card-body d-flex align-items-center gap-2 py-3 px-3">
-            <div style="flex:0 0 38px;height:38px;border-radius:10px;background:${k.c}18;display:flex;align-items:center;justify-content:center">
-              <i class="fa-solid ${k.i}" style="color:${k.c};font-size:1.05rem"></i>
-            </div>
-            <div style="min-width:0">
-              <div style="font-size:1.5rem;font-weight:700;font-family:var(--serif);color:${k.c};line-height:1.1">${k.n}</div>
-              <div class="text-muted text-truncate" style="font-size:.74rem;margin-top:2px" title="${k.l}">${k.l}</div>
+    let currentCases = [...SUPPORT_CASES];
+    let activeKpi = 'ALL';
+    let sortField = 'id';
+    let sortOrder = 'desc';
+
+    function renderKPI() {
+      const total = currentCases.length;
+      const pending = currentCases.filter(c => c.statusCat === 'PENDING').length;
+      const moreInfo = currentCases.filter(c => c.statusCat === 'MORE_INFO').length;
+      const returned = currentCases.filter(c => c.statusCat === 'RETURNED').length;
+      const done = currentCases.filter(c => c.statusCat === 'DONE').length;
+
+      const kpis = [
+        { id: 'ALL', n: total, l: 'สำนวนทั้งหมดในคิว', i: 'fa-folder-open', c: '#0F2A62' },
+        { id: 'PENDING', n: pending, l: 'รอกลั่นกรอง', i: 'fa-hourglass-half', c: '#D0A830' },
+        { id: 'MORE_INFO', n: moreInfo, l: 'ขอข้อมูลเพิ่มเติม', i: 'fa-file-circle-question', c: '#0284C7' },
+        { id: 'RETURNED', n: returned, l: 'ส่งคืนต้นทาง (กจ.5)', i: 'fa-arrow-left-long', c: '#DC2626' },
+        { id: 'DONE', n: done, l: 'กลั่นกรองแล้วเสร็จ', i: 'fa-circle-check', c: '#166434' }
+      ];
+
+      document.getElementById('kpiRow').innerHTML = kpis.map(k => {
+        const isActive = (activeKpi === k.id);
+        return `
+        <div class="col-12 col-sm-6 col-lg">
+          <div class="card card-ecmis kpi-card h-100 ${isActive ? 'border-2 shadow-sm' : ''}"
+               style="min-height:88px; cursor:pointer; ${isActive ? `border-color:${k.c} !important; background:${k.c}0D;` : ''}"
+               onclick="filterByKPI('${k.id}')">
+            <div class="card-body d-flex align-items-center gap-2 py-3 px-3">
+              <div style="flex:0 0 38px;height:38px;border-radius:10px;background:${k.c}18;display:flex;align-items:center;justify-content:center">
+                <i class="fa-solid ${k.i}" style="color:${k.c};font-size:1.05rem"></i>
+              </div>
+              <div style="min-width:0">
+                <div style="font-size:1.5rem;font-weight:700;font-family:var(--serif);color:${k.c};line-height:1.1">${k.n}</div>
+                <div class="text-muted text-truncate" style="font-size:.74rem;margin-top:2px" title="${k.l}">${k.l}</div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  function filterByKPI(kpiId) {
-    activeKpi = kpiId;
-    $('#statusFilter').val(kpiId);
-    renderKPI();
-    renderQueue();
-  }
-
-  function renderQueue() {
-    const search = $('#searchInput').val().toLowerCase().trim();
-    const team = $('#teamFilter').val();
-    const status = $('#statusFilter').val();
-
-    let filtered = currentCases.filter(c => {
-      if (activeKpi !== 'ALL' && c.statusCat !== activeKpi) return false;
-      if (status !== 'ALL' && c.statusCat !== status) return false;
-      if (team !== 'ALL' && c.team !== team) return false;
-      if (search) {
-        const accusedNames = (c.accused || []).map(a => a.name).join(' ');
-        const text = (c.id + ' ' + c.subject + ' ' + accusedNames + ' ' + c.owner + ' ' + c.ownerOrg + ' ' + c.triggerText).toLowerCase();
-        if (!text.includes(search)) return false;
-      }
-      return true;
-    });
-
-    // Sorting
-    filtered.sort((a, b) => {
-      let va = a[sortField];
-      let vb = b[sortField];
-      if (sortField === 'id') {
-        const ma = /^(\d+)\/(\d+)$/.exec(a.id || '');
-        const mb = /^(\d+)\/(\d+)$/.exec(b.id || '');
-        va = ma ? parseInt(ma[2], 10) * 100000 + parseInt(ma[1], 10) : 0;
-        vb = mb ? parseInt(mb[2], 10) * 100000 + parseInt(mb[1], 10) : 0;
-      }
-      if (va < vb) return sortOrder === 'asc' ? -1 : 1;
-      if (va > vb) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
-
-    $('#totalCount').text(filtered.length);
-    $('#tableSummaryText').text(`แสดง 1 ถึง ${filtered.length} จาก ${filtered.length} รายการ`);
-
-    if (filtered.length === 0) {
-      $('#myQueue').html(`
-        <tr>
-          <td colspan="6" class="text-center py-4 text-muted">
-            <i class="fa-solid fa-folder-open fa-2x mb-2 d-block text-secondary"></i>
-            ไม่พบรายการสำนวนตามเงื่อนไขที่เลือก
-          </td>
-        </tr>
-      `);
-      return;
+        </div>`;
+      }).join('');
     }
 
-    const html = filtered.map(c => {
-      const isDone = (c.statusCat === 'DONE');
-
-      // Status Badge: ใช้มาตรฐานเดียวกับเลขาธิการฯ
-      let statusBadge = '';
-      if (isDone) {
-        statusBadge = `<span class="st st-done"><i class="fa-solid fa-circle-check text-success me-1" style="font-size:0.5rem"></i>กลั่นกรองแล้วเสร็จ</span>`;
-      } else if (c.statusCat === 'MORE_INFO') {
-        statusBadge = `<span class="st st-urgent"><i class="fa-solid fa-triangle-exclamation text-danger me-1" style="font-size:0.5rem"></i>รอข้อมูลเพิ่ม</span>`;
-      } else {
-        statusBadge = `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>รอกลั่นกรอง</span>`;
-      }
-
-      // SLA Badge: ใช้มาตรฐานเดียวกับเลขาธิการฯ
-      let slaBadge = '';
-      if (isDone) {
-        slaBadge = `<span class="sla sla-ok"><i class="fa-solid fa-check me-1 text-success"></i>เสร็จสิ้น</span>`;
-      } else if (c.slaDays >= 4) {
-        slaBadge = `<span class="sla sla-warn"><i class="fa-solid fa-clock me-1"></i>ใช้ไป ${c.slaDays}/${c.slaLimit} วัน</span>`;
-      } else {
-        slaBadge = `<span class="sla sla-ok"><i class="fa-solid fa-clock me-1"></i>ใช้ไป ${c.slaDays}/${c.slaLimit} วัน</span>`;
-      }
-
-      // Action Button: ถ้าเสร็จแล้วเป็น "ดูรายละเอียด", ถ้ายังไม่เสร็จเป็น "ดำเนินการ"
-      const actionBtn = isDone
-        ? `<a href="support-subcommittee.html?case=${encodeURIComponent(c.id)}&readonly=true" class="btn btn-sm btn-outline-secondary px-3">
-             <i class="fa-solid fa-eye me-1"></i>ดูรายละเอียด
-           </a>`
-        : `<a href="support-subcommittee.html?case=${encodeURIComponent(c.id)}" class="btn btn-sm btn-navy px-3">
-             <i class="fa-solid fa-pen-to-square me-1"></i>ดำเนินการ
-           </a>`;
-
-      // Checkbox: ถ้าเสร็จแล้วให้ล็อก (Lock icon) ไม่ให้เลือก bulk action
-      const chkCell = isDone
-        ? `<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="กลั่นกรองแล้วเสร็จ (ล็อกข้อมูล)"></i>`
-        : `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">`;
-
-      return `
-        <tr>
-          <td class="text-center">
-            ${chkCell}
-          </td>
-          <td class="case-no">${c.id}</td>
-          <td style="max-width:320px">
-            <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
-            <small class="text-muted d-block text-truncate" style="font-size:0.75rem">${c.ownerOrg}</small>
-          </td>
-          <td>${statusBadge}</td>
-          <td>${slaBadge}</td>
-          <td class="text-end">
-            ${actionBtn}
-          </td>
-        </tr>
-      `;
-    }).join('');
-
-    $('#myQueue').html(html);
-    updateBulkUI();
-  }
-
-  function updateBulkUI() {
-    const checked = $('.case-chk:checked').length;
-    if (checked > 0) {
-      $('#bulkActionsBox').removeClass('d-none').addClass('d-flex');
-      $('#bulkSelectCount').text(`เลือกแล้ว ${checked} รายการ`);
-    } else {
-      $('#bulkActionsBox').addClass('d-none').removeClass('d-flex');
+    function filterByKPI(kpiId) {
+      activeKpi = kpiId;
+      $('#statusFilter').val(kpiId);
+      renderKPI();
+      renderQueue();
     }
-  }
 
-  $(document).ready(function() {
-    renderKPI();
-    renderQueue();
+    function renderQueue() {
+      const search = $('#searchInput').val().toLowerCase().trim();
+      const team = $('#teamFilter').val();
+      const status = $('#statusFilter').val();
 
-    $('#chkAll').on('change', function() {
-      $('.case-chk').prop('checked', this.checked);
-      updateBulkUI();
-    });
-
-    $(document).on('change', '.case-chk', function() {
-      const totalCheckable = $('.case-chk').length;
-      const allChecked = totalCheckable > 0 && $('.case-chk:checked').length === totalCheckable;
-      $('#chkAll').prop('checked', allChecked);
-      updateBulkUI();
-    });
-
-    $('#searchInput, #teamFilter').on('input change', function() {
-      renderQueue();
-    });
-
-    $('#statusFilter').on('change', function() {
-      activeKpi = $(this).val();
-      renderKPI();
-      renderQueue();
-    });
-
-    $('#btnClearFilter').on('click', function() {
-      $('#searchInput').val('');
-      $('#teamFilter').val('ALL');
-      $('#statusFilter').val('ALL');
-      activeKpi = 'ALL';
-      renderKPI();
-      renderQueue();
-    });
-
-    $('.sortable-header').on('click', function() {
-      const field = $(this).data('sort');
-      if (sortField === field) {
-        sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-      } else {
-        sortField = field;
-        sortOrder = 'asc';
-      }
-      $('.sortable-header i').attr('class', 'fa-solid fa-sort ms-1');
-      $(this).find('i').attr('class', `fa-solid fa-sort-${sortOrder === 'asc' ? 'up' : 'down'} ms-1`);
-      renderQueue();
-    });
-
-    $('#btnBulkApprove').on('click', function() {
-      const checkedIds = $('.case-chk:checked').map(function() { return $(this).data('id'); }).get();
-      if (checkedIds.length === 0) return;
-      Swal.fire({
-        title: 'ยืนยันดำเนินการกลั่นกรองแบบกลุ่ม',
-        text: `คุณต้องการบันทึกผลการกลั่นกรองสำหรับ ${checkedIds.length} สำนวนที่เลือกใช่หรือไม่?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'ยืนยันดำเนินการ',
-        cancelButtonText: 'ยกเลิก',
-        confirmButtonColor: '#0F2A62'
-      }).then(res => {
-        if (res.isConfirmed) {
-          ECMIS.toastOk(`บันทึกผลการกลั่นกรอง ${checkedIds.length} รายการเรียบร้อยแล้ว`);
-          $('.case-chk').prop('checked', false);
-          $('#chkAll').prop('checked', false);
-          updateBulkUI();
+      let filtered = currentCases.filter(c => {
+        if (activeKpi !== 'ALL' && c.statusCat !== activeKpi) return false;
+        if (status !== 'ALL' && c.statusCat !== status) return false;
+        if (team !== 'ALL' && c.team !== team) return false;
+        if (search) {
+          const accusedNames = (c.accused || []).map(a => a.name).join(' ');
+          const text = (c.id + ' ' + c.subject + ' ' + accusedNames + ' ' + c.owner + ' ' + c.ownerOrg + ' ' + c.triggerText).toLowerCase();
+          if (!text.includes(search)) return false;
         }
+        return true;
+      });
+
+      // Sorting: จัดลำดับงานที่ต้องดำเนินการก่อน (รอกลั่นกรอง) ให้อยู่ด้านบนสุดเสมอ
+      filtered.sort((a, b) => {
+        const statusWeight = {
+          'PENDING': 1,    // รอกลั่นกรอง (ต้องดำเนินการก่อน)
+          'MORE_INFO': 2,  // รอข้อมูลเพิ่มเติม
+          'RETURNED': 3,   // ส่งคืนต้นทาง (กจ.5)
+          'DONE': 4        // กลั่นกรองแล้วเสร็จ
+        };
+        const wa = statusWeight[a.statusCat] || 99;
+        const wb = statusWeight[b.statusCat] || 99;
+        if (wa !== wb) return wa - wb;
+
+        let va = a[sortField];
+        let vb = b[sortField];
+        if (sortField === 'id') {
+          const ma = /^(\d+)\/(\d+)$/.exec(a.id || '');
+          const mb = /^(\d+)\/(\d+)$/.exec(b.id || '');
+          va = ma ? parseInt(ma[2], 10) * 100000 + parseInt(ma[1], 10) : 0;
+          vb = mb ? parseInt(mb[2], 10) * 100000 + parseInt(mb[1], 10) : 0;
+        }
+        if (va < vb) return sortOrder === 'asc' ? -1 : 1;
+        if (va > vb) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      $('#totalCount').text(filtered.length);
+      $('#tableSummaryText').text(`แสดง 1 ถึง ${filtered.length} จาก ${filtered.length} รายการ`);
+
+      if (filtered.length === 0) {
+        $('#myQueue').html(`
+          <tr>
+            <td colspan="6" class="text-center py-4 text-muted">
+              <i class="fa-solid fa-folder-open fa-2x mb-2 d-block text-secondary"></i>
+              ไม่พบรายการสำนวนตามเงื่อนไขที่เลือก
+            </td>
+          </tr>
+        `);
+        return;
+      }
+
+      const html = filtered.map(c => {
+        const isDone = (c.statusCat === 'DONE');
+        const isReturned = (c.statusCat === 'RETURNED');
+        const isMoreInfo = (c.statusCat === 'MORE_INFO');
+        const isReadOnlyItem = isDone || isReturned || isMoreInfo;
+
+        // Status Badge: สีฟ้าโทนสว่างสำหรับ MORE_INFO ตาม Card
+        let statusBadge = '';
+        if (isDone) {
+          statusBadge = `<span class="st st-done"><i class="fa-solid fa-circle-check text-success me-1" style="font-size:0.5rem"></i>กลั่นกรองแล้วเสร็จ</span>`;
+        } else if (isReturned) {
+          statusBadge = `<span class="st st-urgent" style="border-color:#FCA5A5;background:#FEF2F2;color:#DC2626"><i class="fa-solid fa-arrow-left-long text-danger me-1" style="font-size:0.6rem"></i>ส่งคืนต้นทาง (กจ.5)</span>`;
+        } else if (isMoreInfo) {
+          statusBadge = `<span class="st st-urgent" style="border-color:#BAE6FD;background:#F0F9FF;color:#0284C7"><i class="fa-solid fa-file-circle-question me-1" style="font-size:0.65rem"></i>รอข้อมูลเพิ่ม</span>`;
+        } else {
+          statusBadge = `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>รอกลั่นกรอง</span>`;
+        }
+
+        // SLA Badge
+        let slaBadge = '';
+        if (isDone) {
+          slaBadge = `<span class="sla sla-ok"><i class="fa-solid fa-check me-1 text-success"></i>เสร็จสิ้น</span>`;
+        } else if (isReturned) {
+          slaBadge = `<span class="sla sla-ok" style="background:#F1F5F9;color:#64748B"><i class="fa-solid fa-arrow-left me-1"></i>ส่งคืนแล้ว</span>`;
+        } else if (isMoreInfo) {
+          slaBadge = `<span class="sla sla-warn" style="background:#F0F9FF;color:#0284C7;border-color:#BAE6FD"><i class="fa-solid fa-clock me-1"></i>รอเอกสาร (${c.slaDays}/${c.slaLimit} วัน)</span>`;
+        } else if (c.slaDays >= 4) {
+          slaBadge = `<span class="sla sla-warn"><i class="fa-solid fa-clock me-1"></i>ใช้ไป ${c.slaDays}/${c.slaLimit} วัน</span>`;
+        } else {
+          slaBadge = `<span class="sla sla-ok"><i class="fa-solid fa-clock me-1"></i>ใช้ไป ${c.slaDays}/${c.slaLimit} วัน</span>`;
+        }
+
+        // Action Button: ถ้าเสร็จแล้ว / ส่งคืนแล้ว / รอข้อมูลเพิ่ม เป็น "ดูรายละเอียด"
+        const actionBtn = isReadOnlyItem
+          ? `<a href="support-subcommittee.html?case=${encodeURIComponent(c.id)}&readonly=true" class="btn btn-sm btn-outline-secondary px-3">
+               <i class="fa-solid fa-eye me-1"></i>ดูรายละเอียด
+             </a>`
+          : `<a href="support-subcommittee.html?case=${encodeURIComponent(c.id)}" class="btn btn-sm btn-navy px-3">
+               <i class="fa-solid fa-pen-to-square me-1"></i>ดำเนินการ
+             </a>`;
+
+        // Checkbox: ถ้าเสร็จแล้ว / ส่งคืนแล้ว / รอข้อมูลเพิ่ม ให้ล็อก (Lock icon)
+        let chkTooltip = 'กลั่นกรองแล้วเสร็จ (ล็อกข้อมูล)';
+        if (isReturned) chkTooltip = 'ส่งคืนสายงานต้นทางแล้ว (ล็อกข้อมูล)';
+        if (isMoreInfo) chkTooltip = 'อยู่ระหว่างรอข้อมูลเพิ่มเติม (ล็อกข้อมูล)';
+
+        const chkCell = isReadOnlyItem
+          ? `<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="${chkTooltip}"></i>`
+          : `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">`;
+
+        return `
+          <tr>
+            <td class="text-center">
+              ${chkCell}
+            </td>
+            <td class="case-no">${c.id}</td>
+            <td style="max-width:320px">
+              <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
+              <small class="text-muted d-block text-truncate" style="font-size:0.75rem">${c.ownerOrg}</small>
+            </td>
+            <td>${statusBadge}</td>
+            <td>${slaBadge}</td>
+            <td class="text-end">
+              ${actionBtn}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      $('#myQueue').html(html);
+      updateBulkUI();
+    }
+
+    function updateBulkUI() {
+      const checked = $('.case-chk:checked').length;
+      if (checked > 0) {
+        $('#bulkActionsBox').removeClass('d-none').addClass('d-flex');
+        $('#bulkSelectCount').text(`เลือกแล้ว ${checked} รายการ`);
+      } else {
+        $('#bulkActionsBox').addClass('d-none').removeClass('d-flex');
+      }
+    }
+
+    $(document).ready(function () {
+      renderKPI();
+      renderQueue();
+
+      $('#chkAll').on('change', function () {
+        $('.case-chk').prop('checked', this.checked);
+        updateBulkUI();
+      });
+
+      $(document).on('change', '.case-chk', function () {
+        const totalCheckable = $('.case-chk').length;
+        const allChecked = totalCheckable > 0 && $('.case-chk:checked').length === totalCheckable;
+        $('#chkAll').prop('checked', allChecked);
+        updateBulkUI();
+      });
+
+      $('#searchInput, #teamFilter').on('input change', function () {
+        renderQueue();
+      });
+
+      $('#statusFilter').on('change', function () {
+        activeKpi = $(this).val();
+        renderKPI();
+        renderQueue();
+      });
+
+      $('#btnClearFilter').on('click', function () {
+        $('#searchInput').val('');
+        $('#teamFilter').val('ALL');
+        $('#statusFilter').val('ALL');
+        activeKpi = 'ALL';
+        renderKPI();
+        renderQueue();
+      });
+
+      $('.sortable-header').on('click', function () {
+        const field = $(this).data('sort');
+        if (sortField === field) {
+          sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortField = field;
+          sortOrder = 'asc';
+        }
+        $('.sortable-header i').attr('class', 'fa-solid fa-sort ms-1');
+        $(this).find('i').attr('class', `fa-solid fa-sort-${sortOrder === 'asc' ? 'up' : 'down'} ms-1`);
+        renderQueue();
+      });
+
+      $('#btnBulkApprove').on('click', function () {
+        const checkedIds = $('.case-chk:checked').map(function () { return $(this).data('id'); }).get();
+        if (checkedIds.length === 0) return;
+        Swal.fire({
+          title: 'ยืนยันดำเนินการกลั่นกรองแบบกลุ่ม',
+          text: `คุณต้องการบันทึกผลการกลั่นกรองสำหรับ ${checkedIds.length} สำนวนที่เลือกใช่หรือไม่?`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'ยืนยันดำเนินการ',
+          cancelButtonText: 'ยกเลิก',
+          confirmButtonColor: '#0F2A62'
+        }).then(res => {
+          if (res.isConfirmed) {
+            ECMIS.toastOk(`บันทึกผลการกลั่นกรอง ${checkedIds.length} รายการเรียบร้อยแล้ว`);
+            $('.case-chk').prop('checked', false);
+            $('#chkAll').prop('checked', false);
+            updateBulkUI();
+          }
+        });
       });
     });
-  });
-</script>
+  </script>
 </body>
+
 </html>
