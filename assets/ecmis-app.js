@@ -1675,23 +1675,23 @@ const NAV = [
   { href:'case-register.html',         icon:'fa-folder-open',      label:'ทะเบียนสำนวน' },
 
   { section:'การประชุมคณะกรรมการ ป.ป.ท.' },
-  { href:'meeting-report.html',        icon:'fa-file-contract',    label:'จัดทำรายงานมติการประชุม',
-    visible: role => !!role && can('compile.minutes', role.id) },
-  { href:'agenda-registry.html',       icon:'fa-table-list',       label:'ทะเบียนวาระการประชุม',
-    /* board_sec/secgen/chairman/affairs ซ่อนลิงก์นี้ไว้ — ประธานฯ, เลขาธิการฯ และกลุ่มงานกิจการฯ ไม่มีกระบวนงานในหน้านี้ */
-    visible: role => !!role && role.id !== 'secgen' && role.id !== 'board_sec' && role.id !== 'chairman' && role.id !== 'affairs' },
   { href:'resolution-inbox.html',      icon:'fa-scale-balanced',   label:'รายการรอจัดทำมติ',
     /* work-inbox เดิมของ board_sec ครอบคลุมทั้ง flow (AGENDA_SET..RESOLVED/RESOLVED_PENDING)
        กว้างกว่าคิวใน agenda-registry.html (ซึ่งเป็นแค่ AGENDA_SET/PENDING_INVITE_72/DEFERRED)
        จึงยังต้องมีลิงก์แยกไว้ — badge ของ home item ด้านบนก็ย้ายมาไว้ที่นี่ด้วย */
     visible: role => !!role && role.id === 'board_sec', badge:true },
-  { href:'dashboard.html',                icon:'fa-chart-pie',        label:'Dashboard สถิติมติ',
-    visible: role => !!role && ['affairs','board_sec','chairman','board','secgen'].includes(role.id) },
+  { href:'meeting-report.html',        icon:'fa-file-contract',    label:'จัดทำรายงานมติการประชุม',
+    visible: role => !!role && can('compile.minutes', role.id) },
+  { href:'agenda-registry.html',       icon:'fa-table-list',       label:'ทะเบียนวาระการประชุม',
+    /* board_sec/secgen/chairman/affairs ซ่อนลิงก์นี้ไว้ — ประธานฯ, เลขาธิการฯ และกลุ่มงานกิจการฯ ไม่มีกระบวนงานในหน้านี้ */
+    visible: role => !!role && role.id !== 'secgen' && role.id !== 'board_sec' && role.id !== 'chairman' && role.id !== 'affairs' },
   { href:'followup-dashboard.html',       icon:'fa-diagram-project',  label:'ติดตามผลมติ',
     /* บอร์ด/ประธานฯ ต้องเห็นหน้านี้ด้วย — ตาม design doc (สรุปการเชื่อมโยงกิจกรรมกับกิจกรรมที่7)
        กจ.8 ป้อน feedback loop กลับเข้า Dashboard เสนอบอร์ด กจ.7 พร้อมแจ้งเตือนคดีล่าช้าให้บอร์ดเร่งรัด
        ไม่ใช่แค่ฝ่ายปฏิบัติการ (affairs/board_sec) เท่านั้นที่ควรเห็น */
-    visible: role => !!role && ['affairs','board_sec','chairman','board'].includes(role.id) }
+    visible: role => !!role && ['affairs','board_sec','chairman','board'].includes(role.id) },
+  { href:'dashboard.html',                icon:'fa-chart-pie',        label:'Dashboard สถิติมติ',
+    visible: role => !!role && ['affairs','board_sec','chairman','board','secgen'].includes(role.id) }
 ];
 
 function navLabel(navItem, role){
