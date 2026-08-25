@@ -2320,6 +2320,10 @@ function paginateDoc(containerEl, opts){
     const footSecret = (opts.secret !== false) ? '<div class="doc-secret-foot">ลับ</div>' : '';
     return `<div class="${pageClass}" data-page-no="${pageNo}" style="height:297mm; max-height:297mm; overflow:hidden; box-sizing:border-box;">${header}${p.blocks.join('')}${footSecret}</div>`;
   }).join('');
+
+  if (typeof updateDocPaginationUI === 'function') {
+    updateDocPaginationUI(containerEl);
+  }
 }
 
 function paginateResolutionDoc(containerEl, opts){
@@ -4827,6 +4831,60 @@ function renderDocToolbar(opts) {
     if (expBtn) expBtn.addEventListener('click', () => setPaneCollapsed(false));
   }
 
+  // Automatic Symmetrical Pagination & Zoom Stepper Toolbar
+  let paginationInstance = null;
+  if (opts.pagination !== false && paneEl) {
+    let pagBar = paneEl.querySelector('#docPaginationBar');
+    if (!pagBar) {
+      pagBar = document.createElement('div');
+      pagBar.className = 'pagination-toolbar-symmetric';
+      pagBar.id = 'docPaginationBar';
+      pagBar.innerHTML = `
+        <div class="toolbar-group">
+          <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" id="btnModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น)">
+              <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
+            </button>
+            <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnModeContinuous" title="โหมดดูทุกหน้าเรียงกัน">
+              <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
+            </button>
+          </div>
+          <div class="toolbar-divider"></div>
+          <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnFirstPage" title="หน้าแรกสุด (หน้า 1)"><i class="fa-solid fa-backward-step"></i></button>
+            <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnPrevPage" title="หน้าก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
+          </div>
+          <div class="d-flex align-items-center gap-1">
+            <span class="small opacity-75">หน้า</span>
+            <input type="number" class="page-input-num" id="pageNumberInput" min="1" value="1">
+            <span class="small opacity-75" id="totalPagesText">/ 1 หน้า</span>
+          </div>
+          <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnNextPage" title="หน้าถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+            <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnLastPage" title="หน้าสุดท้าย"><i class="fa-solid fa-forward-step"></i></button>
+          </div>
+        </div>
+        <div class="toolbar-group ms-auto">
+          <div class="d-flex align-items-center bg-dark rounded px-1" style="background:#06182c !important; border:1px solid #1a3d66; height:26px;">
+            <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+            <span style="font-size:0.75rem; width:34px; text-align:center; font-weight:600;" id="zoomLevelText">75%</span>
+            <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+          </div>
+        </div>`;
+
+      const editBar = paneEl.querySelector('.doc-edit-bar');
+      if (editBar) {
+        paneEl.insertBefore(pagBar, editBar);
+      } else if (stageEl) {
+        const stageWrap = stageEl.closest('.ws-paper-stage') || stageEl;
+        paneEl.insertBefore(pagBar, stageWrap);
+      } else {
+        paneEl.appendChild(pagBar);
+      }
+    }
+    paginationInstance = initDocPagination({ stageId: stageId, defaultZoom: 0.75 });
+  }
+
   // Initialize Doc Editor
   let editorInstance = null;
   if (showEdit && stageEl) {
@@ -4839,8 +4897,173 @@ function renderDocToolbar(opts) {
 
   return {
     element: targetEl,
-    editor: editorInstance
+    editor: editorInstance,
+    pagination: paginationInstance
   };
+}
+
+/* ---------- Global Pagination Engine for Doc Previews ---------- */
+const globalPaginationMap = new Map();
+
+function updateDocPaginationUI(stageElOrId) {
+  let id = 'docPaper';
+  if (typeof stageElOrId === 'string') id = stageElOrId;
+  else if (stageElOrId && stageElOrId.id) id = stageElOrId.id;
+
+  const instance = globalPaginationMap.get(id) || globalPaginationMap.get('docPaper');
+  if (instance) {
+    instance.update();
+  }
+}
+
+function initDocPagination(opts = {}) {
+  const stageId = opts.stageId || 'docPaper';
+  let docPaperEl = document.getElementById(stageId);
+  if (!docPaperEl && typeof document !== 'undefined') return null;
+
+  // Ensure scroll viewport wrapper separation
+  if (docPaperEl && docPaperEl.classList.contains('ws-paper-stage') && !document.getElementById('docPaperStage')) {
+    const parent = docPaperEl.parentElement;
+    const stageWrapper = document.createElement('div');
+    stageWrapper.className = 'ws-paper-stage';
+    stageWrapper.id = 'docPaperStage';
+
+    parent.insertBefore(stageWrapper, docPaperEl);
+    docPaperEl.classList.remove('ws-paper-stage');
+    stageWrapper.appendChild(docPaperEl);
+  }
+
+  let zoomLevel = opts.defaultZoom !== undefined ? opts.defaultZoom : 0.75;
+  let viewMode = opts.defaultMode || 'SINGLE';
+  let currentPage = 1;
+  let totalPages = 1;
+
+  function applyZoom() {
+    const el = document.getElementById(stageId);
+    if (!el) return;
+    el.style.transform = `scale(${zoomLevel})`;
+    const zoomText = document.getElementById('zoomLevelText');
+    if (zoomText) zoomText.textContent = `${Math.round(zoomLevel * 100)}%`;
+
+    const stage = document.getElementById('docPaperStage') || (el.parentElement && el.parentElement.classList.contains('ws-paper-stage') ? el.parentElement : null);
+    if (stage) {
+      const pages = el.querySelectorAll('.doc-paper, .a4-paper');
+      if (pages.length > 0) {
+        if (viewMode === 'SINGLE') {
+          const activeP = el.querySelector('.doc-paper.active-page, .a4-paper.active-page') || pages[0];
+          const h = activeP ? activeP.offsetHeight : 1123;
+          el.style.height = `${Math.round(h * zoomLevel)}px`;
+        } else {
+          let totalH = 0;
+          pages.forEach(p => { totalH += p.offsetHeight + 18; });
+          el.style.height = `${Math.round(totalH * zoomLevel)}px`;
+        }
+      }
+    }
+  }
+
+  function updatePaginationUI() {
+    const el = document.getElementById(stageId);
+    if (!el) return;
+    const pages = el.querySelectorAll('.doc-paper, .a4-paper');
+    totalPages = Math.max(1, pages.length);
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const totalText = document.getElementById('totalPagesText');
+    if (totalText) totalText.textContent = `/ ${totalPages} หน้า`;
+    const pageInput = document.getElementById('pageNumberInput');
+    if (pageInput) {
+      pageInput.max = totalPages;
+      pageInput.value = currentPage;
+    }
+
+    if (viewMode === 'SINGLE') {
+      el.classList.remove('mode-continuous');
+      el.classList.add('mode-single');
+      pages.forEach((p, idx) => {
+        if (idx + 1 === currentPage) p.classList.add('active-page');
+        else p.classList.remove('active-page');
+      });
+    } else {
+      el.classList.remove('mode-single');
+      el.classList.add('mode-continuous');
+      pages.forEach(p => p.classList.add('active-page'));
+    }
+    applyZoom();
+  }
+
+  if (typeof $ !== 'undefined') {
+    $(document).off('click.docPagination', '#btnModeSingle').on('click.docPagination', '#btnModeSingle', function () {
+      viewMode = 'SINGLE';
+      $(this).addClass('btn-primary').removeClass('btn-outline-light');
+      $('#btnModeContinuous').addClass('btn-outline-light').removeClass('btn-primary');
+      updatePaginationUI();
+    });
+
+    $(document).off('click.docPagination', '#btnModeContinuous').on('click.docPagination', '#btnModeContinuous', function () {
+      viewMode = 'CONTINUOUS';
+      $(this).addClass('btn-primary').removeClass('btn-outline-light');
+      $('#btnModeSingle').addClass('btn-outline-light').removeClass('btn-primary');
+      updatePaginationUI();
+    });
+
+    $(document).off('click.docPagination', '#btnFirstPage').on('click.docPagination', '#btnFirstPage', function () {
+      currentPage = 1;
+      updatePaginationUI();
+    });
+
+    $(document).off('click.docPagination', '#btnPrevPage').on('click.docPagination', '#btnPrevPage', function () {
+      if (currentPage > 1) {
+        currentPage--;
+        updatePaginationUI();
+      }
+    });
+
+    $(document).off('click.docPagination', '#btnNextPage').on('click.docPagination', '#btnNextPage', function () {
+      if (currentPage < totalPages) {
+        currentPage++;
+        updatePaginationUI();
+      }
+    });
+
+    $(document).off('click.docPagination', '#btnLastPage').on('click.docPagination', '#btnLastPage', function () {
+      currentPage = totalPages;
+      updatePaginationUI();
+    });
+
+    $(document).off('change.docPagination', '#pageNumberInput').on('change.docPagination', '#pageNumberInput', function () {
+      let val = parseInt($(this).val(), 10);
+      if (isNaN(val) || val < 1) val = 1;
+      if (val > totalPages) val = totalPages;
+      currentPage = val;
+      updatePaginationUI();
+    });
+
+    $(document).off('click.docPagination', '#btnZoomIn').on('click.docPagination', '#btnZoomIn', function () {
+      zoomLevel = Math.min(1.3, Math.round((zoomLevel + 0.08) * 100) / 100);
+      applyZoom();
+    });
+
+    $(document).off('click.docPagination', '#btnZoomOut').on('click.docPagination', '#btnZoomOut', function () {
+      zoomLevel = Math.max(0.35, Math.round((zoomLevel - 0.08) * 100) / 100);
+      applyZoom();
+    });
+  }
+
+  const inst = {
+    update: updatePaginationUI,
+    applyZoom: applyZoom,
+    setPage: (p) => { currentPage = p; updatePaginationUI(); },
+    setZoom: (z) => { zoomLevel = z; applyZoom(); }
+  };
+  globalPaginationMap.set(stageId, inst);
+
+  setTimeout(() => {
+    updatePaginationUI();
+  }, 25);
+
+  return inst;
 }
 
 /* ---------- Master Component: Back Navigation Button ---------- */
@@ -4984,6 +5207,7 @@ global.ECMIS = {
 
   initAuditTrail, initChecklistGatekeeper, initBulkActions, initDragDropUpload,
   initDocPaneToggle, initRichTextBox, initDocEditor, renderDocToolbar, renderBackButton,
+  initDocPagination, updateDocPaginationUI,
 
   getSuggestionsData, saveSuggestionsData, openSuggestionsModal, initWritingSuggestions
 };

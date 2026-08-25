@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 
 <head>
@@ -138,8 +138,41 @@
                     <button class="btn btn-sm btn-light" onclick="window.print()"><i class="fa-solid fa-print"></i></button>
                     <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
                 </div>
-                <div class="ws-paper-stage">
-                    <div class="doc-paper doc-resolution a4-paper" id="docPaper"></div>
+                <div class="pagination-toolbar-symmetric" id="docPaginationBar">
+                  <div class="toolbar-group">
+                    <div class="btn-group btn-group-sm" role="group">
+                      <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" id="btnModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น)">
+                        <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
+                      </button>
+                      <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnModeContinuous" title="โหมดดูทุกหน้าเรียงกัน">
+                        <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
+                      </button>
+                    </div>
+                    <div class="toolbar-divider"></div>
+                    <div class="btn-group btn-group-sm" role="group">
+                      <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnFirstPage" title="หน้าแรกสุด (หน้า 1)"><i class="fa-solid fa-backward-step"></i></button>
+                      <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnPrevPage" title="หน้าก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
+                    </div>
+                    <div class="d-flex align-items-center gap-1">
+                      <span class="small opacity-75">หน้า</span>
+                      <input type="number" class="page-input-num" id="pageNumberInput" min="1" value="1">
+                      <span class="small opacity-75" id="totalPagesText">/ 1 หน้า</span>
+                    </div>
+                    <div class="btn-group btn-group-sm" role="group">
+                      <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnNextPage" title="หน้าถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+                      <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnLastPage" title="หน้าสุดท้าย"><i class="fa-solid fa-forward-step"></i></button>
+                    </div>
+                  </div>
+                  <div class="toolbar-group ms-auto">
+                    <div class="d-flex align-items-center bg-dark rounded px-1" style="background:#06182c !important; border:1px solid #1a3d66; height:26px;">
+                      <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                      <span style="font-size:0.75rem; width:34px; text-align:center; font-weight:600;" id="zoomLevelText">75%</span>
+                      <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                    </div>
+                  </div>
+                </div>
+                <div class="ws-paper-stage" id="docPaperStage">
+                    <div id="docPaper"></div>
                 </div>
             </aside>
         </div>
@@ -289,41 +322,44 @@
             };
 
             document.getElementById('docPaper').innerHTML = `
-    <div class="doc-secret">ลับ</div>
-    <div class="doc-title">
-      <div class="doc-title-l1">มติการประชุม</div>
-      <div class="doc-title-l2">คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}</div>
-    </div>
-    <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}</div>
+    <div class="doc-paper a4-paper">
+      <div class="doc-secret">ลับ</div>
+      <div class="doc-title">
+        <div class="doc-title-l1">มติการประชุม</div>
+        <div class="doc-title-l2">คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}</div>
+      </div>
+      <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}</div>
 
-    <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
-    <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
-    <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner)}</div>
-    <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
+      <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
+      <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+      <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner)}</div>
+      <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
 
-    <div class="doc-body-indent">
-      <div class="doc-h">ผู้ถูกร้อง</div>
-      ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} — ${M(a.pos)}</div>`).join('')}
+      <div class="doc-body-indent">
+        <div class="doc-h">ผู้ถูกร้อง</div>
+        ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} — ${M(a.pos)}</div>`).join('')}
 
-      <div class="doc-h">ข้อกล่าวหา</div>
-      <div class="doc-indent">${M(kase.allegation)}</div>
+        <div class="doc-h">ข้อกล่าวหา</div>
+        <div class="doc-indent">${M(kase.allegation)}</div>
 
-      <div class="doc-h">ความเห็นและข้อสังเกตของคณะอนุกรรมการ</div>
-      <div class="doc-indent">${M(opinion, '……………………………………………………………………………………')}</div>
-    </div>
+        <div class="doc-h">ความเห็นและข้อสังเกตของคณะอนุกรรมการ</div>
+        <div class="doc-indent">${M(opinion, '……………………………………………………………………………………')}</div>
+      </div>
 
-    <div class="doc-h">มติคณะอนุกรรมการ</div>
-    <div class="doc-indent">คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}
-      พิจารณาแล้วมีมติ ${M(RES_TXT[res])}</div>
+      <div class="doc-h">มติคณะอนุกรรมการ</div>
+      <div class="doc-indent">คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}
+        พิจารณาแล้วมีมติ ${M(RES_TXT[res])}</div>
 
-    <div class="doc-sign">
-      ${signed && pendingSigData && pendingSigData.sig ? `<img class="doc-sig-img" src="${pendingSigData.sig}" alt="ลายมือชื่อ"><br>` : (signed ? `<span style="display:inline-block;padding:4px 8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:4px;color:#065f46;font-size:0.8rem;margin-bottom:6px"><i class="fa-solid fa-certificate me-1"></i>Digital Signature Verified (${pendingSigData?.certCode || SIGNER_CERT})</span><br>` : '<span class="doc-dots"></span><br>')}
-      (${SIGNER_NAME})<br>
-      อนุกรรมการและเลขานุการ<br>
-      คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}
-      ${signed ? `<br><span style="font-size:0.75rem;color:#16A34A"><i class="fa-solid fa-circle-check"></i> ลงนามดิจิทัลเมื่อ ${new Date().toLocaleString('th-TH')}</span>` : ''}
-    </div>
-    <div class="doc-secret-foot">ลับ</div>`;
+      <div class="doc-sign">
+        ${signed && pendingSigData && pendingSigData.sig ? `<img class="doc-sig-img" src="${pendingSigData.sig}" alt="ลายมือชื่อ"><br>` : (signed ? `<span style="display:inline-block;padding:4px 8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:4px;color:#065f46;font-size:0.8rem;margin-bottom:6px"><i class="fa-solid fa-certificate me-1"></i>Digital Signature Verified (${pendingSigData?.certCode || SIGNER_CERT})</span><br>` : '<span class="doc-dots"></span><br>')}
+        (${SIGNER_NAME})<br>
+        อนุกรรมการและเลขานุการ<br>
+        คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}
+        ${signed ? `<br><span style="font-size:0.75rem;color:#16A34A"><i class="fa-solid fa-circle-check"></i> ลงนามดิจิทัลเมื่อ ${new Date().toLocaleString('th-TH')}</span>` : ''}
+      </div>
+      <div class="doc-secret-foot">ลับ</div>
+    </div>`;
+            ECMIS.updateDocPaginationUI('docPaper');
         }
 
         ['subMeetNo', 'subMeetDate', 'subOpinion'].forEach(id =>
@@ -462,6 +498,7 @@
             }
         }
 
+        ECMIS.initDocPagination({ stageId: 'docPaper', defaultZoom: 0.75 });
         renderSubQuorum(); renderDoc();
         }
 
@@ -561,37 +598,40 @@
                 const opinion = document.getElementById('subOpinion').value.trim();
 
                 document.getElementById('docPaper').innerHTML = `
-    <div class="doc-secret">ลับ</div>
-    <div class="doc-title">
-      <div class="doc-title-l1">รายงานความเห็น</div>
-      <div class="doc-title-l2">คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}</div>
-    </div>
-    <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}</div>
+    <div class="doc-paper a4-paper">
+      <div class="doc-secret">ลับ</div>
+      <div class="doc-title">
+        <div class="doc-title-l1">รายงานความเห็น</div>
+        <div class="doc-title-l2">คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}</div>
+      </div>
+      <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}</div>
 
-    <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
-    <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
-    <div class="doc-row"><span class="k">ผู้รับผิดชอบสำนวน</span> ${M(kase.owner)}</div>
-    <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
+      <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
+      <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+      <div class="doc-row"><span class="k">ผู้รับผิดชอบสำนวน</span> ${M(kase.owner)}</div>
+      <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
 
-    <div class="doc-body-indent">
-      <div class="doc-h">ผู้ถูกกล่าวหา</div>
-      ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}
+      <div class="doc-body-indent">
+        <div class="doc-h">ผู้ถูกกล่าวหา</div>
+        ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}
 
-      <div class="doc-h">ข้อกล่าวหา</div>
-      <div class="doc-indent">${M(kase.allegation)}</div>
+        <div class="doc-h">ข้อกล่าวหา</div>
+        <div class="doc-indent">${M(kase.allegation)}</div>
 
-      <div class="doc-h">ความเห็นของคณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง</div>
-      <div class="doc-indent">${M(opinion, '……………………………………………………………………………………')}</div>
-    </div>
+        <div class="doc-h">ความเห็นของคณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง</div>
+        <div class="doc-indent">${M(opinion, '……………………………………………………………………………………')}</div>
+      </div>
 
-    <div class="doc-sign">
-      ${signed72 && pendingSigData72 && pendingSigData72.sig ? `<img class="doc-sig-img" src="${pendingSigData72.sig}" alt="ลายมือชื่อ"><br>` : (signed72 ? `<span style="display:inline-block;padding:4px 8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:4px;color:#065f46;font-size:0.8rem;margin-bottom:6px"><i class="fa-solid fa-certificate me-1"></i>Digital Signature Verified (${pendingSigData72?.certCode || SIGNER_CERT72})</span><br>` : '<span class="doc-dots"></span><br>')}
-      (${SIGNER_NAME72})<br>
-      อนุกรรมการและเลขานุการ<br>
-      คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}
-      ${signed72 ? `<br><span style="font-size:0.75rem;color:#16A34A"><i class="fa-solid fa-circle-check"></i> ลงนามดิจิทัลเมื่อ ${new Date().toLocaleString('th-TH')}</span>` : ''}
-    </div>
-    <div class="doc-secret-foot">ลับ</div>`;
+      <div class="doc-sign">
+        ${signed72 && pendingSigData72 && pendingSigData72.sig ? `<img class="doc-sig-img" src="${pendingSigData72.sig}" alt="ลายมือชื่อ"><br>` : (signed72 ? `<span style="display:inline-block;padding:4px 8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:4px;color:#065f46;font-size:0.8rem;margin-bottom:6px"><i class="fa-solid fa-certificate me-1"></i>Digital Signature Verified (${pendingSigData72?.certCode || SIGNER_CERT72})</span><br>` : '<span class="doc-dots"></span><br>')}
+        (${SIGNER_NAME72})<br>
+        อนุกรรมการและเลขานุการ<br>
+        คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}
+        ${signed72 ? `<br><span style="font-size:0.75rem;color:#16A34A"><i class="fa-solid fa-circle-check"></i> ลงนามดิจิทัลเมื่อ ${new Date().toLocaleString('th-TH')}</span>` : ''}
+      </div>
+      <div class="doc-secret-foot">ลับ</div>
+    </div>`;
+                ECMIS.updateDocPaginationUI('docPaper');
             }
             ['subMeetNo', 'subMeetDate', 'subOpinion'].forEach(id =>
                 document.getElementById(id).addEventListener('input', renderDoc));
@@ -735,6 +775,7 @@
                 }
             }
 
+            ECMIS.initDocPagination({ stageId: 'docPaper', defaultZoom: 0.75 });
             renderSubQuorum(); renderDoc();
         }
     </script>

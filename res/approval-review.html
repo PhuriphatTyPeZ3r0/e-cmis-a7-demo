@@ -208,6 +208,39 @@
           <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i
               class="fa-solid fa-angles-right"></i></button>
         </div>
+        <div class="pagination-toolbar-symmetric" id="docPaginationBar">
+          <div class="toolbar-group">
+            <div class="btn-group btn-group-sm" role="group">
+              <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" id="btnModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น)">
+                <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
+              </button>
+              <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnModeContinuous" title="โหมดดูทุกหน้าเรียงกัน">
+                <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
+              </button>
+            </div>
+            <div class="toolbar-divider"></div>
+            <div class="btn-group btn-group-sm" role="group">
+              <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnFirstPage" title="หน้าแรกสุด (หน้า 1)"><i class="fa-solid fa-backward-step"></i></button>
+              <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnPrevPage" title="หน้าก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+              <span class="small opacity-75">หน้า</span>
+              <input type="number" class="page-input-num" id="pageNumberInput" min="1" value="1">
+              <span class="small opacity-75" id="totalPagesText">/ 1 หน้า</span>
+            </div>
+            <div class="btn-group btn-group-sm" role="group">
+              <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnNextPage" title="หน้าถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+              <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnLastPage" title="หน้าสุดท้าย"><i class="fa-solid fa-forward-step"></i></button>
+            </div>
+          </div>
+          <div class="toolbar-group ms-auto">
+            <div class="d-flex align-items-center bg-dark rounded px-1" style="background:#06182c !important; border:1px solid #1a3d66; height:26px;">
+              <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+              <span style="font-size:0.75rem; width:34px; text-align:center; font-weight:600;" id="zoomLevelText">75%</span>
+              <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+            </div>
+          </div>
+        </div>
         <div class="doc-edit-bar" id="docEditBar">
           <span class="doc-edit-bar-label"><i class="fa-solid fa-pen-to-square me-1"></i>แก้ไขเอกสาร</span>
           <span class="doc-edit-bar-sep"></span>
@@ -228,8 +261,8 @@
           <button type="button" class="btn btn-sm btn-gold" id="btnSaveDocEdit"
             style="width:auto;padding:0 .6rem">บันทึกการแก้ไข</button>
         </div>
-        <div class="ws-paper-stage">
-          <div class="doc-paper a4-paper" id="docPaper"></div>
+        <div class="ws-paper-stage" id="docPaperStage">
+          <div id="docPaper"></div>
         </div>
       </aside>
     </div>
@@ -1245,34 +1278,38 @@
         const urgentReasonEl = document.getElementById('urgentReason72');
 
         document.getElementById('docPaper').innerHTML = `
-          <div class="doc-secret">ลับ</div>
-          <div class="doc-title">${docType.label}</div>
-          <div class="doc-sub">คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
-          <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
-          <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
-          <div class="doc-row"><span class="k">ผู้รับผิดชอบสำนวน</span> ${M(kase.owner)}</div>
-          <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
-          ${(kase.accused && kase.accused.length) ? `<div class="doc-h">ผู้ถูกกล่าวหา</div>${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}` : ''}
-          <div class="doc-h">${ECMIS.isCase73(kase) ? 'สาระสำคัญ / ข้อเสนอ' : 'ข้อกล่าวหา'}</div>
-          <div class="doc-indent">${M(kase.allegation)}</div>
-          <div class="doc-h">ความเห็นตามสายอนุมัติ</div>
-          <div class="doc-indent">${priorOpinions || '<span class="text-muted">— ยังไม่มีข้อมูล —</span>'}</div>
-          ${role.id === 'secgen' ? `
-          <div class="doc-h">ความเห็นของเลขาธิการฯ</div>
-          <div class="doc-indent">
-            ${complexYes() ? `เห็นว่าสำนวนนี้มีประเด็นซับซ้อนยุ่งยาก — ${M(complexReasonEl ? complexReasonEl.value.trim() : '', '……………')}<br>` : ''}
-            ${urgentYes() ? `เห็นว่าเป็นกรณีเร่งด่วน — ${M(urgentReasonEl ? urgentReasonEl.value.trim() : '', '……………')}` : ''}
-            ${(!complexYes() && !urgentYes()) ? 'เห็นควรพิจารณาตามเส้นทางปกติ ส่งคณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริงต่อไป' : ''}
-          </div>` : ''}
-          <div class="doc-sign" id="docSign">
-            ${signed ? `<img class="doc-sig-img" src="${SECGEN_SIG_IMG}" alt="ลายมือชื่อ">
-            <span style="color:#166434"><i class="fa-solid fa-signature"></i> ลงนามดิจิทัลแล้ว</span>`
-            : 'ลงชื่อ <span class="doc-dots"></span>'}<br>
-            (นายอภิชาติ สุจริตกุล)<br>เลขาธิการคณะกรรมการ ป.ป.ท.
+          <div class="doc-paper a4-paper">
+            <div class="doc-secret">ลับ</div>
+            <div class="doc-title">${docType.label}</div>
+            <div class="doc-sub">คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
+            <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
+            <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+            <div class="doc-row"><span class="k">ผู้รับผิดชอบสำนวน</span> ${M(kase.owner)}</div>
+            <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
+            ${(kase.accused && kase.accused.length) ? `<div class="doc-h">ผู้ถูกกล่าวหา</div>${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}` : ''}
+            <div class="doc-h">${ECMIS.isCase73(kase) ? 'สาระสำคัญ / ข้อเสนอ' : 'ข้อกล่าวหา'}</div>
+            <div class="doc-indent">${M(kase.allegation)}</div>
+            <div class="doc-h">ความเห็นตามสายอนุมัติ</div>
+            <div class="doc-indent">${priorOpinions || '<span class="text-muted">— ยังไม่มีข้อมูล —</span>'}</div>
+            ${role.id === 'secgen' ? `
+            <div class="doc-h">ความเห็นของเลขาธิการฯ</div>
+            <div class="doc-indent">
+              ${complexYes() ? `เห็นว่าสำนวนนี้มีประเด็นซับซ้อนยุ่งยาก — ${M(complexReasonEl ? complexReasonEl.value.trim() : '', '……………')}<br>` : ''}
+              ${urgentYes() ? `เห็นว่าเป็นกรณีเร่งด่วน — ${M(urgentReasonEl ? urgentReasonEl.value.trim() : '', '……………')}` : ''}
+              ${(!complexYes() && !urgentYes()) ? 'เห็นควรพิจารณาตามเส้นทางปกติ ส่งคณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริงต่อไป' : ''}
+            </div>` : ''}
+            <div class="doc-sign" id="docSign">
+              ${signed ? `<img class="doc-sig-img" src="${SECGEN_SIG_IMG}" alt="ลายมือชื่อ">
+              <span style="color:#166434"><i class="fa-solid fa-signature"></i> ลงนามดิจิทัลแล้ว</span>`
+              : 'ลงชื่อ <span class="doc-dots"></span>'}<br>
+              (นายอภิชาติ สุจริตกุล)<br>เลขาธิการคณะกรรมการ ป.ป.ท.
+            </div>
           </div>`;
+        ECMIS.updateDocPaginationUI('docPaper');
       }
 
       if (role.id === 'secgen') { renderRouteOutcome(); }
+      ECMIS.initDocPagination({ stageId: 'docPaper', defaultZoom: 0.75 });
       renderDoc();
       ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: ECMIS.canAct(kase, role.id) });
 

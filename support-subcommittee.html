@@ -195,6 +195,38 @@
           </button>
           <button class="btn btn-sm btn-light" onclick="window.print()"><i class="fa-solid fa-print"></i></button>
           <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
+        <div class="pagination-toolbar-symmetric" id="docPaginationBar">
+          <div class="toolbar-group">
+            <div class="btn-group btn-group-sm" role="group">
+              <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" id="btnModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น)">
+                <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
+              </button>
+              <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnModeContinuous" title="โหมดดูทุกหน้าเรียงกัน">
+                <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
+              </button>
+            </div>
+            <div class="toolbar-divider"></div>
+            <div class="btn-group btn-group-sm" role="group">
+              <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnFirstPage" title="หน้าแรกสุด (หน้า 1)"><i class="fa-solid fa-backward-step"></i></button>
+              <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnPrevPage" title="หน้าก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+              <span class="small opacity-75">หน้า</span>
+              <input type="number" class="page-input-num" id="pageNumberInput" min="1" value="1">
+              <span class="small opacity-75" id="totalPagesText">/ 1 หน้า</span>
+            </div>
+            <div class="btn-group btn-group-sm" role="group">
+              <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnNextPage" title="หน้าถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+              <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnLastPage" title="หน้าสุดท้าย"><i class="fa-solid fa-forward-step"></i></button>
+            </div>
+          </div>
+          <div class="toolbar-group ms-auto">
+            <div class="d-flex align-items-center bg-dark rounded px-1" style="background:#06182c !important; border:1px solid #1a3d66; height:26px;">
+              <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+              <span style="font-size:0.75rem; width:34px; text-align:center; font-weight:600;" id="zoomLevelText">75%</span>
+              <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+            </div>
+          </div>
         </div>
         <div class="doc-edit-bar" id="docEditBar">
           <span class="doc-edit-bar-label"><i class="fa-solid fa-pen-to-square me-1"></i>แก้ไขเอกสาร</span>
@@ -210,8 +242,8 @@
           <button type="button" data-format="undo" title="เลิกทำ"><i class="fa-solid fa-rotate-left"></i></button>
           <button type="button" data-format="redo" title="ทำซ้ำ"><i class="fa-solid fa-rotate-right"></i></button>
         </div>
-        <div class="ws-paper-stage">
-          <div class="doc-paper doc-resolution a4-paper" id="docPaper"></div>
+        <div class="ws-paper-stage" id="docPaperStage">
+          <div id="docPaper"></div>
         </div>
       </aside>
     </div>
@@ -694,41 +726,44 @@
       };
 
       document.getElementById('docPaper').innerHTML = `
-        <div class="doc-secret">ลับ</div>
-        <div class="doc-title">
-          <div class="doc-title-l1">บันทึกข้อความความเห็นการกลั่นกรอง</div>
-          <div class="doc-title-l2">คณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
-        </div>
-        <div class="doc-sub">สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
+        <div class="doc-paper a4-paper">
+          <div class="doc-secret">ลับ</div>
+          <div class="doc-title">
+            <div class="doc-title-l1">บันทึกข้อความความเห็นการกลั่นกรอง</div>
+            <div class="doc-title-l2">คณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
+          </div>
+          <div class="doc-sub">สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
 
-        <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
-        <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
-        <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner || '-')} (${M(kase.ownerOrg || '-')})</div>
+          <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
+          <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+          <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner || '-')} (${M(kase.ownerOrg || '-')})</div>
 
-        <div class="doc-body-indent">
-          <div class="doc-h">ผู้ถูกร้อง</div>
-          ${(kase.accused || []).map(a => `<div>${a.no || 1}. ${M(a.name)} ${a.pos ? `— ${M(a.pos)}` : ''}</div>`).join('')}
+          <div class="doc-body-indent">
+            <div class="doc-h">ผู้ถูกร้อง</div>
+            ${(kase.accused || []).map(a => `<div>${a.no || 1}. ${M(a.name)} ${a.pos ? `— ${M(a.pos)}` : ''}</div>`).join('')}
 
-          <div class="doc-h">ข้อกล่าวหา</div>
-          <div class="doc-indent">${M(kase.allegation)}</div>
+            <div class="doc-h">ข้อกล่าวหา</div>
+            <div class="doc-indent">${M(kase.allegation)}</div>
 
-          <div class="doc-h">ผลการพิจารณากลั่นกรองของคณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
-          <div class="doc-indent"><strong>${M(DEC_TXT[dec])}</strong></div>
+            <div class="doc-h">ผลการพิจารณากลั่นกรองของคณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
+            <div class="doc-indent"><strong>${M(DEC_TXT[dec])}</strong></div>
 
-          ${dec === 'DIFFER' ? `
-          <div class="doc-h text-danger">ข้อกฎหมายและเหตุผลในการแย้งความเห็น</div>
-          ${lawTxt ? `<div class="doc-indent text-danger"><strong>ฐานกฎหมายอ้างอิง:</strong> ${M(lawTxt)}</div>` : ''}
-          <div class="doc-indent text-danger">${M(dissent, '…………………………………… (ระบุเหตุผลแย้งโดยละเอียด)')}</div>` : ''}
+            ${dec === 'DIFFER' ? `
+            <div class="doc-h text-danger">ข้อกฎหมายและเหตุผลในการแย้งความเห็น</div>
+            ${lawTxt ? `<div class="doc-indent text-danger"><strong>ฐานกฎหมายอ้างอิง:</strong> ${M(lawTxt)}</div>` : ''}
+            <div class="doc-indent text-danger">${M(dissent, '…………………………………… (ระบุเหตุผลแย้งโดยละเอียด)')}</div>` : ''}
 
-          <div class="doc-h">ความเห็นและข้อสังเกตประกอบ</div>
-          <div class="doc-indent">${M(opinion, '…………………………………… (ระบุความเห็นกลั่นกรอง)')}</div>
-        </div>
+            <div class="doc-h">ความเห็นและข้อสังเกตประกอบ</div>
+            <div class="doc-indent">${M(opinion, '…………………………………… (ระบุความเห็นกลั่นกรอง)')}</div>
+          </div>
 
-        <div class="doc-sign" style="margin-top:2rem">
-          (นางสาวจิราพร นิติกิจ)<br>
-          ประธานคณะอนุกรรมการสนับสนุนเลขาธิการฯ
+          <div class="doc-sign" style="margin-top:2rem">
+            (นางสาวจิราพร นิติกิจ)<br>
+            ประธานคณะอนุกรรมการสนับสนุนเลขาธิการฯ
+          </div>
         </div>
       `;
+      ECMIS.updateDocPaginationUI('docPaper');
     }
 
     function renderActionButtons() {
