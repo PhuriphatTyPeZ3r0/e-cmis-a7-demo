@@ -921,7 +921,8 @@ const CASES = [
     docType:'GENERAL', signPhase:'COMPLETE',
     slaDays:3, slaLimit:5, subCommittee:null,
     meetingNo:'36/2569', agendaNo:'4.2', meetingDate:'2569-08-05',
-    resolution:'REVIEW_PROSECUTOR_73', resolutionStage: 5, resolvedAtIso: '2026-08-05T03:00:00.000Z'
+    resolution:'REVIEW_PROSECUTOR_73', resolutionStage: 5, resolvedAtIso: '2026-08-05T03:00:00.000Z',
+    generalType:'PROSECUTOR_NO_INDICT'
   },
   {
     id:'กจ.103/2569',
@@ -938,7 +939,65 @@ const CASES = [
     urgent:false, complex:false, dupWarning:false,
     docType:'GENERAL', signPhase:'COMPLETE',
     slaDays:1, slaLimit:5, subCommittee:null,
-    meetingNo:'37/2569', agendaNo:'4.3', meetingDate:'2569-08-20'
+    meetingNo:'37/2569', agendaNo:'4.3', meetingDate:'2569-08-20',
+    generalType:'SPECIAL_TASK_73'
+  },
+  {
+    id:'กจ.104/2569',
+    subject:'บันทึกขอให้คณะกรรมการ ป.ป.ท. พิจารณาจัดให้มีมาตรการคุ้มครองพยานในคดีทุจริตจัดซื้อจัดจ้าง',
+    legalBase:'ระเบียบฯ',
+    status:'AGENDA_SET',
+    procType:'7.3',
+    owner:'นางสาวอรวรรณ คุ้มครองสิทธิ์', ownerOrg:'กองคุ้มครองพยาน',
+    complainant:'กองคุ้มครองพยาน (เสนอตามภารกิจ)',
+    accused:[],
+    allegation:'พยานในคดีทุจริตจัดซื้อจัดจ้างเรื่องที่ 1547/2568 ได้รับการข่มขู่จากบุคคลที่เกี่ยวข้องกับผู้ถูกกล่าวหา เห็นควรจัดให้มีมาตรการคุ้มครองตามกฎหมายว่าด้วยการคุ้มครองพยานในคดีอาญา (ตามระเบียบฯ ข้อ 14, ม.๕๔)',
+    receivedDate:'2569-08-10', deadline60:'—', deadline2y:'—', prescription:'—',
+    docRef:'ปป 0018/1122 ลงวันที่ 10 สิงหาคม 2569',
+    urgent:true, complex:false, dupWarning:false,
+    docType:'GENERAL', signPhase:'COMPLETE',
+    slaDays:2, slaLimit:5, subCommittee:null,
+    meetingNo:'37/2569', agendaNo:'4.4', meetingDate:'2569-08-20',
+    generalType:'WITNESS_PROTECTION'
+  },
+  {
+    id:'กจ.105/2569',
+    subject:'บันทึกขออนุมัติแยกเลขสำนวน กรณีผู้ถูกกล่าวหาหลายคนและหลายพฤติการณ์',
+    legalBase:'ระเบียบฯ',
+    status:'RESOLVED',
+    procType:'7.3',
+    owner:'นายกิตติ แยกสำนวนดี', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 3',
+    complainant:'กองปราบปรามการทุจริตในภาครัฐ 3 (เสนอตามภารกิจ)',
+    accused:[],
+    allegation:'สำนวนเรื่องที่ 0654/2569 มีผู้ถูกกล่าวหาหลายคนและพฤติการณ์แยกจากกันชัดเจน คณะผู้ไต่สวนเห็นควรขออนุมัติแยกเลขสำนวนเพื่อความสะดวกในการดำเนินคดีแต่ละราย',
+    receivedDate:'2569-07-20', deadline60:'—', deadline2y:'—', prescription:'—',
+    docRef:'ปป 0009/0876 ลงวันที่ 20 กรกฎาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    docType:'GENERAL', signPhase:'COMPLETE',
+    slaDays:1, slaLimit:5, subCommittee:null,
+    meetingNo:'36/2569', agendaNo:'4.5', meetingDate:'2569-08-05',
+    resolution:'APPROVE_73', resolutionStage: 5, resolvedAtIso: '2026-08-05T03:00:00.000Z',
+    generalType:'SPLIT_CASE'
+  },
+  {
+    id:'กจ.106/2569',
+    subject:'บันทึกขอให้พิจารณากรณี ก.พ.ค. ส่งคำวินิจฉัยอุทธรณ์ เพื่อทบทวนมติชี้มูลความผิดวินัยตามมาตรา ๔๓',
+    legalBase:'ระเบียบฯ',
+    status:'IN_MEETING',
+    procType:'7.3',
+    owner:'นางสาวนภวรรณ ทบทวนคดี', ownerOrg:'กองบริหารคดี',
+    complainant:'ก.พ.ค. (ส่งคำวินิจฉัยอุทธรณ์กลับ)',
+    accused:[
+      { no:1, name:'นายประสิทธิ์ ราชการดี', pos:'อดีตปลัดเทศบาล', idcard:'3-1301-0xxxx-xx-x', agency:'เทศบาลตำบลแห่งหนึ่ง' }
+    ],
+    allegation:'ก.พ.ค. มีคำวินิจฉัยอุทธรณ์ของผู้ถูกลงโทษทางวินัยส่งกลับมา เห็นว่าเป็นกรณีที่คณะกรรมการ ป.ป.ท. มีมติชี้มูลความผิดวินัยที่สามารถรับไว้พิจารณาทบทวนตามมาตรา ๔๓ (ใหม่) ได้ ตามบทเฉพาะกาลมาตรา ๒๐ แห่ง พ.ร.บ. มาตรการฯ (ฉบับที่ ๔) พ.ศ. ๒๕๖๘',
+    receivedDate:'2569-07-28', deadline60:'—', deadline2y:'—', prescription:'—',
+    docRef:'ปป 0011/0940 ลงวันที่ 28 กรกฎาคม 2569',
+    urgent:false, complex:true, dupWarning:false,
+    docType:'GENERAL', signPhase:'COMPLETE',
+    slaDays:4, slaLimit:5, subCommittee:null,
+    meetingNo:'37/2569', agendaNo:'4.6', meetingDate:'2569-08-20',
+    generalType:'DISCIPLINE_REVIEW_M43'
   },
   {
     id:'1015/2568',
@@ -1331,6 +1390,45 @@ const RESOLUTIONS_73 = [
     doc:'คำสั่งแต่งตั้ง / บันทึกมอบหมายงาน', signer:'ประธานกรรมการ ป.ป.ท.' }
 ];
 function resolution73(code){ return RESOLUTIONS_73.find(r => r.code === code) || null; }
+
+/* ประเภทเรื่องทั่วไป (7.3) — แยกจาก RESOLUTIONS_73 ซึ่งเป็น "มติ/ผลการพิจารณา" (อนุมัติ/
+   ไม่อนุมัติ/ทบทวนอัยการ/ส่งกฎหมาย/เฉพาะกิจ) ส่วนนี้คือ "ประเภทคำขอ" ที่เสนอเข้าบอร์ด —
+   สืบค้นจากคู่มือ As-Is กิจกรรมที่ 7 มติคณะกรรมการ, เล่ม 5 กิจกรรมที่ 7 ระบบมติคณะกรรมการ
+   ป.ป.ท., ระเบียบวาระการประชุมจริง และ Use Case กิจกรรมที่ 4/5/10 (NotebookLM "E-CMIS",
+   2026-08-25) — เรื่องทั่วไปคิดเป็นเกือบ 50% ของวาระทั้งหมดที่เสนอเข้าบอร์ด ไม่ใช่ส่วนน้อย */
+const GENERAL_TYPES_73 = [
+  { code:'APPOINT_SUBCOMMITTEE', group:'บริหารจัดการ/บุคคลในคดี',
+    label:'ขอตั้งอนุกรรมการ/ที่ปรึกษาพิเศษ/คณะทำงานชุดย่อย' },
+  { code:'WITNESS_PROTECTION', group:'บริหารจัดการ/บุคคลในคดี',
+    label:'ขอคุ้มครองพยาน (ม.๕๔)' },
+  { code:'WITNESS_EXEMPTION', group:'บริหารจัดการ/บุคคลในคดี',
+    label:'ขอกันบุคคลไว้เป็นพยาน' },
+  { code:'ADD_ACCUSED_73', group:'บริหารจัดการ/บุคคลในคดี',
+    label:'ขอเพิ่มผู้ถูกกล่าวหาในสำนวน' },
+  { code:'SPECIAL_TASK_73', group:'บริหารจัดการ/บุคคลในคดี',
+    label:'มติเฉพาะกิจอื่น ๆ (ม.๑๗ / ตั้งคณะทำงานพิเศษตามคำสั่งประธานฯ / เลื่อน-ถอนวาระ)' },
+  { code:'PROSECUTOR_NO_INDICT', group:'คดีชั้นอัยการ/ศาล',
+    label:'ทบทวนมติกรณีอัยการสั่งไม่ฟ้อง (ม.๓๓)' },
+  { code:'PROSECUTOR_NO_APPEAL', group:'คดีชั้นอัยการ/ศาล',
+    label:'ความเห็นแย้งกรณีอัยการไม่อุทธรณ์' },
+  { code:'PROSECUTOR_NO_CASSATION', group:'คดีชั้นอัยการ/ศาล',
+    label:'ความเห็นแย้งกรณีอัยการไม่ฎีกา' },
+  { code:'DISCIPLINE_REVIEW_M43', group:'ติดตามมติทางวินัย',
+    label:'ทบทวนมติวินัยตาม ม.๔๓ (จาก ก.พ.ค./ก.พ.ค.ตร.)' },
+  { code:'DISCIPLINE_REVIEW_SUPERVISOR', group:'ติดตามมติทางวินัย',
+    label:'ทบทวนมติชี้มูลวินัยตามคำขอผู้บังคับบัญชา' },
+  { code:'AMEND_RESOLUTION_73', group:'ติดตามมติทางวินัย',
+    label:'ขอแก้ไขรายละเอียดมติเดิม (พิมพ์ผิด/แก้ฐานความผิด)' },
+  { code:'OVERDUE_REPORT_73', group:'ติดตามมติทางวินัย',
+    label:'รายงานผลกรณีดำเนินการเกินกรอบเวลาไต่สวนเบื้องต้น' },
+  { code:'SPLIT_CASE', group:'โครงสร้างสำนวน',
+    label:'ขออนุมัติแยกเลขสำนวน' },
+  { code:'MERGE_CASE', group:'โครงสร้างสำนวน',
+    label:'ขออนุมัติรวมสำนวน' },
+  { code:'POLICY_INQUIRY_73', group:'ข้อหารือเชิงนโยบาย',
+    label:'ข้อหารือขอบเขตอำนาจหน้าที่ / ประเด็นข้อกฎหมาย' }
+];
+function generalType73(code){ return GENERAL_TYPES_73.find(t => t.code === code) || null; }
 
 /* กิจกรรมที่ 7 (ตาม TOR) เริ่มนับเมื่อรายงานมาถึงเลขาธิการฯ — สาย 3 ชั้น
    (ผอ.กอง/ผอ.สำนักงาน ป.ป.ท. เขต/รองเลขาธิการฯ) เป็นขั้นก่อนหน้านั้น จึงไม่แยก
@@ -5189,7 +5287,7 @@ global.ECMIS = {
   DOC_TYPES, SIGN_PHASE, secgenSlaLimit, FORWARD_TARGETS, forwardTarget,
 
   RESOLUTIONS_72, resolution72, FLOW_STEPS_72, STATUS_STEP_72,
-  RESOLUTIONS_73, resolution73, isCase73,
+  RESOLUTIONS_73, resolution73, isCase73, GENERAL_TYPES_73, generalType73,
   trackStatus72, bothTracksDone72,
   OPINION_TYPES, chainDivergence, g1Triggers, M28, M28_ORDERS, m28Order, m28Pending,
   TRANSITIONS, canTransition, nextStates, transitionsBetween,
