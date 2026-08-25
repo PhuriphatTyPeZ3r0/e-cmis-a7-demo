@@ -384,6 +384,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pizzip@3/dist/pizzip.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/build/docxtemplater.js"></script>
   <script src="assets/ecmis-app.js"></script>
   <script src="assets/ecmis-model.js"></script>
   <script>
@@ -477,6 +479,62 @@
         console.error(e);
         ECMIS.toastWarn('ดาวน์โหลด .docx ไม่สำเร็จ: ' + e.message);
       }
+    }
+
+    /* ===================================================================
+       แม่แบบที่แปะ {tag} แล้ว (ต่างจาก TEMPLATE_FILES ด้านบนซึ่งเป็นไฟล์ต้นฉบับดิบ
+       ไม่มี tag) — ตอนนี้มีเฉพาะ 5-01/5-04 (โหมด memo) ที่เหลือยังใช้ downloadTemplate()
+       (ดาวน์โหลดฟอร์มเปล่า) ไปก่อนจนกว่าจะแปะ tag ให้ครบ ---------- */
+    const TAGGED_TEMPLATES = {
+      '5-01': 'assets/templates/tagged-5-01.docx',
+      '5-04': 'assets/templates/tagged-5-04.docx'
+    };
+
+    async function generateDocx(templateUrl, tags, filename) {
+      const resp = await fetch(templateUrl);
+      if (!resp.ok) throw new Error('โหลด template ไม่สำเร็จ: ' + templateUrl);
+      const buf = await resp.arrayBuffer();
+      const zip = new PizZip(buf);
+      const doc = new window.docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+      doc.render(tags);
+      const out = doc.getZip().generate({
+        type: 'blob',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      });
+      const url = URL.createObjectURL(out);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
+    /* memoDocxTags(): เวอร์ชัน plain-text ของฟิลด์เดียวกันกับที่ renderMemoDoc() ใช้ทำ Web
+       Preview -- ห้ามใช้ M()/ECMIS.mergeField() ตรงนี้เพราะมันห่อค่าด้วย <span> HTML เสมอ
+       (ไว้ใช้กับ Web Preview เท่านั้น) ถ้าใส่ tag .docx ตรง ๆ ไฟล์ Word จะโชว์ HTML ดิบ */
+    function memoDocxTags() {
+      const P = (v, ph) => (v && String(v).trim()) ? String(v).trim() : (ph || '…………');
+      const no = document.getElementById('memoNo').value.trim();
+      const dt = ECMIS.thaiDate(document.getElementById('memoDate').value.trim());
+      const origOffice = document.getElementById('memoOrigOffice').value.trim();
+      const origDoc = document.getElementById('memoOrigDoc').value.trim();
+      const meetNo = document.getElementById('memoMeetNo').value.trim();
+      const meetDate = ECMIS.thaiDate(document.getElementById('memoMeetDate').value.trim());
+      const agenda = document.getElementById('memoAgenda').value.trim();
+      const recvDate = ECMIS.thaiDate(document.getElementById('memoReceivedDate').value.trim());
+      const recvMeet = document.getElementById('memoReceivedMeet').value.trim();
+      const ref4 = document.getElementById('memoRef4').value.trim();
+      const ref5 = document.getElementById('memoRef5').value.trim();
+      const memberNames = memoMembers.map(m =>
+        `${P(m.name, 'ชื่อ - สกุล')} ${P(m.pos, 'ตำแหน่ง')} สังกัด ${P(m.agency, '……………')} (${m.role})`).join(' และ ');
+      return {
+        no: P(no, 'ปป ๐๐๐๔/'), dt: P(dt), caseId: P(kase.id),
+        origOffice: P(origOffice, '(กอง/สำนัก)'), origDoc: P(origDoc),
+        meetNo: P(meetNo), meetDate: P(meetDate), agenda: P(agenda),
+        recvDate: P(recvDate), recvMeet: P(recvMeet),
+        memberCount: memoMembers.length ? ECMIS.toThaiDigits(memoMembers.length) : '…',
+        memberNames: P(memberNames),
+        ref4: P(ref4 || kase.id), ref5: P(ref5 || kase.id)
+      };
     }
 
     /* ===================================================================
@@ -1159,13 +1217,23 @@
       else renderAmendDoc();
     }
 
-    document.getElementById('btnDocx').addEventListener('click', () => {
+    document.getElementById('btnDocx').addEventListener('click', async () => {
       if (currentMode === 'appoint') {
         const code = FORM_CODES[isSub ? 'sub' : 'base'][caseOriginCode()];
         downloadTemplate(TEMPLATE_FILES[code], `ปปท. ${code}`);
       } else if (currentMode === 'memo') {
         const code = isSub ? '5-01' : '5-04';
-        downloadTemplate(TEMPLATE_FILES[code], `ปปท. ${code}`);
+        if (TAGGED_TEMPLATES[code]) {
+          try {
+            await generateDocx(TAGGED_TEMPLATES[code], memoDocxTags(), `ปปท.${code}-${kase.id.replace('/', '_')}.docx`);
+            ECMIS.toastOk('ดาวน์โหลด .docx เรียบร้อย — แก้ไขใน Word ได้ตามปกติ');
+          } catch (e) {
+            console.error(e);
+            ECMIS.toastWarn('สร้างไฟล์ .docx ไม่สำเร็จ: ' + e.message);
+          }
+        } else {
+          downloadTemplate(TEMPLATE_FILES[code], `ปปท. ${code}`);
+        }
       } else {
         const code = amendFormCode();
         downloadTemplate(TEMPLATE_FILES[code], code === 'UNCODED' ? 'คำสั่งเปลี่ยนแปลงองค์ประกอบ' : `ปปท. ${code}`);
