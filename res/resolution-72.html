@@ -660,6 +660,14 @@
       setTimeout(() => URL.revokeObjectURL(url), 5000);
     }
 
+    /* computeResolutionText() ห่อชื่อ auto-fill ด้วย <span class="mergefield">...</span> เสมอ
+       (ใช้แสดงผลใน Web Preview) — ต้องแกะ tag ออกก่อนใส่ใน .docx ไม่งั้น Word จะโชว์ HTML ดิบ */
+    function stripHtml(html) {
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      return div.textContent || '';
+    }
+
     function docxTags() {
       const P = (v, ph) => (v && String(v).trim()) ? String(v).trim() : (ph || '…………');
       const meetNo = document.getElementById('meetNo').value.trim();
@@ -692,7 +700,7 @@
         presentCount: String(attendeeCount),
         criminalBasis: crim ? 'มาตรา ๔๔ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม (ส่งพนักงานอัยการดำเนินคดีต่อไป)' : 'ไม่มีมูลความผิดทางอาญา',
         disciplinaryBasis: disc ? 'มาตรา ๓๘ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม' : 'ไม่มีมูลความผิดทางวินัย',
-        resolutionText: computeResolutionText(),
+        resolutionText: P(stripHtml(computeResolutionText())),
         presentRoster: P(presentRosterText()),
         absentCount: String(absentRows().length),
         absentRoster: P(absentRows().map((b, i) => `${i + 1}. ${b.n} ${b.r}`).join(' ')),
