@@ -163,23 +163,44 @@
       margin-bottom: 2px !important;
     }
 
-    /* Single page vs continuous page view */
-    .ws-paper-stage.mode-single .doc-paper {
-      display: none !important;
-    }
-    .ws-paper-stage.mode-single .doc-paper.active-page {
-      display: block !important;
+    /* Viewport Paper Stage */
+    .ws-paper-stage {
+      background: #1e293b !important;
+      padding: 16px 12px 24px !important;
+      overflow-y: auto !important;
+      overflow-x: auto !important;
+      max-height: calc(100vh - 275px) !important;
+      min-height: 520px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      border: 1px solid #1a3d66 !important;
+      border-radius: 0 0 10px 10px !important;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4) !important;
     }
 
-    .ws-paper-stage.mode-continuous .doc-paper {
-      display: block !important;
-      margin-bottom: 18px !important;
-    }
-
-    /* Dynamic Zoom scaling wrapper */
+    /* Dynamic Zoom scaling canvas wrapper */
     #docPaper {
       transition: transform 0.15s ease;
       transform-origin: top center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      width: max-content;
+    }
+
+    /* Single page vs continuous page view */
+    #docPaper.mode-single .doc-paper {
+      display: none !important;
+    }
+    #docPaper.mode-single .doc-paper.active-page {
+      display: block !important;
+    }
+
+    #docPaper.mode-continuous .doc-paper {
+      display: block !important;
+      margin-bottom: 18px !important;
     }
 
     /* Hide injected global suggestions & helper bars on this page to keep it clean */
@@ -445,7 +466,8 @@
                 <div class="toolbar-divider d-none d-md-block"></div>
 
                 <div class="btn-group btn-group-sm">
-                  <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnZoomFit" title="พอดีความกว้าง">พอดีจอ</button>
+                  <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnZoomFit" title="พอดีทั้งหน้า (เห็นเอกสารครบทั้งหน้า)"><i class="fa-solid fa-expand me-1"></i>พอดีจอ</button>
+                  <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnZoomWidth" title="พอดีความกว้าง (อ่านง่าย)"><i class="fa-solid fa-arrows-left-right me-1"></i>พอดีกว้าง</button>
                   <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnZoom75">75%</button>
                   <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnZoom100">100%</button>
                 </div>
@@ -475,7 +497,9 @@
           <span class="doc-edit-bar-sep"></span>
           <button type="button" class="btn btn-sm btn-gold" id="btnSaveDocEdit" style="width:auto;padding:0 .6rem">บันทึกการแก้ไข</button>
         </div>
-        <div class="ws-paper-stage" id="docPaper"></div>
+        <div class="ws-paper-stage" id="docPaperStage">
+          <div id="docPaper"></div>
+        </div>
       </aside>
     </div>
 
@@ -1059,14 +1083,44 @@
       if (!docPaperEl) return;
       docPaperEl.style.transform = `scale(${docZoomLevel})`;
       $('#zoomLevelText').text(`${Math.round(docZoomLevel * 100)}%`);
+
+      // Adjust wrapper height so stage scrolling is natural
+      const stage = document.getElementById('docPaperStage');
+      if (stage) {
+        const pages = docPaperEl.querySelectorAll('.doc-paper');
+        if (pages.length > 0) {
+          if (docViewMode === 'SINGLE') {
+            const activeP = docPaperEl.querySelector('.doc-paper.active-page') || pages[0];
+            const h = activeP ? activeP.offsetHeight : 1123;
+            docPaperEl.style.height = `${Math.round(h * docZoomLevel)}px`;
+          } else {
+            let totalH = 0;
+            pages.forEach(p => { totalH += p.offsetHeight + 18; });
+            docPaperEl.style.height = `${Math.round(totalH * docZoomLevel)}px`;
+          }
+        }
+      }
     }
 
-    function autoFitDocZoom() {
-      const stage = document.querySelector('.ws-paper-stage');
-      const stageWidth = stage ? stage.clientWidth - 40 : 650;
-      const paperWidthPx = 794; // A4 standard width in px
-      const scale = Math.min(1.05, Math.max(0.55, stageWidth / paperWidthPx));
-      docZoomLevel = Math.round(scale * 100) / 100;
+    function autoFitDocZoom(mode = 'fit-page') {
+      const stage = document.getElementById('docPaperStage') || document.querySelector('.ws-paper-stage');
+      if (!stage) return;
+      const stageWidth = Math.max(280, stage.clientWidth - 32);
+      const stageHeight = Math.max(280, stage.clientHeight - 32);
+      const paperWidthPx = 794;   // A4 210mm width
+      const paperHeightPx = 1123; // A4 297mm height
+
+      let scale = 1.0;
+      if (mode === 'fit-page' || docViewMode === 'SINGLE') {
+        const scaleW = stageWidth / paperWidthPx;
+        const scaleH = stageHeight / paperHeightPx;
+        // Fit entire A4 sheet within the visible viewport bounds
+        scale = Math.min(scaleW, scaleH);
+      } else {
+        // Fit width only
+        scale = stageWidth / paperWidthPx;
+      }
+      docZoomLevel = Math.min(1.15, Math.max(0.40, Math.round(scale * 100) / 100));
       applyZoom();
     }
 
@@ -1789,7 +1843,11 @@
     });
 
     $('#btnZoomFit').on('click', function () {
-      autoFitDocZoom();
+      autoFitDocZoom('fit-page');
+    });
+
+    $('#btnZoomWidth').on('click', function () {
+      autoFitDocZoom('fit-width');
     });
 
     $('#btnZoom75').on('click', function () {
@@ -1808,13 +1866,18 @@
     });
 
     $('#btnZoomOut').on('click', function () {
-      docZoomLevel = Math.max(0.5, docZoomLevel - 0.08);
+      docZoomLevel = Math.max(0.35, docZoomLevel - 0.08);
       applyZoom();
     });
 
     ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: true });
     renderDoc();
     renderActions();
+    setTimeout(() => autoFitDocZoom('fit-page'), 60);
+
+    window.addEventListener('resize', () => {
+      autoFitDocZoom('fit-page');
+    });
 
     (async function initOffenseBasis() {
       const ok = await loadOffenseBasisData();
