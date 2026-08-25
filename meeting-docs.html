@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 
 <head>
@@ -92,37 +92,72 @@
       <aside class="ws-doc-pane" id="docCol" style="top:calc(var(--topbar-h) + 14px)">
         <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
         <div class="ws-doc-toolbar">
-          <div class="ws-doc-tabs" id="docTabs">
-            <button class="ws-doc-tab active" data-doc="agenda">ระเบียบวาระ (รวม)</button>
-            <button class="ws-doc-tab" data-doc="propose">เสนอวาระผ่านเลขาธิการฯ</button>
-            <button class="ws-doc-tab" data-doc="invite-board">เชิญประธาน/กรรมการ</button>
-            <button class="ws-doc-tab" data-doc="invite-pacc">เชิญเลขาธิการ ป.ป.ช.</button>
-            <button class="ws-doc-tab" data-doc="invite-dept">เชิญ ผอ.กอง/สำนัก</button>
-            <button class="ws-doc-tab" data-doc="it-meeting">แจ้ง IT e-Meeting</button>
+          <div class="d-flex flex-column w-100 gap-1">
+            <div class="d-flex justify-content-between align-items-center">
+              <div class="ws-doc-tabs" id="docTabs">
+                <button class="ws-doc-tab active" data-doc="agenda">ระเบียบวาระ (รวม)</button>
+                <button class="ws-doc-tab" data-doc="propose">เสนอวาระผ่านเลขาธิการฯ</button>
+                <button class="ws-doc-tab" data-doc="invite-board">เชิญประธาน/กรรมการ</button>
+                <button class="ws-doc-tab" data-doc="invite-pacc">เชิญเลขาธิการ ป.ป.ช.</button>
+                <button class="ws-doc-tab" data-doc="invite-dept">เชิญ ผอ.กอง/สำนัก</button>
+                <button class="ws-doc-tab" data-doc="it-meeting">แจ้ง IT e-Meeting</button>
+              </div>
+              <div class="d-flex gap-1 align-items-center">
+                <button type="button" class="btn-doc-edit" id="btnDocEdit" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
+                  <i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btnDocx" title="ส่งออกเป็นเอกสาร Microsoft Word (.docx)"><i class="fa-solid fa-file-word me-1"></i>ส่งออก DOCX</button>
+                <button class="btn btn-sm btn-light border" onclick="window.print()" title="พิมพ์เฉพาะเอกสาร Preview"><i class="fa-solid fa-print"></i></button>
+                <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
+              </div>
+            </div>
+
+            <!-- Symmetrical Pagination & Zoom Navigator Bar -->
+            <div class="pagination-toolbar-symmetric" id="docPaginationBar">
+              <!-- Left Group: View Mode & Page Jump Controls -->
+              <div class="toolbar-group">
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" id="btnModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น)">
+                    <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
+                  </button>
+                  <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnModeContinuous" title="โหมดดูทุกหน้าเรียงกัน">
+                    <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
+                  </button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnFirstPage" title="หน้าแรกสุด (หน้า 1)"><i class="fa-solid fa-backward-step"></i></button>
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnPrevPage" title="หน้าก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
+                </div>
+                
+                <div class="d-flex align-items-center gap-1">
+                  <span class="small opacity-75">หน้า</span>
+                  <input type="number" class="page-input-num" id="pageNumberInput" min="1" value="1">
+                  <span class="small opacity-75" id="totalPagesText">/ 1 หน้า</span>
+                </div>
+
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnNextPage" title="หน้าถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnLastPage" title="หน้าสุดท้าย"><i class="fa-solid fa-forward-step"></i></button>
+                </div>
+              </div>
+
+              <!-- Right Group: Zoom Stepper Controls -->
+              <div class="toolbar-group ms-auto">
+                <div class="d-flex align-items-center bg-dark rounded px-1" style="background:#06182c !important; border:1px solid #1a3d66; height:26px;">
+                  <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                  <span style="font-size:0.75rem; width:34px; text-align:center; font-weight:600;" id="zoomLevelText">75%</span>
+                  <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                </div>
+              </div>
+            </div>
           </div>
-          <button type="button" class="btn-doc-edit ms-auto me-1" id="btnDocEdit" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
-            <i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>
-          </button>
-          <button class="btn btn-sm btn-light" onclick="window.print()" title="พิมพ์เฉพาะเอกสาร Preview"><i class="fa-solid fa-print"></i></button>
-          <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
         </div>
-        <div class="doc-edit-bar" id="docEditBar">
-          <span class="doc-edit-bar-label"><i class="fa-solid fa-pen-to-square me-1"></i>แก้ไขเอกสาร</span>
-          <span class="doc-edit-bar-sep"></span>
-          <button type="button" data-format="bold" title="ตัวหนา"><b>B</b></button>
-          <button type="button" data-format="italic" title="ตัวเอียง"><i>I</i></button>
-          <button type="button" data-format="underline" title="ขีดเส้นใต้"><u>U</u></button>
-          <span class="doc-edit-bar-sep"></span>
-          <button type="button" data-format="justifyLeft" title="ชิดซ้าย"><i class="fa-solid fa-align-left"></i></button>
-          <button type="button" data-format="justifyCenter" title="กึ่งกลาง"><i class="fa-solid fa-align-center"></i></button>
-          <button type="button" data-format="justifyRight" title="ชิดขวา"><i class="fa-solid fa-align-right"></i></button>
-          <span class="doc-edit-bar-sep"></span>
-          <button type="button" data-format="undo" title="เลิกทำ"><i class="fa-solid fa-rotate-left"></i></button>
-          <button type="button" data-format="redo" title="ทำซ้ำ"><i class="fa-solid fa-rotate-right"></i></button>
-          <span class="doc-edit-bar-sep"></span>
-          <button type="button" class="btn btn-sm btn-gold" id="btnSaveDocEdit" style="width:auto;padding:0 .6rem">บันทึกการแก้ไข</button>
+        <div class="ws-paper-stage" id="docPaperStage">
+          <div id="docPaper"></div>
         </div>
-        <div class="ws-paper-stage" id="docPaper"></div>
       </aside>
     </div>
 
@@ -132,6 +167,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pizzip@3/dist/pizzip.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/build/docxtemplater.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/ecmis-app.js"></script>
   <script src="assets/agenda-registry-data.js"></script>
@@ -416,6 +453,8 @@
       </div>`;
           ECMIS.paginateDoc(docPaperEl, { introBlock, flowBlocks, signBlock, runningHeaderHtml: runningHeader(subject) });
         }
+        updatePaginationUI();
+        applyZoom();
       }
 
       document.getElementById('deptRecipientCol').classList.toggle('d-none', docTab !== 'invite-dept');
@@ -429,17 +468,6 @@
         if (Object.values(SIGNER_TITLE_MAP).includes(titleEl.value)) titleEl.value = SIGNER_TITLE_MAP[docTab];
         renderDoc();
       }));
-
-      /* ---------- Document workspace: collapsible pane ---------- */
-      const docWorkspace = document.getElementById('docWorkspace');
-      const PANE_KEY = 'ecmis-agenda-meeting-docs-docpane-collapsed';
-      function setPaneCollapsed(collapsed) {
-        docWorkspace.classList.toggle('pane-collapsed', collapsed);
-        localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
-      }
-      if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
-      document.getElementById('btnPaneCollapse').addEventListener('click', () => setPaneCollapsed(true));
-      document.getElementById('btnPaneExpand').addEventListener('click', () => setPaneCollapsed(false));
 
       /* ---------- action bar ---------- */
       function renderActions() {
@@ -486,6 +514,172 @@
       renderDoc(); renderActions();
     }
     }
+
+    /* ---------- Document workspace: collapsible pane ---------- */
+    const docWorkspace = document.getElementById('docWorkspace');
+    const PANE_KEY = 'ecmis-agenda-meeting-docs-docpane-collapsed';
+    function setPaneCollapsed(collapsed) {
+      if (docWorkspace) docWorkspace.classList.toggle('pane-collapsed', collapsed);
+      localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
+    }
+    if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
+    const btnCollapse = document.getElementById('btnPaneCollapse');
+    const btnExpand = document.getElementById('btnPaneExpand');
+    if (btnCollapse) btnCollapse.addEventListener('click', () => setPaneCollapsed(true));
+    if (btnExpand) btnExpand.addEventListener('click', () => setPaneCollapsed(false));
+
+    /* ---------- Master Toolbar & Pagination Controls ---------- */
+    let docViewMode = 'SINGLE';
+    let docCurrentPage = 1;
+    let docTotalPages = 1;
+    let docZoomLevel = 0.75;
+
+    function updatePaginationUI() {
+      const docPaperEl = document.getElementById('docPaper');
+      if (!docPaperEl) return;
+      const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
+      docTotalPages = Math.max(1, pages.length);
+
+      if (docCurrentPage > docTotalPages) docCurrentPage = docTotalPages;
+      if (docCurrentPage < 1) docCurrentPage = 1;
+
+      $('#totalPagesText').text(`/ ${docTotalPages} หน้า`);
+      $('#pageNumberInput').attr('max', docTotalPages).val(docCurrentPage);
+
+      if (docViewMode === 'SINGLE') {
+        docPaperEl.classList.remove('mode-continuous');
+        docPaperEl.classList.add('mode-single');
+        pages.forEach((p, idx) => {
+          if (idx + 1 === docCurrentPage) {
+            p.classList.add('active-page');
+            p.style.display = 'block';
+          } else {
+            p.classList.remove('active-page');
+            p.style.display = 'none';
+          }
+        });
+        $('#btnModeSingle').removeClass('btn-outline-light').addClass('btn-primary');
+        $('#btnModeContinuous').removeClass('btn-primary').addClass('btn-outline-light');
+        $('#btnFirstPage, #btnPrevPage').prop('disabled', docCurrentPage === 1);
+        $('#btnNextPage, #btnLastPage').prop('disabled', docCurrentPage === docTotalPages);
+        $('#pageNumberInput').prop('disabled', false);
+        const stage = document.getElementById('docPaperStage');
+        if (stage) stage.scrollTop = 0;
+      } else {
+        docPaperEl.classList.remove('mode-single');
+        docPaperEl.classList.add('mode-continuous');
+        pages.forEach(p => {
+          p.classList.add('active-page');
+          p.style.display = 'block';
+        });
+        $('#btnModeContinuous').removeClass('btn-outline-light').addClass('btn-primary');
+        $('#btnModeSingle').removeClass('btn-primary').addClass('btn-outline-light');
+        $('#btnFirstPage, #btnPrevPage, #btnNextPage, #btnLastPage, #pageNumberInput').prop('disabled', true);
+      }
+      applyZoom();
+    }
+
+    function applyZoom() {
+      const docPaperEl = document.getElementById('docPaper');
+      if (!docPaperEl) return;
+      docPaperEl.style.transform = `scale(${docZoomLevel})`;
+      docPaperEl.style.transformOrigin = 'top center';
+      $('#zoomLevelText').text(`${Math.round(docZoomLevel * 100)}%`);
+
+      const stage = document.getElementById('docPaperStage');
+      if (stage) {
+        const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
+        if (pages.length > 0) {
+          if (docViewMode === 'SINGLE') {
+            const activeP = docPaperEl.querySelector('.doc-paper.active-page, .a4-paper.active-page') || pages[0];
+            const h = activeP ? (activeP.offsetHeight || 1123) : 1123;
+            docPaperEl.style.height = `${Math.round(h * docZoomLevel)}px`;
+          } else {
+            let totalH = 0;
+            pages.forEach(p => { totalH += (p.offsetHeight || 1123) + 18; });
+            docPaperEl.style.height = `${Math.round(totalH * docZoomLevel)}px`;
+          }
+        }
+      }
+    }
+
+    $('#btnModeSingle').on('click', function () {
+      docViewMode = 'SINGLE';
+      updatePaginationUI();
+    });
+
+    $('#btnModeContinuous').on('click', function () {
+      docViewMode = 'CONTINUOUS';
+      updatePaginationUI();
+    });
+
+    $('#btnFirstPage').on('click', function () {
+      if (docCurrentPage > 1) {
+        docCurrentPage = 1;
+        updatePaginationUI();
+      }
+    });
+
+    $('#btnPrevPage').on('click', function () {
+      if (docCurrentPage > 1) {
+        docCurrentPage--;
+        updatePaginationUI();
+      }
+    });
+
+    $('#btnNextPage').on('click', function () {
+      if (docCurrentPage < docTotalPages) {
+        docCurrentPage++;
+        updatePaginationUI();
+      }
+    });
+
+    $('#btnLastPage').on('click', function () {
+      if (docCurrentPage < docTotalPages) {
+        docCurrentPage = docTotalPages;
+        updatePaginationUI();
+      }
+    });
+
+    $('#pageNumberInput').on('change', function () {
+      let val = parseInt($(this).val(), 10);
+      if (isNaN(val) || val < 1) val = 1;
+      if (val > docTotalPages) val = docTotalPages;
+      docCurrentPage = val;
+      updatePaginationUI();
+    });
+
+    $('#btnZoomIn').on('click', function () {
+      if (docZoomLevel < 1.5) {
+        docZoomLevel = Math.min(1.5, Math.round((docZoomLevel + 0.1) * 10) / 10);
+        applyZoom();
+      }
+    });
+
+    $('#btnZoomOut').on('click', function () {
+      if (docZoomLevel > 0.4) {
+        docZoomLevel = Math.max(0.4, Math.round((docZoomLevel - 0.1) * 10) / 10);
+        applyZoom();
+      }
+    });
+
+    $('#btnDocx').on('click', function () {
+      if (typeof ECMIS !== 'undefined' && typeof ECMIS.exportDocToDocx === 'function') {
+        const titleMap = {
+          'agenda': 'ระเบียบวาระการประชุม',
+          'propose': 'เสนอวาระผ่านเลขาธิการ',
+          'invite-board': 'หนังสือเชิญประธานและกรรมการ',
+          'invite-pacc': 'หนังสือเชิญเลขาธิการ_ปปช',
+          'invite-dept': 'หนังสือเชิญ_ผอกอง_สำนัก',
+          'it-meeting': 'แจ้ง_IT_WebConference'
+        };
+        const name = titleMap[docTab] || 'เอกสารการประชุม';
+        const meetName = (typeof meeting !== 'undefined' && meeting && meeting.trc_name) ? meeting.trc_name.replace(/[\/\s]/g, '-') : 'meeting';
+        ECMIS.exportDocToDocx('docPaper', `${name}_ครั้งที่_${meetName}.docx`);
+      } else {
+        window.print();
+      }
+    });
   </script>
 </body>
 
