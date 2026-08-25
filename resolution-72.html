@@ -793,20 +793,25 @@
     let docZoomLevel = 0.75;
 
     function updatePaginationUI() {
-      const pages = document.querySelectorAll('#docPaper .doc-paper, #docPaper .a4-paper');
+      const docPaperEl = document.getElementById('docPaper');
+      if (!docPaperEl) return;
+      const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
       docTotalPages = Math.max(1, pages.length);
+
       if (docCurrentPage > docTotalPages) docCurrentPage = docTotalPages;
       if (docCurrentPage < 1) docCurrentPage = 1;
 
-      $('#pageNumberInput').val(docCurrentPage).attr('max', docTotalPages);
       $('#totalPagesText').text(`/ ${docTotalPages} หน้า`);
+      $('#pageNumberInput').attr('max', docTotalPages).val(docCurrentPage);
 
       if (docViewMode === 'SINGLE') {
-        pages.forEach((page, index) => {
-          if (index + 1 === docCurrentPage) {
-            page.style.display = 'block';
+        docPaperEl.classList.remove('mode-continuous');
+        docPaperEl.classList.add('mode-single');
+        pages.forEach((p, idx) => {
+          if (idx + 1 === docCurrentPage) {
+            p.classList.add('active-page');
           } else {
-            page.style.display = 'none';
+            p.classList.remove('active-page');
           }
         });
         $('#btnFirstPage, #btnPrevPage').prop('disabled', docCurrentPage === 1);
@@ -815,31 +820,37 @@
         const stage = document.getElementById('docPaperStage');
         if (stage) stage.scrollTop = 0;
       } else {
-        pages.forEach(page => {
-          page.style.display = 'block';
-        });
+        docPaperEl.classList.remove('mode-single');
+        docPaperEl.classList.add('mode-continuous');
+        pages.forEach(p => p.classList.add('active-page'));
         $('#btnFirstPage, #btnPrevPage, #btnNextPage, #btnLastPage, #pageNumberInput').prop('disabled', true);
       }
+      applyZoom();
     }
 
     function applyZoom() {
-      const el = document.getElementById('docPaper');
-      if (!el) return;
-      el.style.transform = `scale(${docZoomLevel})`;
-      el.style.transformOrigin = 'top center';
-      el.style.transition = 'transform 0.15s ease, margin 0.15s ease';
-      
-      const baseWidth = 794;
-      const scaledWidth = Math.round(baseWidth * docZoomLevel);
-      const widthDelta = baseWidth - scaledWidth;
-      el.style.marginLeft = `-${Math.round(widthDelta / 2)}px`;
-      el.style.marginRight = `-${Math.round(widthDelta / 2)}px`;
-      
-      const baseHeight = el.scrollHeight || 1123;
-      const heightDelta = Math.round(baseHeight * (1 - docZoomLevel));
-      el.style.marginBottom = `-${heightDelta}px`;
-      
+      const docPaperEl = document.getElementById('docPaper');
+      if (!docPaperEl) return;
+      docPaperEl.style.transform = `scale(${docZoomLevel})`;
+      docPaperEl.style.transformOrigin = 'top center';
       $('#zoomLevelText').text(`${Math.round(docZoomLevel * 100)}%`);
+
+      // Adjust wrapper height so stage scrolling is natural
+      const stage = document.getElementById('docPaperStage');
+      if (stage) {
+        const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
+        if (pages.length > 0) {
+          if (docViewMode === 'SINGLE') {
+            const activeP = docPaperEl.querySelector('.doc-paper.active-page, .a4-paper.active-page') || pages[0];
+            const h = activeP ? activeP.offsetHeight : 1123;
+            docPaperEl.style.height = `${Math.round(h * docZoomLevel)}px`;
+          } else {
+            let totalH = 0;
+            pages.forEach(p => { totalH += p.offsetHeight + 18; });
+            docPaperEl.style.height = `${Math.round(totalH * docZoomLevel)}px`;
+          }
+        }
+      }
     }
 
     /* Event Listeners */
