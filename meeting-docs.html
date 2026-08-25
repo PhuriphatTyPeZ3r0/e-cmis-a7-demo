@@ -92,15 +92,16 @@
       <aside class="ws-doc-pane" id="docCol" style="top:calc(var(--topbar-h) + 14px)">
         <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
         <div class="ws-doc-toolbar">
-          <div class="d-flex flex-column w-100 gap-1">
+          <div class="d-flex flex-column w-100 gap-2">
+            <!-- Row 1: Document Set Title & Action Buttons -->
             <div class="d-flex justify-content-between align-items-center">
-              <div class="ws-doc-tabs" id="docTabs">
-                <button class="ws-doc-tab active" data-doc="agenda">ระเบียบวาระ (รวม)</button>
-                <button class="ws-doc-tab" data-doc="propose">เสนอวาระผ่านเลขาธิการฯ</button>
-                <button class="ws-doc-tab" data-doc="invite-board">เชิญประธาน/กรรมการ</button>
-                <button class="ws-doc-tab" data-doc="invite-pacc">เชิญเลขาธิการ ป.ป.ช.</button>
-                <button class="ws-doc-tab" data-doc="invite-dept">เชิญ ผอ.กอง/สำนัก</button>
-                <button class="ws-doc-tab" data-doc="it-meeting">แจ้ง IT e-Meeting</button>
+              <div class="d-flex align-items-center gap-2">
+                <span class="name fw-bold text-dark" style="font-size:0.92rem;">
+                  <i class="fa-solid fa-folder-tree text-primary me-1"></i>จัดทำชุดเอกสารการประชุม
+                </span>
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" id="tabDocBadge" style="font-size:0.75rem; font-weight:600;">
+                  ระเบียบวาระ (รวม)
+                </span>
               </div>
               <div class="d-flex gap-1 align-items-center">
                 <button type="button" class="btn-doc-edit" id="btnDocEdit" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
@@ -112,7 +113,17 @@
               </div>
             </div>
 
-            <!-- Symmetrical Pagination & Zoom Navigator Bar -->
+            <!-- Row 2: Symmetrical 6 Document Tabs -->
+            <div class="ws-doc-tabs d-flex align-items-center gap-1 overflow-x-auto pb-1" id="docTabs" style="scrollbar-width:thin;">
+              <button class="ws-doc-tab active flex-fill text-center" data-doc="agenda"><i class="fa-solid fa-file-lines me-1"></i>ระเบียบวาระ (รวม)</button>
+              <button class="ws-doc-tab flex-fill text-center" data-doc="propose"><i class="fa-solid fa-paper-plane me-1"></i>เสนอวาระผ่านเลขาฯ</button>
+              <button class="ws-doc-tab flex-fill text-center" data-doc="invite-board"><i class="fa-solid fa-users me-1"></i>เชิญประธาน/กรรมการ</button>
+              <button class="ws-doc-tab flex-fill text-center" data-doc="invite-pacc"><i class="fa-solid fa-building-columns me-1"></i>เชิญเลขาฯ ป.ป.ช.</button>
+              <button class="ws-doc-tab flex-fill text-center" data-doc="invite-dept"><i class="fa-solid fa-user-tie me-1"></i>เชิญ ผอ.กอง/สำนัก</button>
+              <button class="ws-doc-tab flex-fill text-center" data-doc="it-meeting"><i class="fa-solid fa-video me-1"></i>แจ้ง IT e-Meeting</button>
+            </div>
+
+            <!-- Row 3: Symmetrical Pagination & Zoom Navigator Bar -->
             <div class="pagination-toolbar-symmetric" id="docPaginationBar">
               <!-- Left Group: View Mode & Page Jump Controls -->
               <div class="toolbar-group">
@@ -461,6 +472,8 @@
       document.querySelectorAll('#docTabs [data-doc]').forEach(b => b.addEventListener('click', () => {
         document.querySelectorAll('#docTabs .ws-doc-tab').forEach(x => x.classList.remove('active'));
         b.classList.add('active'); docTab = b.dataset.doc;
+        const badgeEl = document.getElementById('tabDocBadge');
+        if (badgeEl) badgeEl.textContent = b.textContent.trim();
         document.getElementById('deptRecipientCol').classList.toggle('d-none', docTab !== 'invite-dept');
         /* สลับตำแหน่งลงนามตามค่าตั้งต้นของเอกสารใหม่ เฉพาะกรณีผู้ใช้ยังไม่ได้แก้ไขเป็นค่าอื่นเอง
            (ถ้าค่าปัจจุบันตรงกับค่าตั้งต้นของแท็บใดแท็บหนึ่งอยู่แล้ว ถือว่ายังไม่ได้ปรับเอง) */
