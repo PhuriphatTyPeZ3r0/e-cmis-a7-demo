@@ -247,9 +247,7 @@
           </div>
         </div>
         <div class="ws-paper-stage" id="docPaperStage">
-          <div id="docPaper">
-            <div class="doc-paper doc-resolution a4-paper" id="docPaperPage"></div>
-          </div>
+          <div id="docPaper"></div>
         </div>
       </aside>
     </div>
@@ -720,41 +718,45 @@
         RETURN: 'เห็นควรส่งคืนสายงานต้นทาง (กจ.5) เพื่อปรับปรุงสำนวนให้ถูกต้องครบถ้วน'
       };
 
-      const docTarget = document.getElementById('docPaperPage') || document.getElementById('docPaper');
-      docTarget.innerHTML = `
-        <div class="doc-secret">ลับ</div>
-        <div class="doc-title">
-          <div class="doc-title-l1">บันทึกข้อความความเห็นการกลั่นกรอง</div>
-          <div class="doc-title-l2">คณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
-        </div>
-        <div class="doc-sub">สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
+      const docPaperEl = document.getElementById('docPaper');
+      if (!docPaperEl) return;
 
-        <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
-        <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
-        <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner || '-')} (${M(kase.ownerOrg || '-')})</div>
+      docPaperEl.innerHTML = `
+        <div class="doc-paper doc-resolution a4-paper active-page" id="docPaperPage">
+          <div class="doc-secret">ลับ</div>
+          <div class="doc-title">
+            <div class="doc-title-l1">บันทึกข้อความความเห็นการกลั่นกรอง</div>
+            <div class="doc-title-l2">คณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
+          </div>
+          <div class="doc-sub">สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
 
-        <div class="doc-body-indent">
-          <div class="doc-h">ผู้ถูกร้อง</div>
-          ${(kase.accused || []).map(a => `<div>${a.no || 1}. ${M(a.name)} ${a.pos ? `— ${M(a.pos)}` : ''}</div>`).join('')}
+          <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
+          <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+          <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner || '-')} (${M(kase.ownerOrg || '-')})</div>
 
-          <div class="doc-h">ข้อกล่าวหา</div>
-          <div class="doc-indent">${M(kase.allegation)}</div>
+          <div class="doc-body-indent">
+            <div class="doc-h">ผู้ถูกร้อง</div>
+            ${(kase.accused || []).map(a => `<div>${a.no || 1}. ${M(a.name)} ${a.pos ? `— ${M(a.pos)}` : ''}</div>`).join('')}
 
-          <div class="doc-h">ผลการพิจารณากลั่นกรองของคณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
-          <div class="doc-indent"><strong>${M(DEC_TXT[dec])}</strong></div>
+            <div class="doc-h">ข้อกล่าวหา</div>
+            <div class="doc-indent">${M(kase.allegation)}</div>
 
-          ${dec === 'DIFFER' ? `
-          <div class="doc-h text-danger">ข้อกฎหมายและเหตุผลในการแย้งความเห็น</div>
-          ${lawTxt ? `<div class="doc-indent text-danger"><strong>ฐานกฎหมายอ้างอิง:</strong> ${M(lawTxt)}</div>` : ''}
-          <div class="doc-indent text-danger">${M(dissent, '…………………………………… (ระบุเหตุผลแย้งโดยละเอียด)')}</div>` : ''}
+            <div class="doc-h">ผลการพิจารณากลั่นกรองของคณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
+            <div class="doc-indent"><strong>${M(DEC_TXT[dec])}</strong></div>
 
-          <div class="doc-h">ความเห็นและข้อสังเกตประกอบ</div>
-          <div class="doc-indent">${M(opinion, '…………………………………… (ระบุความเห็นกลั่นกรอง)')}</div>
-        </div>
+            ${dec === 'DIFFER' ? `
+            <div class="doc-h text-danger">ข้อกฎหมายและเหตุผลในการแย้งความเห็น</div>
+            ${lawTxt ? `<div class="doc-indent text-danger"><strong>ฐานกฎหมายอ้างอิง:</strong> ${M(lawTxt)}</div>` : ''}
+            <div class="doc-indent text-danger">${M(dissent, '…………………………………… (ระบุเหตุผลแย้งโดยละเอียด)')}</div>` : ''}
 
-        <div class="doc-sign" style="margin-top:2rem">
-          (นางสาวจิราพร นิติกิจ)<br>
-          ประธานคณะอนุกรรมการสนับสนุนเลขาธิการฯ
+            <div class="doc-h">ความเห็นและข้อสังเกตประกอบ</div>
+            <div class="doc-indent">${M(opinion, '…………………………………… (ระบุความเห็นกลั่นกรอง)')}</div>
+          </div>
+
+          <div class="doc-sign" style="margin-top:2rem">
+            (นางสาวจิราพร นิติกิจ)<br>
+            ประธานคณะอนุกรรมการสนับสนุนเลขาธิการฯ
+          </div>
         </div>
       `;
       updatePaginationUI();
@@ -955,41 +957,59 @@
       $('#pageNumberInput').attr('max', docTotalPages).val(docCurrentPage);
 
       if (docViewMode === 'SINGLE') {
-        pages.forEach((page, idx) => {
+        docPaperEl.classList.remove('mode-continuous');
+        docPaperEl.classList.add('mode-single');
+        pages.forEach((p, idx) => {
           if (idx + 1 === docCurrentPage) {
-            page.style.display = 'block';
+            p.classList.add('active-page');
+            p.style.display = 'block';
           } else {
-            page.style.display = 'none';
+            p.classList.remove('active-page');
+            p.style.display = 'none';
           }
         });
-        $('#docPaper').removeClass('mode-continuous').addClass('mode-single');
         $('#btnModeSingle').removeClass('btn-outline-light').addClass('btn-primary');
         $('#btnModeContinuous').removeClass('btn-primary').addClass('btn-outline-light');
-        $('#btnFirstPage, #btnPrevPage, #btnNextPage, #btnLastPage, #pageNumberInput').prop('disabled', false);
+        $('#btnFirstPage, #btnPrevPage').prop('disabled', docCurrentPage === 1);
+        $('#btnNextPage, #btnLastPage').prop('disabled', docCurrentPage === docTotalPages);
+        $('#pageNumberInput').prop('disabled', false);
+        const stage = document.getElementById('docPaperStage');
+        if (stage) stage.scrollTop = 0;
       } else {
-        pages.forEach(page => {
-          page.style.display = 'block';
+        docPaperEl.classList.remove('mode-single');
+        docPaperEl.classList.add('mode-continuous');
+        pages.forEach(p => {
+          p.classList.add('active-page');
+          p.style.display = 'block';
         });
-        $('#docPaper').removeClass('mode-single').addClass('mode-continuous');
         $('#btnModeContinuous').removeClass('btn-outline-light').addClass('btn-primary');
         $('#btnModeSingle').removeClass('btn-primary').addClass('btn-outline-light');
         $('#btnFirstPage, #btnPrevPage, #btnNextPage, #btnLastPage, #pageNumberInput').prop('disabled', true);
       }
-
-      $('#btnFirstPage, #btnPrevPage').prop('disabled', docViewMode === 'CONTINUOUS' || docCurrentPage <= 1);
-      $('#btnNextPage, #btnLastPage').prop('disabled', docViewMode === 'CONTINUOUS' || docCurrentPage >= docTotalPages);
+      applyZoom();
     }
 
     function applyZoom() {
-      const zoomPct = Math.round(docZoomLevel * 100);
-      $('#zoomLevelText').text(`${zoomPct}%`);
-      const stage = document.getElementById('docPaperStage') || document.querySelector('.ws-paper-stage');
+      const docPaperEl = document.getElementById('docPaper');
+      if (!docPaperEl) return;
+      docPaperEl.style.transform = `scale(${docZoomLevel})`;
+      docPaperEl.style.transformOrigin = 'top center';
+      $('#zoomLevelText').text(`${Math.round(docZoomLevel * 100)}%`);
+
+      // Adjust wrapper height so stage scrolling is natural
+      const stage = document.getElementById('docPaperStage');
       if (stage) {
-        stage.style.setProperty('--doc-zoom', docZoomLevel);
-        const docPaper = document.getElementById('docPaper');
-        if (docPaper) {
-          docPaper.style.transform = `scale(${docZoomLevel})`;
-          docPaper.style.transformOrigin = 'top center';
+        const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
+        if (pages.length > 0) {
+          if (docViewMode === 'SINGLE') {
+            const activeP = docPaperEl.querySelector('.doc-paper.active-page, .a4-paper.active-page') || pages[0];
+            const h = activeP ? (activeP.offsetHeight || 1123) : 1123;
+            docPaperEl.style.height = `${Math.round(h * docZoomLevel)}px`;
+          } else {
+            let totalH = 0;
+            pages.forEach(p => { totalH += (p.offsetHeight || 1123) + 18; });
+            docPaperEl.style.height = `${Math.round(totalH * docZoomLevel)}px`;
+          }
         }
       }
     }
