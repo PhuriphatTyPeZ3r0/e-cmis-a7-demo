@@ -751,7 +751,7 @@ const CASES = [
     receivedDate:'2568-11-14', deadline60:'2569-01-13', deadline2y:'2570-11-14', prescription:'2571-03-20',
     docRef:'ปป 0020/1028 ลงวันที่ 7 พฤษภาคม 2569',
     urgent:false, complex:true, dupWarning:false,
-    slaDays:3, slaLimit:15, subCommittee:'คณะที่ 1',
+    slaDays:3, slaLimit:15, subCommittee:null,
     meetingNo:'37/2569', agendaNo:'5.2', meetingDate:'2569-08-20',
     docType:'213', signPhase:'COMPLETE'
   },

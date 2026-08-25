@@ -823,7 +823,21 @@
       setTimeout(() => URL.revokeObjectURL(url), 5000);
     }
 
-    function docxTags() {
+    /* ---------- เลือก template .docx ต้นฉบับตามประเภทเรื่อง (ดู 05 - Resolution Templates
+       & Data Mapping ใน docs/memory): 7.1 แยกตาม kase.subCommittee (เสนอตรง/ผ่านอนุกลั่นกรอง),
+       7.3 แยกตาม kase.legalBase (ม.33 = กกม., อื่น ๆ = เรื่องทั่วไป) ---------- */
+    function pickTemplate() {
+      if (kase.docType === 'GENERAL') {
+        return kase.legalBase === 'ม.33'
+          ? { url: 'assets/templates/order-legal-kkm.docx', kind: 'legal73' }
+          : { url: 'assets/templates/order-general.docx', kind: 'general73' };
+      }
+      return kase.subCommittee
+        ? { url: 'assets/templates/order-screening.docx', kind: 'screening' }
+        : { url: 'assets/templates/order-preliminary.docx', kind: 'default' };
+    }
+
+    function docxTags(kind) {
       const P = (v, ph) => (v && String(v).trim()) ? String(v).trim() : (ph || '…………');
       const meetNo = document.getElementById('meetNo').value.trim();
       const meetDateValue = normalizeDateInputValue(document.getElementById('meetDate').value.trim());
@@ -842,9 +856,14 @@
         : '';
       const curSubject = document.getElementById('caseSubject')?.value?.trim() || kase.subject;
       const curOwners = document.getElementById('caseOwnersField')?.value?.trim() || kase.owner;
+      /* ownerName ของ template 2 (ผ่านอนุกลั่นกรอง) ไม่ใช่ชื่อเจ้าของสำนวน แต่เป็นชื่อเต็มของ
+         คณะอนุกรรมการกลั่นกรองที่เสนอเรื่อง ตามที่ตกลงกันไว้ */
+      const screeningOwnerName = `คณะอนุกรรมการกลั่นกรอง เรื่อง รายงานผลการรวบรวมพยานหลักฐานไต่สวนเบื้องต้นและรายงานการไต่สวนเพื่อวินิจฉัยชี้มูล เพื่อเสนอคณะกรรมการ ป.ป.ท. คณะที่ ${P(kase.subCommittee, '…')}`;
       return {
         meetNo: P(meetNo), meetDate: P(meetDate), agendaNo: P(agendaNo),
-        subject: P(curSubject), ownerName: P(curOwners), ownerOrg: P(ownerOrg),
+        subject: P(curSubject),
+        ownerName: kind === 'screening' ? screeningOwnerName : P(curOwners),
+        ownerOrg: P(ownerOrg),
         explainer: P(presenter), refDoc: P(kase.docRef !== '—' ? kase.docRef : ''),
         caseId: P(kase.id), legalBaseClause,
         complainant: P(kase.complainant),
@@ -853,6 +872,9 @@
         accused3: ac[2] ? P(`${ac[2].name} ${ac[2].pos}`) : '',
         allegation: P(kase.allegation), explainNote: P(presenterNote),
         boardOpinion: P(opinion), resolutionText: computeResolutionText(),
+        caseContent: P(kase.allegation),
+        subCommitteeNo: P(kase.subCommittee ? String(kase.subCommittee).replace('คณะที่', '').trim() : ''),
+        agendaCount: P('', '1'),
         nacc65Clause,
         ratifyMeetNo: P(meetNo), ratifyMeetDate: P(meetDate), ratifyAgendaNo: P(agendaNo),
         lastClauseNo: kase.legalBase === 'ม.62' ? '3' : '2'
@@ -861,7 +883,8 @@
 
     document.getElementById('btnDocx').addEventListener('click', async () => {
       try {
-        await generateDocx('assets/templates/order-preliminary.docx', docxTags(),
+        const tpl = pickTemplate();
+        await generateDocx(tpl.url, docxTags(tpl.kind),
           `มติที่ประชุม-${kase.id.replace('/', '_')}.docx`);
         ECMIS.toastOk('ดาวน์โหลด .docx เรียบร้อย — แก้ไขใน Word ได้ตามปกติ');
       } catch (e) {
