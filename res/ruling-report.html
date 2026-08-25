@@ -1699,14 +1699,15 @@
               .then(function (res) {
                 const text = (res.value || '').trim();
                 $('#legalAnalysis').val(text);
-                const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
                 const words = text.split(/\s+/).filter(Boolean).length;
-                const estPages = Math.max(1, Math.ceil(text.length / 1050));
+                const fileSize = file.size < 1024 * 1024
+                  ? `${(file.size / 1024).toFixed(1)} KB`
+                  : `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
 
                 $('#file_badge_legalAnalysis').html(`
                   <div class="attached-info-badge">
                     <i class="fa-solid fa-file-word text-primary"></i>
-                    <strong>${file.name}</strong> (${fileSizeMB} MB • ${words.toLocaleString()} คำ • ~${estPages} หน้า)
+                    <strong>${file.name}</strong> (${fileSize})
                     <button type="button" class="btn btn-link btn-xs text-danger p-0 ms-2" id="btnRemoveFileLegalAnalysis" title="ลบไฟล์">
                       <i class="fa-solid fa-xmark"></i>
                     </button>
