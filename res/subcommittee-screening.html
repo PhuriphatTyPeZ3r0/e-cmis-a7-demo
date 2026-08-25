@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 
 <head>
@@ -134,12 +134,64 @@
             <aside class="ws-doc-pane" style="top:calc(var(--topbar-h) + 14px)">
                 <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
                 <div class="ws-doc-toolbar">
-                    <span class="name"><i class="fa-solid fa-file-word"></i> มติการประชุม (ผ่านอนุกลั่นกรองคณะฯ)</span>
-                    <button class="btn btn-sm btn-light" onclick="window.print()"><i class="fa-solid fa-print"></i></button>
-                    <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
+                  <div class="d-flex flex-column w-100 gap-1">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <span class="name"><i class="fa-solid fa-file-word"></i> มติการประชุม (ผ่านอนุกลั่นกรองคณะฯ)</span>
+                      <div class="d-flex gap-1 align-items-center">
+                        <button type="button" class="btn-doc-edit" id="btnDocEdit" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
+                          <i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnDocx" title="ส่งออกเป็นเอกสาร Microsoft Word (.docx)"><i class="fa-solid fa-file-word me-1"></i>ส่งออก DOCX</button>
+                        <button type="button" class="btn btn-sm btn-light border" onclick="window.print()" title="พิมพ์เอกสารปัจจุบัน"><i class="fa-solid fa-print"></i></button>
+                        <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
+                      </div>
+                    </div>
+
+                    <!-- Symmetrical Pagination & Zoom Navigator Bar -->
+                    <div class="pagination-toolbar-symmetric" id="docPaginationBar">
+                      <!-- Left Group: View Mode & Page Jump Controls -->
+                      <div class="toolbar-group">
+                        <div class="btn-group btn-group-sm" role="group">
+                          <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" id="btnModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น)">
+                            <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
+                          </button>
+                          <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnModeContinuous" title="โหมดดูทุกหน้าเรียงกัน">
+                            <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
+                          </button>
+                        </div>
+
+                        <div class="toolbar-divider"></div>
+
+                        <div class="btn-group btn-group-sm" role="group">
+                          <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnFirstPage" title="หน้าแรกสุด (หน้า 1)"><i class="fa-solid fa-backward-step"></i></button>
+                          <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnPrevPage" title="หน้าก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
+                        </div>
+                        
+                        <div class="d-flex align-items-center gap-1">
+                          <span class="small opacity-75">หน้า</span>
+                          <input type="number" class="page-input-num" id="pageNumberInput" min="1" value="1">
+                          <span class="small opacity-75" id="totalPagesText">/ 1 หน้า</span>
+                        </div>
+
+                        <div class="btn-group btn-group-sm" role="group">
+                          <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnNextPage" title="หน้าถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+                          <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnLastPage" title="หน้าสุดท้าย"><i class="fa-solid fa-forward-step"></i></button>
+                        </div>
+                      </div>
+
+                      <!-- Right Group: Zoom Stepper Controls -->
+                      <div class="toolbar-group ms-auto">
+                        <div class="d-flex align-items-center bg-dark rounded px-1" style="background:#06182c !important; border:1px solid #1a3d66; height:26px;">
+                          <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                          <span style="font-size:0.75rem; width:34px; text-align:center; font-weight:600;" id="zoomLevelText">75%</span>
+                          <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="ws-paper-stage">
-                    <div class="doc-paper doc-resolution a4-paper" id="docPaper"></div>
+                <div class="ws-paper-stage" id="docPaperStage">
+                  <div id="docPaper"></div>
                 </div>
             </aside>
         </div>
@@ -150,6 +202,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pizzip@3/dist/pizzip.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/build/docxtemplater.js"></script>
     <script src="../assets/ecmis-app.js"></script>
     <script src="../assets/ecmis-model.js"></script>
     <script>
@@ -175,17 +229,6 @@
         }
 
         if (isRuling) { initScreening72(); } else { initScreening71(); }
-
-        /* ---------- Document workspace: collapsible pane ---------- */
-        const docWorkspace = document.getElementById('docWorkspace');
-        const PANE_KEY = 'ecmis-subcommittee-screening-docpane-collapsed';
-        function setPaneCollapsed(collapsed) {
-            docWorkspace.classList.toggle('pane-collapsed', collapsed);
-            localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
-        }
-        if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
-        document.getElementById('btnPaneCollapse').addEventListener('click', () => setPaneCollapsed(true));
-        document.getElementById('btnPaneExpand').addEventListener('click', () => setPaneCollapsed(false));
 
         function initScreening71(){
 
@@ -288,42 +331,49 @@
                 NOT_ACCEPT: 'ไม่รับเรื่องไว้พิจารณา และให้แจ้งมติพร้อมความเห็นกลับไปยังผู้รับผิดชอบสำนวน'
             };
 
-            document.getElementById('docPaper').innerHTML = `
-    <div class="doc-secret">ลับ</div>
-    <div class="doc-title">
-      <div class="doc-title-l1">มติการประชุม</div>
-      <div class="doc-title-l2">คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}</div>
-    </div>
-    <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}</div>
+            const docPaperEl = document.getElementById('docPaper');
+            if (!docPaperEl) return;
 
-    <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
-    <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
-    <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner)}</div>
-    <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
+            docPaperEl.innerHTML = `
+    <div class="doc-paper doc-resolution a4-paper active-page" id="docPaperPage">
+      <div class="doc-secret">ลับ</div>
+      <div class="doc-title">
+        <div class="doc-title-l1">มติการประชุม</div>
+        <div class="doc-title-l2">คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}</div>
+      </div>
+      <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}</div>
 
-    <div class="doc-body-indent">
-      <div class="doc-h">ผู้ถูกร้อง</div>
-      ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} — ${M(a.pos)}</div>`).join('')}
+      <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
+      <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+      <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner)}</div>
+      <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
 
-      <div class="doc-h">ข้อกล่าวหา</div>
-      <div class="doc-indent">${M(kase.allegation)}</div>
+      <div class="doc-body-indent">
+        <div class="doc-h">ผู้ถูกร้อง</div>
+        ${(kase.accused || []).map(a => `<div>${a.no}. ${M(a.name)} — ${M(a.pos)}</div>`).join('')}
 
-      <div class="doc-h">ความเห็นและข้อสังเกตของคณะอนุกรรมการ</div>
-      <div class="doc-indent">${M(opinion, '……………………………………………………………………………………')}</div>
-    </div>
+        <div class="doc-h">ข้อกล่าวหา</div>
+        <div class="doc-indent">${M(kase.allegation)}</div>
 
-    <div class="doc-h">มติคณะอนุกรรมการ</div>
-    <div class="doc-indent">คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}
-      พิจารณาแล้วมีมติ ${M(RES_TXT[res])}</div>
+        <div class="doc-h">ความเห็นและข้อสังเกตของคณะอนุกรรมการ</div>
+        <div class="doc-indent">${M(opinion, '……………………………………………………………………………………')}</div>
+      </div>
 
-    <div class="doc-sign">
-      ${signed && pendingSigData && pendingSigData.sig ? `<img class="doc-sig-img" src="${pendingSigData.sig}" alt="ลายมือชื่อ"><br>` : (signed ? `<span style="display:inline-block;padding:4px 8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:4px;color:#065f46;font-size:0.8rem;margin-bottom:6px"><i class="fa-solid fa-certificate me-1"></i>Digital Signature Verified (${pendingSigData?.certCode || SIGNER_CERT})</span><br>` : '<span class="doc-dots"></span><br>')}
-      (${SIGNER_NAME})<br>
-      อนุกรรมการและเลขานุการ<br>
-      คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}
-      ${signed ? `<br><span style="font-size:0.75rem;color:#16A34A"><i class="fa-solid fa-circle-check"></i> ลงนามดิจิทัลเมื่อ ${new Date().toLocaleString('th-TH')}</span>` : ''}
-    </div>
-    <div class="doc-secret-foot">ลับ</div>`;
+      <div class="doc-h">มติคณะอนุกรรมการ</div>
+      <div class="doc-indent">คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}
+        พิจารณาแล้วมีมติ ${M(RES_TXT[res])}</div>
+
+      <div class="doc-sign">
+        ${signed && pendingSigData && pendingSigData.sig ? `<img class="doc-sig-img" src="${pendingSigData.sig}" alt="ลายมือชื่อ"><br>` : (signed ? `<span style="display:inline-block;padding:4px 8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:4px;color:#065f46;font-size:0.8rem;margin-bottom:6px"><i class="fa-solid fa-certificate me-1"></i>Digital Signature Verified (${pendingSigData?.certCode || SIGNER_CERT})</span><br>` : '<span class="doc-dots"></span><br>')}
+        (${SIGNER_NAME})<br>
+        อนุกรรมการและเลขานุการ<br>
+        คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}
+        ${signed ? `<br><span style="font-size:0.75rem;color:#16A34A"><i class="fa-solid fa-circle-check"></i> ลงนามดิจิทัลเมื่อ ${new Date().toLocaleString('th-TH')}</span>` : ''}
+      </div>
+      <div class="doc-secret-foot">ลับ</div>
+    </div>`;
+            updatePaginationUI();
+            applyZoom();
         }
 
         ['subMeetNo', 'subMeetDate', 'subOpinion'].forEach(id =>
@@ -560,38 +610,45 @@
                 const meetDate = ECMIS.thaiDate(document.getElementById('subMeetDate').value.trim());
                 const opinion = document.getElementById('subOpinion').value.trim();
 
-                document.getElementById('docPaper').innerHTML = `
-    <div class="doc-secret">ลับ</div>
-    <div class="doc-title">
-      <div class="doc-title-l1">รายงานความเห็น</div>
-      <div class="doc-title-l2">คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}</div>
-    </div>
-    <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}</div>
+                const docPaperEl = document.getElementById('docPaper');
+                if (!docPaperEl) return;
 
-    <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
-    <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
-    <div class="doc-row"><span class="k">ผู้รับผิดชอบสำนวน</span> ${M(kase.owner)}</div>
-    <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
+                docPaperEl.innerHTML = `
+    <div class="doc-paper doc-resolution a4-paper active-page" id="docPaperPage">
+      <div class="doc-secret">ลับ</div>
+      <div class="doc-title">
+        <div class="doc-title-l1">รายงานความเห็น</div>
+        <div class="doc-title-l2">คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}</div>
+      </div>
+      <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}</div>
 
-    <div class="doc-body-indent">
-      <div class="doc-h">ผู้ถูกกล่าวหา</div>
-      ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)} ${M(a.agency)}</div>`).join('')}
+      <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
+      <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+      <div class="doc-row"><span class="k">ผู้รับผิดชอบสำนวน</span> ${M(kase.owner)}</div>
+      <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
 
-      <div class="doc-h">ข้อกล่าวหา</div>
-      <div class="doc-indent">${M(kase.allegation)}</div>
+      <div class="doc-body-indent">
+        <div class="doc-h">ผู้ถูกกล่าวหา</div>
+        ${(kase.accused || []).map(a => `<div>${a.no || 1}. ${M(a.name)} ${M(a.pos)} ${M(a.agency || '')}</div>`).join('')}
 
-      <div class="doc-h">ความเห็นของคณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง</div>
-      <div class="doc-indent">${M(opinion, '……………………………………………………………………………………')}</div>
-    </div>
+        <div class="doc-h">ข้อกล่าวหา</div>
+        <div class="doc-indent">${M(kase.allegation)}</div>
 
-    <div class="doc-sign">
-      ${signed72 && pendingSigData72 && pendingSigData72.sig ? `<img class="doc-sig-img" src="${pendingSigData72.sig}" alt="ลายมือชื่อ"><br>` : (signed72 ? `<span style="display:inline-block;padding:4px 8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:4px;color:#065f46;font-size:0.8rem;margin-bottom:6px"><i class="fa-solid fa-certificate me-1"></i>Digital Signature Verified (${pendingSigData72?.certCode || SIGNER_CERT72})</span><br>` : '<span class="doc-dots"></span><br>')}
-      (${SIGNER_NAME72})<br>
-      อนุกรรมการและเลขานุการ<br>
-      คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}
-      ${signed72 ? `<br><span style="font-size:0.75rem;color:#16A34A"><i class="fa-solid fa-circle-check"></i> ลงนามดิจิทัลเมื่อ ${new Date().toLocaleString('th-TH')}</span>` : ''}
-    </div>
-    <div class="doc-secret-foot">ลับ</div>`;
+        <div class="doc-h">ความเห็นของคณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง</div>
+        <div class="doc-indent">${M(opinion, '……………………………………………………………………………………')}</div>
+      </div>
+
+      <div class="doc-sign">
+        ${signed72 && pendingSigData72 && pendingSigData72.sig ? `<img class="doc-sig-img" src="${pendingSigData72.sig}" alt="ลายมือชื่อ"><br>` : (signed72 ? `<span style="display:inline-block;padding:4px 8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:4px;color:#065f46;font-size:0.8rem;margin-bottom:6px"><i class="fa-solid fa-certificate me-1"></i>Digital Signature Verified (${pendingSigData72?.certCode || SIGNER_CERT72})</span><br>` : '<span class="doc-dots"></span><br>')}
+        (${SIGNER_NAME72})<br>
+        อนุกรรมการและเลขานุการ<br>
+        คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${M(team)}
+        ${signed72 ? `<br><span style="font-size:0.75rem;color:#16A34A"><i class="fa-solid fa-circle-check"></i> ลงนามดิจิทัลเมื่อ ${new Date().toLocaleString('th-TH')}</span>` : ''}
+      </div>
+      <div class="doc-secret-foot">ลับ</div>
+    </div>`;
+                updatePaginationUI();
+                applyZoom();
             }
             ['subMeetNo', 'subMeetDate', 'subOpinion'].forEach(id =>
                 document.getElementById(id).addEventListener('input', renderDoc));
@@ -737,6 +794,167 @@
 
             renderSubQuorum(); renderDoc();
         }
+
+        /* ---------- Document workspace: collapsible pane ---------- */
+        const docWorkspace = document.getElementById('docWorkspace');
+        const PANE_KEY = 'ecmis-subcommittee-screening-docpane-collapsed';
+        function setPaneCollapsed(collapsed) {
+            if (docWorkspace) docWorkspace.classList.toggle('pane-collapsed', collapsed);
+            localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
+        }
+        if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
+        const btnCollapse = document.getElementById('btnPaneCollapse');
+        const btnExpand = document.getElementById('btnPaneExpand');
+        if (btnCollapse) btnCollapse.addEventListener('click', () => setPaneCollapsed(true));
+        if (btnExpand) btnExpand.addEventListener('click', () => setPaneCollapsed(false));
+
+        /* ---------- Master Toolbar & Pagination Controls ---------- */
+        let docViewMode = 'SINGLE';
+        let docCurrentPage = 1;
+        let docTotalPages = 1;
+        let docZoomLevel = 0.75;
+
+        function updatePaginationUI() {
+            const docPaperEl = document.getElementById('docPaper');
+            if (!docPaperEl) return;
+            const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
+            docTotalPages = Math.max(1, pages.length);
+
+            if (docCurrentPage > docTotalPages) docCurrentPage = docTotalPages;
+            if (docCurrentPage < 1) docCurrentPage = 1;
+
+            $('#totalPagesText').text(`/ ${docTotalPages} หน้า`);
+            $('#pageNumberInput').attr('max', docTotalPages).val(docCurrentPage);
+
+            if (docViewMode === 'SINGLE') {
+                docPaperEl.classList.remove('mode-continuous');
+                docPaperEl.classList.add('mode-single');
+                pages.forEach((p, idx) => {
+                    if (idx + 1 === docCurrentPage) {
+                        p.classList.add('active-page');
+                        p.style.display = 'block';
+                    } else {
+                        p.classList.remove('active-page');
+                        p.style.display = 'none';
+                    }
+                });
+                $('#btnModeSingle').removeClass('btn-outline-light').addClass('btn-primary');
+                $('#btnModeContinuous').removeClass('btn-primary').addClass('btn-outline-light');
+                $('#btnFirstPage, #btnPrevPage').prop('disabled', docCurrentPage === 1);
+                $('#btnNextPage, #btnLastPage').prop('disabled', docCurrentPage === docTotalPages);
+                $('#pageNumberInput').prop('disabled', false);
+                const stage = document.getElementById('docPaperStage');
+                if (stage) stage.scrollTop = 0;
+            } else {
+                docPaperEl.classList.remove('mode-single');
+                docPaperEl.classList.add('mode-continuous');
+                pages.forEach(p => {
+                    p.classList.add('active-page');
+                    p.style.display = 'block';
+                });
+                $('#btnModeContinuous').removeClass('btn-outline-light').addClass('btn-primary');
+                $('#btnModeSingle').removeClass('btn-primary').addClass('btn-outline-light');
+                $('#btnFirstPage, #btnPrevPage, #btnNextPage, #btnLastPage, #pageNumberInput').prop('disabled', true);
+            }
+            applyZoom();
+        }
+
+        function applyZoom() {
+            const docPaperEl = document.getElementById('docPaper');
+            if (!docPaperEl) return;
+            docPaperEl.style.transform = `scale(${docZoomLevel})`;
+            docPaperEl.style.transformOrigin = 'top center';
+            $('#zoomLevelText').text(`${Math.round(docZoomLevel * 100)}%`);
+
+            const stage = document.getElementById('docPaperStage');
+            if (stage) {
+                const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
+                if (pages.length > 0) {
+                    if (docViewMode === 'SINGLE') {
+                        const activeP = docPaperEl.querySelector('.doc-paper.active-page, .a4-paper.active-page') || pages[0];
+                        const h = activeP ? (activeP.offsetHeight || 1123) : 1123;
+                        docPaperEl.style.height = `${Math.round(h * docZoomLevel)}px`;
+                    } else {
+                        let totalH = 0;
+                        pages.forEach(p => { totalH += (p.offsetHeight || 1123) + 18; });
+                        docPaperEl.style.height = `${Math.round(totalH * docZoomLevel)}px`;
+                    }
+                }
+            }
+        }
+
+        $('#btnModeSingle').on('click', function () {
+            docViewMode = 'SINGLE';
+            updatePaginationUI();
+        });
+
+        $('#btnModeContinuous').on('click', function () {
+            docViewMode = 'CONTINUOUS';
+            updatePaginationUI();
+        });
+
+        $('#btnFirstPage').on('click', function () {
+            if (docCurrentPage > 1) {
+                docCurrentPage = 1;
+                updatePaginationUI();
+            }
+        });
+
+        $('#btnPrevPage').on('click', function () {
+            if (docCurrentPage > 1) {
+                docCurrentPage--;
+                updatePaginationUI();
+            }
+        });
+
+        $('#btnNextPage').on('click', function () {
+            if (docCurrentPage < docTotalPages) {
+                docCurrentPage++;
+                updatePaginationUI();
+            }
+        });
+
+        $('#btnLastPage').on('click', function () {
+            if (docCurrentPage < docTotalPages) {
+                docCurrentPage = docTotalPages;
+                updatePaginationUI();
+            }
+        });
+
+        $('#pageNumberInput').on('change', function () {
+            let val = parseInt($(this).val(), 10);
+            if (isNaN(val) || val < 1) val = 1;
+            if (val > docTotalPages) val = docTotalPages;
+            docCurrentPage = val;
+            updatePaginationUI();
+        });
+
+        $('#btnZoomIn').on('click', function () {
+            if (docZoomLevel < 1.5) {
+                docZoomLevel = Math.min(1.5, Math.round((docZoomLevel + 0.1) * 10) / 10);
+                applyZoom();
+            }
+        });
+
+        $('#btnZoomOut').on('click', function () {
+            if (docZoomLevel > 0.4) {
+                docZoomLevel = Math.max(0.4, Math.round((docZoomLevel - 0.1) * 10) / 10);
+                applyZoom();
+            }
+        });
+
+        $('#btnDocx').on('click', function () {
+            if (typeof ECMIS !== 'undefined' && typeof ECMIS.exportDocToDocx === 'function') {
+                ECMIS.exportDocToDocx('docPaper', `รายงานความเห็นคณะอนุกลั่นกรอง_${kase.id.replace(/\//g, '-')}.docx`);
+            } else {
+                window.print();
+            }
+        });
+
+        try {
+            const mayEdit = (role.id === 'sec_sub' || role.id === 'dir_case' || role.id === 'admin');
+            ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: mayEdit });
+        } catch (e) { }
     </script>
 </body>
 
