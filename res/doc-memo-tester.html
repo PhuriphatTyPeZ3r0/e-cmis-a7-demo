@@ -16,11 +16,19 @@
   <link href="../assets/a4-ecmis-workspace.css" rel="stylesheet">
 
   <style>
-    /* Two-pane layout */
+    /* =========================================================
+       SYMMETRICAL TWO-PANE WORKSPACE LAYOUT (50% / 50%)
+       ========================================================= */
+    .app-main {
+      padding: 1.25rem 1.5rem !important;
+      max-width: 1720px;
+      margin: 0 auto;
+    }
+
     .tester-layout {
       display: grid;
-      grid-template-columns: 1.05fr 1fr;
-      gap: 1.25rem;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 1.5rem;
       align-items: start;
     }
 
@@ -30,13 +38,58 @@
       }
     }
 
-    /* Section attachment bar styling */
+    /* Left Pane Scroll Container */
+    .left-pane-scroll {
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    .left-pane-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .left-pane-scroll::-webkit-scrollbar-track {
+      background: #F1F5F9;
+      border-radius: 4px;
+    }
+    .left-pane-scroll::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 4px;
+    }
+    .left-pane-scroll::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+
+    /* Card standard styling */
+    .card-symmetric {
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+      background: #FFFFFF;
+      box-shadow: 0 1px 4px rgba(15, 42, 98, 0.04);
+      margin-bottom: 1.25rem;
+      overflow: hidden;
+    }
+
+    .card-symmetric .card-header {
+      background: #F8FAFC;
+      border-bottom: 1px solid #E2E8F0;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-symmetric .card-body {
+      padding: 1rem;
+    }
+
+    /* Section Cards */
     .section-card {
       border: 1px solid #E2E8F0;
       border-radius: 8px;
       padding: 0.85rem;
       background: #FFFFFF;
-      margin-bottom: 0.9rem;
+      margin-bottom: 0.85rem;
       transition: all 0.2s ease;
     }
 
@@ -56,13 +109,16 @@
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 0.4rem;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.45rem;
     }
 
     .section-title-text {
       font-size: 0.92rem;
       font-weight: 700;
       color: #0F2A62;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
     }
 
     .field-stats-badge {
@@ -72,6 +128,7 @@
       padding: 2px 8px;
       border-radius: 12px;
       border: 1px solid #CBD5E1;
+      font-weight: 500;
     }
 
     .attached-info-badge {
@@ -81,11 +138,11 @@
       background: #EFF6FF;
       color: #1E40AF;
       border: 1px solid #BFDBFE;
-      padding: 3px 8px;
+      padding: 4px 10px;
       border-radius: 6px;
-      font-size: 0.76rem;
+      font-size: 0.78rem;
       font-weight: 500;
-      margin-top: 0.35rem;
+      margin-top: 0.4rem;
     }
 
     .memo-textarea {
@@ -93,37 +150,58 @@
       font-size: 0.92rem;
       line-height: 1.5;
       resize: vertical;
-      min-height: 70px;
+      min-height: 65px;
+      border-color: #CBD5E1;
     }
 
-    /* A4 Paper simulation styling */
+    .memo-textarea:focus {
+      border-color: #2563EB;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    /* Right Pane: Sticky Preview Wrap */
     .preview-sticky-wrap {
       position: sticky;
       top: 75px;
       z-index: 10;
     }
 
+    /* A4 Paper Viewport Container */
     .a4-paper-container {
-      background: #475569;
-      padding: 20px;
-      border-radius: 12px;
+      background: #334155;
+      padding: 24px 16px;
+      border-radius: 10px;
       overflow-y: auto;
-      max-height: calc(100vh - 145px);
-      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+      height: calc(100vh - 210px);
+      min-height: 580px;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.35);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 16px;
+      gap: 20px;
     }
 
+    .a4-paper-container::-webkit-scrollbar {
+      width: 8px;
+    }
+    .a4-paper-container::-webkit-scrollbar-track {
+      background: #1E293B;
+      border-radius: 4px;
+    }
+    .a4-paper-container::-webkit-scrollbar-thumb {
+      background: #64748B;
+      border-radius: 4px;
+    }
+
+    /* Accurate A4 Sheet Simulation */
     .a4-sheet {
       background: #FFFFFF;
       width: 100%;
       max-width: 210mm;
       min-height: 297mm;
       margin: 0 auto;
-      padding: 20mm 18mm 22mm 22mm;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+      padding: 22mm 20mm 24mm 24mm;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
       font-family: 'TH Sarabun IT๙', 'TH Sarabun New', 'Sarabun', serif;
       font-size: 16pt;
       line-height: 1.35;
@@ -134,11 +212,10 @@
       transition: transform 0.15s ease;
     }
 
-    /* Page number watermark / running header */
+    /* Running headers / footers */
     .a4-running-head {
       font-size: 14pt;
       color: #334155;
-      text-align: right;
       border-bottom: 1px solid #CBD5E1;
       padding-bottom: 4px;
       margin-bottom: 16px;
@@ -163,8 +240,8 @@
       font-weight: bold;
       text-align: center;
       line-height: 1.1;
-      margin-top: 10px;
-      margin-bottom: 20px;
+      margin-top: 6px;
+      margin-bottom: 18px;
     }
 
     .memo-row {
@@ -216,17 +293,28 @@
       background-color: transparent !important;
     }
 
-    /* Page Navigation Bar */
-    .pagination-toolbar {
-      background: #1E293B;
+    /* Symmetrical Navigation & Toolbar */
+    .toolbar-symmetric {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 0.5rem 0.75rem;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 1px 3px rgba(15, 42, 98, 0.04);
+    }
+
+    .pagination-toolbar-symmetric {
+      background: #0F172A;
       color: #F8FAFC;
-      border-radius: 8px;
+      border-radius: 10px;
       padding: 6px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
       font-size: 0.82rem;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     }
 
     .page-input-num {
@@ -236,10 +324,15 @@
       font-size: 0.85rem;
       padding: 2px 4px;
       height: 26px;
-      border: 1px solid #475569;
-      background: #0F172A;
+      border: 1px solid #334155;
+      background: #1E293B;
       color: #FFFFFF;
       border-radius: 4px;
+    }
+
+    .page-input-num:focus {
+      outline: none;
+      border-color: #38BDF8;
     }
 
     /* Printing rules */
@@ -282,30 +375,33 @@
 
   <main class="app-main">
 
-    <!-- Page Header -->
-    <div class="page-head d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <!-- Symmetrical Page Header -->
+    <div class="page-head d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-2 border-bottom">
       <div>
-        <h1><i class="fa-solid fa-file-word me-2 text-primary"></i><span>แนบไฟล์ Word แยกตามหัวข้อ & พรีวิวบันทึกข้อความ A4 (รองรับ 100+ หน้า)</span></h1>
+        <h1 class="h4 mb-0 fw-bold text-navy">
+          <i class="fa-solid fa-file-word me-2 text-primary"></i>ระบบแนบไฟล์ Word รายหัวข้อ & พรีวิวบันทึกข้อความ A4
+        </h1>
+        <small class="text-muted">ทดสอบการนำเข้าไฟล์ Word แยกส่วน (ข้อ ๑ - ๗) และระบบจัดหน้า A4 อัตโนมัติ (รองรับ 100+ หน้า)</small>
       </div>
-      <div class="d-flex align-items-center gap-2 ms-auto">
-        <a href="approval-review.html" class="btn btn-sm btn-outline-secondary">
+      <div class="d-flex align-items-center gap-2">
+        <a href="approval-review.html" class="btn btn-sm btn-outline-secondary px-3">
           <i class="fa-solid fa-arrow-left me-1"></i>กลับหน้าระบบ
         </a>
-        <span class="badge bg-primary px-3 py-2">
+        <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm">
           <i class="fa-solid fa-layer-group me-1"></i>Multi-Page A4 Engine
         </span>
       </div>
     </div>
 
-    <!-- Main 2-Pane Workspace -->
+    <!-- Symmetrical 2-Pane Workspace (50% / 50%) -->
     <div class="tester-layout">
 
       <!-- LEFT PANE: Form Controls & Per-Section Word Attachment -->
-      <div class="left-pane">
+      <div class="left-pane-scroll">
 
-        <!-- 1. Header Information -->
-        <div class="card card-ecmis mb-3">
-          <div class="card-header d-flex align-items-center justify-content-between">
+        <!-- 1. Header Information Card -->
+        <div class="card-symmetric">
+          <div class="card-header">
             <span class="fw-bold text-navy"><i class="fa-solid fa-heading me-2 text-primary"></i>ข้อมูลส่วนหัวบันทึกข้อความ (Memo Header)</span>
             <div class="d-flex align-items-center gap-1">
               <button type="button" class="btn btn-xs btn-outline-primary px-2" id="btnLoadExamHeader">
@@ -342,18 +438,18 @@
           </div>
         </div>
 
-        <!-- 2. Sections with Individual Word Attachment -->
-        <div class="card card-ecmis mb-4">
-          <div class="card-header d-flex align-items-center justify-content-between">
-            <span class="fw-bold text-navy"><i class="fa-solid fa-list-check me-2 text-primary"></i>เนื้อหาบันทึกข้อความ ๗ ข้อ (แนบไฟล์ Word แยกตามหัวข้อ)</span>
-            <span class="small text-muted"><i class="fa-solid fa-info-circle me-1"></i>กดแนบไฟล์เพื่อดึงข้อความลงช่องนั้น</span>
+        <!-- 2. Sections with Individual Word Attachment Card -->
+        <div class="card-symmetric">
+          <div class="card-header">
+            <span class="fw-bold text-navy"><i class="fa-solid fa-list-check me-2 text-primary"></i>เนื้อหาบันทึกข้อความ ๗ ข้อ (แนบไฟล์ Word แยกรายข้อ)</span>
+            <span class="badge bg-light text-dark border"><i class="fa-solid fa-paperclip me-1 text-primary"></i>กดแนบไฟล์เพื่อดึงข้อความลงช่อง</span>
           </div>
           <div class="card-body p-3">
 
             <!-- Section 1 -->
             <div class="section-card" id="card_sec1">
               <div class="section-header-flex">
-                <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary me-1"></i>๑. เรื่องเดิม</span>
+                <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary"></i>๑. เรื่องเดิม</span>
                 <div class="d-flex align-items-center gap-1">
                   <span class="field-stats-badge" id="stats_sec1">0 คำ | 0 หน้า</span>
                   <label class="btn btn-xs btn-outline-primary mb-0" style="cursor:pointer;">
@@ -372,7 +468,7 @@
             <!-- Section 2 -->
             <div class="section-card" id="card_sec2">
               <div class="section-header-flex">
-                <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary me-1"></i>๒. ข้อเท็จจริง (มติคณะอนุกรรมการกลั่นกรองฯ)</span>
+                <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary"></i>๒. ข้อเท็จจริง (มติคณะอนุกรรมการกลั่นกรองฯ)</span>
                 <div class="d-flex align-items-center gap-1">
                   <span class="field-stats-badge" id="stats_sec2">0 คำ | 0 หน้า</span>
                   <label class="btn btn-xs btn-outline-primary mb-0" style="cursor:pointer;">
@@ -391,7 +487,7 @@
             <!-- Section 3 -->
             <div class="section-card" id="card_sec3">
               <div class="section-header-flex">
-                <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary me-1"></i>๓. ข้อกฎหมาย ระเบียบ ประกาศ และคำสั่ง</span>
+                <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary"></i>๓. ข้อกฎหมาย ระเบียบ ประกาศ และคำสั่ง</span>
                 <div class="d-flex align-items-center gap-1">
                   <span class="field-stats-badge" id="stats_sec3">0 คำ | 0 หน้า</span>
                   <label class="btn btn-xs btn-outline-primary mb-0" style="cursor:pointer;">
@@ -407,7 +503,7 @@
               <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec3" rows="2" placeholder="กรอกข้อกฎหมายและระเบียบที่เกี่ยวข้อง..."></textarea>
             </div>
 
-            <!-- Section 4 (MAIN HIGHLIGHT: 100+ Pages Support) -->
+            <!-- Section 4 (Special Feature: 100+ Pages) -->
             <div class="section-card border-primary" id="card_sec4" style="background:#F8FAFC; border-width: 2px;">
               <div class="section-header-flex">
                 <span class="section-title-text text-primary">
@@ -425,28 +521,26 @@
                 </div>
               </div>
 
-              <!-- Fast Test Preset Buttons for 100+ Pages -->
-              <div class="d-flex align-items-center flex-wrap gap-2 my-2 p-2 rounded" style="background:#EFF6FF; border:1px dashed #93C5FD;">
+              <!-- Symmetrical Fast Test Buttons -->
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 my-2 p-2 rounded" style="background:#EFF6FF; border:1px dashed #93C5FD;">
                 <span class="small fw-bold text-navy"><i class="fa-solid fa-flask me-1"></i>ทดสอบด่วน:</span>
-                <button type="button" class="btn btn-xs btn-outline-primary" id="btnSimulate5Pages">
-                  <i class="fa-solid fa-bolt me-1"></i>ใส่ตัวอย่าง 5 หน้า
-                </button>
-                <button type="button" class="btn btn-xs btn-outline-primary" id="btnSimulate25Pages">
-                  <i class="fa-solid fa-bolt me-1"></i>ใส่ตัวอย่าง 25 หน้า
-                </button>
-                <button type="button" class="btn btn-xs btn-primary fw-bold" id="btnSimulate100Pages">
-                  <i class="fa-solid fa-fire me-1"></i>จำลองข้อความ 100+ หน้า (Stress Test)
-                </button>
+                <div class="d-flex align-items-center gap-1">
+                  <button type="button" class="btn btn-xs btn-outline-primary" id="btnSimulate5Pages">๕ หน้า</button>
+                  <button type="button" class="btn btn-xs btn-outline-primary" id="btnSimulate25Pages">๒๕ หน้า</button>
+                  <button type="button" class="btn btn-xs btn-primary fw-bold" id="btnSimulate100Pages">
+                    <i class="fa-solid fa-fire me-1"></i>จำลอง 100+ หน้า
+                  </button>
+                </div>
               </div>
 
               <div id="file_badge_sec4"></div>
-              <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec4" rows="5" placeholder="กรอกเนื้อหาข้อพิจารณา หรือกดปุ่ม 'แนบไฟล์ Word ข้อพิจารณา' ด้านบน (รองรับไฟล์ยาว 100+ หน้า)..."></textarea>
+              <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec4" rows="4" placeholder="กรอกเนื้อหาข้อพิจารณา หรือกดปุ่ม 'แนบไฟล์ Word ข้อพิจารณา' ด้านบน (รองรับไฟล์ยาว 100+ หน้า)..."></textarea>
             </div>
 
             <!-- Section 5 -->
             <div class="section-card" id="card_sec5">
               <div class="section-header-flex">
-                <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary me-1"></i>๕. ความเห็นผู้อำนวยการกองกฎหมาย</span>
+                <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary"></i>๕. ความเห็นผู้อำนวยการกองกฎหมาย</span>
                 <div class="d-flex align-items-center gap-1">
                   <span class="field-stats-badge" id="stats_sec5">0 คำ | 0 หน้า</span>
                   <label class="btn btn-xs btn-outline-primary mb-0" style="cursor:pointer;">
@@ -465,7 +559,7 @@
             <!-- Section 6 -->
             <div class="section-card" id="card_sec6">
               <div class="section-header-flex">
-                <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary me-1"></i>๖. ความเห็นรองเลขาธิการคณะกรรมการ ป.ป.ท.</span>
+                <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary"></i>๖. ความเห็นรองเลขาธิการคณะกรรมการ ป.ป.ท.</span>
                 <div class="d-flex align-items-center gap-1">
                   <span class="field-stats-badge" id="stats_sec6">0 คำ | 0 หน้า</span>
                   <label class="btn btn-xs btn-outline-primary mb-0" style="cursor:pointer;">
@@ -484,7 +578,7 @@
             <!-- Section 7 -->
             <div class="section-card" id="card_sec7">
               <div class="section-header-flex">
-                <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary me-1"></i>๗. ความเห็นเลขาธิการคณะกรรมการ ป.ป.ท.</span>
+                <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary"></i>๗. ความเห็นเลขาธิการคณะกรรมการ ป.ป.ท.</span>
                 <div class="d-flex align-items-center gap-1">
                   <span class="field-stats-badge" id="stats_sec7">0 คำ | 0 หน้า</span>
                   <label class="btn btn-xs btn-outline-primary mb-0" style="cursor:pointer;">
@@ -505,41 +599,39 @@
 
       </div>
 
-      <!-- RIGHT PANE: Multi-Page A4 Document Preview & Navigator -->
+      <!-- RIGHT PANE: Multi-Page A4 Document Preview & Symmetrical Controls -->
       <div class="right-pane">
         <div class="preview-sticky-wrap">
 
-          <!-- 1. Top Controls Bar -->
-          <div class="card card-ecmis mb-2 shadow-sm">
-            <div class="card-body p-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
-              <div class="d-flex align-items-center gap-1">
-                <span class="fw-bold small text-navy me-1"><i class="fa-solid fa-file-lines me-1"></i>พรีวิว A4</span>
-                <div class="btn-group btn-group-sm" role="group">
-                  <button type="button" class="btn btn-sm btn-primary" id="btnModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น 60fps)">
-                    <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
-                  </button>
-                  <button type="button" class="btn btn-sm btn-outline-primary" id="btnModeContinuous" title="โหมดดูทุกหน้าเรียงกัน">
-                    <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
-                  </button>
-                </div>
-              </div>
-
-              <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-sm btn-outline-warning text-dark px-2" id="btnToggleHighlight" title="สลับไฮไลต์ข้อความ">
-                  <i class="fa-solid fa-highlighter me-1"></i>ไฮไลต์
+          <!-- 1. Symmetrical Top Controls Bar -->
+          <div class="toolbar-symmetric d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-1">
+              <span class="fw-bold small text-navy me-2"><i class="fa-solid fa-file-lines me-1 text-primary"></i>พรีวิว A4</span>
+              <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-sm btn-primary" id="btnModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น 60fps)">
+                  <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-primary px-2" id="btnPrintA4">
-                  <i class="fa-solid fa-print me-1"></i>พิมพ์ A4
-                </button>
-                <button type="button" class="btn btn-sm btn-success px-2" id="btnExportWord">
-                  <i class="fa-solid fa-download me-1"></i>Word
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btnModeContinuous" title="โหมดดูทุกหน้าเรียงกัน">
+                  <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
                 </button>
               </div>
             </div>
+
+            <div class="d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-sm btn-outline-warning text-dark px-2" id="btnToggleHighlight" title="สลับไฮไลต์ข้อความ">
+                <i class="fa-solid fa-highlighter me-1"></i>ไฮไลต์
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-primary px-2" id="btnPrintA4">
+                <i class="fa-solid fa-print me-1"></i>พิมพ์ A4
+              </button>
+              <button type="button" class="btn btn-sm btn-success px-2" id="btnExportWord">
+                <i class="fa-solid fa-download me-1"></i>Word
+              </button>
+            </div>
           </div>
 
-          <!-- 2. Interactive Pagination Bar -->
-          <div class="pagination-toolbar mb-2 shadow-sm" id="paginationBar">
+          <!-- 2. Symmetrical Pagination Navigator Bar -->
+          <div class="pagination-toolbar-symmetric" id="paginationBar">
             <div class="d-flex align-items-center gap-1">
               <button type="button" class="btn btn-xs btn-secondary" id="btnFirstPage" title="หน้าแรกสุด (หน้า 1)"><i class="fa-solid fa-backward-step"></i></button>
               <button type="button" class="btn btn-xs btn-secondary" id="btnPrevPage" title="หน้าก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
@@ -553,7 +645,7 @@
             </div>
 
             <div class="d-flex align-items-center gap-2">
-              <span class="small opacity-75" id="totalDocStatsText">ประมาณ 1 หน้า • 0 คำ</span>
+              <span class="small opacity-75" id="totalDocStatsText">รวม 1 หน้า • 0 คำ</span>
               <div class="d-flex align-items-center gap-1 border-start ps-2 border-secondary">
                 <button type="button" class="btn btn-xs btn-dark" id="btnZoomOut"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
                 <span style="font-size:0.75rem; width:36px; text-align:center;" id="zoomLevelText">100%</span>
@@ -562,9 +654,9 @@
             </div>
           </div>
 
-          <!-- 3. A4 Paper Viewport Container -->
+          <!-- 3. Centered A4 Paper Container -->
           <div class="a4-paper-container" id="a4Container">
-            <!-- Dynamic pages will be rendered here -->
+            <!-- Dynamic A4 sheets rendered here -->
           </div>
 
         </div>
@@ -688,8 +780,6 @@
       };
 
       // Split Section 4 into chunks if it's large
-      // An A4 page without header holds ~1,200 chars / ~280 words.
-      // Page 1 with header holds ~500 chars of body before spilling.
       const CHARS_PER_PAGE = 1200;
       const s4Paragraphs = s4 ? s4.split(/\n\s*\n/) : [];
 
@@ -945,7 +1035,6 @@
       ];
 
       let paragraphs = [];
-      // ~4 paragraphs make roughly 1 A4 page
       const totalParagraphs = pageCount * 4;
       for (let i = 0; i < totalParagraphs; i++) {
         const t = templates[i % templates.length];
@@ -1189,7 +1278,6 @@
 
       // Print
       $('#btnPrintA4').on('click', function () {
-        // In print mode, render all continuous pages so browser prints all sheets
         const prevMode = viewMode;
         viewMode = 'CONTINUOUS';
         renderPreviewSheets();
