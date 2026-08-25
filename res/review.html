@@ -389,17 +389,6 @@
       applyZoom();
     })();
 
-    /* ---------- Document workspace: collapsible pane ---------- */
-    const docWorkspace = document.getElementById('docWorkspace');
-    const PANE_KEY = 'ecmis-approval-review-docpane-collapsed';
-    function setPaneCollapsed(collapsed) {
-      docWorkspace.classList.toggle('pane-collapsed', collapsed);
-      localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
-    }
-    if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
-    document.getElementById('btnPaneCollapse').addEventListener('click', () => setPaneCollapsed(true));
-    document.getElementById('btnPaneExpand').addEventListener('click', () => setPaneCollapsed(false));
-
     function initReport213Screen() {
 
       document.querySelector('.page-head h1').innerHTML =
@@ -668,7 +657,7 @@
   <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner)}</div>
   <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
   <div class="doc-h">ผู้ถูกร้อง</div>
-  ${kase.accused.map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)}</div>`).join('')}
+  ${(kase.accused || []).map(a => `<div>${a.no}. ${M(a.name)} ${M(a.pos)}</div>`).join('')}
   <div class="doc-h">ข้อกล่าวหา</div>
   <div class="doc-indent">${M(kase.allegation)}</div>
   <div class="doc-h">ความเห็นตามลำดับชั้น</div>
