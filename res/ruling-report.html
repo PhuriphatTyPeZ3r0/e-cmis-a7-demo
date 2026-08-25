@@ -289,7 +289,10 @@
           <div class="card-body">
             <div class="input-group input-group-sm mb-2">
               <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-              <input type="text" class="form-control" id="offenseSearch" placeholder="ค้นหามาตราหรือฐานความผิด...">
+              <input type="text" class="form-control" id="offenseSearch" placeholder="พิมพ์เลขมาตราอย่างน้อย 2 ตัว (เช่น 14, 157, 42, 60) หรือค้นหาชื่อฐานความผิด...">
+              <button class="btn btn-outline-secondary" type="button" id="btnClearOffenseSearch" title="ล้างคำค้นหา" style="display:none;">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
             </div>
             <div id="offenseBasisLoading" class="text-muted small">กำลังโหลดข้อมูล...</div>
             <div id="offenseBasisBody" class="mb-3"></div>
@@ -824,25 +827,56 @@
       }
     });
 
+    function toThaiNumerals(str) {
+      const thaiNums = ['๐','๑','๒','๓','๔','๕','๖','๗','๘','๙'];
+      return String(str || '').replace(/[0-9]/g, d => thaiNums[+d]);
+    }
+    function toArabicNumerals(str) {
+      const thaiNums = {'๐':'0','๑':'1','๒':'2','๓':'3','๔':'4','๕':'5','๖':'6','๗':'7','๘':'8','๙':'9'};
+      return String(str || '').replace(/[๐-๙]/g, d => thaiNums[d] || d);
+    }
+
+    const showAllOffensesMap = {};
+
     function renderOffenseBasisBody() {
       document.getElementById('offenseBasisLoading').classList.add('d-none');
       const body = document.getElementById('offenseBasisBody');
+      if (!body) return;
       if (!accusedRealList.length) {
         body.innerHTML = '<div class="text-muted small">ไม่พบข้อมูลผู้ถูกกล่าวหาในสำนวนนี้</div>';
         return;
       }
       const allOffenses = [...offenseBasisList, ...customOffenses];
-      const searchKeyword = (document.getElementById('offenseSearch').value || '').trim().toLowerCase();
-      const filteredOffenses = searchKeyword
-        ? allOffenses.filter(b => b.trob_article_no.toLowerCase().includes(searchKeyword) ||
-          b.trob_article_label.toLowerCase().includes(searchKeyword) ||
-          b.trob_group.toLowerCase().includes(searchKeyword))
-        : allOffenses;
+      const searchRaw = (document.getElementById('offenseSearch').value || '').trim().toLowerCase();
+      const clearBtn = document.getElementById('btnClearOffenseSearch');
+      if (clearBtn) clearBtn.style.display = searchRaw ? 'block' : 'none';
 
-      const groups = [...new Set(filteredOffenses.map(b => b.trob_group))];
+      const isSearchActive = searchRaw.length >= 2;
+      const qThai = toThaiNumerals(searchRaw);
+      const qArab = toArabicNumerals(searchRaw);
 
       body.innerHTML = accusedRealList.map((acc, accIdx) => {
         const calcs = calculatePrescriptionForAccused(acc);
+        const selectedOffenses = allOffenses.filter(b => acc.selected.has(b.trob_id));
+        const showAllForThisAcc = !!showAllOffensesMap[acc.tcca_id];
+
+        let offensesToRender = [];
+        if (isSearchActive) {
+          offensesToRender = allOffenses.filter(b => {
+            const artNo = (b.trob_article_no || '').toLowerCase();
+            const artNoArab = toArabicNumerals(artNo);
+            const artLabel = (b.trob_article_label || '').toLowerCase();
+            const artGroup = (b.trob_group || '').toLowerCase();
+            const lawName = (b.trob_law_name || '').toLowerCase();
+            return artNo.includes(searchRaw) || artNo.includes(qThai) || artNoArab.includes(qArab) ||
+                   artLabel.includes(searchRaw) || artGroup.includes(searchRaw) || lawName.includes(searchRaw);
+          });
+        } else if (showAllForThisAcc) {
+          offensesToRender = allOffenses;
+        }
+
+        const groups = [...new Set(offensesToRender.map(b => b.trob_group))];
+
         return `
       <div class="ws-card mb-3 border" style="background:#F8FAFC">
         <div class="card-body p-3">
@@ -865,35 +899,118 @@
             </div>
           </div>
 
+          <!-- Section 1: มาตราที่เลือกไว้แล้ว (Selected Chips) -->
+          <div class="mb-2">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+              <span class="small fw-bold text-dark" style="font-size:.78rem">
+                <i class="fa-solid fa-list-check text-navy me-1"></i>มาตราที่เลือกวินิจฉัยชี้มูล (${selectedOffenses.length} มาตรา):
+              </span>
+            </div>
+            ${selectedOffenses.length ? `
+            <div class="d-flex flex-wrap gap-1 p-2 bg-white rounded border">
+              ${selectedOffenses.map(b => {
+                const years = acc.roleType === 'ACCESSORY' ? (b.p_accessory || 10) : (b.p_principal || 15);
+                const title = `${b.trob_law_name} ${b.trob_article_no} — ${b.trob_article_label} (อายุความ ${years} ปี) — คลิกเพื่อยกเลิก`;
+                return `<button type="button" class="btn btn-sm btn-navy py-0 px-2 offense-chip"
+                  data-tcca="${acc.tcca_id}" data-trob="${b.trob_id}" title="${title.replace(/"/g, '&quot;')}"
+                  style="font-size:.78rem">
+                  <i class="fa-solid fa-check me-1"></i>${b.trob_article_no}
+                  <span class="badge bg-light text-dark ms-1" style="font-size:.68rem">${years} ปี</span>
+                  <i class="fa-solid fa-xmark ms-1 opacity-75" title="ยกเลิกมาตรานี้"></i>
+                </button>`;
+              }).join('')}
+            </div>` : `
+            <div class="text-muted small py-2 px-3 bg-white rounded border border-dashed d-flex align-items-center gap-2">
+              <i class="fa-solid fa-circle-info text-secondary"></i>
+              <span>ยังไม่มีมาตราที่เลือก (พิมพ์ค้นหาเลขมาตราด้านบนเพื่อเลือก)</span>
+            </div>`}
+          </div>
+
+          <!-- สรุปผลอายุความ -->
           ${calcs.length ? `
           <div class="p-2 mb-2 bg-white border rounded" style="font-size:.82rem">
             <div class="fw-bold text-danger mb-1"><i class="fa-solid fa-hourglass-half me-1"></i>สรุปผลอายุความ:</div>
             ${calcs.map(c => `<div class="ms-2">• <strong>${c.article}</strong> (อายุความ ${c.years} ปี): <span class="badge bg-danger-subtle text-danger border border-danger-subtle">${c.expText}</span></div>`).join('')}
           </div>` : ''}
 
-          ${groups.map(g => `
-            <div class="mt-2">
-              <div style="font-size:.76rem;color:#475569;font-weight:700" class="mb-1">${g}</div>
-              <div class="d-flex flex-wrap gap-1">
-              ${filteredOffenses.filter(b => b.trob_group === g).map(b => {
-                const active = acc.selected.has(b.trob_id);
-                const years = acc.roleType === 'ACCESSORY' ? (b.p_accessory || 10) : (b.p_principal || 15);
-                const title = `${b.trob_law_name} ${b.trob_article_no} — ${b.trob_article_label} (อายุความ ${years} ปี)`;
-                return `<button type="button" class="btn btn-sm ${active ? 'btn-navy' : 'btn-outline-secondary'} py-0 px-2 offense-chip"
-                  data-tcca="${acc.tcca_id}" data-trob="${b.trob_id}" title="${title.replace(/"/g, '&quot;')}"
-                  style="font-size:.78rem">
-                  ${active ? '<i class="fa-solid fa-check me-1"></i>' : ''}${b.trob_article_no}
-                  <span class="badge ${active ? 'bg-light text-dark' : 'bg-secondary-subtle text-secondary'} ms-1" style="font-size:.68rem">${years} ปี</span>
-                </button>`;
-              }).join('')}
+          <!-- Section 2: ผลการค้นหา หรือ โหมดดูทั้งหมด หรือ คำแนะนำ -->
+          ${isSearchActive ? `
+            <div class="mt-2 pt-2 border-top">
+              <div class="small fw-bold text-primary mb-1">
+                <i class="fa-solid fa-magnifying-glass me-1"></i>ผลการค้นหามาตราที่ตรงกับ "${searchRaw}" (${offensesToRender.length} รายการ):
               </div>
-            </div>`).join('')}
+              ${offensesToRender.length ? `
+                ${groups.map(g => `
+                <div class="mt-2">
+                  <div style="font-size:.76rem;color:#475569;font-weight:700" class="mb-1">${g}</div>
+                  <div class="d-flex flex-wrap gap-1">
+                  ${offensesToRender.filter(b => b.trob_group === g).map(b => {
+                    const active = acc.selected.has(b.trob_id);
+                    const years = acc.roleType === 'ACCESSORY' ? (b.p_accessory || 10) : (b.p_principal || 15);
+                    const title = `${b.trob_law_name} ${b.trob_article_no} — ${b.trob_article_label} (อายุความ ${years} ปี)`;
+                    return `<button type="button" class="btn btn-sm ${active ? 'btn-navy' : 'btn-outline-secondary'} py-0 px-2 offense-chip"
+                      data-tcca="${acc.tcca_id}" data-trob="${b.trob_id}" title="${title.replace(/"/g, '&quot;')}"
+                      style="font-size:.78rem">
+                      ${active ? '<i class="fa-solid fa-check me-1"></i>' : ''}${b.trob_article_no}
+                      <span class="badge ${active ? 'bg-light text-dark' : 'bg-secondary-subtle text-secondary'} ms-1" style="font-size:.68rem">${years} ปี</span>
+                    </button>`;
+                  }).join('')}
+                  </div>
+                </div>`).join('')}
+              ` : `
+                <div class="text-muted small py-2 px-3 bg-white rounded border">
+                  <i class="fa-solid fa-circle-exclamation text-warning me-1"></i>ไม่พบมาตราที่ตรงกับ "${searchRaw}"
+                </div>
+              `}
+            </div>
+          ` : (showAllForThisAcc ? `
+            <div class="mt-2 pt-2 border-top">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="small fw-bold text-muted" style="font-size:.76rem">รายการมาตราทั้งหมด (คลิกเพื่อเลือก/ยกเลิก):</span>
+                <button type="button" class="btn btn-xs btn-link text-decoration-none p-0 btn-toggle-all" data-tcca="${acc.tcca_id}">
+                  <i class="fa-solid fa-chevron-up me-1"></i>ซ่อนรายการทั้งหมด
+                </button>
+              </div>
+              ${groups.map(g => `
+              <div class="mt-2">
+                <div style="font-size:.76rem;color:#475569;font-weight:700" class="mb-1">${g}</div>
+                <div class="d-flex flex-wrap gap-1">
+                ${offensesToRender.filter(b => b.trob_group === g).map(b => {
+                  const active = acc.selected.has(b.trob_id);
+                  const years = acc.roleType === 'ACCESSORY' ? (b.p_accessory || 10) : (b.p_principal || 15);
+                  const title = `${b.trob_law_name} ${b.trob_article_no} — ${b.trob_article_label} (อายุความ ${years} ปี)`;
+                  return `<button type="button" class="btn btn-sm ${active ? 'btn-navy' : 'btn-outline-secondary'} py-0 px-2 offense-chip"
+                    data-tcca="${acc.tcca_id}" data-trob="${b.trob_id}" title="${title.replace(/"/g, '&quot;')}"
+                    style="font-size:.78rem">
+                    ${active ? '<i class="fa-solid fa-check me-1"></i>' : ''}${b.trob_article_no}
+                    <span class="badge ${active ? 'bg-light text-dark' : 'bg-secondary-subtle text-secondary'} ms-1" style="font-size:.68rem">${years} ปี</span>
+                  </button>`;
+                }).join('')}
+                </div>
+              </div>`).join('')}
+            </div>
+          ` : `
+            <div class="text-muted small mt-2 d-flex align-items-center justify-content-between flex-wrap gap-1 bg-white p-2 rounded border">
+              <span><i class="fa-regular fa-lightbulb text-warning me-1"></i>พิมพ์เลขมาตราตั้งแต่ 2 ตัวขึ้นไป (เช่น 14, 157, 42, 60) เพื่อค้นหาและเลือกมาตรา</span>
+              <button type="button" class="btn btn-xs btn-outline-secondary btn-toggle-all py-0 px-2" data-tcca="${acc.tcca_id}" style="font-size:0.72rem; height:22px;">
+                <i class="fa-solid fa-list me-1"></i>ดูมาตราทั้งหมด
+              </button>
+            </div>
+          `)}
         </div>
       </div>`;
       }).join('');
 
       body.querySelectorAll('.offense-chip').forEach(btn => {
         btn.addEventListener('click', () => toggleOffense(+btn.dataset.tcca, +btn.dataset.trob));
+      });
+
+      body.querySelectorAll('.btn-toggle-all').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tccaId = +btn.dataset.tcca;
+          showAllOffensesMap[tccaId] = !showAllOffensesMap[tccaId];
+          renderOffenseBasisBody();
+        });
       });
 
       body.querySelectorAll('.role-radio').forEach(r => {
@@ -913,6 +1030,13 @@
     }
 
     document.getElementById('offenseSearch').addEventListener('input', renderOffenseBasisBody);
+    const btnClearSearch = document.getElementById('btnClearOffenseSearch');
+    if (btnClearSearch) {
+      btnClearSearch.addEventListener('click', () => {
+        const input = document.getElementById('offenseSearch');
+        if (input) { input.value = ''; renderOffenseBasisBody(); }
+      });
+    }
 
     async function toggleOffense(tcca_id, trob_id) {
       const acc = accusedRealList.find(a => a.tcca_id === tcca_id);
