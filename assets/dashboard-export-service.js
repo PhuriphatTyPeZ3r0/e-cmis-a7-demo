@@ -904,7 +904,7 @@
       <div class="print-official-doc p-4" style="font-family: 'Sarabun', 'TH Sarabun New', sans-serif; color: #000000; background: #ffffff;">
         <!-- Header -->
         <div class="text-center mb-4">
-          <img src="../assets/pacc_logo.png" alt="ตรา ป.ป.ท." style="width: 70px; height: auto;" class="mb-2">
+          <img src="${(window.ECMIS && window.ECMIS.assetUrl) ? window.ECMIS.assetUrl('pacc_logo.png') : 'assets/pacc_logo.png'}" alt="ตรา ป.ป.ท." style="width: 70px; height: auto;" class="mb-2">
           <h4 class="fw-bold mb-1" style="font-size: 1.35rem;">รายงานผลปฏิบัติงานประชุมคณะกรรมการ ป.ป.ท.</h4>
           <h5 class="fw-bold mb-1" style="font-size: 1.15rem;">${escapeHtml(monthLabel)}</h5>
           <p class="mb-0 text-muted" style="font-size: 0.95rem;">กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ กองบริหารคดี สำนักงาน ป.ป.ท.</p>

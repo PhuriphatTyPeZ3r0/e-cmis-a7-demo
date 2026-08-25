@@ -76,7 +76,7 @@ const PERM_DEFS = [
   { k:'create.invite', cat:'การแก้ไข',  label:'จัดทำหนังสือเชิญประชุม' },
   { k:'secrecy.set',   cat:'การแก้ไข',  label:'กำหนดชั้นความลับของเอกสาร' },
   { k:'order24.draft', cat:'การแก้ไข',  label:'ร่างคำสั่งแต่งตั้งคณะไต่สวน ม.24' },
-  { k:'doc.generate',  cat:'การแก้ไข',  label:'สร้างเอกสารจาก Mail-Merge Template' },
+  { k:'doc.generate',  cat:'การแก้ไข',  label:'สร้างเอกสารจากแบบร่างอัตโนมัติ' },
   { k:'sign.report213',cat:'การลงนาม',  label:'ลงนามดิจิทัลรายงาน 213 / 644' },
   { k:'sign.agenda',   cat:'การลงนาม',  label:'ลงนามสั่งบรรจุวาระการประชุม' },
   { k:'sign.order24p1',cat:'การลงนาม',  label:'ลงนามคำสั่ง ม.24 วรรคหนึ่ง (องค์คณะ)' },
@@ -851,6 +851,45 @@ const CASES = [
     docType:'RULING', signPhase:'COMPLETE'
   },
   {
+    id:'0807/2568',
+    subject:'กล่าวหาเจ้าหน้าที่แขวงทางหลวงแห่งหนึ่ง ทุจริตงบประมาณค่าซ่อมบำรุงทางหลวงแผ่นดิน (ม.62)',
+    legalBase:'ม.62',
+    status:'IN_MEETING',
+    procType:'7.1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
+    complainant:'ประชาชนผู้ใช้ทางหลวง (ผู้ร้องเรียน)',
+    accused:[
+      { no:1, name:'นายสมศักดิ์ ทางหลวงดี', pos:'นายช่างโยธาชำนาญงาน', idcard:'3-1008-0xxxx-xx-x', agency:'แขวงทางหลวงแห่งหนึ่ง' },
+      { no:2, name:'นายประดิษฐ์ ซ่อมบำรุง', pos:'นายช่างเครื่องกลปฏิบัติงาน', idcard:'3-1011-0xxxx-xx-x', agency:'แขวงทางหลวงแห่งหนึ่ง' }
+    ],
+    allegation:'ร่วมกันจัดทำเอกสารเบิกจ่ายงบประมาณซ่อมแซมผิวจราจรอันเป็นเท็จ โดยมิได้มีการปฏิบัติงานจริง',
+    receivedDate:'2568-11-20', deadline60:'2569-01-19', deadline2y:'2570-11-20', prescription:'2571-06-15',
+    docRef:'ปป 0020/1028 ลงวันที่ 7 พฤษภาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:2, slaLimit:15, subCommittee:'คณะที่ 6',
+    meetingNo:'37/2569', agendaNo:'5.6', meetingDate:'2569-08-20',
+    docType:'213', signPhase:'COMPLETE'
+  },
+  {
+    id:'1855/2568',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีกล่าวหาเจ้าหน้าที่รัฐปฏิบัติหน้าที่โดยมิชอบ (พยานหลักฐานไม่พอรับฟัง)',
+    legalBase:'ม.18/4',
+    status:'IN_MEETING_72',
+    procType:'7.2',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 1',
+    complainant:'นายธนพล มุ่งมั่น (ผู้กล่าวหา)',
+    accused:[
+      { no:1, name:'นายบัณฑิต ศึกษาดี', pos:'ผู้อำนวยการสถานศึกษา', idcard:'3-1102-0xxxx-xx-x', agency:'โรงเรียนแห่งหนึ่ง' }
+    ],
+    allegation:'กล่าวหาว่าละเว้นการปฏิบัติหน้าที่ในการตรวจรับพัสดุโครงการก่อสร้างอาคารเรียน',
+    receivedDate:'2568-12-10', deadline60:'2569-02-08', deadline2y:'2570-12-10', prescription:'2571-12-30',
+    docRef:'ปป 0020/1455 ลงวันที่ 15 สิงหาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:3, slaLimit:15, subCommittee:null,
+    meetingNo:'37/2569', agendaNo:'5.7', meetingDate:'2569-08-20',
+    docType:'RULING', signPhase:'COMPLETE'
+  },
+  {
     id:'กจ.101/2569',
     subject:'บันทึกขอความเห็นทางข้อกฎหมายกรณีการบังคับใช้มาตรา ๑๘/๑ แห่ง พ.ร.บ. มาตรการของฝ่ายบริหารฯ',
     legalBase:'ม.18/1',
@@ -1161,7 +1200,7 @@ const SUBCOMMITTEE_ROSTER = {
   ]
 };
 
-const CASES_VERSION = '2026-08-21-activity7-standard-v1';
+const CASES_VERSION = '2026-08-25-activity7-templates-v2';
 if (typeof sessionStorage !== 'undefined') {
   const savedVersion = sessionStorage.getItem('ecmis_cases_version');
   const savedCases = sessionStorage.getItem('ecmis_cases');
@@ -1474,6 +1513,55 @@ function roleIdForLogin(username){
   return role ? role.id : null;
 }
 
+/* Centralized Page Permissions Matrix (RBAC & Page Guard) */
+const PAGE_PERMISSIONS = {
+  // Main Inbox Screens
+  'inbox.html': ['secgen', 'chairman', 'affairs', 'owner', 'director', 'deputy', 'section_head', 'legal', 'admin'],
+  'support-subcommittee-inbox.html': ['support_sub', 'sup_chair', 'sup_sec', 'sup_asst'],
+  'board-inbox.html': ['board', 'board_ex'],
+  'resolution-inbox.html': ['board_sec', 'affairs'],
+  'meeting-report.html': ['board_sec', 'affairs'],
+  'board-room.html': ['board', 'board_ex', 'board_sec', 'secgen'],
+  'dashboard.html': ['secgen', 'chairman', 'board_sec', 'board', 'board_ex', 'affairs'],
+  'followup-dashboard.html': ['secgen', 'chairman', 'board_sec', 'board', 'board_ex', 'affairs'],
+  'case-register.html': null, // public/all roles
+  'register.html': null, // public/all roles
+
+  // Registry Screens (Strictly removed for chairman & affairs per rules)
+  'agenda-registry.html': ['board_sec', 'board', 'board_ex', 'support_sub'],
+  'agenda-registry-detail.html': ['board_sec', 'board', 'board_ex', 'support_sub'],
+  'agenda-detail.html': ['board_sec', 'board', 'board_ex', 'support_sub'],
+
+  // Detail / Document Screens (Comprehensive coverage with Edit Gate inside page)
+  'approval-review.html': ['secgen', 'affairs', 'owner', 'director', 'deputy', 'section_head', 'board_sec', 'chairman', 'board', 'board_ex'],
+  'review.html': ['secgen', 'affairs', 'owner', 'director', 'deputy', 'section_head', 'board_sec', 'chairman', 'board', 'board_ex'],
+  'support-subcommittee.html': ['support_sub', 'sup_chair', 'sup_sec', 'sup_asst', 'affairs', 'secgen', 'board_sec', 'chairman', 'board', 'board_ex'],
+  'chairman-agenda.html': ['chairman', 'affairs', 'board_sec', 'secgen', 'board', 'board_ex'],
+  'chairman.html': ['chairman', 'affairs', 'board_sec', 'secgen', 'board', 'board_ex'],
+  'subcommittee-screening.html': ['subcommittee', 'subcom_1', 'subcom_2', 'subcom_3', 'subcom_4', 'subcom_5', 'subcom_6', 'subcom_7', 'subcom_8', 'affairs', 'chairman', 'secgen', 'board_sec', 'board', 'board_ex'],
+  'screening.html': ['subcommittee', 'subcom_1', 'subcom_2', 'subcom_3', 'subcom_4', 'subcom_5', 'subcom_6', 'subcom_7', 'subcom_8', 'affairs', 'chairman', 'secgen', 'board_sec', 'board', 'board_ex'],
+  'order-m24.html': ['secgen', 'chairman', 'affairs', 'board_sec', 'board', 'board_ex', 'owner', 'director', 'deputy', 'section_head'],
+  'order.html': ['secgen', 'chairman', 'affairs', 'board_sec', 'board', 'board_ex', 'owner', 'director', 'deputy', 'section_head'],
+  'board-resolution.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen'],
+  'resolution.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen'],
+  'resolution-72.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen'],
+  'ruling-report.html': ['board_sec', 'affairs', 'chairman', 'secgen', 'board', 'board_ex'],
+  'urgent-agenda.html': ['dir_case', 'chairman', 'affairs', 'secgen', 'board_sec', 'board', 'board_ex'],
+  'agenda-set.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen'],
+  'agenda.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen'],
+  'agenda-meeting-docs.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen'],
+  'meeting-docs.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen'],
+  'login.html': null,
+  'index.html': null
+};
+
+function canAccessPage(pageName, roleId){
+  const cleanPage = (pageName || '').split('?')[0].split('#')[0];
+  const perms = PAGE_PERMISSIONS[cleanPage];
+  if (perms === undefined || perms === null) return true;
+  return Array.isArray(perms) && perms.includes(roleId);
+}
+
 /* current role — เก็บใน sessionStorage เพื่อให้สลับข้ามหน้าได้ */
 function currentRoleId(){ return sessionStorage.getItem('ecmis_role') || 'affairs'; }
 function setRole(id){
@@ -1483,15 +1571,7 @@ function setRole(id){
     sessionStorage.setItem('ecmis_username', r.login);
   }
   const page = (location.pathname.split('/').pop() || '').split('?')[0];
-  if (id === 'board_sec' && page === 'inbox.html') {
-    location.href = homeHref(id);
-    return;
-  }
-  if (id !== 'board_sec' && page === 'resolution-inbox.html') {
-    location.href = resolvePage('inbox.html');
-    return;
-  }
-  if (page === 'meeting-report.html' && !can('compile.minutes', id)) {
+  if (!canAccessPage(page, id)) {
     location.href = homeHref(id);
     return;
   }
@@ -1505,6 +1585,7 @@ function logout(){
   sessionStorage.removeItem('ecmis_authed');
   sessionStorage.removeItem('ecmis_role');
   sessionStorage.removeItem('ecmis_username');
+  sessionStorage.removeItem('ecmis_flash_toast');
   location.href = resolvePage('login.html');
 }
 
@@ -1524,6 +1605,44 @@ function canAct(kase, roleId){
 function canRecall(kase, roleId){
   if(roleId !== 'owner') return false;
   return ['PENDING_SECTION','PENDING_DIRECTOR','PENDING_DEPUTY'].includes(kase.status);
+}
+
+function inResFolder() {
+  return (typeof location !== 'undefined') && (
+    (location.pathname || '').includes('/res/') ||
+    (location.pathname || '').endsWith('/res')
+  );
+}
+
+/* Dynamic Asset Path Resolver */
+function assetUrl(relPath) {
+  const p = (relPath || '').replace(/^\/+/, '');
+  return inResFolder() ? `../assets/${p}` : `assets/${p}`;
+}
+
+/* Supabase Singleton Provider */
+const DEFAULT_SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+const DEFAULT_SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+
+function getSupabaseClient(url, key, customOpts) {
+  if (window.__ecmisSupabaseClient) {
+    return window.__ecmisSupabaseClient;
+  }
+  const targetUrl = url || DEFAULT_SUPABASE_URL;
+  const targetKey = key || DEFAULT_SUPABASE_KEY;
+  const defaultOpts = {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false
+    }
+  };
+  const opts = customOpts ? Object.assign({}, defaultOpts, customOpts) : defaultOpts;
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    window.__ecmisSupabaseClient = window.supabase.createClient(targetUrl, targetKey, opts);
+    return window.__ecmisSupabaseClient;
+  }
+  return null;
 }
 
 const NAV = [
@@ -1548,9 +1667,8 @@ const NAV = [
   { href:'meeting-report.html',        icon:'fa-file-contract',    label:'จัดทำรายงานมติการประชุม',
     visible: role => !!role && can('compile.minutes', role.id) },
   { href:'agenda-registry.html',       icon:'fa-table-list',       label:'ทะเบียนวาระการประชุม',
-    /* board_sec เห็นหน้านี้อยู่แล้วผ่าน item แรก (home/inbox) ด้านบน — ซ่อน static item นี้ไว้
-       เพื่อไม่ให้ sidebar มีลิงก์ซ้ำไปหน้าเดียวกัน 2 ที่ */
-    visible: role => !!role && role.id !== 'secgen' && role.id !== 'board_sec' },
+    /* board_sec/secgen/chairman/affairs ซ่อนลิงก์นี้ไว้ — ประธานฯ, เลขาธิการฯ และกลุ่มงานกิจการฯ ไม่มีกระบวนงานในหน้านี้ */
+    visible: role => !!role && role.id !== 'secgen' && role.id !== 'board_sec' && role.id !== 'chairman' && role.id !== 'affairs' },
   { href:'resolution-inbox.html',      icon:'fa-scale-balanced',   label:'รายการรอจัดทำมติ',
     /* work-inbox เดิมของ board_sec ครอบคลุมทั้ง flow (AGENDA_SET..RESOLVED/RESOLVED_PENDING)
        กว้างกว่าคิวใน agenda-registry.html (ซึ่งเป็นแค่ AGENDA_SET/PENDING_INVITE_72/DEFERRED)
@@ -1587,6 +1705,18 @@ function visibleNavFor(role){
 function renderShell(activeHref){
   if(!isAuthed()){ location.href = resolvePage('login.html'); return; }
   const role = currentRole();
+
+  /* Page Guard Check: ป้องกันการพิมพ์ URL เข้าถึงหน้าที่ไม่มีสิทธิ์ */
+  const currentPage = (location.pathname.split('/').pop() || '').split('?')[0];
+  if (!canAccessPage(currentPage, role.id)) {
+    sessionStorage.setItem('ecmis_flash_toast', JSON.stringify({
+      type: 'warn',
+      message: `คุณไม่มีสิทธิ์เข้าถึงหน้านี้ในบทบาท ${role.name} (${role.title}) — ระบบได้นำท่านกลับมายังหน้าหลัก`
+    }));
+    location.href = homeHref(role.id);
+    return;
+  }
+
   const inboxCount = inboxFor(role.id).length;
 
   const notifications = [
@@ -1765,7 +1895,7 @@ function renderShell(activeHref){
   const sidebar = `
   <nav class="app-sidebar no-print" id="appSidebar">
     <a class="brand text-decoration-none" href="${homeHref(role.id)}">
-      <img src="pacc_logo.png" alt="ตราสำนักงาน ป.ป.ท.">
+      <img src="${assetUrl('pacc_logo.png')}" alt="ตราสำนักงาน ป.ป.ท.">
       <span>E-CMIS
         <small>สำนักงาน ป.ป.ท.</small>
       </span>
@@ -1790,6 +1920,17 @@ function renderShell(activeHref){
   initVoiceInput();
   initCharCounterAndCopy();
   initDocPaneToggle();
+
+  const DETAIL_PAGES = [
+    'resolution-72.html', 'resolution.html', 'board-resolution.html', 'ruling-report.html',
+    'approval-review.html', 'review.html', 'agenda-set.html', 'agenda.html',
+    'agenda-meeting-docs.html', 'meeting-docs.html', 'agenda-registry-detail.html', 'agenda-detail.html',
+    'order-m24.html', 'order.html', 'subcommittee-screening.html', 'screening.html',
+    'support-subcommittee.html', 'urgent-agenda.html', 'chairman-agenda.html', 'chairman.html'
+  ];
+  if (DETAIL_PAGES.includes(activeHref) && !document.querySelector('[data-no-back="true"]')) {
+    renderBackButton();
+  }
 
   document.querySelectorAll('form[id], main form').forEach(f => {
     if (f.id) initRealTimeValidation(f);
@@ -1848,6 +1989,21 @@ function renderShell(activeHref){
     }
   }
 
+  /* Flash Toast Listener */
+  const flashToast = sessionStorage.getItem('ecmis_flash_toast');
+  if (flashToast) {
+    try {
+      const ft = JSON.parse(flashToast);
+      sessionStorage.removeItem('ecmis_flash_toast');
+      setTimeout(() => {
+        if (ft.type === 'warn') toastWarn(ft.message);
+        else toastOk(ft.message);
+      }, 300);
+    } catch(e) {
+      sessionStorage.removeItem('ecmis_flash_toast');
+    }
+  }
+
   refreshDeadlineNotificationsFromSupabase(role);
 }
 
@@ -1858,14 +2014,7 @@ function renderShell(activeHref){
 async function refreshDeadlineNotificationsFromSupabase(role) {
   if (typeof window.supabase === 'undefined') return;
   try {
-    if (!window.__ecmisSupabaseClient && window.supabase && typeof window.supabase.createClient === 'function') {
-      window.__ecmisSupabaseClient = window.supabase.createClient(
-        'https://ljhabbwjxnoucrcrsoii.supabase.co',
-        'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd',
-        { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
-      );
-    }
-    const sbShell = window.__ecmisSupabaseClient || (window.supabase && window.supabase.createClient ? window.supabase.createClient('https://ljhabbwjxnoucrcrsoii.supabase.co', 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd', { auth: { persistSession: false } }) : null);
+    const sbShell = getSupabaseClient();
     if (!sbShell) throw new Error('Supabase client unavailable');
     const { data, error } = await sbShell
       .from('tbl_res_request')
@@ -1956,9 +2105,23 @@ function stepperHtml(statusKey, stepsArr, stepMap){
   }).join('') + `</div>`;
 }
 
+function typeBadge(c, force72){
+  const is72 = force72 !== undefined ? force72 : isCase72(c);
+  const is73 = isCase73(c);
+  if (is73) {
+    return '<span class="meet-badge meet-type-general"><i class="fa-solid fa-scale-balanced me-1"></i>เรื่องทั่วไป</span>';
+  }
+  if (is72) {
+    return '<span class="meet-badge meet-type-ruling"><i class="fa-solid fa-gavel me-1"></i>วินิจฉัยชี้มูล</span>';
+  }
+  return '<span class="meet-badge meet-type-inquiry"><i class="fa-solid fa-file-lines me-1"></i>ไต่สวนเบื้องต้น</span>';
+}
+
 function statusBadge(statusKey){
   const s = STATUS[statusKey];
-  return s ? `<span class="st ${s.cls}"><i class="fa-solid fa-circle-dot me-1" style="font-size: 0.65rem"></i>${s.label}</span>` : '';
+  if (!s) return '';
+  const icon = s.icon || 'fa-circle-dot';
+  return `<span class="meet-badge ${s.cls}"><i class="fa-solid ${icon} me-1" style="font-size:0.65rem"></i>${s.label}</span>`;
 }
 
 /* เพดาน SLA ที่ใช้จริงกับสำนวน — ชั้นเลขาธิการฯ ใช้ตารางตามชนิดรายงาน/ระยะ
@@ -2034,8 +2197,8 @@ function toThaiDigits(input){
   return String(input).replace(/[0-9]/g, d => THAI_DIGITS[d]);
 }
 
-/* -------------------------------------------- MAIL-MERGE (Document) */
-/* แทนค่าฟิลด์ลงเทมเพลต — จำลอง Mail-Merge Template Engine (TOR 7.1.3.6)
+/* -------------------------------------------- Document Template Engine */
+/* แทนค่าฟิลด์ลงเทมเพลต — จำลอง Document Template Engine (TOR 7.1.3.6)
    ทุกค่าที่ผ่านฟังก์ชันนี้ถือว่ากำลังลงเอกสารจริง จึงแปลงเป็นเลขไทยเสมอ    */
 /* ค่าที่ไหลเข้า mergeField() มาจาก Supabase (เขียนได้โดย anon key ที่ฝังอยู่ในหน้าเว็บทุกหน้า
    โดยดีไซน์ เพราะระบบยังไม่มี auth จริง) จึงถือเป็น untrusted input เสมอ — escape ก่อน wrap
@@ -2077,19 +2240,24 @@ function paginateDoc(containerEl, opts){
   if(!probe){
     probe = document.createElement('div');
     probe.id = 'docPaperProbe';
-    probe.style.cssText = 'position:absolute; visibility:hidden; left:-99999px; top:0; width:210mm; height:auto; min-height:0; aspect-ratio:auto;';
     document.body.appendChild(probe);
   }
   probe.className = pageClass;
+  probe.style.cssText = 'position:absolute !important; visibility:hidden !important; pointer-events:none !important; left:-99999px; top:0; width:210mm !important; box-sizing:border-box !important; padding:15mm 15mm 18mm 20mm !important; font-family:"Sarabun","Prompt",sans-serif !important; font-size:16pt !important; line-height:1.25 !important; height:auto !important; min-height:0 !important; max-height:none !important; overflow:visible !important;';
+
   const mmProbe = document.createElement('div');
-  mmProbe.style.cssText = 'position:absolute; visibility:hidden; left:-99999px; height:297mm; width:0;';
+  mmProbe.style.cssText = 'position:absolute; visibility:hidden; left:-99999px; height:297mm; width:0; box-sizing:border-box;';
   document.body.appendChild(mmProbe);
-  const PAGE_BUDGET = mmProbe.getBoundingClientRect().height;
+  const PHYSICAL_A4_PX = mmProbe.getBoundingClientRect().height;
   mmProbe.remove();
 
-  const FIT_TOLERANCE = 14;
+  // Optimal safe budget: full A4 height minus 16px safety clearance for bottom footer "ลับ"
+  const PAGE_BUDGET = PHYSICAL_A4_PX - 16;
 
-  function measure(html){ probe.innerHTML = html; return probe.scrollHeight; }
+  function measure(html){
+    probe.innerHTML = html;
+    return probe.offsetHeight || probe.scrollHeight;
+  }
 
   const pages = [];
   let pageBlocks = [introBlock];
@@ -2099,9 +2267,9 @@ function paginateDoc(containerEl, opts){
   function prefixFor(estPageNo){ return isFirst ? '' : runningHeaderHtml(estPageNo); }
 
   flowBlocks.forEach(block => {
-    const mandatoryOnly = pageBlocks.length === (isFirst ? 1 : 0);
+    const isFirstBlock = pageBlocks.length === (isFirst ? 1 : 0);
     const candidate = prefixFor(pages.length + (isFirst ? 1 : 2)) + pageBlocks.join('') + block;
-    if(mandatoryOnly || measure(candidate) <= (PAGE_BUDGET + FIT_TOLERANCE)){
+    if(isFirstBlock || measure(candidate) <= PAGE_BUDGET){
       pageBlocks.push(block);
     } else {
       pushPage();
@@ -2110,8 +2278,8 @@ function paginateDoc(containerEl, opts){
   });
 
   const withSign = prefixFor(pages.length + (isFirst ? 1 : 2)) + pageBlocks.join('') + signBlock;
-  const mandatoryOnly = pageBlocks.length === (isFirst ? 1 : 0);
-  if(mandatoryOnly || measure(withSign) <= (PAGE_BUDGET + FIT_TOLERANCE + 8)){
+  const isFirstBlock = pageBlocks.length === (isFirst ? 1 : 0);
+  if(isFirstBlock || measure(withSign) <= PAGE_BUDGET){
     pageBlocks.push(signBlock);
     pushPage();
   } else {
@@ -2123,12 +2291,72 @@ function paginateDoc(containerEl, opts){
   containerEl.innerHTML = pages.map((p, i) => {
     const pageNo = i + 1;
     const header = p.isFirst ? '' : runningHeaderHtml(pageNo);
-    return `<div class="${pageClass}" data-page-no="${pageNo}">${header}${p.blocks.join('')}</div>`;
+    const footSecret = (opts.secret !== false) ? '<div class="doc-secret-foot">ลับ</div>' : '';
+    return `<div class="${pageClass}" data-page-no="${pageNo}">${header}${p.blocks.join('')}${footSecret}</div>`;
   }).join('');
 }
 
 function paginateResolutionDoc(containerEl, opts){
   return paginateDoc(containerEl, { ...opts, docClass: 'doc-resolution' });
+}
+
+/* ---------------------------------------------------------- EXPORT PDF (Direct PDF File Download) */
+async function exportDocToPdf(containerEl, filename = 'document.pdf', opts = {}) {
+  if (!containerEl || typeof document === 'undefined') return;
+
+  // Check if html2pdf is available, if not dynamically load it
+  if (typeof html2pdf === 'undefined') {
+    await new Promise((resolve) => {
+      const script = document.createElement('script');
+      const isRes = typeof location !== 'undefined' && location.pathname.includes('/res/');
+      script.src = isRes ? '../assets/html2pdf.bundle.min.js' : 'assets/html2pdf.bundle.min.js';
+      script.onload = resolve;
+      script.onerror = () => {
+        console.warn('html2pdf.bundle.min.js failed to load, falling back to window.print()');
+        window.print();
+        resolve();
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  if (typeof html2pdf === 'undefined') {
+    window.print();
+    return;
+  }
+
+  if (typeof toastOk === 'function') {
+    toastOk('กำลังแปลงและสร้างไฟล์ PDF กรุณารอสักครู่...');
+  }
+
+  const pdfFilename = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+  const opt = {
+    margin: [0, 0, 0, 0],
+    filename: pdfFilename,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      scrollY: 0,
+      scrollX: 0
+    },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: opts.orientation || 'portrait' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+
+  try {
+    await html2pdf().set(opt).from(containerEl).save();
+    if (typeof toastOk === 'function') {
+      toastOk(`ดาวน์โหลด ${escapeHtml(pdfFilename)} สำเร็จ`);
+    }
+  } catch (err) {
+    console.error('PDF Export error:', err);
+    if (typeof toastWarn === 'function') {
+      toastWarn('ไม่สามารถดาวน์โหลด PDF โดยตรงได้ กำลังเปิดหน้าพิมพ์แทน...');
+    }
+    window.print();
+  }
 }
 
 /* ---------------------------------------------------------- EXPORT DOCX (Word Document Export) */
@@ -4273,17 +4501,17 @@ function initDocEditor(opts) {
     editBtn = document.createElement('button');
     editBtn.type = 'button';
     editBtn.id = 'btnDocEdit';
-    editBtn.className = 'btn-doc-edit ms-auto me-1';
+    editBtn.className = 'btn btn-sm btn-light btn-doc-edit ms-auto me-1';
     editBtn.title = 'เปิด/ปิดโหมดแก้ไขเอกสาร';
     editBtn.innerHTML = '<i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>';
 
     if (toolbar) {
       const toggle = toolbar.querySelector('.ws-doc-pane-toggle');
-      const printBtn = toolbar.querySelector('[onclick*="print"]');
-      if (printBtn) {
-        toolbar.insertBefore(editBtn, printBtn);
-      } else if (toggle) {
-        toolbar.insertBefore(editBtn, toggle);
+      const printBtn = toolbar.querySelector('[onclick*="print"], #btnDocPrint');
+      if (printBtn && printBtn.parentElement) {
+        printBtn.parentElement.insertBefore(editBtn, printBtn);
+      } else if (toggle && toggle.parentElement) {
+        toggle.parentElement.insertBefore(editBtn, toggle);
       } else {
         toolbar.appendChild(editBtn);
       }
@@ -4292,15 +4520,19 @@ function initDocEditor(opts) {
     }
   } else {
     // If it was an old fab button, modernize it
-    editBtn.className = 'btn-doc-edit ms-auto me-1';
-    editBtn.innerHTML = '<i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>';
-    if (toolbar && editBtn.parentElement !== toolbar) {
-      const printBtn = toolbar.querySelector('[onclick*="print"]');
+    if (!editBtn.classList.contains('btn-doc-edit')) {
+      editBtn.className = 'btn btn-sm btn-light btn-doc-edit ms-auto me-1';
+    }
+    if (!editBtn.innerHTML.trim()) {
+      editBtn.innerHTML = '<i class="fa-solid fa-pen-to-square"></i>';
+    }
+    if (toolbar && !toolbar.contains(editBtn)) {
+      const printBtn = toolbar.querySelector('[onclick*="print"], #btnDocPrint');
       const toggle = toolbar.querySelector('.ws-doc-pane-toggle');
-      if (printBtn) {
-        toolbar.insertBefore(editBtn, printBtn);
-      } else if (toggle) {
-        toolbar.insertBefore(editBtn, toggle);
+      if (printBtn && printBtn.parentElement) {
+        printBtn.parentElement.insertBefore(editBtn, printBtn);
+      } else if (toggle && toggle.parentElement) {
+        toggle.parentElement.insertBefore(editBtn, toggle);
       } else {
         toolbar.appendChild(editBtn);
       }
@@ -4386,6 +4618,310 @@ function initDocEditor(opts) {
   };
 }
 
+/* ---------- Master Declarative Component: ws-doc-toolbar ---------- */
+function renderDocToolbar(opts) {
+  if (typeof document === 'undefined') return null;
+  opts = opts || {};
+  
+  let targetEl = typeof opts.target === 'string' ? document.querySelector(opts.target) : opts.target;
+  const docWorkspace = opts.workspace ? (typeof opts.workspace === 'string' ? document.querySelector(opts.workspace) : opts.workspace) : document.getElementById('docWorkspace');
+  const stageId = opts.stageId || 'docPaper';
+  const stageEl = document.getElementById(stageId);
+  const paneEl = stageEl ? (stageEl.closest('.ws-doc-pane') || stageEl.parentElement) : document.querySelector('.ws-doc-pane');
+
+  if (!targetEl) {
+    if (paneEl) {
+      targetEl = paneEl.querySelector('.ws-doc-toolbar');
+      if (!targetEl) {
+        targetEl = document.createElement('div');
+        targetEl.className = 'ws-doc-toolbar';
+        if (stageEl) {
+          paneEl.insertBefore(targetEl, stageEl);
+        } else {
+          paneEl.appendChild(targetEl);
+        }
+      }
+    } else {
+      targetEl = document.querySelector('.ws-doc-toolbar');
+    }
+  }
+  if (!targetEl) return null;
+
+  // Build Left Content (Title/Badge or Tabs or Jump Select)
+  let leftHtml = '';
+  if (Array.isArray(opts.tabs) && opts.tabs.length > 0) {
+    leftHtml = `<div class="ws-doc-tabs">` + opts.tabs.map(t => {
+      const activeCls = t.active ? ' active' : '';
+      const iconHtml = t.icon ? `<i class="${t.icon} me-1"></i>` : '';
+      const countHtml = t.count !== undefined ? `<span class="badge bg-secondary ms-1">${t.count}</span>` : '';
+      return `<button type="button" class="ws-doc-tab${activeCls}" data-tab-id="${t.id}" ${t.disabled ? 'disabled' : ''}>${iconHtml}${t.label}${countHtml}</button>`;
+    }).join('') + `</div>`;
+  } else if (opts.title) {
+    const iconHtml = opts.icon ? `<i class="${opts.icon}"></i> ` : '<i class="fa-solid fa-file-word"></i> ';
+    const badgeHtml = opts.badge ? `<span class="badge-tpl">${opts.badge}</span>` : '';
+    leftHtml = `<span class="name">${iconHtml}${opts.title} ${badgeHtml}</span>`;
+  }
+
+  if (opts.subTabs && Array.isArray(opts.subTabs.items) && opts.subTabs.items.length > 0) {
+    const subLabel = opts.subTabs.label ? `<span class="sub-tab-label small text-muted me-1">${opts.subTabs.label}</span>` : '';
+    leftHtml += `<div class="ws-doc-subtabs ms-2 d-inline-flex align-items-center gap-1">${subLabel}` + opts.subTabs.items.map(st => {
+      const actCls = st.active ? ' active' : '';
+      return `<button type="button" class="btn btn-xs btn-outline-secondary subtab-btn${actCls}" data-subtab-id="${st.id}">${st.label}</button>`;
+    }).join('') + `</div>`;
+  }
+
+  if (opts.jump && Array.isArray(opts.jump.options)) {
+    const jumpLabel = opts.jump.label ? `<span>${opts.jump.label}</span>` : '<span>ข้ามไปที่</span>';
+    leftHtml += `<div class="ws-doc-jump ms-auto me-2">${jumpLabel}<select class="form-select form-select-sm">` + opts.jump.options.map(opt => {
+      const sel = opt.selected ? ' selected' : '';
+      return `<option value="${opt.value}"${sel}>${opt.label}</option>`;
+    }).join('') + `</select></div>`;
+  }
+
+  // Right Actions
+  const showEdit = opts.editable !== false;
+  const showPdf = opts.exportPdf !== false && opts.printable !== false;
+  const showDocx = opts.exportDocx !== false;
+  const showCollapse = opts.collapsible !== false && (!!docWorkspace || !!paneEl);
+
+  let rightHtml = '<div class="d-flex align-items-center gap-1 ms-auto">';
+  if (showEdit) {
+    rightHtml += `<button type="button" class="btn btn-sm btn-light btn-doc-edit" id="btnDocEdit" title="แก้ไขเนื้อหาเอกสาร (Rich Text)"><i class="fa-solid fa-pen-to-square"></i></button>`;
+  }
+  if (showPdf) {
+    rightHtml += `<button type="button" class="btn btn-sm btn-light" id="btnDocPdf" title="ดาวน์โหลดไฟล์ PDF / สั่งพิมพ์"><i class="fa-solid fa-print me-1"></i>พิมพ์/PDF</button>`;
+  }
+  if (showDocx) {
+    rightHtml += `<button type="button" class="btn btn-sm btn-light" id="btnDocx" title="ดาวน์โหลดไฟล์ Microsoft Word (.docx)"><i class="fa-solid fa-download me-1"></i>.docx</button>`;
+  }
+  if (showCollapse) {
+    rightHtml += `<button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>`;
+  }
+  rightHtml += '</div>';
+
+  targetEl.innerHTML = leftHtml + rightHtml;
+
+  // Rail button if workspace collapsed
+  if (paneEl && showCollapse) {
+    let railBtn = paneEl.querySelector('.ws-doc-pane-rail');
+    if (!railBtn) {
+      railBtn = document.createElement('button');
+      railBtn.type = 'button';
+      railBtn.className = 'ws-doc-pane-rail';
+      railBtn.id = 'btnPaneExpand';
+      railBtn.title = 'ขยายแผงเอกสาร';
+      railBtn.innerHTML = '<i class="fa-solid fa-angles-left"></i><span>เอกสาร</span>';
+      paneEl.insertBefore(railBtn, targetEl);
+    }
+  }
+
+  // Bind Tab clicks
+  if (Array.isArray(opts.tabs)) {
+    targetEl.querySelectorAll('.ws-doc-tab').forEach(tabBtn => {
+      tabBtn.addEventListener('click', () => {
+        targetEl.querySelectorAll('.ws-doc-tab').forEach(b => b.classList.remove('active'));
+        tabBtn.classList.add('active');
+        if (typeof opts.onTabChange === 'function') {
+          opts.onTabChange(tabBtn.dataset.tabId);
+        }
+      });
+    });
+  }
+
+  // Bind Subtab clicks
+  if (opts.subTabs) {
+    targetEl.querySelectorAll('.subtab-btn').forEach(subBtn => {
+      subBtn.addEventListener('click', () => {
+        targetEl.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
+        subBtn.classList.add('active');
+        if (typeof opts.subTabs.onSubTabChange === 'function') {
+          opts.subTabs.onSubTabChange(subBtn.dataset.subtabId);
+        }
+      });
+    });
+  }
+
+  // Bind Jump select
+  if (opts.jump) {
+    const jumpSelect = targetEl.querySelector('.ws-doc-jump select');
+    if (jumpSelect) {
+      jumpSelect.addEventListener('change', (e) => {
+        if (typeof opts.jump.onChange === 'function') {
+          opts.jump.onChange(e.target.value);
+        }
+      });
+    }
+  }
+
+  // Bind Unified Print / PDF Preview
+  const pdfBtn = targetEl.querySelector('#btnDocPdf');
+  if (pdfBtn && showPdf) {
+    pdfBtn.addEventListener('click', () => {
+      if (typeof opts.onPrint === 'function') {
+        opts.onPrint();
+      } else {
+        window.print();
+      }
+    });
+  }
+
+  // Bind Docx Export
+  const docxBtn = targetEl.querySelector('#btnDocx');
+  if (docxBtn && opts.exportDocx) {
+    docxBtn.addEventListener('click', async () => {
+      if (typeof opts.exportDocx === 'object' && typeof opts.exportDocx.onExport === 'function') {
+        opts.exportDocx.onExport(stageEl);
+      } else if (typeof opts.onExportDocx === 'function') {
+        opts.onExportDocx(stageEl);
+      } else {
+        const fn = typeof opts.exportDocx === 'object' && opts.exportDocx.filename
+          ? (typeof opts.exportDocx.filename === 'function' ? opts.exportDocx.filename() : opts.exportDocx.filename)
+          : `${(opts.title || 'document').replace(/\s+/g, '_')}.docx`;
+        exportDocToDocx(stageEl || document.body, fn);
+      }
+    });
+  }
+
+  // Bind Pane Collapsible with Persistence
+  if (showCollapse && docWorkspace) {
+    const PANE_KEY = opts.paneKey || 'ecmis-docpane-collapsed';
+    const setPaneCollapsed = (collapsed) => {
+      docWorkspace.classList.toggle('pane-collapsed', collapsed);
+      try { localStorage.setItem(PANE_KEY, collapsed ? '1' : '0'); } catch(e) {}
+    };
+
+    try {
+      if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
+    } catch(e) {}
+
+    const colBtn = targetEl.querySelector('#btnPaneCollapse');
+    if (colBtn) colBtn.addEventListener('click', () => setPaneCollapsed(true));
+
+    const expBtn = paneEl ? paneEl.querySelector('#btnPaneExpand') : null;
+    if (expBtn) expBtn.addEventListener('click', () => setPaneCollapsed(false));
+  }
+
+  // Initialize Doc Editor
+  let editorInstance = null;
+  if (showEdit && stageEl) {
+    editorInstance = initDocEditor({
+      stageId: stageId,
+      mayEdit: opts.mayEdit !== undefined ? opts.mayEdit : true,
+      onSave: opts.onSaveEdit
+    });
+  }
+
+  return {
+    element: targetEl,
+    editor: editorInstance
+  };
+}
+
+/* ---------- Master Component: Back Navigation Button ---------- */
+function renderBackButton(opts) {
+  if (typeof document === 'undefined') return null;
+  opts = opts || {};
+
+  const currentRole = (typeof currentRoleId === 'function' ? getRole(currentRoleId()) : null) || { id: 'board_sec' };
+  let defaultHref = homeHref ? homeHref(currentRole.id) : 'inbox.html';
+  let defaultLabel = 'กลับหน้ารายการ';
+
+  // Context-aware defaults based on current page
+  const path = (typeof location !== 'undefined' ? location.pathname : '').split('/').pop() || '';
+  if (path.includes('resolution-72') || path.includes('board-resolution') || (path.includes('resolution') && !path.includes('inbox'))) {
+    defaultHref = (currentRole.id === 'board_sec' || currentRole.id === 'affairs')
+      ? resolvePage('resolution-inbox.html')
+      : (homeHref ? homeHref(currentRole.id) : 'inbox.html');
+    defaultLabel = (currentRole.id === 'board_sec' || currentRole.id === 'affairs')
+      ? 'กลับรายการจัดทำมติ'
+      : 'กลับหน้ารายการ';
+  } else if (path.includes('ruling-report')) {
+    defaultHref = (currentRole.id === 'board_sec' || currentRole.id === 'affairs')
+      ? resolvePage('resolution-inbox.html')
+      : (homeHref ? homeHref(currentRole.id) : 'inbox.html');
+    defaultLabel = 'กลับรายการจัดทำมติ';
+  } else if (path.includes('support-subcommittee') && !path.includes('inbox')) {
+    defaultHref = resolvePage('support-subcommittee-inbox.html');
+    defaultLabel = 'กลับรายการกลั่นกรอง';
+  } else if (path.includes('agenda-meeting-docs') || path.includes('meeting-docs')) {
+    const params = typeof URLSearchParams !== 'undefined' ? new URLSearchParams(location.search) : null;
+    const meetId = params ? params.get('meet') : null;
+    defaultHref = meetId ? resolvePage(`agenda-detail.html?meet=${encodeURIComponent(meetId)}`) : resolvePage('agenda-registry.html');
+    defaultLabel = meetId ? 'กลับรายละเอียดวาระ' : 'กลับทะเบียนวาระการประชุม';
+  } else if (path.includes('agenda-registry-detail') || path.includes('agenda-detail')) {
+    defaultHref = resolvePage('agenda-registry.html');
+    defaultLabel = 'กลับทะเบียนวาระการประชุม';
+  } else if (path.includes('chairman-agenda') || path.includes('chairman')) {
+    defaultHref = resolvePage('inbox.html');
+    defaultLabel = 'กลับรายการพิจารณา/สั่งการ';
+  } else if (path.includes('approval-review') || path.includes('review') || path.includes('subcommittee-screening') || path.includes('screening') || path.includes('urgent-agenda') || path.includes('order-m24') || path.includes('order')) {
+    defaultHref = homeHref ? homeHref(currentRole.id) : 'inbox.html';
+    defaultLabel = 'กลับหน้ารายการ';
+  }
+
+  const href = opts.href || opts.fallback || defaultHref;
+  const label = opts.label || defaultLabel;
+  const icon = opts.icon || 'fa-solid fa-arrow-left me-1';
+  const cls = opts.className || 'text-decoration-none small d-block mb-1 btn-back-nav';
+  const inlineStyle = opts.style !== undefined ? opts.style : 'color:var(--ecmis-muted)';
+
+  // Target element (find in page-head or container)
+  let targetContainer = typeof opts.target === 'string' ? document.querySelector(opts.target) : opts.target;
+  if (!targetContainer) {
+    const pageHead = document.querySelector('.page-head');
+    if (pageHead) {
+      // Remove any legacy duplicate manual back links
+      pageHead.querySelectorAll('#backLink, #btnBackToInbox, a.back-link, a.btn-outline-secondary[href*="agenda-registry"], a[href="inbox.html"].small').forEach(el => {
+        if (!el.classList.contains('btn-back-nav')) el.remove();
+      });
+
+      targetContainer = pageHead.querySelector('div:first-child');
+      if (targetContainer) {
+        // Ensure parent div is not forcing horizontal flex layout on h1
+        targetContainer.classList.remove('d-flex', 'align-items-center');
+      }
+    }
+  }
+
+  if (!targetContainer) return null;
+
+  // Clean up any legacy wrap
+  targetContainer.querySelectorAll('.btn-back-nav-wrap').forEach(w => w.remove());
+
+  // Check if back button already exists in targetContainer
+  let btn = targetContainer.querySelector('.btn-back-nav');
+  if (!btn) {
+    btn = document.createElement('a');
+    btn.className = cls;
+    btn.id = opts.id || 'btnBackNav';
+    if (inlineStyle) btn.setAttribute('style', inlineStyle);
+    targetContainer.insertBefore(btn, targetContainer.firstChild);
+  } else {
+    btn.className = cls;
+    if (inlineStyle) btn.setAttribute('style', inlineStyle);
+  }
+
+  btn.href = href;
+  btn.innerHTML = `<i class="${icon}"></i><span>${label}</span>`;
+  btn.title = label;
+
+  // Add click handler to prefer history.back() when referrer is internal and different page
+  btn.addEventListener('click', (e) => {
+    if (opts.useHistory !== false && typeof document !== 'undefined' && document.referrer) {
+      try {
+        const refUrl = new URL(document.referrer);
+        const curUrl = new URL(location.href);
+        if (refUrl.origin === curUrl.origin && refUrl.pathname !== curUrl.pathname) {
+          e.preventDefault();
+          history.back();
+        }
+      } catch (err) {}
+    }
+  });
+
+  return btn;
+}
+
 global.ECMIS = {
   ROLES, STATUS, STATUS_CODE, CODE_STATUS, STATUS_STEP, FLOW_STEPS, APPROVAL_CHAIN,
   buildChainOpinions, supabaseRowToCase, toBuddhistFakeIso, addDaysToDateStr, addYearsToDateStr,
@@ -4402,13 +4938,14 @@ global.ECMIS = {
   M24P1_MIN_PANEL, M24P1_STAFF_FREE, panelComposition,
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
   UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72, pageForCaseByStatus, homeHref, resolvePage,
+  PAGE_PERMISSIONS, canAccessPage, inResFolder, assetUrl, getSupabaseClient,
   PERM_DEFS, can, canEditMaster, canViewCase,
   thaiDate, thaiDayName, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole, roleIdForLogin, LOGIN_ALLOWED_ROLE_IDS,
   addBusinessDays, businessDaysBetween, resolutionSlaInfo, SUBCOMMITTEE_ROSTER,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   isAuthed, currentUsername, logout,
-  renderShell, stepperHtml, statusBadge, slaBadge, actionBar,
-  mergeField, escapeHtml, fakeTodayIso, daysUntilFakeIso, paginateDoc, paginateResolutionDoc, exportDocToDocx, printDoc, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
+  renderShell, stepperHtml, statusBadge, typeBadge, slaBadge, actionBar,
+  mergeField, escapeHtml, fakeTodayIso, daysUntilFakeIso, paginateDoc, paginateResolutionDoc, exportDocToDocx, exportDocToPdf, printDoc, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
 
   ACT7_SECTIONS, ACT7_STATUSES, getAct7Status, act7Badge,
   ACT7_STATUSES_72, getAct7Status72,
@@ -4420,7 +4957,7 @@ global.ECMIS = {
   initAutoSave, initCharCounterAndCopy,
 
   initAuditTrail, initChecklistGatekeeper, initBulkActions, initDragDropUpload,
-  initDocPaneToggle, initRichTextBox, initDocEditor,
+  initDocPaneToggle, initRichTextBox, initDocEditor, renderDocToolbar, renderBackButton,
 
   getSuggestionsData, saveSuggestionsData, openSuggestionsModal, initWritingSuggestions
 };

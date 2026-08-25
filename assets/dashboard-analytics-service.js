@@ -31,10 +31,13 @@
   let sbClient = null;
 
   function getSupabaseClient() {
+    if (global.ECMIS && typeof global.ECMIS.getSupabaseClient === 'function') {
+      return global.ECMIS.getSupabaseClient(SUPABASE_URL, SUPABASE_KEY);
+    }
     if (!sbClient && global.supabase && typeof global.supabase.createClient === 'function') {
       try {
         sbClient = global.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-          auth: { persistSession: false }
+          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
         });
       } catch (err) {
         console.warn('[DashboardAnalyticsService] Supabase client init warning:', err);

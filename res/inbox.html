@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>รายการพิจารณา/ลงนาม | E-CMIS</title>
-<link rel="icon" type="image/png" href="pacc_logo.png">
+<link rel="icon" type="image/png" href="../assets/pacc_logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-<link href="assets/ecmis-app.css" rel="stylesheet">
-<link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
+<link href="../assets/ecmis-app.css" rel="stylesheet">
+<link href="../assets/a4-ecmis-workspace.css" rel="stylesheet">
 <style>
 .btn-xs { font-size: 0.76rem; padding: 0.2rem 0.5rem; border-radius: 4px; }
 .bg-purple { background-color: #7E22CE !important; }
@@ -128,7 +128,8 @@
             <table class="table table-hover tbl-ecmis mb-0 align-middle">
               <colgroup>
                 <col style="width:40px">
-                <col style="width:140px">
+                <col style="width:130px">
+                <col style="width:130px">
                 <col>
                 <col style="width:200px">
                 <col style="width:130px">
@@ -138,6 +139,7 @@
                 <tr>
                   <th class="text-center"><input type="checkbox" id="chkAll" class="form-check-input"></th>
                   <th class="sortable-header" data-sort="id" style="cursor:pointer">เรื่องที่ <i class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
+                  <th>ประเภทเรื่อง</th>
                   <th>เรื่องกล่าวหา</th>
                   <th id="colStatusHeader">สถานะเสนอ/ลงนาม</th>
                   <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
@@ -171,8 +173,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="assets/ecmis-app.js"></script>
-<script src="assets/ecmis-model.js"></script>
+<script src="../assets/ecmis-app.js"></script>
+<script src="../assets/ecmis-model.js"></script>
 <script>
 ECMIS.renderShell('inbox.html');
 
@@ -188,7 +190,7 @@ if (role.id === 'board_sec' || role.id === 'support_sub' || role.id === 'board')
    (approval-review.html ฯลฯ) ยังอ่านจาก ECMIS.CASES เดิมอยู่ จนกว่าจะย้ายเป็นรอบถัดไป */
 const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = (window.ECMIS && window.ECMIS.getSupabaseClient) ? window.ECMIS.getSupabaseClient(SUPABASE_URL, SUPABASE_KEY) : (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }) : null);
 
 function toBuddhistFakeIso(realIso) {
   if (!realIso) return null;
@@ -544,19 +546,19 @@ function caseIdSortValue(id) {
 function getSecgenActionBadge(c) {
   const cat = getSecgenStatusCategory(c);
   if (cat === 'SCREENING') {
-    return `<span class="st st-review"><i class="fa-solid fa-users-gear me-1"></i>ส่งให้อนุกลั่นกรองพิจารณา</span>`;
+    return `<span class="meet-badge meet-review"><i class="fa-solid fa-users-gear me-1"></i>ส่งให้อนุกลั่นกรองพิจารณา</span>`;
   }
   if (cat === 'RETURNED') {
-    return `<span class="st st-returned"><i class="fa-solid fa-xmark me-1"></i>ไม่ลงนาม / ตีกลับ</span>`;
+    return `<span class="meet-badge meet-returned"><i class="fa-solid fa-xmark me-1"></i>ไม่ลงนาม / ตีกลับ</span>`;
   }
   if (cat === 'SIGNED') {
-    return `<span class="st st-done"><i class="fa-solid fa-check me-1"></i>ลงนามแล้ว</span>`;
+    return `<span class="meet-badge meet-done"><i class="fa-solid fa-check me-1"></i>ลงนามแล้ว</span>`;
   }
   /* UPSTREAM: ยังไม่ถึงชั้นเลขาธิการฯ — แสดงสถานะจริงตามสายงานต้นทาง ไม่ใช่ป้าย "รอเลขาฯ" ที่ทำให้เข้าใจผิด */
   if (cat === 'UPSTREAM') {
     return ECMIS.statusBadge(c.status);
   }
-  return `<span class="st st-pending"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.5rem"></i>รอเลขาพิจารณาลงนาม</span>`;
+  return `<span class="meet-badge meet-pending"><i class="fa-solid fa-circle-dot me-1" style="font-size:0.65rem"></i>รอเลขาพิจารณาลงนาม</span>`;
 }
 
 function getActionBadge(c) {
@@ -564,7 +566,13 @@ function getActionBadge(c) {
   return getSecgenActionBadge(c);
 }
 
-const AFFAIRS_PAGE_FOR_STATUS = { DEFERRED: 'agenda-registry.html', RESOLVED: 'board-resolution.html' };
+const AFFAIRS_PAGE_FOR_STATUS = { DEFERRED: 'board-resolution.html', RESOLVED: 'board-resolution.html' };
+
+/* ป้าย "ประเภทเรื่อง" ในคอลัมน์ของตัวเอง — ตรงกับ 3 กลุ่มใน docTypeFilter (71/72/73) เสมอ
+   ใช้ Master Style (.meet-badge) เดียวกันทั้งระบบ */
+function typeBadge(c, is72){
+  return ECMIS.typeBadge(c, is72);
+}
 
 function row(c){
   const is72 = ECMIS.isCase72(c);
@@ -579,19 +587,18 @@ function row(c){
        ถูกจำกัดเหลือเฉพาะ isChairActionable แล้ว (ดู all= ด้านล่าง) จึงไม่มีสถานะอื่นหลุดเข้ามา
        ให้ตกไปที่ ECMIS.statusBadge() (ป้ายกำกับทั่วไปที่ใช้คำไม่ตรงกับ dropdown นี้) อีก */
     let catBadge = '';
-    if (c.status === 'PENDING_CHAIRMAN_URGENT_72' || (c.status === 'PENDING_URGENT' && c.urgent)) catBadge = `<span class="st st-urgent"><i class="fa-solid fa-bolt me-1"></i>วาระด่วน</span>`;
-    else if (c.status === 'PENDING_SIGN_RULING_72') catBadge = `<span class="st st-review"><i class="fa-solid fa-file-signature me-1"></i>รอลงนามรายงานชี้มูล</span>`;
-    else catBadge = `<span class="st st-pending"><i class="fa-solid fa-hourglass-half me-1"></i>รอสั่งการวาระปกติ</span>`;
+    if (c.status === 'PENDING_CHAIRMAN_URGENT_72' || (c.status === 'PENDING_URGENT' && c.urgent)) catBadge = `<span class="meet-badge meet-urgent"><i class="fa-solid fa-bolt me-1"></i>วาระด่วน</span>`;
+    else if (c.status === 'PENDING_SIGN_RULING_72') catBadge = `<span class="meet-badge meet-affairs-ruling"><i class="fa-solid fa-file-signature me-1"></i>รอลงนามรายงานชี้มูล</span>`;
+    else catBadge = `<span class="meet-badge meet-pending"><i class="fa-solid fa-hourglass-half me-1"></i>รอสั่งการวาระปกติ</span>`;
 
-    const typeTag = ECMIS.isCase73(c)
-      ? '<span class="badge bg-info-subtle text-info border border-info-subtle ms-1" style="font-size:0.68rem"><i class="fa-solid fa-scale-balanced me-1"></i>เรื่องทั่วไป</span>'
-      : (is72 ? '<span class="badge bg-purple-subtle text-purple border border-purple-subtle ms-1" style="font-size:0.68rem">วินิจฉัยชี้มูล</span>' : '');
+    const typeTag = typeBadge(c, is72);
 
     return `<tr>
       <td class="text-center">
         ${isActionable ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem"></i>'}
       </td>
-      <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}${typeTag}</td>
+      <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
+      <td>${typeTag}</td>
       <td style="max-width:300px">
         <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
         <small class="text-muted d-block" style="font-size:0.75rem">${c.ownerOrg}</small>
@@ -614,9 +621,7 @@ function row(c){
 
   const isPendingAction = isMyPending(c);
   const statusBadgeHtml = getActionBadge(c);
-  const typeTag = ECMIS.isCase73(c)
-    ? '<span class="badge bg-info-subtle text-info border border-info-subtle ms-1" style="font-size:0.68rem"><i class="fa-solid fa-scale-balanced me-1"></i>เรื่องทั่วไป</span>'
-    : (is72 ? '<span class="badge bg-purple-subtle text-purple border border-purple-subtle ms-1" style="font-size:0.68rem">วินิจฉัยชี้มูล</span>' : '');
+  const typeTag = typeBadge(c, is72);
   /* งานของ affairs (บรรจุวาระใหม่ / ร่างรายงานวินิจฉัยชี้มูล / ส่งดำเนินคดี) เป็นงานจัดทำที่ต้องพิจารณา
      ทีละเรื่อง ไม่ใช่การอนุมัติแบบ bulk — ไม่แสดง checkbox เพื่อไม่ให้เข้าใจผิดว่าสั่งการกลุ่มได้ */
   const showCheckbox = isPendingAction && role.id !== 'affairs';
@@ -625,7 +630,8 @@ function row(c){
     <td class="text-center">
       ${showCheckbox ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="ไม่มีสิทธิ์สั่งการกลุ่ม"></i>'}
     </td>
-    <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}${typeTag}</td>
+    <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
+    <td>${typeTag}</td>
     <td style="max-width:300px">
       <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
       <small class="text-muted d-block" style="font-size:0.75rem">${c.ownerOrg}</small>
@@ -658,6 +664,7 @@ function renderMyQueue(loading = false) {
         <tr class="skeleton-row">
           <td><div class="skeleton-box" style="width:20px"></div></td>
           <td><div class="skeleton-box" style="width:80px"></div></td>
+          <td><div class="skeleton-box" style="width:90px"></div></td>
           <td><div class="skeleton-box" style="width:200px"></div></td>
           <td><div class="skeleton-box" style="width:110px"></div></td>
           <td><div class="skeleton-box" style="width:80px"></div></td>
@@ -706,7 +713,7 @@ function renderMyQueue(loading = false) {
 
   tbodyPrimary.innerHTML = paginatedCases.length
     ? paginatedCases.map(c => row(c)).join('')
-    : `<tr><td colspan="6" class="text-center text-muted py-4">
+    : `<tr><td colspan="7" class="text-center text-muted py-4">
          <i class="fa-solid fa-face-smile fa-lg mb-2 d-block"></i>
          ไม่มีรายการสำนวนตามเงื่อนไขการค้นหา<br>
          <small>ลองเปลี่ยนข้อความค้นหาหรือตัวกรองสถานะ</small></td></tr>`;
@@ -848,9 +855,9 @@ function applyFilters() {
       ));
 
     let matchDocType = true;
-    if (docTypeVal === '71') matchDocType = (!c.docType || c.docType === '213' || c.docType === '644');
-    else if (docTypeVal === '72') matchDocType = (c.docType === 'RULING');
-    else if (docTypeVal === '73') matchDocType = (c.docType === 'GENERAL' || c.docType === 'GENERAL_MEMO');
+    if (docTypeVal === '71') matchDocType = (!ECMIS.isCase72(c) && !ECMIS.isCase73(c));
+    else if (docTypeVal === '72') matchDocType = ECMIS.isCase72(c);
+    else if (docTypeVal === '73') matchDocType = ECMIS.isCase73(c);
 
     let matchSt = true;
     if (role.id === 'chairman') {

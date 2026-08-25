@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>รายการจัดทำมติ | E-CMIS</title>
-<link rel="icon" type="image/png" href="../assets/pacc_logo.png">
+<link rel="icon" type="image/png" href="assets/pacc_logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-<link href="../assets/ecmis-app.css" rel="stylesheet">
+<link href="assets/ecmis-app.css" rel="stylesheet">
 <style>
 .btn-xs { font-size: 0.76rem; padding: 0.2rem 0.5rem; border-radius: 4px; }
 .kpi-grid-7 {
@@ -83,9 +83,6 @@
   overflow: hidden;
   word-break: break-word;
 }
-.meet-type-inquiry { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.75rem; }
-.meet-type-ruling { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.75rem; }
-.meet-type-general { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; font-size: 0.75rem; }
 .tab-btn { font-weight: 600; font-size: 0.88rem; padding: 0.6rem 1.2rem; border-radius: 8px 8px 0 0; color: #64748b; background: transparent; border: none; border-bottom: 3px solid transparent; transition: all 0.2s; }
 .tab-btn:hover { color: #0F2A62; background: rgba(15,42,98,0.03); }
 .tab-btn.active { color: #0F2A62; border-bottom-color: #0F2A62; background: #fff; }
@@ -219,7 +216,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="../assets/ecmis-app.js"></script>
+<script src="assets/ecmis-app.js"></script>
 <script>
 ECMIS.renderShell('resolution-inbox.html');
 
@@ -234,7 +231,7 @@ const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
 let sb = null;
 try {
   if (window.supabase && typeof window.supabase.createClient === 'function') {
-    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    sb = (window.ECMIS && window.ECMIS.getSupabaseClient) ? window.ECMIS.getSupabaseClient(SUPABASE_URL, SUPABASE_KEY) : (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }) : null);
   }
 } catch (e) {
   console.warn('Supabase init skipped, using local data store:', e);
@@ -405,13 +402,7 @@ function getActionBadge(c) {
 
 /* ป้ายประเภทเรื่อง (Clean Text) */
 function typeBadge(c, is72){
-  if (ECMIS.isCase73(c)) {
-    return '<span class="meet-badge meet-type-general"><i class="fa-solid fa-scale-balanced me-1"></i>เรื่องทั่วไป</span>';
-  }
-  if (is72) {
-    return '<span class="meet-badge meet-type-ruling"><i class="fa-solid fa-gavel me-1"></i>วินิจฉัยชี้มูล</span>';
-  }
-  return '<span class="meet-badge meet-type-inquiry"><i class="fa-solid fa-file-lines me-1"></i>ไต่สวนเบื้องต้น</span>';
+  return ECMIS.typeBadge(c, is72);
 }
 
 function row(c){
@@ -419,10 +410,9 @@ function row(c){
   const stg = getStage(c);
   const isActionable = isRowActionable(c);
   
-  // Target route determination
   const target = is72
     ? `resolution-72.html?case=${encodeURIComponent(c.id)}`
-    : `resolution.html?case=${encodeURIComponent(c.id)}`;
+    : `board-resolution.html?case=${encodeURIComponent(c.id)}`;
 
   const statusBadgeHtml = getActionBadge(c);
 
