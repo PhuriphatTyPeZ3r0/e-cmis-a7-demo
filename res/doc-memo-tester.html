@@ -17,28 +17,52 @@
 
   <style>
     /* =========================================================
-       SYMMETRICAL TWO-PANE WORKSPACE LAYOUT (50% / 50%)
+       DYNAMIC WORKSPACE LAYOUT (3 VIEW MODES & COLLAPSIBLE)
        ========================================================= */
     .app-main {
       padding: 1.25rem 1.5rem !important;
       max-width: 1720px;
       margin: 0 auto;
+      transition: all 0.3s ease;
     }
 
+    /* Layout Mode: Split (Default 50:50) */
     .tester-layout {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 1.5rem;
       align-items: start;
+      transition: all 0.3s ease;
+    }
+
+    /* Layout Mode: Form Only (Full width form, hide preview) */
+    .tester-layout.layout-form-only {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .tester-layout.layout-form-only .right-pane {
+      display: none !important;
+    }
+
+    /* Layout Mode: Preview Only (Full width preview, hide form) */
+    .tester-layout.layout-preview-only {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .tester-layout.layout-preview-only .left-pane-scroll {
+      display: none !important;
+    }
+    .tester-layout.layout-preview-only .right-pane {
+      max-width: 1000px;
+      margin: 0 auto;
+      width: 100%;
     }
 
     @media (max-width: 1199px) {
       .tester-layout {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
       }
     }
 
-    /* Left Pane Scroll Container */
+    /* Left Pane Scroll Workspace */
     .left-pane-scroll {
       max-height: calc(100vh - 120px);
       overflow-y: auto;
@@ -60,7 +84,7 @@
       background: #94A3B8;
     }
 
-    /* Card standard styling */
+    /* Card Styling */
     .card-symmetric {
       border: 1px solid #E2E8F0;
       border-radius: 10px;
@@ -169,9 +193,10 @@
     /* A4 Paper Viewport Container */
     .a4-paper-container {
       background: #334155;
-      padding: 24px 16px;
+      padding: 20px 14px;
       border-radius: 10px;
       overflow-y: auto;
+      overflow-x: auto;
       height: calc(100vh - 210px);
       min-height: 580px;
       box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.35);
@@ -183,6 +208,7 @@
 
     .a4-paper-container::-webkit-scrollbar {
       width: 8px;
+      height: 8px;
     }
     .a4-paper-container::-webkit-scrollbar-track {
       background: #1E293B;
@@ -193,18 +219,28 @@
       border-radius: 4px;
     }
 
-    /* Accurate A4 Sheet Simulation */
+    /* Strict A4 Sheet Simulation — Exact 210mm x 297mm with Overflow Hidden to prevent page stretching */
+    .a4-sheet-wrapper {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+
     .a4-sheet {
       background: #FFFFFF;
-      width: 100%;
+      width: 210mm;
+      height: 297mm;
+      min-width: 210mm;
       max-width: 210mm;
       min-height: 297mm;
+      max-height: 297mm;
+      overflow: hidden;
       margin: 0 auto;
-      padding: 22mm 20mm 24mm 24mm;
+      padding: 18mm 18mm 20mm 22mm;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
       font-family: 'TH Sarabun IT๙', 'TH Sarabun New', 'Sarabun', serif;
       font-size: 16pt;
-      line-height: 1.35;
+      line-height: 1.32;
       color: #000000;
       position: relative;
       box-sizing: border-box;
@@ -218,7 +254,7 @@
       color: #334155;
       border-bottom: 1px solid #CBD5E1;
       padding-bottom: 4px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -229,7 +265,7 @@
       color: #64748B;
       text-align: center;
       position: absolute;
-      bottom: 10mm;
+      bottom: 8mm;
       left: 0;
       right: 0;
     }
@@ -240,13 +276,13 @@
       font-weight: bold;
       text-align: center;
       line-height: 1.1;
-      margin-top: 6px;
-      margin-bottom: 18px;
+      margin-top: 4px;
+      margin-bottom: 16px;
     }
 
     .memo-row {
       display: flex;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
       align-items: baseline;
       font-size: 16pt;
     }
@@ -277,8 +313,8 @@
 
     .memo-section-title {
       font-weight: bold;
-      margin-top: 12px;
-      margin-bottom: 4px;
+      margin-top: 10px;
+      margin-bottom: 3px;
       text-indent: 1.5cm;
     }
 
@@ -335,6 +371,33 @@
       border-color: #38BDF8;
     }
 
+    /* Floating Quick Open Preview Button (when collapsed) */
+    .floating-preview-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1050;
+      background: #0F2A62;
+      color: #FFFFFF;
+      border: 2px solid #38BDF8;
+      border-radius: 30px;
+      padding: 10px 20px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .floating-preview-btn:hover {
+      background: #1E40AF;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
     /* Printing rules */
     @media print {
       body * {
@@ -355,6 +418,7 @@
         margin: 0 0 20mm 0;
         padding: 20mm 15mm 20mm 20mm;
         box-shadow: none;
+        transform: none !important;
         page-break-after: always;
         break-after: page;
       }
@@ -375,29 +439,40 @@
 
   <main class="app-main">
 
-    <!-- Symmetrical Page Header -->
+    <!-- Symmetrical Page Header with 3-View Mode Switcher -->
     <div class="page-head d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-2 border-bottom">
       <div>
         <h1 class="h4 mb-0 fw-bold text-navy">
           <i class="fa-solid fa-file-word me-2 text-primary"></i>ระบบแนบไฟล์ Word รายหัวข้อ & พรีวิวบันทึกข้อความ A4
         </h1>
-        <small class="text-muted">ทดสอบการนำเข้าไฟล์ Word แยกส่วน (ข้อ ๑ - ๗) และระบบจัดหน้า A4 อัตโนมัติ (รองรับ 100+ หน้า)</small>
+        <small class="text-muted">แนบไฟล์แยกส่วน (ข้อ ๑ - ๗) และคำนวณตัดหน้า A4 อัตโนมัติ (ไม่ตกขอบกระดาษ • รองรับ 100+ หน้า)</small>
       </div>
-      <div class="d-flex align-items-center gap-2">
+
+      <!-- View Mode Switcher Controls -->
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <div class="btn-group btn-group-sm bg-white p-1 border rounded-pill shadow-sm" role="group">
+          <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="btnLayoutFormOnly" title="ซ่อนเอกสาร (พิมพ์ฟอร์มเต็มจอ)">
+            <i class="fa-solid fa-align-left me-1 text-primary"></i>เฉพาะฟอร์ม
+          </button>
+          <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" id="btnLayoutSplit" title="เปิดจอคู่ 50:50">
+            <i class="fa-solid fa-table-columns me-1"></i>จอคู่ 50:50
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="btnLayoutPreviewOnly" title="ขยายดูเฉพาะเอกสารเต็มจอ">
+            <i class="fa-solid fa-file-lines me-1 text-primary"></i>เฉพาะเอกสาร
+          </button>
+        </div>
+
         <a href="approval-review.html" class="btn btn-sm btn-outline-secondary px-3">
-          <i class="fa-solid fa-arrow-left me-1"></i>กลับหน้าระบบ
+          <i class="fa-solid fa-arrow-left me-1"></i>กลับระบบ
         </a>
-        <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm">
-          <i class="fa-solid fa-layer-group me-1"></i>Multi-Page A4 Engine
-        </span>
       </div>
     </div>
 
-    <!-- Symmetrical 2-Pane Workspace (50% / 50%) -->
-    <div class="tester-layout">
+    <!-- Main Dynamic Workspace -->
+    <div class="tester-layout" id="mainTesterLayout">
 
       <!-- LEFT PANE: Form Controls & Per-Section Word Attachment -->
-      <div class="left-pane-scroll">
+      <div class="left-pane-scroll" id="leftPane">
 
         <!-- 1. Header Information Card -->
         <div class="card-symmetric">
@@ -599,8 +674,8 @@
 
       </div>
 
-      <!-- RIGHT PANE: Multi-Page A4 Document Preview & Symmetrical Controls -->
-      <div class="right-pane">
+      <!-- RIGHT PANE: Multi-Page A4 Document Preview & Controls -->
+      <div class="right-pane" id="rightPane">
         <div class="preview-sticky-wrap">
 
           <!-- 1. Symmetrical Top Controls Bar -->
@@ -618,6 +693,9 @@
             </div>
 
             <div class="d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary px-2" id="btnToggleCollapse" title="ซ่อนหน้าต่างเอกสาร">
+                <i class="fa-solid fa-chevron-right me-1"></i>ซ่อนเอกสาร
+              </button>
               <button type="button" class="btn btn-sm btn-outline-warning text-dark px-2" id="btnToggleHighlight" title="สลับไฮไลต์ข้อความ">
                 <i class="fa-solid fa-highlighter me-1"></i>ไฮไลต์
               </button>
@@ -630,7 +708,7 @@
             </div>
           </div>
 
-          <!-- 2. Symmetrical Pagination Navigator Bar -->
+          <!-- 2. Symmetrical Pagination & Zoom Navigator Bar -->
           <div class="pagination-toolbar-symmetric" id="paginationBar">
             <div class="d-flex align-items-center gap-1">
               <button type="button" class="btn btn-xs btn-secondary" id="btnFirstPage" title="หน้าแรกสุด (หน้า 1)"><i class="fa-solid fa-backward-step"></i></button>
@@ -644,13 +722,17 @@
               <button type="button" class="btn btn-xs btn-secondary" id="btnLastPage" title="หน้าสุดท้าย"><i class="fa-solid fa-forward-step"></i></button>
             </div>
 
-            <div class="d-flex align-items-center gap-2">
-              <span class="small opacity-75" id="totalDocStatsText">รวม 1 หน้า • 0 คำ</span>
-              <div class="d-flex align-items-center gap-1 border-start ps-2 border-secondary">
-                <button type="button" class="btn btn-xs btn-dark" id="btnZoomOut"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
-                <span style="font-size:0.75rem; width:36px; text-align:center;" id="zoomLevelText">100%</span>
-                <button type="button" class="btn btn-xs btn-dark" id="btnZoomIn"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+            <!-- Symmetrical Zoom Controls with Fit-to-Panel -->
+            <div class="d-flex align-items-center gap-1">
+              <span class="small opacity-75 me-1 d-none d-md-inline" id="totalDocStatsText">รวม 1 หน้า</span>
+              <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-xs btn-outline-light" id="btnZoomFit" title="พอดีความกว้าง">พอดีจอ</button>
+                <button type="button" class="btn btn-xs btn-outline-light" id="btnZoom75">75%</button>
+                <button type="button" class="btn btn-xs btn-outline-light" id="btnZoom100">100%</button>
               </div>
+              <button type="button" class="btn btn-xs btn-dark ms-1" id="btnZoomOut"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+              <span style="font-size:0.75rem; width:34px; text-align:center;" id="zoomLevelText">78%</span>
+              <button type="button" class="btn btn-xs btn-dark" id="btnZoomIn"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
             </div>
           </div>
 
@@ -662,6 +744,12 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- Floating Quick-Open Button (visible when preview is closed) -->
+    <div class="floating-preview-btn" id="floatingPreviewBtn">
+      <i class="fa-solid fa-file-lines fa-lg text-info"></i>
+      <span>เปิดดูเอกสาร A4 (<span id="floatingPageCount">1</span> หน้า)</span>
     </div>
 
     <!-- Fullscreen / Large Text Editor Modal -->
@@ -719,8 +807,9 @@
     };
 
     let highlightEnabled = true;
-    let currentZoom = 1.0;
+    let currentZoom = 0.78; // Default comfortable fit zoom scale
     let viewMode = 'SINGLE'; // 'SINGLE' or 'CONTINUOUS'
+    let layoutMode = 'SPLIT'; // 'SPLIT', 'FORM_ONLY', 'PREVIEW_ONLY'
     let currentPage = 1;
     let totalComputedPages = 1;
     let paginatedSheets = [];
@@ -736,8 +825,7 @@
       if (!text) return { chars: 0, words: 0, pages: 0 };
       const chars = text.length;
       const words = text.trim().split(/\s+/).filter(Boolean).length;
-      // In Thai A4 16pt, ~250 words or ~1,200 chars roughly equal 1 page
-      const pages = Math.max(1, Math.ceil(chars / 1100));
+      const pages = Math.max(1, Math.ceil(chars / 1050));
       return { chars, words, pages };
     }
 
@@ -752,8 +840,8 @@
 
     /* 
       =======================================================
-      MULTI-PAGE A4 PAGINATION ENGINE
-      Splits long documents (even 100+ pages) cleanly across A4 sheets
+      SMART STRICT-HEIGHT A4 PAGINATION ENGINE (NO OVERFLOW)
+      Guarantees exact 297mm A4 sheet height without content falling off!
       =======================================================
     */
     function computeA4Pages() {
@@ -779,27 +867,63 @@
         return `<span class="${hlClass}">${val.replace(/\n/g, '<br>')}</span>`;
       };
 
-      // Split Section 4 into chunks if it's large
-      const CHARS_PER_PAGE = 1200;
-      const s4Paragraphs = s4 ? s4.split(/\n\s*\n/) : [];
+      /*
+        Exact capacity rules for strict 297mm height:
+        - Page 1 with Garuda + Header rows + Sec 1, 2, 3: holds ~500 chars of Sec 4.
+        - Subsequent Pages (Page 2 to N-1): Running head + holds ~1,050 chars.
+        - Final Page with Signatures (Sec 5, 6, 7): holds ~650 chars.
+      */
+      const PAGE_1_BODY_CAPACITY = 550;
+      const MIDDLE_PAGE_CAPACITY = 1050;
+      const LAST_PAGE_WITH_SIG_CAPACITY = 650;
 
-      let s4Pages = [];
-      if (!s4 || s4.length <= 800) {
-        s4Pages = [s4];
+      // Smart paragraph splitter that respects page capacities
+      let s4Chunks = [];
+      if (!s4) {
+        s4Chunks = [''];
       } else {
+        const paragraphs = s4.split(/\n\s*\n/);
         let currentChunk = '';
-        s4Paragraphs.forEach(p => {
-          if ((currentChunk.length + p.length) > CHARS_PER_PAGE && currentChunk.length > 400) {
-            s4Pages.push(currentChunk);
+        let targetCapacity = (paragraphs.length === 1 && s4.length <= 500) ? 500 : PAGE_1_BODY_CAPACITY;
+
+        paragraphs.forEach((p, idx) => {
+          // If a single paragraph is enormous, slice it into sentence chunks
+          if (p.length > targetCapacity) {
+            const sentences = p.split(/([。！？\n]|\.\s+|\s{2,})/);
+            sentences.forEach(s => {
+              if ((currentChunk.length + s.length) > targetCapacity && currentChunk.length > 200) {
+                s4Chunks.push(currentChunk.trim());
+                currentChunk = s;
+                targetCapacity = MIDDLE_PAGE_CAPACITY;
+              } else {
+                currentChunk += s;
+              }
+            });
+          } else if ((currentChunk.length + p.length) > targetCapacity && currentChunk.length > 200) {
+            s4Chunks.push(currentChunk.trim());
             currentChunk = p;
+            targetCapacity = MIDDLE_PAGE_CAPACITY;
           } else {
             currentChunk = currentChunk ? (currentChunk + '\n\n' + p) : p;
           }
         });
-        if (currentChunk) s4Pages.push(currentChunk);
+
+        if (currentChunk.trim()) {
+          s4Chunks.push(currentChunk.trim());
+        }
       }
 
-      const totalPages = Math.max(1, s4Pages.length);
+      // If the last chunk is too big for the last page with signatures, split once more
+      if (s4Chunks.length > 1) {
+        const lastChunk = s4Chunks[s4Chunks.length - 1];
+        if (lastChunk.length > LAST_PAGE_WITH_SIG_CAPACITY) {
+          const splitPt = Math.floor(lastChunk.length / 2);
+          s4Chunks[s4Chunks.length - 1] = lastChunk.substring(0, splitPt).trim();
+          s4Chunks.push(lastChunk.substring(splitPt).trim());
+        }
+      }
+
+      const totalPages = Math.max(1, s4Chunks.length);
       totalComputedPages = totalPages;
       paginatedSheets = [];
 
@@ -811,11 +935,11 @@
         let pageHtml = '';
 
         if (isFirstPage) {
-          // Page 1: Full Memo Header with Garuda Emblem
+          // Page 1: Standard Thai Official Memo Header
           pageHtml = `
             <!-- Garuda & Title -->
-            <div style="position:relative; min-height:55px;" class="mb-2">
-              <img src="../assets/doc_logo.jpg" alt="ตราครุฑ" style="position:absolute; top:0; left:0; width:52px; height:auto;">
+            <div style="position:relative; min-height:50px;" class="mb-2">
+              <img src="../assets/doc_logo.jpg" alt="ตราครุฑ" style="position:absolute; top:0; left:0; width:50px; height:auto;">
               <div class="memo-header-title">บันทึกข้อความ</div>
             </div>
 
@@ -841,13 +965,13 @@
               <div class="memo-val fw-bold">${wrapVal(subject, 65)}</div>
             </div>
 
-            <div class="memo-row mb-2">
+            <div class="memo-row mb-1">
               <div class="memo-lbl">เรียน</div>
               <div class="memo-val">${wrapVal(toVal, 50)}</div>
             </div>
 
             <!-- Divider line -->
-            <div style="border-top:1.5px solid #000; margin: 8px 0 14px 0;"></div>
+            <div style="border-top:1.5px solid #000; margin: 6px 0 10px 0;"></div>
 
             <!-- Section 1 -->
             <div class="memo-section-title">๑. เรื่องเดิม</div>
@@ -857,7 +981,7 @@
             <div class="memo-section-title">๒. ข้อเท็จจริง</div>
             <div class="memo-indent-body">
               <span>ประชุมคณะอนุกรรมการพิจารณากลั่นกรองฯ ได้มีมติที่ประชุม ดังนี้</span>
-              <div style="margin-top:4px;">${wrapVal(s2, 100)}</div>
+              <div style="margin-top:2px;">${wrapVal(s2, 100)}</div>
             </div>
 
             <!-- Section 3 -->
@@ -866,10 +990,10 @@
 
             <!-- Section 4 (Page 1 part) -->
             <div class="memo-section-title">๔. ข้อพิจารณา</div>
-            <div class="memo-indent-body">${wrapVal(s4Pages[0], 140)}</div>
+            <div class="memo-indent-body">${wrapVal(s4Chunks[0], 140)}</div>
           `;
 
-          // If only 1 page total, also render signatures at the bottom
+          // If only 1 page total, also render signatures at bottom
           if (isLastPage) {
             pageHtml += `
               <!-- Section 5 -->
@@ -890,12 +1014,12 @@
           const pageThai = ECMIS.toThaiDigits(pageNo);
           pageHtml = `
             <div class="a4-running-head">
-              <span><strong>๔. ข้อพิจารณา (ต่อ)</strong> — ${subject ? subject.substring(0, 45) + '...' : 'รายงานผลการพิจารณา'}</span>
+              <span><strong>๔. ข้อพิจารณา (ต่อ)</strong> — ${subject ? subject.substring(0, 42) + '...' : 'รายงานผลการพิจารณา'}</span>
               <span>- แผ่นที่ ${pageThai} -</span>
             </div>
 
-            <div class="memo-indent-body" style="text-indent: 1.5cm; min-height: 200mm;">
-              ${wrapVal(s4Pages[pIdx], 200)}
+            <div class="memo-indent-body" style="text-indent: 1.5cm;">
+              ${wrapVal(s4Chunks[pIdx], 200)}
             </div>
           `;
 
@@ -903,7 +1027,7 @@
           if (isLastPage) {
             pageHtml += `
               <!-- Section 5 -->
-              <div class="memo-section-title" style="margin-top:20px;">๕. ความเห็นผู้อำนวยการกองกฎหมาย</div>
+              <div class="memo-section-title" style="margin-top:16px;">๕. ความเห็นผู้อำนวยการกองกฎหมาย</div>
               <div class="memo-indent-body">${wrapVal(s5, 80)}</div>
 
               <!-- Section 6 -->
@@ -929,15 +1053,15 @@
       renderPreviewSheets();
     }
 
-    // Render A4 sheets based on current viewMode and currentPage
+    // Render A4 sheets based on current viewMode, zoom, and currentPage
     function renderPreviewSheets() {
       const container = $('#a4Container');
       container.empty();
 
       $('#totalPagesText').text(`/ ${totalComputedPages} หน้า`);
       $('#pageNumberInput').attr('max', totalComputedPages);
+      $('#floatingPageCount').text(totalComputedPages);
 
-      // Clamp current page
       if (currentPage > totalComputedPages) currentPage = totalComputedPages;
       if (currentPage < 1) currentPage = 1;
       $('#pageNumberInput').val(currentPage);
@@ -946,17 +1070,19 @@
       $('#totalDocStatsText').text(`รวม ${totalComputedPages} หน้า • ${totalWords.toLocaleString()} คำ`);
 
       if (viewMode === 'SINGLE') {
-        // Render only current page for ultra high performance
         const targetSheet = paginatedSheets[currentPage - 1] || paginatedSheets[0];
         if (targetSheet) {
-          const sheetEl = $(`<div class="a4-sheet" style="transform: scale(${currentZoom})">${targetSheet.html}</div>`);
-          container.append(sheetEl);
+          const wrapEl = $(`<div class="a4-sheet-wrapper" style="height:${Math.round(297 * 3.78 * currentZoom)}px;">
+            <div class="a4-sheet" style="transform: scale(${currentZoom})">${targetSheet.html}</div>
+          </div>`);
+          container.append(wrapEl);
         }
       } else {
-        // Render all sheets in continuous view
         paginatedSheets.forEach(sheet => {
-          const sheetEl = $(`<div class="a4-sheet" style="transform: scale(${currentZoom})">${sheet.html}</div>`);
-          container.append(sheetEl);
+          const wrapEl = $(`<div class="a4-sheet-wrapper" style="height:${Math.round(297 * 3.78 * currentZoom)}px; margin-bottom: 12px;">
+            <div class="a4-sheet" style="transform: scale(${currentZoom})">${sheet.html}</div>
+          </div>`);
+          container.append(wrapEl);
         });
       }
     }
@@ -984,11 +1110,9 @@
               const text = (res.value || '').trim();
               const stats = calculateStats(text);
 
-              // Set text to target field
               $('#' + targetFieldId).val(text);
               $(`#${cardId}`).addClass('has-attachment');
 
-              // Display success badge
               const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
               $(`#${badgeId}`).html(`
                 <div class="attached-info-badge">
@@ -1006,7 +1130,7 @@
               Swal.fire({
                 icon: 'success',
                 title: 'ถอดข้อความสำเร็จ!',
-                html: `นำเข้าข้อความจำนวน <b>${stats.words.toLocaleString()} คำ</b> (คำนวณได้ประมาณ <b>${stats.pages} หน้า A4</b>) เข้าสู่หัวข้อเรียบร้อยแล้ว`,
+                html: `นำเข้าข้อความจำนวน <b>${stats.words.toLocaleString()} คำ</b> (คำนวณและตัดหน้า A4 ได้ <b>${totalComputedPages} หน้า</b>) เรียบร้อยแล้ว`,
                 confirmButtonColor: '#0F2A62',
                 timer: 2000
               });
@@ -1044,8 +1168,47 @@
       return paragraphs.join('\n\n');
     }
 
+    // Set Layout Mode (SPLIT, FORM_ONLY, PREVIEW_ONLY)
+    function setLayoutMode(mode) {
+      layoutMode = mode;
+      const layout = $('#mainTesterLayout');
+      layout.removeClass('layout-form-only layout-preview-only');
+
+      $('#btnLayoutFormOnly, #btnLayoutSplit, #btnLayoutPreviewOnly').removeClass('btn-primary').addClass('btn-outline-secondary');
+
+      if (mode === 'FORM_ONLY') {
+        layout.addClass('layout-form-only');
+        $('#btnLayoutFormOnly').addClass('btn-primary').removeClass('btn-outline-secondary');
+        $('#floatingPreviewBtn').css('display', 'flex');
+      } else if (mode === 'PREVIEW_ONLY') {
+        layout.addClass('layout-preview-only');
+        $('#btnLayoutPreviewOnly').addClass('btn-primary').removeClass('btn-outline-secondary');
+        $('#floatingPreviewBtn').hide();
+        autoFitZoom();
+      } else {
+        $('#btnLayoutSplit').addClass('btn-primary').removeClass('btn-outline-secondary');
+        $('#floatingPreviewBtn').hide();
+        currentZoom = 0.78;
+        applyZoom();
+      }
+    }
+
+    function autoFitZoom() {
+      const containerWidth = $('#a4Container').width() || 600;
+      const a4WidthPx = 210 * 3.78; // ~794px
+      const scale = Math.min(1.15, Math.max(0.55, (containerWidth - 50) / a4WidthPx));
+      currentZoom = Math.round(scale * 100) / 100;
+      applyZoom();
+    }
+
+    function applyZoom() {
+      $('.a4-sheet').css('transform', `scale(${currentZoom})`);
+      $('.a4-sheet-wrapper').css('height', `${Math.round(297 * 3.78 * currentZoom)}px`);
+      $('#zoomLevelText').text(`${Math.round(currentZoom * 100)}%`);
+    }
+
     $(document).ready(function () {
-      // Initialize with Header Sample
+      // Initialize Header Data
       $('#f_agency').val(EXAM_SAMPLE_HEADER.agency);
       $('#f_doc_no').val(EXAM_SAMPLE_HEADER.doc_no);
       $('#f_doc_date').val(EXAM_SAMPLE_HEADER.doc_date);
@@ -1061,6 +1224,20 @@
 
       updateSectionStats();
       computeA4Pages();
+      applyZoom();
+
+      // Layout Switcher Events
+      $('#btnLayoutFormOnly').on('click', () => setLayoutMode('FORM_ONLY'));
+      $('#btnLayoutSplit').on('click', () => setLayoutMode('SPLIT'));
+      $('#btnLayoutPreviewOnly').on('click', () => setLayoutMode('PREVIEW_ONLY'));
+
+      $('#btnToggleCollapse').on('click', function () {
+        setLayoutMode('FORM_ONLY');
+      });
+
+      $('#floatingPreviewBtn').on('click', function () {
+        setLayoutMode('SPLIT');
+      });
 
       // Input changes trigger recalculation
       $('.reactive-field').on('input', function () {
@@ -1118,7 +1295,7 @@
       $('#btnSimulate100Pages').on('click', function () {
         Swal.fire({
           title: 'กำลังสร้างข้อความจำลอง 100+ หน้า...',
-          text: 'ระบบกำลังประมวลผลย่อหน้าและจัดหน้า A4 อัตโนมัติ',
+          text: 'ระบบกำลังตัดและจัดหน้า A4 อัตโนมัติ (Strict 297mm Height)',
           allowOutsideClick: false,
           didOpen: () => {
             Swal.showLoading();
@@ -1138,7 +1315,7 @@
               Swal.fire({
                 icon: 'success',
                 title: 'สร้างข้อความ 100+ หน้าสำเร็จ!',
-                html: `คำนวณและแบ่งหน้าเอกสารได้ทั้งหมด <b>${totalComputedPages} หน้า</b><br>คุณสามารถใช้แถบนำทางหน้า (Next / Prev / พิมพ์เลขหน้า) เพื่อตรวจดูแต่ละหน้าได้ทันที`,
+                html: `คำนวณและแบ่งหน้าเอกสารได้ทั้งหมด <b>${totalComputedPages} หน้า</b><br>แต่ละหน้าล็อกขนาด 297mm ไม่ตกขอบกระดาษ`,
                 confirmButtonColor: '#0F2A62'
               });
             }, 100);
@@ -1253,21 +1430,30 @@
         renderPreviewSheets();
       });
 
-      // Zoom Controls
+      // Zoom Controls & Presets
+      $('#btnZoomFit').on('click', function () {
+        autoFitZoom();
+      });
+
+      $('#btnZoom75').on('click', function () {
+        currentZoom = 0.75;
+        applyZoom();
+      });
+
+      $('#btnZoom100').on('click', function () {
+        currentZoom = 1.0;
+        applyZoom();
+      });
+
       $('#btnZoomIn').on('click', function () {
-        currentZoom = Math.min(1.3, currentZoom + 0.1);
+        currentZoom = Math.min(1.3, currentZoom + 0.08);
         applyZoom();
       });
 
       $('#btnZoomOut').on('click', function () {
-        currentZoom = Math.max(0.6, currentZoom - 0.1);
+        currentZoom = Math.max(0.5, currentZoom - 0.08);
         applyZoom();
       });
-
-      function applyZoom() {
-        $('.a4-sheet').css('transform', `scale(${currentZoom})`);
-        $('#zoomLevelText').text(`${Math.round(currentZoom * 100)}%`);
-      }
 
       // Highlight Toggle
       $('#btnToggleHighlight').on('click', function () {
