@@ -17,13 +17,29 @@
 
   <style>
     /* =========================================================
-       DYNAMIC WORKSPACE LAYOUT (3 VIEW MODES & COLLAPSIBLE)
+       DYNAMIC WORKSPACE LAYOUT (3 VIEW MODES & PROPER SIDEBAR MARGINS)
        ========================================================= */
     .app-main {
-      padding: 1.25rem 1.5rem !important;
-      max-width: 1720px;
-      margin: 0 auto;
-      transition: all 0.3s ease;
+      margin-left: var(--sidebar-w) !important;
+      padding-top: calc(var(--topbar-h) + 16px) !important;
+      padding-left: 24px !important;
+      padding-right: 24px !important;
+      padding-bottom: 40px !important;
+      width: calc(100vw - var(--sidebar-w)) !important;
+      max-width: none !important;
+      box-sizing: border-box !important;
+      transition: margin-left .15s ease, width .15s ease;
+    }
+
+    body.sidebar-collapsed .app-main {
+      margin-left: var(--sidebar-w-collapsed) !important;
+      width: calc(100vw - var(--sidebar-w-collapsed)) !important;
+    }
+
+    /* Hide injected global suggestions & helper bars on this tester page to keep it clean */
+    .sug-chips-box,
+    .textarea-helper-bar {
+      display: none !important;
     }
 
     /* Layout Mode: Split (Default 50:50) */
@@ -32,6 +48,8 @@
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 1.5rem;
       align-items: start;
+      width: 100%;
+      box-sizing: border-box;
       transition: all 0.3s ease;
     }
 
@@ -51,7 +69,7 @@
       display: none !important;
     }
     .tester-layout.layout-preview-only .right-pane {
-      max-width: 1000px;
+      max-width: 960px;
       margin: 0 auto;
       width: 100%;
     }
@@ -64,7 +82,7 @@
 
     /* Left Pane Scroll Workspace */
     .left-pane-scroll {
-      max-height: calc(100vh - 120px);
+      max-height: calc(100vh - var(--topbar-h) - 100px);
       overflow-y: auto;
       padding-right: 6px;
     }
@@ -186,7 +204,7 @@
     /* Right Pane: Sticky Preview Wrap */
     .preview-sticky-wrap {
       position: sticky;
-      top: 75px;
+      top: calc(var(--topbar-h) + 16px);
       z-index: 10;
     }
 
@@ -197,8 +215,8 @@
       border-radius: 10px;
       overflow-y: auto;
       overflow-x: auto;
-      height: calc(100vh - 210px);
-      min-height: 580px;
+      height: calc(100vh - var(--topbar-h) - 180px);
+      min-height: 540px;
       box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.35);
       display: flex;
       flex-direction: column;
@@ -526,7 +544,7 @@
               <div class="section-header-flex">
                 <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary"></i>๑. เรื่องเดิม</span>
                 <div class="d-flex align-items-center gap-1">
-                  <span class="field-stats-badge" id="stats_sec1">0 คำ | 0 หน้า</span>
+                  <span class="field-stats-badge" id="stats_sec1">0 คำ • ~0 หน้า</span>
                   <label class="btn btn-xs btn-outline-primary mb-0" style="cursor:pointer;">
                     <i class="fa-solid fa-paperclip me-1"></i>แนบไฟล์ Word
                     <input type="file" class="d-none section-file-input" data-target="f_sec1" accept=".docx,.doc">
@@ -537,7 +555,7 @@
                 </div>
               </div>
               <div id="file_badge_sec1"></div>
-              <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec1" rows="2" placeholder="กรอกเนื้อหาเรื่องเดิม หรือกดแนบไฟล์ Word..."></textarea>
+              <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec1" rows="2" data-no-suggestions="true" placeholder="กรอกเนื้อหาเรื่องเดิม หรือกดแนบไฟล์ Word..."></textarea>
             </div>
 
             <!-- Section 2 -->
@@ -545,7 +563,7 @@
               <div class="section-header-flex">
                 <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary"></i>๒. ข้อเท็จจริง (มติคณะอนุกรรมการกลั่นกรองฯ)</span>
                 <div class="d-flex align-items-center gap-1">
-                  <span class="field-stats-badge" id="stats_sec2">0 คำ | 0 หน้า</span>
+                  <span class="field-stats-badge" id="stats_sec2">0 คำ • ~0 หน้า</span>
                   <label class="btn btn-xs btn-outline-primary mb-0" style="cursor:pointer;">
                     <i class="fa-solid fa-paperclip me-1"></i>แนบไฟล์ Word
                     <input type="file" class="d-none section-file-input" data-target="f_sec2" accept=".docx,.doc">
@@ -556,7 +574,7 @@
                 </div>
               </div>
               <div id="file_badge_sec2"></div>
-              <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec2" rows="2" placeholder="ประชุมคณะอนุกรรมการพิจารณากลั่นกรองฯ ได้มีมติที่ประชุม ดังนี้..."></textarea>
+              <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec2" rows="2" data-no-suggestions="true" placeholder="ประชุมคณะอนุกรรมการพิจารณากลั่นกรองฯ ได้มีมติที่ประชุม ดังนี้..."></textarea>
             </div>
 
             <!-- Section 3 -->
@@ -564,7 +582,7 @@
               <div class="section-header-flex">
                 <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary"></i>๓. ข้อกฎหมาย ระเบียบ ประกาศ และคำสั่ง</span>
                 <div class="d-flex align-items-center gap-1">
-                  <span class="field-stats-badge" id="stats_sec3">0 คำ | 0 หน้า</span>
+                  <span class="field-stats-badge" id="stats_sec3">0 คำ • ~0 หน้า</span>
                   <label class="btn btn-xs btn-outline-primary mb-0" style="cursor:pointer;">
                     <i class="fa-solid fa-paperclip me-1"></i>แนบไฟล์ Word
                     <input type="file" class="d-none section-file-input" data-target="f_sec3" accept=".docx,.doc">
@@ -575,7 +593,7 @@
                 </div>
               </div>
               <div id="file_badge_sec3"></div>
-              <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec3" rows="2" placeholder="กรอกข้อกฎหมายและระเบียบที่เกี่ยวข้อง..."></textarea>
+              <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec3" rows="2" data-no-suggestions="true" placeholder="กรอกข้อกฎหมายและระเบียบที่เกี่ยวข้อง..."></textarea>
             </div>
 
             <!-- Section 4 (Special Feature: 100+ Pages) -->
@@ -585,7 +603,7 @@
                   <i class="fa-solid fa-file-lines me-1"></i>๔. ข้อพิจารณา (รองรับเอกสารขนาดยาว 100+ หน้า)
                 </span>
                 <div class="d-flex align-items-center flex-wrap gap-1">
-                  <span class="badge bg-primary px-2" id="stats_sec4">0 คำ | 0 หน้า</span>
+                  <span class="badge bg-primary px-2" id="stats_sec4">0 คำ • ~0 หน้า</span>
                   <label class="btn btn-xs btn-primary mb-0 shadow-sm" style="cursor:pointer;">
                     <i class="fa-solid fa-file-word me-1"></i>แนบไฟล์ Word ข้อพิจารณา
                     <input type="file" class="d-none section-file-input" data-target="f_sec4" accept=".docx,.doc">
@@ -609,7 +627,7 @@
               </div>
 
               <div id="file_badge_sec4"></div>
-              <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec4" rows="4" placeholder="กรอกเนื้อหาข้อพิจารณา หรือกดปุ่ม 'แนบไฟล์ Word ข้อพิจารณา' ด้านบน (รองรับไฟล์ยาว 100+ หน้า)..."></textarea>
+              <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec4" rows="4" data-no-suggestions="true" placeholder="กรอกเนื้อหาข้อพิจารณา หรือกดปุ่ม 'แนบไฟล์ Word ข้อพิจารณา' ด้านบน (รองรับไฟล์ยาว 100+ หน้า)..."></textarea>
             </div>
 
             <!-- Section 5 -->
@@ -617,7 +635,7 @@
               <div class="section-header-flex">
                 <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary"></i>๕. ความเห็นผู้อำนวยการกองกฎหมาย</span>
                 <div class="d-flex align-items-center gap-1">
-                  <span class="field-stats-badge" id="stats_sec5">0 คำ | 0 หน้า</span>
+                  <span class="field-stats-badge" id="stats_sec5">0 คำ • ~0 หน้า</span>
                   <label class="btn btn-xs btn-outline-primary mb-0" style="cursor:pointer;">
                     <i class="fa-solid fa-paperclip me-1"></i>แนบไฟล์ Word
                     <input type="file" class="d-none section-file-input" data-target="f_sec5" accept=".docx,.doc">
@@ -628,7 +646,7 @@
                 </div>
               </div>
               <div id="file_badge_sec5"></div>
-              <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec5" rows="2" placeholder="กรอกความเห็น ผอ.กกม...."></textarea>
+              <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec5" rows="2" data-no-suggestions="true" placeholder="กรอกความเห็น ผอ.กกม...."></textarea>
             </div>
 
             <!-- Section 6 -->
@@ -636,7 +654,7 @@
               <div class="section-header-flex">
                 <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary"></i>๖. ความเห็นรองเลขาธิการคณะกรรมการ ป.ป.ท.</span>
                 <div class="d-flex align-items-center gap-1">
-                  <span class="field-stats-badge" id="stats_sec6">0 คำ | 0 หน้า</span>
+                  <span class="field-stats-badge" id="stats_sec6">0 คำ • ~0 หน้า</span>
                   <label class="btn btn-xs btn-outline-primary mb-0" style="cursor:pointer;">
                     <i class="fa-solid fa-paperclip me-1"></i>แนบไฟล์ Word
                     <input type="file" class="d-none section-file-input" data-target="f_sec6" accept=".docx,.doc">
@@ -647,7 +665,7 @@
                 </div>
               </div>
               <div id="file_badge_sec6"></div>
-              <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec6" rows="2" placeholder="กรอกความเห็น รองเลขาธิการฯ..."></textarea>
+              <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec6" rows="2" data-no-suggestions="true" placeholder="กรอกความเห็น รองเลขาธิการฯ..."></textarea>
             </div>
 
             <!-- Section 7 -->
@@ -655,7 +673,7 @@
               <div class="section-header-flex">
                 <span class="section-title-text"><i class="fa-solid fa-circle-dot text-primary"></i>๗. ความเห็นเลขาธิการคณะกรรมการ ป.ป.ท.</span>
                 <div class="d-flex align-items-center gap-1">
-                  <span class="field-stats-badge" id="stats_sec7">0 คำ | 0 หน้า</span>
+                  <span class="field-stats-badge" id="stats_sec7">0 คำ • ~0 หน้า</span>
                   <label class="btn btn-xs btn-outline-primary mb-0" style="cursor:pointer;">
                     <i class="fa-solid fa-paperclip me-1"></i>แนบไฟล์ Word
                     <input type="file" class="d-none section-file-input" data-target="f_sec7" accept=".docx,.doc">
@@ -666,7 +684,7 @@
                 </div>
               </div>
               <div id="file_badge_sec7"></div>
-              <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec7" rows="2" placeholder="กรอกความเห็น/คำสั่ง เลขาธิการฯ..."></textarea>
+              <textarea class="form-control memo-textarea reactive-field mt-1" id="f_sec7" rows="2" data-no-suggestions="true" placeholder="กรอกความเห็น/คำสั่ง เลขาธิการฯ..."></textarea>
             </div>
 
           </div>
@@ -767,7 +785,7 @@
                 <button type="button" class="btn btn-outline-secondary" id="btnModalClear">ล้างข้อความ</button>
               </div>
             </div>
-            <textarea class="form-control font-monospace p-3" id="modalTextarea" rows="18" style="font-size:1rem; line-height:1.6;"></textarea>
+            <textarea class="form-control font-monospace p-3" id="modalTextarea" rows="18" data-no-suggestions="true" style="font-size:1rem; line-height:1.6;"></textarea>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
@@ -867,17 +885,10 @@
         return `<span class="${hlClass}">${val.replace(/\n/g, '<br>')}</span>`;
       };
 
-      /*
-        Exact capacity rules for strict 297mm height:
-        - Page 1 with Garuda + Header rows + Sec 1, 2, 3: holds ~500 chars of Sec 4.
-        - Subsequent Pages (Page 2 to N-1): Running head + holds ~1,050 chars.
-        - Final Page with Signatures (Sec 5, 6, 7): holds ~650 chars.
-      */
       const PAGE_1_BODY_CAPACITY = 550;
       const MIDDLE_PAGE_CAPACITY = 1050;
       const LAST_PAGE_WITH_SIG_CAPACITY = 650;
 
-      // Smart paragraph splitter that respects page capacities
       let s4Chunks = [];
       if (!s4) {
         s4Chunks = [''];
@@ -887,7 +898,6 @@
         let targetCapacity = (paragraphs.length === 1 && s4.length <= 500) ? 500 : PAGE_1_BODY_CAPACITY;
 
         paragraphs.forEach((p, idx) => {
-          // If a single paragraph is enormous, slice it into sentence chunks
           if (p.length > targetCapacity) {
             const sentences = p.split(/([。！？\n]|\.\s+|\s{2,})/);
             sentences.forEach(s => {
@@ -913,7 +923,6 @@
         }
       }
 
-      // If the last chunk is too big for the last page with signatures, split once more
       if (s4Chunks.length > 1) {
         const lastChunk = s4Chunks[s4Chunks.length - 1];
         if (lastChunk.length > LAST_PAGE_WITH_SIG_CAPACITY) {
@@ -935,7 +944,6 @@
         let pageHtml = '';
 
         if (isFirstPage) {
-          // Page 1: Standard Thai Official Memo Header
           pageHtml = `
             <!-- Garuda & Title -->
             <div style="position:relative; min-height:50px;" class="mb-2">
@@ -993,7 +1001,6 @@
             <div class="memo-indent-body">${wrapVal(s4Chunks[0], 140)}</div>
           `;
 
-          // If only 1 page total, also render signatures at bottom
           if (isLastPage) {
             pageHtml += `
               <!-- Section 5 -->
@@ -1010,7 +1017,6 @@
             `;
           }
         } else {
-          // Subsequent Pages (Page 2 to N): Running Top Header
           const pageThai = ECMIS.toThaiDigits(pageNo);
           pageHtml = `
             <div class="a4-running-head">
@@ -1023,7 +1029,6 @@
             </div>
           `;
 
-          // If this is the final page of multi-page document, append sections 5, 6, 7
           if (isLastPage) {
             pageHtml += `
               <!-- Section 5 -->
@@ -1041,7 +1046,6 @@
           }
         }
 
-        // Add page footer
         pageHtml += `<div class="a4-running-foot">หน้า ${pageNo} จากทั้งหมด ${totalPages} หน้า</div>`;
 
         paginatedSheets.push({
@@ -1208,6 +1212,9 @@
     }
 
     $(document).ready(function () {
+      // Clean up any dynamically appended suggestion chips in case they were generated
+      $('.sug-chips-box, .textarea-helper-bar').remove();
+
       // Initialize Header Data
       $('#f_agency').val(EXAM_SAMPLE_HEADER.agency);
       $('#f_doc_no').val(EXAM_SAMPLE_HEADER.doc_no);
