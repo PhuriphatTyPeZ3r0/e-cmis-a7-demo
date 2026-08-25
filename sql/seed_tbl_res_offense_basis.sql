@@ -11,6 +11,16 @@ ALTER TABLE IF EXISTS public.tbl_res_offense_basis
   ADD COLUMN IF NOT EXISTS p_principal integer DEFAULT 20,
   ADD COLUMN IF NOT EXISTS p_accessory integer DEFAULT 20;
 
+-- 1.1 Document the prescription columns directly on the table
+COMMENT ON COLUMN public.tbl_res_offense_basis.trob_prescription_years_principal IS
+  'อายุความคดีอาญาของฐานความผิดนี้สำหรับตัวการ (ผู้กระทำผิดหลัก) หน่วยเป็นปี คำนวณจากอัตราโทษสูงสุดของฐานความผิดตามประมวลกฎหมายอาญา มาตรา 95 (เช่น จำคุกตลอดชีวิตหรือ 20 ปี = อายุความ 20 ปี, จำคุกเกิน 7-20 ปี = 15 ปี, จำคุกเกิน 1-7 ปี = 10 ปี, จำคุกเกิน 1 เดือน-1 ปี = 5 ปี)';
+COMMENT ON COLUMN public.tbl_res_offense_basis.trob_prescription_years_accessory IS
+  'อายุความคดีอาญาของฐานความผิดนี้สำหรับผู้สนับสนุน/ผู้ใช้ (ผู้กระทำผิดรอง) หน่วยเป็นปี คำนวณแบบเดียวกับตัวการแต่ใช้อัตราโทษของผู้สนับสนุนตามประมวลกฎหมายอาญา มาตรา 86 (ระวางโทษ 2 ใน 3 ของอัตราโทษตัวการ) จึงอาจได้อายุความสั้นกว่าตัวการในบางฐานความผิด';
+COMMENT ON COLUMN public.tbl_res_offense_basis.p_principal IS
+  'คอลัมน์อายุความตัวการแบบย่อ เก็บค่าเดียวกับ trob_prescription_years_principal (หน่วยเป็นปี) — เป็นชื่อฟิลด์ที่หน้าจอจัดทำรายงานวินิจฉัยชี้มูล (ruling-report.html) เรียกใช้จริงเพื่อคำนวณวันขาดอายุความของผู้ถูกกล่าวหาแต่ละรายเมื่อมีบทบาทเป็นตัวการ';
+COMMENT ON COLUMN public.tbl_res_offense_basis.p_accessory IS
+  'คอลัมน์อายุความผู้สนับสนุนแบบย่อ เก็บค่าเดียวกับ trob_prescription_years_accessory (หน่วยเป็นปี) — เป็นชื่อฟิลด์ที่หน้าจอจัดทำรายงานวินิจฉัยชี้มูล (ruling-report.html) เรียกใช้จริงเพื่อคำนวณวันขาดอายุความของผู้ถูกกล่าวหาแต่ละรายเมื่อมีบทบาทเป็นผู้สนับสนุน/ผู้ใช้';
+
 -- 2. Clean old rows or insert full 49 items
 TRUNCATE TABLE public.tbl_res_offense_basis RESTART IDENTITY CASCADE;
 

@@ -921,7 +921,8 @@ const CASES = [
     docType:'GENERAL', signPhase:'COMPLETE',
     slaDays:3, slaLimit:5, subCommittee:null,
     meetingNo:'36/2569', agendaNo:'4.2', meetingDate:'2569-08-05',
-    resolution:'REVIEW_PROSECUTOR_73', resolutionStage: 5, resolvedAtIso: '2026-08-05T03:00:00.000Z'
+    resolution:'REVIEW_PROSECUTOR_73', resolutionStage: 5, resolvedAtIso: '2026-08-05T03:00:00.000Z',
+    generalType:'PROSECUTOR_NO_INDICT'
   },
   {
     id:'กจ.103/2569',
@@ -938,7 +939,65 @@ const CASES = [
     urgent:false, complex:false, dupWarning:false,
     docType:'GENERAL', signPhase:'COMPLETE',
     slaDays:1, slaLimit:5, subCommittee:null,
-    meetingNo:'37/2569', agendaNo:'4.3', meetingDate:'2569-08-20'
+    meetingNo:'37/2569', agendaNo:'4.3', meetingDate:'2569-08-20',
+    generalType:'SPECIAL_TASK_73'
+  },
+  {
+    id:'กจ.104/2569',
+    subject:'บันทึกขอให้คณะกรรมการ ป.ป.ท. พิจารณาจัดให้มีมาตรการคุ้มครองพยานในคดีทุจริตจัดซื้อจัดจ้าง',
+    legalBase:'ระเบียบฯ',
+    status:'AGENDA_SET',
+    procType:'7.3',
+    owner:'นางสาวอรวรรณ คุ้มครองสิทธิ์', ownerOrg:'กองคุ้มครองพยาน',
+    complainant:'กองคุ้มครองพยาน (เสนอตามภารกิจ)',
+    accused:[],
+    allegation:'พยานในคดีทุจริตจัดซื้อจัดจ้างเรื่องที่ 1547/2568 ได้รับการข่มขู่จากบุคคลที่เกี่ยวข้องกับผู้ถูกกล่าวหา เห็นควรจัดให้มีมาตรการคุ้มครองตามกฎหมายว่าด้วยการคุ้มครองพยานในคดีอาญา (ตามระเบียบฯ ข้อ 14, ม.๕๔)',
+    receivedDate:'2569-08-10', deadline60:'—', deadline2y:'—', prescription:'—',
+    docRef:'ปป 0018/1122 ลงวันที่ 10 สิงหาคม 2569',
+    urgent:true, complex:false, dupWarning:false,
+    docType:'GENERAL', signPhase:'COMPLETE',
+    slaDays:2, slaLimit:5, subCommittee:null,
+    meetingNo:'37/2569', agendaNo:'4.4', meetingDate:'2569-08-20',
+    generalType:'WITNESS_PROTECTION'
+  },
+  {
+    id:'กจ.105/2569',
+    subject:'บันทึกขออนุมัติแยกเลขสำนวน กรณีผู้ถูกกล่าวหาหลายคนและหลายพฤติการณ์',
+    legalBase:'ระเบียบฯ',
+    status:'RESOLVED',
+    procType:'7.3',
+    owner:'นายกิตติ แยกสำนวนดี', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 3',
+    complainant:'กองปราบปรามการทุจริตในภาครัฐ 3 (เสนอตามภารกิจ)',
+    accused:[],
+    allegation:'สำนวนเรื่องที่ 0654/2569 มีผู้ถูกกล่าวหาหลายคนและพฤติการณ์แยกจากกันชัดเจน คณะผู้ไต่สวนเห็นควรขออนุมัติแยกเลขสำนวนเพื่อความสะดวกในการดำเนินคดีแต่ละราย',
+    receivedDate:'2569-07-20', deadline60:'—', deadline2y:'—', prescription:'—',
+    docRef:'ปป 0009/0876 ลงวันที่ 20 กรกฎาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    docType:'GENERAL', signPhase:'COMPLETE',
+    slaDays:1, slaLimit:5, subCommittee:null,
+    meetingNo:'36/2569', agendaNo:'4.5', meetingDate:'2569-08-05',
+    resolution:'APPROVE_73', resolutionStage: 5, resolvedAtIso: '2026-08-05T03:00:00.000Z',
+    generalType:'SPLIT_CASE'
+  },
+  {
+    id:'กจ.106/2569',
+    subject:'บันทึกขอให้พิจารณากรณี ก.พ.ค. ส่งคำวินิจฉัยอุทธรณ์ เพื่อทบทวนมติชี้มูลความผิดวินัยตามมาตรา ๔๓',
+    legalBase:'ระเบียบฯ',
+    status:'IN_MEETING',
+    procType:'7.3',
+    owner:'นางสาวนภวรรณ ทบทวนคดี', ownerOrg:'กองบริหารคดี',
+    complainant:'ก.พ.ค. (ส่งคำวินิจฉัยอุทธรณ์กลับ)',
+    accused:[
+      { no:1, name:'นายประสิทธิ์ ราชการดี', pos:'อดีตปลัดเทศบาล', idcard:'3-1301-0xxxx-xx-x', agency:'เทศบาลตำบลแห่งหนึ่ง' }
+    ],
+    allegation:'ก.พ.ค. มีคำวินิจฉัยอุทธรณ์ของผู้ถูกลงโทษทางวินัยส่งกลับมา เห็นว่าเป็นกรณีที่คณะกรรมการ ป.ป.ท. มีมติชี้มูลความผิดวินัยที่สามารถรับไว้พิจารณาทบทวนตามมาตรา ๔๓ (ใหม่) ได้ ตามบทเฉพาะกาลมาตรา ๒๐ แห่ง พ.ร.บ. มาตรการฯ (ฉบับที่ ๔) พ.ศ. ๒๕๖๘',
+    receivedDate:'2569-07-28', deadline60:'—', deadline2y:'—', prescription:'—',
+    docRef:'ปป 0011/0940 ลงวันที่ 28 กรกฎาคม 2569',
+    urgent:false, complex:true, dupWarning:false,
+    docType:'GENERAL', signPhase:'COMPLETE',
+    slaDays:4, slaLimit:5, subCommittee:null,
+    meetingNo:'37/2569', agendaNo:'4.6', meetingDate:'2569-08-20',
+    generalType:'DISCIPLINE_REVIEW_M43'
   },
   {
     id:'1015/2568',
@@ -976,6 +1035,252 @@ const CASES = [
     docType:'644', signPhase:'WAIT',
     slaDays:11, slaLimit:15, subCommittee:null,
     meetingNo:null, agendaNo:null
+  },
+  {
+    id:'0921/2569',
+    subject:'กล่าวหาเจ้าหน้าที่สหกรณ์ออมทรัพย์แห่งหนึ่ง ยักยอกเงินฝากสมาชิกโดยทุจริต',
+    legalBase:'ม.18/4',
+    status:'IN_SUPPORT_SUB',
+    procType:'7.1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
+    complainant:'สมาชิกสหกรณ์ออมทรัพย์ (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายเจริญ เงินดี', pos:'ผู้จัดการสหกรณ์ออมทรัพย์', idcard:'3-1601-0xxxx-xx-x', agency:'สหกรณ์ออมทรัพย์แห่งหนึ่ง' } ],
+    allegation:'ยักยอกเงินฝากของสมาชิกสหกรณ์ไปใช้ประโยชน์ส่วนตัว รวมมูลค่าความเสียหายกว่า 3.6 ล้านบาท ความเห็นในสายบังคับบัญชาไม่ตรงกัน',
+    receivedDate:'2569-06-18', deadline60:'2569-08-17', deadline2y:'2571-06-18', prescription:'2572-11-10',
+    docRef:'ปป 0020/0777 ลงวันที่ 18 มิถุนายน 2569',
+    urgent:false, complex:true, dupWarning:false,
+    slaDays:6, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'213', signPhase:'WAIT'
+  },
+  {
+    id:'1203/2569',
+    subject:'กล่าวหาเจ้าหน้าที่กรมที่ดินแห่งหนึ่ง เร่งรัดออกเอกสารสิทธิ์โดยมิชอบ ก่อนคดีขาดอายุความ',
+    legalBase:'ม.18/4',
+    status:'PENDING_URGENT',
+    procType:'7.1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
+    complainant:'นายสุรพล ที่ดินทอง (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายวิรัช เขตที่ดิน', pos:'เจ้าพนักงานที่ดินอาวุโส', idcard:'3-1701-0xxxx-xx-x', agency:'สนง.ที่ดินจังหวัด' } ],
+    allegation:'ออกเอกสารสิทธิ์ที่ดินโดยมิชอบให้กับพวกพ้อง คดีใกล้ครบกำหนดอายุความ 2 ปี เห็นควรเสนอขอบรรจุวาระด่วน',
+    receivedDate:'2569-06-25', deadline60:'2569-08-24', deadline2y:'2569-09-15', prescription:'2569-09-15',
+    docRef:'ปป 0020/0801 ลงวันที่ 25 มิถุนายน 2569',
+    urgent:true, urgentReason:'คดีใกล้ครบกำหนดอายุความ 2 ปี ภายใน 21 วัน เห็นควรเสนอบรรจุวาระด่วน', urgentCertified:false,
+    complex:false, dupWarning:false,
+    slaDays:2, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'213', signPhase:'WAIT'
+  },
+  {
+    id:'1277/2569',
+    subject:'กล่าวหาเจ้าหน้าที่เทศบาลนครแห่งหนึ่ง ทุจริตการจัดเก็บภาษีป้าย',
+    legalBase:'ม.18/4',
+    status:'PENDING_CHAIRMAN',
+    procType:'7.1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
+    complainant:'ความปรากฏต่อสำนักงาน',
+    accused:[ { no:1, name:'นางสาวพิมพ์ใจ จัดเก็บดี', pos:'นักวิชาการจัดเก็บรายได้ชำนาญการ', idcard:'3-1801-0xxxx-xx-x', agency:'เทศบาลนครแห่งหนึ่ง' } ],
+    allegation:'ละเว้นการจัดเก็บภาษีป้ายจากผู้ประกอบการรายใหญ่หลายราย เป็นเหตุให้ทางราชการเสียหาย',
+    receivedDate:'2569-07-01', deadline60:'2569-08-30', deadline2y:'2571-07-01', prescription:'2572-06-20',
+    docRef:'ปป 0020/0842 ลงวันที่ 1 กรกฎาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:3, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'213', signPhase:'WAIT'
+  },
+  {
+    id:'1330/2569',
+    subject:'กล่าวหาเจ้าหน้าที่การประปาส่วนภูมิภาคแห่งหนึ่ง ทุจริตการจัดซื้อวัสดุประปา',
+    legalBase:'ม.18/4',
+    status:'IN_SCREENING',
+    procType:'7.1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
+    complainant:'พนักงานการประปาฯ (ผู้แจ้งเบาะแส)',
+    accused:[ { no:1, name:'นายอนุสรณ์ วัสดุดี', pos:'หัวหน้างานพัสดุ', idcard:'3-1901-0xxxx-xx-x', agency:'การประปาส่วนภูมิภาคแห่งหนึ่ง' } ],
+    allegation:'ร่วมกำหนดสเปควัสดุประปาเพื่อเอื้อประโยชน์ผู้เสนอราคารายหนึ่ง ความเสียหายรวม 1.8 ล้านบาท',
+    receivedDate:'2569-07-08', deadline60:'2569-09-06', deadline2y:'2571-07-08', prescription:'2572-05-02',
+    docRef:'ปป 0020/0868 ลงวันที่ 8 กรกฎาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:4, slaLimit:15, subCommittee:'คณะที่ 4',
+    meetingNo:null, agendaNo:null,
+    docType:'213', signPhase:'WAIT'
+  },
+  {
+    id:'1088/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่กรมชลประทานแห่งหนึ่ง ทุจริตโครงการขุดลอกคลอง',
+    legalBase:'ม.18/4',
+    status:'IN_SUPPORT_SUB_72',
+    procType:'7.2',
+    owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
+    complainant:'ประชาชนในพื้นที่ (ผู้ร้องเรียน)',
+    accused:[ { no:1, name:'นายไพศาล ขุดลอกดี', pos:'นายช่างชลประทานชำนาญงาน', idcard:'3-2001-0xxxx-xx-x', agency:'โครงการชลประทานแห่งหนึ่ง' } ],
+    allegation:'ร่วมกับผู้รับเหมาเบิกจ่ายค่าขุดลอกคลองเกินปริมาณงานจริง ความเห็นในสายบังคับบัญชาไม่ตรงกัน จึงเสนอคณะอนุกรรมการสนับสนุนเลขาธิการฯ พิจารณา',
+    receivedDate:'2569-06-05', deadline60:'2569-08-04', deadline2y:'2571-06-05', prescription:'2572-08-14',
+    docRef:'ปป 0021/0742 ลงวันที่ 5 มิถุนายน 2569',
+    urgent:false, urgent72:false, complex:true, complex72:true, dupWarning:false,
+    slaDays:5, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'RULING', signPhase:'WAIT'
+  },
+  {
+    id:'1177/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่กรมสรรพากรแห่งหนึ่ง เรียกรับสินบนก่อนคดีขาดอายุความ',
+    legalBase:'ม.18/4',
+    status:'PENDING_URGENT_72',
+    procType:'7.2',
+    owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
+    complainant:'ผู้ประกอบการ (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายสมพงษ์ สรรพากรดี', pos:'นักตรวจสอบภาษีชำนาญการ', idcard:'3-2101-0xxxx-xx-x', agency:'สนง.สรรพากรพื้นที่' } ],
+    allegation:'เรียกรับเงินจากผู้ประกอบการเพื่อแลกกับการลดยอดประเมินภาษี คดีใกล้ครบกำหนดอายุความ เห็นควรเสนอขอวาระด่วน',
+    receivedDate:'2569-06-12', deadline60:'2569-08-11', deadline2y:'2569-09-20', prescription:'2569-09-20',
+    docRef:'ปป 0021/0760 ลงวันที่ 12 มิถุนายน 2569',
+    urgent:false, urgent72:true, urgentReason:'คดีใกล้ครบกำหนดอายุความภายใน 25 วัน เห็นควรเสนอบรรจุวาระด่วน', urgentCertifiedDate72:'',
+    complex:false, complex72:false, dupWarning:false,
+    slaDays:2, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'RULING', signPhase:'WAIT'
+  },
+  {
+    id:'1210/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่กรมทางหลวงชนบทแห่งหนึ่ง ทุจริตงานก่อสร้างสะพาน',
+    legalBase:'ม.18/4',
+    status:'PENDING_CHAIRMAN_URGENT_72',
+    procType:'7.2',
+    owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
+    complainant:'ผู้รับเหมารายอื่น (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายบุญเลิศ สะพานดี', pos:'ผู้อำนวยการแขวงทางหลวงชนบท', idcard:'3-2201-0xxxx-xx-x', agency:'แขวงทางหลวงชนบทแห่งหนึ่ง' } ],
+    allegation:'กำหนดคุณสมบัติผู้เสนอราคางานก่อสร้างสะพานเพื่อเอื้อประโยชน์ผู้รับเหมารายหนึ่ง คดีใกล้ครบกำหนดอายุความ ผอ.กบค. รับรองเหตุผลเร่งด่วนแล้ว',
+    receivedDate:'2569-06-15', deadline60:'2569-08-14', deadline2y:'2569-09-25', prescription:'2569-09-25',
+    docRef:'ปป 0021/0771 ลงวันที่ 15 มิถุนายน 2569',
+    urgent:false, urgent72:true, urgentReason:'คดีใกล้ครบกำหนดอายุความภายใน 30 วัน ผอ.กบค. รับรองเหตุผลเร่งด่วนแล้ว', urgentCertifiedDate72:'20 ก.ค. 2569',
+    complex:false, complex72:false, dupWarning:false,
+    slaDays:1, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'RULING', signPhase:'WAIT'
+  },
+  {
+    id:'1233/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่องค์การบริหารส่วนจังหวัดแห่งหนึ่ง ทุจริตจัดซื้อรถบรรทุกขยะ',
+    legalBase:'ม.18/4',
+    status:'IN_SCREENING_72',
+    procType:'7.2',
+    owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 2',
+    complainant:'สมาชิกสภาองค์การบริหารส่วนจังหวัด (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายวิเชียร ขยะดี', pos:'หัวหน้าฝ่ายพัสดุ', idcard:'3-2301-0xxxx-xx-x', agency:'องค์การบริหารส่วนจังหวัดแห่งหนึ่ง' } ],
+    allegation:'จัดซื้อรถบรรทุกขยะราคาสูงกว่าราคากลางอย่างมีนัยสำคัญ อยู่ระหว่างการพิจารณาของคณะอนุกรรมการกลั่นกรองฯ',
+    receivedDate:'2569-06-20', deadline60:'2569-08-19', deadline2y:'2571-06-20', prescription:'2572-09-01',
+    docRef:'ปป 0021/0790 ลงวันที่ 20 มิถุนายน 2569',
+    urgent:false, urgent72:false, complex:false, complex72:false, dupWarning:false,
+    slaDays:3, slaLimit:15, subCommittee:'คณะที่ 5',
+    meetingNo:null, agendaNo:null,
+    docType:'RULING', signPhase:'WAIT'
+  },
+  {
+    id:'1366/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่กรมประมงแห่งหนึ่ง ออกใบอนุญาตประมงโดยมิชอบ',
+    legalBase:'ม.18/4',
+    status:'PENDING_INVITE_72',
+    procType:'7.2',
+    owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 2',
+    complainant:'สมาคมประมงพื้นบ้าน (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายประมวล ประมงดี', pos:'ประมงอำเภอ', idcard:'3-2401-0xxxx-xx-x', agency:'สนง.ประมงจังหวัด' } ],
+    allegation:'ออกใบอนุญาตทำการประมงในเขตอนุรักษ์โดยมิชอบให้กับพวกพ้อง กลั่นกรองแล้วเสร็จ รอจัดทำหนังสือเชิญประชุม',
+    receivedDate:'2569-06-28', deadline60:'2569-08-27', deadline2y:'2571-06-28', prescription:'2572-10-11',
+    docRef:'ปป 0021/0815 ลงวันที่ 28 มิถุนายน 2569',
+    urgent:false, urgent72:false, complex:false, complex72:false, dupWarning:false,
+    slaDays:2, slaLimit:15, subCommittee:'คณะที่ 6',
+    meetingNo:null, agendaNo:null,
+    docType:'RULING', signPhase:'WAIT'
+  },
+  {
+    id:'1299/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่การไฟฟ้าส่วนภูมิภาคแห่งหนึ่ง ทุจริตค่าติดตั้งมิเตอร์ไฟฟ้า',
+    legalBase:'ม.18/4',
+    status:'RESOLVED_PENDING_72',
+    procType:'7.2',
+    owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
+    complainant:'ผู้ใช้ไฟฟ้า (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายจตุพร มิเตอร์ดี', pos:'ช่างไฟฟ้าอาวุโส', idcard:'3-2501-0xxxx-xx-x', agency:'การไฟฟ้าส่วนภูมิภาคแห่งหนึ่ง' } ],
+    allegation:'เรียกรับเงินค่าติดตั้งมิเตอร์ไฟฟ้านอกเหนือจากค่าธรรมเนียมทางราชการ ที่ประชุมมีมติแล้ว อยู่ระหว่างจัดทำรายงานวินิจฉัยชี้มูล',
+    receivedDate:'2569-05-20', deadline60:'2569-07-19', deadline2y:'2571-05-20', prescription:'2572-07-30',
+    docRef:'ปป 0021/0688 ลงวันที่ 20 พฤษภาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:1, slaLimit:15, subCommittee:'คณะที่ 2',
+    meetingNo:'36/2569', agendaNo:'5.2', meetingDate:'2569-08-05',
+    quorumOk72:true,
+    docType:'RULING', signPhase:'WAIT'
+  },
+  {
+    id:'1311/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่กรมพัฒนาที่ดินแห่งหนึ่ง ทุจริตแจกจ่ายปุ๋ยอินทรีย์',
+    legalBase:'ม.18/4',
+    status:'PENDING_SIGN_RULING_72',
+    procType:'7.2',
+    owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
+    complainant:'เกษตรกรในพื้นที่ (ผู้ร้อง)',
+    accused:[ { no:1, name:'นางสาวรัตนา ปุ๋ยดี', pos:'นักวิชาการเกษตรชำนาญการ', idcard:'3-2601-0xxxx-xx-x', agency:'สนง.พัฒนาที่ดินจังหวัด' } ],
+    allegation:'แจกจ่ายปุ๋ยอินทรีย์ไม่ครบตามจำนวนที่ได้รับงบประมาณ และนำส่วนที่เหลือไปจำหน่ายเป็นประโยชน์ส่วนตัว ร่างรายงานวินิจฉัยชี้มูลเสร็จแล้ว รอประธานฯ ลงนาม',
+    receivedDate:'2569-05-10', deadline60:'2569-07-09', deadline2y:'2571-05-10', prescription:'2572-06-18',
+    docRef:'ปป 0021/0655 ลงวันที่ 10 พฤษภาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:2, slaLimit:15, subCommittee:'คณะที่ 1',
+    meetingNo:'35/2569', agendaNo:'5.3', meetingDate:'2569-07-22',
+    quorumOk72:true, resolution72:'GUILTY_72',
+    docType:'RULING', signPhase:'WAIT'
+  },
+  {
+    id:'1322/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่สำนักงานสาธารณสุขจังหวัดแห่งหนึ่ง (ข้อกล่าวหาไม่มีมูล)',
+    legalBase:'ม.18/4',
+    status:'PENDING_AREA_NOTICE_72',
+    procType:'7.2',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
+    complainant:'บัตรสนเท่ห์ (ความปรากฏต่อสำนักงาน)',
+    accused:[ { no:1, name:'นายเกรียงศักดิ์ สาธารณสุขดี', pos:'นักวิชาการสาธารณสุขชำนาญการ', idcard:'3-2701-0xxxx-xx-x', agency:'สนง.สาธารณสุขจังหวัด' } ],
+    allegation:'ถูกกล่าวหาเบิกจ่ายค่าตอบแทนโดยมิชอบ ไต่สวนแล้วพยานหลักฐานไม่พอรับฟัง คณะกรรมการ ป.ป.ท. มีมติว่าข้อกล่าวหาไม่มีมูล รอพื้นที่บันทึกรับมติและแจ้งผลผู้ถูกกล่าวหา',
+    receivedDate:'2569-04-18', deadline60:'2569-06-17', deadline2y:'2571-04-18', prescription:'2572-05-02',
+    docRef:'ปป 0020/0590 ลงวันที่ 18 เมษายน 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:1, slaLimit:15, subCommittee:'คณะที่ 3',
+    meetingNo:'34/2569', agendaNo:'5.5', meetingDate:'2569-07-08',
+    quorumOk72:true, resolution72:'NO_MERIT_72',
+    docType:'RULING', signPhase:'COMPLETE'
+  },
+  {
+    id:'1344/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่กรมบัญชีกลางแห่งหนึ่ง (นอกอำนาจหน้าที่ ป.ป.ท.)',
+    legalBase:'ม.19(ข)(1)',
+    status:'DISPATCHING_NACC_72',
+    procType:'7.2',
+    owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
+    complainant:'สำนักงาน ป.ป.ช. (ส่งเรื่องมอบหมาย)',
+    accused:[ { no:1, name:'นายอมร บัญชีดี', pos:'ผู้อำนวยการกองการเงิน', idcard:'3-2801-0xxxx-xx-x', agency:'กรมบัญชีกลาง' } ],
+    allegation:'ถูกกล่าวหาทุจริตเบิกจ่ายงบประมาณระดับกรม คณะกรรมการ ป.ป.ท. พิจารณาแล้วเห็นว่าอยู่นอกอำนาจหน้าที่ตาม ม.19(ข)(1) มีมติส่งเรื่องให้ ป.ป.ช. รอส่งมอบสำนวน',
+    receivedDate:'2569-04-25', deadline60:'2569-06-24', deadline2y:'2571-04-25', prescription:'2572-08-19',
+    docRef:'ปป 0021/0602 ลงวันที่ 25 เมษายน 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:2, slaLimit:15, subCommittee:'คณะที่ 4',
+    meetingNo:'34/2569', agendaNo:'5.6', meetingDate:'2569-07-08',
+    quorumOk72:true, resolution72:'FORWARD_NACC',
+    docType:'RULING', signPhase:'COMPLETE'
+  },
+  {
+    id:'1355/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่กรมทรัพยากรน้ำแห่งหนึ่ง ทุจริตโครงการขุดเจาะบ่อบาดาล',
+    legalBase:'ม.18/4',
+    status:'PENDING_DISPATCH_GUILTY_72',
+    procType:'7.2',
+    owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 2',
+    complainant:'ประชาชนในพื้นที่ (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายสุเทพ บาดาลดี', pos:'วิศวกรทรัพยากรน้ำชำนาญการ', idcard:'3-2901-0xxxx-xx-x', agency:'สนง.ทรัพยากรน้ำภาค' } ],
+    allegation:'ร่วมกับผู้รับเหมาเบิกจ่ายค่าขุดเจาะบ่อบาดาลเกินจำนวนบ่อที่ขุดจริง คณะกรรมการ ป.ป.ท. มีมติชี้มูลความผิดแล้ว รอส่งเรื่องดำเนินคดีทั้งสายอาญาและสายวินัย',
+    receivedDate:'2569-04-05', deadline60:'2569-06-04', deadline2y:'2571-04-05', prescription:'2572-04-22',
+    docRef:'ปป 0021/0570 ลงวันที่ 5 เมษายน 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:3, slaLimit:15, subCommittee:'คณะที่ 7',
+    meetingNo:'33/2569', agendaNo:'5.4', meetingDate:'2569-06-24',
+    quorumOk72:true, resolution72:'GUILTY_72',
+    docType:'RULING', signPhase:'COMPLETE'
   }
 ];
 
@@ -1196,7 +1501,7 @@ const SUBCOMMITTEE_ROSTER = {
   ]
 };
 
-const CASES_VERSION = '2026-08-25-activity7-templates-v2';
+const CASES_VERSION = '2026-08-25-activity7-flow-coverage-v3';
 if (typeof sessionStorage !== 'undefined') {
   const savedVersion = sessionStorage.getItem('ecmis_cases_version');
   const savedCases = sessionStorage.getItem('ecmis_cases');
@@ -1331,6 +1636,45 @@ const RESOLUTIONS_73 = [
     doc:'คำสั่งแต่งตั้ง / บันทึกมอบหมายงาน', signer:'ประธานกรรมการ ป.ป.ท.' }
 ];
 function resolution73(code){ return RESOLUTIONS_73.find(r => r.code === code) || null; }
+
+/* ประเภทเรื่องทั่วไป (7.3) — แยกจาก RESOLUTIONS_73 ซึ่งเป็น "มติ/ผลการพิจารณา" (อนุมัติ/
+   ไม่อนุมัติ/ทบทวนอัยการ/ส่งกฎหมาย/เฉพาะกิจ) ส่วนนี้คือ "ประเภทคำขอ" ที่เสนอเข้าบอร์ด —
+   สืบค้นจากคู่มือ As-Is กิจกรรมที่ 7 มติคณะกรรมการ, เล่ม 5 กิจกรรมที่ 7 ระบบมติคณะกรรมการ
+   ป.ป.ท., ระเบียบวาระการประชุมจริง และ Use Case กิจกรรมที่ 4/5/10 (NotebookLM "E-CMIS",
+   2026-08-25) — เรื่องทั่วไปคิดเป็นเกือบ 50% ของวาระทั้งหมดที่เสนอเข้าบอร์ด ไม่ใช่ส่วนน้อย */
+const GENERAL_TYPES_73 = [
+  { code:'APPOINT_SUBCOMMITTEE', group:'บริหารจัดการ/บุคคลในคดี',
+    label:'ขอตั้งอนุกรรมการ/ที่ปรึกษาพิเศษ/คณะทำงานชุดย่อย' },
+  { code:'WITNESS_PROTECTION', group:'บริหารจัดการ/บุคคลในคดี',
+    label:'ขอคุ้มครองพยาน (ม.๕๔)' },
+  { code:'WITNESS_EXEMPTION', group:'บริหารจัดการ/บุคคลในคดี',
+    label:'ขอกันบุคคลไว้เป็นพยาน' },
+  { code:'ADD_ACCUSED_73', group:'บริหารจัดการ/บุคคลในคดี',
+    label:'ขอเพิ่มผู้ถูกกล่าวหาในสำนวน' },
+  { code:'SPECIAL_TASK_73', group:'บริหารจัดการ/บุคคลในคดี',
+    label:'มติเฉพาะกิจอื่น ๆ (ม.๑๗ / ตั้งคณะทำงานพิเศษตามคำสั่งประธานฯ / เลื่อน-ถอนวาระ)' },
+  { code:'PROSECUTOR_NO_INDICT', group:'คดีชั้นอัยการ/ศาล',
+    label:'ทบทวนมติกรณีอัยการสั่งไม่ฟ้อง (ม.๓๓)' },
+  { code:'PROSECUTOR_NO_APPEAL', group:'คดีชั้นอัยการ/ศาล',
+    label:'ความเห็นแย้งกรณีอัยการไม่อุทธรณ์' },
+  { code:'PROSECUTOR_NO_CASSATION', group:'คดีชั้นอัยการ/ศาล',
+    label:'ความเห็นแย้งกรณีอัยการไม่ฎีกา' },
+  { code:'DISCIPLINE_REVIEW_M43', group:'ติดตามมติทางวินัย',
+    label:'ทบทวนมติวินัยตาม ม.๔๓ (จาก ก.พ.ค./ก.พ.ค.ตร.)' },
+  { code:'DISCIPLINE_REVIEW_SUPERVISOR', group:'ติดตามมติทางวินัย',
+    label:'ทบทวนมติชี้มูลวินัยตามคำขอผู้บังคับบัญชา' },
+  { code:'AMEND_RESOLUTION_73', group:'ติดตามมติทางวินัย',
+    label:'ขอแก้ไขรายละเอียดมติเดิม (พิมพ์ผิด/แก้ฐานความผิด)' },
+  { code:'OVERDUE_REPORT_73', group:'ติดตามมติทางวินัย',
+    label:'รายงานผลกรณีดำเนินการเกินกรอบเวลาไต่สวนเบื้องต้น' },
+  { code:'SPLIT_CASE', group:'โครงสร้างสำนวน',
+    label:'ขออนุมัติแยกเลขสำนวน' },
+  { code:'MERGE_CASE', group:'โครงสร้างสำนวน',
+    label:'ขออนุมัติรวมสำนวน' },
+  { code:'POLICY_INQUIRY_73', group:'ข้อหารือเชิงนโยบาย',
+    label:'ข้อหารือขอบเขตอำนาจหน้าที่ / ประเด็นข้อกฎหมาย' }
+];
+function generalType73(code){ return GENERAL_TYPES_73.find(t => t.code === code) || null; }
 
 /* กิจกรรมที่ 7 (ตาม TOR) เริ่มนับเมื่อรายงานมาถึงเลขาธิการฯ — สาย 3 ชั้น
    (ผอ.กอง/ผอ.สำนักงาน ป.ป.ท. เขต/รองเลขาธิการฯ) เป็นขั้นก่อนหน้านั้น จึงไม่แยก
@@ -1652,6 +1996,41 @@ function getSupabaseClient(url, key, customOpts) {
   if (window.supabase && typeof window.supabase.createClient === 'function') {
     window.__ecmisSupabaseClient = window.supabase.createClient(targetUrl, targetKey, opts);
     return window.__ecmisSupabaseClient;
+  }
+  return null;
+}
+
+/* Central audit-trail writer for tbl_res_request_event (the "audit trail กลาง" documented
+   on the table itself — timeline/dashboard/public-status features read from here).
+   Call this right after any successful real trr_status write to Supabase; never call it
+   from ECMIS.Model.CaseStore.update() paths, since those don't touch the real row at all.
+   Best-effort: a logging failure must never block the caller's actual state transition. */
+async function logRequestEvent(trrId, fromStatus, toStatus, opts) {
+  if (!trrId) return null;
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+  const o = opts || {};
+  let eventType = o.type;
+  if (!eventType && fromStatus && toStatus) {
+    const matches = transitionsBetween(fromStatus, toStatus);
+    eventType = (matches[0] && matches[0].event) || 'STATUS_CHANGE';
+  }
+  const role = (typeof currentRole === 'function') ? currentRole() : null;
+  try {
+    // trre_from_status/trre_to_status are CHAR(3) columns mirroring STATUS_CODE
+    // (same encoding as trr_status), not the readable ECMIS.STATUS key names.
+    const { error } = await sb.from('tbl_res_request_event').insert({
+      trr_id: trrId,
+      trre_type: eventType || 'STATUS_CHANGE',
+      trre_from_status: (fromStatus && STATUS_CODE[fromStatus]) || null,
+      trre_to_status: (toStatus && STATUS_CODE[toStatus]) || null,
+      trre_actor_role: o.actorRole || (role && role.id) || null,
+      trre_note: o.note || null,
+      trre_data: o.data || null
+    });
+    if (error) throw error;
+  } catch (e) {
+    console.error('logRequestEvent failed (non-blocking):', e);
   }
   return null;
 }
@@ -2320,6 +2699,10 @@ function paginateDoc(containerEl, opts){
     const footSecret = (opts.secret !== false) ? '<div class="doc-secret-foot">ลับ</div>' : '';
     return `<div class="${pageClass}" data-page-no="${pageNo}" style="height:297mm; max-height:297mm; overflow:hidden; box-sizing:border-box;">${header}${p.blocks.join('')}${footSecret}</div>`;
   }).join('');
+
+  if (typeof updateDocPaginationUI === 'function') {
+    updateDocPaginationUI(containerEl);
+  }
 }
 
 function paginateResolutionDoc(containerEl, opts){
@@ -4704,15 +5087,53 @@ function renderDocToolbar(opts) {
     }).join('') + `</select></div>`;
   }
 
-  // Right Actions
+  // Center Content: Pagination & View Mode
+  let centerHtml = '';
+  if (opts.pagination !== false) {
+    centerHtml = `
+      <div class="doc-toolbar-center">
+        <div class="btn-group btn-group-sm" role="group">
+          <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" id="btnModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น)">
+            <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
+          </button>
+          <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnModeContinuous" title="โหมดดูทุกหน้าเรียงกัน">
+            <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
+          </button>
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="btn-group btn-group-sm" role="group">
+          <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnFirstPage" title="หน้าแรกสุด (หน้า 1)"><i class="fa-solid fa-backward-step"></i></button>
+          <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnPrevPage" title="หน้าก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
+        </div>
+        <div class="d-flex align-items-center gap-1">
+          <span class="small opacity-75">หน้า</span>
+          <input type="number" class="page-input-num" id="pageNumberInput" min="1" value="1">
+          <span class="small opacity-75" id="totalPagesText">/ 1 หน้า</span>
+        </div>
+        <div class="btn-group btn-group-sm" role="group">
+          <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnNextPage" title="หน้าถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+          <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnLastPage" title="หน้าสุดท้าย"><i class="fa-solid fa-forward-step"></i></button>
+        </div>
+      </div>`;
+  }
+
+  // Right Actions: Edit, Zoom, Print, Docx, Collapse
   const showEdit = opts.editable !== false;
   const showPdf = opts.exportPdf !== false && opts.printable !== false;
   const showDocx = opts.exportDocx !== false;
   const showCollapse = opts.collapsible !== false && (!!docWorkspace || !!paneEl);
 
-  let rightHtml = '<div class="d-flex align-items-center gap-1 ms-auto">';
+  let rightHtml = '<div class="doc-toolbar-right">';
   if (showEdit) {
-    rightHtml += `<button type="button" class="btn btn-sm btn-light btn-doc-edit" id="btnDocEdit" title="แก้ไขเนื้อหาเอกสาร (Rich Text)"><i class="fa-solid fa-pen-to-square"></i></button>`;
+    rightHtml += `<button type="button" class="btn btn-sm btn-light btn-doc-edit" id="btnDocEdit" title="แก้ไขเนื้อหาเอกสาร (Rich Text)"><i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไข</span></button>`;
+  }
+  if (opts.pagination !== false) {
+    rightHtml += `
+      <div class="zoom-stepper-box">
+        <button type="button" class="btn btn-link btn-xs p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+        <span class="zoom-level-text" id="zoomLevelText">75%</span>
+        <button type="button" class="btn btn-link btn-xs p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+      </div>`;
   }
   if (showPdf) {
     rightHtml += `<button type="button" class="btn btn-sm btn-light" id="btnDocPdf" title="ดาวน์โหลดไฟล์ PDF / สั่งพิมพ์"><i class="fa-solid fa-print me-1"></i>พิมพ์/PDF</button>`;
@@ -4725,7 +5146,12 @@ function renderDocToolbar(opts) {
   }
   rightHtml += '</div>';
 
-  targetEl.innerHTML = leftHtml + rightHtml;
+  targetEl.innerHTML = `<div class="doc-toolbar-left">${leftHtml}</div>` + centerHtml + rightHtml;
+
+  // Clean up any redundant standalone pagination bars in pane
+  if (paneEl) {
+    paneEl.querySelectorAll('#docPaginationBar, .pagination-toolbar-symmetric').forEach(b => b.remove());
+  }
 
   // Rail button if workspace collapsed
   if (paneEl && showCollapse) {
@@ -4827,6 +5253,12 @@ function renderDocToolbar(opts) {
     if (expBtn) expBtn.addEventListener('click', () => setPaneCollapsed(false));
   }
 
+  // Initialize Doc Pagination & Zoom
+  let paginationInstance = null;
+  if (opts.pagination !== false) {
+    paginationInstance = initDocPagination({ stageId: stageId, defaultZoom: 0.75 });
+  }
+
   // Initialize Doc Editor
   let editorInstance = null;
   if (showEdit && stageEl) {
@@ -4839,8 +5271,188 @@ function renderDocToolbar(opts) {
 
   return {
     element: targetEl,
-    editor: editorInstance
+    editor: editorInstance,
+    pagination: paginationInstance
   };
+}
+
+/* ---------- Global Pagination Engine for Doc Previews ---------- */
+const globalPaginationMap = new Map();
+
+function updateDocPaginationUI(stageElOrId) {
+  let id = 'docPaper';
+  if (typeof stageElOrId === 'string') id = stageElOrId;
+  else if (stageElOrId && stageElOrId.id) id = stageElOrId.id;
+
+  const instance = globalPaginationMap.get(id) || globalPaginationMap.get('docPaper');
+  if (instance) {
+    instance.update();
+  }
+}
+
+function initDocPagination(opts = {}) {
+  const stageId = opts.stageId || 'docPaper';
+  let docPaperEl = document.getElementById(stageId);
+  if (!docPaperEl && typeof document !== 'undefined') return null;
+
+  // Ensure scroll viewport wrapper separation
+  if (docPaperEl && docPaperEl.classList.contains('ws-paper-stage') && !document.getElementById('docPaperStage')) {
+    const parent = docPaperEl.parentElement;
+    const stageWrapper = document.createElement('div');
+    stageWrapper.className = 'ws-paper-stage';
+    stageWrapper.id = 'docPaperStage';
+
+    parent.insertBefore(stageWrapper, docPaperEl);
+    docPaperEl.classList.remove('ws-paper-stage');
+    stageWrapper.appendChild(docPaperEl);
+  }
+
+  let zoomLevel = opts.defaultZoom !== undefined ? opts.defaultZoom : 0.75;
+  let viewMode = opts.defaultMode || 'SINGLE';
+  let currentPage = 1;
+  let totalPages = 1;
+
+  function applyZoom() {
+    const el = document.getElementById(stageId);
+    if (!el) return;
+    el.style.transform = `scale(${zoomLevel})`;
+    el.style.transformOrigin = 'top center';
+
+    const zoomText = document.getElementById('zoomLevelText');
+    if (zoomText) zoomText.textContent = `${Math.round(zoomLevel * 100)}%`;
+
+    const pages = el.querySelectorAll('.doc-paper, .a4-paper');
+    if (pages.length > 0) {
+      let baseHeight = 1123;
+      if (viewMode === 'SINGLE') {
+        const activeP = el.querySelector('.doc-paper.active-page, .a4-paper.active-page') || pages[0];
+        baseHeight = activeP ? activeP.offsetHeight : 1123;
+      } else {
+        baseHeight = 0;
+        pages.forEach(p => { baseHeight += p.offsetHeight + 18; });
+      }
+
+      // Exact pixel layout margin compensation
+      const scaledHeight = Math.round(baseHeight * zoomLevel);
+      const heightDelta = baseHeight - scaledHeight;
+      el.style.marginBottom = `-${heightDelta}px`;
+
+      const baseWidth = 794;
+      const scaledWidth = Math.round(baseWidth * zoomLevel);
+      const widthDelta = baseWidth - scaledWidth;
+      el.style.marginLeft = `-${Math.round(widthDelta / 2)}px`;
+      el.style.marginRight = `-${Math.round(widthDelta / 2)}px`;
+    }
+  }
+
+  function updatePaginationUI(resetScroll) {
+    const el = document.getElementById(stageId);
+    if (!el) return;
+    const pages = el.querySelectorAll('.doc-paper, .a4-paper');
+    totalPages = Math.max(1, pages.length);
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const totalText = document.getElementById('totalPagesText');
+    if (totalText) totalText.textContent = `/ ${totalPages} หน้า`;
+    const pageInput = document.getElementById('pageNumberInput');
+    if (pageInput) {
+      pageInput.max = totalPages;
+      pageInput.value = currentPage;
+    }
+
+    if (viewMode === 'SINGLE') {
+      el.classList.remove('mode-continuous');
+      el.classList.add('mode-single');
+      pages.forEach((p, idx) => {
+        if (idx + 1 === currentPage) p.classList.add('active-page');
+        else p.classList.remove('active-page');
+      });
+    } else {
+      el.classList.remove('mode-single');
+      el.classList.add('mode-continuous');
+      pages.forEach(p => p.classList.add('active-page'));
+    }
+
+    if (resetScroll) {
+      const stage = document.getElementById('docPaperStage') || el.closest('.ws-paper-stage');
+      if (stage) stage.scrollTop = 0;
+    }
+
+    applyZoom();
+  }
+
+  if (typeof $ !== 'undefined') {
+    $(document).off('click.docPagination', '#btnModeSingle').on('click.docPagination', '#btnModeSingle', function () {
+      viewMode = 'SINGLE';
+      $('#btnModeSingle').addClass('btn-primary').removeClass('btn-outline-light');
+      $('#btnModeContinuous').addClass('btn-outline-light').removeClass('btn-primary');
+      updatePaginationUI(true);
+    });
+
+    $(document).off('click.docPagination', '#btnModeContinuous').on('click.docPagination', '#btnModeContinuous', function () {
+      viewMode = 'CONTINUOUS';
+      $('#btnModeContinuous').addClass('btn-primary').removeClass('btn-outline-light');
+      $('#btnModeSingle').addClass('btn-outline-light').removeClass('btn-primary');
+      updatePaginationUI(false);
+    });
+
+    $(document).off('click.docPagination', '#btnFirstPage').on('click.docPagination', '#btnFirstPage', function () {
+      currentPage = 1;
+      updatePaginationUI(true);
+    });
+
+    $(document).off('click.docPagination', '#btnPrevPage').on('click.docPagination', '#btnPrevPage', function () {
+      if (currentPage > 1) {
+        currentPage--;
+        updatePaginationUI(true);
+      }
+    });
+
+    $(document).off('click.docPagination', '#btnNextPage').on('click.docPagination', '#btnNextPage', function () {
+      if (currentPage < totalPages) {
+        currentPage++;
+        updatePaginationUI(true);
+      }
+    });
+
+    $(document).off('click.docPagination', '#btnLastPage').on('click.docPagination', '#btnLastPage', function () {
+      currentPage = totalPages;
+      updatePaginationUI(true);
+    });
+
+    $(document).off('change.docPagination', '#pageNumberInput').on('change.docPagination', '#pageNumberInput', function () {
+      let val = parseInt($(this).val(), 10);
+      if (isNaN(val) || val < 1) val = 1;
+      if (val > totalPages) val = totalPages;
+      currentPage = val;
+      updatePaginationUI(true);
+    });
+
+    $(document).off('click.docPagination', '#btnZoomIn').on('click.docPagination', '#btnZoomIn', function () {
+      zoomLevel = Math.min(1.3, Math.round((zoomLevel + 0.08) * 100) / 100);
+      applyZoom();
+    });
+
+    $(document).off('click.docPagination', '#btnZoomOut').on('click.docPagination', '#btnZoomOut', function () {
+      zoomLevel = Math.max(0.35, Math.round((zoomLevel - 0.08) * 100) / 100);
+      applyZoom();
+    });
+  }
+
+  const inst = {
+    update: updatePaginationUI,
+    applyZoom: applyZoom,
+    setPage: (p) => { currentPage = p; updatePaginationUI(true); },
+    setZoom: (z) => { zoomLevel = z; applyZoom(); }
+  };
+  globalPaginationMap.set(stageId, inst);
+
+  setTimeout(() => {
+    updatePaginationUI();
+  }, 25);
+
+  return inst;
 }
 
 /* ---------- Master Component: Back Navigation Button ---------- */
@@ -4956,7 +5568,7 @@ global.ECMIS = {
   DOC_TYPES, SIGN_PHASE, secgenSlaLimit, FORWARD_TARGETS, forwardTarget,
 
   RESOLUTIONS_72, resolution72, FLOW_STEPS_72, STATUS_STEP_72,
-  RESOLUTIONS_73, resolution73, isCase73,
+  RESOLUTIONS_73, resolution73, isCase73, GENERAL_TYPES_73, generalType73,
   trackStatus72, bothTracksDone72,
   OPINION_TYPES, chainDivergence, g1Triggers, M28, M28_ORDERS, m28Order, m28Pending,
   TRANSITIONS, canTransition, nextStates, transitionsBetween,
@@ -4964,7 +5576,7 @@ global.ECMIS = {
   M24P1_MIN_PANEL, M24P1_STAFF_FREE, panelComposition,
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
   UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72, pageForCaseByStatus, homeHref, resolvePage,
-  PAGE_PERMISSIONS, canAccessPage, inResFolder, assetUrl, getSupabaseClient,
+  PAGE_PERMISSIONS, canAccessPage, inResFolder, assetUrl, getSupabaseClient, logRequestEvent,
   PERM_DEFS, can, canEditMaster, canViewCase,
   thaiDate, thaiDayName, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, requireCase, getRole, roleIdForLogin, LOGIN_ALLOWED_ROLE_IDS,
   addBusinessDays, businessDaysBetween, resolutionSlaInfo, SUBCOMMITTEE_ROSTER,
@@ -4984,6 +5596,7 @@ global.ECMIS = {
 
   initAuditTrail, initChecklistGatekeeper, initBulkActions, initDragDropUpload,
   initDocPaneToggle, initRichTextBox, initDocEditor, renderDocToolbar, renderBackButton,
+  initDocPagination, updateDocPaginationUI,
 
   getSuggestionsData, saveSuggestionsData, openSuggestionsModal, initWritingSuggestions
 };
