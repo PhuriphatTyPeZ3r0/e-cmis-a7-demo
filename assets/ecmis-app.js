@@ -1768,10 +1768,13 @@ function renderShell(activeHref){
     </ul>
   </div>`;
 
+  const isResPage = typeof location !== 'undefined' && location.pathname.includes('/res/');
+  const brandLogoSrc = isResPage ? '../assets/pacc_logo.png' : 'assets/pacc_logo.png';
+
   const sidebar = `
   <nav class="app-sidebar no-print" id="appSidebar">
     <a class="brand text-decoration-none" href="${homeHref(role.id)}">
-      <img src="pacc_logo.png" alt="ตราสำนักงาน ป.ป.ท.">
+      <img src="${brandLogoSrc}" onerror="this.onerror=null;this.src='pacc_logo.png';" alt="ตราสำนักงาน ป.ป.ท.">
       <span>E-CMIS
         <small>สำนักงาน ป.ป.ท.</small>
       </span>
