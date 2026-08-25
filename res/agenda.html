@@ -220,6 +220,7 @@
            ทำให้สำนวนไม่หลุดจากคิวรอบรรจุวาระจริง (agenda-registry.html อ่าน trr_status จริง) */
         async function persistCase(kase, patch) {
             const dbPatch = {};
+            const fromStatus = kase.status;
             if ('status' in patch) {
                 const code = ECMIS.STATUS_CODE[patch.status];
                 if (!code) throw new Error(`ไม่พบรหัสสถานะสำหรับ ${patch.status}`);
@@ -228,6 +229,7 @@
             if ('urgent' in patch) dbPatch.trr_urgent = patch.urgent;
             const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
             if (error) throw error;
+            if ('status' in patch) ECMIS.logRequestEvent(kase.trr_id, fromStatus, patch.status);
             Object.assign(kase, patch);
         }
 

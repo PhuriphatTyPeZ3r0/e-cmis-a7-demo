@@ -1035,6 +1035,252 @@ const CASES = [
     docType:'644', signPhase:'WAIT',
     slaDays:11, slaLimit:15, subCommittee:null,
     meetingNo:null, agendaNo:null
+  },
+  {
+    id:'0921/2569',
+    subject:'กล่าวหาเจ้าหน้าที่สหกรณ์ออมทรัพย์แห่งหนึ่ง ยักยอกเงินฝากสมาชิกโดยทุจริต',
+    legalBase:'ม.18/4',
+    status:'IN_SUPPORT_SUB',
+    procType:'7.1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
+    complainant:'สมาชิกสหกรณ์ออมทรัพย์ (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายเจริญ เงินดี', pos:'ผู้จัดการสหกรณ์ออมทรัพย์', idcard:'3-1601-0xxxx-xx-x', agency:'สหกรณ์ออมทรัพย์แห่งหนึ่ง' } ],
+    allegation:'ยักยอกเงินฝากของสมาชิกสหกรณ์ไปใช้ประโยชน์ส่วนตัว รวมมูลค่าความเสียหายกว่า 3.6 ล้านบาท ความเห็นในสายบังคับบัญชาไม่ตรงกัน',
+    receivedDate:'2569-06-18', deadline60:'2569-08-17', deadline2y:'2571-06-18', prescription:'2572-11-10',
+    docRef:'ปป 0020/0777 ลงวันที่ 18 มิถุนายน 2569',
+    urgent:false, complex:true, dupWarning:false,
+    slaDays:6, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'213', signPhase:'WAIT'
+  },
+  {
+    id:'1203/2569',
+    subject:'กล่าวหาเจ้าหน้าที่กรมที่ดินแห่งหนึ่ง เร่งรัดออกเอกสารสิทธิ์โดยมิชอบ ก่อนคดีขาดอายุความ',
+    legalBase:'ม.18/4',
+    status:'PENDING_URGENT',
+    procType:'7.1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
+    complainant:'นายสุรพล ที่ดินทอง (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายวิรัช เขตที่ดิน', pos:'เจ้าพนักงานที่ดินอาวุโส', idcard:'3-1701-0xxxx-xx-x', agency:'สนง.ที่ดินจังหวัด' } ],
+    allegation:'ออกเอกสารสิทธิ์ที่ดินโดยมิชอบให้กับพวกพ้อง คดีใกล้ครบกำหนดอายุความ 2 ปี เห็นควรเสนอขอบรรจุวาระด่วน',
+    receivedDate:'2569-06-25', deadline60:'2569-08-24', deadline2y:'2569-09-15', prescription:'2569-09-15',
+    docRef:'ปป 0020/0801 ลงวันที่ 25 มิถุนายน 2569',
+    urgent:true, urgentReason:'คดีใกล้ครบกำหนดอายุความ 2 ปี ภายใน 21 วัน เห็นควรเสนอบรรจุวาระด่วน', urgentCertified:false,
+    complex:false, dupWarning:false,
+    slaDays:2, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'213', signPhase:'WAIT'
+  },
+  {
+    id:'1277/2569',
+    subject:'กล่าวหาเจ้าหน้าที่เทศบาลนครแห่งหนึ่ง ทุจริตการจัดเก็บภาษีป้าย',
+    legalBase:'ม.18/4',
+    status:'PENDING_CHAIRMAN',
+    procType:'7.1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
+    complainant:'ความปรากฏต่อสำนักงาน',
+    accused:[ { no:1, name:'นางสาวพิมพ์ใจ จัดเก็บดี', pos:'นักวิชาการจัดเก็บรายได้ชำนาญการ', idcard:'3-1801-0xxxx-xx-x', agency:'เทศบาลนครแห่งหนึ่ง' } ],
+    allegation:'ละเว้นการจัดเก็บภาษีป้ายจากผู้ประกอบการรายใหญ่หลายราย เป็นเหตุให้ทางราชการเสียหาย',
+    receivedDate:'2569-07-01', deadline60:'2569-08-30', deadline2y:'2571-07-01', prescription:'2572-06-20',
+    docRef:'ปป 0020/0842 ลงวันที่ 1 กรกฎาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:3, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'213', signPhase:'WAIT'
+  },
+  {
+    id:'1330/2569',
+    subject:'กล่าวหาเจ้าหน้าที่การประปาส่วนภูมิภาคแห่งหนึ่ง ทุจริตการจัดซื้อวัสดุประปา',
+    legalBase:'ม.18/4',
+    status:'IN_SCREENING',
+    procType:'7.1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
+    complainant:'พนักงานการประปาฯ (ผู้แจ้งเบาะแส)',
+    accused:[ { no:1, name:'นายอนุสรณ์ วัสดุดี', pos:'หัวหน้างานพัสดุ', idcard:'3-1901-0xxxx-xx-x', agency:'การประปาส่วนภูมิภาคแห่งหนึ่ง' } ],
+    allegation:'ร่วมกำหนดสเปควัสดุประปาเพื่อเอื้อประโยชน์ผู้เสนอราคารายหนึ่ง ความเสียหายรวม 1.8 ล้านบาท',
+    receivedDate:'2569-07-08', deadline60:'2569-09-06', deadline2y:'2571-07-08', prescription:'2572-05-02',
+    docRef:'ปป 0020/0868 ลงวันที่ 8 กรกฎาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:4, slaLimit:15, subCommittee:'คณะที่ 4',
+    meetingNo:null, agendaNo:null,
+    docType:'213', signPhase:'WAIT'
+  },
+  {
+    id:'1088/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่กรมชลประทานแห่งหนึ่ง ทุจริตโครงการขุดลอกคลอง',
+    legalBase:'ม.18/4',
+    status:'IN_SUPPORT_SUB_72',
+    procType:'7.2',
+    owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
+    complainant:'ประชาชนในพื้นที่ (ผู้ร้องเรียน)',
+    accused:[ { no:1, name:'นายไพศาล ขุดลอกดี', pos:'นายช่างชลประทานชำนาญงาน', idcard:'3-2001-0xxxx-xx-x', agency:'โครงการชลประทานแห่งหนึ่ง' } ],
+    allegation:'ร่วมกับผู้รับเหมาเบิกจ่ายค่าขุดลอกคลองเกินปริมาณงานจริง ความเห็นในสายบังคับบัญชาไม่ตรงกัน จึงเสนอคณะอนุกรรมการสนับสนุนเลขาธิการฯ พิจารณา',
+    receivedDate:'2569-06-05', deadline60:'2569-08-04', deadline2y:'2571-06-05', prescription:'2572-08-14',
+    docRef:'ปป 0021/0742 ลงวันที่ 5 มิถุนายน 2569',
+    urgent:false, urgent72:false, complex:true, complex72:true, dupWarning:false,
+    slaDays:5, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'RULING', signPhase:'WAIT'
+  },
+  {
+    id:'1177/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่กรมสรรพากรแห่งหนึ่ง เรียกรับสินบนก่อนคดีขาดอายุความ',
+    legalBase:'ม.18/4',
+    status:'PENDING_URGENT_72',
+    procType:'7.2',
+    owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
+    complainant:'ผู้ประกอบการ (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายสมพงษ์ สรรพากรดี', pos:'นักตรวจสอบภาษีชำนาญการ', idcard:'3-2101-0xxxx-xx-x', agency:'สนง.สรรพากรพื้นที่' } ],
+    allegation:'เรียกรับเงินจากผู้ประกอบการเพื่อแลกกับการลดยอดประเมินภาษี คดีใกล้ครบกำหนดอายุความ เห็นควรเสนอขอวาระด่วน',
+    receivedDate:'2569-06-12', deadline60:'2569-08-11', deadline2y:'2569-09-20', prescription:'2569-09-20',
+    docRef:'ปป 0021/0760 ลงวันที่ 12 มิถุนายน 2569',
+    urgent:false, urgent72:true, urgentReason:'คดีใกล้ครบกำหนดอายุความภายใน 25 วัน เห็นควรเสนอบรรจุวาระด่วน', urgentCertifiedDate72:'',
+    complex:false, complex72:false, dupWarning:false,
+    slaDays:2, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'RULING', signPhase:'WAIT'
+  },
+  {
+    id:'1210/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่กรมทางหลวงชนบทแห่งหนึ่ง ทุจริตงานก่อสร้างสะพาน',
+    legalBase:'ม.18/4',
+    status:'PENDING_CHAIRMAN_URGENT_72',
+    procType:'7.2',
+    owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
+    complainant:'ผู้รับเหมารายอื่น (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายบุญเลิศ สะพานดี', pos:'ผู้อำนวยการแขวงทางหลวงชนบท', idcard:'3-2201-0xxxx-xx-x', agency:'แขวงทางหลวงชนบทแห่งหนึ่ง' } ],
+    allegation:'กำหนดคุณสมบัติผู้เสนอราคางานก่อสร้างสะพานเพื่อเอื้อประโยชน์ผู้รับเหมารายหนึ่ง คดีใกล้ครบกำหนดอายุความ ผอ.กบค. รับรองเหตุผลเร่งด่วนแล้ว',
+    receivedDate:'2569-06-15', deadline60:'2569-08-14', deadline2y:'2569-09-25', prescription:'2569-09-25',
+    docRef:'ปป 0021/0771 ลงวันที่ 15 มิถุนายน 2569',
+    urgent:false, urgent72:true, urgentReason:'คดีใกล้ครบกำหนดอายุความภายใน 30 วัน ผอ.กบค. รับรองเหตุผลเร่งด่วนแล้ว', urgentCertifiedDate72:'20 ก.ค. 2569',
+    complex:false, complex72:false, dupWarning:false,
+    slaDays:1, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'RULING', signPhase:'WAIT'
+  },
+  {
+    id:'1233/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่องค์การบริหารส่วนจังหวัดแห่งหนึ่ง ทุจริตจัดซื้อรถบรรทุกขยะ',
+    legalBase:'ม.18/4',
+    status:'IN_SCREENING_72',
+    procType:'7.2',
+    owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 2',
+    complainant:'สมาชิกสภาองค์การบริหารส่วนจังหวัด (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายวิเชียร ขยะดี', pos:'หัวหน้าฝ่ายพัสดุ', idcard:'3-2301-0xxxx-xx-x', agency:'องค์การบริหารส่วนจังหวัดแห่งหนึ่ง' } ],
+    allegation:'จัดซื้อรถบรรทุกขยะราคาสูงกว่าราคากลางอย่างมีนัยสำคัญ อยู่ระหว่างการพิจารณาของคณะอนุกรรมการกลั่นกรองฯ',
+    receivedDate:'2569-06-20', deadline60:'2569-08-19', deadline2y:'2571-06-20', prescription:'2572-09-01',
+    docRef:'ปป 0021/0790 ลงวันที่ 20 มิถุนายน 2569',
+    urgent:false, urgent72:false, complex:false, complex72:false, dupWarning:false,
+    slaDays:3, slaLimit:15, subCommittee:'คณะที่ 5',
+    meetingNo:null, agendaNo:null,
+    docType:'RULING', signPhase:'WAIT'
+  },
+  {
+    id:'1366/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่กรมประมงแห่งหนึ่ง ออกใบอนุญาตประมงโดยมิชอบ',
+    legalBase:'ม.18/4',
+    status:'PENDING_INVITE_72',
+    procType:'7.2',
+    owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 2',
+    complainant:'สมาคมประมงพื้นบ้าน (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายประมวล ประมงดี', pos:'ประมงอำเภอ', idcard:'3-2401-0xxxx-xx-x', agency:'สนง.ประมงจังหวัด' } ],
+    allegation:'ออกใบอนุญาตทำการประมงในเขตอนุรักษ์โดยมิชอบให้กับพวกพ้อง กลั่นกรองแล้วเสร็จ รอจัดทำหนังสือเชิญประชุม',
+    receivedDate:'2569-06-28', deadline60:'2569-08-27', deadline2y:'2571-06-28', prescription:'2572-10-11',
+    docRef:'ปป 0021/0815 ลงวันที่ 28 มิถุนายน 2569',
+    urgent:false, urgent72:false, complex:false, complex72:false, dupWarning:false,
+    slaDays:2, slaLimit:15, subCommittee:'คณะที่ 6',
+    meetingNo:null, agendaNo:null,
+    docType:'RULING', signPhase:'WAIT'
+  },
+  {
+    id:'1299/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่การไฟฟ้าส่วนภูมิภาคแห่งหนึ่ง ทุจริตค่าติดตั้งมิเตอร์ไฟฟ้า',
+    legalBase:'ม.18/4',
+    status:'RESOLVED_PENDING_72',
+    procType:'7.2',
+    owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
+    complainant:'ผู้ใช้ไฟฟ้า (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายจตุพร มิเตอร์ดี', pos:'ช่างไฟฟ้าอาวุโส', idcard:'3-2501-0xxxx-xx-x', agency:'การไฟฟ้าส่วนภูมิภาคแห่งหนึ่ง' } ],
+    allegation:'เรียกรับเงินค่าติดตั้งมิเตอร์ไฟฟ้านอกเหนือจากค่าธรรมเนียมทางราชการ ที่ประชุมมีมติแล้ว อยู่ระหว่างจัดทำรายงานวินิจฉัยชี้มูล',
+    receivedDate:'2569-05-20', deadline60:'2569-07-19', deadline2y:'2571-05-20', prescription:'2572-07-30',
+    docRef:'ปป 0021/0688 ลงวันที่ 20 พฤษภาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:1, slaLimit:15, subCommittee:'คณะที่ 2',
+    meetingNo:'36/2569', agendaNo:'5.2', meetingDate:'2569-08-05',
+    quorumOk72:true,
+    docType:'RULING', signPhase:'WAIT'
+  },
+  {
+    id:'1311/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่กรมพัฒนาที่ดินแห่งหนึ่ง ทุจริตแจกจ่ายปุ๋ยอินทรีย์',
+    legalBase:'ม.18/4',
+    status:'PENDING_SIGN_RULING_72',
+    procType:'7.2',
+    owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
+    complainant:'เกษตรกรในพื้นที่ (ผู้ร้อง)',
+    accused:[ { no:1, name:'นางสาวรัตนา ปุ๋ยดี', pos:'นักวิชาการเกษตรชำนาญการ', idcard:'3-2601-0xxxx-xx-x', agency:'สนง.พัฒนาที่ดินจังหวัด' } ],
+    allegation:'แจกจ่ายปุ๋ยอินทรีย์ไม่ครบตามจำนวนที่ได้รับงบประมาณ และนำส่วนที่เหลือไปจำหน่ายเป็นประโยชน์ส่วนตัว ร่างรายงานวินิจฉัยชี้มูลเสร็จแล้ว รอประธานฯ ลงนาม',
+    receivedDate:'2569-05-10', deadline60:'2569-07-09', deadline2y:'2571-05-10', prescription:'2572-06-18',
+    docRef:'ปป 0021/0655 ลงวันที่ 10 พฤษภาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:2, slaLimit:15, subCommittee:'คณะที่ 1',
+    meetingNo:'35/2569', agendaNo:'5.3', meetingDate:'2569-07-22',
+    quorumOk72:true, resolution72:'GUILTY_72',
+    docType:'RULING', signPhase:'WAIT'
+  },
+  {
+    id:'1322/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่สำนักงานสาธารณสุขจังหวัดแห่งหนึ่ง (ข้อกล่าวหาไม่มีมูล)',
+    legalBase:'ม.18/4',
+    status:'PENDING_AREA_NOTICE_72',
+    procType:'7.2',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
+    complainant:'บัตรสนเท่ห์ (ความปรากฏต่อสำนักงาน)',
+    accused:[ { no:1, name:'นายเกรียงศักดิ์ สาธารณสุขดี', pos:'นักวิชาการสาธารณสุขชำนาญการ', idcard:'3-2701-0xxxx-xx-x', agency:'สนง.สาธารณสุขจังหวัด' } ],
+    allegation:'ถูกกล่าวหาเบิกจ่ายค่าตอบแทนโดยมิชอบ ไต่สวนแล้วพยานหลักฐานไม่พอรับฟัง คณะกรรมการ ป.ป.ท. มีมติว่าข้อกล่าวหาไม่มีมูล รอพื้นที่บันทึกรับมติและแจ้งผลผู้ถูกกล่าวหา',
+    receivedDate:'2569-04-18', deadline60:'2569-06-17', deadline2y:'2571-04-18', prescription:'2572-05-02',
+    docRef:'ปป 0020/0590 ลงวันที่ 18 เมษายน 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:1, slaLimit:15, subCommittee:'คณะที่ 3',
+    meetingNo:'34/2569', agendaNo:'5.5', meetingDate:'2569-07-08',
+    quorumOk72:true, resolution72:'NO_MERIT_72',
+    docType:'RULING', signPhase:'COMPLETE'
+  },
+  {
+    id:'1344/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่กรมบัญชีกลางแห่งหนึ่ง (นอกอำนาจหน้าที่ ป.ป.ท.)',
+    legalBase:'ม.19(ข)(1)',
+    status:'DISPATCHING_NACC_72',
+    procType:'7.2',
+    owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
+    complainant:'สำนักงาน ป.ป.ช. (ส่งเรื่องมอบหมาย)',
+    accused:[ { no:1, name:'นายอมร บัญชีดี', pos:'ผู้อำนวยการกองการเงิน', idcard:'3-2801-0xxxx-xx-x', agency:'กรมบัญชีกลาง' } ],
+    allegation:'ถูกกล่าวหาทุจริตเบิกจ่ายงบประมาณระดับกรม คณะกรรมการ ป.ป.ท. พิจารณาแล้วเห็นว่าอยู่นอกอำนาจหน้าที่ตาม ม.19(ข)(1) มีมติส่งเรื่องให้ ป.ป.ช. รอส่งมอบสำนวน',
+    receivedDate:'2569-04-25', deadline60:'2569-06-24', deadline2y:'2571-04-25', prescription:'2572-08-19',
+    docRef:'ปป 0021/0602 ลงวันที่ 25 เมษายน 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:2, slaLimit:15, subCommittee:'คณะที่ 4',
+    meetingNo:'34/2569', agendaNo:'5.6', meetingDate:'2569-07-08',
+    quorumOk72:true, resolution72:'FORWARD_NACC',
+    docType:'RULING', signPhase:'COMPLETE'
+  },
+  {
+    id:'1355/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่กรมทรัพยากรน้ำแห่งหนึ่ง ทุจริตโครงการขุดเจาะบ่อบาดาล',
+    legalBase:'ม.18/4',
+    status:'PENDING_DISPATCH_GUILTY_72',
+    procType:'7.2',
+    owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 2',
+    complainant:'ประชาชนในพื้นที่ (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายสุเทพ บาดาลดี', pos:'วิศวกรทรัพยากรน้ำชำนาญการ', idcard:'3-2901-0xxxx-xx-x', agency:'สนง.ทรัพยากรน้ำภาค' } ],
+    allegation:'ร่วมกับผู้รับเหมาเบิกจ่ายค่าขุดเจาะบ่อบาดาลเกินจำนวนบ่อที่ขุดจริง คณะกรรมการ ป.ป.ท. มีมติชี้มูลความผิดแล้ว รอส่งเรื่องดำเนินคดีทั้งสายอาญาและสายวินัย',
+    receivedDate:'2569-04-05', deadline60:'2569-06-04', deadline2y:'2571-04-05', prescription:'2572-04-22',
+    docRef:'ปป 0021/0570 ลงวันที่ 5 เมษายน 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:3, slaLimit:15, subCommittee:'คณะที่ 7',
+    meetingNo:'33/2569', agendaNo:'5.4', meetingDate:'2569-06-24',
+    quorumOk72:true, resolution72:'GUILTY_72',
+    docType:'RULING', signPhase:'COMPLETE'
   }
 ];
 
@@ -1255,7 +1501,7 @@ const SUBCOMMITTEE_ROSTER = {
   ]
 };
 
-const CASES_VERSION = '2026-08-25-activity7-templates-v2';
+const CASES_VERSION = '2026-08-25-activity7-flow-coverage-v3';
 if (typeof sessionStorage !== 'undefined') {
   const savedVersion = sessionStorage.getItem('ecmis_cases_version');
   const savedCases = sessionStorage.getItem('ecmis_cases');
@@ -1750,6 +1996,41 @@ function getSupabaseClient(url, key, customOpts) {
   if (window.supabase && typeof window.supabase.createClient === 'function') {
     window.__ecmisSupabaseClient = window.supabase.createClient(targetUrl, targetKey, opts);
     return window.__ecmisSupabaseClient;
+  }
+  return null;
+}
+
+/* Central audit-trail writer for tbl_res_request_event (the "audit trail กลาง" documented
+   on the table itself — timeline/dashboard/public-status features read from here).
+   Call this right after any successful real trr_status write to Supabase; never call it
+   from ECMIS.Model.CaseStore.update() paths, since those don't touch the real row at all.
+   Best-effort: a logging failure must never block the caller's actual state transition. */
+async function logRequestEvent(trrId, fromStatus, toStatus, opts) {
+  if (!trrId) return null;
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+  const o = opts || {};
+  let eventType = o.type;
+  if (!eventType && fromStatus && toStatus) {
+    const matches = transitionsBetween(fromStatus, toStatus);
+    eventType = (matches[0] && matches[0].event) || 'STATUS_CHANGE';
+  }
+  const role = (typeof currentRole === 'function') ? currentRole() : null;
+  try {
+    // trre_from_status/trre_to_status are CHAR(3) columns mirroring STATUS_CODE
+    // (same encoding as trr_status), not the readable ECMIS.STATUS key names.
+    const { error } = await sb.from('tbl_res_request_event').insert({
+      trr_id: trrId,
+      trre_type: eventType || 'STATUS_CHANGE',
+      trre_from_status: (fromStatus && STATUS_CODE[fromStatus]) || null,
+      trre_to_status: (toStatus && STATUS_CODE[toStatus]) || null,
+      trre_actor_role: o.actorRole || (role && role.id) || null,
+      trre_note: o.note || null,
+      trre_data: o.data || null
+    });
+    if (error) throw error;
+  } catch (e) {
+    console.error('logRequestEvent failed (non-blocking):', e);
   }
   return null;
 }
@@ -5295,7 +5576,7 @@ global.ECMIS = {
   M24P1_MIN_PANEL, M24P1_STAFF_FREE, panelComposition,
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
   UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72, pageForCaseByStatus, homeHref, resolvePage,
-  PAGE_PERMISSIONS, canAccessPage, inResFolder, assetUrl, getSupabaseClient,
+  PAGE_PERMISSIONS, canAccessPage, inResFolder, assetUrl, getSupabaseClient, logRequestEvent,
   PERM_DEFS, can, canEditMaster, canViewCase,
   thaiDate, thaiDayName, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, requireCase, getRole, roleIdForLogin, LOGIN_ALLOWED_ROLE_IDS,
   addBusinessDays, businessDaysBetween, resolutionSlaInfo, SUBCOMMITTEE_ROSTER,

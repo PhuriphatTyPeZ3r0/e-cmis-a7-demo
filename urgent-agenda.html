@@ -138,6 +138,7 @@
        เดียวกับ persistCase ใน support-subcommittee.html / resolution.html */
     async function persistCase(kase, patch) {
       const dbPatch = {};
+      const fromStatus = kase.status;
       if ('status' in patch) {
         const code = ECMIS.STATUS_CODE[patch.status];
         if (code) dbPatch.trr_status = code;
@@ -146,6 +147,7 @@
         try {
           const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
           if (error) console.warn('Supabase update warning:', error);
+          else if ('status' in patch) ECMIS.logRequestEvent(kase.trr_id, fromStatus, patch.status);
         } catch (e) {
           console.warn('Supabase update failed:', e);
         }

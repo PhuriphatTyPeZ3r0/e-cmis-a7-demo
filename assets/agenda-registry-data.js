@@ -355,14 +355,34 @@
     return mapped;
   }
 
+  /* บันทึกประวัติการแก้ไขวาระลง tbl_res_calendar_item_history — best-effort เช่นเดียวกับ
+     ECMIS.logRequestEvent ความล้มเหลวของการบันทึกประวัติต้องไม่ไปบล็อกการแก้ไขจริง */
+  async function logItemHistory(trciId, detail, remark) {
+    try {
+      const role = global.ECMIS.currentRole();
+      const { error } = await sb.from('tbl_res_calendar_item_history').insert({
+        trci_id: trciId,
+        trcih_detail: detail,
+        trcih_remark: remark || '',
+        created_by: role ? role.row : null,
+        created_datetime: new Date().toISOString()
+      });
+      if (error) throw error;
+    } catch (e) {
+      console.error('logItemHistory failed (non-blocking):', e);
+    }
+  }
+
   /* Soft delete — ตั้ง is_deleted = true เท่านั้น ข้อมูลยังอยู่ในฐานข้อมูลจริง
      เผื่อกรณีอยากสร้างวาระใหม่แทนโดยไม่ต้องลบทิ้งถาวร */
   async function deleteItem(trciId) {
     const role = global.ECMIS.currentRole();
+    const it = ITEMS.find(x => x.trci_id === trciId);
     const { error } = await sb.from('tbl_res_calendar_item')
       .update({ is_deleted: true, updated_by: role.row, updated_datetime: new Date().toISOString() })
       .eq('trci_id', trciId);
     if (error) throw error;
+    logItemHistory(trciId, `ลบวาระ "${it ? it.trci_topic : trciId}" (soft delete)`);
     const idx = ITEMS.findIndex(x => x.trci_id === trciId);
     if (idx !== -1) ITEMS.splice(idx, 1);
   }
@@ -370,8 +390,10 @@
   async function updateItemNumber(trciId, newNumber) {
     const it = ITEMS.find(x => x.trci_id === trciId);
     if (!it) return;
+    const oldNumber = it.trci_number;
     const { error } = await sb.from('tbl_res_calendar_item').update({ trci_number: newNumber }).eq('trci_id', trciId);
     if (error) throw error;
+    logItemHistory(trciId, `เปลี่ยนเลขวาระที่ ${oldNumber} เป็น ${newNumber}`);
     it.trci_number = newNumber;
   }
 
@@ -390,6 +412,7 @@
       sb.from('tbl_res_calendar_item').update({ trci_number: a }).eq('trci_id', swapWith.trci_id)
     ]);
     if (e1 || e2) throw (e1 || e2);
+    logItemHistory(trciId, `สลับเลขวาระที่ ${a} กับ ${b} (${dir > 0 ? 'เลื่อนลง' : 'เลื่อนขึ้น'})`);
     it.trci_number = b; swapWith.trci_number = a;
     return true;
   }

@@ -252,11 +252,13 @@ async function loadCasesFromSupabase() {
 }
 
 async function updateCaseStatus(kase, newStatus) {
+  const fromStatus = kase.status;
   kase.status = newStatus;
   if (sb && kase.trr_id) {
     const code = ECMIS.STATUS_CODE[newStatus];
     if (code) {
-      await sb.from('tbl_res_request').update({ trr_status: code }).eq('trr_id', kase.trr_id);
+      const { error } = await sb.from('tbl_res_request').update({ trr_status: code }).eq('trr_id', kase.trr_id);
+      if (!error) ECMIS.logRequestEvent(kase.trr_id, fromStatus, newStatus);
     }
   }
   ECMIS.saveCases();

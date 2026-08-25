@@ -231,8 +231,10 @@ async function loadCasesFromSupabase() {
 async function updateCaseStatus(kase, newStatus) {
   const code = ECMIS.STATUS_CODE[newStatus];
   if (!code) throw new Error(`ไม่พบรหัสสถานะสำหรับ ${newStatus}`);
+  const fromStatus = kase.status;
   const { error } = await sb.from('tbl_res_request').update({ trr_status: code }).eq('trr_id', kase.trr_id);
   if (error) throw error;
+  ECMIS.logRequestEvent(kase.trr_id, fromStatus, newStatus);
   kase.status = newStatus;
 }
 
