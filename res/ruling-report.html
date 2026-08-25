@@ -132,6 +132,20 @@
       position: relative !important;
     }
 
+    #docPaperProbe {
+      position: absolute !important;
+      visibility: hidden !important;
+      left: -99999px !important;
+      top: 0 !important;
+      width: 210mm !important;
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      overflow: visible !important;
+      box-sizing: border-box !important;
+      padding: 25mm 20mm 20mm 25mm !important;
+    }
+
     /* Paragraph indentation and line height standard */
     .doc-paper .doc-indent {
       text-indent: 2.5em;
@@ -1270,23 +1284,28 @@
 
         function createFlowSection(title, content, subNote = '') {
           const blocks = [];
-          if (title) {
-            blocks.push(`<div class="doc-h" style="margin-top:6px">${title}</div>${subNote ? `<div class="doc-indent" style="color:#64748b;font-size:.84rem;margin-bottom:2px">${subNote}</div>` : ''}`);
-          }
-          if (content) {
-            const paras = String(content).split(/\n\s*\n|\r\n\r\n/).filter(p => p.trim());
-            if (paras.length > 0) {
-              paras.forEach(p => {
-                const lines = p.split(/\n|\r\n/).filter(l => l.trim());
-                if (lines.length > 1) {
-                  lines.forEach(l => blocks.push(`<div class="doc-indent" style="margin-bottom:4px;">${M(l)}</div>`));
-                } else {
-                  blocks.push(`<div class="doc-indent" style="margin-bottom:4px;">${M(p)}</div>`);
-                }
-              });
-            } else {
-              blocks.push(`<div class="doc-indent">${M(content)}</div>`);
+          const paras = content ? String(content).split(/\n\s*\n|\r\n\r\n/).filter(p => p.trim()) : [];
+
+          if (title && paras.length > 0) {
+            const firstPara = paras[0];
+            blocks.push(`
+              <div class="doc-h" style="margin-top:6px">${title}</div>
+              ${subNote ? `<div class="doc-indent" style="color:#64748b;font-size:.84rem;margin-bottom:2px">${subNote}</div>` : ''}
+              <div class="doc-indent" style="margin-bottom:4px;">${M(firstPara)}</div>
+            `);
+            for (let i = 1; i < paras.length; i++) {
+              blocks.push(`<div class="doc-indent" style="margin-bottom:4px;">${M(paras[i])}</div>`);
             }
+          } else if (title) {
+            blocks.push(`
+              <div class="doc-h" style="margin-top:6px">${title}</div>
+              ${subNote ? `<div class="doc-indent" style="color:#64748b;font-size:.84rem;margin-bottom:2px">${subNote}</div>` : ''}
+              ${content ? `<div class="doc-indent">${M(content)}</div>` : ''}
+            `);
+          } else if (paras.length > 0) {
+            paras.forEach(p => blocks.push(`<div class="doc-indent" style="margin-bottom:4px;">${M(p)}</div>`));
+          } else if (content) {
+            blocks.push(`<div class="doc-indent">${M(content)}</div>`);
           }
           return blocks;
         }

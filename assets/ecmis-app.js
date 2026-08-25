@@ -2086,20 +2086,24 @@ function paginateDoc(containerEl, opts){
   if(!probe){
     probe = document.createElement('div');
     probe.id = 'docPaperProbe';
-    probe.style.cssText = 'position:absolute; visibility:hidden; left:-99999px; top:0; width:210mm; height:auto; min-height:0; aspect-ratio:auto; box-sizing:border-box;';
     document.body.appendChild(probe);
   }
   probe.className = pageClass;
+  probe.style.cssText = 'position:absolute !important; visibility:hidden !important; left:-99999px !important; top:0 !important; width:210mm !important; height:auto !important; min-height:0 !important; max-height:none !important; overflow:visible !important; aspect-ratio:auto !important; box-sizing:border-box !important; padding:25mm 20mm 20mm 25mm !important;';
+
   const mmProbe = document.createElement('div');
   mmProbe.style.cssText = 'position:absolute; visibility:hidden; left:-99999px; height:297mm; width:0;';
   document.body.appendChild(mmProbe);
   const PAGE_BUDGET = mmProbe.getBoundingClientRect().height;
   mmProbe.remove();
 
-  // Safety buffer: keep 8px breathing room at the bottom of the page
-  const MAX_PAGE_HEIGHT = PAGE_BUDGET - 8;
+  // Safety threshold: 4px buffer
+  const MAX_PAGE_HEIGHT = PAGE_BUDGET - 4;
 
-  function measure(html){ probe.innerHTML = html; return probe.scrollHeight; }
+  function measure(html){
+    probe.innerHTML = html;
+    return probe.scrollHeight;
+  }
 
   const pages = [];
   let pageBlocks = introBlock ? [introBlock] : [];
