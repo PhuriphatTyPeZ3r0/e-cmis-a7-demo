@@ -2086,7 +2086,7 @@ function paginateDoc(containerEl, opts){
   if(!probe){
     probe = document.createElement('div');
     probe.id = 'docPaperProbe';
-    probe.style.cssText = 'position:absolute; visibility:hidden; left:-99999px; top:0; width:210mm; height:auto; min-height:0; aspect-ratio:auto;';
+    probe.style.cssText = 'position:absolute; visibility:hidden; left:-99999px; top:0; width:210mm; height:auto; min-height:0; aspect-ratio:auto; box-sizing:border-box;';
     document.body.appendChild(probe);
   }
   probe.className = pageClass;
@@ -2096,21 +2096,30 @@ function paginateDoc(containerEl, opts){
   const PAGE_BUDGET = mmProbe.getBoundingClientRect().height;
   mmProbe.remove();
 
-  const FIT_TOLERANCE = 14;
+  // Safety buffer: keep 8px breathing room at the bottom of the page
+  const MAX_PAGE_HEIGHT = PAGE_BUDGET - 8;
 
   function measure(html){ probe.innerHTML = html; return probe.scrollHeight; }
 
   const pages = [];
-  let pageBlocks = [introBlock];
+  let pageBlocks = introBlock ? [introBlock] : [];
   let isFirst = true;
 
-  function pushPage(){ pages.push({ isFirst, blocks: pageBlocks }); pageBlocks = []; isFirst = false; }
+  function pushPage(){
+    if (pageBlocks.length > 0) {
+      pages.push({ isFirst, blocks: pageBlocks });
+      pageBlocks = [];
+      isFirst = false;
+    }
+  }
   function prefixFor(estPageNo){ return isFirst ? '' : runningHeaderHtml(estPageNo); }
 
-  flowBlocks.forEach(block => {
-    const mandatoryOnly = pageBlocks.length === (isFirst ? 1 : 0);
+  (flowBlocks || []).forEach(block => {
+    if (!block) return;
     const candidate = prefixFor(pages.length + (isFirst ? 1 : 2)) + pageBlocks.join('') + block;
-    if(mandatoryOnly || measure(candidate) <= (PAGE_BUDGET + FIT_TOLERANCE)){
+    if (pageBlocks.length === 0) {
+      pageBlocks.push(block);
+    } else if (measure(candidate) <= MAX_PAGE_HEIGHT) {
       pageBlocks.push(block);
     } else {
       pushPage();
@@ -2118,21 +2127,27 @@ function paginateDoc(containerEl, opts){
     }
   });
 
-  const withSign = prefixFor(pages.length + (isFirst ? 1 : 2)) + pageBlocks.join('') + signBlock;
-  const mandatoryOnly = pageBlocks.length === (isFirst ? 1 : 0);
-  if(mandatoryOnly || measure(withSign) <= (PAGE_BUDGET + FIT_TOLERANCE + 8)){
-    pageBlocks.push(signBlock);
-    pushPage();
-  } else {
-    pushPage();
-    pageBlocks = [signBlock];
+  if (signBlock) {
+    const withSign = prefixFor(pages.length + (isFirst ? 1 : 2)) + pageBlocks.join('') + signBlock;
+    if (pageBlocks.length === 0) {
+      pageBlocks.push(signBlock);
+      pushPage();
+    } else if (measure(withSign) <= MAX_PAGE_HEIGHT) {
+      pageBlocks.push(signBlock);
+      pushPage();
+    } else {
+      pushPage();
+      pageBlocks = [signBlock];
+      pushPage();
+    }
+  } else if (pageBlocks.length > 0) {
     pushPage();
   }
 
   containerEl.innerHTML = pages.map((p, i) => {
     const pageNo = i + 1;
     const header = p.isFirst ? '' : runningHeaderHtml(pageNo);
-    return `<div class="${pageClass}" data-page-no="${pageNo}">${header}${p.blocks.join('')}</div>`;
+    return `<div class="${pageClass}" data-page-no="${pageNo}" style="height:297mm; max-height:297mm; overflow:hidden; box-sizing:border-box;">${header}${p.blocks.join('')}</div>`;
   }).join('');
 }
 
