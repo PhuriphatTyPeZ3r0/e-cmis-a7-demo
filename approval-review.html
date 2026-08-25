@@ -385,6 +385,8 @@
 
       renderAttachments(kase.tcc_id);
       if (isRuling) { initRulingScreen(); } else { initReport213Screen(); }
+      updatePaginationUI();
+      applyZoom();
     })();
 
     /* ---------- Document workspace: collapsible pane ---------- */
@@ -1276,7 +1278,8 @@
         const complexReasonEl = document.getElementById('g1reason');
         const urgentReasonEl = document.getElementById('urgentReason72');
 
-        document.getElementById('docPaper').innerHTML = `
+        const docTarget = document.getElementById('docPaperPage') || document.getElementById('docPaper');
+        docTarget.innerHTML = `
           <div class="doc-secret">ลับ</div>
           <div class="doc-title">${docType.label}</div>
           <div class="doc-sub">คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
@@ -1302,6 +1305,8 @@
             : 'ลงชื่อ <span class="doc-dots"></span>'}<br>
             (นายอภิชาติ สุจริตกุล)<br>เลขาธิการคณะกรรมการ ป.ป.ท.
           </div>`;
+        updatePaginationUI();
+        applyZoom();
       }
 
       if (role.id === 'secgen') { renderRouteOutcome(); }
@@ -1491,10 +1496,12 @@
           });
         }
       }
+      window.handle = handle;
+    }
 
-      /* ---------- Master Toolbar & Pagination Controls ---------- */
-      let docViewMode = 'SINGLE';
-      let docCurrentPage = 1;
+    /* ---------- Master Toolbar & Pagination Controls ---------- */
+    let docViewMode = 'SINGLE';
+    let docCurrentPage = 1;
       let docTotalPages = 1;
       let docZoomLevel = 0.75;
 
@@ -1635,9 +1642,8 @@
         if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
       } catch (e) { }
 
-      const mayEdit = ECMIS.canEditMaster(role.id) || ['secgen', 'director', 'deputy', 'section_head', 'affairs'].includes(role.id);
-      ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: mayEdit });
-    }
+    const mayEdit = ECMIS.canEditMaster(role.id) || ['secgen', 'director', 'deputy', 'section_head', 'affairs'].includes(role.id);
+    ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: mayEdit });
   </script>
 </body>
 
