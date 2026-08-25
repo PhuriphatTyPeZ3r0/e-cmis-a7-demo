@@ -457,24 +457,11 @@
                 </div>
               </div>
 
-              <!-- Right Group: Document Stats & Symmetrical Zoom Controls -->
+              <!-- Right Group: Zoom Stepper Controls -->
               <div class="toolbar-group ms-auto">
-                <span class="doc-stats-pill d-none d-md-inline-block" id="totalDocStatsText">
-                  <i class="fa-solid fa-file-lines me-1 text-info"></i>รวม 1 หน้า • 0 คำ
-                </span>
-
-                <div class="toolbar-divider d-none d-md-block"></div>
-
-                <div class="btn-group btn-group-sm">
-                  <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnZoomFit" title="พอดีทั้งหน้า (เห็นเอกสารครบทั้งหน้า)"><i class="fa-solid fa-expand me-1"></i>พอดีจอ</button>
-                  <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnZoomWidth" title="พอดีความกว้าง (อ่านง่าย)"><i class="fa-solid fa-arrows-left-right me-1"></i>พอดีกว้าง</button>
-                  <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnZoom75">75%</button>
-                  <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnZoom100">100%</button>
-                </div>
-
                 <div class="d-flex align-items-center bg-dark rounded px-1" style="background:#06182c !important; border:1px solid #1a3d66; height:26px;">
                   <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
-                  <span style="font-size:0.75rem; width:34px; text-align:center; font-weight:600;" id="zoomLevelText">100%</span>
+                  <span style="font-size:0.75rem; width:34px; text-align:center; font-weight:600;" id="zoomLevelText">75%</span>
                   <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
                 </div>
               </div>
@@ -551,7 +538,7 @@
     let docViewMode = 'SINGLE'; // 'SINGLE' or 'CONTINUOUS'
     let docCurrentPage = 1;
     let docTotalPages = 1;
-    let docZoomLevel = 1.0;
+    let docZoomLevel = 0.75;
 
     /* รายชื่อกรรมการ ป.ป.ท. */
     const BOARD = [
@@ -1842,42 +1829,20 @@
       updatePaginationUI();
     });
 
-    $('#btnZoomFit').on('click', function () {
-      autoFitDocZoom('fit-page');
-    });
-
-    $('#btnZoomWidth').on('click', function () {
-      autoFitDocZoom('fit-width');
-    });
-
-    $('#btnZoom75').on('click', function () {
-      docZoomLevel = 0.75;
-      applyZoom();
-    });
-
-    $('#btnZoom100').on('click', function () {
-      docZoomLevel = 1.0;
-      applyZoom();
-    });
-
     $('#btnZoomIn').on('click', function () {
-      docZoomLevel = Math.min(1.3, docZoomLevel + 0.08);
+      docZoomLevel = Math.min(1.3, Math.round((docZoomLevel + 0.08) * 100) / 100);
       applyZoom();
     });
 
     $('#btnZoomOut').on('click', function () {
-      docZoomLevel = Math.max(0.35, docZoomLevel - 0.08);
+      docZoomLevel = Math.max(0.35, Math.round((docZoomLevel - 0.08) * 100) / 100);
       applyZoom();
     });
 
     ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: true });
     renderDoc();
     renderActions();
-    setTimeout(() => autoFitDocZoom('fit-page'), 60);
-
-    window.addEventListener('resize', () => {
-      autoFitDocZoom('fit-page');
-    });
+    applyZoom();
 
     (async function initOffenseBasis() {
       const ok = await loadOffenseBasisData();
