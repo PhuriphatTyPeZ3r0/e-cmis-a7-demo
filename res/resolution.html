@@ -179,37 +179,68 @@
       </div>
 
       <aside class="ws-doc-pane" id="docCol" style="top:calc(var(--topbar-h) + 14px)">
-        <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
+        <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i
+            class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
         <div class="ws-doc-toolbar">
-          <span class="name"><i class="fa-solid fa-file-word"></i> มติการประชุม (ไต่สวนเบื้องต้น)</span>
-          <button class="btn btn-sm btn-light" onclick="window.print()" title="พิมพ์เฉพาะเอกสาร Preview"><i class="fa-solid fa-print"></i></button>
-          <button class="btn btn-sm btn-light" id="btnDocx"><i class="fa-solid fa-download me-1"></i>.docx</button>
-          <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
+          <div class="d-flex flex-column w-100 gap-1">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="name"><i class="fa-solid fa-file-word"></i> มติการประชุม (ไต่สวนเบื้องต้น)</span>
+              <div class="d-flex gap-1 align-items-center">
+                <button type="button" class="btn-doc-edit" id="btnDocEdit" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
+                  <i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btnDocx" title="ส่งออกเป็นเอกสาร Microsoft Word (.docx)"><i class="fa-solid fa-file-word me-1"></i>ส่งออก DOCX</button>
+                <button type="button" class="btn btn-sm btn-light border" onclick="window.print()" title="พิมพ์เอกสารปัจจุบัน"><i class="fa-solid fa-print"></i></button>
+                <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
+              </div>
+            </div>
+
+            <!-- Symmetrical Pagination & Zoom Navigator Bar -->
+            <div class="pagination-toolbar-symmetric" id="docPaginationBar">
+              <!-- Left Group: View Mode & Page Jump Controls -->
+              <div class="toolbar-group">
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" id="btnModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น)">
+                    <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
+                  </button>
+                  <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnModeContinuous" title="โหมดดูทุกหน้าเรียงกัน">
+                    <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
+                  </button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnFirstPage" title="หน้าแรกสุด (หน้า 1)"><i class="fa-solid fa-backward-step"></i></button>
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnPrevPage" title="หน้าก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
+                </div>
+                
+                <div class="d-flex align-items-center gap-1">
+                  <span class="small opacity-75">หน้า</span>
+                  <input type="number" class="page-input-num" id="pageNumberInput" min="1" value="1">
+                  <span class="small opacity-75" id="totalPagesText">/ 1 หน้า</span>
+                </div>
+
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnNextPage" title="หน้าถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnLastPage" title="หน้าสุดท้าย"><i class="fa-solid fa-forward-step"></i></button>
+                </div>
+              </div>
+
+              <!-- Right Group: Zoom Stepper Controls -->
+              <div class="toolbar-group ms-auto">
+                <div class="d-flex align-items-center bg-dark rounded px-1" style="background:#06182c !important; border:1px solid #1a3d66; height:26px;">
+                  <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                  <span style="font-size:0.75rem; width:34px; text-align:center; font-weight:600;" id="zoomLevelText">75%</span>
+                  <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="doc-edit-bar" id="docEditBar" aria-label="แถบจัดรูปแบบ">
-          <select class="doc-edit-size" data-format="fontSize" title="ขนาดตัวอักษร">
-            <option value="">ขนาด</option>
-            <option value="3">16</option><option value="4">18</option>
-            <option value="5">20</option><option value="6">24</option>
-          </select>
-          <span class="doc-edit-bar-sep"></span>
-          <button type="button" data-format="bold" title="ตัวหนา"><b>B</b></button>
-          <button type="button" data-format="italic" title="ตัวเอียง"><i>I</i></button>
-          <button type="button" data-format="underline" title="ขีดเส้นใต้"><u>U</u></button>
-          <span class="doc-edit-bar-sep"></span>
-          <button type="button" data-format="justifyLeft" title="ชิดซ้าย"><i class="fa-solid fa-align-left"></i></button>
-          <button type="button" data-format="justifyCenter" title="กึ่งกลาง"><i class="fa-solid fa-align-center"></i></button>
-          <button type="button" data-format="justifyRight" title="ชิดขวา"><i class="fa-solid fa-align-right"></i></button>
-          <span class="doc-edit-bar-sep"></span>
-          <button type="button" data-format="undo" title="เลิกทำ"><i class="fa-solid fa-rotate-left"></i></button>
-          <button type="button" data-format="redo" title="ทำซ้ำ"><i class="fa-solid fa-rotate-right"></i></button>
-          <span class="doc-edit-bar-sep"></span>
-          <button type="button" class="btn btn-sm btn-gold" id="btnSaveDocEdit" style="width:auto;padding:0 .6rem">บันทึกการแก้ไข</button>
+        <div class="ws-paper-stage" id="docPaperStage">
+          <div id="docPaper"></div>
         </div>
-        <div class="ws-paper-stage" id="docPaper"></div>
-        <button type="button" class="doc-edit-fab d-none" id="docEditFab" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
-          <span aria-hidden="true">✏️</span><span>แก้ไขเอกสาร</span>
-        </button>
       </aside>
     </div>
 
@@ -756,6 +787,8 @@
 
       ECMIS.paginateResolutionDoc(document.getElementById('docPaper'),
         { introBlock, flowBlocks, signBlock, runningHeaderHtml });
+      updatePaginationUI();
+      applyZoom();
     }
 
     document.getElementById('resList').addEventListener('change', () => { toggleBoxes(); renderOutcome(); renderDoc(); });
@@ -1077,59 +1110,144 @@
       }
     }
 
-    /* ---------- Document workspace: collapsible pane (ws-doc-pane-toggle/-rail จาก a4-ecmis-workspace.css) ---------- */
-    const docWorkspace = document.getElementById('docWorkspace');
+    /* ---------- Master Toolbar & Pagination Controls ---------- */
+    let docViewMode = 'SINGLE';
+    let docCurrentPage = 1;
+    let docTotalPages = 1;
+    let docZoomLevel = 0.75;
+
+    function updatePaginationUI() {
+      const docPaperEl = document.getElementById('docPaper');
+      if (!docPaperEl) return;
+      const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
+      docTotalPages = Math.max(1, pages.length);
+
+      if (docCurrentPage > docTotalPages) docCurrentPage = docTotalPages;
+      if (docCurrentPage < 1) docCurrentPage = 1;
+
+      $('#totalPagesText').text(`/ ${docTotalPages} หน้า`);
+      $('#pageNumberInput').attr('max', docTotalPages).val(docCurrentPage);
+
+      if (docViewMode === 'SINGLE') {
+        docPaperEl.classList.remove('mode-continuous');
+        docPaperEl.classList.add('mode-single');
+        pages.forEach((p, idx) => {
+          if (idx + 1 === docCurrentPage) {
+            p.classList.add('active-page');
+          } else {
+            p.classList.remove('active-page');
+          }
+        });
+        $('#btnFirstPage, #btnPrevPage').prop('disabled', docCurrentPage === 1);
+        $('#btnNextPage, #btnLastPage').prop('disabled', docCurrentPage === docTotalPages);
+        $('#pageNumberInput').prop('disabled', false);
+        const stage = document.getElementById('docPaperStage');
+        if (stage) stage.scrollTop = 0;
+      } else {
+        docPaperEl.classList.remove('mode-single');
+        docPaperEl.classList.add('mode-continuous');
+        pages.forEach(p => p.classList.add('active-page'));
+        $('#btnFirstPage, #btnPrevPage, #btnNextPage, #btnLastPage, #pageNumberInput').prop('disabled', true);
+      }
+      applyZoom();
+    }
+
+    function applyZoom() {
+      const docPaperEl = document.getElementById('docPaper');
+      if (!docPaperEl) return;
+      docPaperEl.style.transform = `scale(${docZoomLevel})`;
+      docPaperEl.style.transformOrigin = 'top center';
+      $('#zoomLevelText').text(`${Math.round(docZoomLevel * 100)}%`);
+
+      // Adjust wrapper height so stage scrolling is natural
+      const stage = document.getElementById('docPaperStage');
+      if (stage) {
+        const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
+        if (pages.length > 0) {
+          if (docViewMode === 'SINGLE') {
+            const activeP = docPaperEl.querySelector('.doc-paper.active-page, .a4-paper.active-page') || pages[0];
+            const h = activeP ? activeP.offsetHeight : 1123;
+            docPaperEl.style.height = `${Math.round(h * docZoomLevel)}px`;
+          } else {
+            let totalH = 0;
+            pages.forEach(p => { totalH += p.offsetHeight + 18; });
+            docPaperEl.style.height = `${Math.round(totalH * docZoomLevel)}px`;
+          }
+        }
+      }
+    }
+
+    /* Event Listeners */
+    $('#btnModeSingle').on('click', function () {
+      docViewMode = 'SINGLE';
+      $(this).addClass('btn-primary').removeClass('btn-outline-light');
+      $('#btnModeContinuous').addClass('btn-outline-light').removeClass('btn-primary');
+      updatePaginationUI();
+    });
+
+    $('#btnModeContinuous').on('click', function () {
+      docViewMode = 'CONTINUOUS';
+      $(this).addClass('btn-primary').removeClass('btn-outline-light');
+      $('#btnModeSingle').addClass('btn-outline-light').removeClass('btn-primary');
+      updatePaginationUI();
+    });
+
+    $('#btnFirstPage').on('click', function () {
+      docCurrentPage = 1;
+      updatePaginationUI();
+    });
+
+    $('#btnPrevPage').on('click', function () {
+      if (docCurrentPage > 1) {
+        docCurrentPage--;
+        updatePaginationUI();
+      }
+    });
+
+    $('#btnNextPage').on('click', function () {
+      if (docCurrentPage < docTotalPages) {
+        docCurrentPage++;
+        updatePaginationUI();
+      }
+    });
+
+    $('#btnLastPage').on('click', function () {
+      docCurrentPage = docTotalPages;
+      updatePaginationUI();
+    });
+
+    $('#pageNumberInput').on('change', function () {
+      let val = parseInt($(this).val(), 10);
+      if (isNaN(val)) val = 1;
+      if (val < 1) val = 1;
+      if (val > docTotalPages) val = docTotalPages;
+      docCurrentPage = val;
+      updatePaginationUI();
+    });
+
+    $('#btnZoomIn').on('click', function () {
+      docZoomLevel = Math.min(1.3, Math.round((docZoomLevel + 0.08) * 100) / 100);
+      applyZoom();
+    });
+
+    $('#btnZoomOut').on('click', function () {
+      docZoomLevel = Math.max(0.35, Math.round((docZoomLevel - 0.08) * 100) / 100);
+      applyZoom();
+    });
+
+    // Pane collapse toggle
     const PANE_KEY = 'ecmis-board-resolution-docpane-collapsed';
     function setPaneCollapsed(collapsed) {
-      docWorkspace.classList.toggle('pane-collapsed', collapsed);
-      localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
+      document.body.classList.toggle('docpane-collapsed', collapsed);
+      try { localStorage.setItem(PANE_KEY, collapsed ? '1' : '0'); } catch (e) { }
     }
-    if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
-    document.getElementById('btnPaneCollapse').addEventListener('click', () => setPaneCollapsed(true));
-    document.getElementById('btnPaneExpand').addEventListener('click', () => setPaneCollapsed(false));
+    $('#btnPaneCollapse').on('click', () => setPaneCollapsed(true));
+    $('#btnPaneExpand').on('click', () => setPaneCollapsed(false));
+    try {
+      if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
+    } catch (e) { }
 
-    /* ---------- Document workspace: แก้ไขเอกสารที่ล็อกแล้วแบบ Word (rich-text) ----------
-       เปิดใช้เฉพาะเอกสารที่บันทึก/ล็อกแล้ว (isLocked) และเฉพาะผู้มีสิทธิ์แก้ไขมติ (mayEdit)
-       ตรงกับข้อความ "แก้ไขมติที่ล็อกแล้วต้องผ่านกระบวนการแก้ไขพิเศษ" ด้านบน */
-    const docEditFab = document.getElementById('docEditFab');
-    const docEditBar = document.getElementById('docEditBar');
-    const docPaperWrap = document.getElementById('docPaper');
-    /* ย้าย FAB ไปเป็นลูกตรงของ body — กัน ancestor ที่มี transform/position ทับ z-index ของ
-       position:fixed จนโดนแถบ action-bar ด้านล่างบังปุ่ม (เจอจริงตอนทดสอบ) */
-    document.body.appendChild(docEditFab);
-
-    if (isLocked && mayEdit) {
-      docEditFab.classList.remove('d-none');
-    }
-
-    function setDocEditMode(on) {
-      docPaperWrap.querySelectorAll('.doc-paper').forEach(p => {
-        if (on) p.setAttribute('contenteditable', 'true');
-        else p.removeAttribute('contenteditable');
-      });
-      docEditFab.classList.toggle('active', on);
-      docEditBar.classList.toggle('show', on);
-    }
-
-    docEditFab.addEventListener('click', () => {
-      const on = !docEditFab.classList.contains('active');
-      setDocEditMode(on);
-    });
-
-    docEditBar.addEventListener('click', e => {
-      const btn = e.target.closest('[data-format]');
-      if (btn) { document.execCommand(btn.dataset.format); docPaperWrap.querySelector('.doc-paper')?.focus(); }
-    });
-    docEditBar.addEventListener('change', e => {
-      const el = e.target.closest('select[data-format]');
-      if (el) { document.execCommand(el.dataset.format, false, el.value); docPaperWrap.querySelector('.doc-paper')?.focus(); }
-    });
-
-    document.getElementById('btnSaveDocEdit').addEventListener('click', () => {
-      ECMIS.Model.CaseStore.update(kase.id, { recordedDocHtml: docPaperWrap.innerHTML });
-      setDocEditMode(false);
-      ECMIS.toastOk('บันทึกการแก้ไขเอกสารเรียบร้อย');
-    });
+    ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: mayEdit });
 
     applyMode(); toggleBoxes(); renderOutcome(); renderDoc();
   </script>
