@@ -1480,7 +1480,22 @@ function slaLabel(used, limit){
   if(used > limit) return `เกินกำหนด ${used - limit} วัน`;
   return `ใช้ไป ${used}/${limit} วัน`;
 }
-function getCase(id){ return CASES.find(c => c.id === id) || CASES[0]; }
+function getCase(id){ return CASES.find(c => c.id === id); }
+/* ใช้แทนการ guard ซ้ำ ๆ ในแต่ละหน้า: ถ้าไม่พบสำนวนตาม id ที่ระบุ จะแจ้งเตือนด้วย
+   Flash Toast แล้วพากลับหน้าหลักของบทบาทปัจจุบันทันที (รูปแบบเดียวกับ Page Guard
+   ใน renderShell()) — หน้าที่เรียกใช้ยังต้องเช็ก `if (!kase) return;` ต่อเอง
+   เพราะ JS ไม่มีทางให้ helper ตัดตอน caller function แทนได้ */
+function requireCase(id){
+  const kase = getCase(id);
+  if (!kase) {
+    sessionStorage.setItem('ecmis_flash_toast', JSON.stringify({
+      type: 'warn',
+      message: `ไม่พบสำนวน "${id}" ในระบบ — ระบบได้นำท่านกลับมายังหน้าหลัก`
+    }));
+    location.href = homeHref();
+  }
+  return kase;
+}
 function getRole(id){
   const found = ROLES.find(r => r.id === id);
   if (found) return found;
@@ -4951,7 +4966,7 @@ global.ECMIS = {
   UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72, pageForCaseByStatus, homeHref, resolvePage,
   PAGE_PERMISSIONS, canAccessPage, inResFolder, assetUrl, getSupabaseClient,
   PERM_DEFS, can, canEditMaster, canViewCase,
-  thaiDate, thaiDayName, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, getRole, roleIdForLogin, LOGIN_ALLOWED_ROLE_IDS,
+  thaiDate, thaiDayName, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, requireCase, getRole, roleIdForLogin, LOGIN_ALLOWED_ROLE_IDS,
   addBusinessDays, businessDaysBetween, resolutionSlaInfo, SUBCOMMITTEE_ROSTER,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   isAuthed, currentUsername, logout,

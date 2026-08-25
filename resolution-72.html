@@ -195,7 +195,8 @@
     ECMIS.renderShell('resolution-72.html');
 
     const params = new URLSearchParams(location.search);
-    const kase = ECMIS.getCase(params.get('case') || '2015/2569');
+    const kase = ECMIS.requireCase(params.get('case') || '2015/2569');
+    if (!kase) throw new Error('ECMIS_CASE_NOT_FOUND');
     const role = ECMIS.currentRole();
 
     document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
