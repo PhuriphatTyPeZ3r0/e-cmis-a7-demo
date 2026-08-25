@@ -239,7 +239,6 @@ async function updateCaseStatus(kase, newStatus) {
 
 function isChairActionable(c) {
   return c.status === 'PENDING_CHAIRMAN' ||
-         c.status === 'PENDING_CHAIR_OF' ||
          c.status === 'PENDING_CHAIRMAN_URGENT_72' ||
          c.status === 'PENDING_SIGN_RULING_72' ||
          (c.status === 'PENDING_URGENT' && c.urgent);
@@ -412,7 +411,7 @@ function renderKPICards() {
   const currentSt = document.getElementById('statusFilter')?.value || 'ALL';
 
   if (role.id === 'chairman') {
-    const pendingNormalCount = allCasesCombined.filter(c => c.status === 'PENDING_CHAIRMAN' || c.status === 'PENDING_CHAIR_OF').length;
+    const pendingNormalCount = allCasesCombined.filter(c => c.status === 'PENDING_CHAIRMAN').length;
     const pendingUrgentCount = allCasesCombined.filter(c => c.status === 'PENDING_CHAIRMAN_URGENT_72' || (c.status === 'PENDING_URGENT' && c.urgent)).length;
     const pendingRulingCount = allCasesCombined.filter(c => c.status === 'PENDING_SIGN_RULING_72').length;
 
@@ -526,7 +525,6 @@ const PAGE_FOR = {
   owner:'approval-review.html', section_head:'approval-review.html',
   director:'approval-review.html', deputy:'approval-review.html',
   secgen:'approval-review.html', support_sub:'support-subcommittee.html',
-  chair_office:'chairman-agenda.html',
   chairman:'chairman-agenda.html', subcommittee:'subcommittee-screening.html',
   board_sec:'agenda-registry.html', affairs:'board-resolution.html',
   board:'board-resolution.html'
@@ -581,7 +579,7 @@ function row(c){
   const target = `${page}?case=${encodeURIComponent(c.id)}`;
 
   if (role.id === 'chairman') {
-    const isActionable = (c.status === 'PENDING_CHAIRMAN' || c.status === 'PENDING_CHAIRMAN_URGENT_72' || c.status === 'PENDING_SIGN_RULING_72' || c.status === 'PENDING_CHAIR_OF' || isMyPending(c));
+    const isActionable = (c.status === 'PENDING_CHAIRMAN' || c.status === 'PENDING_CHAIRMAN_URGENT_72' || c.status === 'PENDING_SIGN_RULING_72' || isMyPending(c));
     
     /* ข้อความ badge ต้องตรงกับตัวเลือกใน dropdown "สถานะสั่งการ/บรรจุวาระ" ทุกคำ — คิว all
        ถูกจำกัดเหลือเฉพาะ isChairActionable แล้ว (ดู all= ด้านล่าง) จึงไม่มีสถานะอื่นหลุดเข้ามา
@@ -810,7 +808,6 @@ document.getElementById('btnBulkApprove')?.addEventListener('click', () => {
     if (!res.isConfirmed) return;
     const transitionMap = {
       'PENDING_SECGEN': c => c.urgent ? 'PENDING_CHAIRMAN' : 'IN_SCREENING',
-      'PENDING_CHAIR_OF': () => 'PENDING_CHAIRMAN',
       'PENDING_CHAIRMAN': () => 'IN_SCREENING',
       'IN_SCREENING': () => 'AGENDA_SET',
       'AGENDA_SET': () => 'IN_MEETING',
@@ -862,7 +859,7 @@ function applyFilters() {
     let matchSt = true;
     if (role.id === 'chairman') {
       if (st !== 'ALL') {
-        if (st === 'PENDING_NORMAL') matchSt = (c.status === 'PENDING_CHAIRMAN' || c.status === 'PENDING_CHAIR_OF');
+        if (st === 'PENDING_NORMAL') matchSt = (c.status === 'PENDING_CHAIRMAN');
         else if (st === 'PENDING_URGENT') matchSt = (c.status === 'PENDING_CHAIRMAN_URGENT_72' || (c.status === 'PENDING_URGENT' && c.urgent));
         else if (st === 'PENDING_RULING') matchSt = (c.status === 'PENDING_SIGN_RULING_72');
       }
