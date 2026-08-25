@@ -4708,15 +4708,53 @@ function renderDocToolbar(opts) {
     }).join('') + `</select></div>`;
   }
 
-  // Right Actions
+  // Center Content: Pagination & View Mode
+  let centerHtml = '';
+  if (opts.pagination !== false) {
+    centerHtml = `
+      <div class="doc-toolbar-center">
+        <div class="btn-group btn-group-sm" role="group">
+          <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" id="btnModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น)">
+            <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
+          </button>
+          <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnModeContinuous" title="โหมดดูทุกหน้าเรียงกัน">
+            <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
+          </button>
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="btn-group btn-group-sm" role="group">
+          <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnFirstPage" title="หน้าแรกสุด (หน้า 1)"><i class="fa-solid fa-backward-step"></i></button>
+          <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnPrevPage" title="หน้าก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
+        </div>
+        <div class="d-flex align-items-center gap-1">
+          <span class="small opacity-75">หน้า</span>
+          <input type="number" class="page-input-num" id="pageNumberInput" min="1" value="1">
+          <span class="small opacity-75" id="totalPagesText">/ 1 หน้า</span>
+        </div>
+        <div class="btn-group btn-group-sm" role="group">
+          <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnNextPage" title="หน้าถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+          <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnLastPage" title="หน้าสุดท้าย"><i class="fa-solid fa-forward-step"></i></button>
+        </div>
+      </div>`;
+  }
+
+  // Right Actions: Edit, Zoom, Print, Docx, Collapse
   const showEdit = opts.editable !== false;
   const showPdf = opts.exportPdf !== false && opts.printable !== false;
   const showDocx = opts.exportDocx !== false;
   const showCollapse = opts.collapsible !== false && (!!docWorkspace || !!paneEl);
 
-  let rightHtml = '<div class="d-flex align-items-center gap-1 ms-auto">';
+  let rightHtml = '<div class="doc-toolbar-right">';
   if (showEdit) {
-    rightHtml += `<button type="button" class="btn btn-sm btn-light btn-doc-edit" id="btnDocEdit" title="แก้ไขเนื้อหาเอกสาร (Rich Text)"><i class="fa-solid fa-pen-to-square"></i></button>`;
+    rightHtml += `<button type="button" class="btn btn-sm btn-light btn-doc-edit" id="btnDocEdit" title="แก้ไขเนื้อหาเอกสาร (Rich Text)"><i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไข</span></button>`;
+  }
+  if (opts.pagination !== false) {
+    rightHtml += `
+      <div class="zoom-stepper-box">
+        <button type="button" class="btn btn-link btn-xs p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+        <span class="zoom-level-text" id="zoomLevelText">75%</span>
+        <button type="button" class="btn btn-link btn-xs p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+      </div>`;
   }
   if (showPdf) {
     rightHtml += `<button type="button" class="btn btn-sm btn-light" id="btnDocPdf" title="ดาวน์โหลดไฟล์ PDF / สั่งพิมพ์"><i class="fa-solid fa-print me-1"></i>พิมพ์/PDF</button>`;
@@ -4729,7 +4767,12 @@ function renderDocToolbar(opts) {
   }
   rightHtml += '</div>';
 
-  targetEl.innerHTML = leftHtml + rightHtml;
+  targetEl.innerHTML = `<div class="doc-toolbar-left">${leftHtml}</div>` + centerHtml + rightHtml;
+
+  // Clean up any redundant standalone pagination bars in pane
+  if (paneEl) {
+    paneEl.querySelectorAll('#docPaginationBar, .pagination-toolbar-symmetric').forEach(b => b.remove());
+  }
 
   // Rail button if workspace collapsed
   if (paneEl && showCollapse) {
@@ -4831,57 +4874,9 @@ function renderDocToolbar(opts) {
     if (expBtn) expBtn.addEventListener('click', () => setPaneCollapsed(false));
   }
 
-  // Automatic Symmetrical Pagination & Zoom Stepper Toolbar
+  // Initialize Doc Pagination & Zoom
   let paginationInstance = null;
-  if (opts.pagination !== false && paneEl) {
-    let pagBar = paneEl.querySelector('#docPaginationBar');
-    if (!pagBar) {
-      pagBar = document.createElement('div');
-      pagBar.className = 'pagination-toolbar-symmetric';
-      pagBar.id = 'docPaginationBar';
-      pagBar.innerHTML = `
-        <div class="toolbar-group">
-          <div class="btn-group btn-group-sm" role="group">
-            <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" id="btnModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น)">
-              <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
-            </button>
-            <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnModeContinuous" title="โหมดดูทุกหน้าเรียงกัน">
-              <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
-            </button>
-          </div>
-          <div class="toolbar-divider"></div>
-          <div class="btn-group btn-group-sm" role="group">
-            <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnFirstPage" title="หน้าแรกสุด (หน้า 1)"><i class="fa-solid fa-backward-step"></i></button>
-            <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnPrevPage" title="หน้าก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
-          </div>
-          <div class="d-flex align-items-center gap-1">
-            <span class="small opacity-75">หน้า</span>
-            <input type="number" class="page-input-num" id="pageNumberInput" min="1" value="1">
-            <span class="small opacity-75" id="totalPagesText">/ 1 หน้า</span>
-          </div>
-          <div class="btn-group btn-group-sm" role="group">
-            <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnNextPage" title="หน้าถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
-            <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnLastPage" title="หน้าสุดท้าย"><i class="fa-solid fa-forward-step"></i></button>
-          </div>
-        </div>
-        <div class="toolbar-group ms-auto">
-          <div class="d-flex align-items-center bg-dark rounded px-1" style="background:#06182c !important; border:1px solid #1a3d66; height:26px;">
-            <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
-            <span style="font-size:0.75rem; width:34px; text-align:center; font-weight:600;" id="zoomLevelText">75%</span>
-            <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
-          </div>
-        </div>`;
-
-      const editBar = paneEl.querySelector('.doc-edit-bar');
-      if (editBar) {
-        paneEl.insertBefore(pagBar, editBar);
-      } else if (stageEl) {
-        const stageWrap = stageEl.closest('.ws-paper-stage') || stageEl;
-        paneEl.insertBefore(pagBar, stageWrap);
-      } else {
-        paneEl.appendChild(pagBar);
-      }
-    }
+  if (opts.pagination !== false) {
     paginationInstance = initDocPagination({ stageId: stageId, defaultZoom: 0.75 });
   }
 
@@ -4942,27 +4937,36 @@ function initDocPagination(opts = {}) {
     const el = document.getElementById(stageId);
     if (!el) return;
     el.style.transform = `scale(${zoomLevel})`;
+    el.style.transformOrigin = 'top center';
+
     const zoomText = document.getElementById('zoomLevelText');
     if (zoomText) zoomText.textContent = `${Math.round(zoomLevel * 100)}%`;
 
-    const stage = document.getElementById('docPaperStage') || (el.parentElement && el.parentElement.classList.contains('ws-paper-stage') ? el.parentElement : null);
-    if (stage) {
-      const pages = el.querySelectorAll('.doc-paper, .a4-paper');
-      if (pages.length > 0) {
-        if (viewMode === 'SINGLE') {
-          const activeP = el.querySelector('.doc-paper.active-page, .a4-paper.active-page') || pages[0];
-          const h = activeP ? activeP.offsetHeight : 1123;
-          el.style.height = `${Math.round(h * zoomLevel)}px`;
-        } else {
-          let totalH = 0;
-          pages.forEach(p => { totalH += p.offsetHeight + 18; });
-          el.style.height = `${Math.round(totalH * zoomLevel)}px`;
-        }
+    const pages = el.querySelectorAll('.doc-paper, .a4-paper');
+    if (pages.length > 0) {
+      let baseHeight = 1123;
+      if (viewMode === 'SINGLE') {
+        const activeP = el.querySelector('.doc-paper.active-page, .a4-paper.active-page') || pages[0];
+        baseHeight = activeP ? activeP.offsetHeight : 1123;
+      } else {
+        baseHeight = 0;
+        pages.forEach(p => { baseHeight += p.offsetHeight + 18; });
       }
+
+      // Exact pixel layout margin compensation
+      const scaledHeight = Math.round(baseHeight * zoomLevel);
+      const heightDelta = baseHeight - scaledHeight;
+      el.style.marginBottom = `-${heightDelta}px`;
+
+      const baseWidth = 794;
+      const scaledWidth = Math.round(baseWidth * zoomLevel);
+      const widthDelta = baseWidth - scaledWidth;
+      el.style.marginLeft = `-${Math.round(widthDelta / 2)}px`;
+      el.style.marginRight = `-${Math.round(widthDelta / 2)}px`;
     }
   }
 
-  function updatePaginationUI() {
+  function updatePaginationUI(resetScroll) {
     const el = document.getElementById(stageId);
     if (!el) return;
     const pages = el.querySelectorAll('.doc-paper, .a4-paper');
@@ -4990,46 +4994,52 @@ function initDocPagination(opts = {}) {
       el.classList.add('mode-continuous');
       pages.forEach(p => p.classList.add('active-page'));
     }
+
+    if (resetScroll) {
+      const stage = document.getElementById('docPaperStage') || el.closest('.ws-paper-stage');
+      if (stage) stage.scrollTop = 0;
+    }
+
     applyZoom();
   }
 
   if (typeof $ !== 'undefined') {
     $(document).off('click.docPagination', '#btnModeSingle').on('click.docPagination', '#btnModeSingle', function () {
       viewMode = 'SINGLE';
-      $(this).addClass('btn-primary').removeClass('btn-outline-light');
+      $('#btnModeSingle').addClass('btn-primary').removeClass('btn-outline-light');
       $('#btnModeContinuous').addClass('btn-outline-light').removeClass('btn-primary');
-      updatePaginationUI();
+      updatePaginationUI(true);
     });
 
     $(document).off('click.docPagination', '#btnModeContinuous').on('click.docPagination', '#btnModeContinuous', function () {
       viewMode = 'CONTINUOUS';
-      $(this).addClass('btn-primary').removeClass('btn-outline-light');
+      $('#btnModeContinuous').addClass('btn-primary').removeClass('btn-outline-light');
       $('#btnModeSingle').addClass('btn-outline-light').removeClass('btn-primary');
-      updatePaginationUI();
+      updatePaginationUI(false);
     });
 
     $(document).off('click.docPagination', '#btnFirstPage').on('click.docPagination', '#btnFirstPage', function () {
       currentPage = 1;
-      updatePaginationUI();
+      updatePaginationUI(true);
     });
 
     $(document).off('click.docPagination', '#btnPrevPage').on('click.docPagination', '#btnPrevPage', function () {
       if (currentPage > 1) {
         currentPage--;
-        updatePaginationUI();
+        updatePaginationUI(true);
       }
     });
 
     $(document).off('click.docPagination', '#btnNextPage').on('click.docPagination', '#btnNextPage', function () {
       if (currentPage < totalPages) {
         currentPage++;
-        updatePaginationUI();
+        updatePaginationUI(true);
       }
     });
 
     $(document).off('click.docPagination', '#btnLastPage').on('click.docPagination', '#btnLastPage', function () {
       currentPage = totalPages;
-      updatePaginationUI();
+      updatePaginationUI(true);
     });
 
     $(document).off('change.docPagination', '#pageNumberInput').on('change.docPagination', '#pageNumberInput', function () {
@@ -5037,7 +5047,7 @@ function initDocPagination(opts = {}) {
       if (isNaN(val) || val < 1) val = 1;
       if (val > totalPages) val = totalPages;
       currentPage = val;
-      updatePaginationUI();
+      updatePaginationUI(true);
     });
 
     $(document).off('click.docPagination', '#btnZoomIn').on('click.docPagination', '#btnZoomIn', function () {
@@ -5054,7 +5064,7 @@ function initDocPagination(opts = {}) {
   const inst = {
     update: updatePaginationUI,
     applyZoom: applyZoom,
-    setPage: (p) => { currentPage = p; updatePaginationUI(); },
+    setPage: (p) => { currentPage = p; updatePaginationUI(true); },
     setZoom: (z) => { zoomLevel = z; applyZoom(); }
   };
   globalPaginationMap.set(stageId, inst);
