@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ทดสอบฟอร์มและพรีวิวบันทึกข้อความ (Auto-fill จากไฟล์ Word) | E-CMIS</title>
+  <link rel="icon" type="image/png" href="pacc_logo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="assets/ecmis-app.css" rel="stylesheet">
+  <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
+
+  <style>
+    /* Two-pane layout */
+    .tester-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1199px) {
+      .tester-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Dropzone styling */
+    .upload-dropzone {
+      border: 2px dashed #3B82F6;
+      background: #EFF6FF;
+      border-radius: 12px;
+      padding: 1.5rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .upload-dropzone:hover,
+    .upload-dropzone.dragover {
+      background: #DBEAFE;
+      border-color: #1D4ED8;
+      transform: translateY(-1px);
+    }
+
+    .upload-dropzone input[type="file"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    /* Memo form styling */
+    .field-label {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: #0F2A62;
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .field-hint {
+      font-size: 0.75rem;
+      font-weight: 400;
+      color: #64748B;
+    }
+
+    .memo-textarea {
+      font-family: 'Sarabun', sans-serif;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      resize: vertical;
+      min-height: 75px;
+    }
+
+    /* A4 Paper simulation styling */
+    .preview-sticky-wrap {
+      position: sticky;
+      top: 75px;
+      z-index: 10;
+    }
+
+    .a4-paper-container {
+      background: #525659;
+      padding: 24px;
+      border-radius: 12px;
+      overflow-y: auto;
+      max-height: calc(100vh - 140px);
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+
+    .a4-sheet {
+      background: #FFFFFF;
+      width: 100%;
+      max-width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 22mm 20mm 25mm 25mm;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      font-family: 'TH Sarabun IT๙', 'TH Sarabun New', 'Sarabun', serif;
+      font-size: 16pt;
+      line-height: 1.35;
+      color: #000000;
+      position: relative;
+      box-sizing: border-box;
+      transform-origin: top center;
+      transition: transform 0.2s ease;
+    }
+
+    /* Thai Official Memo Header Typography */
+    .memo-header-title {
+      font-size: 29pt;
+      font-weight: bold;
+      text-align: center;
+      line-height: 1.1;
+      margin-top: 10px;
+      margin-bottom: 24px;
+    }
+
+    .memo-row {
+      display: flex;
+      margin-bottom: 6px;
+      align-items: baseline;
+      font-size: 16pt;
+    }
+
+    .memo-lbl {
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .memo-val {
+      flex: 1;
+      border-bottom: 1px dotted transparent;
+      padding-left: 6px;
+    }
+
+    .memo-dotted-placeholder {
+      color: #94A3B8;
+      font-style: italic;
+      border-bottom: 1px dotted #CBD5E1;
+      word-break: break-all;
+    }
+
+    .memo-indent-body {
+      text-indent: 2.5cm;
+      text-align: justify;
+      margin-top: 6px;
+      margin-bottom: 8px;
+    }
+
+    .memo-section-title {
+      font-weight: bold;
+      margin-top: 14px;
+      margin-bottom: 4px;
+      text-indent: 1.5cm;
+    }
+
+    .memo-highlight-filled {
+      background-color: #FEF9C3;
+      border-radius: 2px;
+      padding: 0 2px;
+      transition: background 0.3s;
+    }
+
+    .memo-highlight-filled.no-hl {
+      background-color: transparent !important;
+    }
+
+    /* Printing rules */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+
+      .a4-sheet,
+      .a4-sheet * {
+        visibility: visible;
+      }
+
+      .a4-sheet {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20mm 15mm 20mm 20mm;
+        box-shadow: none;
+      }
+
+      .preview-sticky-wrap,
+      .a4-paper-container {
+        padding: 0;
+        background: transparent;
+        box-shadow: none;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="app-main">
+
+    <!-- Page Header -->
+    <div class="page-head d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+      <div>
+        <h1><i class="fa-solid fa-file-word me-2 text-primary"></i><span>ทดสอบระบบแนบไฟล์ Word & พรีวิวบันทึกข้อความ (Auto-fill)</span></h1>
+      </div>
+      <div class="d-flex align-items-center gap-2 ms-auto">
+        <a href="approval-review.html" class="btn btn-sm btn-outline-secondary">
+          <i class="fa-solid fa-arrow-left me-1"></i>กลับหน้าระบบ
+        </a>
+        <span class="badge bg-primary px-3 py-2">
+          <i class="fa-solid fa-flask me-1"></i>Exam.doc Interactive Prototype
+        </span>
+      </div>
+    </div>
+
+    <!-- Main 2-Pane Workspace -->
+    <div class="tester-layout">
+
+      <!-- LEFT PANE: Form Controls & Word Attachment -->
+      <div class="left-pane">
+
+        <!-- 1. Attach File Card -->
+        <div class="card card-ecmis mb-3">
+          <div class="card-header d-flex align-items-center justify-content-between">
+            <span class="fw-bold text-navy"><i class="fa-solid fa-paperclip me-2 text-primary"></i>1. แนบไฟล์ Word เพื่อดึงข้อมูลอัตโนมัติ (Auto-Extract)</span>
+            <span class="badge bg-info text-dark" id="parseStatusBadge">พร้อมรับไฟล์</span>
+          </div>
+          <div class="card-body">
+            <!-- Dropzone -->
+            <div class="upload-dropzone mb-3" id="dropzone">
+              <input type="file" id="wordFileInput" accept=".docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword">
+              <div class="mb-2">
+                <i class="fa-solid fa-cloud-arrow-up fa-2x text-primary"></i>
+              </div>
+              <div class="fw-bold text-dark mb-1">ลากไฟล์ Word (.docx / .doc) มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</div>
+              <div class="small text-muted">ระบบจะอ่านเนื้อหาข้างในและนำไปกรอกลงในช่อง ๑ - ๗ และส่วนหัวโดยอัตโนมัติ</div>
+            </div>
+
+            <!-- Quick Action Buttons -->
+            <div class="d-flex align-items-center flex-wrap gap-2">
+              <button type="button" class="btn btn-sm btn-primary px-3" id="btnLoadExamSample">
+                <i class="fa-solid fa-wand-magic-sparkles me-1"></i>โหลดตัวอย่างจาก exam.doc
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary px-3" id="btnClearForm">
+                <i class="fa-solid fa-eraser me-1"></i>ล้างข้อมูลฟอร์ม
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-success px-3 ms-auto" id="btnCopyJson">
+                <i class="fa-solid fa-copy me-1"></i>คัดลอกข้อมูล
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Memo Header Form Card -->
+        <div class="card card-ecmis mb-3">
+          <div class="card-header">
+            <span class="fw-bold text-navy"><i class="fa-solid fa-heading me-2 text-primary"></i>2. ข้อมูลส่วนหัวบันทึกข้อความ (Memo Header)</span>
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-12">
+                <label class="field-label">
+                  <span>ส่วนราชการ</span>
+                  <span class="field-hint">เช่น กองกฎหมาย สำนักงาน ป.ป.ท. โทร. ๐ ๒๕๐๔ ๕๔๐๐ ต่อ ...</span>
+                </label>
+                <input type="text" class="form-control form-control-sm reactive-field" id="f_agency" placeholder="กองกฎหมาย สำนักงาน ป.ป.ท. โทร. ๐ ๒๕๐๔ ๕๔๐๐ ต่อ ๑๕๓๐">
+              </div>
+              <div class="col-md-6">
+                <label class="field-label">
+                  <span>ที่ (เลขที่หนังสือ)</span>
+                  <span class="field-hint">เช่น ปท ๐๐๐๘/</span>
+                </label>
+                <input type="text" class="form-control form-control-sm reactive-field" id="f_doc_no" placeholder="ปท ๐๐๐๘/๒๔๕">
+              </div>
+              <div class="col-md-6">
+                <label class="field-label">
+                  <span>วันที่</span>
+                  <span class="field-hint">เช่น ๒๕ สิงหาคม ๒๕๖๙</span>
+                </label>
+                <input type="text" class="form-control form-control-sm reactive-field" id="f_doc_date" placeholder="๒๕ สิงหาคม ๒๕๖๙">
+              </div>
+              <div class="col-12">
+                <label class="field-label">
+                  <span>เรื่อง</span>
+                </label>
+                <input type="text" class="form-control form-control-sm reactive-field fw-medium" id="f_subject" placeholder="รายงานผลการพิจารณากลั่นกรองสำนวนคดี...">
+              </div>
+              <div class="col-12">
+                <label class="field-label">
+                  <span>เรียน</span>
+                </label>
+                <input type="text" class="form-control form-control-sm reactive-field" id="f_to" value="เลขาธิการคณะกรรมการ ป.ป.ท.  (ผ่าน ผอ.กกม.)" placeholder="เลขาธิการคณะกรรมการ ป.ป.ท.  (ผ่าน ผอ.กกม.)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Memo 7 Main Sections Form Card -->
+        <div class="card card-ecmis mb-4">
+          <div class="card-header d-flex align-items-center justify-content-between">
+            <span class="fw-bold text-navy"><i class="fa-solid fa-list-check me-2 text-primary"></i>3. เนื้อหาบันทึกข้อความ ๗ ข้อ (Section Fields)</span>
+            <span class="small text-muted">พิมพ์แก้ไขได้ ขวาจะอัปเดตทันที</span>
+          </div>
+          <div class="card-body p-3">
+
+            <!-- Section 1 -->
+            <div class="mb-3">
+              <label class="field-label" for="f_sec1">
+                <span>๑. เรื่องเดิม</span>
+                <span class="badge bg-light text-dark border">ข้อ ๑</span>
+              </label>
+              <textarea class="form-control memo-textarea reactive-field" id="f_sec1" rows="2" placeholder="กรอกเนื้อหาเรื่องเดิม..."></textarea>
+            </div>
+
+            <!-- Section 2 -->
+            <div class="mb-3">
+              <label class="field-label" for="f_sec2">
+                <span>๒. ข้อเท็จจริง (มติคณะอนุกรรมการกลั่นกรองฯ)</span>
+                <span class="badge bg-light text-dark border">ข้อ ๒</span>
+              </label>
+              <textarea class="form-control memo-textarea reactive-field" id="f_sec2" rows="3" placeholder="ประชุมคณะอนุกรรมการพิจารณากลั่นกรองฯ ได้มีมติที่ประชุม ดังนี้..."></textarea>
+            </div>
+
+            <!-- Section 3 -->
+            <div class="mb-3">
+              <label class="field-label" for="f_sec3">
+                <span>๓. ข้อกฎหมาย ระเบียบ ประกาศ และคำสั่ง</span>
+                <span class="badge bg-light text-dark border">ข้อ ๓</span>
+              </label>
+              <textarea class="form-control memo-textarea reactive-field" id="f_sec3" rows="3" placeholder="กรอกข้อกฎหมายและระเบียบที่เกี่ยวข้อง..."></textarea>
+            </div>
+
+            <!-- Section 4 -->
+            <div class="mb-3">
+              <label class="field-label" for="f_sec4">
+                <span>๔. ข้อพิจารณา</span>
+                <span class="badge bg-light text-dark border">ข้อ ๔</span>
+              </label>
+              <textarea class="form-control memo-textarea reactive-field" id="f_sec4" rows="4" placeholder="กรอกข้อพิจารณาและการวิเคราะห์..."></textarea>
+            </div>
+
+            <!-- Section 5 -->
+            <div class="mb-3">
+              <label class="field-label" for="f_sec5">
+                <span>๕. ความเห็นผู้อำนวยการกองกฎหมาย</span>
+                <span class="badge bg-light text-dark border">ข้อ ๕</span>
+              </label>
+              <textarea class="form-control memo-textarea reactive-field" id="f_sec5" rows="2" placeholder="กรอกความเห็น ผอ.กกม...."></textarea>
+            </div>
+
+            <!-- Section 6 -->
+            <div class="mb-3">
+              <label class="field-label" for="f_sec6">
+                <span>๖. ความเห็นรองเลขาธิการคณะกรรมการ ป.ป.ท.</span>
+                <span class="badge bg-light text-dark border">ข้อ ๖</span>
+              </label>
+              <textarea class="form-control memo-textarea reactive-field" id="f_sec6" rows="2" placeholder="กรอกความเห็น รองเลขาธิการฯ..."></textarea>
+            </div>
+
+            <!-- Section 7 -->
+            <div class="mb-3">
+              <label class="field-label" for="f_sec7">
+                <span>๗. ความเห็นเลขาธิการคณะกรรมการ ป.ป.ท.</span>
+                <span class="badge bg-light text-dark border">ข้อ ๗</span>
+              </label>
+              <textarea class="form-control memo-textarea reactive-field" id="f_sec7" rows="2" placeholder="กรอกความเห็น/คำสั่ง เลขาธิการฯ..."></textarea>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT PANE: Live A4 Document Preview -->
+      <div class="right-pane">
+        <div class="preview-sticky-wrap">
+
+          <!-- Preview Toolbar -->
+          <div class="card card-ecmis mb-2 shadow-sm">
+            <div class="card-body p-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div class="d-flex align-items-center gap-1">
+                <span class="fw-bold small text-navy me-2"><i class="fa-solid fa-file-lines me-1"></i>พรีวิวเอกสาร A4</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary px-2" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                <span class="small fw-semibold px-1" id="zoomLevelText">100%</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary px-2" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                <button type="button" class="btn btn-sm btn-outline-secondary px-2" id="btnZoomReset" title="ขนาดมาตรฐาน (100%)"><i class="fa-solid fa-rotate-left"></i></button>
+              </div>
+
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-warning text-dark px-2" id="btnToggleHighlight" title="สลับเปิด/ปิด ไฮไลต์ข้อความที่กรอก">
+                  <i class="fa-solid fa-highlighter me-1"></i>ไฮไลต์
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary px-2" id="btnPrintA4">
+                  <i class="fa-solid fa-print me-1"></i>พิมพ์ A4 / PDF
+                </button>
+                <button type="button" class="btn btn-sm btn-success px-2" id="btnExportWord">
+                  <i class="fa-solid fa-download me-1"></i>ดาวน์โหลด Word
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- A4 Paper Viewport -->
+          <div class="a4-paper-container">
+            <div class="a4-sheet" id="a4Sheet">
+
+              <!-- Official Garuda Emblem & Title -->
+              <div style="position:relative; min-height:60px;" class="mb-2">
+                <img src="assets/doc_logo.jpg" alt="ตราครุฑ" style="position:absolute; top:0; left:0; width:52px; height:auto;">
+                <div class="memo-header-title">บันทึกข้อความ</div>
+              </div>
+
+              <!-- Header Rows -->
+              <div class="memo-row">
+                <div class="memo-lbl">ส่วนราชการ</div>
+                <div class="memo-val" id="pv_agency"></div>
+              </div>
+
+              <div class="d-flex justify-content-between align-items-baseline mb-1">
+                <div class="memo-row" style="width:48%;">
+                  <div class="memo-lbl">ที่</div>
+                  <div class="memo-val" id="pv_doc_no"></div>
+                </div>
+                <div class="memo-row" style="width:48%;">
+                  <div class="memo-lbl">วันที่</div>
+                  <div class="memo-val" id="pv_doc_date"></div>
+                </div>
+              </div>
+
+              <div class="memo-row">
+                <div class="memo-lbl">เรื่อง</div>
+                <div class="memo-val fw-bold" id="pv_subject"></div>
+              </div>
+
+              <div class="memo-row mb-3">
+                <div class="memo-lbl">เรียน</div>
+                <div class="memo-val" id="pv_to"></div>
+              </div>
+
+              <!-- Divider line -->
+              <div style="border-top:1.5px solid #000; margin: 10px 0 16px 0;"></div>
+
+              <!-- Section 1 -->
+              <div class="memo-section-title">๑. เรื่องเดิม</div>
+              <div class="memo-indent-body" id="pv_sec1"></div>
+
+              <!-- Section 2 -->
+              <div class="memo-section-title">๒. ข้อเท็จจริง</div>
+              <div class="memo-indent-body">
+                <span>ประชุมคณะอนุกรรมการพิจารณากลั่นกรองฯ ได้มีมติที่ประชุม ดังนี้</span>
+                <div id="pv_sec2" style="margin-top:4px;"></div>
+              </div>
+
+              <!-- Section 3 -->
+              <div class="memo-section-title">๓. ข้อกฎหมาย ระเบียบ ประกาศ และคำสั่ง</div>
+              <div class="memo-indent-body" id="pv_sec3"></div>
+
+              <!-- Section 4 -->
+              <div class="memo-section-title">๔. ข้อพิจารณา</div>
+              <div class="memo-indent-body" id="pv_sec4"></div>
+
+              <!-- Section 5 -->
+              <div class="memo-section-title">๕. ความเห็นผู้อำนวยการกองกฎหมาย</div>
+              <div class="memo-indent-body" id="pv_sec5"></div>
+
+              <!-- Section 6 -->
+              <div class="memo-section-title">๖. ความเห็นรองเลขาธิการคณะกรรมการ ป.ป.ท.</div>
+              <div class="memo-indent-body" id="pv_sec6"></div>
+
+              <!-- Section 7 -->
+              <div class="memo-section-title">๗. ความเห็นเลขาธิการคณะกรรมการ ป.ป.ท.</div>
+              <div class="memo-indent-body" id="pv_sec7"></div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- External Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Mammoth.js for client-side Word parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
+  <script src="assets/ecmis-app.js"></script>
+
+  <script>
+    // Initialize ECMIS Shell
+    ECMIS.renderShell('doc-memo-tester.html');
+
+    // Default sample data extracted directly from exam.doc structure
+    const EXAM_SAMPLE_DATA = {
+      agency: 'กองกฎหมาย สำนักงาน ป.ป.ท. โทร. ๐ ๒๕๐๔ ๕๔๐๐ ต่อ ๑๕๓๐',
+      doc_no: 'ปท ๐๐๐๘/๒๔๕',
+      doc_date: '๒๕ สิงหาคม ๒๕๖๙',
+      subject: 'รายงานผลการพิจารณากลั่นกรองสำนวนคดีและการเสนอความเห็นตามขั้นตอน',
+      to: 'เลขาธิการคณะกรรมการ ป.ป.ท.  (ผ่าน ผอ.กกม.)',
+      sec1: 'ตามที่สำนักงาน ป.ป.ท. ได้รับเรื่องกล่าวหาเจ้าหน้าที่ของรัฐกระทำการทุจริตในภาครัฐ และได้มอบหมายให้คณะพนักงานไต่สวนดำเนินการรวบรวมพยานหลักฐานตามระเบียบที่เกี่ยวข้อง โดยได้ส่งสำนวนรายงานการไต่สวนเบื้องต้นมาเพื่อพิจารณากลั่นกรองตามขั้นตอน',
+      sec2: 'เห็นชอบตามรายงานผลการไต่สวนข้อเท็จจริง โดยมีมติให้เสนอเรื่องต่อคณะกรรมการ ป.ป.ท. เพื่อพิจารณาวินิจฉัยชี้มูลความผิดทางวินัยและอาญาตามพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม',
+      sec3: 'พระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ มาตรา ๑๙, มาตรา ๒๔, มาตรา ๓๓ และระเบียบคณะกรรมการ ป.ป.ท. ว่าด้วยการไต่สวนข้อเท็จจริง พ.ศ. ๒๕๖๒ ข้อ ๔๕ และ ข้อ ๔๘',
+      sec4: 'กองกฎหมายได้ตรวจพิจารณาข้อเท็จจริงและข้อกฎหมายแล้ว เห็นว่า พยานหลักฐานในสำนวนมีน้ำหนักเพียงพอรับฟังได้ว่าผู้ถูกกล่าวหามีพฤติการณ์กระทำความผิดจริงตามข้อกล่าวหา การดำเนินการของคณะอนุกรรมการกลั่นกรองฯ เป็นไปโดยชอบด้วยกฎหมาย จึงเห็นควรเสนอเลขาธิการฯ เพื่อโปรดพิจารณาลงนามและบรรจุเข้าสู่วาระการประชุมคณะกรรมการ ป.ป.ท. ต่อไป',
+      sec5: 'เห็นชอบตามข้อพิจารณาของเจ้าหน้าที่ เห็นควรเสนอรองเลขาธิการฯ เพื่อโปรดพิจารณา',
+      sec6: 'เห็นชอบตามความเห็นของ ผอ.กกม. เสนอเลขาธิการคณะกรรมการ ป.ป.ท. เพื่อโปรดพิจารณาลงนาม',
+      sec7: 'เห็นชอบ ดำเนินการตามระเบียบและบรรจุเข้าสู่วาระการประชุมคณะกรรมการ ป.ป.ท. ต่อไป'
+    };
+
+    let highlightEnabled = true;
+    let currentZoom = 1.0;
+
+    // Helper: generate dotted placeholder
+    function dotted(len = 65) {
+      return `<span class="memo-dotted-placeholder">${'.'.repeat(len)}</span>`;
+    }
+
+    // Reactive Render Function
+    function updatePreview() {
+      const getVal = id => ($('#' + id).val() || '').trim();
+
+      const agency = getVal('f_agency');
+      const docNo = getVal('f_doc_no');
+      const docDate = getVal('f_doc_date');
+      const subject = getVal('f_subject');
+      const toVal = getVal('f_to');
+
+      const s1 = getVal('f_sec1');
+      const s2 = getVal('f_sec2');
+      const s3 = getVal('f_sec3');
+      const s4 = getVal('f_sec4');
+      const s5 = getVal('f_sec5');
+      const s6 = getVal('f_sec6');
+      const s7 = getVal('f_sec7');
+
+      const wrapVal = (val, defaultDotsLen) => {
+        if (!val) return dotted(defaultDotsLen);
+        const hlClass = highlightEnabled ? 'memo-highlight-filled' : 'memo-highlight-filled no-hl';
+        return `<span class="${hlClass}">${val.replace(/\n/g, '<br>')}</span>`;
+      };
+
+      $('#pv_agency').html(wrapVal(agency, 60));
+      $('#pv_doc_no').html(wrapVal(docNo, 25));
+      $('#pv_doc_date').html(wrapVal(docDate, 25));
+      $('#pv_subject').html(wrapVal(subject, 65));
+      $('#pv_to').html(wrapVal(toVal, 50));
+
+      $('#pv_sec1').html(wrapVal(s1, 140));
+      $('#pv_sec2').html(wrapVal(s2, 140));
+      $('#pv_sec3').html(wrapVal(s3, 140));
+      $('#pv_sec4').html(wrapVal(s4, 180));
+      $('#pv_sec5').html(wrapVal(s5, 100));
+      $('#pv_sec6').html(wrapVal(s6, 100));
+      $('#pv_sec7').html(wrapVal(s7, 100));
+    }
+
+    // Populate Form fields with data object
+    function setFormData(data) {
+      if (data.agency !== undefined) $('#f_agency').val(data.agency);
+      if (data.doc_no !== undefined) $('#f_doc_no').val(data.doc_no);
+      if (data.doc_date !== undefined) $('#f_doc_date').val(data.doc_date);
+      if (data.subject !== undefined) $('#f_subject').val(data.subject);
+      if (data.to !== undefined) $('#f_to').val(data.to);
+
+      if (data.sec1 !== undefined) $('#f_sec1').val(data.sec1);
+      if (data.sec2 !== undefined) $('#f_sec2').val(data.sec2);
+      if (data.sec3 !== undefined) $('#f_sec3').val(data.sec3);
+      if (data.sec4 !== undefined) $('#f_sec4').val(data.sec4);
+      if (data.sec5 !== undefined) $('#f_sec5').val(data.sec5);
+      if (data.sec6 !== undefined) $('#f_sec6').val(data.sec6);
+      if (data.sec7 !== undefined) $('#f_sec7').val(data.sec7);
+
+      updatePreview();
+    }
+
+    // Smart Parser for Thai Word Memo text
+    function parseMemoText(fullText) {
+      const cleanDots = str => (str || '').replace(/\.{3,}/g, '').trim();
+
+      const result = {};
+
+      // Match Header Fields
+      const agencyMatch = fullText.match(/ส่วนราชการ\s*[:\s]*([^\n\r]+)/);
+      if (agencyMatch && cleanDots(agencyMatch[1])) result.agency = cleanDots(agencyMatch[1]);
+
+      const docNoMatch = fullText.match(/ที่\s*[:\s]*([^\s\t\n]+)/);
+      if (docNoMatch && cleanDots(docNoMatch[1])) result.doc_no = cleanDots(docNoMatch[1]);
+
+      const dateMatch = fullText.match(/วันที่\s*[:\s]*([^\n\r]+)/);
+      if (dateMatch && cleanDots(dateMatch[1])) result.doc_date = cleanDots(dateMatch[1]);
+
+      const subjectMatch = fullText.match(/เรื่อง\s*[:\s]*([^\n\r]+)/);
+      if (subjectMatch && cleanDots(subjectMatch[1])) result.subject = cleanDots(subjectMatch[1]);
+
+      const toMatch = fullText.match(/เรียน\s*[:\s]*([^\n\r]+)/);
+      if (toMatch && cleanDots(toMatch[1])) result.to = cleanDots(toMatch[1]);
+
+      // Regex patterns for Thai sections ๑ - ๗
+      const patterns = [
+        { key: 'sec1', regex: /(?:๑\.|1\.)\s*เรื่องเดิม\s*[\r\n\s]*(.*?)(?=(?:๒\.|2\.)\s*ข้อเท็จจริง|\Z)/s },
+        { key: 'sec2', regex: /(?:๒\.|2\.)\s*ข้อเท็จจริง\s*(?:.*?มติที่ประชุม ดังนี้)?\s*[\r\n\s]*(.*?)(?=(?:๓\.|3\.)\s*ข้อกฎหมาย|\Z)/s },
+        { key: 'sec3', regex: /(?:๓\.|3\.)\s*ข้อกฎหมาย.*?\s*[\r\n\s]*(.*?)(?=(?:๔\.|4\.)\s*ข้อพิจารณา|\Z)/s },
+        { key: 'sec4', regex: /(?:๔\.|4\.)\s*ข้อพิจารณา\s*[\r\n\s]*(.*?)(?=(?:๕\.|5\.)\s*ความเห็นผู้อำนวยการ|\Z)/s },
+        { key: 'sec5', regex: /(?:๕\.|5\.)\s*ความเห็นผู้อำนวยการ.*?\s*[\r\n\s]*(.*?)(?=(?:๖\.|6\.)\s*ความเห็นรองเลขาธิการ|\Z)/s },
+        { key: 'sec6', regex: /(?:๖\.|6\.)\s*ความเห็นรองเลขาธิการ.*?\s*[\r\n\s]*(.*?)(?=(?:๗\.|7\.)\s*ความเห็นเลขาธิการ|\Z)/s },
+        { key: 'sec7', regex: /(?:๗\.|7\.)\s*ความเห็นเลขาธิการ.*?\s*[\r\n\s]*(.*?)(?=\Z)/s }
+      ];
+
+      let foundSections = 0;
+      patterns.forEach(p => {
+        const m = fullText.match(p.regex);
+        if (m && m[1]) {
+          const val = cleanDots(m[1]);
+          if (val) {
+            result[p.key] = val;
+            foundSections++;
+          }
+        }
+      });
+
+      return { result, foundSections };
+    }
+
+    // Process Word File using Mammoth
+    function handleWordFile(file) {
+      if (!file) return;
+
+      $('#parseStatusBadge').attr('class', 'badge bg-warning text-dark').html('<i class="fa-solid fa-spinner fa-spin me-1"></i>กำลังอ่านไฟล์...');
+
+      const reader = new FileReader();
+      reader.onload = function (loadEvent) {
+        const arrayBuffer = loadEvent.target.result;
+
+        // Try mammoth extraction (.docx)
+        if (window.mammoth) {
+          mammoth.extractRawText({ arrayBuffer: arrayBuffer })
+            .then(function (res) {
+              const rawText = res.value;
+              const { result, foundSections } = parseMemoText(rawText);
+
+              if (Object.keys(result).length > 0) {
+                setFormData(result);
+                $('#parseStatusBadge').attr('class', 'badge bg-success').html(`<i class="fa-solid fa-check me-1"></i>นำเข้าข้อมูลสำเร็จ (${Object.keys(result).length} ฟิลด์)`);
+                Swal.fire({
+                  icon: 'success',
+                  title: 'นำเข้าข้อมูลจากไฟล์สำเร็จ!',
+                  html: `พบข้อมูลทั้งหมด <b>${Object.keys(result).length}</b> รายการ และนำไปเติมลงในช่องฟอร์มพร้อมพรีวิวทันที`,
+                  confirmButtonText: 'ตกลง',
+                  confirmButtonColor: '#0F2A62'
+                });
+              } else {
+                $('#parseStatusBadge').attr('class', 'badge bg-info text-dark').text('อ่านไฟล์แล้ว — โครงสร้างไม่ตรง');
+                Swal.fire({
+                  icon: 'info',
+                  title: 'อ่านไฟล์เรียบร้อย',
+                  text: 'ระบบอ่านไฟล์แล้ว แต่โครงสร้างหัวข้อในไฟล์เป็นรูปแบบเฉพาะ ต้องการให้โหลดข้อมูลตัวอย่างจาก exam.doc แทนหรือไม่?',
+                  showCancelButton: true,
+                  confirmButtonText: 'โหลดตัวอย่าง exam.doc',
+                  cancelButtonText: 'ยกเลิก',
+                  confirmButtonColor: '#0F2A62'
+                }).then(r => {
+                  if (r.isConfirmed) setFormData(EXAM_SAMPLE_DATA);
+                });
+              }
+            })
+            .catch(function (err) {
+              // Binary .doc fallback
+              $('#parseStatusBadge').attr('class', 'badge bg-secondary').text('ไฟล์ .doc รูปแบบเก่า');
+              Swal.fire({
+                icon: 'question',
+                title: 'ไฟล์ Word (.doc) รูปแบบดั้งเดิม',
+                text: 'ไฟล์นี้เป็นเอกสาร Word 97-2003 Binary (.doc) ต้องการให้ระบบโหลดโครงสร้างข้อความและช่องกรอกที่ถอดรหัสจาก exam.doc เข้าสู่ฟอร์มหรือไม่?',
+                showCancelButton: true,
+                confirmButtonText: 'โหลดข้อมูล exam.doc',
+                cancelButtonText: 'ปิด',
+                confirmButtonColor: '#0F2A62'
+              }).then(r => {
+                if (r.isConfirmed) {
+                  setFormData(EXAM_SAMPLE_DATA);
+                  $('#parseStatusBadge').attr('class', 'badge bg-success').html('<i class="fa-solid fa-check me-1"></i>โหลด exam.doc สำเร็จ');
+                }
+              });
+            });
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+
+    $(document).ready(function () {
+      // Initial render with empty dotted placeholders
+      updatePreview();
+
+      // Input event listener for real-time reactivity
+      $('.reactive-field').on('input', updatePreview);
+
+      // Quick Action: Load Sample
+      $('#btnLoadExamSample').on('click', function () {
+        setFormData(EXAM_SAMPLE_DATA);
+        $('#parseStatusBadge').attr('class', 'badge bg-success').html('<i class="fa-solid fa-check me-1"></i>โหลดข้อมูลตัวอย่าง exam.doc แล้ว');
+        Swal.fire({
+          icon: 'success',
+          title: 'โหลดข้อมูลตัวอย่างเรียบร้อย',
+          text: 'เติมข้อมูลจากเอกสาร exam.doc ครบทั้ง ๗ ข้อแล้ว สามารถทดลองแก้ไขข้อความเพื่อดูการเปลี่ยนแปลงแบบเรียลไทม์ได้ทันที',
+          timer: 1800,
+          showConfirmButton: false
+        });
+      });
+
+      // Quick Action: Clear Form
+      $('#btnClearForm').on('click', function () {
+        Swal.fire({
+          title: 'ต้องการล้างข้อมูลทั้งหมด?',
+          text: 'ข้อมูลในช่องกรอกจะถูกล้าง และพรีวิวจะกลับเป็นเส้นจุดประว่างเปล่า',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'ยืนยันล้างข้อมูล',
+          cancelButtonText: 'ยกเลิก',
+          confirmButtonColor: '#d33'
+        }).then(res => {
+          if (res.isConfirmed) {
+            $('.reactive-field').val('');
+            $('#f_to').val('เลขาธิการคณะกรรมการ ป.ป.ท.  (ผ่าน ผอ.กกม.)');
+            updatePreview();
+            $('#parseStatusBadge').attr('class', 'badge bg-info text-dark').text('พร้อมรับไฟล์');
+          }
+        });
+      });
+
+      // Quick Action: Copy Data
+      $('#btnCopyJson').on('click', function () {
+        const data = {
+          agency: $('#f_agency').val(),
+          doc_no: $('#f_doc_no').val(),
+          doc_date: $('#f_doc_date').val(),
+          subject: $('#f_subject').val(),
+          to: $('#f_to').val(),
+          sec1: $('#f_sec1').val(),
+          sec2: $('#f_sec2').val(),
+          sec3: $('#f_sec3').val(),
+          sec4: $('#f_sec4').val(),
+          sec5: $('#f_sec5').val(),
+          sec6: $('#f_sec6').val(),
+          sec7: $('#f_sec7').val()
+        };
+        navigator.clipboard.writeText(JSON.stringify(data, null, 2)).then(() => {
+          Swal.fire({ icon: 'success', title: 'คัดลอกข้อมูลสำเร็จ!', timer: 1200, showConfirmButton: false });
+        });
+      });
+
+      // File Input Change
+      $('#wordFileInput').on('change', function (e) {
+        if (e.target.files && e.target.files[0]) {
+          handleWordFile(e.target.files[0]);
+        }
+      });
+
+      // Drag and Drop
+      const dropzone = document.getElementById('dropzone');
+      dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+      dropzone.addEventListener('dragleave', e => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+      dropzone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          handleWordFile(e.dataTransfer.files[0]);
+        }
+      });
+
+      // Zoom Controls
+      $('#btnZoomIn').on('click', function () {
+        currentZoom = Math.min(1.4, currentZoom + 0.1);
+        applyZoom();
+      });
+      $('#btnZoomOut').on('click', function () {
+        currentZoom = Math.max(0.6, currentZoom - 0.1);
+        applyZoom();
+      });
+      $('#btnZoomReset').on('click', function () {
+        currentZoom = 1.0;
+        applyZoom();
+      });
+
+      function applyZoom() {
+        $('#a4Sheet').css('transform', `scale(${currentZoom})`);
+        $('#zoomLevelText').text(`${Math.round(currentZoom * 100)}%`);
+      }
+
+      // Highlight Toggle
+      $('#btnToggleHighlight').on('click', function () {
+        highlightEnabled = !highlightEnabled;
+        $(this).toggleClass('btn-warning btn-outline-warning');
+        updatePreview();
+      });
+
+      // Print / PDF
+      $('#btnPrintA4').on('click', function () {
+        window.print();
+      });
+
+      // Export Word
+      $('#btnExportWord').on('click', function () {
+        const sheetHtml = document.getElementById('a4Sheet').innerHTML;
+        const fullDocHtml = `
+          <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+          <head>
+            <meta charset='utf-8'>
+            <title>บันทึกข้อความ</title>
+            <style>
+              body { font-family: 'TH Sarabun PSK', 'TH Sarabun New', sans-serif; font-size: 16pt; }
+              .memo-header-title { font-size: 29pt; font-weight: bold; text-align: center; }
+              .memo-row { display: flex; margin-bottom: 6px; }
+              .memo-lbl { font-weight: bold; }
+              .memo-indent-body { text-indent: 2.5cm; margin-bottom: 8px; }
+              .memo-section-title { font-weight: bold; text-indent: 1.5cm; margin-top: 10px; }
+            </style>
+          </head>
+          <body>
+            ${sheetHtml}
+          </body>
+          </html>
+        `;
+
+        const blob = new Blob(['\ufeff' + fullDocHtml], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `บันทึกข้อความ_${($('#f_doc_no').val() || 'draft').replace(/[\/\\:*?"<>|]/g, '_')}.doc`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    });
+  </script>
+</body>
+
+</html>
