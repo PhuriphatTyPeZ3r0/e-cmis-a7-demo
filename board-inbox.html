@@ -117,11 +117,8 @@
         </div>
         <div class="col-lg-4 col-md-5 text-md-end">
           <div class="d-flex flex-column flex-sm-row gap-2 justify-content-md-end">
-            <a href="board-room.html?meet=38" class="btn btn-gold px-3 py-2 shadow">
-              <i class="fa-solid fa-door-open me-1"></i>เข้าห้องประชุม & ลงมติ
-            </a>
-            <a href="agenda-meeting-docs.html?meet=38" target="_blank" class="btn btn-outline-light px-3 py-2">
-              <i class="fa-solid fa-file-lines me-1"></i>ระเบียบวาระ (รวม)
+            <a href="agenda-meeting-docs.html?meet=38" target="_blank" class="btn btn-gold px-3 py-2 shadow">
+              <i class="fa-solid fa-book-open-reader me-1"></i>อ่านระเบียบวาระและเอกสาร
             </a>
           </div>
         </div>
@@ -275,13 +272,13 @@
     function renderKPI() {
       const total = BOARD_MEETINGS.length;
       const reading = BOARD_MEETINGS.filter(m => m.status === 'ACTIVE_READING').length;
-      const live = BOARD_MEETINGS.filter(m => m.status === 'LIVE').length;
+      const scheduled = BOARD_MEETINGS.filter(m => m.status === 'SCHEDULED').length;
       const closed = BOARD_MEETINGS.filter(m => m.status === 'CLOSED').length;
 
       const kpis = [
         { id: 'ALL', n: total, l: 'รอบการประชุมทั้งหมด', i: 'fa-calendar-days', c: '#0F2A62' },
         { id: 'ACTIVE_READING', n: reading, l: 'เปิดให้อ่านวาระล่วงหน้า', i: 'fa-book-open-reader', c: '#059669' },
-        { id: 'LIVE', n: live, l: 'อยู่ระหว่างการประชุม (Live)', i: 'fa-gavel', c: '#DC2626' },
+        { id: 'SCHEDULED', n: scheduled, l: 'กำหนดการแล้ว (รอเปิดอ่าน)', i: 'fa-clock', c: '#D97706' },
         { id: 'CLOSED', n: closed, l: 'ประชุมเสร็จสิ้นแล้ว', i: 'fa-circle-check', c: '#475569' }
       ];
 
@@ -359,7 +356,7 @@
         if (m.status === 'ACTIVE_READING') {
           statusBadge = `<span class="badge badge-adv-active px-2 py-1"><i class="fa-solid fa-book-open-reader me-1"></i>เปิดให้อ่านวาระล่วงหน้า</span>`;
         } else if (m.status === 'LIVE') {
-          statusBadge = `<span class="badge badge-live-meeting px-2 py-1"><i class="fa-solid fa-circle-dot me-1"></i>กำลังประชุม Live</span>`;
+          statusBadge = `<span class="badge badge-live-meeting px-2 py-1"><i class="fa-solid fa-circle-dot me-1"></i>กำลังประชุม</span>`;
         } else if (m.status === 'CLOSED') {
           statusBadge = `<span class="badge bg-secondary px-2 py-1"><i class="fa-solid fa-circle-check me-1"></i>ประชุมเสร็จสิ้นแล้ว</span>`;
         } else {
@@ -369,20 +366,14 @@
         let actionBtns = '';
         if (m.status === 'CLOSED') {
           actionBtns = `
-            <a href="board-room.html?meet=${m.id}&readonly=true" class="btn btn-sm btn-outline-secondary px-2">
-              <i class="fa-solid fa-eye me-1"></i>ดูมติที่ประชุม
-            </a>
-            <a href="agenda-meeting-docs.html?meet=${m.id}" target="_blank" class="btn btn-sm btn-outline-primary px-2 ms-1" title="ดูระเบียบวาระ">
-              <i class="fa-solid fa-file-lines"></i>
+            <a href="agenda-meeting-docs.html?meet=${m.id}" target="_blank" class="btn btn-sm btn-outline-secondary px-3">
+              <i class="fa-solid fa-file-lines me-1"></i>ดูระเบียบวาระและเอกสาร
             </a>
           `;
         } else {
           actionBtns = `
-            <a href="board-room.html?meet=${m.id}" class="btn btn-sm btn-navy px-2 fw-medium">
-              <i class="fa-solid fa-gavel me-1"></i>เข้าห้องประชุม
-            </a>
-            <a href="agenda-meeting-docs.html?meet=${m.id}" target="_blank" class="btn btn-sm btn-outline-primary px-2 ms-1" title="อ่านระเบียบวาระล่วงหน้า">
-              <i class="fa-solid fa-book-open"></i>
+            <a href="agenda-meeting-docs.html?meet=${m.id}" target="_blank" class="btn btn-sm btn-primary px-3 fw-medium">
+              <i class="fa-solid fa-book-open-reader me-1"></i>อ่านระเบียบวาระและเอกสาร
             </a>
           `;
         }

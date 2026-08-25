@@ -1556,8 +1556,6 @@ const NAV = [
        กว้างกว่าคิวใน agenda-registry.html (ซึ่งเป็นแค่ AGENDA_SET/PENDING_INVITE_72/DEFERRED)
        จึงยังต้องมีลิงก์แยกไว้ — badge ของ home item ด้านบนก็ย้ายมาไว้ที่นี่ด้วย */
     visible: role => !!role && role.id === 'board_sec', badge:true },
-  { href:'board-room.html',               icon:'fa-gavel',            label:'ห้องประชุมและลงมติ',
-    visible: role => !!role && (role.id === 'board' || role.id === 'board_ex') },
   { href:'dashboard.html',                icon:'fa-chart-pie',        label:'Dashboard สถิติมติ',
     visible: role => !!role && ['affairs','board_sec','chairman','board','secgen'].includes(role.id) },
   { href:'followup-dashboard.html',       icon:'fa-diagram-project',  label:'ติดตามผลมติ',
