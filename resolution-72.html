@@ -660,6 +660,14 @@
       setTimeout(() => URL.revokeObjectURL(url), 5000);
     }
 
+    /* computeResolutionText() ห่อชื่อ auto-fill ด้วย <span class="mergefield">...</span> เสมอ
+       (ใช้แสดงผลใน Web Preview) — ต้องแกะ tag ออกก่อนใส่ใน .docx ไม่งั้น Word จะโชว์ HTML ดิบ */
+    function stripHtml(html) {
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      return div.textContent || '';
+    }
+
     function docxTags() {
       const P = (v, ph) => (v && String(v).trim()) ? String(v).trim() : (ph || '…………');
       const meetNo = document.getElementById('meetNo').value.trim();
@@ -692,10 +700,29 @@
         presentCount: String(attendeeCount),
         criminalBasis: crim ? 'มาตรา ๔๔ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม (ส่งพนักงานอัยการดำเนินคดีต่อไป)' : 'ไม่มีมูลความผิดทางอาญา',
         disciplinaryBasis: disc ? 'มาตรา ๓๘ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม' : 'ไม่มีมูลความผิดทางวินัย',
+        resolutionText: P(stripHtml(computeResolutionText())),
+        presentRoster: P(presentRosterText()),
+        absentCount: String(absentRows().length),
+        absentRoster: P(absentRows().map((b, i) => `${i + 1}. ${b.n} ${b.r}`).join(' ')),
         nacc65Clause,
         ratifyMeetNo: P(meetNo), ratifyMeetDate: P(meetDate), ratifyAgendaNo: P(agendaNo),
         lastClauseNo: kase.legalBase === 'ม.62' ? '3' : '2'
       };
+    }
+
+    /* ผู้เข้าประชุม/ไม่เข้าประชุม สำหรับ template "ไม่ชี้มูล-ทำเพิ่ม" (ปุ่ม .docx) — ใช้ข้อมูลชุด
+       เดียวกับ #boardTb ที่ renderDoc() ใช้สร้าง Web Preview เพื่อไม่ให้ตัวเลขเพี้ยนไปคนละทาง */
+    function boardRowsWithAttendance() {
+      return Array.from(document.querySelectorAll('#boardTb tr')).map((tr, i) => ({
+        ...BOARD[i], attend: tr.querySelector('.attend').value
+      }));
+    }
+    function absentRows() {
+      return boardRowsWithAttendance().filter(b => b.attend !== 'present');
+    }
+    function presentRosterText() {
+      return boardRowsWithAttendance().filter(b => b.attend === 'present')
+        .map((b, i) => `${i + 1}. ${b.n} ${b.r}`).join(' ');
     }
 
     /* ---------- Master Toolbar Component ---------- */
@@ -708,13 +735,15 @@
       printable: true,
       exportDocx: {
         onExport: async () => {
-          if (selectedRes().code !== 'GUILTY_72') {
-            ECMIS.toastWarn('ไฟล์ .docx ต้นฉบับรองรับเฉพาะมติ "ชี้มูลความผิด" — กรุณาเลือกมตินี้ก่อนดาวน์โหลด');
-            return;
-          }
+          /* GUILTY_72 -> "ไต่สวน กรรีชี้มูลความผืด.docx" (order-ruling.docx), ส่วนอีก 3 มติ
+             (ไม่มีมูล/ให้ไต่สวนเพิ่มเติม/ส่ง ป.ป.ช.) -> "ไต่สวน กรณี ไม่ชี้มูล-ทำเพิ่ม.docx"
+             (order-no-merit.docx) ตาม 05 - Resolution Templates & Data Mapping */
+          const isGuilty = selectedRes().code === 'GUILTY_72';
+          const tplUrl = isGuilty ? 'assets/templates/order-ruling.docx' : 'assets/templates/order-no-merit.docx';
+          const filePrefix = isGuilty ? 'มติชี้มูล' : 'มติไม่ชี้มูล';
           try {
-            await generateDocx('assets/templates/order-ruling.docx', docxTags(),
-              `มติชี้มูล-${kase.id.replace('/', '_')}.docx`);
+            await generateDocx(tplUrl, docxTags(),
+              `${filePrefix}-${kase.id.replace('/', '_')}.docx`);
             ECMIS.toastOk('ดาวน์โหลด .docx เรียบร้อย — แก้ไขใน Word ได้ตามปกติ');
           } catch (e) {
             console.error(e);
