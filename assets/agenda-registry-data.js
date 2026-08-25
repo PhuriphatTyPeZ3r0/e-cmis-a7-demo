@@ -19,12 +19,9 @@
 
   const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
-  if (!global.__ecmisSupabaseClient && global.supabase && typeof global.supabase.createClient === 'function') {
-    global.__ecmisSupabaseClient = global.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
-    });
-  }
-  const sb = global.__ecmisSupabaseClient || (global.supabase && global.supabase.createClient ? global.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } }) : null);
+  const sb = (global.ECMIS && typeof global.ECMIS.getSupabaseClient === 'function')
+    ? global.ECMIS.getSupabaseClient(SUPABASE_URL, SUPABASE_KEY)
+    : (global.__ecmisSupabaseClient || (global.supabase && global.supabase.createClient ? global.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }) : null));
 
   const MEETINGS = [];
   const ITEMS = [];

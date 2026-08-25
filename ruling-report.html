@@ -5,15 +5,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>รายงานวินิจฉัยชี้มูล | E-CMIS</title>
-  <link rel="icon" type="image/png" href="../assets/pacc_logo.png">
+  <link rel="icon" type="image/png" href="assets/pacc_logo.png">
   <link
     href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-  <link href="../assets/ecmis-app.css" rel="stylesheet">
-  <link href="../assets/a4-ecmis-workspace.css" rel="stylesheet">
+  <link href="assets/ecmis-app.css" rel="stylesheet">
+  <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
 
   <!-- Mammoth.js for Word document extraction in browser -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
@@ -525,8 +525,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="../assets/ecmis-app.js"></script>
-  <script src="../assets/ecmis-model.js"></script>
+  <script src="assets/ecmis-app.js"></script>
+  <script src="assets/ecmis-model.js"></script>
   <script>
     ECMIS.renderShell('ruling-report.html');
 
@@ -556,7 +556,7 @@
 
     const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const sb = (window.ECMIS && window.ECMIS.getSupabaseClient) ? window.ECMIS.getSupabaseClient(SUPABASE_URL, SUPABASE_KEY) : (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }) : null);
 
     async function loadCaseFromSupabase(caseId) {
       try {
@@ -1298,7 +1298,7 @@
 
         const introBlock = `
           <div class="doc-secret" style="color:#d9534f;font-weight:bold;font-size:16px;text-align:right;margin-bottom:-10px">ลับ</div>
-          <div style="text-align:center;margin-bottom:4px"><img src="../assets/doc_logo.jpg" alt="ตราครุฑ" style="height:52px"></div>
+          <div style="text-align:center;margin-bottom:4px"><img src="assets/doc_logo.jpg" alt="ตราครุฑ" style="height:52px"></div>
           <div class="doc-title" style="text-align:center;font-size:17.5px;font-weight:bold;margin:4px 0 2px;">รายงานการไต่สวนเพื่อวินิจฉัยชี้มูล${isSingleAccused ? ` (เฉพาะราย ${targetAccused.name})` : ''}</div>
           <div class="doc-sub" style="text-align:center;font-size:15px;margin-bottom:6px;">คณะกรรมการ ป.ป.ท.</div>
           <div class="doc-row" style="margin-top:4px"><span class="k" style="font-weight:bold;">เรื่องที่</span> ${M(kase.id)}${isSingleAccused ? `/${activeSplitAccusedIndex + 1}` : ''}</div>
@@ -1453,7 +1453,7 @@
               ที่ ${M(orderNo, 'ปป ๐๐.../...')}
             </div>
             <div style="width:34%; text-align:center;">
-              <img src="../assets/doc_logo.jpg" alt="ตราครุฑ" style="height:58px;">
+              <img src="assets/doc_logo.jpg" alt="ตราครุฑ" style="height:58px;">
             </div>
             <div style="width:33%; text-align:left; font-size:14.5px; line-height:1.45; padding-top:8px;">
               สำนักงาน ป.ป.ท.<br>

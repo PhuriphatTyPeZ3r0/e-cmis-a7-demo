@@ -5,15 +5,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>คำร้องขอบรรจุวาระด่วน | E-CMIS</title>
-  <link rel="icon" type="image/png" href="../assets/pacc_logo.png">
+  <link rel="icon" type="image/png" href="assets/pacc_logo.png">
   <link
     href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-  <link href="../assets/ecmis-app.css" rel="stylesheet">
-  <link href="../assets/a4-ecmis-workspace.css" rel="stylesheet">
+  <link href="assets/ecmis-app.css" rel="stylesheet">
+  <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
 </head>
 
 <body>
@@ -44,8 +44,7 @@
       <aside class="ws-doc-pane" style="top:calc(var(--topbar-h) + 14px)">
         <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
         <div class="ws-doc-toolbar">
-          <span class="name"><i class="fa-solid fa-file-word"></i> หนังสือขอบรรจุวาระการประชุมด่วน
-            <span class="badge-tpl">Mail-Merge</span></span>
+          <span class="name"><i class="fa-solid fa-file-word"></i> หนังสือขอบรรจุวาระการประชุมด่วน</span>
           <button type="button" class="btn-doc-edit ms-auto me-1" id="btnDocEdit" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
             <i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>
           </button>
@@ -81,14 +80,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="../assets/ecmis-app.js"></script>
-  <script src="../assets/ecmis-model.js"></script>
+  <script src="assets/ecmis-app.js"></script>
+  <script src="assets/ecmis-model.js"></script>
   <script>
     ECMIS.renderShell('urgent-agenda.html');
 
     const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const sb = (window.ECMIS && window.ECMIS.getSupabaseClient) ? window.ECMIS.getSupabaseClient(SUPABASE_URL, SUPABASE_KEY) : (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }) : null);
 
     async function loadCaseFromSupabase(caseId) {
       const { data, error } = await sb
