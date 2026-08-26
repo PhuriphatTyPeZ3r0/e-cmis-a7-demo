@@ -329,6 +329,15 @@ function renderKPICards() {
   const bd = document.getElementById('badgeDispatchedTab');
   if (bp) bp.textContent = pendingCount;
   if (bd) bd.textContent = dispatchedCount;
+
+  /* เลขบนแถบเมนูด้านข้าง (badge สีแดง) มาจาก ECMIS.inboxFor('board_sec') ซึ่งอิง CASES จำลอง
+     ส่วนกลาง ไม่ใช่ข้อมูลจริงจาก Supabase ที่โหลดในหน้านี้ — sync ให้ตรงกับคิวงานรอบันทึกมติจริง
+     (pendingCount) เช่นเดียวกับรูปแบบที่ inbox.html ใช้กับ badge ของ role อื่น ๆ */
+  const navBadge = document.querySelector('#appSidebar .badge.bg-danger.rounded-pill');
+  if (navBadge) {
+    if (pendingCount) navBadge.textContent = pendingCount;
+    else navBadge.remove();
+  }
 }
 
 function filterByKPI(statusId) {
