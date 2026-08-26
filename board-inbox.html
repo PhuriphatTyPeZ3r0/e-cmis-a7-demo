@@ -604,6 +604,23 @@
                           </div>
                         </div>
                       </div>
+
+                      <!-- Board Member Private Notes Box -->
+                      <div class="mt-3 p-3 rounded-3" style="background:#fffaf0; border:1px solid #fed7aa;">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                          <strong class="text-dark small d-flex align-items-center gap-1" style="color:#9a3412 !important;">
+                            <i class="fa-solid fa-note-sticky text-warning"></i>บันทึกข้อสังเกต / คำถามส่วนตัวของกรรมการ (Private Note)
+                          </strong>
+                          <span class="badge bg-white text-secondary border px-2 py-1" id="modalNoteSaveStatus" style="font-size:0.7rem; font-weight:normal;">
+                            <i class="fa-solid fa-cloud-arrow-up text-success me-1"></i>บันทึกอัตโนมัติ
+                          </span>
+                        </div>
+                        <textarea class="form-control" id="modalBoardPrivateNote" rows="3" placeholder="พิมพ์ข้อสังเกตส่วนตัว ข้อสงสัย หรือประเด็นที่ต้องการซักถามเพิ่มเติมในที่ประชุมสำหรับสำนวนนี้ (ข้อมูลจะถูกบันทึกไว้เฉพาะท่าน)..." style="font-size:0.84rem; background:#ffffff; border-color:#fbd38d; resize:vertical;"></textarea>
+                        <div class="d-flex align-items-center justify-content-between mt-1">
+                          <small class="text-muted" style="font-size:0.72rem;"><i class="fa-solid fa-shield-halved text-success me-1"></i>ข้อมูลนี้จะถูกเก็บไว้เป็นความลับเฉพาะอุปกรณ์/บัญชีของท่าน</small>
+                          <small class="text-muted" id="modalNoteCharCount" style="font-size:0.72rem;">0 ตัวอักษร</small>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1174,6 +1191,13 @@
         $('#modalBriefOffenses').html('<span class="text-muted small">ไม่มีข้อกล่าวหา</span>');
       }
 
+      // Load Private Notes for Board Member
+      const noteKey = `ecmis_board_note_${kase.caseId || kase.agendaNo}`;
+      const savedNote = localStorage.getItem(noteKey) || '';
+      $('#modalBoardPrivateNote').val(savedNote);
+      $('#modalNoteCharCount').text(`${savedNote.length} ตัวอักษร`);
+      $('#modalNoteSaveStatus').html('<i class="fa-solid fa-check text-success me-1"></i>บันทึกแล้ว');
+
       // Tab 2: Evidence Vault
       modalEvidenceCat = 'ALL';
       $('#modalEvidenceCount').text(kase.evidences ? kase.evidences.length : 0);
@@ -1490,6 +1514,23 @@
       $('#btnModalModeContinuous').on('click', function () {
         $(this).removeClass('btn-outline-light').addClass('btn-primary');
         $('#btnModalModeSingle').removeClass('btn-primary').addClass('btn-outline-light');
+      });
+
+      // Auto-save Private Notes for Board Member
+      let noteSaveTimer = null;
+      $('#modalBoardPrivateNote').on('input', function () {
+        if (!currentModalMeeting || !currentModalMeeting.agendas || !currentModalMeeting.agendas[currentModalAgendaIdx]) return;
+        const kase = currentModalMeeting.agendas[currentModalAgendaIdx];
+        const noteKey = `ecmis_board_note_${kase.caseId || kase.agendaNo}`;
+        const text = $(this).val();
+        $('#modalNoteCharCount').text(`${text.length} ตัวอักษร`);
+        $('#modalNoteSaveStatus').html('<i class="fa-solid fa-spinner fa-spin text-warning me-1"></i>กำลังบันทึก...');
+
+        clearTimeout(noteSaveTimer);
+        noteSaveTimer = setTimeout(() => {
+          localStorage.setItem(noteKey, text);
+          $('#modalNoteSaveStatus').html('<i class="fa-solid fa-check text-success me-1"></i>บันทึกแล้ว');
+        }, 400);
       });
 
       // URL query check: ?meet=38
