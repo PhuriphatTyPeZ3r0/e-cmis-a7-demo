@@ -73,8 +73,14 @@
         <div class="ws-card mb-3">
           <div class="card-header"><i class="fa-solid fa-code-branch"></i> ผลมติของที่ประชุม</div>
           <div class="card-body">
-            <label class="form-label field-req">เลือกประเภทผลมติ</label>
-            <div class="list-group mb-3" id="resList"></div>
+            <div id="resListSection">
+              <label class="form-label field-req">เลือกประเภทผลมติ</label>
+              <div class="list-group mb-3" id="resList"></div>
+            </div>
+            <div id="resFreeTextNote" class="alert alert-secondary py-2 px-3 mb-3 d-none" style="font-size:.85rem">
+              <i class="fa-solid fa-circle-info me-1"></i>เอกสารมติประเภท "เรื่องทั่วไป" ไม่มีตัวเลือกมติตายตัวในแม่แบบต้นฉบับ
+              — ระบบใช้ข้อความในช่อง "ความเห็นที่ประชุม" ด้านล่างเป็นเนื้อหามติที่ประชุมโดยตรง
+            </div>
 
             <div id="rejectLawBox" class="mb-3 d-none">
               <label class="form-label field-req">มาตราที่ใช้อ้างอิงกรณีไม่รับเรื่องไว้พิจารณา / จำหน่ายเรื่อง</label>
@@ -250,6 +256,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pizzip@3/dist/pizzip.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/build/docxtemplater.js"></script>
   <script src="../assets/ecmis-app.js"></script>
@@ -261,6 +268,20 @@
     const kase = ECMIS.requireCase(params.get('case') || '1547/2568');
     if (!kase) throw new Error('ECMIS_CASE_NOT_FOUND');
     const role = ECMIS.currentRole();
+
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = (window.ECMIS && window.ECMIS.getSupabaseClient) ? window.ECMIS.getSupabaseClient(SUPABASE_URL, SUPABASE_KEY) : (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }) : null);
+    async function loadCaseFromSupabase(caseId) {
+      const { data, error } = await sb
+        .from('tbl_res_request')
+        .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+        .eq('tbl_cmp_case.tcc_no', caseId)
+        .eq('is_deleted', false)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? ECMIS.supabaseRowToCase(data) : null;
+    }
 
     function normalizeDateInputValue(value) {
       const v = String(value || '').trim();
@@ -281,7 +302,13 @@
     const generalTypeInfo = kase.generalType ? ECMIS.generalType73(kase.generalType) : null;
     document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase)
       + (generalTypeInfo ? ` <span class="chip me-1" title="${generalTypeInfo.group}"><i class="fa-solid fa-scale-balanced me-1"></i>${generalTypeInfo.label}</span>` : '');
-    document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status);
+    /* legal73/general73 ("เรื่องของ กกม." / "เรื่องทั่วไป") ไม่เคยผ่านใบด่วน/อนุกลั่นกรองฯ และไม่จบ
+       ที่ "ออกคำสั่ง ม.24" (คำสั่งแต่งตั้งองค์คณะไต่สวน ใช้เฉพาะสาย 7.1) — ใช้ FLOW_STEPS_73 แทน
+       FLOW_STEPS เดิมสำหรับ 2 kind นี้ (ดูรูปแบบเดียวกับ FLOW_STEPS_72 ที่หน้าอื่นใช้อยู่แล้ว) */
+    const stepperKind = pickTemplate().kind;
+    document.getElementById('stepper').innerHTML = (stepperKind === 'legal73' || stepperKind === 'general73')
+      ? ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_73, ECMIS.STATUS_STEP_73)
+      : ECMIS.stepperHtml(kase.status);
 
     /* ป้ายชื่อเอกสารบนแถบเครื่องมือ (ws-doc-toolbar) เดิม hardcode เป็น "(ไต่สวนเบื้องต้น)"
        เสมอ ทั้งที่หน้านี้รองรับทั้ง 7.1/7.3 — ให้ตรงกับ 4 กลุ่มแม่แบบเดียวกับที่ pickTemplate()
@@ -526,23 +553,54 @@
       renderQuorum(); renderDoc();
     }
 
-    document.getElementById('resList').innerHTML = ECMIS.RESOLUTIONS.map((r, i) => `
+    /* ตัวเลือก "มติที่ประชุม" ต้องตรงกับแม่แบบ .docx จริงที่ pickTemplate() จะเลือกใช้ — 7.1
+       (default/screening) ใช้ ECMIS.RESOLUTIONS เดิม, legal73 ("เรื่องของ กกม.") มีตัวเลือกตายตัว
+       เฉพาะ 4 แบบตามเอกสารต้นฉบับ, general73 ("เรื่องทั่วไป") ไม่มีตัวเลือกตายตัวเลยในต้นฉบับ —
+       ใช้ข้อความอิสระจากช่อง "ความเห็นที่ประชุม" แทน (ดูใน computeResolutionText()) */
+    const resKind = pickTemplate().kind;
+    const activeResolutions = resKind === 'legal73' ? ECMIS.RESOLUTIONS_LEGAL_KKM : ECMIS.RESOLUTIONS;
+
+    if (resKind === 'general73') {
+      document.getElementById('resListSection').classList.add('d-none');
+      document.getElementById('resFreeTextNote').classList.remove('d-none');
+    } else {
+      document.getElementById('resList').innerHTML = activeResolutions.map((r, i) => `
   <label class="list-group-item d-flex gap-2 align-items-start">
     <input class="form-check-input mt-1" type="radio" name="res" value="${r.code}" ${i === 0 ? 'checked' : ''}>
     <span><strong>${r.label}</strong>
       <br><small class="text-muted">เอกสารที่ต้องออก: ${r.doc}${r.signer !== '—' ? ` · ผู้ลงนาม: ${r.signer}` : ''}</small></span>
   </label>`).join('');
+    }
 
     function selectedRes() {
-      const code = document.querySelector('input[name="res"]:checked').value;
-      return ECMIS.RESOLUTIONS.find(r => r.code === code);
+      const checked = document.querySelector('input[name="res"]:checked');
+      if (!checked) return { code: 'GENERAL_FREE_TEXT', label: 'ระบุอิสระ (เรื่องทั่วไป)', doc: '—', signer: '—' };
+      return activeResolutions.find(r => r.code === checked.value) || activeResolutions[0];
     }
 
     /* ข้อความ "มติที่ประชุม" ตามประเภทมติที่เลือก — ใช้ร่วมกันทั้ง HTML preview (renderDoc)
        และตอนสร้างไฟล์ .docx จริง (generateDocx) เพื่อไม่ให้ข้อความเพี้ยนไปคนละทางกัน */
     function computeResolutionText() {
       const opinion = document.getElementById('boardOpinion').value.trim();
+      /* general73: แม่แบบต้นฉบับ ("มติการประชุม เรื่องทั่วไป.docx") ไม่มีตัวเลือกมติตายตัวเลย
+         เป็นช่องว่างอิสระ ("มีมติเป็นเอกฉันท์ ................................") — ใช้ข้อความ
+         "ความเห็นที่ประชุม" ตรง ๆ แทนการเลือกจาก picklist ของ 7.1 ที่ใช้อยู่เดิม (ผิดบริบท) */
+      if (resKind === 'general73') {
+        return opinion || '……………………………………';
+      }
       const r = selectedRes();
+      /* legal73: แม่แบบต้นฉบับ ("มติการประชุม เรื่องของ กกม.docx") มีตัวเลือกตายตัวเฉพาะ 4 แบบ
+         (ทบทวนมติอัยการ ม.33) — คนละชุดคำกับตัวเลือกสายไต่สวน 7.1 (ACCEPT_S24P1 ฯลฯ) ที่ใช้อยู่เดิม */
+      if (resKind === 'legal73') {
+        if (r.code === 'KKM_NO_APPEAL') {
+          return 'เห็นชอบไม่อุทธรณ์คำพิพากษาของศาลอาญาคดีทุจริตและประพฤติมิชอบภาค 2 ตามความเห็นของพนักงานอัยการ เนื่องจากศาลได้มีคำพิพากษาลงโทษจำเลย เป็นไปตามฟ้องของพนักงานอัยการและสอดคล้องกับมติของคณะกรรมการ ป.ป.ท. ที่วินิจฉัยชี้มูลความผิดโดยชอบด้วยข้อเท็จจริงและข้อกฎหมายแล้ว';
+        } else if (r.code === 'KKM_NO_DIKA') {
+          return `เห็นชอบไม่ฎีกาคำพิพากษาของศาลอุทธรณ์ ตามความเห็นของพนักงานอัยการ เนื่องจาก ${opinion || '……………………'}`;
+        } else if (r.code === 'KKM_DISAGREE_AG') {
+          return `ไม่เห็นพ้องด้วยกับความเห็นของพนักงานอัยการ ${opinion || '……………………'} และส่งเรื่องให้อัยการสูงสุด พิจารณาตามมาตรา 43 แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม ต่อไป`;
+        }
+        return opinion || '……………………………………'; // KKM_OTHER
+      }
       if (r.code === 'ACCEPT_S24P1') {
         return 'รับไว้ไต่สวน โดยให้ดำเนินการไต่สวนเป็นองค์คณะ ตามมาตรา ๒๔ วรรคหนึ่ง แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม';
       } else if (r.code === 'ACCEPT_S24P3') {
@@ -669,6 +727,20 @@
             'และกรณีส่ง ป.ป.ช. ต้องคัดสำเนาสำนวนเก็บรักษาไว้เป็นหลักฐานตาม ม.18/1'],
           ['กำหนดส่งตามกฎหมาย', 'กรณีส่ง ป.ป.ช. — 15 วันตาม ม.18/1 (ก)(3)/(ข)(1)/(ข)(3) · เส้นตาย ขยายไม่ได้'],
           ['กรอบกำกับติดตาม', 'กรณีส่ง ป.ป.ช. — 30 วันตามเล่ม 6 กิจกรรมที่ 8 CHK011 นับแต่วันที่ได้รับมติ (มิใช่กำหนดส่ง)']
+        ],
+
+        KKM_NO_APPEAL: [
+          ['เอกสารที่ระบบสร้าง', 'บันทึกแจ้งมติเห็นชอบไม่อุทธรณ์'],
+          ['ปลายทาง', 'แจ้งพนักงานอัยการทราบมติ']
+        ],
+        KKM_NO_DIKA: [
+          ['เอกสารที่ระบบสร้าง', 'บันทึกแจ้งมติเห็นชอบไม่ฎีกา'],
+          ['ปลายทาง', 'แจ้งพนักงานอัยการทราบมติ']
+        ],
+        KKM_DISAGREE_AG: [
+          ['เอกสารที่ระบบสร้าง', 'หนังสือนำส่งเรื่องถึงอัยการสูงสุด'],
+          ['ผู้ลงนาม', 'ประธานกรรมการ ป.ป.ท.'],
+          ['ฐานกฎหมาย', 'ม.43 แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม']
         ]
       };
       el.innerHTML =
@@ -752,7 +824,25 @@
     </div>`;
 
       const bi = html => `<div class="doc-body-indent">${html}</div>`;
-      const flowBlocks = [
+
+      /* legal73/general73 ("เรื่องของ กกม." / "เรื่องทั่วไป") เป็นเอกสารสั้น ไม่มีผู้กล่าวหา/
+         ผู้ถูกร้อง/ข้อกล่าวหา/รายชื่อผู้มาประชุม/เหตุผลผ่านอนุกลั่นกรอง เหมือนแม่แบบไต่สวนเบื้องต้น —
+         ตรวจสอบกับต้นฉบับจริงแล้วมีแค่ "ผู้ชี้แจงกล่าวต่อที่ประชุมว่า...(เนื้อเรื่อง)" ตามด้วย
+         มติที่ประชุม + รับรองมติ (ข้อ ๒ เสมอ ไม่มีเงื่อนไข ม.62/ม.65 แบบ 7.1) */
+      const flowBlocks = (resKind === 'legal73' || resKind === 'general73') ? [
+        bi(`<div class="doc-indent" style="margin-top:4px">
+        ${M(presenter)} ${M(ownerOrg)} กล่าวต่อที่ประชุมว่า
+      </div>`),
+        bi(`<div class="doc-indent" style="margin-top:6px">${M(kase.allegation, kase.subject)}</div>`),
+        bi(`<div class="doc-h">มติที่ประชุม</div>
+    <div>๑. คณะกรรมการ ป.ป.ท. มีมติ${M(unanimous ? 'เป็นเอกฉันท์' : `ด้วยคะแนนเสียงข้างมาก ${t.forV} ต่อ ${t.againstV} เสียง`)} ${M(resText)}</div>`),
+        ...(t.againstV > 0 ? [bi(`<div style="padding-left:1.5em;color:#DB2626">
+      (มีกรรมการเห็นแย้ง ${t.againstV} ท่าน — บันทึกความเห็นแย้งพร้อมเหตุผลไว้ในรายงานการประชุมตาม ม.๑๖)</div>`)] : []),
+        ...(t.recused > 0 ? [bi(`<div style="padding-left:1.5em;color:#6b3fa0">
+      (กรรมการที่ถูกกันออกจากการพิจารณาวาระนี้ตาม ม.๒๐ จำนวน ${t.recused} ท่าน)</div>`)] : []),
+        bi(`<div style="margin-top:3px">๒. รับรองมติการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)}
+      วันที่ ${M(meetDate)} วาระที่ ${M(agendaNo)}</div>`)
+      ] : [
         bi(kase.subCommittee ? `<div class="doc-indent" style="margin-top:4px">
         ${M(presenter)} ในฐานะฝ่ายเลขานุการคณะอนุกรรมการกลั่นกรอง เรื่อง รายงานผลการรวบรวมพยานหลักฐาน
         ไต่สวนเบื้องต้นและรายงานการไต่สวนเพื่อวินิจฉัยชี้มูลเพื่อเสนอคณะกรรมการ ป.ป.ท. ${M(kase.subCommittee)}
@@ -1083,7 +1173,7 @@
           • Auto-compile รายงานการประชุมรวมทุกเรื่องในวันประชุมเดียวกัน
         </div></div>`,
           confirmText: 'ยืนยันบันทึกมติ'
-        }).then(res => {
+        }).then(async res => {
           if (!res.isConfirmed) return;
 
           if (r.code === 'MORE_INVESTIGATE') {
@@ -1097,12 +1187,15 @@
             });
           }
 
+          const fromStatus = kase.status;
+          const recordedDocHtml = document.getElementById('docPaper').innerHTML;
+
           ECMIS.Model.CaseStore.update(kase.id, {
             status: 'RESOLVED',
             resolution: r.code,
             resolvedAt: new Date().toLocaleString('th-TH'),
             resolvedAtIso: new Date().toISOString(),
-            recordedDocHtml: document.getElementById('docPaper').innerHTML,
+            recordedDocHtml,
             resolutionStage: 1,
             signedByBoardSec: true,
             boardSecSignedAt: new Date().toISOString()
@@ -1117,6 +1210,25 @@
               method: pendingSigData?.mode || 'cert',
               signedAt: new Date().toISOString()
             });
+          }
+
+          /* เขียนมติจริงลง Supabase ก่อน redirect เสมอ (ต้อง await ให้เสร็จก่อน) — ไม่งั้น
+             ถ้า redirect ไปก่อน request ที่ยังค้างอยู่จะถูกเบราว์เซอร์ตัดทิ้งกลางทาง */
+          if (sb && kase.trr_id) {
+            const { error } = await sb.from('tbl_res_request').update({
+              trr_status: ECMIS.STATUS_CODE['RESOLVED'],
+              trr_resolution_stage: 1,
+              trr_recorded_doc_html: recordedDocHtml,
+              trr_resolution_data: { code: r.code, label: r.label }
+            }).eq('trr_id', kase.trr_id);
+            if (!error) {
+              ECMIS.logRequestEvent(kase.trr_id, fromStatus, 'RESOLVED', {
+                type: 'RESOLVED', actorRole: role.id,
+                data: { resolutionCode: r.code, resolutionLabel: r.label, signerName, signerTitle }
+              });
+            } else {
+              console.error('บันทึกมติลง Supabase ไม่สำเร็จ:', error);
+            }
           }
 
           ECMIS.toastOk('บันทึกมติและล็อก PDF เรียบร้อย');
@@ -1268,6 +1380,22 @@
     ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: mayEdit });
 
     applyMode(); toggleBoxes(); renderOutcome(); renderDoc();
+
+    /* โหลดข้อมูลจริงจาก Supabase แบบ background หลังเรนเดอร์ด้วย mock data ไปก่อนแล้ว (เหมือน
+       order.html/chairman.html) — ถ้าได้ข้อมูลจริงมา mutate kase object เดิม แล้ว re-render */
+    (async function refreshFromSupabase() {
+      if (!sb) return;
+      let live;
+      try {
+        live = await loadCaseFromSupabase(params.get('case') || '1547/2568');
+      } catch (err) {
+        console.warn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ ใช้ข้อมูลจำลองต่อไป:', err);
+        return;
+      }
+      if (!live) return;
+      Object.assign(kase, live);
+      applyMode(); toggleBoxes(); renderOutcome(); renderDoc();
+    })();
   </script>
 </body>
 

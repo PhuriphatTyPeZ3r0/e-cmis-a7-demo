@@ -246,6 +246,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pizzip@3/dist/pizzip.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/build/docxtemplater.js"></script>
   <script src="assets/ecmis-app.js"></script>
@@ -257,6 +258,20 @@
     const kase = ECMIS.requireCase(params.get('case') || '2015/2569');
     if (!kase) throw new Error('ECMIS_CASE_NOT_FOUND');
     const role = ECMIS.currentRole();
+
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = (window.ECMIS && window.ECMIS.getSupabaseClient) ? window.ECMIS.getSupabaseClient(SUPABASE_URL, SUPABASE_KEY) : (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }) : null);
+    async function loadCaseFromSupabase(caseId) {
+      const { data, error } = await sb
+        .from('tbl_res_request')
+        .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+        .eq('tbl_cmp_case.tcc_no', caseId)
+        .eq('is_deleted', false)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? ECMIS.supabaseRowToCase(data) : null;
+    }
 
     document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
     document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72);
@@ -670,8 +685,11 @@
           ${r.code === 'GUILTY_72' ? `• เปิดสายดำเนินคดี: ${[crim ? 'อาญา' : null, disc ? 'วินัย' : null].filter(Boolean).join(' + ')}<br>` : ''}
         </div></div>`,
           confirmText: 'ยืนยันบันทึกมติ'
-        }).then(res => {
+        }).then(async res => {
           if (!res.isConfirmed) return;
+
+          const fromStatus = kase.status;
+          const recordedDocHtml = document.getElementById('docPaper')?.innerHTML || null;
 
           const patch = {
             status: 'RESOLVED_PENDING_72',
@@ -704,6 +722,25 @@
             if (disc && !kase.disciplinaryFinding72) patch.disciplinaryFinding72 = document.getElementById('disciplinaryFinding').value.trim();
           }
           ECMIS.Model.CaseStore.update(kase.id, patch);
+
+          /* เขียนมติจริงลง Supabase ก่อน redirect เสมอ — reuse patch object เดิมตรงๆ เป็น
+             trr_resolution_data (มีทุกฟิลด์ resolution72/boardOpinion72/guiltyCriminal72 ฯลฯ อยู่แล้ว) */
+          if (sb && kase.trr_id) {
+            const { error } = await sb.from('tbl_res_request').update({
+              trr_status: ECMIS.STATUS_CODE[patch.status],
+              trr_recorded_doc_html: recordedDocHtml,
+              trr_resolution_data: patch
+            }).eq('trr_id', kase.trr_id);
+            if (!error) {
+              ECMIS.logRequestEvent(kase.trr_id, fromStatus, patch.status, {
+                type: 'RESOLVED_72', actorRole: role.id,
+                data: { resolutionCode: r.code, resolutionLabel: r.label }
+              });
+            } else {
+              console.error('บันทึกมติลง Supabase ไม่สำเร็จ:', error);
+            }
+          }
+
           ECMIS.toastOk('บันทึกมติและล็อก PDF เรียบร้อย');
           setTimeout(() => location.href = 'ruling-report.html?case=' + encodeURIComponent(kase.id), 1400);
         });
@@ -949,6 +986,22 @@
     ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: mayEdit });
 
     toggleBoxes(); renderQuorum(); renderDoc();
+
+    /* โหลดข้อมูลจริงจาก Supabase แบบ background หลังเรนเดอร์ด้วย mock data ไปก่อนแล้ว (เหมือน
+       order.html/board-resolution.html) — ถ้าได้ข้อมูลจริงมา mutate kase object เดิม แล้ว re-render */
+    (async function refreshFromSupabase() {
+      if (!sb) return;
+      let live;
+      try {
+        live = await loadCaseFromSupabase(params.get('case') || '2015/2569');
+      } catch (err) {
+        console.warn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ ใช้ข้อมูลจำลองต่อไป:', err);
+        return;
+      }
+      if (!live) return;
+      Object.assign(kase, live);
+      toggleBoxes(); renderQuorum(); renderDoc();
+    })();
   </script>
 </body>
 

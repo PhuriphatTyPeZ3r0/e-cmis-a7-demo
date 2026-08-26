@@ -210,6 +210,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pizzip@3/dist/pizzip.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/build/docxtemplater.js"></script>
     <script src="assets/ecmis-app.js"></script>
@@ -223,6 +224,20 @@
         if (!kase) throw new Error('ECMIS_CASE_NOT_FOUND');
         const role = ECMIS.currentRole();
         let docTab = 'mainOrder';
+
+        const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+        const sb = (window.ECMIS && window.ECMIS.getSupabaseClient) ? window.ECMIS.getSupabaseClient(SUPABASE_URL, SUPABASE_KEY) : (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }) : null);
+        async function loadCaseFromSupabase(caseId) {
+            const { data, error } = await sb
+                .from('tbl_res_request')
+                .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+                .eq('tbl_cmp_case.tcc_no', caseId)
+                .eq('is_deleted', false)
+                .maybeSingle();
+            if (error) throw error;
+            return data ? ECMIS.supabaseRowToCase(data) : null;
+        }
 
         let signed = false;
         let pendingSigData = null;
@@ -590,18 +605,17 @@
                 const is72 = ECMIS.isCase72(kase);
                 const nextStatus = is72 ? 'PENDING_INVITE_72' : 'AGENDA_SET';
                 const nextTarget = 'agenda-registry.html';
+                const docType = is72 ? 'รายงานการไต่สวนเพื่อวินิจฉัยชี้มูล (ปปท. ๗-๐๒)' : 'คำสั่งแต่งตั้งคณะอนุกรรมการไต่สวน (ปปท. ๕-๐๒)';
+                const fromStatus = kase.status;
 
-                kase.status = nextStatus;
                 kase.signedByChair = true;
                 kase.chairSignedAt = new Date().toISOString();
                 kase.chairNote = document.getElementById('chairNote')?.value?.trim() || '';
 
-                ECMIS.saveCases();
-
                 if (ECMIS.Model && ECMIS.Model.SignatureStore) {
                     ECMIS.Model.SignatureStore.create({
                         caseId: kase.id,
-                        docType: is72 ? 'รายงานการไต่สวนเพื่อวินิจฉัยชี้มูล (ปปท. ๗-๐๒)' : 'คำสั่งแต่งตั้งคณะอนุกรรมการไต่สวน (ปปท. ๕-๐๒)',
+                        docType,
                         signerRole: 'chairman',
                         signerName: `${SIGNER_NAME} — ${SIGNER_TITLE}`,
                         method: pendingSigData?.mode || 'cert',
@@ -609,21 +623,33 @@
                     });
                 }
 
-                Swal.fire({
-                    icon: 'success',
-                    title: 'บันทึกคำสั่งและลงนามสำเร็จ',
-                    html: `<div class="text-start">
-                              สำนวนเรื่องที่ <strong>${kase.id}</strong><br>
-                              สถานะใหม่: <strong>${ECMIS.STATUS[nextStatus]?.label || nextStatus}</strong><br><br>
-                              <span style="font-size:.9rem;color:#475569">
-                                  <i class="fa-solid fa-arrow-right me-1 text-primary"></i>ส่งสำนวนเข้าสู่ <strong>ทะเบียนวาระการประชุม (agenda-registry.html)</strong> เพื่อให้ฝ่ายเลขาฯ บรรจุวาระต่อไป
-                              </span>
-                           </div>`,
-                    confirmButtonColor: '#0F2A62',
-                    confirmButtonText: 'ตกลง (ไปที่ทะเบียนวาระ)'
-                }).then(() => {
+                /* ต้องรอเขียน Supabase ให้เสร็จก่อนค่อย redirect — ถ้า redirect ก่อน (เช่น sync ทันทีที่
+                   ผู้ใช้กด "ตกลง") request ที่ยังค้างอยู่จะถูกเบราว์เซอร์ตัดทิ้งกลางทาง ทำให้ดูเหมือน
+                   บันทึกสำเร็จ (Swal ขึ้นแล้ว) แต่จริงๆ ไม่ได้ persist ลง DB เลย */
+                (async () => {
+                    await ECMIS.updateCaseStatus(kase, nextStatus, sb);
+                    if (kase.trr_id && sb) {
+                        ECMIS.logRequestEvent(kase.trr_id, fromStatus, nextStatus, {
+                            type: 'SIGNED', actorRole: 'chairman',
+                            data: { docType, signerName: SIGNER_NAME, signerTitle: SIGNER_TITLE, method: pendingSigData?.mode || 'cert', note: kase.chairNote }
+                        });
+                    }
+
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'บันทึกคำสั่งและลงนามสำเร็จ',
+                        html: `<div class="text-start">
+                                  สำนวนเรื่องที่ <strong>${kase.id}</strong><br>
+                                  สถานะใหม่: <strong>${ECMIS.STATUS[nextStatus]?.label || nextStatus}</strong><br><br>
+                                  <span style="font-size:.9rem;color:#475569">
+                                      <i class="fa-solid fa-arrow-right me-1 text-primary"></i>ส่งสำนวนเข้าสู่ <strong>ทะเบียนวาระการประชุม (agenda-registry.html)</strong> เพื่อให้ฝ่ายเลขาฯ บรรจุวาระต่อไป
+                                  </span>
+                               </div>`,
+                        confirmButtonColor: '#0F2A62',
+                        confirmButtonText: 'ตกลง (ไปที่ทะเบียนวาระ)'
+                    });
                     location.href = nextTarget;
-                });
+                })();
             }
         }
 
@@ -790,6 +816,22 @@
         } catch (e) { }
 
         refreshCaseView();
+
+        /* โหลดข้อมูลจริงจาก Supabase แบบ background หลังเรนเดอร์ด้วย mock data ไปก่อนแล้ว (เหมือน
+           order.html) — ถ้าได้ข้อมูลจริงมา mutate kase object เดิม แล้ว re-render ทั้ง view */
+        (async function refreshFromSupabase() {
+            if (!sb) return;
+            let live;
+            try {
+                live = await loadCaseFromSupabase(currentCaseId);
+            } catch (err) {
+                console.warn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ ใช้ข้อมูลจำลองต่อไป:', err);
+                return;
+            }
+            if (!live) return;
+            Object.assign(kase, live);
+            refreshCaseView();
+        })();
     </script>
 </body>
 
