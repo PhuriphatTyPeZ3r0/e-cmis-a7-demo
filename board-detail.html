@@ -1417,7 +1417,7 @@
       }
     }
 
-    /* Render Evidence / Attachment List */
+        /* Render Evidence / Attachment List */
     function renderEvidenceList() {
       if (!currentMeeting || !currentMeeting.agendas || !currentMeeting.agendas[currentAgendaIdx]) return;
       const agenda = currentMeeting.agendas[currentAgendaIdx];
@@ -1440,24 +1440,33 @@
         const safePreview = (e.preview || '').replace(/'/g, "\'");
 
         return `
-          <div class="col-md-6 col-12">
-            <div class="p-3 bg-white rounded border d-flex align-items-center justify-content-between gap-2 h-100 shadow-xs">
-              <div class="d-flex align-items-center gap-2.5 flex-1 min-w-0">
-                <div class="rounded p-2 bg-light text-navy text-center d-flex align-items-center justify-content-center" style="width:40px; height:40px; flex:none;">
-                  <i class="fa-solid ${e.icon || 'fa-file'} text-primary fs-5"></i>
-                </div>
-                <div class="min-w-0 flex-1">
-                  <div class="d-flex align-items-center gap-1.5 mb-1 flex-wrap">
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size:0.68rem;">${e.actLabel || 'เอกสาร'}</span>
-                    <span class="small text-muted" style="font-size:0.72rem;">${e.size}</span>
+          <div class="col-lg-6 col-12">
+            <div class="p-3 bg-white rounded-3 border h-100 shadow-xs d-flex flex-column justify-content-between">
+              <!-- Top Row: Icon + Badge + Size + Action Button -->
+              <div class="d-flex align-items-center justify-content-between gap-2 mb-2.5 pb-2 border-bottom">
+                <div class="d-flex align-items-center gap-2 min-w-0">
+                  <div class="rounded p-1 bg-primary-subtle text-primary text-center d-flex align-items-center justify-content-center flex-shrink-0" style="width:34px; height:34px;">
+                    <i class="fa-solid ${e.icon || 'fa-file-lines'} fs-6"></i>
                   </div>
-                  <strong class="d-block text-dark small text-truncate" style="font-size:0.82rem;">${e.title}</strong>
-                  <p class="small text-muted mb-0 text-truncate" style="font-size:0.75rem;">${e.preview}</p>
+                  <div class="min-w-0">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size:0.7rem;">${e.actLabel || 'เอกสาร'}</span>
+                    <span class="small text-muted ms-1.5" style="font-size:0.75rem;">${e.size}</span>
+                  </div>
                 </div>
+                <button type="button" class="btn btn-xs btn-outline-primary px-2.5 py-1 flex-shrink-0" onclick="alertEvidenceModal('${safeTitle}', '${safePreview}')">
+                  <i class="fa-solid fa-eye me-1"></i>ดูเอกสาร
+                </button>
               </div>
-              <button type="button" class="btn btn-xs btn-outline-primary px-2.5 flex-shrink-0" onclick="alertEvidenceModal('${safeTitle}', '${safePreview}')">
-                <i class="fa-solid fa-eye me-1"></i>ดูเอกสาร
-              </button>
+
+              <!-- Body: Full File Title & Preview Description -->
+              <div class="flex-grow-1">
+                <h6 class="fw-bold text-navy mb-1.5" style="font-size: 0.88rem; line-height: 1.45; word-break: break-word;">
+                  ${e.title}
+                </h6>
+                <p class="small text-muted mb-0" style="font-size: 0.78rem; line-height: 1.4; word-break: break-word;">
+                  ${e.preview}
+                </p>
+              </div>
             </div>
           </div>
         `;
