@@ -116,8 +116,9 @@ async function sync() {
             topic: row[3] || '',
             status: row[4] || '',
             resolvedDate: row[5] || '',
-            developer: row[6] || '',
-            notes: row[7] || ''
+            resolvedTime: row[6] || '',
+            developer: row[7] || '',
+            notes: row[8] || ''
           });
         } else {
           const text = row.filter(Boolean).join(' ');
