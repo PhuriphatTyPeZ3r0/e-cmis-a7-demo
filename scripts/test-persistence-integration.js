@@ -21,15 +21,19 @@
  * Run: npm run test:integration
  */
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ljhabbwjxnoucrcrsoii.supabase.co';
-const SUPABASE_KEY = process.env.SUPABASE_KEY || 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
-
 const fs = require('fs');
 const path = require('path');
 const rootDir = path.resolve(__dirname, '..');
 
+// shared with tests-e2e/*.spec.js — see scripts/lib/supabase-rest.js
+const { sbFetch, seedCase: seedCaseShared, cleanupCase, logRequestEvent, getEvents, getRequest } = require('./lib/supabase-rest');
+
 const RUN_ID = Date.now();
-let seedSeq = 0;
+
+// this suite's fixtures keep the TEST-INTEGRATION- prefix used since it first shipped
+function seedCase(status, label) {
+  return seedCaseShared(status, label, { tagPrefix: 'TEST-INTEGRATION' });
+}
 
 let pass = 0;
 let fail = 0;
@@ -44,110 +48,6 @@ function assert(cond, msg) {
     failures.push(msg);
     console.log(`    ❌ ${msg}`);
   }
-}
-
-async function sbFetch(pathAndQuery, opts = {}) {
-  const url = `${SUPABASE_URL}/rest/v1/${pathAndQuery}`;
-  const headers = Object.assign(
-    {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    opts.headers || {}
-  );
-  const res = await fetch(url, Object.assign({}, opts, { headers }));
-  const text = await res.text();
-  let data = null;
-  if (text) {
-    try { data = JSON.parse(text); } catch (e) { data = text; }
-  }
-  return { ok: res.ok, status: res.status, data };
-}
-
-/* สร้าง fixture เคสทดสอบของตัวเอง — tcc_id/trr_id เป็น auto-generated
-   (IDENTITY ALWAYS / nextval sequence ตามลำดับ ยืนยันจาก information_schema
-   แล้วก่อนออกแบบ) จึง insert ได้โดยไม่ต้องคำนวณ id เอง */
-async function seedCase(status, label) {
-  seedSeq++;
-  const tccNo = `TEST-INTEGRATION-${RUN_ID}-${seedSeq}`;
-  const insCase = await sbFetch('tbl_cmp_case', {
-    method: 'POST',
-    headers: { Prefer: 'return=representation' },
-    body: JSON.stringify({
-      tcc_no: tccNo,
-      tcc_subject: `[Automated Integration Test Fixture] ${label}`
-    })
-  });
-  if (!insCase.ok || !insCase.data || !insCase.data[0]) {
-    throw new Error(`seedCase(${label}): insert tbl_cmp_case failed — ${JSON.stringify(insCase.data)}`);
-  }
-  const tccId = insCase.data[0].tcc_id;
-
-  const insReq = await sbFetch('tbl_res_request', {
-    method: 'POST',
-    headers: { Prefer: 'return=representation' },
-    body: JSON.stringify({ tcc_id: tccId, trr_status: status })
-  });
-  if (!insReq.ok || !insReq.data || !insReq.data[0]) {
-    throw new Error(`seedCase(${label}): insert tbl_res_request failed — ${JSON.stringify(insReq.data)}`);
-  }
-  const trrId = insReq.data[0].trr_id;
-
-  return { tccId, trrId, tccNo };
-}
-
-/* RLS on this project only grants the anon/publishable key INSERT/SELECT/UPDATE on these
-   3 tables (verified via pg_policies — no DELETE policy for anon at all), so a hard DELETE
-   here would silently no-op (PostgREST returns 200 with 0 rows affected, not an error) and
-   leave every fixture orphaned. Soft-delete via is_deleted instead — the same convention
-   every read query in the app already uses (.eq('is_deleted', false)), so a soft-deleted
-   fixture is invisible to the app even though the row physically remains. */
-async function cleanupCase(tccId, trrId) {
-  // tbl_res_request_event has no anon UPDATE or DELETE policy at all, so the SIGNED/
-  // RESOLVED/RESOLVED_72 audit rows this suite creates can't be cleaned up by design —
-  // acceptable, since an audit trail is meant to be append-only/immutable anyway. They
-  // stay attached to a trr_id whose parent case ends up soft-deleted below.
-  if (trrId) {
-    await sbFetch(`tbl_res_request?trr_id=eq.${trrId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ is_deleted: true })
-    });
-  }
-  if (tccId) {
-    await sbFetch(`tbl_cmp_case?tcc_id=eq.${tccId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ is_deleted: true })
-    });
-  }
-}
-
-/* จำลอง ECMIS.logRequestEvent(trrId, fromStatus, toStatus, opts) จาก assets/ecmis-app.js —
-   ทำงานที่ระดับ status CODE ตรงๆ (ไม่ใช่ key name อย่างของจริง เพราะ test นี้ทดสอบที่ data-layer) */
-async function logRequestEvent(trrId, fromStatus, toStatus, opts = {}) {
-  return sbFetch('tbl_res_request_event', {
-    method: 'POST',
-    headers: { Prefer: 'return=representation' },
-    body: JSON.stringify({
-      trr_id: trrId,
-      trre_type: opts.type || 'STATUS_CHANGE',
-      trre_from_status: fromStatus,
-      trre_to_status: toStatus,
-      trre_actor_role: opts.actorRole || null,
-      trre_note: opts.note || null,
-      trre_data: opts.data || null
-    })
-  });
-}
-
-async function getEvents(trrId) {
-  const res = await sbFetch(`tbl_res_request_event?trr_id=eq.${trrId}&order=trre_id.asc`);
-  return res.data || [];
-}
-
-async function getRequest(trrId) {
-  const res = await sbFetch(`tbl_res_request?trr_id=eq.${trrId}`);
-  return res.data && res.data[0];
 }
 
 /* ===================================================================
@@ -203,6 +103,32 @@ async function scenarioA() {
       assert(row && row.trr_status === '109', 'TC-ST-02: trr_status persisted as 109 on re-read');
       const events = await getEvents(fx.trrId);
       assert(events.length === 2, 'TC-ST-02: exactly 2 audit events recorded');
+    } finally {
+      if (fx) await cleanupCase(fx.tccId, fx.trrId);
+    }
+  }
+
+  // TC-ST-07 (State Transition): order.html's act==='save_order' — 018/019 -> 020
+  // (UNDER_INVESTIGATION, formalized into STATUS_CODE this session — see
+  // sql/add_under_investigation_status.sql)
+  {
+    let fx;
+    try {
+      fx = await seedCase('019', 'order-save-order');
+      const upd = await sbFetch(`tbl_res_request?trr_id=eq.${fx.trrId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ trr_status: '020' })
+      });
+      assert(upd.ok, 'TC-ST-07: update trr_status 019→020 (save_order) succeeds');
+      await logRequestEvent(fx.trrId, '019', '020', {
+        type: 'SIGNED', actorRole: 'secgen',
+        data: { docType: 'คำสั่งแต่งตั้งองค์คณะพนักงาน ป.ป.ท.', orderNo: '210/2569', signerName: 'นายอภิชาติ สุจริตกุล', method: 'hand' }
+      });
+      const row = await getRequest(fx.trrId);
+      assert(row && row.trr_status === '020', 'TC-ST-07: trr_status persisted as 020 (UNDER_INVESTIGATION) on re-read');
+      const events = await getEvents(fx.trrId);
+      const signedEvt = events.find(e => e.trre_type === 'SIGNED');
+      assert(signedEvt && signedEvt.trre_data && signedEvt.trre_data.orderNo === '210/2569', 'TC-ST-07: SIGNED event carries orderNo metadata');
     } finally {
       if (fx) await cleanupCase(fx.tccId, fx.trrId);
     }
@@ -408,6 +334,61 @@ async function scenarioC() {
       assert(hasNoGuiltyFields, 'TC-EP-03: guilty-family fields (guiltyCriminal72/guiltyDiscipline72/criminalTrack72/disciplinaryTrack72) are absent for the non-GUILTY_72 equivalence class');
     } finally {
       if (fx) await cleanupCase(fx.tccId, fx.trrId);
+    }
+  }
+
+  // TC-ST-08 (State Transition): ruling-report.html's #btnDraftDone — 111 -> 112
+  // (PENDING_SIGN_RULING_72). This button only wrote ECMIS.Model.CaseStore (mock) until
+  // this session — now goes through the same ECMIS.updateCaseStatus() helper chairman.html
+  // already used.
+  {
+    let fx;
+    try {
+      fx = await seedCase('111', 'ruling-draft-done');
+      const upd = await sbFetch(`tbl_res_request?trr_id=eq.${fx.trrId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ trr_status: '112' })
+      });
+      assert(upd.ok, 'TC-ST-08: update trr_status 111→112 (btnDraftDone) succeeds');
+      await logRequestEvent(fx.trrId, '111', '112');
+      const row = await getRequest(fx.trrId);
+      assert(row && row.trr_status === '112', 'TC-ST-08: trr_status persisted as 112 (PENDING_SIGN_RULING_72) on re-read');
+    } finally {
+      if (fx) await cleanupCase(fx.tccId, fx.trrId);
+    }
+  }
+
+  // TC-ST-09 (State Transition + Equivalence Partitioning): ruling-report.html's
+  // #btnSignRuling — 112 -> {100,113,114,115} depending on which of the 4
+  // nextStatusPatchByResolution() branches fires (one representative case per class)
+  {
+    const targets = [
+      { label: 'MORE_INVESTIGATE_72', to: '100' }, // -> PENDING_SECTION_72
+      { label: 'NO_MERIT_72', to: '113' },          // -> PENDING_AREA_NOTICE_72
+      { label: 'FORWARD_NACC', to: '114' },         // -> DISPATCHING_NACC_72
+      { label: 'GUILTY_72 (default branch)', to: '115' } // -> PENDING_DISPATCH_GUILTY_72
+    ];
+    for (const t of targets) {
+      let fx;
+      try {
+        fx = await seedCase('112', `ruling-sign-${t.label}`);
+        const upd = await sbFetch(`tbl_res_request?trr_id=eq.${fx.trrId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ trr_status: t.to })
+        });
+        assert(upd.ok, `TC-ST-09 (${t.label}): update trr_status 112→${t.to} (btnSignRuling) succeeds`);
+        await logRequestEvent(fx.trrId, '112', t.to, {
+          type: 'SIGNED', actorRole: 'chairman',
+          data: { docType: 'รายงานวินิจฉัยชี้มูล', signerName: 'นายวิชัย ยุติธรรม', method: 'hand' }
+        });
+        const row = await getRequest(fx.trrId);
+        assert(row && row.trr_status === t.to, `TC-ST-09 (${t.label}): trr_status persisted as ${t.to} on re-read`);
+        const events = await getEvents(fx.trrId);
+        const signedEvt = events.find(e => e.trre_type === 'SIGNED');
+        assert(signedEvt, `TC-ST-09 (${t.label}): a SIGNED audit event exists`);
+      } finally {
+        if (fx) await cleanupCase(fx.tccId, fx.trrId);
+      }
     }
   }
 }
