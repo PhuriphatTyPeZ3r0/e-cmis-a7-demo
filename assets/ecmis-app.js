@@ -2896,9 +2896,19 @@ ${bodyContent}
   }, 300);
 }
 
-/* ---------------------------------------------------------- PRINT DOC (Official A4 Clean Print) */
+/* ---------------------------------------------------------- PRINT DOC (Official A4 Clean Print 100% Auto-Scale) */
 function printDoc(containerEl){
-  const target = containerEl || document.getElementById('docPaper');
+  let target = containerEl;
+  if (!target) {
+    // Check if modal doc is open and visible
+    const modalDoc = document.getElementById('modalDocPaper');
+    if (modalDoc && modalDoc.offsetParent !== null) {
+      target = modalDoc;
+    } else {
+      target = document.getElementById('docPaper') || document.querySelector('.doc-paper') || document.querySelector('.a4-paper');
+    }
+  }
+
   if (!target) {
     window.print();
     return;
@@ -2918,7 +2928,7 @@ function printDoc(containerEl){
 <html>
 <head>
 <meta charset="utf-8">
-<title>พิมพ์เอกสาร</title>
+<title>พิมพ์เอกสารทางการ</title>
 <link rel="stylesheet" href="assets/a4-ecmis-workspace.css">
 <link rel="stylesheet" href="assets/ecmis-app.css">
 <style>
@@ -2935,6 +2945,7 @@ html, body { margin: 0; padding: 0; background: #fff; width: 210mm; }
   padding: 25mm 20mm 20mm 25mm !important;
   page-break-after: always !important;
   break-after: page !important;
+  transform: none !important;
 }
 .doc-paper:last-child, .a4-paper:last-child {
   page-break-after: auto !important;
@@ -2943,7 +2954,7 @@ html, body { margin: 0; padding: 0; background: #fff; width: 210mm; }
 </style>
 </head>
 <body>
-${target.innerHTML}
+${target.outerHTML || target.innerHTML}
 </body>
 </html>`);
   frameDoc.close();
@@ -2951,8 +2962,31 @@ ${target.innerHTML}
   setTimeout(() => {
     printFrame.contentWindow.focus();
     printFrame.contentWindow.print();
-  }, 300);
+  }, 350);
 }
+
+// Global Lifecycle Listeners for Browser Print (Ctrl+P and window.print())
+window.addEventListener('beforeprint', function () {
+  const scaledElements = document.querySelectorAll('#modalDocPaperContainer, #docPaperContainer, .ws-paper-stage > div, .ws-paper-stage, .doc-paper-wrap');
+  scaledElements.forEach(el => {
+    el.setAttribute('data-print-prev-transform', el.style.transform || '');
+    el.setAttribute('data-print-prev-height', el.style.height || '');
+    el.style.transform = 'none';
+    el.style.height = 'auto';
+  });
+});
+
+window.addEventListener('afterprint', function () {
+  const scaledElements = document.querySelectorAll('[data-print-prev-transform]');
+  scaledElements.forEach(el => {
+    const prevT = el.getAttribute('data-print-prev-transform');
+    const prevH = el.getAttribute('data-print-prev-height');
+    el.style.transform = prevT || '';
+    if (prevH) el.style.height = prevH;
+    el.removeAttribute('data-print-prev-transform');
+    el.removeAttribute('data-print-prev-height');
+  });
+});
 
 /* ---------------------------------------------------------- DIALOGS */
 function confirmAction(opts){
