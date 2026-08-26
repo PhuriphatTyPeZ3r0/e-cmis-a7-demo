@@ -442,14 +442,20 @@
       <aside class="ws-doc-pane" style="top:calc(var(--topbar-h) + 14px)">
         <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
         <div class="ws-doc-toolbar">
-          <div class="d-flex flex-column w-100 gap-2">
-            <!-- Row 1: Document Tabs (Left) & Action Controls (Right) -->
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-              <div class="ws-doc-tabs" id="docTabs">
-                <button class="ws-doc-tab active" data-doc="ruling"><i class="fa-solid fa-file-signature me-1"></i>รายงานวินิจฉัยชี้มูล</button>
-                <button class="ws-doc-tab" data-doc="discipline"><i class="fa-solid fa-file-shield me-1"></i>หนังสือลงโทษทางวินัย</button>
+          <div class="d-flex flex-column w-100 gap-1">
+            <!-- Top Row: Document Tabs, Split Accused Versions & Action Buttons -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
+              <div class="d-flex align-items-center flex-wrap gap-2">
+                <div class="ws-doc-tabs" id="docTabs">
+                  <button class="ws-doc-tab active" data-doc="ruling">รายงานวินิจฉัยชี้มูล</button>
+                  <button class="ws-doc-tab" data-doc="discipline">หนังสือลงโทษทางวินัย</button>
+                </div>
+                <div class="d-none align-items-center gap-1 ms-1" id="splitReportPane" style="font-size:.78rem">
+                  <span class="text-secondary small fw-medium"><i class="fa-solid fa-files me-1"></i>ฉบับ:</span>
+                  <div class="d-flex gap-1 flex-wrap" id="splitReportTabs"></div>
+                </div>
               </div>
-              <div class="d-flex gap-1 align-items-center ms-auto">
+              <div class="d-flex gap-1 align-items-center">
                 <button type="button" class="btn-doc-edit" id="btnDocEdit" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
                   <i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>
                 </button>
@@ -459,13 +465,7 @@
               </div>
             </div>
 
-            <!-- Sub Row: Split Report Accused Tabs (under doc-tab across full width) -->
-            <div class="d-none align-items-center gap-1 flex-wrap py-1 px-2 rounded bg-light border" id="splitReportPane" style="font-size:.78rem">
-              <span class="text-secondary small fw-semibold"><i class="fa-solid fa-files me-1"></i>ฉบับ:</span>
-              <div class="d-flex gap-1 flex-wrap" id="splitReportTabs"></div>
-            </div>
-
-            <!-- Symmetrical Pagination & Zoom Navigator Bar -->
+            <!-- Bottom Row: Symmetrical Pagination & Zoom Navigator Bar -->
             <div class="pagination-toolbar-symmetric" id="docPaginationBar">
               <!-- Left Group: View Mode & Page Jump Controls -->
               <div class="toolbar-group">
@@ -499,13 +499,14 @@
 
               <!-- Right Group: Zoom Stepper Controls -->
               <div class="toolbar-group ms-auto">
-                <div class="d-flex align-items-center bg-dark rounded px-1" style="background:#06182c !important; border:1px solid #1a3d66; height:26px;">
-                  <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
-                  <span style="font-size:0.75rem; width:34px; text-align:center; font-weight:600; color:#fff;" id="zoomLevelText">75%</span>
-                  <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                <div class="zoom-stepper-box">
+                  <button type="button" class="btn btn-link btn-xs p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                  <span class="zoom-level-text" id="zoomLevelText">75%</span>
+                  <button type="button" class="btn btn-link btn-xs p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </div>
         <div class="doc-edit-bar" id="docEditBar">
@@ -1148,12 +1149,18 @@
     /* ระบบสลับฉบับรายงาน (Split Report Tabs) */
     function renderSplitReportTabs() {
       const container = document.getElementById('splitReportTabs');
+      const splitPane = document.getElementById('splitReportPane');
+      if (!container) return;
+      if (!accusedRealList || accusedRealList.length <= 1) {
+        if (splitPane) splitPane.classList.add('d-none');
+        return;
+      }
       const tabs = [
         { id: null, label: 'ฉบับรวม (ทุกคน)' },
-        ...accusedRealList.map((a, idx) => ({ id: idx, label: `ฉบับที่ ${idx + 1}: ${a.name.split(' ')[0] || a.name}` }))
+        ...accusedRealList.map((a, idx) => ({ id: idx, label: `ฉบับที่ ${idx + 1}: ${(a.name || '').split(' ')[0] || a.name}` }))
       ];
       container.innerHTML = tabs.map(t => `
-        <button type="button" class="btn btn-sm ${activeSplitAccusedIndex === t.id ? 'btn-navy' : 'btn-outline-secondary'} py-0 px-2 split-tab-btn" data-idx="${t.id !== null ? t.id : 'all'}">
+        <button type="button" class="btn btn-xs ${activeSplitAccusedIndex === t.id ? 'btn-navy' : 'btn-outline-secondary'} py-0 px-2 split-tab-btn" data-idx="${t.id !== null ? t.id : 'all'}">
           ${t.label}
         </button>`).join('');
 
@@ -1165,6 +1172,9 @@
           renderDoc();
         });
       });
+      if (splitPane && docTab === 'ruling') {
+        splitPane.classList.remove('d-none');
+      }
     }
 
     function selectedChargesText(forAccused = null) {
@@ -2019,13 +2029,17 @@
       updatePaginationUI();
     });
 
+    const ZOOM_STEPS = [0.40, 0.50, 0.60, 0.70, 0.75, 0.80, 0.90, 1.00, 1.10, 1.25, 1.50];
+
     $('#btnZoomIn').on('click', function () {
-      docZoomLevel = Math.min(1.3, Math.round((docZoomLevel + 0.08) * 100) / 100);
+      const nextStep = ZOOM_STEPS.find(s => s > docZoomLevel + 0.005);
+      docZoomLevel = nextStep !== undefined ? nextStep : Math.min(1.50, Math.round((docZoomLevel + 0.1) * 100) / 100);
       applyZoom();
     });
 
     $('#btnZoomOut').on('click', function () {
-      docZoomLevel = Math.max(0.35, Math.round((docZoomLevel - 0.08) * 100) / 100);
+      const prevSteps = ZOOM_STEPS.filter(s => s < docZoomLevel - 0.005);
+      docZoomLevel = prevSteps.length > 0 ? prevSteps[prevSteps.length - 1] : Math.max(0.40, Math.round((docZoomLevel - 0.1) * 100) / 100);
       applyZoom();
     });
 
