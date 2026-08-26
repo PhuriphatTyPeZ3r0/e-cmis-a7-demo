@@ -32,6 +32,8 @@
     .case-chip{color:var(--ecmis-navy);font-weight:600;text-decoration:none;white-space:nowrap}
     .case-chip:hover{text-decoration:underline}
     .remark-cell{font-size:.78rem;color:var(--ecmis-muted);line-height:1.4}
+    .case-schedule-table{font-size:.76rem}
+    .case-schedule-table th,.case-schedule-table td{padding:.3rem .5rem;vertical-align:middle}
     .detail-tabs{display:flex;gap:.4rem;padding:.7rem .9rem 0}
     .detail-tab{border:1px solid var(--border-divider);border-bottom:none;background:var(--bg-page);color:var(--ecmis-muted);
       padding:.45rem 1rem;border-radius:8px 8px 0 0;font-size:.85rem;font-weight:600;cursor:pointer}
@@ -372,8 +374,10 @@
               <td>
                 <div class="fw-medium">${it.trci_topic}</div>
                 <span class="cat-badge ${AR.CATEGORY_CLASS[it.category]}" style="font-size:0.68rem; padding:0.1rem 0.45rem">${AR.CATEGORY_LABEL[it.category]}</span>
+                ${AR.renderQualifierChips(it) ? `<div class="mt-1">${AR.renderQualifierChips(it)}</div>` : ''}
+                ${AR.renderPresenters(it)}
               </td>
-              <td>${AR.renderCaseRef(it.case_ref)}</td>
+              <td>${AR.renderCaseRef(it.case_ref)}${AR.renderCaseSchedule(it)}</td>
               <td><span class="small fw-medium">${it.owner && it.owner !== '-' ? it.owner : '<span class="text-muted">—</span>'}</span></td>
               <td><span class="small text-muted">${it.org && it.org !== '-' ? it.org : '—'}</span></td>
               <td class="remark-cell">${it.remark && it.remark !== '-' ? it.remark : '<span class="text-muted">—</span>'}</td>
@@ -395,8 +399,10 @@
                 ? `<input class="form-control form-control-sm agenda-no-input" data-trci="${it.trci_id}" value="${it.trci_number}">`
                 : MS(it.trci_number)}</td>
           <td><span class="cat-badge ${AR.CATEGORY_CLASS[it.category]}">${AR.CATEGORY_LABEL[it.category]}</span></td>
-          <td>${it.trci_topic}</td>
-          <td>${AR.renderCaseRef(it.case_ref)}</td>
+          <td>${it.trci_topic}
+            ${AR.renderQualifierChips(it) ? `<div class="mt-1">${AR.renderQualifierChips(it)}</div>` : ''}
+            ${AR.renderPresenters(it)}</td>
+          <td>${AR.renderCaseRef(it.case_ref)}${AR.renderCaseSchedule(it)}</td>
           <td><span class="small fw-medium">${it.owner && it.owner !== '-' ? it.owner : '<span class="text-muted">—</span>'}</span></td>
           <td><span class="small text-muted">${it.org && it.org !== '-' ? it.org : '—'}</span></td>
           <td class="remark-cell">${it.remark && it.remark !== '-' ? it.remark : '<span class="text-muted">—</span>'}
