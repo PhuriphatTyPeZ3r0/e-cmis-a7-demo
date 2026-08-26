@@ -416,16 +416,6 @@
           </div>
 
           <div class="d-flex align-items-center gap-2 flex-wrap">
-            <!-- Meeting Switcher Dropdown -->
-            <div class="dropdown">
-              <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" type="button" id="meetingSwitchBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fa-solid fa-calendar-days me-1 text-primary"></i><span id="selectedMeetingLabel">ครั้งที่ 38/2569</span>
-              </button>
-              <ul class="dropdown-menu dropdown-menu-end shadow-sm" id="meetingSwitchMenu" style="min-width: 280px; max-height: 360px; overflow-y: auto;">
-                <!-- Populated via JS -->
-              </ul>
-            </div>
-
             <button type="button" class="btn btn-sm btn-outline-primary" id="btnExportAgendaPack" title="ดาวน์โหลดเล่มเอกสารระเบียบวาระรวมทุกวาระ">
               <i class="fa-solid fa-file-pdf me-1 text-danger"></i>เล่มระเบียบวาระ (.pdf)
             </button>
@@ -1140,36 +1130,7 @@
       selectAgenda(currentAgendaIdx, false);
     }
 
-    function renderMeetingSwitcherMenu() {
-      const menu = document.getElementById('meetingSwitchMenu');
-      if (!menu) return;
 
-      menu.innerHTML = `
-        <li class="dropdown-header text-muted small fw-bold px-3 py-1">สลับรอบการประชุมคณะกรรมการ</li>
-        <li><hr class="dropdown-divider my-1"></li>
-      ` + BOARD_MEETINGS.map(m => {
-        const isActive = (m.id === currentMeeting.id);
-        const statusBadge = m.status === 'CLOSED' 
-          ? '<span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.68rem;">เสร็จสิ้น</span>'
-          : (m.status === 'ACTIVE_READING' ? '<span class="badge bg-warning text-dark" style="font-size:0.68rem;">อ่านล่วงหน้า</span>' : '<span class="badge bg-light text-muted border" style="font-size:0.68rem;">กำหนดการ</span>');
-        
-        return `
-          <li>
-            <a class="dropdown-item d-flex justify-content-between align-items-center py-2 px-3 ${isActive ? 'active bg-primary text-white' : ''}"
-              href="board-detail.html?id=${m.id}">
-              <div>
-                <strong class="d-block ${isActive ? 'text-white' : 'text-navy'}" style="font-size:0.85rem;">ครั้งที่ ${m.name}</strong>
-                <small class="${isActive ? 'text-white-50' : 'text-muted'}" style="font-size:0.75rem;">${ECMIS.thaiDate(m.date)}</small>
-              </div>
-              <div class="text-end ms-2">
-                ${statusBadge}
-                <div class="small ${isActive ? 'text-white-50' : 'text-muted'} mt-0.5" style="font-size:0.7rem;">${m.agendas ? m.agendas.length : m.agendaCount} วาระ</div>
-              </div>
-            </a>
-          </li>
-        `;
-      }).join('');
-    }
 
     function updateAgendaKPIs() {
       if (!currentMeeting || !currentMeeting.agendas) return;
