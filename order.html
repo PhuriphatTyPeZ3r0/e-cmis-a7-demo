@@ -113,33 +113,38 @@
                 <tbody id="memberTb"></tbody>
               </table>
             </div>
-            <div class="card-body">
+            <div class="card-body" id="compRulesCard">
               <div class="rule-panel" id="compRules"></div>
             </div>
           </div>
 
-          <div class="ws-card mb-3">
+          <!-- การ์ดนี้ทั้งใบเป็นเรื่องของ "ผู้ลงนาม" ล้วนๆ (ชื่อผู้มีอำนาจ + สถานะส่งออก/ลงนาม) —
+               ผู้ร่าง (affairs) ไม่ใช่ผู้ลงนามจึงไม่ต้องเห็นการ์ดนี้เลย เห็นแค่ปุ่ม "ส่งออกเพื่อลงนาม"/
+               "บันทึกร่างคำสั่ง" ที่แถบ action bar ด้านล่างพอ -->
+          <div class="ws-card mb-3" id="signCard">
             <div class="card-header"><i class="fa-solid fa-signature"></i> การลงนามคำสั่ง</div>
             <div class="card-body">
               <div class="kv mb-2"><span class="k">ผู้มีอำนาจลงนามตามกฎหมาย:</span>
                 <span class="v" id="signerName"></span>
               </div>
 
-              <div id="delegateBox" class="d-none mb-3">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="delegate">
-                  <label class="form-check-label" for="delegate">
-                    <strong>ประธานฯ มอบหมายให้เลขาธิการฯ ลงนามในเอกสารแทน</strong>
-                    <br><small class="text-muted">อาศัย <strong>ม.18 วรรคสาม</strong> —
-                      "ในการปฏิบัติหน้าที่ของประธานกรรมการ
-                      ประธานกรรมการจะมอบหมายให้เลขาธิการลงนามในเอกสารแทนก็ได้"</small>
-                  </label>
+              <div id="sigSection" class="d-none">
+                <div id="delegateBox" class="d-none mb-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="delegate">
+                    <label class="form-check-label" for="delegate">
+                      <strong>ประธานฯ มอบหมายให้เลขาธิการฯ ลงนามในเอกสารแทน</strong>
+                      <br><small class="text-muted">อาศัย <strong>ม.18 วรรคสาม</strong> —
+                        "ในการปฏิบัติหน้าที่ของประธานกรรมการ
+                        ประธานกรรมการจะมอบหมายให้เลขาธิการลงนามในเอกสารแทนก็ได้"</small>
+                    </label>
+                  </div>
                 </div>
-              </div>
-              <div class="sig-box" id="sigBox">
-                <i class="fa-solid fa-file-signature fa-2x mb-2" style="color:#7C8CA3"></i>
-                <div class="sig-name">ยังไม่ได้ลงนาม</div>
-                <div class="sig-meta" id="sigHint"></div>
+                <div class="sig-box" id="sigBox">
+                  <i class="fa-solid fa-file-signature fa-2x mb-2" style="color:#7C8CA3"></i>
+                  <div class="sig-name">ยังไม่ได้ลงนาม</div>
+                  <div class="sig-meta" id="sigHint"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -415,7 +420,11 @@
     if (!kase) throw new Error('ECMIS_CASE_NOT_FOUND');
     const role = ECMIS.currentRole();
     const resCode = params.get('res') || 'ACCEPT_S24P1';
-    const isSub = resCode === 'ACCEPT_S24P3';
+    /* ไม่มีลิงก์จริงในระบบที่ส่ง ?res= มาเลย (มีไว้ทดสอบเองด้วยมือเท่านั้น) — เส้นทางจริงต้องมาจาก
+       kase.subCommittee (ผ่านอนุกลั่นกรองคณะฯ = สาย "sub" เสนอตรงเลขาธิการฯ = สาย "base") ซึ่งเป็น
+       ฟิลด์เดียวกับที่ใช้ดึงองค์ประกอบอนุกรรมการอัตโนมัติด้านล่าง มิเช่นนั้นเคสที่ผ่านอนุกลั่นกรองจริง
+       จะตกไปที่เลขาธิการฯ แทนประธานฯ เมื่อเปิดจาก inbox.html ตรงๆ */
+    const isSub = !!kase.subCommittee || resCode === 'ACCEPT_S24P3';
     const M = ECMIS.mergeField;
 
     const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
@@ -626,6 +635,12 @@
       }
     }
 
+    /* คนละ concern กัน 2 อย่าง: "ผู้ลงนามคือใคร" (SIGNER, มาจาก isSub/delegate เหมือนเดิม) กับ
+       "ผู้ลงนามได้ส่งเรื่องมาถึงคิวจริงหรือยัง" (สถานะ PENDING_SIGN_ORDER_* — ใหม่ที่เพิ่มเข้ามา
+       เพื่อไม่ให้ affairs ต้องมีสิทธิ์ signer role ตัวเองถึงจะกดปุ่มในหน้านี้ต่อได้เลย) */
+    function isSentForSign() {
+      return kase.status === 'PENDING_SIGN_ORDER_CHAIRMAN' || kase.status === 'PENDING_SIGN_ORDER_SECGEN';
+    }
     function refreshSigner() {
       SIGNER = isDelegated() ? DELEGATE_SIGNER : BASE_SIGNER;
       document.getElementById('signerName').textContent = `${SIGNER.name} — ${SIGNER.title}`;
@@ -637,16 +652,30 @@
       }
       ECMIS.STATUS.RESOLVED.owner = SIGNER.roleId;
       renderDoc();
+
+      const isSignerViewing = role.id === SIGNER.roleId;
+      const sent = isSentForSign();
+      /* การ์ด "การลงนามคำสั่ง" ทั้งใบ (ชื่อผู้มีอำนาจ + compRules + กล่องลงนาม) เป็นเรื่องของ
+         ผู้ลงนามล้วนๆ ไม่ใช่การกรอกข้อมูลเอกสารของผู้ร่าง (affairs) — ผู้ร่างไม่ต้องเห็นการ์ดนี้เลย
+         เห็นแค่ปุ่ม "ส่งออกเพื่อลงนาม"/"บันทึกร่างคำสั่ง" ที่ action bar ด้านล่างพอ */
+      document.getElementById('signCard').classList.toggle('d-none', !isSignerViewing);
+      document.getElementById('compRulesCard').classList.toggle('d-none', !isSignerViewing);
+      document.getElementById('sigSection').classList.toggle('d-none', !isSignerViewing);
+
       const btns = [];
-      if (signedAppoint && role.id === SIGNER.roleId) {
+      if (!isSignerViewing) {
+        if (!sent) {
+          if (ECMIS.can('order24.draft', role.id))
+            btns.push({ act: 'draft', label: 'บันทึกร่างคำสั่ง', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' });
+          btns.push({ act: 'send_order', label: 'ส่งออกเพื่อลงนาม', icon: 'fa-paper-plane', cls: 'btn-gold' });
+        }
+        /* sent && !isSignerViewing: ส่งไปแล้ว รอฝั่งลงนาม ไม่มีอะไรให้ผู้ร่างกดต่อ */
+      } else if (signedAppoint) {
         btns.push({ act: 'edit_sign', label: 'แก้ไข / ลงนามใหม่', icon: 'fa-pen-to-square', cls: 'btn-outline-warning' });
         btns.push({ act: 'clear_sign', label: 'ลบลายเซ็น', icon: 'fa-trash-can', cls: 'btn-outline-danger' });
         btns.push({ act: 'save_order', label: 'บันทึกคำสั่งและส่งต่อ', icon: 'fa-paper-plane', cls: 'btn-success' });
       } else {
-        if (ECMIS.can('order24.draft', role.id))
-          btns.push({ act: 'draft', label: 'บันทึกร่างคำสั่ง', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' });
-        if (role.id === SIGNER.roleId)
-          btns.push({ act: 'sign', label: 'ลงนามดิจิทัลคำสั่ง', icon: 'fa-signature', cls: 'btn-gold' });
+        btns.push({ act: 'sign', label: 'ลงนามดิจิทัลคำสั่ง', icon: 'fa-signature', cls: 'btn-gold' });
       }
       document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(
         Object.assign({}, kase, { status: 'RESOLVED' }), role.id, btns, { forceAllowed: btns.length > 0 });
@@ -785,9 +814,11 @@
       const code = FORM_CODES[isSub ? 'sub' : 'base'][caseOriginCode()];
 
       const appointHtml = `
-    <div style="text-align:center;margin-bottom:8px"><img src="assets/doc_logo.jpg" alt="ตราครุฑ" style="height:60px"></div>
-    <div class="doc-title">
-      คำสั่ง${isSub ? 'คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ' : 'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ'}<br>
+    <div style="text-align:center;margin-bottom:8px"><img src="assets/doc_logo.jpg" alt="ตราครุฑ" style="height:76px"></div>
+    <div class="doc-title" style="font-size:20pt">
+      คำสั่ง${isSub ? 'คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ' : 'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ'}
+    </div>
+    <div class="doc-sub">
       ที่ ${M(no, '………/………')}
     </div>
     <div class="doc-sub">
@@ -881,7 +912,7 @@
         (${M(SIGNER.name)})<br>${M(SIGNER.title)}
         ${signedAppoint ? `<br><span style="font-size:0.75rem;color:#16A34A"><i class="fa-solid fa-circle-check"></i> ลงนามดิจิทัลเมื่อ ${new Date().toLocaleString('th-TH')}</span>` : ''}
       </div>
-      <div style="text-align:left;margin-top:18px;font-size:14px;color:#555">
+      <div style="text-align:left;margin-top:18px;font-size:16pt">
         ปปท. ${code}
       </div>
     </div>`;
@@ -1024,7 +1055,7 @@
     <div>
       <div class="doc-indent" style="margin-top:22px;text-indent:0">- เห็นชอบ<br>- ลงนามแล้ว</div>
       <div class="doc-sign" style="margin-top:20px">(${'…'.repeat(30)})<br>${s.title}</div>
-      <div style="text-align:left;margin-top:18px;font-size:14px;color:#555">ปปท. ${code}</div>
+      <div style="text-align:left;margin-top:18px;font-size:16pt">ปปท. ${code}</div>
     </div>`;
       paginateFromHtml(document.getElementById('docPaper'), memoHtml, `บันทึกเสนอเพื่อลงนามคำสั่งแต่งตั้ง${orderKind}`);
     }
@@ -1215,11 +1246,9 @@
       }
 
       const amendHtml = `
-    <div style="text-align:center;margin-bottom:8px"><img src="assets/doc_logo.jpg" alt="ตราครุฑ" style="height:60px"></div>
-    <div class="doc-title">
-      คำสั่ง${orgFullName}<br>
-      ที่ ${M(no, '………/………')}
-    </div>
+    <div style="text-align:center;margin-bottom:8px"><img src="assets/doc_logo.jpg" alt="ตราครุฑ" style="height:76px"></div>
+    <div class="doc-title" style="font-size:20pt">คำสั่ง${orgFullName}</div>
+    <div class="doc-sub">ที่ ${M(no, '………/………')}</div>
     <div class="doc-sub">เรื่อง ${meta.subject}</div>
     <div style="width:140px;margin:6px auto 14px;border-bottom:1px solid #333"></div>
     ${body}
@@ -1229,7 +1258,7 @@
         ลงชื่อ <span class="doc-dots"></span><br>
         (${M(s.name)})<br>${M(s.title)}
       </div>
-      <div style="text-align:left;margin-top:18px;font-size:14px;color:#555">
+      <div style="text-align:left;margin-top:18px;font-size:16pt">
         ${code === 'UNCODED' ? '(ไม่ปรากฏเลข ปปท. กำกับในต้นฉบับ)' : `ปปท. ${code}`}
       </div>
     </div>`;
@@ -1268,6 +1297,36 @@
       }
     });
 
+    /* ใช้ร่วมกันทั้งตอนผู้ร่าง "ส่งออกเพื่อลงนาม" และตอนผู้ลงนามกด "ลงนามดิจิทัลคำสั่ง" — เกณฑ์
+       องค์ประกอบ ม.24 ต้องผ่านก่อนส่งออกจริง ไม่ใช่รอให้ผู้ลงนามเจอเองทีหลัง (compRules ถูกซ่อนจาก
+       ผู้ร่างแล้ว แต่การ validate ต้องยังทำงานอยู่เบื้องหลังเหมือนเดิม) */
+    function checkCompositionOrWarn() {
+      const rulesOk = renderRules();
+      if (rulesOk) return true;
+      const comp = isSub ? null : ECMIS.panelComposition({
+        officers: members.filter(m => m.type === 'officer').length,
+        staff: members.filter(m => m.type === 'staff').length
+      });
+      const BLOCK_MSG = {
+        M24P1_MIN_PANEL: 'ม.24 วรรคหนึ่ง — "องค์คณะละไม่น้อยกว่าสองคนตามที่เลขาธิการแต่งตั้ง"',
+        M24P1_NO_OFFICER: 'ม.24 วรรคหนึ่ง — องค์คณะต้อง "ประกอบด้วยพนักงาน ป.ป.ท. อย่างน้อยหนึ่งคน"',
+        M24P1_OFFICER_RATIO: 'ม.24 วรรคหนึ่ง — กรณีตั้งเจ้าหน้าที่ ป.ป.ท. เกินสองคน "ต้องมีพนักงาน ป.ป.ท. ไม่น้อยกว่ากึ่งหนึ่งของจำนวนเจ้าหน้าที่ ป.ป.ท."'
+      };
+      const cite = comp && comp.blockedBy
+        ? `<div style="background:#fdecea;border-left:4px solid #DB2626;padding:.6rem .8rem;border-radius:0 6px 6px 0;margin-bottom:.6rem">
+         <strong>ฐานที่ระบบใช้บล็อก:</strong><br>${BLOCK_MSG[comp.blockedBy]}
+         <br><small>ปัจจุบัน พนักงาน ป.ป.ท. ${comp.officers} คน · เจ้าหน้าที่ ป.ป.ท. ${comp.staff} คน (รวม ${comp.total} คน)</small>
+       </div>`
+        : `<div class="mb-2">องค์ประกอบยังไม่ครบตามที่กฎหมายและแบบคำสั่งกำหนด</div>`;
+      Swal.fire({
+        icon: 'error',
+        title: isSub ? 'องค์ประกอบคณะอนุกรรมการไต่สวนยังไม่ครบ' : 'องค์ประกอบองค์คณะไม่เป็นไปตาม ม.24 วรรคหนึ่ง',
+        html: cite + document.getElementById('compRules').innerHTML,
+        confirmButtonColor: '#DB2626', customClass: { popup: 'text-start' }
+      });
+      return false;
+    }
+
     function handle(act) {
       if (act === 'draft' || act === 'memoDraft' || act === 'amendDraft') { ECMIS.toastOk('บันทึกร่างเรียบร้อย'); return; }
 
@@ -1295,33 +1354,33 @@
         return;
       }
 
+      if (act === 'send_order') {
+        if (!document.getElementById('orderNo').value.trim()) { ECMIS.toastWarn('กรุณากรอกเลขที่คำสั่งที่ขอจากงานสารบรรณ'); return; }
+        if (!checkCompositionOrWarn()) return;
+        const targetStatus = isSub ? 'PENDING_SIGN_ORDER_CHAIRMAN' : 'PENDING_SIGN_ORDER_SECGEN';
+        (async () => {
+          try {
+            if (kase.trr_id && sb) {
+              const { error } = await sb.from('tbl_res_request')
+                .update({ trr_status: ECMIS.STATUS_CODE[targetStatus] }).eq('trr_id', kase.trr_id);
+              if (error) throw error;
+            }
+          } catch (e) {
+            console.error(e);
+            ECMIS.toastWarn('บันทึกสถานะไปยังฐานข้อมูลไม่สำเร็จ (จะยังอัปเดตหน้าจอนี้ต่อไปก่อน): ' + e.message);
+          }
+          kase.status = targetStatus;
+          const memCase = ECMIS.CASES.find(x => x.id === kase.id);
+          if (memCase) memCase.status = targetStatus;
+          ECMIS.toastOk(`ส่งคำสั่งให้ ${SIGNER.title} ลงนามเรียบร้อย`);
+          setTimeout(() => location.href = ECMIS.homeHref(role.id), 1200);
+        })();
+        return;
+      }
+
       if (act === 'sign') {
         if (!document.getElementById('orderNo').value.trim()) { ECMIS.toastWarn('กรุณากรอกเลขที่คำสั่งที่ขอจากงานสารบรรณ'); return; }
-        const rulesOk = renderRules();
-        const comp = isSub ? null : ECMIS.panelComposition({
-          officers: members.filter(m => m.type === 'officer').length,
-          staff: members.filter(m => m.type === 'staff').length
-        });
-        const BLOCK_MSG = {
-          M24P1_MIN_PANEL: 'ม.24 วรรคหนึ่ง — "องค์คณะละไม่น้อยกว่าสองคนตามที่เลขาธิการแต่งตั้ง"',
-          M24P1_NO_OFFICER: 'ม.24 วรรคหนึ่ง — องค์คณะต้อง "ประกอบด้วยพนักงาน ป.ป.ท. อย่างน้อยหนึ่งคน"',
-          M24P1_OFFICER_RATIO: 'ม.24 วรรคหนึ่ง — กรณีตั้งเจ้าหน้าที่ ป.ป.ท. เกินสองคน "ต้องมีพนักงาน ป.ป.ท. ไม่น้อยกว่ากึ่งหนึ่งของจำนวนเจ้าหน้าที่ ป.ป.ท."'
-        };
-        if (!rulesOk) {
-          const cite = comp && comp.blockedBy
-            ? `<div style="background:#fdecea;border-left:4px solid #DB2626;padding:.6rem .8rem;border-radius:0 6px 6px 0;margin-bottom:.6rem">
-             <strong>ฐานที่ระบบใช้บล็อก:</strong><br>${BLOCK_MSG[comp.blockedBy]}
-             <br><small>ปัจจุบัน พนักงาน ป.ป.ท. ${comp.officers} คน · เจ้าหน้าที่ ป.ป.ท. ${comp.staff} คน (รวม ${comp.total} คน)</small>
-           </div>`
-            : `<div class="mb-2">องค์ประกอบยังไม่ครบตามที่กฎหมายและแบบคำสั่งกำหนด</div>`;
-          Swal.fire({
-            icon: 'error',
-            title: isSub ? 'องค์ประกอบคณะอนุกรรมการไต่สวนยังไม่ครบ' : 'องค์ประกอบองค์คณะไม่เป็นไปตาม ม.24 วรรคหนึ่ง',
-            html: cite + document.getElementById('compRules').innerHTML,
-            confirmButtonColor: '#DB2626', customClass: { popup: 'text-start' }
-          });
-          return;
-        }
+        if (!checkCompositionOrWarn()) return;
         ECMIS.signDialog(document.getElementById('docName').textContent + ' — เรื่องที่ ' + kase.id, `${SIGNER.name} — ${SIGNER.title}`, SIGNER_CERT)
           .then(res => {
             if (!res.isConfirmed) return;
@@ -1338,6 +1397,9 @@
 
       if (act === 'save_order') {
         const now = new Date();
+        const fromStatus = kase.status;
+        const orderNoVal = document.getElementById('orderNo').value.trim();
+
         if (ECMIS.Model && ECMIS.Model.SignatureStore) {
           ECMIS.Model.SignatureStore.create({
             caseId: kase.id,
@@ -1350,26 +1412,44 @@
         }
         ECMIS.Model.CaseStore.update(kase.id, {
           status: 'UNDER_INVESTIGATION',
-          orderNo: document.getElementById('orderNo').value.trim(),
+          orderNo: orderNoVal,
           orderSignedAt: now.toISOString()
         });
 
-        Swal.fire({
-          icon: 'success',
-          title: 'ออกคำสั่งเรียบร้อย — เสร็จสิ้นกระบวนงานไต่สวนเบื้องต้น',
-          html: `<div class="text-start" style="font-size:.9rem">
-            <p>คำสั่งที่ <strong>${document.getElementById('orderNo').value}</strong> ลงนามเรียบร้อย</p>
-            <div style="background:#f4f0fa;border-left:4px solid #9673a6;padding:.6rem .8rem;border-radius:0 6px 6px 0">
-              <strong>ระบบดำเนินการอัตโนมัติ:</strong><br>
-              • ยิงมติ + คำสั่งกลับ <strong>กิจกรรมที่ 5</strong><br>
-              • เปลี่ยนสถานะคดีเป็น <strong>"อยู่ระหว่างไต่สวน"</strong><br>
-              • เริ่มนับกรอบเวลา ม.23 (ครบกำหนด ${ECMIS.thaiDate(kase.deadline2y)})<br>
-              • สำนวนเข้าสู่ชั้นไต่สวนวินิจฉัยชี้มูล
-            </div></div>`,
-          confirmButtonColor: '#0F2A62',
-          confirmButtonText: 'ตกลง',
-          width: 560
-        }).then(() => location.href = ECMIS.homeHref(role.id));
+        /* ต้องรอเขียน Supabase ให้เสร็จก่อน Swal/redirect เสมอ (pattern เดียวกับ send_order ด้านบน
+           และ board-resolution.html/chairman.html session ก่อน) — ไม่งั้น request ที่ยังค้างอยู่จะถูก
+           เบราว์เซอร์ตัดทิ้งกลางทางตอนเปลี่ยนหน้า */
+        (async () => {
+          if (kase.trr_id && sb) {
+            try {
+              await ECMIS.updateCaseStatus(kase, 'UNDER_INVESTIGATION', sb);
+              await ECMIS.logRequestEvent(kase.trr_id, fromStatus, 'UNDER_INVESTIGATION', {
+                type: 'SIGNED', actorRole: SIGNER.roleId,
+                data: { docType: document.getElementById('docName').textContent, orderNo: orderNoVal, signerName: SIGNER.name, method: pendingSigDataAppoint?.mode || 'cert' }
+              });
+            } catch (e) {
+              console.error('บันทึกสถานะออกคำสั่งลง Supabase ไม่สำเร็จ:', e);
+            }
+          }
+
+          await Swal.fire({
+            icon: 'success',
+            title: 'ออกคำสั่งเรียบร้อย — เสร็จสิ้นกระบวนงานไต่สวนเบื้องต้น',
+            html: `<div class="text-start" style="font-size:.9rem">
+              <p>คำสั่งที่ <strong>${orderNoVal}</strong> ลงนามเรียบร้อย</p>
+              <div style="background:#f4f0fa;border-left:4px solid #9673a6;padding:.6rem .8rem;border-radius:0 6px 6px 0">
+                <strong>ระบบดำเนินการอัตโนมัติ:</strong><br>
+                • ยิงมติ + คำสั่งกลับ <strong>กิจกรรมที่ 5</strong><br>
+                • เปลี่ยนสถานะคดีเป็น <strong>"อยู่ระหว่างไต่สวน"</strong><br>
+                • เริ่มนับกรอบเวลา ม.23 (ครบกำหนด ${ECMIS.thaiDate(kase.deadline2y)})<br>
+                • สำนวนเข้าสู่ชั้นไต่สวนวินิจฉัยชี้มูล
+              </div></div>`,
+            confirmButtonColor: '#0F2A62',
+            confirmButtonText: 'ตกลง',
+            width: 560
+          });
+          location.href = ECMIS.homeHref(role.id);
+        })();
         return;
       }
 

@@ -62,7 +62,7 @@ function secgenSlaLimit(kase){
 }
 
 const PERM_DEFS = [
-  { k:'view.all',      cat:'การเข้าถึง', label:'ดูสำนวนได้ทุกเรื่องในกิจกรรมที่ 7' },
+  { k:'view.all',      cat:'การเข้าถึง', label:'ดูสำนวนได้ทุกเรื่อง' },
   { k:'view.own',      cat:'การเข้าถึง', label:'ดูได้เฉพาะสำนวนของตนเอง', note:'ชีตแถว 17' },
   { k:'view.assigned', cat:'การเข้าถึง', label:'ดูได้เฉพาะสำนวนที่ได้รับมอบหมายให้คณะของตน' },
   { k:'download',      cat:'การเข้าถึง', label:'ดาวน์โหลดเอกสารได้ทุกเรื่อง' },
@@ -154,6 +154,17 @@ const STATUS = {
   RESOLVED:         { label:'มีมติแล้ว',                  cls:'st-done',     owner:'board_sec' },
   DISPATCHING:      { label:'ส่งมติออกแล้ว รอไฟล์ลงนามกลับ', cls:'st-pending',  owner:'owner' },
   CLOSED:           { label:'ปิดสำนวน',                   cls:'st-closed',   owner:null },
+  /* สายหลักเดิมไม่มีสถานะ "ส่งคำสั่ง ม.24 ให้ผู้มีอำนาจลงนามแล้ว รอลงนาม" เทียบเท่า
+     PENDING_SIGN_RULING_72 ของสาย 7.2 เลย — order.html เดิมจึงต้องอาศัย role ปัจจุบันตรงกับ
+     ผู้ลงนามเป๊ะๆ ถึงจะลงนามได้ ไม่มีการส่งต่อเข้าคิวจริงของอีกฝ่าย แยกเป็น 2 สถานะเพราะผู้ลงนาม
+     คำสั่ง ม.24 ต่างกันตามระดับคำสั่ง (ปปท.5-02/5-08 ระดับคณะกรรมการ → ประธานฯ, ปปท.5-05/5-17
+     ระดับสำนักงาน → เลขาธิการฯ) owner จึงต้อง static คนละค่ากัน */
+  PENDING_SIGN_ORDER_CHAIRMAN: { label:'รอประธานฯ ลงนามคำสั่ง ม.24',      cls:'st-pending', owner:'chairman' },
+  PENDING_SIGN_ORDER_SECGEN:   { label:'รอเลขาธิการฯ ลงนามคำสั่ง ม.24',   cls:'st-pending', owner:'secgen' },
+  /* ปลายทางจริงของ order.html หลังลงนามคำสั่ง ม.24 เสร็จสมบูรณ์ (act==='save_order') — เดิมโค้ด
+     เขียนคำว่า 'UNDER_INVESTIGATION' ตรงๆ โดยไม่เคย formalize เข้า STATUS/STATUS_CODE เลย จึงไม่มี
+     ทาง persist ค่านี้ลง trr_status (CHAR(3)) ได้จริง เพิ่มเข้ามาให้ครบตอนต่อ Supabase */
+  UNDER_INVESTIGATION: { label:'อยู่ระหว่างไต่สวนตามคำสั่ง ม.24', cls:'st-active', owner:null },
 
   PENDING_SECTION_72:  { label:'รอหัวหน้ากลุ่มงาน (รายงานวินิจฉัยชี้มูล)',      cls:'st-pending', owner:'section_head' },
   PENDING_DIRECTOR_72: { label:'รอ ผอ.กอง / ผอ.เขต (รายงานวินิจฉัยชี้มูล)',      cls:'st-pending', owner:'director' },
@@ -171,7 +182,7 @@ const STATUS = {
   PENDING_AREA_NOTICE_72: { label:'รอพื้นที่บันทึกรับมติ / แจ้งผล (ม.32)',       cls:'st-pending', owner:'owner' },
   DISPATCHING_NACC_72:    { label:'รอส่งเรื่องให้ ป.ป.ช. (นอกอำนาจ ม.19)',       cls:'st-pending', owner:'owner' },
   PENDING_DISPATCH_GUILTY_72: { label:'ชี้มูลความผิดแล้ว รอส่งดำเนินคดี',        cls:'st-review',  owner:'affairs' },
-  CLOSED_72: { label:'ปิดสำนวน — จบกระบวนการกิจกรรมที่ 7',                      cls:'st-closed',  owner:null }
+  CLOSED_72: { label:'ปิดสำนวน — จบกระบวนการ',                      cls:'st-closed',  owner:null }
 };
 
 // รหัสสถานะ CHAR(3) ตามที่ออกแบบไว้ใน tbl_res_request.trr_status (res_db.json) —
@@ -181,6 +192,7 @@ const STATUS_CODE = {
   PENDING_SECGEN:'005', IN_SUPPORT_SUB:'006', PENDING_URGENT:'007',
   PENDING_CHAIRMAN:'009', IN_SCREENING:'010', AGENDA_SET:'011', IN_MEETING:'012', DEFERRED:'013',
   RESOLVED_PENDING:'014', RESOLVED:'015', DISPATCHING:'016', CLOSED:'017',
+  PENDING_SIGN_ORDER_CHAIRMAN:'018', PENDING_SIGN_ORDER_SECGEN:'019', UNDER_INVESTIGATION:'020',
 
   PENDING_SECTION_72:'100', PENDING_DIRECTOR_72:'101', PENDING_DEPUTY_72:'102', RETURNED_72:'103',
   PENDING_SECGEN_72:'104', IN_SUPPORT_SUB_72:'105', PENDING_URGENT_72:'106', PENDING_CHAIRMAN_URGENT_72:'107',
@@ -367,7 +379,7 @@ const STATUS_STEP = {
   PENDING_CHAIRMAN:'chairman',
   IN_SCREENING:'screening',
   AGENDA_SET:'agenda',
-  RESOLVED:'resolution', CLOSED:'order'
+  RESOLVED:'resolution', PENDING_SIGN_ORDER_CHAIRMAN:'order', PENDING_SIGN_ORDER_SECGEN:'order', UNDER_INVESTIGATION:'order', CLOSED:'order'
 };
 
 /* Page filenames are the single canonical name across the whole site (no more
@@ -443,6 +455,7 @@ function pageForCaseByStatus(kase) {
     return resolvePage('chairman-agenda.html');
   }
   if (st === 'AGENDA_SET') return resolvePage('agenda-registry.html');
+  if (st === 'PENDING_SIGN_ORDER_CHAIRMAN' || st === 'PENDING_SIGN_ORDER_SECGEN') return resolvePage('order.html');
   if (['IN_MEETING', 'RESOLVED_PENDING', 'RESOLVED', 'DEFERRED', 'CLOSED'].includes(st)) {
     return resolvePage('board-resolution.html');
   }
@@ -674,7 +687,7 @@ function getAct7Status(c) {
     return 'บอร์ดมีมติแล้ว - รอจัดทำรายงานการประชุม';
   }
 
-  return 'ยังไม่เข้าสู่กิจกรรมที่ 7';
+  return 'ยังไม่เข้าสู่ระบบนี้';
 }
 
 const ACT7_STATUSES_72 = [
@@ -683,7 +696,7 @@ const ACT7_STATUSES_72 = [
   { section: 2, name: 'อยู่ระหว่างพิจารณาโดยคณะกรรมการ ป.ป.ท. (วินิจฉัยชี้มูล)', icon: 'fa-gavel' },
   { section: 2, name: 'บอร์ดมีมติแล้ว - รอจัดทำรายงานวินิจฉัยชี้มูล', icon: 'fa-file-signature' },
   { section: 3, name: 'รอส่งดำเนินการ/แจ้งผลตามมติวินิจฉัยชี้มูล', icon: 'fa-share-nodes' },
-  { section: 4, name: 'ปิดสำนวน (กิจกรรมที่ 7.2)', icon: 'fa-circle-check' }
+  { section: 4, name: 'ปิดสำนวน (7.2)', icon: 'fa-circle-check' }
 ];
 const ACT7_STAGE_72 = {
   PENDING_SECTION_72:0, PENDING_DIRECTOR_72:0, PENDING_DEPUTY_72:0, RETURNED_72:0, PENDING_SECGEN_72:0,
@@ -795,7 +808,11 @@ const CASES = [
     id:'1396/2564',
     subject:'กล่าวหาข้าราชการสังกัดกรมโยธาธิการฯ เรียกรับเงินจากผู้ประกอบการเพื่อแลกกับการออกใบอนุญาต (ม.62)',
     legalBase:'ม.62',
-    status:'AGENDA_SET',
+    /* เดิมใช้ 'AGENDA_SET' (รหัสสายหลัก 7.1) ทั้งที่ procType เป็น 7.2 — ทำให้ ECMIS.pageForCase72()/
+       PAGE_FOR_72 หาไม่เจอ (ไม่มีคีย์ 'AGENDA_SET' ในนั้น) แล้ว fallback ไป case-register.html แทน
+       ที่ควรจะเป็น agenda-registry.html ตัวจริง แก้ให้ใช้รหัสสาย 7.2 ที่ตรงกัน (ระเบียบวาระ = รอทำ
+       หนังสือเชิญประชุม) */
+    status:'PENDING_INVITE_72',
     procType:'7.2',
     owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'สำนักงาน ป.ป.ช. (ส่งเรื่องมอบหมาย)',
@@ -813,7 +830,12 @@ const CASES = [
     id:'1119/2565',
     subject:'กล่าวหาเจ้าหน้าที่โรงพยาบาลรัฐแห่งหนึ่ง เบิกจ่ายค่าตอบแทนล่วงเวลาอันเป็นเท็จ',
     legalBase:'ม.18/4',
-    status:'RESOLVED',
+    /* เดิมใช้ 'RESOLVED' (รหัสสายหลัก 7.1) ทั้งที่ procType/docType เป็น 7.2 (RULING) — สาเหตุจริง
+       ที่ปุ่ม "ดำเนินการ" ใน inbox.html พาไปหน้า case-register.html แทน ruling-report.html จริง
+       (ECMIS.pageForCase72() หาคีย์ 'RESOLVED' ไม่เจอใน PAGE_FOR_72 ซึ่งมีแต่ 'RESOLVED_PENDING_72'
+       จึง fallback ไปหน้าทะเบียนสำนวนเฉยๆ) — ตรงกับที่ note เก่าบันทึกไว้ว่าสำนวนนี้ควรมีสถานะ
+       RESOLVED_PENDING_72 (รอจัดทำรายงานวินิจฉัยชี้มูล) แต่ข้อมูลจริงไม่ตรงกันมาตลอด */
+    status:'RESOLVED_PENDING_72',
     procType:'7.2',
     owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 2',
     complainant:'บัตรสนเท่ห์ (ความปรากฏต่อสำนักงาน)',
@@ -1373,6 +1395,16 @@ function supabaseRowToCase(row) {
     meetingNo: row.trr_meeting_no || null, agendaNo: row.trr_agenda_no || null,
     meetingDate: toBuddhistFakeIso(row.trr_meeting_date)
   };
+  /* trr_resolution_data เก็บ payload มติแบบเต็มเป็น JSON เดียว (รหัสมติ + ฟิลด์ความเห็น/ข้อหา
+     ของสาย 7.2) — spread เข้า kase ตรงๆ ก่อน memCase fallback ด้านล่าง เพื่อให้ค่าจริงจาก DB
+     ชนะ mock array เสมอเมื่อมีข้อมูลจริงแล้ว */
+  if (row.trr_resolution_data) Object.assign(kase, row.trr_resolution_data);
+  /* trr_resolution_data มักมีฟิลด์ .status ติดมาด้วย (เช่น patch object ที่ resolution-72.html/
+     board-resolution.html เขียนตอน lock มติ — ถูกบันทึกไว้ ณ ตอนนั้นเท่านั้น ไม่เคยอัปเดตซ้ำอีกหลังจากนั้น
+     แม้ trr_status คอลัมน์จริงจะเปลี่ยนต่อไปกี่ครั้งก็ตาม เช่นตอน btnDraftDone/btnSignRuling ใน
+     ruling-report.html) ห้ามปล่อยให้ค่าเก่านั้นทับสถานะจริงที่คำนวณจาก trr_status ไว้ข้างบนแล้ว —
+     trr_status คือแหล่งความจริงของสถานะเสมอ */
+  kase.status = CODE_STATUS[row.trr_status] || row.trr_status;
   if (kase.receivedDate) {
     kase.deadline60 = addDaysToDateStr(kase.receivedDate, 60);
     kase.deadline2y = addYearsToDateStr(kase.receivedDate, 2);
@@ -1637,6 +1669,26 @@ const RESOLUTIONS_73 = [
 ];
 function resolution73(code){ return RESOLUTIONS_73.find(r => r.code === code) || null; }
 
+/* ตัวเลือกมติเฉพาะแม่แบบ "มติการประชุม เรื่องของ กกม.docx" (legal73 — ทบทวนมติอัยการ ม.33)
+   ถอดคำมาตรงตัวจากส่วน "มติที่ประชุม" ของเอกสารต้นฉบับจริง (คนละชุดกับ RESOLUTIONS_73 ซึ่งเป็น
+   taxonomy กว้าง ๆ ที่ยังไม่ได้ใช้งานจริงที่ไหน) — board-resolution.html ใช้ชุดนี้เฉพาะกรณี
+   pickTemplate().kind === 'legal73' เท่านั้น */
+const RESOLUTIONS_LEGAL_KKM = [
+  { code:'KKM_NO_APPEAL', group:'เห็นชอบตามอัยการ',
+    label:'เห็นชอบไม่อุทธรณ์คำพิพากษาของศาลอาญาคดีทุจริตและประพฤติมิชอบ ตามความเห็นของพนักงานอัยการ',
+    doc:'บันทึกแจ้งมติเห็นชอบไม่อุทธรณ์', signer:'—' },
+  { code:'KKM_NO_DIKA', group:'เห็นชอบตามอัยการ',
+    label:'เห็นชอบไม่ฎีกาคำพิพากษาของศาลอุทธรณ์ ตามความเห็นของพนักงานอัยการ',
+    doc:'บันทึกแจ้งมติเห็นชอบไม่ฎีกา', signer:'—' },
+  { code:'KKM_DISAGREE_AG', group:'ไม่เห็นพ้องกับอัยการ',
+    label:'ไม่เห็นพ้องด้วยกับความเห็นของพนักงานอัยการ — ส่งอัยการสูงสุดพิจารณาตามมาตรา 43',
+    doc:'หนังสือนำส่งเรื่องถึงอัยการสูงสุด', signer:'ประธานกรรมการ ป.ป.ท.', legalBasis:'ม.43' },
+  { code:'KKM_OTHER', group:'มติอื่น ๆ',
+    label:'อื่น ๆ (ระบุตามความเห็นที่ประชุม)',
+    doc:'บันทึกแจ้งมติ', signer:'—' }
+];
+function resolutionLegalKkm(code){ return RESOLUTIONS_LEGAL_KKM.find(r => r.code === code) || null; }
+
 /* ประเภทเรื่องทั่วไป (7.3) — แยกจาก RESOLUTIONS_73 ซึ่งเป็น "มติ/ผลการพิจารณา" (อนุมัติ/
    ไม่อนุมัติ/ทบทวนอัยการ/ส่งกฎหมาย/เฉพาะกิจ) ส่วนนี้คือ "ประเภทคำขอ" ที่เสนอเข้าบอร์ด —
    สืบค้นจากคู่มือ As-Is กิจกรรมที่ 7 มติคณะกรรมการ, เล่ม 5 กิจกรรมที่ 7 ระบบมติคณะกรรมการ
@@ -1686,6 +1738,29 @@ const FLOW_STEPS_72 = [
   { key:'ruling72',  label:'จัดทำ / ลงนามรายงานวินิจฉัยชี้มูล', ref:'จัดทำรายงานวินิจฉัยชี้มูล' },
   { key:'dispatch72',label:'แจ้งผล / ส่งดำเนินการต่อ',        ref:'แจ้งผลและส่งเรื่องดำเนินการ' }
 ];
+/* board-resolution.html ใช้ FLOW_STEPS เดิม (7 สเต็ปสายไต่สวน) กับทุก kind เหมือนกันหมด
+   ทั้งที่ legal73/general73 ("เรื่องของ กกม." / "เรื่องทั่วไป") ไม่เคยผ่านใบด่วน/อนุกลั่นกรองฯ
+   เลยตาม CLAUDE.md §4 (คนละ workflow กับสาย 7.1) และจบที่การแจ้งมติ/ปิดเรื่อง ไม่ใช่ "ออกคำสั่ง
+   ม.24" (ม.24 เป็นคำสั่งแต่งตั้งองค์คณะไต่สวน ใช้เฉพาะสาย 7.1 เท่านั้น) — เพิ่มชุดสเต็ปแยกสำหรับ
+   7.3 ตามรูปแบบเดียวกับ FLOW_STEPS_72 ด้านบน */
+const FLOW_STEPS_73 = [
+  { key:'secgen73',    label:'เลขาธิการฯ พิจารณา / ลงนาม', ref:'เสนอเลขาธิการฯ' },
+  { key:'chairman73',  label:'ประธานฯ สั่งการ',            ref:'ประธานฯ สั่งการ' },
+  { key:'agenda73',    label:'บรรจุวาระ',                 ref:'บรรจุวาระการประชุม' },
+  { key:'resolution73',label:'บอร์ดลงมติ',                ref:'คณะกรรมการลงมติ' },
+  { key:'dispatch73',  label:'แจ้งมติ / ปิดเรื่อง',         ref:'แจ้งมติและปิดเรื่อง' }
+];
+const STATUS_STEP_73 = {
+  DRAFT:'secgen73', RETURNED:'secgen73',
+  PENDING_SECTION:'secgen73', PENDING_DIRECTOR:'secgen73', PENDING_DEPUTY:'secgen73',
+  PENDING_SECGEN:'secgen73', IN_SUPPORT_SUB:'secgen73',
+  PENDING_URGENT:'secgen73', IN_SCREENING:'chairman73', // ไม่ควรเกิดกับเคส 7.3 จริง กันไว้เผื่อข้อมูลผิดสาย
+  PENDING_CHAIRMAN:'chairman73',
+  AGENDA_SET:'agenda73', IN_MEETING:'agenda73', DEFERRED:'agenda73',
+  RESOLVED_PENDING:'resolution73', RESOLVED:'resolution73',
+  DISPATCHING:'dispatch73', CLOSED:'dispatch73'
+};
+
 const STATUS_STEP_72 = {
   PENDING_SECTION_72:'secgen72', PENDING_DIRECTOR_72:'secgen72', PENDING_DEPUTY_72:'secgen72', RETURNED_72:'secgen72',
   PENDING_SECGEN_72:'secgen72',
@@ -2033,6 +2108,24 @@ async function logRequestEvent(trrId, fromStatus, toStatus, opts) {
     console.error('logRequestEvent failed (non-blocking):', e);
   }
   return null;
+}
+
+/* Shared status-write helper (เดิมโค้ดซ้ำอยู่ใน resolution-inbox.html/inbox.html แยกกัน) — เขียน
+   trr_status จริงถ้ามี sb+trr_id แล้ว log audit event ทันทีที่เขียนสำเร็จ, mutate kase.status ในหน่วย
+   ความจำเสมอ (แม้ไม่มี sb/trr_id) เพื่อให้ UI ในหน้าปัจจุบันอัปเดตทันทีเหมือนพฤติกรรมเดิม */
+async function updateCaseStatus(kase, newStatus, sb) {
+  const fromStatus = kase.status;
+  kase.status = newStatus;
+  if (sb && kase.trr_id) {
+    const code = STATUS_CODE[newStatus];
+    if (code) {
+      const { error } = await sb.from('tbl_res_request').update({ trr_status: code }).eq('trr_id', kase.trr_id);
+      /* ต้อง await ตรงนี้ — ไม่งั้นถ้า caller redirect/reload ทันทีหลัง updateCaseStatus() คืนค่า
+         request ของ logRequestEvent ที่ยังค้างอยู่จะโดนเบราว์เซอร์ตัดทิ้งกลางทาง (audit event หาย) */
+      if (!error) await logRequestEvent(kase.trr_id, fromStatus, newStatus);
+    }
+  }
+  saveCases();
 }
 
 const NAV = [
@@ -2548,10 +2641,10 @@ function actionBar(kase, roleId, buttons, opts){
     const ownerRole = STATUS[kase.status] ? getRole(STATUS[kase.status].owner) : null;
     inner = `<div class="no-permission" style="border-color:#d79b00;background:#fff8ec">
       <i class="fa-solid fa-arrow-right-to-bracket me-1"></i>
-      <strong>สำนวนนี้ยังไม่เข้าสู่กิจกรรมที่ 7</strong> — อยู่ระหว่างการเสนอตามลำดับชั้น
-      ภายในกอง / สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต ซึ่งเป็นกระบวนงานของ <strong>กิจกรรมที่ 5</strong>
+      <strong>สำนวนนี้ยังไม่เข้าสู่ระบบนี้</strong> — อยู่ระหว่างการเสนอตามลำดับชั้น
+      ภายในกอง / สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต ซึ่งเป็นกระบวนงาน<strong>ไต่สวนข้อเท็จจริง</strong>ต้นทาง
       ${ownerRole ? `<br>ขณะนี้เรื่องอยู่ที่ <strong>${ownerRole.title}</strong>` : ''}
-      <br><small>กิจกรรมที่ 7 เริ่มนับเมื่อรายงานมาถึง <strong>เลขาธิการคณะกรรมการ ป.ป.ท.</strong></small>
+      <br><small>ระบบนี้เริ่มนับเมื่อรายงานมาถึง <strong>เลขาธิการคณะกรรมการ ป.ป.ท.</strong></small>
     </div>`;
   } else if(allowed && buttons.length){
     inner = buttons.map(b =>
@@ -5567,8 +5660,8 @@ global.ECMIS = {
   CASES, RETURN_REASONS, RESOLUTIONS, resolutionOf,
   DOC_TYPES, SIGN_PHASE, secgenSlaLimit, FORWARD_TARGETS, forwardTarget,
 
-  RESOLUTIONS_72, resolution72, FLOW_STEPS_72, STATUS_STEP_72,
-  RESOLUTIONS_73, resolution73, isCase73, GENERAL_TYPES_73, generalType73,
+  RESOLUTIONS_72, resolution72, FLOW_STEPS_72, STATUS_STEP_72, FLOW_STEPS_73, STATUS_STEP_73,
+  RESOLUTIONS_73, resolution73, RESOLUTIONS_LEGAL_KKM, resolutionLegalKkm, isCase73, GENERAL_TYPES_73, generalType73,
   trackStatus72, bothTracksDone72,
   OPINION_TYPES, chainDivergence, g1Triggers, M28, M28_ORDERS, m28Order, m28Pending,
   TRANSITIONS, canTransition, nextStates, transitionsBetween,
@@ -5576,7 +5669,7 @@ global.ECMIS = {
   M24P1_MIN_PANEL, M24P1_STAFF_FREE, panelComposition,
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
   UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72, pageForCaseByStatus, homeHref, resolvePage,
-  PAGE_PERMISSIONS, canAccessPage, inResFolder, assetUrl, getSupabaseClient, logRequestEvent,
+  PAGE_PERMISSIONS, canAccessPage, inResFolder, assetUrl, getSupabaseClient, logRequestEvent, updateCaseStatus,
   PERM_DEFS, can, canEditMaster, canViewCase,
   thaiDate, thaiDayName, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, requireCase, getRole, roleIdForLogin, LOGIN_ALLOWED_ROLE_IDS,
   addBusinessDays, businessDaysBetween, resolutionSlaInfo, SUBCOMMITTEE_ROSTER,

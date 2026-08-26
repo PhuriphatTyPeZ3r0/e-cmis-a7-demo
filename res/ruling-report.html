@@ -1779,11 +1779,15 @@
       });
 
       const btnDraftDone = document.getElementById('btnDraftDone');
-      if (btnDraftDone) btnDraftDone.addEventListener('click', () => {
+      if (btnDraftDone) btnDraftDone.addEventListener('click', async () => {
         persistForm();
-        ECMIS.Model.CaseStore.update(kase.id, { status: 'PENDING_SIGN_RULING_72' });
+        /* ECMIS.updateCaseStatus() (assets/ecmis-app.js) เขียน kase.status + saveCases() เองอยู่แล้ว
+           ไม่ว่า sb/kase.trr_id จะมีหรือไม่ — เดิมโค้ดตรงนี้เรียก ECMIS.Model.CaseStore.update() ตรงๆ
+           (mock ล้วน ไม่เคยแตะ Supabase) แทนที่ด้วย helper กลางตัวเดียวกันที่ session ต่อ Supabase
+           ใช้กับ chairman.html/resolution-inbox.html/inbox.html แล้ว */
+        await ECMIS.updateCaseStatus(kase, 'PENDING_SIGN_RULING_72', sb);
         ECMIS.toastOk('ส่งรายงานเข้าสู่ขั้นตอนรอลงนามแล้ว');
-        setTimeout(() => location.reload(), 500);
+        location.reload();
       });
 
       const btnSignRuling = document.getElementById('btnSignRuling');
@@ -1797,11 +1801,31 @@
           signerRole: 'chairman', signerName: ECMIS.getRole('chairman').name,
           method: signed.value.mode, signedAt: new Date().toISOString()
         });
+
+        const fromStatus = kase.status;
         const patch = nextStatusPatchByResolution();
         patch.signedRulingAt = new Date().toISOString().slice(0, 10);
+
+        /* updateCaseStatus() ต้องเรียกก่อนเสมอ เพราะมันจับ "fromStatus" เองจาก kase.status ตอนถูกเรียก
+           — ถ้าเรียก CaseStore.update(patch) ก่อน (ซึ่งเปลี่ยน kase.status ไปแล้ว) audit event ที่ auto
+           log จาก updateCaseStatus จะได้ fromStatus ผิด (เท่ากับ toStatus) */
+        if (kase.trr_id && sb) {
+          try {
+            await ECMIS.updateCaseStatus(kase, patch.status, sb);
+            await ECMIS.logRequestEvent(kase.trr_id, fromStatus, patch.status, {
+              type: 'SIGNED', actorRole: 'chairman',
+              data: { docType: 'รายงานวินิจฉัยชี้มูล', signerName: ECMIS.getRole('chairman').name, method: signed.value.mode }
+            });
+          } catch (e) {
+            console.error('บันทึกลงนามรายงานลง Supabase ไม่สำเร็จ:', e);
+          }
+        }
+        // เขียนฟิลด์เสริม (signedRulingAt, round72 กรณี MORE_INVESTIGATE_72) ลง mock model เหมือนเดิม —
+        // status ถูกเซ็ตซ้ำเป็นค่าเดียวกันแล้ว (ไม่มีผลข้างเคียง)
         ECMIS.Model.CaseStore.update(kase.id, patch);
+
         ECMIS.toastOk('ลงนามรายงานเรียบร้อยแล้ว');
-        setTimeout(() => { location.href = 'register.html'; }, 550);
+        location.href = 'register.html';
       });
     }
 
