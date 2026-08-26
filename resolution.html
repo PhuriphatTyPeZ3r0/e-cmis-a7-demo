@@ -278,8 +278,26 @@
       el.value = normalizeDateInputValue(value);
     }
 
-    document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
+    const generalTypeInfo = kase.generalType ? ECMIS.generalType73(kase.generalType) : null;
+    document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase)
+      + (generalTypeInfo ? ` <span class="chip me-1" title="${generalTypeInfo.group}"><i class="fa-solid fa-scale-balanced me-1"></i>${generalTypeInfo.label}</span>` : '');
     document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status);
+
+    /* ป้ายชื่อเอกสารบนแถบเครื่องมือ (ws-doc-toolbar) เดิม hardcode เป็น "(ไต่สวนเบื้องต้น)"
+       เสมอ ทั้งที่หน้านี้รองรับทั้ง 7.1/7.3 — ให้ตรงกับ 4 กลุ่มแม่แบบเดียวกับที่ pickTemplate()
+       ใช้เลือกไฟล์ .docx จริงตอนส่งออก (ดู CLAUDE.md §4 ตารางแม่แบบ 6 รายการ) */
+    const TOOLBAR_TITLE_BY_KIND = {
+      default:   'มติการประชุม (ไต่สวนเบื้องต้น)',
+      screening: 'มติการประชุม (ผ่านอนุกลั่นกรองคณะฯ)',
+      legal73:   'มติการประชุม (เรื่องของ กกม.)',
+      general73: 'มติการประชุม (เรื่องทั่วไป)'
+    };
+    const docToolbarNameEl = document.querySelector('.ws-doc-toolbar .name');
+    if (docToolbarNameEl) {
+      const title = TOOLBAR_TITLE_BY_KIND[pickTemplate().kind] || TOOLBAR_TITLE_BY_KIND.default;
+      docToolbarNameEl.innerHTML = `<i class="fa-solid fa-file-word"></i> ${title}`;
+    }
+
     if (kase.meetingNo) document.getElementById('meetNo').value = kase.meetingNo;
     if (kase.agendaNo) document.getElementById('agendaNo').value = kase.agendaNo;
     if (kase.meetingDate) setDateInputValue('meetDate', kase.meetingDate);

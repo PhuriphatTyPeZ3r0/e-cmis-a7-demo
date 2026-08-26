@@ -95,6 +95,12 @@
 
   /* trci_id -> [เลขสำนวนจริง, ...] ที่เชื่อมผ่าน tbl_res_calendar_item_case จริง (โหลดใน load()) */
   const LINKED_CASE_NOS = {};
+  /* trci_id -> [{tcc_no, org, remark}, ...] รายละเอียดสำนวนที่เชื่อมจริง สำหรับตาราง
+     "บัญชีแนบ" (ลำดับที่/เรื่องที่/สำนัก-กอง-เขต/หมายเหตุ) ของวาระชุด */
+  const LINKED_CASE_DETAILS = {};
+  /* trci_id -> [{code, group, label, sort}, ...] ป้ายกำกับที่ติดกับวาระ (3 แกน:
+     nature/subcommittee_stance/routing) จาก tbl_res_calendar_item_qualifier */
+  const ITEM_QUALIFIERS = {};
   /* trr_id -> true สำหรับสำนวนที่ถูกบรรจุวาระแล้ว (มี link จริง) — ใช้กันคิวรอบรรจุวาระ
      ไม่ให้แสดงเรื่องที่บรรจุวาระไปแล้วซ้ำ แม้ trr_status ยังไม่ถูกอัปเดตตาม */
   const LINKED_TRR_IDS = new Set();
@@ -169,10 +175,16 @@
       org = 'กองบริหารคดี / ฝ่ายเลขาฯ';
     }
 
+    let presenters = [];
+    try { presenters = Array.isArray(row.trci_presenters) ? row.trci_presenters : JSON.parse(row.trci_presenters || '[]'); } catch (e) { presenters = []; }
+    const qualifiers = (ITEM_QUALIFIERS[row.trci_id] || []).slice().sort((a, b) => a.sort - b.sort);
+
     return {
       trci_id: row.trci_id, trc_id: row.trc_id, trci_number: row.trci_number || '',
       category: row.category || 'finding', trci_topic: row.trci_topic || '',
       case_ref: caseRef,
+      caseDetails: LINKED_CASE_DETAILS[row.trci_id] || [],
+      qualifiers, presenters,
       owner: owner || '-',
       org: org || '-',
       remark: row.remark || '-'
@@ -180,25 +192,43 @@
   }
 
   async function load() {
-    const [{ data: mRows, error: mErr }, { data: iRows, error: iErr }, { data: licRows, error: licErr }] = await Promise.all([
+    const [{ data: mRows, error: mErr }, { data: iRows, error: iErr }, { data: licRows, error: licErr }, { data: qRows, error: qErr }] = await Promise.all([
       sb.from('tbl_res_calendar').select('*').eq('is_deleted', false).order('trc_id'),
       sb.from('tbl_res_calendar_item').select('*').eq('is_deleted', false).order('trci_id'),
       sb.from('tbl_res_calendar_item_case')
-        .select('trci_id, trr_id, tbl_res_request!inner(tbl_cmp_case!inner(tcc_no))')
+        .select('trci_id, trr_id, trcic_remark, tbl_res_request!inner(tbl_cmp_case!inner(tcc_no, tcc_owner_org))')
+        .eq('is_deleted', false),
+      sb.from('tbl_res_calendar_item_qualifier')
+        .select('trci_id, tbl_res_agenda_qualifier!inner(trqf_code, trqf_group, trqf_label, trqf_sort_order)')
         .eq('is_deleted', false)
     ]);
     if (mErr) throw mErr;
     if (iErr) throw iErr;
     if (licErr) throw licErr;
+    if (qErr) throw qErr;
     MEETINGS.length = 0; (mRows || []).forEach(r => MEETINGS.push(mapMeetingRow(r)));
 
     Object.keys(LINKED_CASE_NOS).forEach(k => delete LINKED_CASE_NOS[k]);
+    Object.keys(LINKED_CASE_DETAILS).forEach(k => delete LINKED_CASE_DETAILS[k]);
     LINKED_TRR_IDS.clear();
     (licRows || []).forEach(r => {
-      const caseNo = r.tbl_res_request && r.tbl_res_request.tbl_cmp_case && r.tbl_res_request.tbl_cmp_case.tcc_no;
+      const cc = r.tbl_res_request && r.tbl_res_request.tbl_cmp_case;
+      const caseNo = cc && cc.tcc_no;
       if (!caseNo) return;
       (LINKED_CASE_NOS[r.trci_id] = LINKED_CASE_NOS[r.trci_id] || []).push(caseNo);
+      (LINKED_CASE_DETAILS[r.trci_id] = LINKED_CASE_DETAILS[r.trci_id] || []).push({
+        tcc_no: caseNo, org: (cc && cc.tcc_owner_org) || '-', remark: r.trcic_remark || '—'
+      });
       LINKED_TRR_IDS.add(r.trr_id);
+    });
+
+    Object.keys(ITEM_QUALIFIERS).forEach(k => delete ITEM_QUALIFIERS[k]);
+    (qRows || []).forEach(r => {
+      const qf = r.tbl_res_agenda_qualifier;
+      if (!qf) return;
+      (ITEM_QUALIFIERS[r.trci_id] = ITEM_QUALIFIERS[r.trci_id] || []).push({
+        code: qf.trqf_code, group: qf.trqf_group, label: qf.trqf_label, sort: qf.trqf_sort_order
+      });
     });
 
     ITEMS.length = 0; (iRows || []).forEach(r => ITEMS.push(mapItemRow(r)));
@@ -220,8 +250,17 @@
   function itemsOf(meetingId) {
     return ITEMS.filter(it => it.trc_id === meetingId).sort((a, b) => itemSortKey(a) - itemSortKey(b));
   }
-  function isFlagged(item) { return /ไม่ผ่าน|เห็นแย้ง/.test(item.remark || ''); }
-  function isBundled(item) { return /ชุด|บัญชีแนบ|เรื่องรวม/.test(item.trci_topic) || /,/.test(item.case_ref); }
+  /* isFlagged/isBundled: เดิมใช้ regex เดาจากข้อความอิสระ (topic/remark/case_ref) — ตอนนี้ใช้
+     ข้อมูลโครงสร้างจริงจาก tbl_res_calendar_item_qualifier / tbl_res_calendar_item_case ก่อน
+     แล้วค่อย fallback เป็น regex เดิมสำหรับวาระเก่าที่ยังไม่มีป้ายกำกับ/ลิงก์สำนวนจริง */
+  function isFlagged(item) {
+    if (item.qualifiers && item.qualifiers.some(q => q.group === 'subcommittee_stance' && q.code === 'SUBCMT_DISSENT')) return true;
+    return /ไม่ผ่าน|เห็นแย้ง/.test(item.remark || '');
+  }
+  function isBundled(item) {
+    if (item.caseDetails && item.caseDetails.length > 1) return true;
+    return /ชุด|บัญชีแนบ|เรื่องรวม/.test(item.trci_topic) || /,/.test(item.case_ref);
+  }
 
   function renderCaseRef(text) {
     if (!text || text === '-') return '<span class="text-muted small">—</span>';
@@ -229,6 +268,42 @@
     const linked = text.replace(/(\d[\d]{1,6}\/\d{4})/g, m =>
       `<a class="case-chip" href="${target}?q=${encodeURIComponent(m)}" title="ค้นหาในทะเบียนสำนวน">${m}</a>`);
     return `<span class="small">${linked}</span>`;
+  }
+
+  /* บัญชีแนบ: ตารางย่อยของวาระชุด (ลำดับที่/เรื่องที่/สำนัก-กอง-เขต/หมายเหตุ) — แสดงเมื่อวาระ
+     เชื่อมสำนวนจริงมากกว่า 1 เรื่อง ตามรูปแบบที่พบใน ระเบียบวาระการประชุม.pdf จริง */
+  function renderCaseSchedule(item) {
+    if (!item.caseDetails || item.caseDetails.length < 2) return '';
+    const target = (global.ECMIS && global.ECMIS.resolvePage) ? global.ECMIS.resolvePage('case-register.html') : 'case-register.html';
+    const rows = item.caseDetails.map((c, i) => `
+      <tr>
+        <td class="text-center">${i + 1}</td>
+        <td><a class="case-chip" href="${target}?q=${encodeURIComponent(c.tcc_no)}" title="ค้นหาในทะเบียนสำนวน">${c.tcc_no}</a></td>
+        <td>${c.org || '-'}</td>
+        <td>${c.remark || '—'}</td>
+      </tr>`).join('');
+    return `<table class="table table-sm table-bordered case-schedule-table mt-2 mb-0">
+      <thead class="table-light"><tr>
+        <th class="text-center" style="width:3.5em">ลำดับที่</th>
+        <th>เรื่องที่</th>
+        <th>สำนัก/กอง/เขต</th>
+        <th>หมายเหตุ</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  const QUALIFIER_CHIP_CLASS = { nature: 'text-bg-secondary', subcommittee_stance: 'text-bg-warning', routing: 'text-bg-danger' };
+  function renderQualifierChips(item) {
+    if (!item.qualifiers || !item.qualifiers.length) return '';
+    return item.qualifiers.map(q =>
+      `<span class="badge ${QUALIFIER_CHIP_CLASS[q.group] || 'text-bg-secondary'} fw-normal me-1 mb-1">${q.label}</span>`
+    ).join('');
+  }
+
+  function renderPresenters(item) {
+    if (!item.presenters || !item.presenters.length) return '';
+    return `<div class="small text-muted mt-1"><i class="fa-solid fa-user-tie me-1"></i>โดย ${item.presenters.join(', ')}</div>`;
   }
 
   /* ดึงข้อมูลสำนวนจากระบบด้วยเลขสำนวน — จำลองการอัตโนมัติแทนขั้นตอน
@@ -420,7 +495,8 @@
   global.AgendaRegistry = {
     sb, MEETINGS, ITEMS, LINKED_TRR_IDS, CATEGORY_LABEL, CATEGORY_CLASS, STATUS_LABEL, STATUS_CLASS, STATUS_ICON, meetingBadge,
     ready, meetingOf, itemsOf, isFlagged, isBundled, itemSortKey,
-    renderCaseRef, lookupCaseForAgenda, resolveCaseNoToTrrId, getOwnerOrg, setOwnerOrg,
+    renderCaseRef, renderCaseSchedule, renderQualifierChips, renderPresenters,
+    lookupCaseForAgenda, resolveCaseNoToTrrId, getOwnerOrg, setOwnerOrg,
     addMeeting, deleteMeeting, addItem, deleteItem, updateItemNumber, swapItemNumber, confirmMeeting
   };
 
