@@ -7,6 +7,13 @@
 
 ---
 
+## 🧭 0. Workflow Reference (อ่านก่อนเริ่มงานทุกครั้ง)
+วงจรการทำงานเต็ม (Plan → Implement → Test → Commit) ที่ใช้ร่วมกันทั้งทีมและทุก AI agent อยู่ที่
+`../docs/memory/standards/dev-workflow.md` — งานที่ไม่ trivial ทุกงานต้องมีไฟล์แผนใน
+`../docs/memory/plans/<YYYY-MM-DD>-<slug>.md` ก่อนเริ่ม implement เสมอ (ดูรายละเอียดในเอกสารนั้น)
+
+---
+
 ## ⚡ 1. Daily Development Commands (คำสั่งที่ใช้งานประจำ)
 
 ```bash
