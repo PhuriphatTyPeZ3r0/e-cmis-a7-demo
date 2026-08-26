@@ -468,6 +468,16 @@
       const opinion = document.getElementById('boardOpinion').value.trim();
       const presenter = document.getElementById('presenter').value.trim();
       const r = selectedRes();
+
+      /* ป้ายชื่อเอกสารบนแถบเครื่องมือ เดิม hardcode เป็น "(วินิจฉัยชี้มูล)" เสมอ ทั้งที่หน้านี้
+         ส่งออกได้ 2 แม่แบบ (ชี้มูล/ไม่ชี้มูล-ทำเพิ่ม) ตาม r.code — ให้ตรงกับ isGuilty ที่ปุ่ม
+         #btnExportDocx ใช้เลือกไฟล์ .docx จริง (ดู CLAUDE.md §4 ตารางแม่แบบ 6 รายการ) */
+      const docToolbarNameEl = document.querySelector('.ws-doc-toolbar .name');
+      if (docToolbarNameEl) {
+        const title = r.code === 'GUILTY_72' ? 'มติการประชุม (วินิจฉัยชี้มูล)' : 'มติการประชุม (ไต่สวน กรณีไม่ชี้มูล/ทำเพิ่ม)';
+        docToolbarNameEl.innerHTML = `<i class="fa-solid fa-file-word"></i> ${title}`;
+      }
+
       const t = tally();
       const unanimous = t.againstV === 0 && t.abstainV === 0;
       const allBoardRows = Array.from(document.querySelectorAll('#boardTb tr')).map((tr, i) => {
