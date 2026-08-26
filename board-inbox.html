@@ -13,20 +13,24 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link href="assets/ecmis-app.css" rel="stylesheet">
-  <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
   <style>
     :root {
       --board-navy: #0F2A62;
-      --board-navy-dark: #0A1D45;
+      --board-navy-dark: #081B3E;
+      --board-navy-light: #1E3A8A;
       --board-gold: #D0A830;
+      --board-gold-hover: #B89224;
       --board-gold-light: #FEF9E7;
       --board-bg-soft: #F8FAFC;
+      --board-border: #E2E8F0;
     }
 
     body {
       background-color: #F1F5F9;
+      font-family: 'Prompt', 'Noto Sans Thai', sans-serif;
     }
 
+    /* Dashboard KPI & Banner */
     .kpi-card {
       transition: all 0.2s ease;
       cursor: pointer;
@@ -47,11 +51,12 @@
     }
 
     .next-meet-banner {
-      background: linear-gradient(135deg, #0F2A62 0%, #1E3A8A 60%, #172554 100%);
+      background: linear-gradient(135deg, #0F2A62 0%, #1E3A8A 60%, #081B3E 100%);
       color: #FFFFFF;
       border-radius: 12px;
       padding: 1.5rem 1.75rem;
       box-shadow: 0 10px 25px -5px rgba(15, 42, 98, 0.25);
+      border-bottom: 3px solid var(--board-gold);
       position: relative;
       overflow: hidden;
     }
@@ -64,282 +69,37 @@
       right: 20px;
       bottom: -15px;
       font-size: 8.5rem;
-      opacity: 0.06;
+      opacity: 0.05;
       pointer-events: none;
-      color: #fff;
-    }
-
-    .badge-adv-active {
-      background-color: #ECFDF5;
-      color: #059669;
-      border: 1px solid #A7F3D0;
-      font-weight: 600;
-    }
-
-    .badge-live-meeting {
-      background-color: #FEF2F2;
-      color: #DC2626;
-      border: 1px solid #FECACA;
-      font-weight: 600;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.6; }
-      100% { opacity: 1; }
-    }
-
-    .badge-agenda-count {
-      background-color: #EBF3FC !important;
-      color: #0F2A62 !important;
-      border: 1px solid #B9D5F7 !important;
-      font-size: 0.82rem !important;
-      font-weight: 700 !important;
-      padding: 4px 10px !important;
-      border-radius: 6px !important;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .bg-navy {
-      background-color: #0F2A62 !important;
-      color: #FFFFFF !important;
-    }
-
-    .badge-agenda-no {
-      background: linear-gradient(135deg, #0F2A62 0%, #1E3A8A 100%) !important;
-      color: #FFFFFF !important;
-      font-weight: 700 !important;
-      padding: 4px 9px !important;
-      border-radius: 6px !important;
-      font-size: 0.8rem !important;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      border: 1px solid #172554 !important;
-      box-shadow: 0 1px 3px rgba(15, 42, 98, 0.25);
+      color: #FFFFFF;
     }
 
     .btn-gold {
-      background-color: #D0A830;
-      color: #0F2A62;
-      font-weight: 600;
-      border: none;
+      background: linear-gradient(135deg, #E5B83B 0%, #D0A830 100%);
+      color: #081B3E !important;
+      font-weight: 700;
+      border: 1px solid #B89224;
+      border-radius: 6px;
+      transition: all 0.15s ease;
     }
 
     .btn-gold:hover {
-      background-color: #B89224;
-      color: #0F2A62;
+      background: linear-gradient(135deg, #D0A830 0%, #B89224 100%);
+      color: #081B3E !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(208, 168, 48, 0.35);
     }
 
-    /* Modal Dossier Explorer Styles */
-    .modal-dossier-layout {
-      display: grid;
-      grid-template-columns: 310px minmax(0, 1fr);
-      gap: 1.25rem;
-      min-height: 620px;
-    }
-
-    @media (max-width: 992px) {
-      .modal-dossier-layout {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .modal-agenda-list-pane {
-      background: #F8FAFC;
-      border: 1px solid #E2E8F0;
-      border-radius: 8px;
-      padding: 0.75rem;
-      display: flex;
-      flex-direction: column;
-      height: 620px;
-    }
-
-    .modal-agenda-scroll {
-      overflow-y: auto;
-      flex: 1;
-      padding-right: 4px;
-    }
-
-    .modal-agenda-item-card {
-      border: 1px solid #CBD5E1;
-      border-radius: 8px;
-      padding: 0.7rem 0.8rem;
-      margin-bottom: 0.5rem;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      background: #FFFFFF;
-      position: relative;
-    }
-
-    .modal-agenda-item-card:hover {
-      background: #EFF6FF;
-      border-color: #3B82F6;
-      transform: translateX(2px);
-    }
-
-    .modal-agenda-item-card.active {
-      background: #EFF6FF;
-      border-color: #2563EB;
-      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
-    }
-
-    .modal-agenda-item-card.active::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 4px;
-      background: #2563EB;
-      border-radius: 8px 0 0 8px;
-    }
-
-    .evidence-item-badge-act5 {
-      background: #EFF6FF;
-      color: #1E40AF;
-      border: 1px solid #BFDBFE;
-      font-size: 0.72rem;
+    .btn-navy {
+      background-color: var(--board-navy) !important;
+      color: #FFFFFF !important;
+      border-color: var(--board-navy-dark) !important;
       font-weight: 600;
     }
 
-    .evidence-item-badge-act4 {
-      background: #FEF3C7;
-      color: #92400E;
-      border: 1px solid #FDE68A;
-      font-size: 0.72rem;
-      font-weight: 600;
-    }
-
-    .evidence-item-badge-act7 {
-      background: #F0FDF4;
-      color: #166534;
-      border: 1px solid #BBF7D0;
-      font-size: 0.72rem;
-      font-weight: 600;
-    }
-
-    /* Symmetrical Pagination & Zoom Navigator Bar in Doc Pane */
-    .pagination-toolbar-symmetric {
-      background: linear-gradient(180deg, #0f2a4a 0%, #08213b 100%);
-      color: #F8FAFC;
-      border: 1px solid #1a3d66;
-      border-radius: 8px;
-      padding: 6px 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 8px;
-      font-size: 0.8rem;
-      margin-bottom: 0.5rem;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 5px rgba(0, 0, 0, 0.15);
-    }
-
-    .pagination-toolbar-symmetric .toolbar-group {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .pagination-toolbar-symmetric .toolbar-divider {
-      width: 1px;
-      height: 20px;
-      background: rgba(255, 255, 255, 0.18);
-      margin: 0 3px;
-    }
-
-    .pagination-toolbar-symmetric .btn-toolbar-nav {
-      height: 26px;
-      padding: 0 8px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.76rem;
-      font-weight: 500;
-      border-radius: 5px;
-      transition: all 0.15s ease;
-    }
-
-    .page-input-num {
-      width: 44px;
-      text-align: center;
-      font-weight: bold;
-      font-size: 0.82rem;
-      padding: 0 4px;
-      height: 26px;
-      line-height: 26px;
-      border: 1px solid #244b75;
-      background: #06182c;
-      color: #F8FAFC;
-      border-radius: 4px;
-    }
-
-    /* Paper Stage & Strict A4 Dimension */
-    .ws-paper-stage {
-      background: #1e293b !important;
-      padding: 16px 12px 24px !important;
-      overflow-y: auto !important;
-      overflow-x: auto !important;
-      max-height: 520px !important;
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      border: 1px solid #1a3d66 !important;
-      border-radius: 8px !important;
-      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4) !important;
-    }
-
-    .doc-paper.a4-paper {
-      width: 210mm !important;
-      min-height: 297mm !important;
-      padding: 25mm 20mm 20mm 25mm !important;
-      box-sizing: border-box !important;
-      background: #FFFFFF !important;
-      position: relative !important;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
-      font-family: 'TH Sarabun IT9', 'Sarabun', serif !important;
-      font-size: 16pt !important;
-      line-height: 1.4 !important;
-      color: #000000 !important;
-    }
-
-    .doc-paper .doc-indent {
-      text-indent: 2.5em;
-      text-align: justify;
-      text-justify: inter-cluster;
-      line-height: 1.35 !important;
-      margin-bottom: 6px !important;
-      word-break: break-word;
-    }
-
-    .doc-paper .doc-secret {
-      color: #d9534f;
-      font-weight: bold;
-      font-size: 16px;
-      text-align: right;
-      margin-bottom: -10px;
-    }
-
-    .doc-paper .doc-title {
-      text-align: center;
-      font-size: 18px;
-      font-weight: bold;
-      margin: 6px 0 2px;
-    }
-
-    .doc-paper .doc-sub {
-      text-align: center;
-      font-size: 15px;
-      margin-bottom: 8px;
-    }
-
-    .doc-paper .doc-row {
-      margin-bottom: 3px;
+    .btn-navy:hover {
+      background-color: var(--board-navy-dark) !important;
+      color: #FFFFFF !important;
     }
   </style>
 </head>
@@ -348,45 +108,92 @@
 
   <main class="app-main">
 
+    <!-- Page Header & Flow Reference -->
     <div class="page-head d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
       <div>
         <h1><i class="fa-solid fa-gavel me-2" style="color:#0F2A62"></i><span>รอบการประชุมและอ่านวาระล่วงหน้า</span></h1>
       </div>
       <div class="d-flex align-items-center gap-2 ms-auto">
-        <span class="flow-ref">สิทธิ์อ่านวาระล่วงหน้า 3 วัน (ม.๒๐)</span>
+        <span class="flow-ref"><i class="fa-solid fa-shield-halved me-1 text-warning"></i>สิทธิ์อ่านวาระล่วงหน้า 3 วัน (ม.๒๐)</span>
       </div>
     </div>
 
-    <!-- Next Meeting Alert Banner -->
-    <div class="next-meet-banner mb-4">
+    <!-- Active Reading Banner (Hero Highlight) -->
+    <div class="next-meet-banner mb-4" id="nextMeetingBanner">
       <div class="row align-items-center g-3">
-        <div class="col-lg-8 col-md-7">
+        <div class="col-lg-8 col-md-12">
           <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-            <span class="badge bg-warning text-dark px-2 py-1 fw-bold"><i class="fa-solid fa-calendar-check me-1"></i>การประชุมครั้งถัดไป</span>
-            <span class="badge bg-success px-2 py-1"><i class="fa-solid fa-book-open-reader me-1"></i>เปิดให้อ่านวาระล่วงหน้าแล้ว</span>
-            <span class="small text-light opacity-75 ms-1">กำหนดส่งความเห็นก่อน 28 ส.ค. 2569</span>
+            <span class="badge bg-warning text-dark px-2.5 py-1 fw-bold">
+              <i class="fa-solid fa-calendar-check me-1"></i>เปิดให้อ่านวาระล่วงหน้า (3 วัน)
+            </span>
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fw-semibold">
+              <i class="fa-solid fa-unlock-keyhole me-1"></i>เข้าถึงสำนวนระดับกรรมการ ป.ป.ท.
+            </span>
           </div>
-          <h3 class="fw-bold mb-1 text-white">การประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ 38/2569</h3>
-          <div class="d-flex align-items-center gap-3 text-light opacity-90 small flex-wrap mt-2">
-            <span><i class="fa-regular fa-clock me-1 text-warning"></i>วันพฤหัสบดีที่ 28 สิงหาคม 2569 (09:30 - 16:30 น.)</span>
-            <span><i class="fa-solid fa-location-dot me-1 text-warning"></i>ห้องประชุม 501 ชั้น 5 อาคาร ป.ป.ท. / Zoom Hybrid</span>
-            <span><i class="fa-solid fa-list-ol me-1 text-warning"></i>บรรจุ 5 วาระคดี</span>
+          <h4 class="fw-bold text-white mb-2" id="bannerMeetingTitle">
+            การประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ 38/2569
+          </h4>
+          <div class="d-flex align-items-center gap-3 text-light opacity-90 small flex-wrap" id="bannerMeetingDetails">
+            <span><i class="fa-regular fa-clock me-1 text-warning"></i>28 ส.ค. 2569 (09:30 - 16:30 น.)</span>
+            <span><i class="fa-solid fa-location-dot me-1 text-warning"></i>ห้องประชุม 501 ชั้น 5 / Zoom Hybrid</span>
+            <span><i class="fa-solid fa-list-ol me-1 text-warning"></i>บรรจุ 10 วาระ (สำนวนคดี 5 เรื่อง)</span>
           </div>
         </div>
-        <div class="col-lg-4 col-md-5 text-md-end">
-          <div class="d-flex flex-column flex-sm-row gap-2 justify-content-md-end">
-            <button type="button" onclick="openMeetingAgendasModal(38)" class="btn btn-gold px-3 py-2 shadow">
-              <i class="fa-solid fa-book-open-reader me-1"></i>อ่านระเบียบวาระและเอกสาร
-            </button>
-          </div>
+        <div class="col-lg-4 col-md-12 text-lg-end">
+          <a href="board-detail.html?id=38" class="btn btn-gold btn-lg px-4 py-2.5 shadow text-decoration-none d-inline-flex align-items-center" id="btnOpenBannerMeeting">
+            <i class="fa-solid fa-book-open-reader me-2"></i>เปิดห้องอ่านสำนวน & วาระ
+          </a>
         </div>
       </div>
     </div>
 
-    <!-- 3 Summary KPI Cards Row (รอบการประชุมทั้งหมด, รอประชุม, ประชุมเสร็จสิ้นแล้ว) -->
-    <div class="row g-3 mb-4" id="kpiRow"></div>
+    <!-- 3 Summary KPI Cards Row -->
+    <div class="row g-3 mb-4" id="kpiCardsRow">
+      <div class="col-md-4">
+        <div class="card kpi-card active p-3" data-filter="ALL" style="border-left: 4px solid var(--board-navy) !important;">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="text-muted small fw-semibold">รอบการประชุมทั้งหมด</div>
+              <div class="h3 fw-bold text-navy mb-0" id="kpiTotalMeetings">4</div>
+            </div>
+            <div class="rounded-circle p-2.5 bg-primary-subtle text-primary">
+              <i class="fa-solid fa-calendar-days fs-4"></i>
+            </div>
+          </div>
+          <div class="small text-muted mt-2 pt-2 border-top">รวมรอบการประชุมปี พ.ศ. 2569</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card kpi-card p-3" data-filter="PENDING" style="border-left: 4px solid #D97706 !important;">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="text-muted small fw-semibold">กำหนดการแล้ว — รอประชุม</div>
+              <div class="h3 fw-bold text-warning-emphasis mb-0" id="kpiPendingMeetings">2</div>
+            </div>
+            <div class="rounded-circle p-2.5 bg-warning-subtle text-warning-emphasis">
+              <i class="fa-solid fa-clock fs-4"></i>
+            </div>
+          </div>
+          <div class="small text-muted mt-2 pt-2 border-top">เปิดให้อ่านล่วงหน้าแล้ว 1 รอบ</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card kpi-card p-3" data-filter="CLOSED" style="border-left: 4px solid #059669 !important;">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="text-muted small fw-semibold">ประชุมเสร็จสิ้นแล้ว</div>
+              <div class="h3 fw-bold text-success mb-0" id="kpiClosedMeetings">2</div>
+            </div>
+            <div class="rounded-circle p-2.5 bg-success-subtle text-success">
+              <i class="fa-solid fa-circle-check fs-4"></i>
+            </div>
+          </div>
+          <div class="small text-muted mt-2 pt-2 border-top">มีมติวินิจฉัยครบถ้วนแล้ว</div>
+        </div>
+      </div>
+    </div>
 
-    <!-- Filter Bar -->
+    <!-- Filter Card -->
     <div class="card card-ecmis mb-4">
       <div class="card-body p-3">
         <div class="row g-3 align-items-end">
@@ -416,12 +223,12 @@
       </div>
     </div>
 
-    <!-- Table: Meeting Rounds List -->
+    <!-- Meeting Rounds Table Card -->
     <div class="card card-ecmis mb-4">
       <div class="card-header d-flex align-items-center flex-wrap gap-2">
         <i class="fa-solid fa-calendar-days text-primary"></i>
         <span class="fw-bold">ตารางรายการรอบการประชุมคณะกรรมการ ป.ป.ท.</span>
-        <span class="ms-auto small text-muted">แสดงรอบการประชุมที่มีสิทธิ์เข้าถึง ดูวาระ และสืบค้นสำนวนดิจิทัล</span>
+        <span class="ms-auto small text-muted">แสดงรอบการประชุมที่เปิดสิทธิ์ให้อ่านล่วงหน้า 3 วัน</span>
       </div>
       <div class="card-body p-0">
         <div class="table-responsive">
@@ -430,410 +237,58 @@
               <col style="width:130px">
               <col style="width:230px">
               <col>
-              <col style="width:120px">
+              <col style="width:130px">
               <col style="width:190px">
-              <col style="width:240px">
+              <col style="width:220px">
             </colgroup>
             <thead>
               <tr>
-                <th class="sortable-header" data-sort="name" style="cursor:pointer">ครั้งที่ประชุม <i class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
-                <th class="sortable-header" data-sort="date" style="cursor:pointer">วัน/เวลาประชุม <i class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
+                <th class="sortable-header" data-sort="name" style="cursor:pointer">ครั้งที่ประชุม <i
+                    class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
+                <th class="sortable-header" data-sort="date" style="cursor:pointer">วัน/เวลาประชุม <i
+                    class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                 <th>สถานที่ / รูปแบบการประชุม</th>
                 <th class="text-center">จำนวนวาระ</th>
                 <th>สถานะการประชุม</th>
                 <th class="text-end">ดำเนินการ</th>
               </tr>
             </thead>
-            <tbody id="meetingTableBody"></tbody>
+            <tbody id="meetingsTableBody">
+              <!-- Populated via JS -->
+            </tbody>
           </table>
         </div>
 
-        <div class="px-3 py-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-2" id="queueFooter">
-          <div class="small text-muted" id="tableSummaryText">แสดง 0 ถึง 0 จาก 0 รายการ</div>
-          <nav aria-label="Meeting navigation">
-            <ul class="pagination pagination-sm m-0" id="queuePagination"></ul>
-          </nav>
+        <div class="px-3 py-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <div class="small text-muted" id="summaryText">แสดง 1 ถึง 4 จาก 4 รายการ</div>
         </div>
       </div>
     </div>
 
   </main>
 
-  <!-- Modal: ค้นหาวาระการประชุม ดู Detail แต่ละวาระ และ Export เอกสาร -->
-  <div class="modal fade" id="meetingAgendasModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 1320px; width: 96%;">
-      <div class="modal-content">
-        
-        <!-- Modal Header -->
-        <div class="modal-header bg-light d-flex justify-content-between align-items-center py-2 px-3">
-          <div class="d-flex align-items-center gap-2">
-            <i class="fa-solid fa-gavel text-primary fs-5"></i>
-            <div>
-              <h5 class="modal-title fw-bold text-navy mb-0" id="modalMeetTitle">การประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ 38/2569</h5>
-              <small class="text-muted" id="modalMeetSubtitle">วันพฤหัสบดีที่ 28 ส.ค. 2569 • ห้องประชุม 501 ชั้น 5</small>
-            </div>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <button type="button" class="btn btn-sm btn-outline-primary" id="btnExportAgendaPackModal" title="ส่งออกชุดเอกสารระเบียบวาระรวม">
-              <i class="fa-solid fa-file-pdf me-1 text-danger"></i>ส่งออกระเบียบวาระ (.pdf)
-            </button>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-        </div>
-
-        <!-- Modal Body: Split-Pane Agenda Explorer -->
-        <div class="modal-body p-3">
-          <div class="modal-dossier-layout">
-            
-            <!-- Left Pane: Agenda List with Search Box -->
-            <div class="modal-agenda-list-pane">
-              <div class="input-group input-group-sm mb-2">
-                <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                <input type="text" id="modalAgendaSearchInput" class="form-control" placeholder="ค้นหาวาระ, เลขสำนวน, ผู้ถูกกล่าวหา...">
-              </div>
-
-              <div class="d-flex gap-1 flex-wrap mb-2">
-                <button type="button" class="btn btn-xs btn-primary modal-agenda-filter-btn active" data-st="ALL">ทั้งหมด (<span id="modalCountAll">5</span>)</button>
-                <button type="button" class="btn btn-xs btn-outline-secondary modal-agenda-filter-btn" data-st="LIVE">LIVE (<span id="modalCountLive">1</span>)</button>
-                <button type="button" class="btn btn-xs btn-outline-secondary modal-agenda-filter-btn" data-st="PENDING">รอพิจารณา (<span id="modalCountPending">3</span>)</button>
-                <button type="button" class="btn btn-xs btn-outline-secondary modal-agenda-filter-btn" data-st="RESOLVED">มีมติแล้ว (<span id="modalCountResolved">1</span>)</button>
-              </div>
-
-              <hr class="my-1">
-
-              <div class="modal-agenda-scroll mt-1" id="modalAgendaListContainer">
-                <!-- Rendered dynamically -->
-              </div>
-            </div>
-
-            <!-- Right Pane: Agenda Detail & Evidence Dossier -->
-            <div class="d-flex flex-column min-w-0">
-              
-              <!-- Dossier Top Action Bar -->
-              <div class="p-3 bg-light rounded border mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <div>
-                  <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                    <span class="badge badge-agenda-no" id="modalDossierAgendaNo"><i class="fa-solid fa-list-ol text-warning"></i>วาระที่ 5.1</span>
-                    <span class="badge bg-white text-dark border fw-bold" id="modalDossierCaseId">สำนวนเลขที่ 2018/2569</span>
-                    <span class="badge badge-live-meeting px-2 py-1" id="modalDossierLiveBadge"><i class="fa-solid fa-circle-dot me-1"></i>กำลังพิจารณา Live</span>
-                  </div>
-                  <h6 class="fw-bold text-dark mb-0" id="modalDossierSubject">กรณีกล่าวหา นายสุรชัย สมมุติ เจ้าหน้าที่บริหารงานทั่วไป ทุจริตเบิกจ่ายเงินโครงการ</h6>
-                </div>
-
-                <div class="d-flex align-items-center gap-1">
-                  <button type="button" class="btn btn-sm btn-outline-primary" id="btnExportDocxModal" title="ส่งออกรายงานวินิจฉัยชี้มูลเป็น Word">
-                    <i class="fa-solid fa-file-word me-1"></i>.docx
-                  </button>
-                  <button type="button" class="btn btn-sm btn-outline-danger" id="btnExportPdfModal" title="ส่งออกรายงานเป็น PDF">
-                    <i class="fa-solid fa-file-pdf me-1"></i>.pdf
-                  </button>
-                  <button type="button" class="btn btn-sm btn-light border" onclick="ECMIS.printDoc(document.getElementById('modalDocPaper'))" title="พิมพ์เอกสารปัจจุบัน">
-                    <i class="fa-solid fa-print"></i>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Navigation Tabs for Detail -->
-              <ul class="nav nav-tabs mb-3" id="modalDossierTabs">
-                <li class="nav-item">
-                  <button class="nav-link active fw-semibold" data-tab="brief">
-                    <i class="fa-solid fa-clipboard-list text-primary me-1"></i>สรุปสำนวน & พฤติการณ์
-                  </button>
-                </li>
-                <li class="nav-item">
-                  <button class="nav-link fw-semibold" data-tab="evidence">
-                    <i class="fa-solid fa-folder-tree text-warning me-1"></i>คลังพยานหลักฐานดิจิทัล
-                    <span class="badge rounded-pill bg-primary ms-1" id="modalEvidenceCount">8</span>
-                  </button>
-                </li>
-                <li class="nav-item">
-                  <button class="nav-link fw-semibold" data-tab="doc">
-                    <i class="fa-solid fa-file-contract text-success me-1"></i>ร่างรายงานวินิจฉัยชี้มูล (ปปท. 7-02)
-                  </button>
-                </li>
-              </ul>
-
-              <!-- Tab Contents -->
-              <div class="flex-1 modal-tab-content-container">
-                
-                <!-- TAB 1: Brief & Investigation Facts -->
-                <div class="modal-tab-pane" id="modalTab_brief" style="overflow-y:auto; max-height:550px; padding-right:6px;">
-                  <div class="card card-ecmis mb-3">
-                    <div class="card-body p-3">
-                      <div class="row g-2 mb-3">
-                        <div class="col-md-4">
-                          <small class="text-muted d-block">ผู้ถูกกล่าวหา</small>
-                          <strong class="text-dark" id="modalBriefAccused">นายสุรชัย สมมุติ (นายช่างโยธาชำนาญงาน)</strong>
-                          <div class="small text-muted" id="modalBriefAgency">เทศบาลตำบลดอนแก้ว จ.เชียงใหม่</div>
-                        </div>
-                        <div class="col-md-4">
-                          <small class="text-muted d-block">ผู้กล่าวหา / ผู้ร้องเรียน</small>
-                          <strong class="text-dark" id="modalBriefComplainant">สำนักงานการตรวจเงินแผ่นดิน (สตง.)</strong>
-                        </div>
-                        <div class="col-md-4">
-                          <small class="text-muted d-block">วันเวลาเกิดเหตุ / อายุความ</small>
-                          <strong class="text-dark" id="modalBriefIncident">15 ม.ค. 2568 - 20 ก.พ. 2568</strong>
-                          <div class="small text-danger" id="modalBriefPrescription"><i class="fa-solid fa-clock me-1"></i>อายุความ: 15 ม.ค. 2583</div>
-                        </div>
-                      </div>
-
-                      <h6 class="fw-bold text-navy mb-1"><i class="fa-solid fa-file-lines me-1"></i>พฤติการณ์และการกระทำความผิด</h6>
-                      <p class="text-dark mb-3" id="modalBriefFact" style="font-size:0.88rem; line-height:1.6;">
-                        จากการไต่สวนข้อเท็จจริงของคณะอนุกรรมการไต่สวน พบว่า ผู้ถูกกล่าวหาซึ่งได้รับแต่งตั้งเป็นกรรมการตรวจรับพัสดุ ได้ร่วมกับผู้รับจ้างลงนามตรวจรับงานจ้างโครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก ทั้งที่งานยังไม่แล้วเสร็จตามแบบรูปรายการ เป็นเหตุให้ทางราชการเบิกจ่ายเงินงบประมาณไปโดยมิชอบ
-                      </p>
-
-                      <h6 class="fw-bold text-navy mb-1"><i class="fa-solid fa-scale-balanced me-1"></i>ฐานความผิดและข้อกฎหมาย</h6>
-                      <div id="modalBriefOffenses" class="mb-3">
-                        <span class="badge bg-danger me-1">ป.อาญา ม.157</span>
-                        <span class="badge bg-danger me-1">ป.อาญา ม.162 (1) (4)</span>
-                        <span class="badge bg-warning text-dark me-1">พ.ร.บ. ป.ป.ท. ม.18/4</span>
-                        <span class="badge bg-info text-dark">วินัยร้ายแรง</span>
-                      </div>
-
-                      <div class="row g-2 pt-2 border-top">
-                        <div class="col-md-6">
-                          <div class="p-2 bg-light rounded border">
-                            <strong class="text-primary small d-block mb-1"><i class="fa-solid fa-user-tie me-1"></i>ความเห็นพนักงานไต่สวน</strong>
-                            <p class="small text-muted mb-0">เห็นควรชี้มูลความผิดทางอาญาตาม ม.157, 162 และวินัยอย่างร้ายแรง ส่งเรื่อง อสส. ดำเนินคดี</p>
-                          </div>
-                        </div>
-                        <div class="col-md-6">
-                          <div class="p-2 bg-light rounded border">
-                            <strong class="text-primary small d-block mb-1"><i class="fa-solid fa-users-gear me-1"></i>ความเห็นคณะอนุกรรมการกลั่นกรอง</strong>
-                            <p class="small text-muted mb-0">มีมติเห็นพ้องตามรายงานของพนักงานไต่สวน เสนอคณะกรรมการ ป.ป.ท. ชี้มูลความผิด</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Board Member Private Notes Box -->
-                      <div class="mt-3 p-3 rounded-3" style="background:#fffaf0; border:1px solid #fed7aa;">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                          <strong class="text-dark small d-flex align-items-center gap-1" style="color:#9a3412 !important;">
-                            <i class="fa-solid fa-note-sticky text-warning"></i>บันทึกข้อสังเกต / คำถามส่วนตัวของกรรมการ (Private Note)
-                          </strong>
-                          <span class="badge bg-white text-secondary border px-2 py-1" id="modalNoteSaveStatus" style="font-size:0.7rem; font-weight:normal;">
-                            <i class="fa-solid fa-cloud-arrow-up text-success me-1"></i>บันทึกอัตโนมัติ
-                          </span>
-                        </div>
-                        <textarea class="form-control" id="modalBoardPrivateNote" rows="3" placeholder="พิมพ์ข้อสังเกตส่วนตัว ข้อสงสัย หรือประเด็นที่ต้องการซักถามเพิ่มเติมในที่ประชุมสำหรับสำนวนนี้ (ข้อมูลจะถูกบันทึกไว้เฉพาะท่าน)..." style="font-size:0.84rem; background:#ffffff; border-color:#fbd38d; resize:vertical;"></textarea>
-                        <div class="d-flex align-items-center justify-content-between mt-1">
-                          <small class="text-muted" style="font-size:0.72rem;"><i class="fa-solid fa-shield-halved text-success me-1"></i>ข้อมูลนี้จะถูกเก็บไว้เป็นความลับเฉพาะอุปกรณ์/บัญชีของท่าน</small>
-                          <small class="text-muted" id="modalNoteCharCount" style="font-size:0.72rem;">0 ตัวอักษร</small>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- TAB 2: Smart Evidence Vault -->
-                <div class="modal-tab-pane d-none" id="modalTab_evidence" style="overflow-y:auto; max-height:550px; padding-right:6px;">
-                  <div id="modalEvidenceFiltersContainer" class="d-flex gap-1 flex-wrap mb-2">
-                    <!-- Rendered dynamically matching current agenda -->
-                  </div>
-
-                  <div id="modalEvidenceListContainer">
-                    <!-- Rendered dynamically -->
-                  </div>
-                </div>
-
-                <!-- TAB 3: Official A4 Document Preview -->
-                <div class="modal-tab-pane d-none" id="modalTab_doc" style="width:100%;">
-                  
-                  <!-- Symmetrical Pagination & Zoom Navigator Bar -->
-                  <div class="pagination-toolbar-symmetric mb-2" id="modalDocPaginationBar">
-                    <!-- Left Group: View Mode & Page Jump Controls -->
-                    <div class="toolbar-group">
-                      <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" id="btnModalModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น)">
-                          <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
-                        </button>
-                        <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnModalModeContinuous" title="โหมดดูทุกหน้าต่อเนื่อง">
-                          <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
-                        </button>
-                      </div>
-
-                      <div class="toolbar-divider"></div>
-
-                      <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnModalFirstPage" title="หน้าแรกสุด"><i class="fa-solid fa-backward-step"></i></button>
-                        <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnModalPrevPage" title="หน้าก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
-                      </div>
-                      
-                      <div class="d-flex align-items-center gap-1">
-                        <span class="small opacity-75">หน้า</span>
-                        <input type="number" class="page-input-num" id="modalPageNumberInput" min="1" value="1">
-                        <span class="small opacity-75" id="modalTotalPagesText">/ 1 หน้า</span>
-                      </div>
-
-                      <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnModalNextPage" title="หน้าถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
-                        <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnModalLastPage" title="หน้าสุดท้าย"><i class="fa-solid fa-forward-step"></i></button>
-                      </div>
-                    </div>
-
-                    <!-- Right Group: Zoom Stepper Controls -->
-                    <div class="toolbar-group ms-auto">
-                      <div class="d-flex align-items-center bg-dark rounded px-1" style="background:#06182c !important; border:1px solid #1a3d66; height:26px;">
-                        <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnModalZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
-                        <span style="font-size:0.75rem; width:34px; text-align:center; font-weight:600; color:#fff;" id="modalZoomLevelText">75%</span>
-                        <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnModalZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- A4 Document Paper Stage -->
-                  <div class="ws-paper-stage" id="modalDocPaperStage" style="height:510px !important; max-height:510px !important; width:100% !important;">
-                    <div id="modalDocPaperContainer" style="display:flex; justify-content:center; width:100%; transform:scale(0.75); transform-origin:top center; transition:transform 0.15s ease;">
-                      <div class="doc-paper a4-paper" id="modalDocPaper">
-                        <!-- Rendered dynamically -->
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-
-        <div class="modal-footer bg-light py-2">
-          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">ปิดหน้าต่าง</button>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
+  <!-- Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="assets/ecmis-app.js"></script>
+  <script src="assets/ecmis-model.js"></script>
   <script>
+    // Initialize standard system navigation shell & role authentication
     ECMIS.renderShell('board-inbox.html');
 
-    const role = ECMIS.currentRole();
-
-    /* Board Meetings and Embedded Agendas Data */
+    /* Board Meetings Dataset */
     const BOARD_MEETINGS = [
       {
         id: 38,
         name: '38/2569',
         date: '2569-08-28',
         time: '09:30 - 16:30 น.',
-        location: 'ห้องประชุม 501 ชั้น 5 / Zoom Hybrid Meeting',
-        agendaCount: 5,
+        location: 'ห้องประชุม 501 ชั้น 5 อาคาร ป.ป.ท. / Zoom Hybrid Meeting',
+        agendaCount: 10,
         status: 'ACTIVE_READING',
         statusText: 'เปิดให้อ่านล่วงหน้า (3 วัน)',
-        isNext: true,
-        agendas: [
-          {
-            agendaNo: '5.1',
-            caseId: '2018/2569',
-            subject: 'กรณีกล่าวหา นายสุรชัย สมมุติ เจ้าหน้าที่บริหารงานทั่วไป ทุจริตเบิกจ่ายเงินโครงการก่อสร้าง',
-            accused: 'นายสุรชัย สมมุติ',
-            accusedPos: 'นายช่างโยธาชำนาญงาน',
-            agency: 'เทศบาลตำบลดอนแก้ว จ.เชียงใหม่',
-            complainant: 'สำนักงานการตรวจเงินแผ่นดิน (สตง.)',
-            incidentDate: '15 ม.ค. 2568 - 20 ก.พ. 2568',
-            prescription: '15 ม.ค. 2583 (เหลือ 13 ปี)',
-            status: 'LIVE',
-            statusLabel: 'กำลังพิจารณา Live',
-            factSummary: 'จากการไต่สวนข้อเท็จจริงของคณะอนุกรรมการไต่สวน พบว่า ผู้ถูกกล่าวหาซึ่งได้รับแต่งตั้งเป็นกรรมการตรวจรับพัสดุ ได้ร่วมกับผู้รับจ้างลงนามตรวจรับงานจ้างโครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก ทั้งที่งานยังไม่แล้วเสร็จตามแบบรูปรายการ เป็นเหตุให้ทางราชการเบิกจ่ายเงินงบประมาณไปโดยมิชอบ เกิดความเสียหายแก่ทางราชการเป็นเงินจำนวน 1,240,000 บาท',
-            offenses: ['ป.อาญา ม.157', 'ป.อาญา ม.162 (1) (4)', 'พ.ร.บ. ป.ป.ท. ม.18/4', 'วินัยร้ายแรง'],
-            evidences: [
-              { id: 'E5-01', title: 'บันทึกถ้อยคำพยานบุคคล (นายสมเกียรติ - วิศวกรผู้ควบคุมงาน)', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '2.4 MB', icon: 'fa-file-lines', preview: 'พยานให้ถ้อยคำยืนยันว่า ในวันที่ผู้ถูกกล่าวหาลงนามตรวจรับงานนั้น ผิวจราจรคอนกรีตยังเทไม่เสร็จตามแบบรูปรายการ' },
-              { id: 'E5-02', title: 'สัญญาจ้างก่อสร้างโครงการและแบบรูปรายการ เลขที่ 45/2568', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '14.8 MB', icon: 'fa-file-contract', preview: 'สัญญาจ้างระบุงวดงานและเงื่อนไขการตรวจรับอย่างชัดเจนว่าต้องผ่านการตรวจวัดความหนาของผิวคอนกรีตก่อนลงนาม' },
-              { id: 'E5-03', title: 'รายงานการตรวจสอบเส้นทางการเงินและรายการเดินบัญชีธนาคาร', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '5.1 MB', icon: 'fa-file-invoice-dollar', preview: 'พบรายการโอนเงินจากบัญชีของผู้รับจ้างเข้าบัญชีเครือญาติของผู้ถูกกล่าวหาจำนวน 150,000 บาท ภายหลังวันตรวจรับงาน 3 วัน' },
-              { id: 'E5-04', title: 'ภาพถ่ายและวิดีโอการตรวจสถานที่ก่อสร้างจริงโดยพนักงานไต่สวน', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '32.0 MB', icon: 'fa-image', preview: 'ภาพถ่ายสภาพถนนจริงปรากฏว่าความหนาของคอนกรีตไม่ได้มาตรฐานตามแบบแปลน และมีรอยแตกร้าวเสียหายตลอดสายทาง' },
-              { id: 'E4-01', title: 'หนังสือร้องเรียนต้นเรื่องจากประชาชนและภาพถ่ายเบื้องต้น', act: 'ACT4', actLabel: 'แสวงหาข้อเท็จจริง', size: '1.8 MB', icon: 'fa-envelope-open-text', preview: 'หนังสือร้องเรียนระบุพฤติการณ์การทุจริตในโครงการก่อสร้างถนน พร้อมแนบรายชื่อประชาชนผู้ได้รับความเดือดร้อน' },
-              { id: 'E4-02', title: 'รายงานผลการตรวจสอบข้อเท็จจริงเบื้องต้น (การแสวงหาข้อเท็จจริง)', act: 'ACT4', actLabel: 'แสวงหาข้อเท็จจริง', size: '4.2 MB', icon: 'fa-magnifying-glass', preview: 'ผลการแสวงหาข้อเท็จจริงเบื้องต้นพบว่าเรื่องมีมูลความผิดเพียงพอที่จะแต่งตั้งคณะอนุกรรมการไต่สวนตาม ม.24' },
-              { id: 'E7-01', title: 'มติคณะอนุกรรมการกลั่นกรองคณะที่ 1', act: 'ACT7', actLabel: 'มติคณะอนุฯ', size: '1.2 MB', icon: 'fa-gavel', preview: 'คณะอนุกรรมการกลั่นกรองมีมติเห็นพ้องตามรายงานของพนักงานไต่สวน และเสนอคณะกรรมการ ป.ป.ท. ชี้มูลความผิด' },
-              { id: 'E7-02', title: 'ร่างรายงานวินิจฉัยชี้มูลความผิด ปปท. 7-02 ฉบับสมบูรณ์', act: 'ACT7', actLabel: 'รายงานวินิจฉัย', size: '2.8 MB', icon: 'fa-file-signature', preview: 'ร่างรายงานวินิจฉัยชี้มูลบรรยายข้อเท็จจริง ข้อกฎหมาย และมติการชี้มูลความผิดทั้งทางอาญาและทางวินัยอย่างละเอียด' }
-            ]
-          },
-          {
-            agendaNo: '5.2',
-            caseId: '2015/2569',
-            subject: 'กรณีกล่าวหา นายวิชัย รักษ์ดี จัดซื้อครุภัณฑ์คอมพิวเตอร์ราคาสูงเกินจริง',
-            accused: 'นายวิชัย รักษ์ดี',
-            accusedPos: 'ผู้อำนวยการกองการศึกษา',
-            agency: 'องค์การบริหารส่วนตำบลบางพลี',
-            complainant: 'บัตรสนเท่ห์และเจ้าหน้าที่ภายใน',
-            incidentDate: '10 มี.ค. 2568',
-            prescription: '10 มี.ค. 2583',
-            status: 'PENDING',
-            statusLabel: 'รอพิจารณา',
-            factSummary: 'ไต่สวนพบการกำหนดสเปกครุภัณฑ์ล็อกสเปกให้เอกชนรายเดียว และมีราคาสูงกว่าราคากลางของกระทรวงดิจิทัลฯ เกือบเท่าตัว',
-            offenses: ['ป.อาญา ม.157', 'พ.ร.บ.ฮั้ว ม.12'],
-            evidences: [
-              { id: 'E5-05', title: 'ตารางเปรียบเทียบสเปกคอมพิวเตอร์และราคากลาง', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '3.2 MB', icon: 'fa-table', preview: 'สเปกอุปกรณ์ตรงกับแคตตาล็อกของบริษัทผู้ชนะการเสนอราคาถึง 98%' },
-              { id: 'E5-06', title: 'รายงานการตรวจรับพัสดุและใบส่งของครุภัณฑ์', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '4.5 MB', icon: 'fa-file-contract', preview: 'ตรวจรับครุภัณฑ์ที่มีสเปกต่ำกว่าเกณฑ์แต่เบิกจ่ายเต็มจำนวน' },
-              { id: 'E4-03', title: 'บัตรสนเท่ห์และเอกสารร้องเรียนเบื้องต้น', act: 'ACT4', actLabel: 'แสวงหาข้อเท็จจริง', size: '1.2 MB', icon: 'fa-envelope-open-text', preview: 'หนังสือร้องเรียนระบุการล็อกสเปกให้เอกชนรายเดียวในพื้นที่' },
-              { id: 'E7-03', title: 'บันทึกความเห็นคณะอนุกรรมการกลั่นกรอง', act: 'ACT7', actLabel: 'มติและความเห็น', size: '1.8 MB', icon: 'fa-file-signature', preview: 'เห็นพ้องชี้มูลความผิดอาญาตาม ม.157 และ พ.ร.บ.ฮั้ว ม.12' }
-            ]
-          },
-          {
-            agendaNo: '5.3',
-            caseId: '2022/2569',
-            subject: 'กรณีกล่าวหา นายสมพงษ์ ใจบุญ เบิกจ่ายค่าน้ำมันเชื้อเพลิงยานพาหนะเท็จ',
-            accused: 'นายสมพงษ์ ใจบุญ',
-            accusedPos: 'พนักงานขับรถยนต์',
-            agency: 'แขวงทางหลวงสระบุรี',
-            complainant: 'การตรวจทานภายในหน่วยงาน',
-            incidentDate: '01 ก.พ. 2568 - 30 เม.ย. 2568',
-            prescription: '01 ก.พ. 2583',
-            status: 'PENDING',
-            statusLabel: 'รอพิจารณา',
-            factSummary: 'นำใบเสร็จค่าน้ำมันปลอมมาเบิกเงินหลวงทั้งที่รถยนต์จอดซ่อมอยู่ในอู่',
-            offenses: ['ป.อาญา ม.157', 'ป.อาญา ม.162', 'วินัยร้ายแรง'],
-            evidences: [
-              { id: 'E5-07', title: 'สมุดบันทึกการใช้รถยนต์ส่วนกลางและใบเบิกน้ำมัน', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '2.8 MB', icon: 'fa-book', preview: 'พบการลงเวลาเบิกค่าน้ำมันในวันที่รถยนต์จอดซ่อมอยู่ที่อู่' },
-              { id: 'E5-08', title: 'หนังสือยืนยันและใบเสร็จจากสถานีบริการน้ำมัน', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '1.5 MB', icon: 'fa-receipt', preview: 'สถานีบริการน้ำมันยืนยันว่าไม่มีการเติมน้ำมันตามวันเวลาที่ระบุในใบเสร็จ' },
-              { id: 'E4-04', title: 'รายงานการตรวจสอบข้อเท็จจริงของหน่วยงานต้นสังกัด', act: 'ACT4', actLabel: 'แสวงหาข้อเท็จจริง', size: '3.1 MB', icon: 'fa-magnifying-glass', preview: 'ผลการตรวจทานภายในพบความผิดปกติของการเบิกจ่ายงบประมาณค่าน้ำมัน' }
-            ]
-          },
-          {
-            agendaNo: '5.4',
-            caseId: '1355/2566',
-            subject: 'กรณีกล่าวหา นายสุเทพ วิจารณ์ อนุมัติเบิกจ่ายเบี้ยเลี้ยงเดินทางไปราชการอันเป็นเท็จ',
-            accused: 'นายสุเทพ วิจารณ์',
-            accusedPos: 'หัวหน้าฝ่ายการเงิน',
-            agency: 'สำนักงานเขตพื้นที่การศึกษา',
-            complainant: 'ผู้บังคับบัญชา',
-            incidentDate: '12 ส.ค. 2566',
-            prescription: '12 ส.ค. 2581',
-            status: 'PENDING',
-            statusLabel: 'รอพิจารณา',
-            factSummary: 'จัดทำเอกสารโครงการฝึกอบรมและเบิกค่าเบี้ยเลี้ยงโดยไม่ได้มีการจัดโครงการจริง',
-            offenses: ['ป.อาญา ม.157', 'ป.อาญา ม.162'],
-            evidences: [
-              { id: 'E5-09', title: 'หลักฐานการเบิกจ่ายเงินเบี้ยเลี้ยงและค่าที่พักเท็จ', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '4.0 MB', icon: 'fa-file-invoice-dollar', preview: 'ไม่มีการจัดโครงการฝึกอบรมตามสถานที่และวันเวลาที่ขออนุมัติเบิกจ่าย' },
-              { id: 'E5-10', title: 'บันทึกถ้อยคำพยานเจ้าหน้าที่ฝ่ายการเงินและพัสดุ', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '2.6 MB', icon: 'fa-file-lines', preview: 'พยานให้การยืนยันว่าได้รับคำสั่งให้จัดทำเอกสารเบิกจ่ายย้อนหลัง' },
-              { id: 'E4-05', title: 'รายงานผลการแสวงหาข้อเท็จจริงเบื้องต้น', act: 'ACT4', actLabel: 'แสวงหาข้อเท็จจริง', size: '2.1 MB', icon: 'fa-file-circle-check', preview: 'มีพยานหลักฐานเพียงพอที่จะรับเรื่องไว้ไต่สวนข้อเท็จจริง' }
-            ]
-          },
-          {
-            agendaNo: '5.5',
-            caseId: '2004/2569',
-            subject: 'กรณีรายงานเรื่องเชิงนโยบายการจัดสรรอัตรากำลังพนักงานไต่สวนประจำภูมิภาค',
-            accused: '— (เรื่องเชิงนโยบาย)',
-            accusedPos: 'สำนักบริหารงานกลาง',
-            agency: 'สำนักงาน ป.ป.ท.',
-            complainant: 'เลขาธิการ ป.ป.ท.',
-            incidentDate: '—',
-            prescription: '—',
-            status: 'RESOLVED',
-            statusLabel: 'มีมติรับทราบแล้ว',
-            factSummary: 'รายงานผลการวิเคราะห์กรอบอัตรากำลังและภาระงาน เพื่อขอความเห็นชอบในการกระจายอัตรากำลังสู่ ป.ป.ท. เขต 1-9',
-            offenses: [],
-            evidences: [
-              { id: 'E7-04', title: 'รายงานผลการวิเคราะห์กรอบอัตรากำลังพนักงานไต่สวน', act: 'ACT7', actLabel: 'มติและความเห็น', size: '5.4 MB', icon: 'fa-chart-pie', preview: 'เอกสารวิเคราะห์ภาระงานและอัตรากำลังประจำ ป.ป.ท. เขต 1-9' },
-              { id: 'E7-05', title: 'ร่างข้อเสนอนโยบายการจัดสรรกำลังคนต่อคณะกรรมการ', act: 'ACT7', actLabel: 'มติและความเห็น', size: '2.2 MB', icon: 'fa-file-contract', preview: 'ข้อเสนอเชิงนโยบายเพื่อเพิ่มประสิทธิภาพการไต่สวนคดีค้างสะสม' }
-            ]
-          }
-        ]
+        isNext: true
       },
       {
         id: 37,
@@ -844,50 +299,7 @@
         agendaCount: 4,
         status: 'CLOSED',
         statusText: 'ประชุมเสร็จสิ้นแล้ว (มีมติแล้ว)',
-        isNext: false,
-        agendas: [
-          {
-            agendaNo: '5.1',
-            caseId: '1525/2558',
-            subject: 'กรณีกล่าวหา นายสมศักดิ์ ข้าราชการระดับ 8 ทุจริตโครงการขุดลอกคลอง',
-            accused: 'นายสมศักดิ์ มั่นคง',
-            accusedPos: 'ผู้อำนวยการส่วน',
-            agency: 'กรมชลประทาน',
-            complainant: 'สตง.',
-            incidentDate: '2558-10-08',
-            prescription: '2570-06-30',
-            status: 'RESOLVED',
-            statusLabel: 'มีมติชี้มูลแล้ว',
-            factSummary: 'มีมติชี้มูลความผิดวินัยร้ายแรงและคดีอาญา ส่งสำนวนให้อัยการสูงสุดแล้ว',
-            offenses: ['ป.อาญา ม.157'],
-            evidences: [
-              { id: 'E5-11', title: 'รายงานผลการตรวจสอบปริมาณงานขุดลอกคลอง', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '8.2 MB', icon: 'fa-water', preview: 'ปริมาณดินที่ขุดลอกจริงต่ำกว่าเกณฑ์ตามสัญญาจ้างกว่า 40%' },
-              { id: 'E5-12', title: 'บันทึกคำให้การผู้ควบคุมงานและกรรมการตรวจรับ', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '3.5 MB', icon: 'fa-file-lines', preview: 'ลงนามตรวจรับงานทั้งที่ยังขุดลอกไม่เสร็จสิ้นตามแบบรูปรายการ' },
-              { id: 'E4-06', title: 'รายงานผลการตรวจสอบของ สตง. ภูมิภาค', act: 'ACT4', actLabel: 'แสวงหาข้อเท็จจริง', size: '4.1 MB', icon: 'fa-magnifying-glass', preview: 'ตรวจพบความเสียหายแก่เงินงบประมาณแผ่นดินจำนวน 3.8 ล้านบาท' },
-              { id: 'E7-06', title: 'รายงานวินิจฉัยชี้มูลและมติคณะกรรมการ ป.ป.ท.', act: 'ACT7', actLabel: 'มติและความเห็น', size: '2.9 MB', icon: 'fa-file-signature', preview: 'มีมติชี้มูลความผิดวินัยร้ายแรงและคดีอาญา ส่งสำนวน อสส. แล้ว' }
-            ]
-          },
-          {
-            agendaNo: '5.2',
-            caseId: '1547/2568',
-            subject: 'กรณีกล่าวหา นายประเสริฐ ออกใบอนุญาตก่อสร้างอาคารผิดแบบแปลนผังเมือง',
-            accused: 'นายประเสริฐ ชำนาญการ',
-            accusedPos: 'นายช่างผังเมือง',
-            agency: 'เทศบาลนครนนทบุรี',
-            complainant: 'ประชาชนผู้พักอาศัยข้างเคียง',
-            incidentDate: '2568-02-14',
-            prescription: '2583-02-14',
-            status: 'RESOLVED',
-            statusLabel: 'มีมติชี้มูลแล้ว',
-            factSummary: 'พิจารณาแล้วมีมติชี้มูลความผิดทางวินัยอย่างไม่ร้ายแรง',
-            offenses: ['ป.อาญา ม.157'],
-            evidences: [
-              { id: 'E5-13', title: 'แบบแปลนผังเมืองและใบอนุญาตก่อสร้างอาคาร', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '12.4 MB', icon: 'fa-map-location-dot', preview: 'อาคารมีระยะร่นและพื้นที่ใช้สอยขัดต่อกฎกระทรวงผังเมืองรวม' },
-              { id: 'E5-14', title: 'บันทึกถ้อยคำนายช่างผู้ตรวจแบบแปลน', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '2.7 MB', icon: 'fa-file-lines', preview: 'ยอมรับว่าตรวจแบบแปลนผิดพลาดโดยประมาทเลินเล่อ' },
-              { id: 'E4-07', title: 'หนังสือร้องเรียนจากประชาชนผู้พักอาศัยข้างเคียง', act: 'ACT4', actLabel: 'แสวงหาข้อเท็จจริง', size: '1.9 MB', icon: 'fa-envelope-open-text', preview: 'ร้องเรียนผลกระทบจากการก่อสร้างอาคารสูงบดบังทิศทางลม' }
-            ]
-          }
-        ]
+        isNext: false
       },
       {
         id: 36,
@@ -898,25 +310,7 @@
         agendaCount: 6,
         status: 'CLOSED',
         statusText: 'ประชุมเสร็จสิ้นแล้ว (มีมติแล้ว)',
-        isNext: false,
-        agendas: [
-          {
-            agendaNo: '5.1',
-            caseId: '1015/2568',
-            subject: 'กรณีกล่าวหา จัดซื้อรถยนต์ส่วนกลางราคาเกินจริง',
-            accused: 'นายอำนาจ เจริญดี',
-            accusedPos: 'เจ้าหน้าที่พัสดุ',
-            agency: 'สำนักงานสาธารณสุขจังหวัด',
-            complainant: 'สตง.',
-            incidentDate: '2568-01-10',
-            prescription: '2583-01-10',
-            status: 'RESOLVED',
-            statusLabel: 'มีมติชี้มูลแล้ว',
-            factSummary: 'ชี้มูลความผิดทางอาญาและวินัยร้ายแรง',
-            offenses: ['ป.อาญา ม.157'],
-            evidences: []
-          }
-        ]
+        isNext: false
       },
       {
         id: 39,
@@ -927,621 +321,98 @@
         agendaCount: 3,
         status: 'SCHEDULED',
         statusText: 'กำหนดการแล้ว (รอเปิดอ่าน)',
-        isNext: false,
-        agendas: [
-          {
-            agendaNo: '5.1',
-            caseId: '2020/2569',
-            subject: 'กรณีกล่าวหา ละเว้นการบังคับใช้กฎหมายควบคุมอาคาร',
-            accused: 'นายธีระพล มงคล',
-            accusedPos: 'ปลัดเทศบาล',
-            agency: 'เทศบาลเมืองหัวหิน',
-            complainant: 'สำนักนายกรัฐมนตรี',
-            incidentDate: '2568-05-12',
-            prescription: '2583-05-12',
-            status: 'PENDING',
-            statusLabel: 'รอพิจารณา',
-            factSummary: 'อยู่ระหว่างบรรจุวาระเพื่อพิจารณาชี้มูล',
-            offenses: ['ป.อาญา ม.157'],
-            evidences: []
-          }
-        ]
+        isNext: false
       }
     ];
 
-    let activeKpi = 'ALL';
-    let sortField = 'id';
-    let sortOrder = 'desc';
+    let currentFilter = 'ALL';
 
-    /* Render exactly 3 synchronized KPI cards */
-    function renderKPI() {
+    /* Render KPI Cards on Overview Page */
+    function renderOverviewKPI() {
       const total = BOARD_MEETINGS.length;
-      // กำหนดการแล้ว — รอประชุม = status !== 'CLOSED'
       const pending = BOARD_MEETINGS.filter(m => m.status !== 'CLOSED').length;
       const closed = BOARD_MEETINGS.filter(m => m.status === 'CLOSED').length;
 
-      const kpis = [
-        { id: 'ALL', n: total, l: 'รอบการประชุมทั้งหมด', i: 'fa-calendar-days', c: '#0F2A62' },
-        { id: 'PENDING', n: pending, l: 'กำหนดการแล้ว — รอประชุม', i: 'fa-clock', c: '#D97706' },
-        { id: 'CLOSED', n: closed, l: 'ประชุมเสร็จสิ้นแล้ว', i: 'fa-circle-check', c: '#059669' }
-      ];
-
-      document.getElementById('kpiRow').innerHTML = kpis.map(k => {
-        const isActive = (activeKpi === k.id);
-        const cardStyle = isActive ? `style="border-color:${k.c};background:#F8FAFC;"` : '';
-        return `
-          <div class="col-md-4 col-sm-12">
-            <div class="card kpi-card h-100 ${isActive ? 'active' : ''}" 
-                 ${cardStyle}
-                 onclick="filterByKPI('${k.id}')">
-              <div class="card-body p-3 d-flex align-items-center justify-content-between">
-                <div>
-                  <div class="text-muted small mb-1">${k.l}</div>
-                  <div class="h3 fw-bold mb-0" style="color:${k.c}">${k.n}</div>
-                </div>
-                <div class="rounded-circle p-3 d-flex align-items-center justify-content-center"
-                     style="background: ${k.c}15; width:52px; height:52px;">
-                  <i class="fa-solid ${k.i} fs-4" style="color:${k.c}"></i>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
+      $('#kpiTotalMeetings').text(total);
+      $('#kpiPendingMeetings').text(pending);
+      $('#kpiClosedMeetings').text(closed);
     }
 
-    function filterByKPI(kpiId) {
-      activeKpi = kpiId;
-      $('#statusFilter').val(kpiId);
-      renderKPI();
-      renderMeetingList();
-    }
-
-    function isMeetingStatusMatch(m, st) {
-      if (st === 'ALL') return true;
-      if (st === 'PENDING') return m.status !== 'CLOSED';
-      if (st === 'CLOSED') return m.status === 'CLOSED';
-      return m.status === st;
-    }
-
-    function renderMeetingList() {
+    /* Render Meeting Rounds Table */
+    function renderMeetingsTable() {
       const q = ($('#searchInput').val() || '').trim().toLowerCase();
-      const st = $('#statusFilter').val() || 'ALL';
+      const st = $('#statusFilter').val() || currentFilter;
 
       let filtered = BOARD_MEETINGS.filter(m => {
-        if (!isMeetingStatusMatch(m, st)) return false;
+        if (st === 'PENDING' && m.status === 'CLOSED') return false;
+        if (st === 'CLOSED' && m.status !== 'CLOSED') return false;
         if (!q) return true;
-        const matchName = m.name.toLowerCase().includes(q);
-        const matchLoc = m.location.toLowerCase().includes(q);
-        const matchAgendas = m.agendas && m.agendas.some(a => 
-          (a.caseId && a.caseId.toLowerCase().includes(q)) ||
-          (a.subject && a.subject.toLowerCase().includes(q)) ||
-          (a.accused && a.accused.toLowerCase().includes(q))
-        );
-        return matchName || matchLoc || matchAgendas;
+        return m.name.toLowerCase().includes(q) || m.location.toLowerCase().includes(q);
       });
 
-      filtered.sort((a, b) => {
-        let valA = a[sortField];
-        let valB = b[sortField];
-        if (typeof valA === 'string') {
-          return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-        } else {
-          return sortOrder === 'asc' ? (valA - valB) : (valB - valA);
-        }
-      });
+      $('#summaryText').text(`แสดง 1 ถึง ${filtered.length} จาก ${filtered.length} รายการ`);
 
-      $('#tableSummaryText').text(`แสดง 1 ถึง ${filtered.length} จาก ${filtered.length} รายการ`);
-
-      if (filtered.length === 0) {
-        $('#meetingTableBody').html(`
-          <tr>
-            <td colspan="6" class="text-center py-4 text-muted">
-              <i class="fa-solid fa-folder-open fa-2x mb-2 d-block text-secondary"></i>
-              ไม่พบรอบการประชุมตามเงื่อนไขที่เลือก
-            </td>
-          </tr>
-        `);
-        return;
-      }
-
-      const html = filtered.map(m => {
-        let statusBadge = '';
-        if (m.status === 'CLOSED') {
-          statusBadge = `<span class="meet-badge meet-closed"><i class="fa-solid fa-circle-check me-1"></i>ประชุมเสร็จสิ้นแล้ว</span>`;
-        } else {
-          statusBadge = `<span class="meet-badge meet-scheduled"><i class="fa-solid fa-calendar-days me-1"></i>กำหนดการแล้ว — รอประชุม</span>`;
-        }
-
-        return `
-          <tr>
-            <td class="fw-bold text-navy">ครั้งที่ ${m.name}</td>
-            <td>
-              <div class="fw-semibold">${ECMIS.thaiDate(m.date)}</div>
-              <small class="text-muted"><i class="fa-regular fa-clock me-1"></i>${m.time}</small>
-            </td>
-            <td>
-              <div class="text-truncate" style="max-width:300px;" title="${m.location}">
-                <i class="fa-solid fa-location-dot text-danger me-1"></i>${m.location}
-              </div>
-            </td>
-            <td class="text-center">
-              <span class="badge badge-agenda-count"><i class="fa-solid fa-layer-group text-primary"></i>${m.agendaCount} วาระ</span>
-            </td>
-            <td>${statusBadge}</td>
-            <td class="text-end">
-              <div class="d-flex justify-content-end gap-1">
-                <button type="button" onclick="openMeetingAgendasModal(${m.id})" class="btn btn-sm btn-primary px-3 fw-medium">
-                  <i class="fa-solid fa-folder-open me-1"></i>ดูวาระและสำนวนคดี
-                </button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      $('#meetingTableBody').html(html);
-    }
-
-    /* Modal Agenda & Dossier Management */
-    let currentModalMeeting = null;
-    let currentModalAgendaIdx = 0;
-    let modalStatusFilter = 'ALL';
-    let modalEvidenceCat = 'ALL';
-
-    function openMeetingAgendasModal(meetId) {
-      currentModalMeeting = BOARD_MEETINGS.find(m => m.id === meetId) || BOARD_MEETINGS[0];
-      currentModalAgendaIdx = 0;
-      modalStatusFilter = 'ALL';
-
-      $('#modalMeetTitle').text(`การประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${currentModalMeeting.name}`);
-      $('#modalMeetSubtitle').text(`${ECMIS.thaiDate(currentModalMeeting.date)} • ${currentModalMeeting.location}`);
-
-      // Count filter badges
-      if (currentModalMeeting.agendas) {
-        $('#modalCountAll').text(currentModalMeeting.agendas.length);
-        $('#modalCountLive').text(currentModalMeeting.agendas.filter(a => a.status === 'LIVE').length);
-        $('#modalCountPending').text(currentModalMeeting.agendas.filter(a => a.status === 'PENDING').length);
-        $('#modalCountResolved').text(currentModalMeeting.agendas.filter(a => a.status === 'RESOLVED').length);
-      }
-
-      renderModalAgendaList();
-      selectModalAgenda(0);
-
-      const modal = new bootstrap.Modal(document.getElementById('meetingAgendasModal'));
-      modal.show();
-    }
-
-    function renderModalAgendaList() {
-      if (!currentModalMeeting || !currentModalMeeting.agendas) return;
-
-      const q = ($('#modalAgendaSearchInput').val() || '').trim().toLowerCase();
-      let filtered = currentModalMeeting.agendas.map((a, idx) => ({ ...a, originalIdx: idx }));
-
-      if (modalStatusFilter !== 'ALL') {
-        filtered = filtered.filter(a => a.status === modalStatusFilter);
-      }
-
-      if (q) {
-        filtered = filtered.filter(a =>
-          a.agendaNo.toLowerCase().includes(q) ||
-          (a.caseId && a.caseId.toLowerCase().includes(q)) ||
-          (a.subject && a.subject.toLowerCase().includes(q)) ||
-          (a.accused && a.accused.toLowerCase().includes(q))
-        );
-      }
-
-      const container = document.getElementById('modalAgendaListContainer');
-      if (filtered.length === 0) {
-        container.innerHTML = '<div class="text-muted text-center py-4 small">ไม่พบวาระที่ค้นหา</div>';
-        return;
-      }
-
-      container.innerHTML = filtered.map(a => {
-        const isSelected = (a.originalIdx === currentModalAgendaIdx);
-        let badgeHtml = '';
-        if (a.status === 'LIVE') {
-          badgeHtml = '<span class="badge badge-live-meeting px-2 py-1"><i class="fa-solid fa-circle-dot me-1"></i>LIVE</span>';
-        } else if (a.status === 'RESOLVED') {
-          badgeHtml = '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">มีมติแล้ว</span>';
-        } else {
-          badgeHtml = '<span class="badge bg-light text-muted border px-2 py-1">รอพิจารณา</span>';
-        }
-
-        return `
-          <div class="modal-agenda-item-card ${isSelected ? 'active' : ''}" onclick="selectModalAgenda(${a.originalIdx})">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="badge badge-agenda-no"><i class="fa-solid fa-list-ol text-warning"></i>วาระที่ ${a.agendaNo}</span>
-              ${badgeHtml}
+      const html = filtered.map(m => `
+        <tr>
+          <td class="fw-bold text-navy">ครั้งที่ ${m.name}</td>
+          <td>
+            <div class="fw-semibold text-dark">${ECMIS.thaiDate(m.date)}</div>
+            <small class="text-muted"><i class="fa-regular fa-clock me-1"></i>${m.time}</small>
+          </td>
+          <td>
+            <div class="text-truncate" style="max-width:300px;" title="${m.location}">
+              <i class="fa-solid fa-location-dot text-danger me-1"></i>${m.location}
             </div>
-            <strong class="d-block text-navy small mb-1">${a.caseId}</strong>
-            <div class="text-dark small text-truncate-2" style="font-size:0.76rem; line-height:1.35;">${a.subject}</div>
-            <div class="d-flex justify-content-between align-items-center mt-2 pt-1 border-top" style="font-size:0.72rem;">
-              <span class="text-muted"><i class="fa-solid fa-user me-1"></i>${a.accused ? a.accused.split(' ')[0] : '—'}</span>
-              <span class="text-primary fw-medium"><i class="fa-solid fa-folder-tree me-1"></i>${a.evidences ? a.evidences.length : 0} หลักฐาน</span>
-            </div>
-          </div>
-        `;
-      }).join('');
+          </td>
+          <td class="text-center">
+            <span class="badge bg-light text-navy border fw-bold px-2 py-1">${m.agendaCount} วาระ</span>
+          </td>
+          <td>
+            ${m.status === 'CLOSED'
+              ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fa-solid fa-circle-check me-1"></i>ประชุมเสร็จสิ้นแล้ว</span>'
+              : '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1"><i class="fa-solid fa-clock me-1"></i>กำหนดการแล้ว — รอประชุม</span>'}
+          </td>
+          <td class="text-end">
+            <a href="board-detail.html?id=${m.id}" class="btn btn-sm btn-navy px-3 text-decoration-none">
+              <i class="fa-solid fa-book-open-reader me-1 text-warning"></i>เปิดห้องอ่านสำนวน
+            </a>
+          </td>
+        </tr>
+      `).join('');
+
+      $('#meetingsTableBody').html(html);
     }
 
-    function selectModalAgenda(idx) {
-      currentModalAgendaIdx = idx;
-      if (!currentModalMeeting || !currentModalMeeting.agendas || !currentModalMeeting.agendas[idx]) return;
-
-      const kase = currentModalMeeting.agendas[idx];
-
-      // Update Top Bar
-      $('#modalDossierAgendaNo').html(`<i class="fa-solid fa-list-ol text-warning me-1"></i>วาระที่ ${kase.agendaNo}`);
-      $('#modalDossierCaseId').text(`สำนวนเลขที่ ${kase.caseId}`);
-      $('#modalDossierSubject').text(kase.subject);
-      $('#modalDossierLiveBadge').toggle(kase.status === 'LIVE');
-
-      // Tab 1: Brief
-      $('#modalBriefAccused').text(`${kase.accused} (${kase.accusedPos || '—'})`);
-      $('#modalBriefAgency').text(kase.agency || '—');
-      $('#modalBriefComplainant').text(kase.complainant || '—');
-      $('#modalBriefIncident').text(kase.incidentDate || '—');
-      $('#modalBriefPrescription').html(`<i class="fa-solid fa-clock me-1"></i>อายุความ: ${kase.prescription || '—'}`);
-      $('#modalBriefFact').text(kase.factSummary || '—');
-
-      if (kase.offenses && kase.offenses.length) {
-        $('#modalBriefOffenses').html(kase.offenses.map(o => `<span class="badge bg-danger me-1 mb-1">${o}</span>`).join(' '));
-      } else {
-        $('#modalBriefOffenses').html('<span class="text-muted small">ไม่มีข้อกล่าวหา</span>');
-      }
-
-      // Load Private Notes for Board Member
-      const noteKey = `ecmis_board_note_${kase.caseId || kase.agendaNo}`;
-      const savedNote = localStorage.getItem(noteKey) || '';
-      $('#modalBoardPrivateNote').val(savedNote);
-      $('#modalNoteCharCount').text(`${savedNote.length} ตัวอักษร`);
-      $('#modalNoteSaveStatus').html('<i class="fa-solid fa-check text-success me-1"></i>บันทึกแล้ว');
-
-      // Tab 2: Evidence Vault
-      modalEvidenceCat = 'ALL';
-      $('#modalEvidenceCount').text(kase.evidences ? kase.evidences.length : 0);
-      renderModalEvidenceList();
-
-      // Tab 3: Official A4 Government Document
-      renderModalOfficialRulingDoc();
-
-      renderModalAgendaList();
-    }
-
-    const BOARD_MEMBERS_LIST = [
-      { n: 'นายวิชัย ยุติธรรม', r: 'ประธานกรรมการ ป.ป.ท.' },
-      { n: 'นายสมบูรณ์ ธรรมรัฐ', r: 'กรรมการ ป.ป.ท.' },
-      { n: 'พันตำรวจโท วันนพ สมจินตนากุล', r: 'กรรมการ ป.ป.ท.' },
-      { n: 'นายวิเชียร จันทรโณทัย', r: 'กรรมการ ป.ป.ท.' },
-      { n: 'นายพรเทพ อัมพรกลิ่นแก้ว', r: 'กรรมการ ป.ป.ท.' },
-      { n: 'นายกมล สกลเดชา', r: 'กรรมการ ป.ป.ท.' },
-      { n: 'นายสุรพงษ์ อินทรถาวร', r: 'กรรมการ ป.ป.ท.' }
-    ];
-
-    let modalDocZoom = 0.75;
-
-    function renderModalOfficialRulingDoc() {
-      if (!currentModalMeeting || !currentModalMeeting.agendas || !currentModalMeeting.agendas[currentModalAgendaIdx]) return;
-      const kase = currentModalMeeting.agendas[currentModalAgendaIdx];
-      const meetDateThai = ECMIS.thaiDate(currentModalMeeting.date);
-      const paper = document.getElementById('modalDocPaper');
-      if (!paper) return;
-
-      const html = `
-        <div class="doc-secret">ลับ</div>
-        <div style="text-align:center; margin-bottom:4px;">
-          <img src="assets/doc_logo.jpg" alt="ตราครุฑ" style="height:52px;">
-        </div>
-        <div class="doc-title">รายงานการไต่สวนเพื่อวินิจฉัยชี้มูล</div>
-        <div class="doc-sub">คณะกรรมการ ป.ป.ท.</div>
-        
-        <div class="doc-row" style="margin-top:6px;"><span style="font-weight:bold;">เรื่องที่</span> ${kase.caseId}</div>
-        <div class="doc-row"><span style="font-weight:bold;">วันที่</span> ${meetDateThai}</div>
-
-        <div class="doc-indent" style="margin-top:8px;">
-          ในคราวการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${currentModalMeeting.name} เมื่อวันที่ ${meetDateThai} เพื่อพิจารณาและวินิจฉัยชี้มูลความผิด เรื่องที่ ${kase.caseId} กรณีกล่าวหา <strong>${kase.accused || 'ผู้ถูกกล่าวหา'}</strong> ตำแหน่ง ${kase.accusedPos || 'เจ้าหน้าที่'} สังกัด ${kase.agency || 'หน่วยงานของรัฐ'}
-        </div>
-
-        <div class="doc-indent" style="margin-top:6px;">
-          กรรมการ ป.ป.ท. ที่มาประชุม จำนวน ๗ คน ประกอบด้วย
-        </div>
-        <div style="margin-top:2px; font-size:15pt;">
-          ${BOARD_MEMBERS_LIST.map((b, i) => `<div class="doc-row" style="padding-left:1.5em;"><span style="font-weight:bold;">(${ECMIS.toThaiDigits(i + 1)})</span> ${b.n} — ${b.r}</div>`).join('')}
-        </div>
-
-        <div class="doc-h" style="margin-top:12px; font-size:16pt;">๑. ผู้ถูกกล่าวหาและตำแหน่งหน้าที่</div>
-        <div class="doc-indent">
-          ${kase.accused || 'ผู้ถูกกล่าวหา'} ตำแหน่ง ${kase.accusedPos || 'เจ้าหน้าที่'} สังกัด ${kase.agency || 'หน่วยงานของรัฐ'} มีอำนาจหน้าที่ในการปฏิบัติงานและเป็นกรรมการตรวจรับพัสดุตามคำสั่งของทางราชการ
-        </div>
-
-        <div class="doc-h" style="margin-top:10px; font-size:16pt;">๒. พฤติการณ์และการกระทำความผิด</div>
-        <div class="doc-indent">
-          ${kase.factSummary || 'จากการไต่สวนข้อเท็จจริงปรากฏว่า ผู้ถูกกล่าวหาได้ปฏิบัติหรือละเว้นการปฏิบัติหน้าที่โดยมิชอบเพื่อให้เกิดความเสียหายแก่ทางราชการ'}
-        </div>
-
-        <div class="doc-h" style="margin-top:10px; font-size:16pt;">๓. ฐานความผิดและข้อกฎหมายที่เกี่ยวข้อง</div>
-        <div class="doc-indent">
-          การกระทำของผู้ถูกกล่าวหาเป็นความผิดตาม ${kase.offenses && kase.offenses.length ? kase.offenses.join(', ') : 'ประมวลกฎหมายอาญา มาตรา ๑๕๗ และมีมูลความผิดทางวินัยอย่างร้ายแรง'}
-        </div>
-
-        <div class="doc-h" style="margin-top:10px; font-size:16pt;">๔. มติการวินิจฉัยชี้มูลของคณะกรรมการ ป.ป.ท.</div>
-        <div class="doc-indent">
-          ที่ประชุมพิจารณาแล้ว มีมติเป็นเอกฉันท์เห็นชอบตามรายงานของคณะอนุกรรมการไต่สวน และความเห็นของคณะอนุกรรมการกลั่นกรอง ว่าการกระทำของผู้ถูกกล่าวหามีมูลความผิดทางอาญาและทางวินัยอย่างร้ายแรง ให้ส่งรายงาน เอกสาร และความเห็นไปยังอัยการสูงสุด เพื่อดำเนินคดีอาญาในศาลซึ่งมีเขตอำนาจ และส่งเรื่องไปยังผู้บังคับบัญชาเพื่อดำเนินการทางวินัยตามกฎหมายต่อไป
-        </div>
-
-        <div style="margin-top:28px; text-align:right; padding-right:15px;">
-          <p style="margin-bottom:4px;">(ลงชื่อ) ...........................................................</p>
-          <p style="margin-bottom:0; font-weight:bold;">(นายวิชัย ยุติธรรม)</p>
-          <p style="margin-bottom:0; font-size:14pt; color:#475569;">ประธานกรรมการ ป.ป.ท.</p>
-        </div>
-      `;
-
-      paper.innerHTML = html;
-      updateModalDocPaperHeight();
-    }
-
-    function setModalDocZoom(newZoom) {
-      modalDocZoom = Math.min(1.2, Math.max(0.4, Math.round(newZoom * 100) / 100));
-      $('#modalDocPaperContainer').css('transform', `scale(${modalDocZoom})`);
-      $('#modalZoomLevelText').text(`${Math.round(modalDocZoom * 100)}%`);
-      updateModalDocPaperHeight();
-    }
-
-    function updateModalDocPaperHeight() {
-      const paper = document.getElementById('modalDocPaper');
-      const container = document.getElementById('modalDocPaperContainer');
-      if (paper && container) {
-        container.style.height = `${Math.round(paper.offsetHeight * modalDocZoom)}px`;
-      }
-    }
-
-    function renderModalEvidenceFilters() {
-      if (!currentModalMeeting || !currentModalMeeting.agendas || !currentModalMeeting.agendas[currentModalAgendaIdx]) return;
-      const kase = currentModalMeeting.agendas[currentModalAgendaIdx];
-      const filtersContainer = document.getElementById('modalEvidenceFiltersContainer');
-      if (!filtersContainer) return;
-
-      const evidences = kase.evidences || [];
-      const countAll = evidences.length;
-      const countAct5 = evidences.filter(e => e.act === 'ACT5').length;
-      const countAct4 = evidences.filter(e => e.act === 'ACT4').length;
-      const countAct7 = evidences.filter(e => e.act === 'ACT7').length;
-
-      if (countAll === 0) {
-        filtersContainer.innerHTML = '';
-        return;
-      }
-
-      let html = `<button type="button" class="btn btn-xs btn-outline-secondary modal-ev-filter ${modalEvidenceCat === 'ALL' ? 'active' : ''}" data-cat="ALL">ทั้งหมด (${countAll})</button>`;
-      
-      if (countAct5 > 0) {
-        html += `<button type="button" class="btn btn-xs btn-outline-primary modal-ev-filter ${modalEvidenceCat === 'ACT5' ? 'active' : ''}" data-cat="ACT5">สำนวนการไต่สวน (${countAct5})</button>`;
-      }
-      if (countAct4 > 0) {
-        html += `<button type="button" class="btn btn-xs btn-outline-warning modal-ev-filter ${modalEvidenceCat === 'ACT4' ? 'active' : ''}" data-cat="ACT4">การแสวงหาข้อเท็จจริง (${countAct4})</button>`;
-      }
-      if (countAct7 > 0) {
-        html += `<button type="button" class="btn btn-xs btn-outline-success modal-ev-filter ${modalEvidenceCat === 'ACT7' ? 'active' : ''}" data-cat="ACT7">มติและความเห็น (${countAct7})</button>`;
-      }
-
-      filtersContainer.innerHTML = html;
-    }
-
-    function renderModalEvidenceList() {
-      if (!currentModalMeeting || !currentModalMeeting.agendas || !currentModalMeeting.agendas[currentModalAgendaIdx]) return;
-      const kase = currentModalMeeting.agendas[currentModalAgendaIdx];
-      const container = document.getElementById('modalEvidenceListContainer');
-      if (!container) return;
-
-      renderModalEvidenceFilters();
-
-      const evidences = kase.evidences || [];
-      if (evidences.length === 0) {
-        container.innerHTML = `
-          <div class="text-center py-4 text-muted">
-            <i class="fa-solid fa-box-open fa-2x mb-2 text-secondary opacity-50"></i>
-            <p class="mb-0 small">ยังไม่มีการนำเข้าไฟล์พยานหลักฐานสำหรับสำนวนนี้</p>
-          </div>
-        `;
-        return;
-      }
-
-      let filtered = evidences;
-      if (modalEvidenceCat !== 'ALL') {
-        filtered = filtered.filter(e => e.act === modalEvidenceCat);
-      }
-
-      if (filtered.length === 0) {
-        container.innerHTML = `
-          <div class="text-center py-4 text-muted">
-            <i class="fa-solid fa-filter fa-2x mb-2 text-secondary opacity-50"></i>
-            <p class="mb-0 small">ไม่พบพยานหลักฐานในหมวดหมู่นี้</p>
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = filtered.map(e => {
-        let badgeCls = 'evidence-item-badge-act5';
-        if (e.act === 'ACT4') badgeCls = 'evidence-item-badge-act4';
-        if (e.act === 'ACT7') badgeCls = 'evidence-item-badge-act7';
-
-        const safeTitle = (e.title || '').replace(/'/g, "\\'");
-        const safePreview = (e.preview || '').replace(/'/g, "\\'");
-
-        return `
-          <div class="p-2 bg-white rounded border mb-2 d-flex align-items-center justify-content-between gap-2">
-            <div class="d-flex align-items-center gap-2 flex-1 min-w-0">
-              <div class="rounded p-2 bg-light text-navy text-center" style="width:36px; height:36px; flex:none;">
-                <i class="fa-solid ${e.icon || 'fa-file'} text-primary"></i>
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="d-flex align-items-center gap-1 mb-1 flex-wrap">
-                  <span class="badge ${badgeCls}">${e.actLabel}</span>
-                  <span class="small text-muted">${e.size}</span>
-                </div>
-                <strong class="d-block text-dark small text-truncate" style="font-size:0.8rem;">${e.title}</strong>
-                <p class="small text-muted mb-0 text-truncate" style="font-size:0.75rem;">${e.preview}</p>
-              </div>
-            </div>
-            <button type="button" class="btn btn-xs btn-outline-primary px-2 flex-shrink-0" onclick="alertEvidenceDetail('${safeTitle}', '${safePreview}')">
-              <i class="fa-solid fa-eye me-1"></i>ดูหลักฐาน
-            </button>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function alertEvidenceDetail(title, preview) {
-      Swal.fire({
-        title: title,
-        html: `<div class="text-start p-3 bg-light rounded border small">${preview}</div>`,
-        icon: 'info',
-        confirmButtonText: 'ปิด'
-      });
-    }
-
+    /* Document Ready */
     $(document).ready(function () {
-      renderKPI();
-      renderMeetingList();
+      renderOverviewKPI();
+      renderMeetingsTable();
 
-      $('#searchInput').on('input', renderMeetingList);
+      // Filter events
+      $('#searchInput').on('input', renderMeetingsTable);
       $('#statusFilter').on('change', function () {
-        activeKpi = $(this).val();
-        renderKPI();
-        renderMeetingList();
+        currentFilter = $(this).val();
+        $('.kpi-card').removeClass('active');
+        $(`.kpi-card[data-filter="${currentFilter}"]`).addClass('active');
+        renderMeetingsTable();
+      });
+
+      $('.kpi-card').on('click', function () {
+        $('.kpi-card').removeClass('active');
+        $(this).addClass('active');
+        currentFilter = $(this).data('filter');
+        $('#statusFilter').val(currentFilter);
+        renderMeetingsTable();
       });
 
       $('#btnClearFilter').on('click', function () {
         $('#searchInput').val('');
         $('#statusFilter').val('ALL');
-        activeKpi = 'ALL';
-        renderKPI();
-        renderMeetingList();
+        currentFilter = 'ALL';
+        $('.kpi-card').removeClass('active');
+        $('.kpi-card[data-filter="ALL"]').addClass('active');
+        renderMeetingsTable();
       });
-
-      $('.sortable-header').on('click', function () {
-        const field = $(this).data('sort');
-        if (sortField === field) {
-          sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-        } else {
-          sortField = field;
-          sortOrder = 'desc';
-        }
-        $('.sortable-header i').attr('class', 'fa-solid fa-sort ms-1');
-        $(this).find('i').attr('class', `fa-solid fa-sort-${sortOrder === 'asc' ? 'up' : 'down'} ms-1`);
-        renderMeetingList();
-      });
-
-      // Modal Tab switching
-      $('#modalDossierTabs .nav-link').on('click', function () {
-        $('#modalDossierTabs .nav-link').removeClass('active');
-        $(this).addClass('active');
-        const tab = $(this).data('tab');
-        $('.modal-tab-pane').addClass('d-none');
-        $(`#modalTab_${tab}`).removeClass('d-none');
-        if (tab === 'doc') {
-          renderModalOfficialRulingDoc();
-        } else if (tab === 'evidence') {
-          renderModalEvidenceList();
-        }
-      });
-
-      // Modal Agenda Search & Filter
-      $('#modalAgendaSearchInput').on('input', renderModalAgendaList);
-      $('.modal-agenda-filter-btn').on('click', function () {
-        $('.modal-agenda-filter-btn').removeClass('active btn-primary').addClass('btn-outline-secondary');
-        $(this).addClass('active btn-primary').removeClass('btn-outline-secondary');
-        modalStatusFilter = $(this).data('st');
-        renderModalAgendaList();
-      });
-
-      // Modal Evidence Filters
-      $(document).on('click', '.modal-ev-filter', function () {
-        $('.modal-ev-filter').removeClass('active');
-        $(this).addClass('active');
-        modalEvidenceCat = $(this).data('cat');
-        renderModalEvidenceList();
-      });
-
-      // Modal Export Buttons
-      $('#btnExportAgendaPackModal').on('click', function () {
-        Swal.fire({
-          icon: 'success',
-          title: 'กำลังส่งออกระเบียบวาระ (.PDF)',
-          text: 'ระบบกำลังจัดทำชุดเอกสารระเบียบวาระการประชุมรวม...',
-          timer: 1800,
-          showConfirmButton: false
-        });
-      });
-
-      $('#btnExportDocxModal').on('click', function () {
-        const kase = currentModalMeeting.agendas[currentModalAgendaIdx];
-        Swal.fire({
-          icon: 'success',
-          title: 'กำลังส่งออก Word (.DOCX)',
-          text: `ระบบกำลังสร้างไฟล์รายงานคำวินิจฉัยสำหรับสำนวน ${kase.caseId}...`,
-          timer: 1800,
-          showConfirmButton: false
-        });
-      });
-
-      $('#btnExportPdfModal').on('click', function () {
-        const kase = currentModalMeeting.agendas[currentModalAgendaIdx];
-        Swal.fire({
-          icon: 'success',
-          title: 'กำลังส่งออก PDF',
-          text: `ส่งออกรายงานคำวินิจฉัยของสำนวน ${kase.caseId} เรียบร้อยแล้ว`,
-          timer: 1800,
-          showConfirmButton: false
-        });
-      });
-
-      // Modal Doc Zoom Controls
-      $('#btnModalZoomIn').on('click', function () {
-        setModalDocZoom(modalDocZoom + 0.05);
-      });
-      $('#btnModalZoomOut').on('click', function () {
-        setModalDocZoom(modalDocZoom - 0.05);
-      });
-
-      // View Mode Toggle in Modal Doc
-      $('#btnModalModeSingle').on('click', function () {
-        $(this).removeClass('btn-outline-light').addClass('btn-primary');
-        $('#btnModalModeContinuous').removeClass('btn-primary').addClass('btn-outline-light');
-      });
-      $('#btnModalModeContinuous').on('click', function () {
-        $(this).removeClass('btn-outline-light').addClass('btn-primary');
-        $('#btnModalModeSingle').removeClass('btn-primary').addClass('btn-outline-light');
-      });
-
-      // Auto-save Private Notes for Board Member
-      let noteSaveTimer = null;
-      $('#modalBoardPrivateNote').on('input', function () {
-        if (!currentModalMeeting || !currentModalMeeting.agendas || !currentModalMeeting.agendas[currentModalAgendaIdx]) return;
-        const kase = currentModalMeeting.agendas[currentModalAgendaIdx];
-        const noteKey = `ecmis_board_note_${kase.caseId || kase.agendaNo}`;
-        const text = $(this).val();
-        $('#modalNoteCharCount').text(`${text.length} ตัวอักษร`);
-        $('#modalNoteSaveStatus').html('<i class="fa-solid fa-spinner fa-spin text-warning me-1"></i>กำลังบันทึก...');
-
-        clearTimeout(noteSaveTimer);
-        noteSaveTimer = setTimeout(() => {
-          localStorage.setItem(noteKey, text);
-          $('#modalNoteSaveStatus').html('<i class="fa-solid fa-check text-success me-1"></i>บันทึกแล้ว');
-        }, 400);
-      });
-
-      // URL query check: ?meet=38
-      const urlParams = new URLSearchParams(window.location.search);
-      const meetParam = urlParams.get('meet');
-      if (meetParam) {
-        const mId = parseInt(meetParam, 10);
-        if (!isNaN(mId)) {
-          openMeetingAgendasModal(mId);
-        }
-      }
     });
   </script>
 </body>

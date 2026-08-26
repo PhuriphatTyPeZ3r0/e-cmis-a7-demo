@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รายละเอียดวาระการประชุม | คณะกรรมการ ป.ป.ท. | E-CMIS</title>
+  <link rel="icon" type="image/png" href="assets/pacc_logo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="assets/ecmis-app.css" rel="stylesheet">
+  <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: var(--bg-page);
+      font-family: var(--font-sans);
+      color: var(--text-strong);
+    }
+
+    /* Symmetrical Pagination & Zoom Navigator Bar in Doc Pane (Adopted from ruling-report.html) */
+    .pagination-toolbar-symmetric {
+      background: linear-gradient(180deg, #0f2a4a 0%, #08213b 100%);
+      color: #F8FAFC;
+      border: 1px solid #1a3d66;
+      border-radius: 8px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.8rem;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 5px rgba(0, 0, 0, 0.15);
+    }
+
+    .pagination-toolbar-symmetric .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .pagination-toolbar-symmetric .toolbar-divider {
+      width: 1px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.18);
+      margin: 0 3px;
+    }
+
+    .pagination-toolbar-symmetric .btn-toolbar-nav {
+      height: 26px;
+      padding: 0 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.76rem;
+      font-weight: 500;
+      border-radius: 5px;
+      transition: all 0.15s ease;
+    }
+
+    .page-input-num {
+      width: 44px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 0.82rem;
+      padding: 0 4px;
+      height: 26px;
+      line-height: 26px;
+      border: 1px solid #244b75;
+      background: #06182c;
+      color: #FFFFFF;
+      border-radius: 4px;
+    }
+
+    .page-input-num:focus {
+      outline: none;
+      border-color: #38BDF8;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+    }
+
+    .doc-stats-pill {
+      font-size: 0.74rem;
+      color: #94A3B8;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 3px 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    /* Strict A4 Dimension & Overflow Prevention (Adopted from ruling-report.html) */
+    .doc-paper.a4-paper {
+      width: 210mm !important;
+      min-height: 297mm !important;
+      padding: 25mm 20mm 20mm 25mm !important;
+      box-sizing: border-box !important;
+      background: #FFFFFF !important;
+      position: relative !important;
+      font-family: 'THSarabunIT9', 'Sarabun', serif !important;
+      font-size: 16pt !important;
+      line-height: 1.4 !important;
+      color: #000000 !important;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+      margin: 0 auto !important;
+    }
+
+    .doc-paper .doc-indent {
+      text-indent: 2.5em;
+      text-align: justify;
+      text-justify: inter-cluster;
+      line-height: 1.35 !important;
+      margin-bottom: 4px !important;
+      word-break: break-word;
+    }
+
+    .doc-paper .doc-secret {
+      color: #d9534f;
+      font-weight: bold;
+      font-size: 16px;
+      text-align: right;
+      margin-bottom: -10px;
+    }
+
+    .doc-paper .doc-title {
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      margin: 6px 0 2px;
+    }
+
+    .doc-paper .doc-sub {
+      text-align: center;
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+
+    .doc-paper .doc-row {
+      margin-bottom: 3px;
+    }
+
+    .doc-paper .doc-h {
+      font-weight: 700;
+      line-height: 1.3 !important;
+      margin-top: 8px !important;
+      margin-bottom: 3px !important;
+    }
+
+    /* Viewport Paper Stage */
+    .ws-paper-stage {
+      background: #1e293b !important;
+      padding: 18px 12px 28px !important;
+      overflow-y: auto !important;
+      overflow-x: auto !important;
+      min-height: 600px !important;
+      max-height: calc(100vh - 275px) !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      border: 1px solid #1a3d66 !important;
+      border-radius: 0 0 10px 10px !important;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    #docPaper {
+      transition: transform 0.15s ease;
+      transform-origin: top center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      width: max-content;
+    }
+
+    /* Two-Pane Symmetrical Workspace Layout */
+    .board-two-pane-layout {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1080px) {
+      .board-two-pane-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Left Column: Agenda Navigator */
+    .agenda-nav-pane {
+      position: sticky;
+      top: calc(var(--topbar-h) + 14px);
+    }
+
+    .agenda-card-list {
+      max-height: calc(100vh - 330px);
+      overflow-y: auto;
+      padding: 0.75rem;
+      background: #F8FAFC;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    @media (max-width: 1080px) {
+      .agenda-card-list {
+        max-height: 420px;
+      }
+    }
+
+    .agenda-nav-item {
+      background: #FFFFFF;
+      border: 1px solid var(--border-divider);
+      border-radius: 8px;
+      padding: 0.75rem 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .agenda-nav-item:hover {
+      border-color: var(--action-primary);
+      box-shadow: 0 2px 8px rgba(15, 42, 98, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .agenda-nav-item.active {
+      border-color: var(--action-primary) !important;
+      border-width: 2px !important;
+      background: #FFFFFF !important;
+      box-shadow: 0 3px 10px rgba(15, 42, 98, 0.12) !important;
+    }
+
+    .agenda-nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--action-primary);
+      border-top-left-radius: 6px;
+      border-bottom-left-radius: 6px;
+    }
+
+    /* Category Badges */
+    .badge-cat-1 { background-color: #E8F2FC; color: #174E80; border: 1px solid #BFDBFE; font-weight: 600; }
+    .badge-cat-2 { background-color: #DFF0E7; color: #1E6141; border: 1px solid #BBF7D0; font-weight: 600; }
+    .badge-cat-3 { background-color: #EDE9FE; color: #6D28D9; border: 1px solid #DDD6FE; font-weight: 600; }
+    .badge-cat-4 { background-color: #E8EDF2; color: #3D4F61; border: 1px solid #CBD5E1; font-weight: 600; }
+    .badge-cat-5 { background-color: #0F2A62; color: #FFFFFF; font-weight: 600; }
+    .badge-cat-6 { background-color: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; font-weight: 600; }
+
+    /* Segmented Status Buttons (Symmetrical 4-button group) */
+    .status-seg-group .btn {
+      font-size: 0.72rem;
+      padding: 0.35rem 0.25rem;
+      font-weight: 600;
+      flex: 1 1 0;
+    }
+
+    /* Workspace Detail Tabs */
+    .ws-detail-tabs {
+      display: flex;
+      gap: 0.35rem;
+      padding: 0.6rem 1rem 0;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-divider);
+      flex-wrap: wrap;
+      border-radius: var(--radius-card) var(--radius-card) 0 0;
+    }
+
+    .ws-detail-tab {
+      border: 1px solid var(--border-divider);
+      border-bottom: none;
+      background: #F1F5F9;
+      color: var(--text-body);
+      padding: 0.5rem 1.1rem;
+      border-radius: 8px 8px 0 0;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ws-detail-tab:hover {
+      background: #E2E8F0;
+      color: var(--action-primary);
+    }
+
+    .ws-detail-tab.active {
+      background: #FFFFFF;
+      color: var(--action-primary);
+      border-color: var(--border-divider);
+      border-top: 2px solid var(--action-primary);
+      margin-bottom: -1px;
+      padding-top: calc(0.5rem - 1px);
+    }
+
+    /* Hide injected global suggestions & helper bars on this page */
+    .sug-chips-box,
+    .textarea-helper-bar {
+      display: none !important;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #docPaper, #docPaper * {
+        visibility: visible;
+      }
+      #docPaper {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 20mm !important;
+        box-shadow: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="app-main">
+
+    <!-- Standard Page Header & Flow Reference -->
+    <div class="page-head mb-3">
+      <div>
+        <a href="board-inbox.html" class="text-decoration-none small d-block mb-1" style="color:var(--text-disabled)">
+          <i class="fa-solid fa-arrow-left me-1"></i>กลับรอบการประชุมและอ่านวาระล่วงหน้า
+        </a>
+        <h1><i class="fa-solid fa-file-signature me-2" style="color:var(--action-primary)"></i><span>รายละเอียดวาระและสำนวนการประชุม</span></h1>
+      </div>
+      <div class="d-flex align-items-center gap-2 ms-auto">
+        <span class="flow-ref"><i class="fa-solid fa-shield-halved me-1 text-warning"></i>สิทธิ์อ่านวาระล่วงหน้า 3 วัน (ม.๒๐)</span>
+      </div>
+    </div>
+
+    <!-- Active Meeting Overview Header Card (.ws-card) -->
+    <div class="ws-card mb-3">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+              <span class="badge bg-primary px-2.5 py-1" id="bannerMeetName">การประชุม ครั้งที่ 38/2569</span>
+              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-0.5" id="bannerStatusBadge">
+                <i class="fa-solid fa-calendar-check me-1"></i>เปิดให้อ่านวาระล่วงหน้า (3 วัน)
+              </span>
+              <span class="badge bg-light text-muted border px-2 py-0.5" id="bannerAgendaCount">
+                <i class="fa-solid fa-list-ol me-1 text-primary"></i>10 วาระ
+              </span>
+            </div>
+            <div class="d-flex align-items-center gap-3 small text-muted flex-wrap mt-1" id="bannerMeetDetails">
+              <span><i class="fa-regular fa-clock me-1 text-primary"></i>28 ส.ค. 2569 (09:30 - 16:30 น.)</span>
+              <span><i class="fa-solid fa-location-dot me-1 text-danger"></i>ห้องประชุม 501 ชั้น 5 อาคาร ป.ป.ท. / Zoom Hybrid</span>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Meeting Switcher Dropdown -->
+            <div class="dropdown">
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" type="button" id="meetingSwitchBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fa-solid fa-calendar-days me-1 text-primary"></i><span id="selectedMeetingLabel">ครั้งที่ 38/2569</span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end shadow-sm" id="meetingSwitchMenu">
+                <!-- Populated via JS -->
+              </ul>
+            </div>
+
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btnExportAgendaPack" title="ดาวน์โหลดเล่มเอกสารระเบียบวาระรวมทุกวาระ">
+              <i class="fa-solid fa-file-pdf me-1 text-danger"></i>เล่มระเบียบวาระ (.pdf)
+            </button>
+
+            <div class="btn-group btn-group-sm">
+              <button type="button" class="btn btn-outline-secondary" id="btnPrevAgenda" title="ไปวาระก่อนหน้า">
+                <i class="fa-solid fa-chevron-left me-1"></i>วาระก่อนหน้า
+              </button>
+              <span class="btn btn-outline-secondary disabled px-2 fw-bold text-dark" id="currentAgendaStepperText">1 / 10</span>
+              <button type="button" class="btn btn-outline-secondary" id="btnNextAgenda" title="ไปวาระถัดไป">
+                วาระถัดไป<i class="fa-solid fa-chevron-right ms-1"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN SYMMETRICAL TWO-PANE WORKSPACE GRID -->
+    <div class="board-two-pane-layout" id="boardWorkspace">
+
+      <!-- LEFT COLUMN: Agenda Explorer Sidebar -->
+      <aside class="agenda-nav-pane">
+        <div class="ws-card">
+          <!-- Left Header (Adopted from ruling-report.html .card-header) -->
+          <div class="card-header d-flex justify-content-between align-items-center py-2.5">
+            <div>
+              <i class="fa-solid fa-list-ol text-primary me-1.5"></i>
+              <strong class="text-navy small">ระเบียบวาระการประชุม</strong>
+            </div>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle" id="leftBadgeCount">10 วาระ</span>
+          </div>
+
+          <!-- Filter Controls Area with proper padding & breathing room -->
+          <div class="p-3 border-bottom bg-white d-flex flex-column gap-3">
+            <!-- Category Filter Dropdown (6 Official Categories Sorted 1 to 6) -->
+            <div>
+              <label class="form-label text-muted small fw-semibold mb-1" style="font-size:0.75rem;">
+                <i class="fa-solid fa-layer-group text-primary me-1"></i>หมวดหมู่วาระ
+              </label>
+              <select class="form-select form-select-sm" id="agendaCategoryFilter" style="border-radius: 6px;">
+                <option value="ALL" selected>ทุกระเบียบวาระ (วาระ ๑ ถึง ๖)</option>
+                <option value="CAT1">วาระที่ ๑ : เรื่องประธานแจ้งให้ทราบ</option>
+                <option value="CAT2">วาระที่ ๒ : รับรองรายงานการประชุม</option>
+                <option value="CAT3">วาระที่ ๓ : เรื่องสืบเนื่อง</option>
+                <option value="CAT4">วาระที่ ๔ : เรื่องเพื่อทราบ / สถิติ</option>
+                <option value="CAT5">วาระที่ ๕ : เรื่องเพื่อพิจารณา (สำนวนคดี)</option>
+                <option value="CAT6">วาระที่ ๖ : เรื่องอื่นๆ</option>
+              </select>
+            </div>
+
+            <!-- Realtime Search Input -->
+            <div>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 6px 0 0 6px;">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input type="text" id="agendaSearchInput" class="form-control border-start-0 ps-0" placeholder="ค้นหาวาระ, เรื่อง, เลขคดี..." style="border-radius: 0 6px 6px 0;">
+              </div>
+            </div>
+
+            <!-- Symmetrical 4-Button Segmented Status Bar -->
+            <div class="p-1 bg-light rounded-2 border d-flex gap-1">
+              <button type="button" class="btn btn-xs btn-primary agenda-status-btn active flex-fill py-1" data-st="ALL" style="font-size:0.72rem; border-radius: 5px;">ทั้งหมด (<span id="countStAll">10</span>)</button>
+              <button type="button" class="btn btn-xs btn-outline-secondary agenda-status-btn flex-fill py-1 border-0 bg-transparent text-secondary" data-st="LIVE" style="font-size:0.72rem; border-radius: 5px;">LIVE (<span id="countStLive">1</span>)</button>
+              <button type="button" class="btn btn-xs btn-outline-secondary agenda-status-btn flex-fill py-1 border-0 bg-transparent text-secondary" data-st="PENDING" style="font-size:0.72rem; border-radius: 5px;">รอ (<span id="countStPending">7</span>)</button>
+              <button type="button" class="btn btn-xs btn-outline-secondary agenda-status-btn flex-fill py-1 border-0 bg-transparent text-secondary" data-st="RESOLVED" style="font-size:0.72rem; border-radius: 5px;">เสร็จ (<span id="countStResolved">2</span>)</button>
+            </div>
+          </div>
+
+          <!-- Scrollable Agenda Item Cards List -->
+          <div class="agenda-card-list" id="agendaListContainer">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </aside>
+
+      <!-- RIGHT COLUMN: Dynamic Workspace Content (Adopting .ws-card components from ruling-report.html) -->
+      <div>
+
+        <!-- Top Title & Tabs Header Container -->
+        <div class="ws-card mb-3">
+          <div class="card-body p-3 pb-2 border-bottom">
+            <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+              <div class="flex-grow-1 min-w-0">
+                <div class="d-flex align-items-center gap-2 mb-1.5 flex-wrap">
+                  <span id="dossierAgendaPill" class="badge bg-primary px-2.5 py-1 fw-bold">วาระที่ 5.1</span>
+                  <span id="dossierCatBadge" class="badge badge-cat-5">วาระที่ ๕ : เรื่องเพื่อพิจารณา</span>
+                  <span id="dossierStatusBadge" class="badge bg-danger text-white"><i class="fa-solid fa-circle-dot me-1"></i>LIVE</span>
+                </div>
+                <h5 class="fw-bold text-navy mb-0" id="dossierSubject" style="line-height: 1.45;">
+                  กรณีกล่าวหา นายสุรชัย สมมุติ (ตัวการ) และ หจก.เชียงใหม่โยธา (ผู้สนับสนุน) ทุจริตเบิกจ่ายเงินโครงการก่อสร้าง
+                </h5>
+              </div>
+
+              <div class="d-flex align-items-center gap-1.5 flex-shrink-0">
+                <div class="btn-group btn-group-sm">
+                  <button type="button" class="btn btn-outline-secondary" id="btnExportDocx" title="ส่งออกเป็นเอกสาร Microsoft Word (.docx)">
+                    <i class="fa-solid fa-file-word text-primary me-1"></i>ส่งออก Word
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary" id="btnExportPdf" title="ส่งออก PDF">
+                    <i class="fa-solid fa-file-pdf text-danger me-1"></i>PDF
+                  </button>
+                </div>
+                <button type="button" class="btn btn-sm btn-navy" onclick="window.print()" title="พิมพ์เอกสารปัจจุบัน">
+                  <i class="fa-solid fa-print me-1"></i>พิมพ์
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Adopted Workspace Detail Tabs -->
+          <div class="ws-detail-tabs" id="dossierTabs">
+            <button type="button" class="ws-detail-tab active" data-tab="brief" id="tabBriefBtn">
+              <i class="fa-solid fa-file-lines text-primary"></i>สาระสำคัญและรายละเอียด
+            </button>
+            <button type="button" class="ws-detail-tab" data-tab="evidence" id="tabEvidenceBtn">
+              <i class="fa-solid fa-folder-open text-warning"></i>คลังพยานหลักฐานดิจิทัล <span class="badge bg-secondary rounded-pill ms-1" id="tabEvidenceCount">4</span>
+            </button>
+            <button type="button" class="ws-detail-tab" data-tab="doc" id="tabDocBtn">
+              <i class="fa-solid fa-file-signature text-success"></i>แผงเอกสารทางการ (A4)
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 1: Dossier Details & Facts (Using ruling-report.html .ws-card structured components) -->
+        <div id="tabPane_brief">
+          
+          <!-- 1. ข้อมูลสรุปสถานะและคู่กรณี (Adopted .ws-card) -->
+          <div class="ws-card mb-3" id="cardGeneralInfo">
+            <div class="card-header"><i class="fa-solid fa-circle-info"></i> สรุปข้อมูลวาระและคู่กรณี</div>
+            <div class="card-body">
+              <div class="row g-3" id="dossierGeneralInfoRow">
+                <!-- Dynamically Populated -->
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. ข้อมูลพฤติการณ์และการกระทำความผิด (Adopted .ws-card from ruling-report.html) -->
+          <div class="ws-card mb-3" id="cardFact">
+            <div class="card-header"><i class="fa-solid fa-file-lines"></i> <span id="lblFactHeader">พฤติการณ์และการกระทำความผิด (ข้อเท็จจริงจากการไต่สวน)</span></div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label fw-bold text-dark small" id="lblFactSub">สาระสำคัญของเรื่อง</label>
+                <div class="p-3 bg-light rounded border small text-dark" id="briefFact" style="line-height: 1.6;">
+                  <!-- Fact content -->
+                </div>
+              </div>
+              <div class="row g-2 mb-0" id="dateMetadataRow">
+                <div class="col-md-6">
+                  <label class="form-label text-muted small">วัน เวลา เกิดเหตุ (เริ่มต้น)</label>
+                  <input type="text" class="form-control form-control-sm bg-white" id="fieldIncidentStart" readonly value="15 ม.ค. 2568">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label text-muted small">วัน เวลา เกิดเหตุ (สิ้นสุด / หลายกรรม)</label>
+                  <input type="text" class="form-control form-control-sm bg-white" id="fieldIncidentEnd" readonly value="20 ก.พ. 2568">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. ฐานความผิด มาตรา และการคำนวณอายุความ (Adopted from ruling-report.html #offenseBasisCard) -->
+          <div class="ws-card mb-3" id="cardOffenses">
+            <div class="card-header"><i class="fa-solid fa-scale-balanced"></i> ฐานความผิด มาตรา และการคำนวณอายุความ</div>
+            <div class="card-body">
+              <div id="offenseBadgesContainer" class="mb-3">
+                <!-- Badges -->
+              </div>
+              
+              <div class="card border-danger-subtle bg-danger-subtle bg-opacity-10 mb-0">
+                <div class="card-body p-2.5">
+                  <div class="d-flex align-items-center justify-content-between mb-1.5">
+                    <strong class="small text-danger"><i class="fa-solid fa-hourglass-half me-1"></i>สรุปการคำนวณอายุความตามกฎหมาย (มาตรา ๙๕):</strong>
+                    <span class="badge bg-danger text-white" style="font-size: 0.7rem;">+1 วันหลังครบกำหนด</span>
+                  </div>
+                  <div class="small">
+                    <div class="d-flex justify-content-between text-muted mb-0.5" id="presPrincipalRow">
+                      <span><strong class="text-primary"><i class="fa-solid fa-user-tie me-1"></i>ตัวการ:</strong></span>
+                      <span class="text-danger fw-semibold text-end" id="presPrincipalText">16 ม.ค. 2583 (ตัวการ 15 ปี)</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted" id="presAccessoryRow">
+                      <span><strong class="text-secondary"><i class="fa-solid fa-handshake-angle me-1"></i>ผู้สนับสนุน:</strong></span>
+                      <span class="text-danger fw-semibold text-end" id="presAccessoryText">16 ม.ค. 2578 (ผู้สนับสนุน 10 ปี)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. ความเห็นและการวินิจฉัยของที่ประชุม (Adopted from ruling-report.html #rulingDecisionCard) -->
+          <div class="ws-card mb-3" id="cardDecision">
+            <div class="card-header"><i class="fa-solid fa-gavel"></i> การวินิจฉัยและความเห็นของที่ประชุม</div>
+            <div class="card-body">
+              <!-- Opinions Comparison (Only CAT5) -->
+              <div id="opinionsComparisonBox" class="mb-3">
+                <label class="form-label fw-bold text-dark small mb-1.5">ความเห็นพนักงานไต่สวน และ คณะอนุกรรมการกลั่นกรอง</label>
+                <div class="row g-2.5">
+                  <div class="col-md-6">
+                    <div class="p-3 bg-light rounded border h-100">
+                      <div class="d-flex align-items-center justify-content-between mb-1.5">
+                        <strong class="text-navy small"><i class="fa-solid fa-user-ninja text-primary me-1"></i>ความเห็นพนักงานไต่สวน</strong>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.68rem;">ชี้มูลความผิด</span>
+                      </div>
+                      <p class="small text-muted mb-0" style="font-size:0.8rem; line-height:1.45;">เห็นควรชี้มูลความผิดทางอาญาตาม ป.อาญา ม.157 และ ม.162 และความผิดวินัยอย่างร้ายแรง ส่งสำนวน อสส.</p>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="p-3 bg-light rounded border h-100">
+                      <div class="d-flex align-items-center justify-content-between mb-1.5">
+                        <strong class="text-navy small"><i class="fa-solid fa-gavel text-warning me-1"></i>ความเห็นคณะอนุกรรมการกลั่นกรอง</strong>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.68rem;">เห็นพ้อง</span>
+                      </div>
+                      <p class="small text-muted mb-0" style="font-size:0.8rem; line-height:1.45;">คณะอนุกรรมการกลั่นกรองคณะที่ 1 มีมติเห็นพ้องตามรายงานของพนักงานไต่สวน เสนอคณะกรรมการ ป.ป.ท. วินิจฉัยชี้มูล</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Meeting Deliberation / Resolution -->
+              <div>
+                <label class="form-label fw-bold text-dark small mb-1.5">มติและความเห็นของที่ประชุมคณะกรรมการ ป.ป.ท.</label>
+                <div class="p-3 rounded border border-warning-subtle bg-warning-subtle bg-opacity-10 small text-dark" id="meetingDeliberationText" style="line-height: 1.6;">
+                  ที่ประชุมมีมติเป็นเอกฉันท์ชี้มูลความผิดตามรายงานไต่สวน
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. การขอถอนตัวจากการพิจารณา (ม.๒๐) (ถ้ามี) -->
+          <div class="ws-card mb-3 d-none" id="cardConflict">
+            <div class="card-header bg-warning-subtle text-warning-emphasis"><i class="fa-solid fa-triangle-exclamation"></i> การขอถอนตัวจากการพิจารณา (ม.๒๐)</div>
+            <div class="card-body">
+              <p class="small text-warning-emphasis mb-0" id="conflictText"></p>
+            </div>
+          </div>
+
+          <!-- 6. บันทึกข้อสังเกตส่วนตัวของกรรมการ ป.ป.ท. (เฉพาะท่าน) -->
+          <div class="ws-card mb-3" id="cardPrivateNote">
+            <div class="card-header d-flex align-items-center justify-content-between">
+              <div><i class="fa-solid fa-pen-to-square text-warning me-1"></i> บันทึกข้อสังเกตส่วนตัวของกรรมการ ป.ป.ท. (เฉพาะท่าน)</div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="small text-muted" id="noteCharCount" style="font-size:0.72rem;">0 ตัวอักษร</span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle" id="noteSaveStatus" style="font-size:0.68rem;">
+                  <i class="fa-solid fa-check me-1"></i>บันทึกแล้ว
+                </span>
+              </div>
+            </div>
+            <div class="card-body">
+              <textarea class="form-control form-control-sm bg-white" id="boardPrivateNote" rows="3"
+                data-no-suggestions="true" data-no-helper="true"
+                placeholder="บันทึกความเห็นส่วนตัว ข้อสังเกต หรือประเด็นที่ต้องการซักถามในที่ประชุม (ระบบบันทึกอัตโนมัติ)"></textarea>
+              <small class="text-muted d-block mt-1" style="font-size:0.72rem;">
+                <i class="fa-solid fa-shield-halved me-1 text-primary"></i>ข้อความนี้จะถูกจัดเก็บเฉพาะในอุปกรณ์ของท่าน และไม่เปิดเผยต่อสาธารณะ
+              </small>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- TAB 2: Evidence & Documents Vault -->
+        <div id="tabPane_evidence" class="d-none">
+          <div class="ws-card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div><i class="fa-solid fa-folder-open text-primary me-1"></i> <span id="evidenceHeaderTitle">คลังพยานหลักฐานดิจิทัลในสำนวน</span></div>
+              <small class="text-muted" id="evidenceHeaderSub">เอกสาร บันทึกข้อความ และไฟล์แนบประกอบการพิจารณา</small>
+            </div>
+            <div class="card-body p-3">
+              <div class="row g-3" id="evidenceListContainer">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: Symmetrical Official A4 Document Pane (Full Features from ruling-report.html) -->
+        <div id="tabPane_doc" class="d-none">
+          <div class="ws-card mb-3">
+            <div class="card-header p-2 bg-dark">
+              <!-- Symmetrical Pagination & Zoom Navigator Bar (Exact Match with ruling-report.html) -->
+              <div class="pagination-toolbar-symmetric" id="docPaginationBar">
+                <!-- Left Group: View Mode & Navigation Controls -->
+                <div class="toolbar-group">
+                  <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" id="btnModeSingle" title="โหมดดูทีละหน้า">
+                      <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
+                    </button>
+                    <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnModeContinuous" title="โหมดดูทุกหน้าต่อเนื่อง">
+                      <i class="fa-solid fa-file-lines me-1"></i>ดูต่อเนื่อง
+                    </button>
+                  </div>
+
+                  <div class="toolbar-divider"></div>
+
+                  <!-- Page Navigation Controls -->
+                  <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnPrevPage" title="หน้าก่อนหน้า">
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <div class="d-flex align-items-center gap-1">
+                    <input type="text" class="page-input-num" id="pageCurrentNum" value="1">
+                    <span class="text-light" style="font-size:0.75rem;">/ <span id="pageTotalNum">1</span></span>
+                  </div>
+                  <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnNextPage" title="หน้าถัดไป">
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+
+                <!-- Right Group: Zoom Controls, Word Export & Print -->
+                <div class="toolbar-group">
+                  <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnZoomOut" title="ย่อขนาด (-5%)">
+                      <i class="fa-solid fa-minus"></i>
+                    </button>
+                    <span class="btn btn-xs btn-outline-light btn-toolbar-nav disabled text-white fw-bold px-2" id="zoomPercentBadge" style="min-width: 44px;">80%</span>
+                    <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnZoomIn" title="ขยายขนาด (+5%)">
+                      <i class="fa-solid fa-plus"></i>
+                    </button>
+                  </div>
+
+                  <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnZoomFit" title="ขนาดพอดีจอ">Fit</button>
+                  <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnZoom100" title="ขนาดจริง 100%">100%</button>
+
+                  <div class="toolbar-divider"></div>
+
+                  <span class="doc-stats-pill" id="docStatsPill"><i class="fa-solid fa-font me-1"></i>A4 มาตรฐาน</span>
+                  <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" onclick="window.print()" title="พิมพ์เอกสาร">
+                    <i class="fa-solid fa-print me-1"></i>พิมพ์
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Viewport Paper Stage -->
+            <div class="ws-paper-stage">
+              <div id="docPaper" style="transform: scale(0.8);">
+                <div class="doc-paper a4-paper" id="docPaperContent">
+                  <!-- Formal A4 Content Injected via JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="assets/ecmis-app.js"></script>
+  <script src="assets/ecmis-model.js"></script>
+  <script>
+    // Initialize standard system navigation shell & role authentication
+    ECMIS.renderShell('board-inbox.html');
+
+    /* Board Meetings Dataset Across 6 Official Categories with Context-Aware Data */
+    const BOARD_MEETINGS = [
+      {
+        id: 38,
+        name: '38/2569',
+        date: '2569-08-28',
+        time: '09:30 - 16:30 น.',
+        location: 'ห้องประชุม 501 ชั้น 5 อาคาร ป.ป.ท. / Zoom Hybrid Meeting',
+        agendaCount: 10,
+        status: 'ACTIVE_READING',
+        statusText: 'เปิดให้อ่านล่วงหน้า (3 วัน)',
+        isNext: true,
+        agendas: [
+          {
+            cat: 'CAT1',
+            catName: 'วาระที่ ๑ : เรื่องประธานแจ้งให้ทราบ',
+            catBadgeClass: 'badge-cat-1',
+            catIcon: 'fa-bullhorn',
+            agendaNo: '1.1',
+            caseId: 'วาระที่ ๑.๑',
+            subject: 'แจ้งนโยบายและแนวทางการขับเคลื่อนการปราบปรามการทุจริตในภาครัฐ ประจำปีงบประมาณ พ.ศ. ๒๕๖๙',
+            presenter: 'นายวิชัย ยุติธรรม (ประธานกรรมการ ป.ป.ท.)',
+            agency: 'สำนักงาน ป.ป.ท.',
+            topicType: 'นโยบายและทิศทางการบริหารงาน',
+            status: 'RESOLVED',
+            statusLabel: 'แจ้งทราบแล้ว',
+            factSummary: 'ประธานกรรมการ ป.ป.ท. ได้แจ้งต่อที่ประชุมถึงนโยบายสำคัญเร่งด่วนในการเร่งรัดสำนวนคดีค้างเก่าที่มีอายุความเกินกว่า ๑๐ ปี ให้แล้วเสร็จภายในไตรมาสแรก และการบูรณาการเชื่อมโยงฐานข้อมูลการปราบปรามการทุจริตร่วมกับ ป.ป.ช. และ สตง. ผ่านระบบ E-CMIS 7.0 เต็มรูปแบบ',
+            meetingDeliberation: 'ที่ประชุมรับทราบแนวทางการขับเคลื่อนนโยบายดังกล่าว และมอบหมายให้เลขาธิการ ป.ป.ท. รายงานความก้าวหน้าการเร่งรัดสำนวนคดีเป็นรายเดือน',
+            evidences: [
+              { id: 'DOC-101', title: 'กรอบนโยบายและทิศทางการขับเคลื่อนงาน ป.ป.ท. ประจำปีงบประมาณ พ.ศ. ๒๕๖๙', act: 'POLICY', actLabel: 'เอกสารนโยบาย', size: '2.8 MB', icon: 'fa-file-lines', preview: 'เอกสารแสดงเป้าหมาย ยุทธศาสตร์ และตัวชี้วัดความสำเร็จในการปราบปรามการทุจริตภาครัฐ' },
+              { id: 'DOC-102', title: 'แผนผังการเชื่อมโยงระบบฐานข้อมูล E-CMIS 7.0 ร่วมกับ ป.ป.ช. และ สตง.', act: 'INTEGRATION', actLabel: 'แผนภาพระบบ', size: '4.5 MB', icon: 'fa-diagram-project', preview: 'สถาปัตยกรรมการแลกเปลี่ยนข้อมูลสำนวนคดีระหว่างองค์กรตรวจสอบตามกฎหมาย' }
+            ],
+            conflictNote: null
+          },
+          {
+            cat: 'CAT2',
+            catName: 'วาระที่ ๒ : รับรองรายงานการประชุม',
+            catBadgeClass: 'badge-cat-2',
+            catIcon: 'fa-clipboard-check',
+            agendaNo: '2.1',
+            caseId: 'วาระที่ ๒.๑',
+            subject: 'รับรองรายงานการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ๓๗/๒๕๖๙ เมื่อวันที่ ๒๐ สิงหาคม ๒๕๖๙',
+            presenter: 'ฝ่ายเลขานุการ (กลุ่มงานกิจการคณะกรรมการ)',
+            agency: 'กองบริหารคดี สำนักงาน ป.ป.ท.',
+            topicType: 'รายงานการประชุมครั้งที่ ๓๗/๒๕๖๙',
+            status: 'RESOLVED',
+            statusLabel: 'รับรองแล้ว',
+            factSummary: 'ฝ่ายเลขานุการได้จัดทำรายงานการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ๓๗/๒๕๖๙ เมื่อวันที่ ๒๐ สิงหาคม ๒๕๖๙ จำนวน ๔ วาระ และส่งให้กรรมการ ป.ป.ท. ทุกท่านตรวจทานล่วงหน้าผ่านระบบ E-CMIS ไม่มีการขอแก้ไขข้อความใดๆ',
+            meetingDeliberation: 'ที่ประชุมมีมติรับรองรายงานการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ๓๗/๒๕๖๙ โดยไม่มีการแก้ไข',
+            evidences: [
+              { id: 'DOC-201', title: 'ร่างรายงานการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ๓๗/๒๕๖๙ (ฉบับตรวจทาน)', act: 'MINUTES', actLabel: 'รายงานการประชุม', size: '5.2 MB', icon: 'fa-file-contract', preview: 'รายงานการประชุมฉบับเต็ม บันทึกการอภิปรายและมติการชี้มูลความผิดจำนวน 4 วาระ' }
+            ],
+            conflictNote: null
+          },
+          {
+            cat: 'CAT3',
+            catName: 'วาระที่ ๓ : เรื่องสืบเนื่อง',
+            catBadgeClass: 'badge-cat-3',
+            catIcon: 'fa-clock-rotate-left',
+            agendaNo: '3.1',
+            caseId: 'วาระที่ ๓.๑ (สำนวน ๑๕๒๕/๒๕๕๘)',
+            subject: 'รายงานความคืบหน้าการส่งสำนวนคดีให้อัยการสูงสุดดำเนินคดีอาญาตามมาตรา ๓๘ (สำนวน ๑๕๒๕/๒๕๕๘)',
+            presenter: 'ฝ่ายเลขานุการ (กลุ่มงานคำวินิจฉัยและมติ)',
+            agency: 'กรมชลประทาน / สำนักงาน ป.ป.ท.',
+            topicType: 'ติดตามมติที่ประชุมครั้งที่ ๓๗/๒๕๖๙',
+            status: 'RESOLVED',
+            statusLabel: 'รับทราบความคืบหน้า',
+            factSummary: 'สืบเนื่องจากมติที่ประชุมครั้งที่ ๓๗/๒๕๖๙ ที่ชี้มูลความผิด นายสมศักดิ์ มั่นคง ขณะนี้ฝ่ายเลขานุการได้รวบรวมสำนวนพร้อมพยานหลักฐานส่งให้อัยการสูงสุดแล้วเมื่อวันที่ ๒๕ ส.ค. ๒๕๖๙ ตามกรอบเวลา SLA ๓๐ วัน',
+            meetingDeliberation: 'ที่ประชุมรับทราบความคืบหน้า และกำชับให้ฝ่ายเลขานุการติดตามผลการสั่งฟ้องของพนักงานอัยการอย่างต่อเนื่อง',
+            evidences: [
+              { id: 'DOC-301', title: 'หนังสือนำส่งสำนวนคดีถึงอัยการสูงสุด ที่ ปปท ๐๐๐๔/๑๘๙๒', act: 'DISPATCH', actLabel: 'หนังสือนำส่ง', size: '1.9 MB', icon: 'fa-envelope-circle-check', preview: 'หนังสือนำส่งสำนวนหลักฐานตามมาตรา ๓๘ พร้อมใบตอบรับของสำนักงานอัยการสูงสุด' }
+            ],
+            conflictNote: null
+          },
+          {
+            cat: 'CAT4',
+            catName: 'วาระที่ ๔ : เรื่องเพื่อทราบ / สถิติ',
+            catBadgeClass: 'badge-cat-4',
+            catIcon: 'fa-chart-pie',
+            agendaNo: '4.1',
+            caseId: 'วาระที่ ๔.๑',
+            subject: 'รายงานสถิติมติคณะกรรมการ ป.ป.ท. และการติดตามผลการดำเนินการตามกรอบ SLA ประจำไตรมาส ๓ (แบบรายงาน กบค.)',
+            presenter: 'กลุ่มงานวิเคราะห์สถิติและเทคโนโลยี',
+            agency: 'กองบริหารคดี สำนักงาน ป.ป.ท.',
+            topicType: 'สถิติมติและการบริหารคดี',
+            status: 'RESOLVED',
+            statusLabel: 'รับทราบ',
+            factSummary: 'รายงานสถิติการชี้มูลความผิด ๕ หมวดสถิติ สรุปผลการดำเนินงาน ๑๐๐% ตามแบบรายงาน กบค. โดยมีสำนวนชี้มูลความผิดวินัยร้ายแรง ๑๒ เรื่อง และอาญา ๘ เรื่อง เป็นไปตามกรอบระยะเวลา SLA',
+            meetingDeliberation: 'ที่ประชุมรับทราบรายงานสถิติ และให้ข้อเสนอแนะในการพัฒนาระบบสถิติอัตโนมัติบนแดชบอร์ดสำหรับผู้บริหาร',
+            evidences: [
+              { id: 'DOC-401', title: 'แบบรายงานสถิติมติคณะกรรมการ ป.ป.ท. ประจำไตรมาส ๓ (แบบ กบค. ๑-๕)', act: 'STATS', actLabel: 'รายงานสถิติ', size: '3.4 MB', icon: 'fa-chart-column', preview: 'ตารางสถิติจำนวนสำนวนที่ชี้มูลความผิด แยกตามประเภทข้อกล่าวหาและหน่วยงานต้นสังกัด' }
+            ],
+            conflictNote: null
+          },
+          {
+            cat: 'CAT5',
+            catName: 'วาระที่ ๕ : เรื่องเพื่อพิจารณา (สำนวนคดี)',
+            catBadgeClass: 'badge-cat-5',
+            catIcon: 'fa-scale-balanced',
+            agendaNo: '5.1',
+            caseId: '2018/2569',
+            subject: 'กรณีกล่าวหา นายสุรชัย สมมุติ (ตัวการ) และ หจก.เชียงใหม่โยธา (ผู้สนับสนุน) ทุจริตเบิกจ่ายเงินโครงการก่อสร้าง',
+            accused: 'นายสุรชัย สมมุติ',
+            accusedPos: 'นายช่างโยธาชำนาญงาน (กรรมการตรวจรับ)',
+            agency: 'เทศบาลตำบลดอนแก้ว จ.เชียงใหม่',
+            complainant: 'สำนักงานการตรวจเงินแผ่นดิน (สตง.)',
+            incidentDateStart: '2568-01-15',
+            incidentDateEnd: '2568-02-20',
+            incidentDate: '15 ม.ค. 2568 - 20 ก.พ. 2568',
+            prescription: '16 ม.ค. 2583 (ตัวการ 15 ปี) / 16 ม.ค. 2578 (ผู้สนับสนุน 10 ปี)',
+            prescriptionPrincipal: '16 ม.ค. 2583 (ขาดอายุความ: นับจากเกิดเหตุ 15 ม.ค. 68 + 15 ปี + 1 วัน ตาม ป.อาญา ม.95 (2))',
+            prescriptionAccessory: '16 ม.ค. 2578 (ขาดอายุความ: นับจากเกิดเหตุ 15 ม.ค. 68 + 10 ปี + 1 วัน ตาม ป.อาญา ม.86 ประกอบ ม.95 (3))',
+            accusedAccessory: 'หจก.เชียงใหม่โยธาการช่าง (ผู้รับจ้าง / ผู้สนับสนุน)',
+            status: 'LIVE',
+            statusLabel: 'กำลังพิจารณา Live',
+            factSummary: 'จากการไต่สวนข้อเท็จจริงของคณะอนุกรรมการไต่สวน พบว่า ผู้ถูกกล่าวหาซึ่งได้รับแต่งตั้งเป็นกรรมการตรวจรับพัสดุ ได้ร่วมกับผู้รับจ้างลงนามตรวจรับงานจ้างโครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก ทั้งที่งานยังไม่แล้วเสร็จตามแบบรูปรายการ เป็นเหตุให้ทางราชการเบิกจ่ายเงินงบประมาณไปโดยมิชอบ เกิดความเสียหายแก่ทางราชการเป็นเงินจำนวน 1,240,000 บาท',
+            meetingDeliberation: 'ที่ประชุมได้ร่วมกันพิจารณาพยานหลักฐานและข้อเท็จจริงในสำนวนไต่สวนอย่างรอบคอบ โดยมีข้อสังเกตว่าพฤติการณ์ของผู้ถูกกล่าวหามีเจตนาเอื้อประโยชน์แก่ผู้รับจ้างอย่างชัดเจน แม้ผู้ถูกกล่าวหาจะอ้างว่าลงนามตามที่ผู้ควบคุมงานเสนอ แต่ในฐานะกรรมการตรวจรับมีหน้าที่โดยตรงในการตรวจวัดงานจริง จึงเห็นพ้องชี้มูลความผิด',
+            offenses: ['ป.อาญา ม.157', 'ป.อาญา ม.162 (1) (4)', 'พ.ร.บ. ป.ป.ท. ม.18/4', 'วินัยร้ายแรง'],
+            evidences: [
+              { id: 'E5-01', title: 'บันทึกถ้อยคำพยานบุคคล (นายสมเกียรติ - วิศวกรผู้ควบคุมงาน)', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '2.4 MB', icon: 'fa-file-lines', preview: 'พยานให้ถ้อยคำยืนยันว่า ในวันที่ผู้ถูกกล่าวหาลงนามตรวจรับงานนั้น ผิวจราจรคอนกรีตยังเทไม่เสร็จตามแบบรูปรายการ' },
+              { id: 'E5-02', title: 'สัญญาจ้างก่อสร้างโครงการและแบบรูปรายการ เลขที่ 45/2568', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '14.8 MB', icon: 'fa-file-contract', preview: 'สัญญาจ้างระบุงวดงานและเงื่อนไขการตรวจรับอย่างชัดเจนว่าต้องผ่านการตรวจวัดความหนาของผิวคอนกรีตก่อนลงนาม' },
+              { id: 'E5-03', title: 'รายงานการตรวจสอบเส้นทางการเงินและรายการเดินบัญชีธนาคาร', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '5.1 MB', icon: 'fa-file-invoice-dollar', preview: 'พบรายการโอนเงินจากบัญชีของผู้รับจ้างเข้าบัญชีเครือญาติของผู้ถูกกล่าวหาจำนวน 150,000 บาท ภายหลังวันตรวจรับงาน 3 วัน' },
+              { id: 'E5-04', title: 'ภาพถ่ายและวิดีโอการตรวจสถานที่ก่อสร้างจริงโดยพนักงานไต่สวน', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '32.0 MB', icon: 'fa-image', preview: 'ภาพถ่ายสภาพถนนจริงปรากฏว่าความหนาของคอนกรีตไม่ได้มาตรฐานตามแบบแปลน และมีรอยแตกร้าวเสียหายตลอดสายทาง' }
+            ],
+            conflictNote: null
+          },
+          {
+            cat: 'CAT5',
+            catName: 'วาระที่ ๕ : เรื่องเพื่อพิจารณา (สำนวนคดี)',
+            catBadgeClass: 'badge-cat-5',
+            catIcon: 'fa-scale-balanced',
+            agendaNo: '5.2',
+            caseId: '2015/2569',
+            subject: 'กรณีกล่าวหา นายวิชัย รักษ์ดี จัดซื้อครุภัณฑ์คอมพิวเตอร์ราคาสูงเกินจริง',
+            accused: 'นายวิชัย รักษ์ดี',
+            accusedPos: 'ผู้อำนวยการกองการศึกษา',
+            agency: 'องค์การบริหารส่วนตำบลบางพลี',
+            complainant: 'บัตรสนเท่ห์และเจ้าหน้าที่ภายใน',
+            incidentDateStart: '2568-03-10',
+            incidentDateEnd: '2568-03-10',
+            incidentDate: '10 มี.ค. 2568',
+            prescription: '11 มี.ค. 2583 (ตัวการ 15 ปี) / 11 มี.ค. 2578 (ผู้สนับสนุน 10 ปี)',
+            prescriptionPrincipal: '11 มี.ค. 2583 (ขาดอายุความ: นับจากเกิดเหตุ 10 มี.ค. 68 + 15 ปี + 1 วัน ตาม ม.12 พ.ร.บ.ฮั้ว)',
+            prescriptionAccessory: '11 มี.ค. 2578 (ขาดอายุความ: นับจากเกิดเหตุ 10 มี.ค. 68 + 10 ปี + 1 วัน)',
+            accusedAccessory: 'บริษัท คอมพิวเทค ซิสเต็ม จำกัด (คู่สัญญา)',
+            status: 'PENDING',
+            statusLabel: 'รอพิจารณา',
+            factSummary: 'ไต่สวนพบการกำหนดสเปกครุภัณฑ์ล็อกสเปกให้เอกชนรายเดียว และมีราคาสูงกว่าราคากลางของกระทรวงดิจิทัลฯ เกือบเท่าตัว',
+            meetingDeliberation: 'ที่ประชุมมีประเด็นอภิปรายเรื่องส่วนต่างราคากลาง และให้ตรวจสอบเพิ่มเติมว่ามีเจ้าหน้าที่อื่นในคณะกรรมการกำหนดราคากลางร่วมกระทำผิดด้วยหรือไม่',
+            offenses: ['ป.อาญา ม.157', 'พ.ร.บ.ฮั้ว ม.12'],
+            evidences: [
+              { id: 'E5-05', title: 'ตารางเปรียบเทียบสเปกคอมพิวเตอร์และราคากลาง', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '3.2 MB', icon: 'fa-table', preview: 'สเปกอุปกรณ์ตรงกับแคตตาล็อกของบริษัทผู้ชนะการเสนอราคาถึง 98%' },
+              { id: 'E5-06', title: 'รายงานการตรวจรับพัสดุและใบส่งของครุภัณฑ์', act: 'ACT5', actLabel: 'สำนวนไต่สวน', size: '4.5 MB', icon: 'fa-file-contract', preview: 'ตรวจรับครุภัณฑ์ที่มีสเปกต่ำกว่าเกณฑ์แต่เบิกจ่ายเต็มจำนวน' }
+            ],
+            conflictNote: 'นายวิเชียร จันทรโณทัย (กรรมการ ป.ป.ท.) ขอถอนตัวจากการพิจารณาสำนวนนี้ เนื่องจากเคยดำรงตำแหน่งผู้ว่าราชการจังหวัดในพื้นที่เกิดเหตุ (ตาม ม.๑๓ พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง)'
+          },
+          {
+            cat: 'CAT6',
+            catName: 'วาระที่ ๖ : เรื่องอื่นๆ',
+            catBadgeClass: 'badge-cat-6',
+            catIcon: 'fa-calendar-plus',
+            agendaNo: '6.1',
+            caseId: 'วาระที่ ๖.๑',
+            subject: 'การกำหนดวันและเวลานัดหมายการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ๓๙/๒๕๖๙',
+            presenter: 'ฝ่ายเลขานุการ (กลุ่มงานกิจการคณะกรรมการ)',
+            agency: 'สำนักงาน ป.ป.ท.',
+            topicType: 'กำหนดการประชุมครั้งถัดไป',
+            status: 'PENDING',
+            statusLabel: 'รอนัดหมาย',
+            factSummary: 'ฝ่ายเลขานุการเสนอให้กำหนดการประชุมครั้งที่ ๓๙/๒๕๖๙ ในวันพฤหัสบดีที่ ๔ กันยายน ๒๕๖๙ เวลา ๐๙.๓๐ น. ณ ห้องประชุม ๕๐๑ อาคาร ป.ป.ท. เพื่อพิจารณาสำนวนคดีค้างเก่าต่อเนื่อง',
+            meetingDeliberation: 'ที่ประชุมเห็นพ้องกำหนดวันนัดหมายดังกล่าว และมอบหมายให้ฝ่ายเลขานุการออกหนังสือเชิญประชุมตามระเบียบ',
+            evidences: [
+              { id: 'DOC-601', title: 'ปฏิทินและตารางกำหนดการประชุมคณะกรรมการ ป.ป.ท. ไตรมาส ๔', act: 'SCHEDULE', actLabel: 'ตารางการประชุม', size: '1.2 MB', icon: 'fa-calendar-days', preview: 'ตารางวันนัดหมายการประชุมประจำเดือนกันยายน - ธันวาคม ๒๕๖๙' }
+            ],
+            conflictNote: null
+          }
+        ]
+      }
+    ];
+
+    const BOARD_MEMBERS_LIST = [
+      { n: 'นายวิชัย ยุติธรรม', r: 'ประธานกรรมการ ป.ป.ท.', status: 'PRESENT' },
+      { n: 'นายสมบูรณ์ ธรรมรัฐ', r: 'กรรมการ ป.ป.ท.', status: 'PRESENT' },
+      { n: 'พันตำรวจโท วันนพ สมจินตนากุล', r: 'กรรมการ ป.ป.ท.', status: 'PRESENT' },
+      { n: 'นายวิเชียร จันทรโณทัย', r: 'กรรมการ ป.ป.ท.', status: 'PRESENT' },
+      { n: 'นายพรเทพ อัมพรกลิ่นแก้ว', r: 'กรรมการ ป.ป.ท.', status: 'ABSENT', note: 'ติดภารกิจราชการต่างประเทศ' },
+      { n: 'นายกมล สกลเดชา', r: 'กรรมการ ป.ป.ท.', status: 'PRESENT' },
+      { n: 'นายสุรพงษ์ อินทรถาวร', r: 'กรรมการ ป.ป.ท.', status: 'PRESENT' }
+    ];
+
+    /* Active State */
+    let currentMeeting = null;
+    let currentAgendaIdx = 0;
+    let currentAgendaStatusFilter = 'ALL';
+    let currentDocZoom = 0.8;
+    let isSinglePageMode = true;
+
+    /* Initialize Page */
+    function initPage() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const meetingIdParam = parseInt(urlParams.get('id') || urlParams.get('meet'), 10);
+      const agendaParam = urlParams.get('agenda');
+
+      // Find Meeting
+      let foundMeeting = BOARD_MEETINGS.find(m => m.id === meetingIdParam) || BOARD_MEETINGS[0];
+      currentMeeting = foundMeeting;
+
+      // Populate Switcher Menu
+      renderMeetingSwitcherMenu();
+
+      // Find Target Agenda Index
+      let targetIdx = 0;
+      if (agendaParam && currentMeeting.agendas) {
+        const foundIdx = currentMeeting.agendas.findIndex(a => a.agendaNo === agendaParam);
+        if (foundIdx >= 0) targetIdx = foundIdx;
+      }
+      currentAgendaIdx = targetIdx;
+
+      // Render KPIs and Cards
+      updateAgendaKPIs();
+      renderAgendaCards();
+      selectAgenda(currentAgendaIdx, false);
+    }
+
+    function renderMeetingSwitcherMenu() {
+      const menu = document.getElementById('meetingSwitchMenu');
+      if (!menu) return;
+
+      menu.innerHTML = BOARD_MEETINGS.map(m => `
+        <li>
+          <a class="dropdown-item d-flex justify-content-between align-items-center py-2 ${m.id === currentMeeting.id ? 'active' : ''}"
+            href="board-detail.html?id=${m.id}">
+            <div>
+              <strong class="d-block">ครั้งที่ ${m.name}</strong>
+              <small class="${m.id === currentMeeting.id ? 'text-light' : 'text-muted'}">${ECMIS.thaiDate(m.date)}</small>
+            </div>
+            <span class="badge ${m.status === 'CLOSED' ? 'bg-success' : 'bg-warning text-dark'} ms-2">${m.agendas ? m.agendas.length : m.agendaCount} วาระ</span>
+          </a>
+        </li>
+      `).join('');
+    }
+
+    function updateAgendaKPIs() {
+      if (!currentMeeting || !currentMeeting.agendas) return;
+      const total = currentMeeting.agendas.length;
+      const live = currentMeeting.agendas.filter(a => a.status === 'LIVE').length;
+      const pending = currentMeeting.agendas.filter(a => a.status === 'PENDING').length;
+      const resolved = currentMeeting.agendas.filter(a => a.status === 'RESOLVED').length;
+
+      $('#countStAll').text(total);
+      $('#countStLive').text(live);
+      $('#countStPending').text(pending);
+      $('#countStResolved').text(resolved);
+      $('#leftBadgeCount').text(`${total} วาระ`);
+    }
+
+    /* Render Left Column Agenda Cards */
+    function renderAgendaCards() {
+      if (!currentMeeting || !currentMeeting.agendas) return;
+
+      const q = ($('#agendaSearchInput').val() || '').trim().toLowerCase();
+      const cat = $('#agendaCategoryFilter').val() || 'ALL';
+      let filtered = currentMeeting.agendas.map((a, idx) => ({ ...a, originalIdx: idx }));
+
+      if (cat !== 'ALL') {
+        filtered = filtered.filter(a => a.cat === cat);
+      }
+
+      if (currentAgendaStatusFilter !== 'ALL') {
+        filtered = filtered.filter(a => a.status === currentAgendaStatusFilter);
+      }
+
+      if (q) {
+        filtered = filtered.filter(a =>
+          (a.agendaNo && a.agendaNo.toLowerCase().includes(q)) ||
+          (a.caseId && a.caseId.toLowerCase().includes(q)) ||
+          (a.subject && a.subject.toLowerCase().includes(q)) ||
+          (a.accused && a.accused.toLowerCase().includes(q)) ||
+          (a.agency && a.agency.toLowerCase().includes(q))
+        );
+      }
+
+      const container = document.getElementById('agendaListContainer');
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="text-muted text-center py-4 small"><i class="fa-solid fa-magnifying-glass mb-2 d-block text-secondary opacity-50 fs-4"></i>ไม่พบวาระตามเงื่อนไข</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(a => {
+        const isSelected = (a.originalIdx === currentAgendaIdx);
+        let statusBadge = '';
+        if (a.status === 'LIVE') {
+          statusBadge = '<span class="badge bg-danger text-white px-1.5 py-0.5" style="font-size:0.68rem;"><i class="fa-solid fa-circle-dot me-1"></i>LIVE</span>';
+        } else if (a.status === 'RESOLVED') {
+          statusBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5" style="font-size:0.68rem;">เสร็จสิ้น</span>';
+        } else {
+          statusBadge = '<span class="badge bg-light text-muted border px-1.5 py-0.5" style="font-size:0.68rem;">รอพิจารณา</span>';
+        }
+
+        const catBadgeClass = a.catBadgeClass || 'badge-cat-5';
+        const isCase = (a.cat === 'CAT5');
+
+        return `
+          <div class="agenda-nav-item ${isSelected ? 'active' : ''}" onclick="selectAgenda(${a.originalIdx}, true)">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="badge ${catBadgeClass}" style="font-size:0.72rem;">วาระ ${a.agendaNo}</span>
+              ${statusBadge}
+            </div>
+            <strong class="d-block text-navy small mb-1">${a.caseId}</strong>
+            <div class="text-dark small text-truncate-2" style="font-size:0.78rem; line-height:1.35;">${a.subject}</div>
+            ${a.conflictNote ? '<div class="text-danger fw-semibold mt-1" style="font-size:0.68rem;"><i class="fa-solid fa-triangle-exclamation me-1 text-warning"></i>มีกรรมการขอถอนตัว</div>' : ''}
+            <div class="d-flex justify-content-between align-items-center mt-2 pt-1 border-top" style="font-size:0.72rem;">
+              <span class="text-muted text-truncate" style="max-width:140px;">
+                <i class="fa-solid ${isCase ? 'fa-user' : 'fa-building-columns'} me-1"></i>${isCase ? (a.accused ? a.accused.split(' ')[0] : '—') : (a.agency || 'สำนักงาน ป.ป.ท.')}
+              </span>
+              <span class="text-primary fw-medium"><i class="fa-solid fa-paperclip me-1"></i>${a.evidences ? a.evidences.length : 0} ไฟล์</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /* Select Agenda & Dynamically Populate Workspace by Context */
+    function selectAgenda(idx, updateHistory = true) {
+      if (!currentMeeting || !currentMeeting.agendas || !currentMeeting.agendas[idx]) return;
+      currentAgendaIdx = idx;
+      const agenda = currentMeeting.agendas[idx];
+      const totalAgendas = currentMeeting.agendas.length;
+      const isCase = (agenda.cat === 'CAT5');
+
+      // Update URL without reload
+      if (updateHistory) {
+        const newUrl = `board-detail.html?id=${currentMeeting.id}&agenda=${encodeURIComponent(agenda.agendaNo)}`;
+        history.replaceState({ id: currentMeeting.id, agenda: agenda.agendaNo }, '', newUrl);
+      }
+
+      // Stepper & Buttons
+      $('#currentAgendaStepperText').text(`${idx + 1} / ${totalAgendas}`);
+      $('#btnPrevAgenda').prop('disabled', idx === 0);
+      $('#btnNextAgenda').prop('disabled', idx === totalAgendas - 1);
+
+      // Top Header Info
+      $('#dossierAgendaPill').text(`วาระที่ ${agenda.agendaNo}`);
+      $('#dossierCatBadge').attr('class', `badge ${agenda.catBadgeClass || 'badge-cat-5'}`).text(agenda.catName || 'ระเบียบวาระ');
+      
+      let stBadgeHtml = '<span class="badge bg-light text-muted border">รอพิจารณา</span>';
+      if (agenda.status === 'LIVE') stBadgeHtml = '<span class="badge bg-danger text-white"><i class="fa-solid fa-circle-dot me-1"></i>กำลังพิจารณา LIVE</span>';
+      if (agenda.status === 'RESOLVED') stBadgeHtml = '<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fa-solid fa-check me-1"></i>' + (agenda.statusLabel || 'เสร็จสิ้น') + '</span>';
+      $('#dossierStatusBadge').replaceWith($(stBadgeHtml).attr('id', 'dossierStatusBadge'));
+
+      $('#dossierSubject').text(agenda.subject);
+
+      // Tab Headers
+      if (isCase) {
+        $('#tabBriefBtn').html('<i class="fa-solid fa-file-lines text-primary me-1"></i>สาระสำคัญและรายละเอียด');
+        $('#tabEvidenceBtn').html('<i class="fa-solid fa-folder-open text-warning me-1"></i>คลังพยานหลักฐานดิจิทัล <span class="badge bg-secondary rounded-pill ms-1" id="tabEvidenceCount">' + (agenda.evidences ? agenda.evidences.length : 0) + '</span>');
+        $('#tabDocBtn').html('<i class="fa-solid fa-file-signature text-success me-1"></i>แผงเอกสารทางการ (A4)');
+        $('#evidenceHeaderTitle').text('คลังพยานหลักฐานดิจิทัลในสำนวน');
+        $('#evidenceHeaderSub').text('เอกสาร พยานวัตถุ และรายงานผลการตรวจพิสูจน์ที่ประกอบการพิจารณา');
+        $('#lblFactHeader').text('พฤติการณ์และการกระทำความผิด (ข้อเท็จจริงจากการไต่สวน)');
+        $('#lblFactSub').text('สรุปข้อเท็จจริงและพฤติการณ์แห่งคดี');
+        $('#cardOffenses').removeClass('d-none');
+        $('#opinionsComparisonBox').removeClass('d-none');
+      } else {
+        $('#tabBriefBtn').html('<i class="fa-solid fa-file-lines text-primary me-1"></i>สาระสำคัญและรายละเอียด');
+        $('#tabEvidenceBtn').html('<i class="fa-solid fa-paperclip text-warning me-1"></i>เอกสารประกอบวาระ <span class="badge bg-secondary rounded-pill ms-1" id="tabEvidenceCount">' + (agenda.evidences ? agenda.evidences.length : 0) + '</span>');
+        $('#tabDocBtn').html('<i class="fa-solid fa-file-signature text-success me-1"></i>บันทึกระเบียบวาระทางการ (A4)');
+        $('#evidenceHeaderTitle').text('เอกสารประกอบระเบียบวาระ');
+        $('#evidenceHeaderSub').text('บันทึกข้อความ เอกสารนโยบาย และไฟล์แนบประกอบการพิจารณาในวาระนี้');
+        $('#lblFactHeader').text('สาระสำคัญของเรื่องที่เสนอ');
+        $('#lblFactSub').text('รายละเอียดและเหตุผลความจำเป็น');
+        $('#cardOffenses').addClass('d-none');
+        $('#opinionsComparisonBox').addClass('d-none');
+      }
+
+      // Populate Card 1: General Info Row
+      renderGeneralInfoRow(agenda, isCase);
+
+      // Populate Card 2: Fact Summary & Dates
+      $('#briefFact').text(agenda.factSummary || '—');
+      if (agenda.incidentDateStart) {
+        $('#dateMetadataRow').removeClass('d-none');
+        $('#fieldIncidentStart').val(agenda.incidentDateStart);
+        $('#fieldIncidentEnd').val(agenda.incidentDateEnd || agenda.incidentDateStart);
+      } else {
+        $('#dateMetadataRow').addClass('d-none');
+      }
+
+      // Populate Card 3: Offenses & Prescription
+      if (isCase) {
+        if (agenda.offenses && agenda.offenses.length) {
+          $('#offenseBadgesContainer').html(
+            '<label class="form-label fw-bold text-dark small mb-1">ฐานความผิดที่เสนอชี้มูล</label><br>' +
+            agenda.offenses.map(o => `<span class="badge bg-danger me-1 mb-1">${o}</span>`).join(' ')
+          );
+        } else {
+          $('#offenseBadgesContainer').html('');
+        }
+
+        if (agenda.prescriptionPrincipal) {
+          $('#presPrincipalRow').removeClass('d-none');
+          $('#presPrincipalText').text(agenda.prescriptionPrincipal);
+        } else {
+          $('#presPrincipalRow').addClass('d-none');
+        }
+
+        if (agenda.prescriptionAccessory && agenda.prescriptionAccessory !== '—') {
+          $('#presAccessoryRow').removeClass('d-none');
+          $('#presAccessoryText').text(agenda.prescriptionAccessory);
+        } else {
+          $('#presAccessoryRow').addClass('d-none');
+        }
+      }
+
+      // Populate Card 4: Deliberation
+      $('#meetingDeliberationText').text(agenda.meetingDeliberation || 'ที่ประชุมรับทราบตามที่เสนอ');
+
+      // Populate Card 5: Conflict of Interest (Section 20)
+      if (agenda.conflictNote) {
+        $('#cardConflict').removeClass('d-none');
+        $('#conflictText').html(`<strong>การขอถอนตัวตาม ม.๒๐:</strong> ${agenda.conflictNote}`);
+      } else {
+        $('#cardConflict').addClass('d-none');
+      }
+
+      // Populate Card 6: Private Notes
+      const noteKey = `ecmis_board_note_${agenda.caseId || agenda.agendaNo}`;
+      const savedNote = localStorage.getItem(noteKey) || '';
+      $('#boardPrivateNote').val(savedNote);
+      $('#noteCharCount').text(`${savedNote.length} ตัวอักษร`);
+      $('#noteSaveStatus').html('<i class="fa-solid fa-check me-1"></i>บันทึกแล้ว');
+
+      // Tab 2: Evidences
+      renderEvidenceList();
+
+      // Tab 3: Official A4 Document
+      renderOfficialDoc(agenda, isCase);
+
+      renderAgendaCards();
+    }
+
+    function renderGeneralInfoRow(agenda, isCase) {
+      const container = document.getElementById('dossierGeneralInfoRow');
+      if (!container) return;
+
+      if (isCase) {
+        container.innerHTML = `
+          <div class="col-md-4">
+            <label class="form-label text-muted small mb-1"><i class="fa-solid fa-user-tie text-primary me-1"></i>ผู้ถูกกล่าวหา / ตำแหน่ง</label>
+            <input class="form-control form-control-sm bg-white fw-bold text-navy" readonly value="${agenda.accused || '—'}">
+            <small class="text-muted d-block mt-1">${agenda.accusedPos ? `ตำแหน่ง ${agenda.accusedPos}` : ''} (${agenda.agency || '—'})</small>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label text-muted small mb-1"><i class="fa-solid fa-bullhorn text-warning me-1"></i>ผู้กล่าวหา / หน่วยงานต้นเรื่อง</label>
+            <input class="form-control form-control-sm bg-white" readonly value="${agenda.complainant || '—'}">
+            <small class="text-muted d-block mt-1">${agenda.agency || '—'}</small>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label text-muted small mb-1"><i class="fa-solid fa-calendar-xmark text-danger me-1"></i>วันเกิดเหตุ & อายุความ</label>
+            <input class="form-control form-control-sm bg-white text-danger fw-semibold" readonly value="${agenda.incidentDate || '—'}">
+            <small class="text-danger d-block mt-1"><i class="fa-solid fa-clock me-1"></i>${agenda.prescription || '—'}</small>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="col-md-4">
+            <label class="form-label text-muted small mb-1"><i class="fa-solid fa-user-check text-primary me-1"></i>ผู้นำเสนอ / ผู้รายงาน</label>
+            <input class="form-control form-control-sm bg-white fw-bold text-navy" readonly value="${agenda.presenter || 'ฝ่ายเลขานุการ'}">
+            <small class="text-muted d-block mt-1">${agenda.agency || 'สำนักงาน ป.ป.ท.'}</small>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label text-muted small mb-1"><i class="fa-solid fa-building-columns text-primary me-1"></i>หน่วยงานที่เกี่ยวข้อง</label>
+            <input class="form-control form-control-sm bg-white" readonly value="${agenda.agency || 'สำนักงาน ป.ป.ท.'}">
+            <small class="text-muted d-block mt-1">${agenda.catName || 'ระเบียบวาระ'}</small>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label text-muted small mb-1"><i class="fa-solid fa-tag text-success me-1"></i>ประเภทเรื่อง / วาระ</label>
+            <input class="form-control form-control-sm bg-white text-success fw-semibold" readonly value="${agenda.topicType || 'เรื่องเพื่อทราบ'}">
+            <small class="text-success d-block mt-1"><i class="fa-solid fa-check-circle me-1"></i>${agenda.statusLabel || 'ตามระเบียบวาระ'}</small>
+          </div>
+        `;
+      }
+    }
+
+    /* Render Evidence / Attachment List */
+    function renderEvidenceList() {
+      if (!currentMeeting || !currentMeeting.agendas || !currentMeeting.agendas[currentAgendaIdx]) return;
+      const agenda = currentMeeting.agendas[currentAgendaIdx];
+      const container = document.getElementById('evidenceListContainer');
+      if (!container) return;
+
+      const evidences = agenda.evidences || [];
+      if (evidences.length === 0) {
+        container.innerHTML = `
+          <div class="col-12 text-center py-5 text-muted">
+            <i class="fa-solid fa-folder-open fa-2x mb-2 text-secondary opacity-50"></i>
+            <p class="mb-0 small">ไม่มีไฟล์แนบสำหรับวาระนี้</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = evidences.map(e => {
+        const safeTitle = (e.title || '').replace(/'/g, "\'");
+        const safePreview = (e.preview || '').replace(/'/g, "\'");
+
+        return `
+          <div class="col-md-6 col-12">
+            <div class="p-3 bg-white rounded border d-flex align-items-center justify-content-between gap-2 h-100 shadow-xs">
+              <div class="d-flex align-items-center gap-2.5 flex-1 min-w-0">
+                <div class="rounded p-2 bg-light text-navy text-center d-flex align-items-center justify-content-center" style="width:40px; height:40px; flex:none;">
+                  <i class="fa-solid ${e.icon || 'fa-file'} text-primary fs-5"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="d-flex align-items-center gap-1.5 mb-1 flex-wrap">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size:0.68rem;">${e.actLabel || 'เอกสาร'}</span>
+                    <span class="small text-muted" style="font-size:0.72rem;">${e.size}</span>
+                  </div>
+                  <strong class="d-block text-dark small text-truncate" style="font-size:0.82rem;">${e.title}</strong>
+                  <p class="small text-muted mb-0 text-truncate" style="font-size:0.75rem;">${e.preview}</p>
+                </div>
+              </div>
+              <button type="button" class="btn btn-xs btn-outline-primary px-2.5 flex-shrink-0" onclick="alertEvidenceModal('${safeTitle}', '${safePreview}')">
+                <i class="fa-solid fa-eye me-1"></i>ดูเอกสาร
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function alertEvidenceModal(title, preview) {
+      Swal.fire({
+        title: title,
+        html: `<div class="text-start p-3 bg-light rounded border small">${preview}</div>`,
+        icon: 'info',
+        confirmButtonText: 'ปิด',
+        confirmButtonColor: '#0F2A62'
+      });
+    }
+
+    /* Render A4 Formal Document */
+    function renderOfficialDoc(agenda, isCase) {
+      const meetDateThai = ECMIS.thaiDate(currentMeeting.date);
+      const paper = document.getElementById('docPaperContent');
+      if (!paper) return;
+
+      if (isCase) {
+        paper.innerHTML = `
+          <div class="doc-secret">ลับ</div>
+          <div style="text-align:center; margin-bottom:4px;">
+            <img src="assets/doc_logo.jpg" alt="ตราครุฑ" style="height:52px;">
+          </div>
+          <div class="doc-title">รายงานการไต่สวนเพื่อวินิจฉัยชี้มูล</div>
+          <div class="doc-sub">คณะกรรมการ ป.ป.ท. (แบบ ปปท. ๗-๐๒)</div>
+          
+          <div class="doc-row" style="margin-top:6px;"><span style="font-weight:bold;">ระเบียบวาระที่</span> ${agenda.agendaNo} (สำนวนเลขที่ ${agenda.caseId})</div>
+          <div class="doc-row"><span style="font-weight:bold;">วันเดือนปีที่ประชุม</span> ${meetDateThai}</div>
+
+          <div class="doc-indent" style="margin-top:8px;">
+            ในคราวการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${currentMeeting.name} เมื่อวันที่ ${meetDateThai} เพื่อพิจารณาและวินิจฉัยชี้มูลความผิด เรื่องที่ ${agenda.caseId} กรณีกล่าวหา <strong>${agenda.accused || 'ผู้ถูกกล่าวหา'}</strong> ${agenda.accusedPos ? `ตำแหน่ง ${agenda.accusedPos}` : ''} สังกัด ${agenda.agency || 'หน่วยงานของรัฐ'}
+          </div>
+
+          <div class="doc-h" style="margin-top:12px; font-size:16pt;">๑. ผู้ถูกกล่าวหาและตำแหน่งหน้าที่</div>
+          <div class="doc-indent">
+            ${agenda.accused || 'ผู้ถูกกล่าวหา'} ${agenda.accusedPos ? `ตำแหน่ง ${agenda.accusedPos}` : ''} สังกัด ${agenda.agency || 'หน่วยงานของรัฐ'} ${agenda.accusedAccessory && agenda.accusedAccessory !== '—' ? `ร่วมกับ ${agenda.accusedAccessory}` : ''}
+          </div>
+
+          <div class="doc-h" style="margin-top:10px; font-size:16pt;">๒. พฤติการณ์และการกระทำความผิด</div>
+          <div class="doc-indent">${agenda.factSummary || '—'}</div>
+
+          <div class="doc-h" style="margin-top:10px; font-size:16pt;">๓. ความเห็นและมติที่ประชุมคณะกรรมการ ป.ป.ท.</div>
+          <div class="doc-indent">${agenda.meetingDeliberation || 'ที่ประชุมมีมติเป็นเอกฉันท์ชี้มูลความผิดตามรายงานไต่สวน'}</div>
+
+          <div style="margin-top:28px; text-align:right; padding-right:15px;">
+            <p style="margin-bottom:4px;">(ลงชื่อ) ...........................................................</p>
+            <p style="margin-bottom:0; font-weight:bold;">(นายวิชัย ยุติธรรม)</p>
+            <p style="margin-bottom:0; font-size:14pt; color:#475569;">ประธานกรรมการ ป.ป.ท.</p>
+          </div>
+        `;
+      } else {
+        paper.innerHTML = `
+          <div style="text-align:center; margin-bottom:4px;">
+            <img src="assets/doc_logo.jpg" alt="ตราครุฑ" style="height:52px;">
+          </div>
+          <div class="doc-title">ระเบียบวาระการประชุมคณะกรรมการ ป.ป.ท.</div>
+          <div class="doc-sub">ครั้งที่ ${currentMeeting.name} วันที่ ${meetDateThai}</div>
+          
+          <div class="doc-row" style="margin-top:10px;"><span style="font-weight:bold;">${agenda.catName || 'ระเบียบวาระ'}</span></div>
+          <div class="doc-row"><span style="font-weight:bold;">เรื่อง:</span> ${agenda.subject}</div>
+          <div class="doc-row"><span style="font-weight:bold;">ผู้นำเสนอ:</span> ${agenda.presenter || 'ฝ่ายเลขานุการ'} (${agenda.agency || 'สำนักงาน ป.ป.ท.'})</div>
+
+          <div class="doc-h" style="margin-top:14px; font-size:16pt;">๑. สาระสำคัญของเรื่องที่เสนอ</div>
+          <div class="doc-indent">${agenda.factSummary || '—'}</div>
+
+          <div class="doc-h" style="margin-top:12px; font-size:16pt;">๒. ความเห็น / มติของที่ประชุม</div>
+          <div class="doc-indent">${agenda.meetingDeliberation || 'ที่ประชุมรับทราบตามที่เสนอ'}</div>
+
+          <div style="margin-top:35px; text-align:right; padding-right:15px;">
+            <p style="margin-bottom:4px;">(ลงชื่อ) ...........................................................</p>
+            <p style="margin-bottom:0; font-weight:bold;">(นางสาวศิริพร กิจการ)</p>
+            <p style="margin-bottom:0; font-size:14pt; color:#475569;">เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ / ฝ่ายเลขานุการ</p>
+          </div>
+        `;
+      }
+    }
+
+    function setDocZoom(newZoom) {
+      currentDocZoom = Math.min(1.30, Math.max(0.45, Math.round(newZoom * 100) / 100));
+      $('#docPaper').css('transform', `scale(${currentDocZoom})`);
+      $('#zoomPercentBadge').text(`${Math.round(currentDocZoom * 100)}%`);
+    }
+
+    /* Event Listeners */
+    $(document).ready(function () {
+      initPage();
+
+      // Prev & Next Buttons
+      $('#btnPrevAgenda').on('click', function () {
+        if (currentAgendaIdx > 0) selectAgenda(currentAgendaIdx - 1, true);
+      });
+
+      $('#btnNextAgenda').on('click', function () {
+        if (currentMeeting && currentMeeting.agendas && currentAgendaIdx < currentMeeting.agendas.length - 1) {
+          selectAgenda(currentAgendaIdx + 1, true);
+        }
+      });
+
+      // Filter events
+      $('#agendaCategoryFilter').on('change', renderAgendaCards);
+      $('#agendaSearchInput').on('input', renderAgendaCards);
+      $('.agenda-status-btn').on('click', function () {
+        $('.agenda-status-btn').removeClass('active btn-primary shadow-xs').addClass('btn-outline-secondary border-0 bg-transparent text-secondary');
+        $(this).addClass('active btn-primary shadow-xs').removeClass('btn-outline-secondary border-0 bg-transparent text-secondary');
+        currentAgendaStatusFilter = $(this).data('st');
+        renderAgendaCards();
+      });
+
+      // Tab Switching (.ws-detail-tab)
+      $('#dossierTabs .ws-detail-tab').on('click', function () {
+        $('#dossierTabs .ws-detail-tab').removeClass('active');
+        $(this).addClass('active');
+        const tab = $(this).data('tab');
+        $('#tabPane_brief, #tabPane_evidence, #tabPane_doc').addClass('d-none');
+        $(`#tabPane_${tab}`).removeClass('d-none');
+      });
+
+      // Pagination & Mode Switching (Adopted from ruling-report.html)
+      $('#btnModeSingle').on('click', function () {
+        isSinglePageMode = true;
+        $('#btnModeSingle').removeClass('btn-outline-light').addClass('btn-primary');
+        $('#btnModeContinuous').removeClass('btn-primary').addClass('btn-outline-light');
+      });
+
+      $('#btnModeContinuous').on('click', function () {
+        isSinglePageMode = false;
+        $('#btnModeContinuous').removeClass('btn-outline-light').addClass('btn-primary');
+        $('#btnModeSingle').removeClass('btn-primary').addClass('btn-outline-light');
+      });
+
+      // Zoom Controls (Adopted from ruling-report.html)
+      $('#btnZoomIn').on('click', function () { setDocZoom(currentDocZoom + 0.05); });
+      $('#btnZoomOut').on('click', function () { setDocZoom(currentDocZoom - 0.05); });
+      $('#btnZoomFit').on('click', function () { setDocZoom(0.80); });
+      $('#btnZoom100').on('click', function () { setDocZoom(1.00); });
+
+      // Export Agenda Pack PDF
+      $('#btnExportAgendaPack').on('click', function () {
+        if (!currentMeeting) return;
+        Swal.fire({
+          title: `กำลังรวบรวมเล่มเอกสารการประชุม ครั้งที่ ${currentMeeting.name}`,
+          html: `
+            <div class="text-start small text-secondary mt-2">
+              <div class="mb-1"><i class="fa-solid fa-spinner fa-spin text-primary me-1"></i> [1/3] หนังสือนัดประชุมและรายชื่อกรรมการ ป.ป.ท.</div>
+              <div class="mb-1"><i class="fa-solid fa-spinner fa-spin text-primary me-1"></i> [2/3] สรุประเบียบวาระการประชุม วาระที่ ๑ ถึง ๖ (${currentMeeting.agendas.length} วาระ)</div>
+              <div><i class="fa-solid fa-spinner fa-spin text-primary me-1"></i> [3/3] เอกสารและบันทึกประกอบวาระครบถ้วน</div>
+            </div>
+            <div class="progress mt-3" style="height: 8px;">
+              <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 100%"></div>
+            </div>
+          `,
+          timer: 1800,
+          showConfirmButton: false
+        }).then(() => {
+          Swal.fire({
+            icon: 'success',
+            title: 'ดาวน์โหลดสำเร็จ',
+            text: `สร้างเล่มเอกสารการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${currentMeeting.name} (ขนาด 48.6 MB) เรียบร้อยแล้ว`,
+            confirmButtonColor: '#0F2A62',
+            confirmButtonText: 'ตกลง'
+          });
+        });
+      });
+
+      // Export Word & PDF
+      $('#btnExportDocx').on('click', function () {
+        const agenda = currentMeeting.agendas[currentAgendaIdx];
+        Swal.fire({
+          icon: 'success',
+          title: 'กำลังส่งออก Word (.DOCX)',
+          text: `ระบบกำลังสร้างไฟล์เอกสารสำหรับ ${agenda.agendaNo}...`,
+          timer: 1500,
+          showConfirmButton: false
+        });
+      });
+
+      $('#btnExportPdf').on('click', function () {
+        const agenda = currentMeeting.agendas[currentAgendaIdx];
+        Swal.fire({
+          icon: 'success',
+          title: 'กำลังส่งออก PDF',
+          text: `ส่งออกเอกสารของ ${agenda.agendaNo} เรียบร้อยแล้ว`,
+          timer: 1500,
+          showConfirmButton: false
+        });
+      });
+
+      // Auto-save Private Notes
+      let noteTimer = null;
+      $('#boardPrivateNote').on('input', function () {
+        if (!currentMeeting || !currentMeeting.agendas || !currentMeeting.agendas[currentAgendaIdx]) return;
+        const agenda = currentMeeting.agendas[currentAgendaIdx];
+        const noteKey = `ecmis_board_note_${agenda.caseId || agenda.agendaNo}`;
+        const text = $(this).val();
+        $('#noteCharCount').text(`${text.length} ตัวอักษร`);
+        $('#noteSaveStatus').html('<i class="fa-solid fa-spinner fa-spin text-warning me-1"></i>กำลังบันทึก...');
+
+        clearTimeout(noteTimer);
+        noteTimer = setTimeout(() => {
+          localStorage.setItem(noteKey, text);
+          $('#noteSaveStatus').html('<i class="fa-solid fa-check me-1"></i>บันทึกแล้ว');
+        }, 400);
+      });
+    });
+  </script>
+</body>
+
+</html>
