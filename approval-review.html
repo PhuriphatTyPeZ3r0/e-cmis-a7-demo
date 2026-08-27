@@ -322,6 +322,17 @@
       if ('signedBySecgen' in patch) dbPatch.trr_signed_secgen = patch.signedBySecgen;
       if ('urgent' in patch) dbPatch.trr_urgent = patch.urgent;
       if ('subCommittee' in patch) dbPatch.trr_sub_committee = patch.subCommittee;
+
+      // บันทึกและ merge ข้อมูลมติ/ความเห็นเข้าสู่ trr_resolution_data ใน Supabase
+      if ('resolutionData' in patch || 'secgenOpinion' in patch || 'g1Reason' in patch || 'subCommittee' in patch) {
+        const currentResData = kase.resolutionData || {};
+        const extraRes = patch.resolutionData || {};
+        if (patch.secgenOpinion) extraRes.secgenOpinion = patch.secgenOpinion;
+        if (patch.g1Reason) extraRes.g1Reason = patch.g1Reason;
+        if (patch.subCommittee) extraRes.subCommittee = patch.subCommittee;
+        dbPatch.trr_resolution_data = Object.assign({}, currentResData, extraRes);
+      }
+
       if (kase.trr_id && Object.keys(dbPatch).length) {
         try {
           const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
@@ -331,6 +342,7 @@
         }
       }
       Object.assign(kase, patch);
+      if (dbPatch.trr_resolution_data) kase.resolutionData = dbPatch.trr_resolution_data;
       kase.chainOpinions = ECMIS.buildChainOpinions(kase);
       const memCase = ECMIS.CASES.find(x => x.id === kase.id);
       if (memCase) Object.assign(memCase, patch);
@@ -543,6 +555,32 @@
         }
         document.getElementById('g1Box').classList.remove('d-none');
         document.getElementById('signCard').classList.remove('d-none');
+
+        const hasSupportOpinion = !!(kase.supportOpinion || kase.supportOpinion72 || kase.supportDecision);
+        if (hasSupportOpinion) {
+          const g1yes = document.getElementById('g1yes');
+          const g1no = document.getElementById('g1no');
+          if (g1yes) { g1yes.checked = true; g1yes.disabled = true; }
+          if (g1no) { g1no.disabled = true; }
+          const g1reasonBox = document.getElementById('g1reasonBox');
+          if (g1reasonBox) g1reasonBox.classList.remove('d-none');
+          const g1reason = document.getElementById('g1reason');
+          if (g1reason) {
+            g1reason.readOnly = true;
+            if (!g1reason.value.trim()) g1reason.value = kase.g1Reason || (kase.resolutionData && kase.resolutionData.g1Reason) || 'เลขาธิการฯ มอบหมายให้คณะอนุกรรมการสนับสนุนเลขาธิการฯ กลั่นกรองแล้ว';
+          }
+          const subSelectBox = document.getElementById('supportSubSelectBox');
+          if (subSelectBox) subSelectBox.classList.remove('d-none');
+          const subSelect = document.getElementById('supportSubSelect');
+          if (subSelect) {
+            subSelect.disabled = true;
+            if (kase.subCommittee) subSelect.value = kase.subCommittee;
+          }
+          const myOpinion = document.getElementById('myOpinion');
+          if (myOpinion && !myOpinion.value.trim()) {
+            myOpinion.value = 'ตรวจทานรายงานและผลการกลั่นกรองของคณะอนุกรรมการสนับสนุนเลขาธิการฯ แล้ว เห็นชอบตามผลการกลั่นกรอง เห็นควรเสนอประธานกรรมการ ป.ป.ท. สั่งบรรจุวาระการประชุม';
+          }
+        }
       }
       if (role.id === 'support_sub') document.getElementById('g2Box').classList.remove('d-none');
 
@@ -786,24 +824,24 @@
       function buildButtons() {
         const b = [{ act: 'return', label: 'ส่งคืนสายงานต้นทาง (กจ.5)', icon: 'fa-arrow-left-long', cls: 'btn-outline-danger' }];
         if (role.id === 'secgen') {
+          const hasSupportOpinion = !!(kase.supportOpinion || kase.supportOpinion72 || kase.supportDecision);
           if (signed) {
             return [
               { act: 'edit_sign', label: 'แก้ไข / ลงนามใหม่', icon: 'fa-pen-to-square', cls: 'btn-outline-warning' },
               { act: 'clear_sign', label: 'ลบลายเซ็น', icon: 'fa-trash-can', cls: 'btn-outline-danger' },
-              { act: 'save_status', label: 'บันทึกเพื่อเปลี่ยนสถานะ (เลขาลงนามแล้ว)', icon: 'fa-floppy-disk', cls: 'btn-success' }
+              { act: 'save_status', label: hasSupportOpinion ? 'บันทึกและเสนอประธานกรรมการ ป.ป.ท.' : 'บันทึกเพื่อเปลี่ยนสถานะ (เลขาลงนามแล้ว)', icon: 'fa-paper-plane', cls: 'btn-success' }
             ];
           }
           const m28 = m28Selected();
           if (m28 === 'ACCEPT') {
             const complex = g1Yes();
-            const hasSupportOpinion = !!(kase.supportOpinion || kase.supportOpinion72);
             if (complex && !hasSupportOpinion) {
               b.push({
                 act: 'assign', label: 'ส่งคณะอนุกรรมการสนับสนุนเลขาธิการฯ', icon: 'fa-people-arrows',
                 cls: 'btn-navy'
               });
             } else {
-              b.push({ act: 'sign', label: 'ลงนามดิจิทัลและส่งต่อ', icon: 'fa-signature', cls: 'btn-gold' });
+              b.push({ act: 'sign', label: hasSupportOpinion ? 'ลงนามดิจิทัลและเสนอประธานฯ' : 'ลงนามดิจิทัลและส่งต่อ', icon: 'fa-signature', cls: 'btn-gold' });
             }
           } else {
             b.push({
@@ -975,10 +1013,12 @@
         /* มอบหมาย = ส่งต่อเข้าคณะอนุกรรมการสนับสนุนฯ ทันที โดยไม่ต้องลงนามดิจิทัล */
         if (act === 'assign') {
           if (!requireOpinion()) return;
+          const subSelect = document.getElementById('supportSubSelect');
+          const chosenSub = (subSelect && subSelect.value) ? subSelect.value : 'คณะที่ 1';
           ECMIS.confirmAction({
             title: 'มอบหมายสำนวนให้คณะอนุกรรมการสนับสนุนเลขาธิการฯ',
             html: `<p>สำนวน <strong>${kase.id}</strong> จะถูกมอบหมายเข้า
-            <strong>คณะอนุกรรมการสนับสนุนเลขาธิการฯ</strong> เพื่อพิจารณาก่อนเสนอต่อ
+            <strong>คณะอนุกรรมการสนับสนุนเลขาธิการฯ (${chosenSub})</strong> เพื่อพิจารณาก่อนเสนอต่อ
             <strong>ประธานกรรมการ ป.ป.ท.</strong></p>`,
             confirmText: 'ยืนยันมอบหมาย'
           }).then(async r => {
@@ -989,10 +1029,27 @@
             if (grBox) grBox.classList.remove('d-none');
             const gr = document.getElementById('g1reason');
             if (gr && !gr.value.trim()) gr.value = 'เลขาธิการฯ พิจารณาแล้วเห็นควรมอบหมายให้คณะอนุกรรมการสนับสนุนฯ ตรวจสอบก่อน';
+            const grVal = gr ? gr.value.trim() : '';
 
             // Change status to IN_SUPPORT_SUB directly without signing
             try {
-              await persistCase(kase, { status: 'IN_SUPPORT_SUB' });
+              await persistCase(kase, {
+                status: 'IN_SUPPORT_SUB',
+                subCommittee: chosenSub,
+                complex: true,
+                g1Reason: grVal,
+                resolutionData: {
+                  subCommittee: chosenSub,
+                  g1Reason: grVal,
+                  assignedBy: 'secgen',
+                  assignedAtIso: new Date().toISOString()
+                }
+              });
+              await ECMIS.logRequestEvent(kase.trr_id, kase.status, 'IN_SUPPORT_SUB', {
+                type: 'ASSIGN_SUPPORT_SUB',
+                actorRole: 'secgen',
+                data: { subCommittee: chosenSub, reason: grVal }
+              });
             } catch (err) {
               console.error('มอบหมายไม่สำเร็จ:', err);
               ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
@@ -1004,8 +1061,8 @@
               title: 'มอบหมายสำนวนเรียบร้อย',
               html: `<div class="text-start">
               สำนวน <strong>${kase.id}</strong> ถูกส่งต่อไปยัง
-              <strong>คณะอนุกรรมการสนับสนุนเลขาธิการฯ</strong> เรียบร้อยแล้ว<br>
-              <div style="font-size:.82rem;color:#7C8CA3;margin-top:.6rem">เส้นทางที่ระบบกำหนด: กลั่นกรองโดยคณะอนุสนับสนุนฯ ก่อนเสนอประธานฯ</div>
+              <strong>คณะอนุกรรมการสนับสนุนเลขาธิการฯ (${chosenSub})</strong> เรียบร้อยแล้ว<br>
+              <div style="font-size:.82rem;color:#7C8CA3;margin-top:.6rem">เส้นทางที่ระบบกำหนด: กลั่นกรองโดยคณะอนุสนับสนุนฯ (${chosenSub}) ก่อนเสนอประธานฯ</div>
             </div>`,
               confirmButtonColor: '#0F2A62',
               confirmButtonText: 'ตกลง (ไปที่ Work Inbox)',
@@ -1020,6 +1077,7 @@
         if (act === 'save_status') {
           const m28 = m28Selected();
           const complex = g1Yes();
+          const hasSupportOpinion = !!(kase.supportOpinion || kase.supportOpinion72 || kase.supportDecision);
           let dest, path, targetStatus;
 
           if (m28 !== 'ACCEPT') {
@@ -1028,7 +1086,7 @@
             targetStatus = 'CLOSED';
             dest = order.label;
             path = `ม.28 — ${order.label} (${order.lawRef} มาตรา ${lawSel ? lawSel.value : ''})`;
-          } else if (complex) {
+          } else if (complex && !hasSupportOpinion) {
             targetStatus = 'IN_SUPPORT_SUB';
             dest = 'คณะอนุกรรมการสนับสนุนเลขาธิการฯ';
             path = g1.diverged
@@ -1041,16 +1099,30 @@
           } else {
             targetStatus = 'PENDING_CHAIRMAN';
             dest = 'ประธานกรรมการ ป.ป.ท.';
-            path = ECMIS.isCase73(kase)
-              ? 'เรื่องทั่วไป / ข้อกฎหมาย (7.3): เสนอประธานฯ เพื่อพิจารณาสั่งบรรจุวาระการประชุม'
-              : 'สำนวนปกติ: เสนอประธานฯ พิจารณาสั่งการ';
+            path = hasSupportOpinion
+              ? 'ผ่านการกลั่นกรองโดยคณะอนุสนับสนุนฯ แล้ว — เสนอประธานฯ เพื่อพิจารณาสั่งการบรรจุวาระการประชุม'
+              : (ECMIS.isCase73(kase)
+                ? 'เรื่องทั่วไป / ข้อกฎหมาย (7.3): เสนอประธานฯ เพื่อพิจารณาสั่งบรรจุวาระการประชุม'
+                : 'สำนวนปกติ: เสนอประธานฯ พิจารณาสั่งการ');
           }
 
           try {
+            const secOp = document.getElementById('myOpinion')?.value.trim() || '';
             await persistCase(kase, {
               status: targetStatus,
               signedBySecgen: true,
-              secgenSignedAt: new Date().toLocaleString('th-TH')
+              secgenSignedAt: new Date().toLocaleString('th-TH'),
+              secgenOpinion: secOp,
+              resolutionData: {
+                secgenOpinion: secOp,
+                secgenSignedAt: new Date().toISOString(),
+                signedBySecgen: true
+              }
+            });
+            await ECMIS.logRequestEvent(kase.trr_id, kase.status, targetStatus, {
+              type: 'SIGNED_SECGEN',
+              actorRole: 'secgen',
+              data: { opinion: secOp, signedAt: new Date().toISOString() }
             });
           } catch (err) {
             console.error('บันทึกสถานะไม่สำเร็จ:', err);
@@ -1061,13 +1133,13 @@
           const isCase73Item = ECMIS.isCase73(kase);
           Swal.fire({
             icon: 'success',
-            title: isCase73Item ? 'ลงนามบันทึกเสนอเรื่องเรียบร้อย' : 'บันทึกและเปลี่ยนสถานะเรียบร้อย',
+            title: hasSupportOpinion ? 'ลงนามและเสนอประธานกรรมการ ป.ป.ท. เรียบร้อย' : (isCase73Item ? 'ลงนามบันทึกเสนอเรื่องเรียบร้อย' : 'บันทึกและเปลี่ยนสถานะเรียบร้อย'),
             html: `<div class="text-start">
             สำนวน <strong>${kase.id}</strong> ถูกบันทึกสถานะเป็น
             <span class="st st-done" style="font-size:0.85rem"><i class="fa-solid fa-signature me-1"></i>เลขาลงนามแล้ว</span><br>
             และส่งต่อไปยัง <strong>${dest}</strong> เรียบร้อยแล้ว
             <div style="font-size:.82rem;color:#7C8CA3;margin-top:.6rem">เส้นทางที่ระบบกำหนด: ${path}</div>
-            ${!isCase73Item ? `
+            ${!isCase73Item && m28 !== 'ACCEPT' ? `
             <div style="background:#fdf7e8;border-left:4px solid #D0A830;padding:.55rem .8rem;border-radius:0 6px 6px 0;margin-top:.7rem;font-size:.8rem">
               <strong>ม.28</strong> — คำสั่งของเลขาธิการฯ ถูกบรรจุเข้ารอบรายงานคณะกรรมการ ป.ป.ท. รอบถัดไปโดยอัตโนมัติ
             </div>` : ''}

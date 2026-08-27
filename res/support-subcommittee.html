@@ -291,6 +291,25 @@
         const code = ECMIS.STATUS_CODE[patch.status];
         if (code) dbPatch.trr_status = code;
       }
+      // บันทึกและ merge ข้อมูลมติ/ความเห็นของคณะอนุสนับสนุนฯ เข้าสู่ trr_resolution_data ใน Supabase
+      const currentResData = kase.resolutionData || {};
+      const extraRes = {};
+      if (patch.supportTeam || patch.supportTeam72) extraRes.supportTeam = patch.supportTeam || patch.supportTeam72;
+      if (patch.supportOpinion || patch.supportOpinion72) {
+        extraRes.supportOpinion = patch.supportOpinion || patch.supportOpinion72;
+        extraRes.supportOpinion72 = patch.supportOpinion72 || patch.supportOpinion;
+      }
+      if (patch.supportDecision) extraRes.supportDecision = patch.supportDecision;
+      if (patch.supportLaw) extraRes.supportLaw = patch.supportLaw;
+      if (patch.dissentReason) extraRes.dissentReason = patch.dissentReason;
+      if (patch.status === 'PENDING_SECGEN' || patch.status === 'PENDING_SECGEN_72') {
+        extraRes.supportSubmittedAt = new Date().toISOString();
+      }
+
+      if (Object.keys(extraRes).length > 0) {
+        dbPatch.trr_resolution_data = Object.assign({}, currentResData, extraRes);
+      }
+
       if (sb && kase.trr_id && Object.keys(dbPatch).length) {
         try {
           const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
@@ -300,8 +319,12 @@
         }
       }
       Object.assign(kase, patch);
+      if (dbPatch.trr_resolution_data) kase.resolutionData = dbPatch.trr_resolution_data;
       const memCase = ECMIS.CASES.find(x => x.id === kase.id);
-      if (memCase) Object.assign(memCase, patch);
+      if (memCase) {
+        Object.assign(memCase, patch);
+        if (dbPatch.trr_resolution_data) memCase.resolutionData = dbPatch.trr_resolution_data;
+      }
       ECMIS.saveCases();
     }
 
@@ -915,15 +938,17 @@
           ? 'เห็นพ้องกับความเห็นเดิม — เลขาธิการฯ สามารถใช้สิทธิ์ Fast-track บรรจุวาระด่วนตรงถึงประธานฯ ได้ (ม.24/ม.28)'
           : `มีความเห็นแย้งตาม ${lawVal ? 'ม.' + lawVal : 'ข้อกฎหมาย'} — ส่งผลกลั่นกรองกลับเลขาธิการฯ เพื่อพิจารณาสั่งการตาม ม.28`;
 
+        const assignedTeam = currentGroup === 'group2' ? 'TEAM2' : 'TEAM1';
+        const teamTitle = currentGroup === 'group2' ? 'คณะที่ 2' : 'คณะที่ 1';
         ECMIS.confirmAction({
           title: 'เสนอความเห็นคืนเลขาธิการ ป.ป.ท.',
-          html: `<p>สำนวน <strong>${kase.id}</strong> — กลั่นกรองโดย <strong>${'คณะอนุกรรมการสนับสนุนเลขาธิการฯ'}</strong><br><small class="text-muted">${nextMsg}</small></p>`,
+          html: `<p>สำนวน <strong>${kase.id}</strong> — กลั่นกรองโดย <strong>คณะอนุกรรมการสนับสนุนเลขาธิการฯ (${teamTitle})</strong><br><small class="text-muted">${nextMsg}</small></p>`,
           confirmText: 'ยืนยันเสนอความเห็นคืนเลขาธิการฯ'
         }).then(async res => {
           if (!res.isConfirmed) return;
           await persistCase(kase, {
-            supportTeam72: 'SUB_COMMITTEE',
-            supportTeam: 'SUB_COMMITTEE',
+            supportTeam72: assignedTeam,
+            supportTeam: assignedTeam,
             supportOpinion72: op.value.trim(),
             supportOpinion: op.value.trim(),
             supportDecision: dec,
@@ -932,8 +957,22 @@
             status: isRuling ? 'PENDING_SECGEN_72' : 'PENDING_SECGEN'
           });
 
-          ECMIS.toastOk('เสนอความเห็นคืนเลขาธิการฯ เรียบร้อย — ส่งกลับเข้าคิวพิจารณาของเลขาธิการฯ แล้ว');
-          setTimeout(() => location.href = 'approval-review.html?case=' + encodeURIComponent(kase.id), 1400);
+          await Swal.fire({
+            icon: 'success',
+            title: 'เสนอความเห็นคืนเลขาธิการ ป.ป.ท. เรียบร้อย',
+            html: `<div class="text-start">
+              สำนวน <strong>${kase.id}</strong> ได้รับการกลั่นกรองและส่งกลับเข้าคิวของ <strong>เลขาธิการคณะกรรมการ ป.ป.ท.</strong> แล้ว<br><br>
+              <div style="background:#f0f9ff;border-left:4px solid #0284c7;padding:.6rem .8rem;border-radius:0 6px 6px 0;font-size:.88rem">
+                <strong>ขั้นตอนถัดไปสำหรับการทดสอบ:</strong><br>
+                1. สลับบทบาทเป็น <strong>"เลขาธิการคณะกรรมการ ป.ป.ท."</strong><br>
+                2. เข้าหน้า <strong>Work Inbox</strong> เพื่อตรวจทานผลการกลั่นกรองและลงนามดิจิทัล
+              </div>
+            </div>`,
+            confirmButtonColor: '#0F2A62',
+            confirmButtonText: 'ตกลง (กลับกล่องข้อความอนุสนับสนุนฯ)',
+            width: 560
+          });
+          location.href = returnInboxUrl;
         });
       }
     }

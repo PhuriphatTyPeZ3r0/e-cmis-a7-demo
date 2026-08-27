@@ -415,12 +415,13 @@
           } else if (c.status === 'RETURNED' || c.status === 'RETURNED_72') {
             statusCat = 'RETURNED';
             statusText = 'ส่งคืนต้นทาง (กจ.5)';
-          } else if (['PENDING_CHAIRMAN', 'PENDING_INVITE_72', 'PENDING_URGENT', 'PENDING_URGENT_72', 'AGENDA_SET', 'RESOLVED'].includes(c.status)) {
+          } else if (['PENDING_CHAIRMAN', 'PENDING_INVITE_72', 'PENDING_URGENT', 'PENDING_URGENT_72', 'AGENDA_SET', 'RESOLVED'].includes(c.status) ||
+                     ((c.status === 'PENDING_SECGEN' || c.status === 'PENDING_SECGEN_72') && (c.supportOpinion || c.supportOpinion72 || c.supportDecision))) {
             statusCat = 'DONE';
-            statusText = 'กลั่นกรองแล้วเสร็จ';
+            statusText = 'กลั่นกรองแล้วเสร็จ (ส่งคืนเลขาฯ แล้ว)';
           }
 
-          const isGroup2 = (c.subCommittee && c.subCommittee.includes('2')) || (idx % 2 === 1);
+          const isGroup2 = (c.subCommittee && c.subCommittee.includes('2')) ? true : ((c.subCommittee && c.subCommittee.includes('1')) ? false : (idx % 2 === 1));
           const assignedGroup = isGroup2 ? 'group2' : 'group1';
           const team = isGroup2 ? 'TEAM2' : 'TEAM1';
           const teamLabel = isGroup2 ? 'คณะที่ 2' : 'คณะที่ 1';
