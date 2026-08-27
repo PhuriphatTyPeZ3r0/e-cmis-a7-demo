@@ -228,7 +228,7 @@
             </div>
           </div>
 
-          <div class="ws-card mb-3">
+          <div class="ws-card mb-3" id="memoSignCard">
             <div class="card-header"><i class="fa-solid fa-signature"></i> การเห็นชอบ</div>
             <div class="card-body">
               <div class="kv mb-2"><span class="k">ผู้มีอำนาจเห็นชอบ/ลงนาม:</span>
@@ -318,7 +318,7 @@
             </div>
           </div>
 
-          <div class="ws-card mb-3">
+          <div class="ws-card mb-3" id="amendSignCard">
             <div class="card-header"><i class="fa-solid fa-signature"></i> การลงนามคำสั่ง</div>
             <div class="card-body">
               <div class="kv mb-2"><span class="k">ผู้มีอำนาจลงนามตามกฎหมาย:</span>
@@ -969,10 +969,18 @@
         ? 'กดปุ่ม "เห็นชอบและลงนาม" ที่แถบด้านล่าง'
         : `ต้องสลับบทบาทเป็น "${s.title}" จึงจะลงนามได้`;
       renderMemoDoc();
+
+      const isSignerViewing = role.id === s.roleId;
+      const memoCard = document.getElementById('memoSignCard');
+      if (memoCard) memoCard.classList.toggle('d-none', !isSignerViewing);
+
       const btns = [];
-      if (role.id === s.roleId)
+      if (isSignerViewing) {
         btns.push({ act: 'memoSign', label: 'เห็นชอบและลงนาม', icon: 'fa-signature', cls: 'btn-gold' });
-      btns.push({ act: 'memoDraft', label: 'บันทึกร่าง', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' });
+      } else {
+        btns.push({ act: 'memoDraft', label: 'บันทึกร่าง', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' });
+        btns.push({ act: 'send_order', label: 'ส่งออกเพื่อลงนาม', icon: 'fa-paper-plane', cls: 'btn-gold' });
+      }
       document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(
         Object.assign({}, kase, { status: 'RESOLVED' }), role.id, btns, { forceAllowed: btns.length > 0 });
       document.querySelectorAll('.action-bar [data-act]').forEach(b =>
@@ -1146,8 +1154,18 @@
         ? 'กดปุ่ม "ลงนามดิจิทัลและส่งต่อ" ที่แถบด้านล่าง'
         : `ต้องสลับบทบาทเป็น "${s.title}" จึงจะลงนามได้`;
       renderAmendDoc();
-      const btns = [{ act: 'amendDraft', label: 'บันทึกร่าง', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' }];
-      if (role.id === s.roleId) btns.push({ act: 'amendSign', label: 'ลงนามดิจิทัลและส่งต่อ', icon: 'fa-signature', cls: 'btn-gold' });
+
+      const isSignerViewing = role.id === s.roleId;
+      const amendCard = document.getElementById('amendSignCard');
+      if (amendCard) amendCard.classList.toggle('d-none', !isSignerViewing);
+
+      const btns = [];
+      if (isSignerViewing) {
+        btns.push({ act: 'amendSign', label: 'ลงนามดิจิทัลและส่งต่อ', icon: 'fa-signature', cls: 'btn-gold' });
+      } else {
+        btns.push({ act: 'amendDraft', label: 'บันทึกร่าง', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' });
+        btns.push({ act: 'send_order', label: 'ส่งออกเพื่อลงนาม', icon: 'fa-paper-plane', cls: 'btn-gold' });
+      }
       document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(
         Object.assign({}, kase, { status: 'RESOLVED' }), role.id, btns, { forceAllowed: btns.length > 0 });
       document.querySelectorAll('.action-bar [data-act]').forEach(b =>
@@ -1355,9 +1373,25 @@
       }
 
       if (act === 'send_order') {
-        if (!document.getElementById('orderNo').value.trim()) { ECMIS.toastWarn('กรุณากรอกเลขที่คำสั่งที่ขอจากงานสารบรรณ'); return; }
-        if (!checkCompositionOrWarn()) return;
-        const targetStatus = isSub ? 'PENDING_SIGN_ORDER_CHAIRMAN' : 'PENDING_SIGN_ORDER_SECGEN';
+        let targetStatus = isSub ? 'PENDING_SIGN_ORDER_CHAIRMAN' : 'PENDING_SIGN_ORDER_SECGEN';
+        let targetSignerTitle = SIGNER.title;
+        let docWord = 'คำสั่ง';
+
+        if (currentMode === 'memo') {
+          const s = MEMO_SIGNER[isSub ? 'sub' : 'base'];
+          targetSignerTitle = s.title;
+          targetStatus = isSub ? 'PENDING_SIGN_ORDER_CHAIRMAN' : 'PENDING_SIGN_ORDER_SECGEN';
+          docWord = 'บันทึกเสนอ';
+        } else if (currentMode === 'amend') {
+          const s = amendSigner();
+          targetSignerTitle = s.title;
+          targetStatus = amendLevel() === 'sub' ? 'PENDING_SIGN_ORDER_CHAIRMAN' : 'PENDING_SIGN_ORDER_SECGEN';
+          docWord = 'คำสั่งแก้ไข';
+        } else {
+          if (!document.getElementById('orderNo').value.trim()) { ECMIS.toastWarn('กรุณากรอกเลขที่คำสั่งที่ขอจากงานสารบรรณ'); return; }
+          if (!checkCompositionOrWarn()) return;
+        }
+
         (async () => {
           try {
             if (kase.trr_id && sb) {
@@ -1372,7 +1406,7 @@
           kase.status = targetStatus;
           const memCase = ECMIS.CASES.find(x => x.id === kase.id);
           if (memCase) memCase.status = targetStatus;
-          ECMIS.toastOk(`ส่งคำสั่งให้ ${SIGNER.title} ลงนามเรียบร้อย`);
+          ECMIS.toastOk(`ส่ง${docWord}ให้ ${targetSignerTitle} ลงนามเรียบร้อย`);
           setTimeout(() => location.href = ECMIS.homeHref(role.id), 1200);
         })();
         return;
