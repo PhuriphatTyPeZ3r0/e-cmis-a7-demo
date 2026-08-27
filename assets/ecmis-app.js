@@ -1671,6 +1671,7 @@ function supabaseRowToCase(row) {
     docRef: cc.tcc_doc_ref, docType: cc.tcc_doc_type || '213',
     complex: !!cc.tcc_complex,
     accused: (cc.tbl_cmp_case_accused || [])
+      .filter(a => !a.is_deleted)
       .sort((a, b) => (a.tcca_no || 0) - (b.tcca_no || 0))
       .map(a => ({ no: a.tcca_no, name: a.tcca_name, pos: a.tcca_position, idcard: a.tcca_idcard, agency: a.tcca_agency })),
     status: CODE_STATUS[row.trr_status] || row.trr_status,
