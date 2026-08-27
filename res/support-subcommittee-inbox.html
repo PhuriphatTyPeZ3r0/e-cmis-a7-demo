@@ -147,6 +147,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="../assets/ecmis-app.js"></script>
   <script>
     ECMIS.renderShell('support-subcommittee-inbox.html');
@@ -340,6 +341,14 @@
       }
     ];
 
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = (window.ECMIS && window.ECMIS.getSupabaseClient)
+      ? window.ECMIS.getSupabaseClient(SUPABASE_URL, SUPABASE_KEY)
+      : (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }) : null);
+
+    let allCases = [...SUPPORT_CASES];
+
     // Scope selection persistence (URL query > sessionStorage > localStorage > role default)
     const urlParams = new URLSearchParams(window.location.search);
     const groupFromUrl = urlParams.get('group');
@@ -367,10 +376,92 @@
       $('#myRoleLabel').text(`บทบาท: คณะอนุกรรมการสนับสนุนเลขาธิการฯ — ${groupLabel}`);
 
       // Filter cases mapped to the selected group
-      currentCases = SUPPORT_CASES.filter(c => c.assignedGroup === selectedGroup);
+      currentCases = allCases.filter(c => c.assignedGroup === selectedGroup);
       
       renderKPI();
       renderQueue();
+    }
+
+    async function refreshFromSupabase() {
+      if (!sb) return;
+      try {
+        const { data, error } = await sb
+          .from('tbl_res_request')
+          .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+          .eq('is_deleted', false)
+          .order('created_datetime', { ascending: false });
+        if (error) throw error;
+        if (!data || data.length === 0) return;
+
+        const liveCases = [];
+        data.forEach((row, idx) => {
+          const c = ECMIS.supabaseRowToCase(row);
+          if (!c || !c.id || c.id.startsWith('TEST-')) return;
+
+          const isSubStatus = (
+            c.status === 'IN_SUPPORT_SUB' || c.status === 'IN_SUPPORT_SUB_72' ||
+            c.status === 'RETURNED' || c.status === 'RETURNED_72' ||
+            c.status === 'PENDING_CHAIRMAN' || c.status === 'PENDING_INVITE_72' ||
+            c.status === 'PENDING_URGENT' || c.status === 'PENDING_URGENT_72' ||
+            c.status === 'AGENDA_SET' || c.status === 'PENDING_SUBCOMMITTEE' || c.subCommittee
+          );
+          if (!isSubStatus) return;
+
+          let statusCat = 'PENDING';
+          let statusText = 'รอกลั่นกรอง';
+          if (c.status === 'IN_SUPPORT_SUB' || c.status === 'IN_SUPPORT_SUB_72' || c.status === 'PENDING_SUBCOMMITTEE') {
+            statusCat = 'PENDING';
+            statusText = 'รอกลั่นกรอง';
+          } else if (c.status === 'RETURNED' || c.status === 'RETURNED_72') {
+            statusCat = 'RETURNED';
+            statusText = 'ส่งคืนต้นทาง (กจ.5)';
+          } else if (['PENDING_CHAIRMAN', 'PENDING_INVITE_72', 'PENDING_URGENT', 'PENDING_URGENT_72', 'AGENDA_SET', 'RESOLVED'].includes(c.status)) {
+            statusCat = 'DONE';
+            statusText = 'กลั่นกรองแล้วเสร็จ';
+          }
+
+          const isGroup2 = (c.subCommittee && c.subCommittee.includes('2')) || (idx % 2 === 1);
+          const assignedGroup = isGroup2 ? 'group2' : 'group1';
+          const team = isGroup2 ? 'TEAM2' : 'TEAM1';
+          const teamLabel = isGroup2 ? 'คณะที่ 2' : 'คณะที่ 1';
+
+          const isComplex = c.isComplex || (c.subCommittee && c.subCommittee.length > 0) || (c.resolutionData && c.resolutionData.code === 'ACCEPT_S24P3');
+          const triggerType = (statusCat === 'RETURNED') ? 'RETURN' : (statusCat === 'DONE' ? 'DONE' : (isComplex ? 'COMPLEX' : 'DIFFER'));
+          const triggerBadgeText = (statusCat === 'RETURNED') ? 'ส่งคืนสายงานต้นทาง' : (statusCat === 'DONE' ? 'กลั่นกรองแล้วเสร็จ' : (isComplex ? 'ประเด็นซับซ้อน' : 'ความเห็นแย้งในสายงาน'));
+          const triggerText = (statusCat === 'RETURNED') ? 'ส่งคืนสายงานต้นทาง (กจ.5) ดำเนินการใหม่' : (statusCat === 'DONE' ? 'กลั่นกรองแล้วเสร็จ (ส่งต่อแล้ว)' : (isComplex ? 'สำนวนซับซ้อนตาม ม.24 วรรคสาม' : 'ความเห็นแย้งในสายงานต้นทาง กจ.5'));
+
+          liveCases.push({
+            id: c.id,
+            subject: c.subject || 'ไม่มีระบุเรื่อง',
+            allegation: c.allegation || 'ไม่มีระบุข้อกล่าวหา',
+            docType: c.docType || '213',
+            owner: c.owner || 'เจ้าหน้าที่ผู้รับผิดชอบ',
+            ownerOrg: c.ownerOrg || 'กองบริหารคดี',
+            assignedGroup: assignedGroup,
+            team: team,
+            teamLabel: teamLabel,
+            triggerType: triggerType,
+            triggerBadgeText: triggerBadgeText,
+            triggerText: triggerText,
+            status: c.status,
+            statusText: statusText,
+            statusCat: statusCat,
+            slaDays: c.slaDays || 2,
+            slaLimit: c.slaLimit || 5,
+            accused: c.accused || [],
+            trr_id: c.trr_id
+          });
+        });
+
+        if (liveCases.length > 0) {
+          const liveIds = new Set(liveCases.map(c => c.id));
+          const preservedMocks = SUPPORT_CASES.filter(c => !liveIds.has(c.id));
+          allCases = [...liveCases, ...preservedMocks];
+          updateScopeGroup(selectedGroup, false);
+        }
+      } catch (err) {
+        console.warn('โหลดข้อมูลจาก Supabase ไม่สำเร็จ:', err);
+      }
     }
 
     function renderKPI() {
@@ -568,6 +659,7 @@
     $(document).ready(function () {
       // ตั้งค่า Scope เริ่มต้น
       updateScopeGroup(selectedGroup);
+      refreshFromSupabase();
 
       $('#scopeGroupSelect').on('change', function () {
         updateScopeGroup($(this).val());
@@ -616,10 +708,10 @@
         renderQueue();
       });
 
-      $('#btnBulkApprove').on('click', function () {
+      $('#btnBulkApprove').on('click', async function () {
         const checkedIds = $('.case-chk:checked').map(function () { return $(this).data('id'); }).get();
         if (checkedIds.length === 0) return;
-        Swal.fire({
+        const res = await Swal.fire({
           title: 'ยืนยันดำเนินการกลั่นกรองแบบกลุ่ม',
           text: `คุณต้องการบันทึกผลการกลั่นกรองสำหรับ ${checkedIds.length} สำนวนที่เลือกใช่หรือไม่?`,
           icon: 'question',
@@ -627,14 +719,33 @@
           confirmButtonText: 'ยืนยันดำเนินการ',
           cancelButtonText: 'ยกเลิก',
           confirmButtonColor: '#0F2A62'
-        }).then(res => {
-          if (res.isConfirmed) {
-            ECMIS.toastOk(`บันทึกผลการกลั่นกรอง ${checkedIds.length} รายการเรียบร้อยแล้ว`);
-            $('.case-chk').prop('checked', false);
-            $('#chkAll').prop('checked', false);
-            updateBulkUI();
+        });
+        if (!res.isConfirmed) return;
+
+        if (sb) {
+          try {
+            const trrIds = allCases.filter(c => checkedIds.includes(c.id) && c.trr_id).map(c => c.trr_id);
+            if (trrIds.length > 0) {
+              await sb.from('tbl_res_request').update({ trr_status: '009' }).in('trr_id', trrIds);
+            }
+          } catch (e) {
+            console.error('Bulk update to Supabase failed:', e);
+          }
+        }
+
+        allCases.forEach(c => {
+          if (checkedIds.includes(c.id)) {
+            c.status = 'PENDING_CHAIRMAN';
+            c.statusCat = 'DONE';
+            c.statusText = 'กลั่นกรองแล้วเสร็จ';
           }
         });
+
+        ECMIS.toastOk(`บันทึกผลการกลั่นกรอง ${checkedIds.length} รายการเรียบร้อยแล้ว`);
+        $('.case-chk').prop('checked', false);
+        $('#chkAll').prop('checked', false);
+        updateBulkUI();
+        updateScopeGroup(selectedGroup, false);
       });
     });
   </script>
