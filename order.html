@@ -421,10 +421,9 @@
     const role = ECMIS.currentRole();
     const resCode = params.get('res') || 'ACCEPT_S24P1';
     /* ไม่มีลิงก์จริงในระบบที่ส่ง ?res= มาเลย (มีไว้ทดสอบเองด้วยมือเท่านั้น) — เส้นทางจริงต้องมาจาก
-       kase.subCommittee (ผ่านอนุกลั่นกรองคณะฯ = สาย "sub" เสนอตรงเลขาธิการฯ = สาย "base") ซึ่งเป็น
-       ฟิลด์เดียวกับที่ใช้ดึงองค์ประกอบอนุกรรมการอัตโนมัติด้านล่าง มิเช่นนั้นเคสที่ผ่านอนุกลั่นกรองจริง
-       จะตกไปที่เลขาธิการฯ แทนประธานฯ เมื่อเปิดจาก inbox.html ตรงๆ */
-    const isSub = !!kase.subCommittee || resCode === 'ACCEPT_S24P3';
+       kase.subCommittee (ผ่านอนุกลั่นกรองคณะฯ = สาย "sub" เสนอตรงเลขาธิการฯ = สาย "base") หรือ
+       kase.code === 'ACCEPT_S24P3' จากมติบอร์ด ซึ่งใช้ดึงองค์ประกอบอนุกรรมการอัตโนมัติ */
+    let isSub = !!kase.subCommittee || resCode === 'ACCEPT_S24P3' || kase.code === 'ACCEPT_S24P3' || (kase.resolutionData && kase.resolutionData.code === 'ACCEPT_S24P3');
     const M = ECMIS.mergeField;
 
     const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
@@ -577,12 +576,75 @@
     /* ===================================================================
        สลับโหมด: แต่งตั้ง / เสนอเพื่อลงนาม / แก้ไของค์ประกอบ
        =================================================================== */
-    let currentMode = 'appoint';
+    const isReadOnlyView = (role.id === 'secgen' || role.id === 'chairman' || (role.id !== 'affairs' && !ECMIS.can('order24.draft', role.id)));
+
+    function determineInitialMode() {
+      const modeParam = params.get('mode');
+      if (modeParam && ['appoint', 'memo', 'amend'].includes(modeParam)) {
+        return modeParam;
+      }
+      if (role.id === 'secgen') {
+        return isSub ? 'memo' : 'appoint';
+      }
+      if (role.id === 'chairman') {
+        return 'appoint';
+      }
+      return 'appoint';
+    }
+
+    let currentMode = determineInitialMode();
     const PAGE_TITLES = {
       appoint: 'ออกคำสั่งแต่งตั้งผู้ไต่สวน (มาตรา 24)',
       memo: 'บันทึกเสนอเพื่อลงนามในคำสั่งแต่งตั้งผู้ไต่สวน',
       amend: 'แก้ไของค์ประกอบคณะผู้ไต่สวน / เพิ่มผู้ถูกกล่าวหา'
     };
+
+    function applyReadOnlyLock() {
+      if (!isReadOnlyView) return;
+
+      // Hide mode switch bar completely for signers/reviewers
+      const modeSwitchEl = document.getElementById('modeSwitch');
+      if (modeSwitchEl) modeSwitchEl.classList.add('d-none');
+
+      // Hide editing and add buttons
+      const btnDocEdit = document.getElementById('btnDocEdit');
+      if (btnDocEdit) btnDocEdit.classList.add('d-none');
+      const btnMemberAdd = document.getElementById('btnMemberAdd');
+      if (btnMemberAdd) btnMemberAdd.classList.add('d-none');
+      const btnMemoAdd = document.getElementById('btnMemoAdd');
+      if (btnMemoAdd) btnMemoAdd.classList.add('d-none');
+      const btnAmendAdd = document.getElementById('btnAmendAdd');
+      if (btnAmendAdd) btnAmendAdd.classList.add('d-none');
+
+      // Hide delete action buttons in member / accused tables
+      document.querySelectorAll('#membersTb [data-del], #memoMemberTb [data-mdel], #amendTb [data-adel]').forEach(b => {
+        b.classList.add('d-none');
+      });
+
+      // Disable all inputs, textareas, and selects
+      document.querySelectorAll('#panelAppoint input, #panelAppoint select, #panelAppoint textarea, ' +
+                                '#panelMemo input, #panelMemo select, #panelMemo textarea, ' +
+                                '#panelAmend input, #panelAmend select, #panelAmend textarea').forEach(el => {
+        el.setAttribute('disabled', 'disabled');
+        el.setAttribute('readonly', 'readonly');
+        el.style.backgroundColor = '#f8fafc';
+        el.style.cursor = 'default';
+        el.style.borderColor = '#e2e8f0';
+        el.style.color = '#1e293b';
+      });
+
+      // Disable allegation rich text editor
+      const allegationBox = document.getElementById('allegationBox');
+      if (allegationBox) {
+        allegationBox.setAttribute('contenteditable', 'false');
+        allegationBox.style.backgroundColor = '#f8fafc';
+        allegationBox.style.cursor = 'default';
+        allegationBox.style.border = '1px solid #e2e8f0';
+      }
+      const allegationToolbar = document.getElementById('allegationToolbar');
+      if (allegationToolbar) allegationToolbar.classList.add('d-none');
+    }
+
     function setMode(mode) {
       currentMode = mode;
       document.getElementById('pageTitle').textContent = PAGE_TITLES[mode];
@@ -594,25 +656,33 @@
       if (mode === 'appoint') { updateDocName(); refreshSigner(); }
       if (mode === 'memo') { updateMemoDocName(); refreshMemoSigner(); }
       if (mode === 'amend') { updateAmendDocName(); refreshAmendSigner(); }
+      applyReadOnlyLock();
     }
     document.querySelectorAll('#modeSwitch button').forEach(b =>
       b.addEventListener('click', () => setMode(b.dataset.mode)));
 
     /* ===================================================================
        MODE: APPOINT — ปปท. 5-02 / 5-05 / 5-08 / 5-17
-       (ตรรกะเดิมทั้งหมด ย้ายมาไว้ในไฟล์รวม ไม่มีการเปลี่ยนพฤติกรรม)
        =================================================================== */
-    const BASE_SIGNER = isSub
+    let BASE_SIGNER = isSub
       ? { name: 'นายวิชัย ยุติธรรม', title: 'ประธานกรรมการ ป.ป.ท.', roleId: 'chairman' }
       : { name: 'นายอภิชาติ สุจริตกุล', title: 'เลขาธิการคณะกรรมการ ป.ป.ท.', roleId: 'secgen' };
     const DELEGATE_SIGNER = {
       name: 'นายอภิชาติ สุจริตกุล',
       title: 'เลขาธิการคณะกรรมการ ป.ป.ท. ปฏิบัติราชการแทน ประธานกรรมการ ป.ป.ท.', roleId: 'secgen'
     };
-    const SIGNER_CERT = isSub ? 'PACC-CHAIRMAN-2569-001' : 'PACC-SECGEN-2569-001';
+    let SIGNER_CERT = isSub ? 'PACC-CHAIRMAN-2569-001' : 'PACC-SECGEN-2569-001';
     let SIGNER = BASE_SIGNER;
     let signedAppoint = false;
     let pendingSigDataAppoint = null;
+
+    function refreshSignerConfig() {
+      BASE_SIGNER = isSub
+        ? { name: 'นายวิชัย ยุติธรรม', title: 'ประธานกรรมการ ป.ป.ท.', roleId: 'chairman' }
+        : { name: 'นายอภิชาติ สุจริตกุล', title: 'เลขาธิการคณะกรรมการ ป.ป.ท.', roleId: 'secgen' };
+      SIGNER_CERT = isSub ? 'PACC-CHAIRMAN-2569-001' : 'PACC-SECGEN-2569-001';
+      SIGNER = isDelegated() ? DELEGATE_SIGNER : BASE_SIGNER;
+    }
 
     function isDelegated() { return isSub && document.getElementById('delegate')?.checked; }
 
@@ -764,6 +834,7 @@
       });
       document.querySelectorAll('#memberTb [data-del]').forEach(el =>
         el.addEventListener('click', () => { members.splice(+el.dataset.del, 1); renderMembers(); renderRules(); renderDoc(); }));
+      applyReadOnlyLock();
     }
 
     function renderRules() {
@@ -923,7 +994,7 @@
        MODE: MEMO — ปปท. 5-01 / 5-04 (บันทึกเสนอเพื่อลงนามในคำสั่งแต่งตั้ง)
        =================================================================== */
     const MEMO_SIGNER = {
-      sub: { name: 'นายวิชัย ยุติธรรม', title: 'ประธานกรรมการ ป.ป.ท.', roleId: 'chairman' },
+      sub: { name: 'นายอภิชาติ สุจริตกุล', title: 'เลขาธิการคณะกรรมการ ป.ป.ท.', roleId: 'secgen' },
       base: { name: 'นายอภิชาติ สุจริตกุล', title: 'เลขาธิการคณะกรรมการ ป.ป.ท.', roleId: 'secgen' }
     };
     let memoMembers = isSub ? [
@@ -938,18 +1009,20 @@
       document.getElementById('memoMemberTb').innerHTML = memoMembers.map((m, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td><input class="form-control form-control-sm" data-mf="name" data-i="${i}" value="${m.name || ''}" placeholder="ชื่อ-สกุล"></td>
-      <td><input class="form-control form-control-sm" data-mf="pos" data-i="${i}" value="${m.pos || ''}" placeholder="ตำแหน่ง"></td>
-      <td><input class="form-control form-control-sm" data-mf="agency" data-i="${i}" value="${m.agency || ''}" placeholder="สังกัด"></td>
-      <td><input class="form-control form-control-sm" data-mf="role" data-i="${i}" value="${m.role || ''}" placeholder="ฐานะในคณะ"></td>
-      <td><button class="btn btn-sm btn-link text-danger p-0" data-mdel="${i}"><i class="fa-solid fa-trash"></i></button></td>
+      <td><input class="form-control form-control-sm" data-mf="name" data-mi="${i}" value="${m.name}" placeholder="ชื่อ - นามสกุล"></td>
+      <td><input class="form-control form-control-sm" data-mf="pos" data-mi="${i}" value="${m.pos}" placeholder="ตำแหน่ง"></td>
+      <td><input class="form-control form-control-sm" data-mf="agency" data-mi="${i}" value="${m.agency}" placeholder="สังกัด (เช่น กอง/สำนัก/ป.ป.ท. เขต)"></td>
+      <td><input class="form-control form-control-sm" data-mf="role" data-mi="${i}" value="${m.role}" placeholder="หน้าที่"></td>
+      <td class="text-center"><button class="btn btn-sm btn-link text-danger p-0" data-mdel="${i}"><i class="fa-solid fa-trash-can"></i></button></td>
     </tr>`).join('');
-      document.querySelectorAll('#memoMemberTb [data-mf]').forEach(el =>
-        el.addEventListener('input', e => {
-          memoMembers[+e.target.dataset.i][e.target.dataset.mf] = e.target.value; renderMemoDoc();
+      document.querySelectorAll('#memoMemberTb input').forEach(inp =>
+        inp.addEventListener('input', () => {
+          memoMembers[+inp.dataset.mi][inp.dataset.mf] = inp.value;
+          renderMemoDoc();
         }));
       document.querySelectorAll('#memoMemberTb [data-mdel]').forEach(el =>
         el.addEventListener('click', () => { memoMembers.splice(+el.dataset.mdel, 1); renderMemoMembers(); renderMemoDoc(); }));
+      applyReadOnlyLock();
     }
     document.getElementById('btnMemoAdd').addEventListener('click', () => {
       memoMembers.push({ name: '', pos: '', agency: '', role: isSub ? 'อนุกรรมการไต่สวน' : 'องค์คณะ' });
@@ -968,6 +1041,19 @@
       document.getElementById('memoSigHint').textContent = role.id === s.roleId
         ? 'กดปุ่ม "เห็นชอบและลงนาม" ที่แถบด้านล่าง'
         : `ต้องสลับบทบาทเป็น "${s.title}" จึงจะลงนามได้`;
+
+      if (kase.signedBySecgen) {
+        const memoSigBoxEl = document.getElementById('memoSigBox');
+        if (memoSigBoxEl) {
+          memoSigBoxEl.className = 'sig-box signed';
+          memoSigBoxEl.innerHTML = `
+            <i class="fa-solid fa-circle-check fa-2x mb-2" style="color:#16A34A"></i><br>
+            <div class="sig-name">${s.name}</div>
+            <div class="sig-meta">${s.title}</div>
+            <div class="sig-meta" style="color:#16A34A; margin-top:4px;"><i class="fa-solid fa-shield-halved me-1"></i>ลงนามเห็นชอบแล้ว</div>`;
+        }
+      }
+
       renderMemoDoc();
 
       const isSignerViewing = role.id === s.roleId;
@@ -976,7 +1062,9 @@
 
       const btns = [];
       if (isSignerViewing) {
-        btns.push({ act: 'memoSign', label: 'เห็นชอบและลงนาม', icon: 'fa-signature', cls: 'btn-gold' });
+        if (!kase.signedBySecgen) {
+          btns.push({ act: 'memoSign', label: 'เห็นชอบและลงนาม', icon: 'fa-signature', cls: 'btn-gold' });
+        }
       } else {
         btns.push({ act: 'memoDraft', label: 'บันทึกร่าง', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' });
         btns.push({ act: 'send_order', label: 'ส่งออกเพื่อลงนาม', icon: 'fa-paper-plane', cls: 'btn-gold' });
@@ -1128,6 +1216,7 @@
         el.addEventListener('input', e => { amendRows[+e.target.dataset.i][e.target.dataset.af] = e.target.value; renderAmendDoc(); }));
       document.querySelectorAll('#amendTb [data-adel]').forEach(el =>
         el.addEventListener('click', () => { amendRows.splice(+el.dataset.adel, 1); renderAmendTable(); renderAmendDoc(); }));
+      applyReadOnlyLock();
     }
     document.getElementById('btnAmendAdd').addEventListener('click', () => { amendRows.push({}); renderAmendTable(); renderAmendDoc(); });
     document.getElementById('amendType').addEventListener('change', onAmendTypeChange);
@@ -1487,8 +1576,173 @@
         return;
       }
 
-      if (act === 'memoSign') { ECMIS.toastOk('เห็นชอบและลงนามบันทึกเรียบร้อย'); return; }
-      if (act === 'amendSign') { ECMIS.toastOk('ลงนามคำสั่งแก้ไขเรียบร้อย'); return; }
+      if (act === 'memoSign') {
+        const s = MEMO_SIGNER[isSub ? 'sub' : 'base'];
+        const certNo = 'PACC-SECGEN-2569-001';
+        ECMIS.signDialog(
+          document.getElementById('docName').textContent + ' — เรื่องที่ ' + kase.id,
+          `${s.name} — ${s.title}`,
+          certNo
+        ).then(async (res) => {
+          if (!res.isConfirmed) return;
+          const sigData = res.value;
+          const now = new Date();
+          const nowStr = now.toLocaleString('th-TH');
+
+          const memoSigBoxEl = document.getElementById('memoSigBox');
+          if (memoSigBoxEl) {
+            memoSigBoxEl.className = 'sig-box signed';
+            memoSigBoxEl.innerHTML = `
+              ${sigData && sigData.sig ? `<img src="${sigData.sig}" style="max-height:60px; max-width:180px; margin-bottom:6px; object-fit:contain;" alt="ลายเซ็น"><br>` : `<i class="fa-solid fa-circle-check fa-2x mb-2" style="color:#16A34A"></i><br>`}
+              <div class="sig-name">${s.name}</div>
+              <div class="sig-meta">${s.title}</div>
+              <div class="sig-meta" style="color:#16A34A; margin-top:4px;"><i class="fa-solid fa-shield-halved me-1"></i>ลงนามดิจิทัลแล้วเมื่อ ${nowStr}</div>`;
+          }
+
+          if (ECMIS.Model && ECMIS.Model.SignatureStore) {
+            ECMIS.Model.SignatureStore.create({
+              caseId: kase.id,
+              docType: document.getElementById('docName').textContent,
+              signerRole: s.roleId,
+              signerName: `${s.name} — ${s.title}`,
+              method: sigData?.mode || 'cert',
+              signedAt: now.toISOString()
+            });
+          }
+
+          const targetStatus = isSub ? 'PENDING_SIGN_ORDER_CHAIRMAN' : 'UNDER_INVESTIGATION';
+          const fromStatus = kase.status;
+
+          try {
+            if (kase.trr_id && sb) {
+              const updatePayload = {
+                trr_status: ECMIS.STATUS_CODE[targetStatus],
+                trr_signed_secgen: true
+              };
+              const { error } = await sb.from('tbl_res_request')
+                .update(updatePayload)
+                .eq('trr_id', kase.trr_id);
+              if (error) throw error;
+
+              ECMIS.logRequestEvent(kase.trr_id, fromStatus, targetStatus, {
+                type: 'SIGNED',
+                actorRole: 'secgen',
+                data: {
+                  docType: document.getElementById('docName').textContent,
+                  signerName: s.name,
+                  signerTitle: s.title,
+                  method: sigData?.mode || 'cert'
+                }
+              });
+            }
+          } catch (e) {
+            console.error(e);
+            ECMIS.toastWarn('บันทึกสถานะไปยังฐานข้อมูลไม่สำเร็จ: ' + e.message);
+          }
+
+          kase.status = targetStatus;
+          kase.signedBySecgen = true;
+          const memCase = ECMIS.CASES.find(x => x.id === kase.id);
+          if (memCase) {
+            memCase.status = targetStatus;
+            memCase.signedBySecgen = true;
+          }
+
+          await Swal.fire({
+            icon: 'success',
+            title: 'เห็นชอบและลงนามบันทึกเรียบร้อย',
+            html: `<div class="text-start">
+                     สำนวนเรื่องที่ <strong>${kase.id}</strong><br>
+                     ${isSub ? 'ส่งเรื่องให้ <strong>ประธานกรรมการ ป.ป.ท.</strong> ลงนามคำสั่งแต่งตั้ง (ปปท. ๕-๐๒) ต่อไป' : 'บันทึกคำสั่งและส่งต่อเรียบร้อยแล้ว'}
+                   </div>`,
+            confirmButtonColor: '#0F2A62',
+            confirmButtonText: 'ตกลง (กลับหน้ารายการสั่งการ)'
+          });
+
+          location.href = ECMIS.homeHref ? ECMIS.homeHref(role.id) : 'inbox.html';
+        });
+        return;
+      }
+
+      if (act === 'amendSign') {
+        const s = amendSigner();
+        const certNo = s.roleId === 'chairman' ? 'PACC-CHAIRMAN-2569-001' : 'PACC-SECGEN-2569-001';
+        ECMIS.signDialog(
+          document.getElementById('docName').textContent + ' — เรื่องที่ ' + kase.id,
+          `${s.name} — ${s.title}`,
+          certNo
+        ).then(async (res) => {
+          if (!res.isConfirmed) return;
+          const sigData = res.value;
+          const now = new Date();
+          const nowStr = now.toLocaleString('th-TH');
+
+          const amendSigBoxEl = document.getElementById('amendSigBox');
+          if (amendSigBoxEl) {
+            amendSigBoxEl.className = 'sig-box signed';
+            amendSigBoxEl.innerHTML = `
+              ${sigData && sigData.sig ? `<img src="${sigData.sig}" style="max-height:60px; max-width:180px; margin-bottom:6px; object-fit:contain;" alt="ลายเซ็น"><br>` : `<i class="fa-solid fa-circle-check fa-2x mb-2" style="color:#16A34A"></i><br>`}
+              <div class="sig-name">${s.name}</div>
+              <div class="sig-meta">${s.title}</div>
+              <div class="sig-meta" style="color:#16A34A; margin-top:4px;"><i class="fa-solid fa-shield-halved me-1"></i>ลงนามดิจิทัลแล้วเมื่อ ${nowStr}</div>`;
+          }
+
+          if (ECMIS.Model && ECMIS.Model.SignatureStore) {
+            ECMIS.Model.SignatureStore.create({
+              caseId: kase.id,
+              docType: document.getElementById('docName').textContent,
+              signerRole: s.roleId,
+              signerName: `${s.name} — ${s.title}`,
+              method: sigData?.mode || 'cert',
+              signedAt: now.toISOString()
+            });
+          }
+
+          const targetStatus = 'UNDER_INVESTIGATION';
+          const fromStatus = kase.status;
+
+          try {
+            if (kase.trr_id && sb) {
+              const { error } = await sb.from('tbl_res_request')
+                .update({ trr_status: ECMIS.STATUS_CODE[targetStatus] })
+                .eq('trr_id', kase.trr_id);
+              if (error) throw error;
+
+              ECMIS.logRequestEvent(kase.trr_id, fromStatus, targetStatus, {
+                type: 'SIGNED',
+                actorRole: s.roleId,
+                data: {
+                  docType: document.getElementById('docName').textContent,
+                  signerName: s.name,
+                  signerTitle: s.title,
+                  method: sigData?.mode || 'cert'
+                }
+              });
+            }
+          } catch (e) {
+            console.error(e);
+            ECMIS.toastWarn('บันทึกสถานะไปยังฐานข้อมูลไม่สำเร็จ: ' + e.message);
+          }
+
+          kase.status = targetStatus;
+          const memCase = ECMIS.CASES.find(x => x.id === kase.id);
+          if (memCase) memCase.status = targetStatus;
+
+          await Swal.fire({
+            icon: 'success',
+            title: 'ลงนามคำสั่งแก้ไขเรียบร้อย',
+            html: `<div class="text-start">
+                     สำนวนเรื่องที่ <strong>${kase.id}</strong><br>
+                     บันทึกคำสั่งแก้ไขเพิ่มเติมเรียบร้อยแล้ว
+                   </div>`,
+            confirmButtonColor: '#0F2A62',
+            confirmButtonText: 'ตกลง (กลับหน้ารายการสั่งการ)'
+          });
+
+          location.href = ECMIS.homeHref ? ECMIS.homeHref(role.id) : 'inbox.html';
+        });
+        return;
+      }
     }
 
     ECMIS.initRichTextBox(document.getElementById('allegationBox'), {
@@ -1634,14 +1888,14 @@
       if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
     } catch (e) { }
 
-    const mayEdit = ECMIS.can('order24.draft', role.id) || ECMIS.canEditMaster(role.id) || ['affairs', 'secgen', 'chairman'].includes(role.id);
+    const mayEdit = !isReadOnlyView && (ECMIS.can('order24.draft', role.id) || ECMIS.canEditMaster(role.id) || role.id === 'affairs');
     ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: mayEdit });
 
     /* init */
     renderMembers(); renderRules();
     renderMemoMembers();
     renderAmendTable();
-    setMode('appoint');
+    setMode(determineInitialMode());
 
     /* โหลดข้อมูลจริงจาก Supabase แบบ background หลังเรนเดอร์ด้วย mock data ไปก่อนแล้ว (เหมือน
        res/inbox.html) — ถ้าได้ข้อมูลจริงมา mutate kase object เดิม (คนละ binding แต่ object เดียวกัน
@@ -1656,6 +1910,8 @@
       }
       if (!live) return;
       Object.assign(kase, live);
+      isSub = !!kase.subCommittee || resCode === 'ACCEPT_S24P3' || kase.code === 'ACCEPT_S24P3' || (kase.resolutionData && kase.resolutionData.code === 'ACCEPT_S24P3');
+      refreshSignerConfig();
 
       document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status);
       const allegationBoxEl = document.getElementById('allegationBox');
@@ -1664,7 +1920,7 @@
       renderMembers(); renderRules();
       renderMemoMembers();
       renderAmendTable();
-      setMode(currentMode);
+      setMode(determineInitialMode());
     })();
   </script>
 </body>
