@@ -386,6 +386,13 @@ document.getElementById('stOptSigned').textContent = copy.stDone;
 document.getElementById('stOptReturned').textContent = copy.stReturned;
 document.getElementById('bulkBtnText').textContent = copy.bulkBtn;
 
+/* ประธานฯ ไม่มีสิทธิ์สั่งการกลุ่ม (ดูคอมเมนต์ใน row()) — ซ่อน master checkbox ของหัวตารางไปด้วย
+   เพราะไม่มี checkbox ย่อยในแถวให้ติ๊กแล้ว ปุ่ม Bulk Action จะไม่ถูกใช้งานเลยสำหรับบทบาทนี้ */
+if (role.id === 'chairman') {
+  const chkAllEl = document.getElementById('chkAll');
+  if (chkAllEl) chkAllEl.style.visibility = 'hidden';
+}
+
 document.getElementById('myRoleLabel').textContent = `บทบาท: ${role.title}`;
 
 if(ECMIS.isUpstreamRole(role.id)){
@@ -666,9 +673,13 @@ function row(c){
 
     const typeTag = typeBadge(c, is72);
 
+    /* ประธานฯ ต้องพิจารณาสั่งการ/ลงนามทีละสำนวนโดยเปิดจากหน้ารายการเข้าไปยังหน้าเอกสารเฉพาะเรื่องเสมอ
+       (chairman-agenda.html / order.html / ruling-report.html / urgent-agenda.html) — ไม่แสดง checkbox
+       เพื่อไม่ให้มีทางลัด Bulk Action ที่ข้ามการอ่านเอกสารและลงนามดิจิทัลรายสำนวน (เดิม bulk เปลี่ยน
+       สถานะตรงไป IN_SCREENING ซึ่งข้ามหน้าลงนามไปเลยและสถานะปลายทางไม่ตรงกับที่หน้าลงนามจริงใช้) */
     return `<tr>
       <td class="text-center">
-        ${isActionable ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem"></i>'}
+        <i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="ต้องพิจารณาสั่งการทีละรายการจากหน้ารายการ ไม่มีสิทธิ์สั่งการกลุ่ม"></i>
       </td>
       <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
       <td>${typeTag}</td>
@@ -881,7 +892,6 @@ document.getElementById('btnBulkApprove')?.addEventListener('click', () => {
     if (!res.isConfirmed) return;
     const transitionMap = {
       'PENDING_SECGEN': c => c.urgent ? 'PENDING_CHAIRMAN' : 'IN_SCREENING',
-      'PENDING_CHAIRMAN': () => 'IN_SCREENING',
       'IN_SCREENING': () => 'AGENDA_SET',
       'AGENDA_SET': () => 'IN_MEETING',
       'IN_MEETING': () => 'RESOLVED_PENDING',
