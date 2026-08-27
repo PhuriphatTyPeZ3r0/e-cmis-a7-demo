@@ -1481,11 +1481,26 @@
           if (!checkCompositionOrWarn()) return;
         }
 
+        const orderNoVal = document.getElementById('orderNo').value.trim();
+        const orderDateVal = document.getElementById('orderDate').value.trim();
+        const caseOriginVal = document.getElementById('caseOrigin')?.value || 'MISCONDUCT';
+
         (async () => {
           try {
             if (kase.trr_id && sb) {
+              const currentResData = kase.resolutionData || (kase.code ? { code: kase.code, label: kase.label } : {});
+              const updatedResData = Object.assign({}, currentResData, {
+                orderNo: orderNoVal,
+                orderDate: orderDateVal,
+                caseOrigin: caseOriginVal,
+                order24Members: members,
+                orderMode: currentMode
+              });
               const { error } = await sb.from('tbl_res_request')
-                .update({ trr_status: ECMIS.STATUS_CODE[targetStatus] }).eq('trr_id', kase.trr_id);
+                .update({
+                  trr_status: ECMIS.STATUS_CODE[targetStatus],
+                  trr_resolution_data: updatedResData
+                }).eq('trr_id', kase.trr_id);
               if (error) throw error;
             }
           } catch (e) {
@@ -1493,8 +1508,14 @@
             ECMIS.toastWarn('บันทึกสถานะไปยังฐานข้อมูลไม่สำเร็จ (จะยังอัปเดตหน้าจอนี้ต่อไปก่อน): ' + e.message);
           }
           kase.status = targetStatus;
+          kase.orderNo = orderNoVal;
+          kase.orderDate = orderDateVal;
           const memCase = ECMIS.CASES.find(x => x.id === kase.id);
-          if (memCase) memCase.status = targetStatus;
+          if (memCase) {
+            memCase.status = targetStatus;
+            memCase.orderNo = orderNoVal;
+            memCase.orderDate = orderDateVal;
+          }
           ECMIS.toastOk(`ส่ง${docWord}ให้ ${targetSignerTitle} ลงนามเรียบร้อย`);
           setTimeout(() => location.href = ECMIS.homeHref(role.id), 1200);
         })();
@@ -1917,10 +1938,40 @@
       const allegationBoxEl = document.getElementById('allegationBox');
       if (allegationBoxEl) allegationBoxEl.innerHTML = kase.allegation ? `<p>${kase.allegation}</p>` : '';
 
+      // ดึงเลขที่คำสั่งและวันที่จากฐานข้อมูล / ค่าที่บันทึกไว้
+      const savedOrderNo = kase.orderNo || (kase.resolutionData && kase.resolutionData.orderNo) || '';
+      const orderNoEl = document.getElementById('orderNo');
+      if (savedOrderNo && orderNoEl) {
+        orderNoEl.value = savedOrderNo;
+      } else if (orderNoEl && !orderNoEl.value && (kase.status === 'PENDING_SIGN_ORDER_SECGEN' || kase.status === 'PENDING_SIGN_ORDER_CHAIRMAN')) {
+        // Fallback กรณีเป็นสำนวนที่ส่งมารอลงนามแต่ยังไม่มีเลขที่คำสั่ง ป้องกันทางตัน
+        const rawNum = kase.id ? parseInt(kase.id.split('/')[0], 10) : 101;
+        const fallbackNo = `${((rawNum % 100) + 130)}/2569`;
+        orderNoEl.value = fallbackNo;
+        kase.orderNo = fallbackNo;
+      }
+
+      const savedOrderDate = kase.orderDate || (kase.resolutionData && kase.resolutionData.orderDate) || '';
+      const orderDateEl = document.getElementById('orderDate');
+      if (savedOrderDate && orderDateEl) {
+        orderDateEl.value = savedOrderDate;
+      }
+
+      const savedOrigin = kase.caseOrigin || (kase.resolutionData && kase.resolutionData.caseOrigin) || '';
+      const originEl = document.getElementById('caseOrigin');
+      if (savedOrigin && originEl) {
+        originEl.value = savedOrigin;
+      }
+
+      if (kase.order24Members && Array.isArray(kase.order24Members) && kase.order24Members.length) {
+        members = kase.order24Members;
+      }
+
       renderMembers(); renderRules();
       renderMemoMembers();
       renderAmendTable();
       setMode(determineInitialMode());
+      if (typeof renderDoc === 'function') renderDoc();
     })();
   </script>
 </body>
