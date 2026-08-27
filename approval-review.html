@@ -124,11 +124,6 @@
                   <option value="คณะที่ 2">คณะที่ 2 (กลุ่มงานสนับสนุนฯ 2)</option>
                 </select>
               </div>
-
-              <div id="g1reasonBox" class="mt-2 d-none">
-                <label class="form-label field-req">เหตุผลที่ถือเป็นเรื่องยุ่งยากซับซ้อน</label>
-                <textarea class="form-control" id="g1reason" rows="2"></textarea>
-              </div>
               <hr>
             </div>
 
@@ -518,7 +513,7 @@
         const resBody = document.getElementById('supportSubResultBody');
         if (resCard && resBody) {
           resCard.classList.remove('d-none');
-          const teamLbl = (kase.supportTeam === 'TEAM2' || kase.supportTeam72 === 'TEAM2') ? 'คณะที่ 2' : 'คณะที่ 1';
+          const teamLbl = (kase.subCommittee && kase.subCommittee.includes('2')) || kase.supportTeam === 'TEAM2' || kase.supportTeam72 === 'TEAM2' ? 'คณะที่ 2' : 'คณะที่ 1';
           const dec = kase.supportDecision || 'AGREE';
           const decBadge = dec === 'AGREE'
             ? '<span class="badge bg-success">เห็นพ้องกับความเห็นเดิม (มีมูลความผิด)</span>'
@@ -553,33 +548,32 @@
         } else {
           document.getElementById('m28Card').classList.add('d-none');
         }
-        document.getElementById('g1Box').classList.remove('d-none');
         document.getElementById('signCard').classList.remove('d-none');
 
         const hasSupportOpinion = !!(kase.supportOpinion || kase.supportOpinion72 || kase.supportDecision);
+        const myOpinionBoxEl = document.getElementById('myOpinionBox');
+        const myOpinion = document.getElementById('myOpinion');
+
         if (hasSupportOpinion) {
-          const g1yes = document.getElementById('g1yes');
-          const g1no = document.getElementById('g1no');
-          if (g1yes) { g1yes.checked = true; g1yes.disabled = true; }
-          if (g1no) { g1no.disabled = true; }
-          const g1reasonBox = document.getElementById('g1reasonBox');
-          if (g1reasonBox) g1reasonBox.classList.remove('d-none');
-          const g1reason = document.getElementById('g1reason');
-          if (g1reason) {
-            g1reason.readOnly = true;
-            if (!g1reason.value.trim()) g1reason.value = kase.g1Reason || (kase.resolutionData && kase.resolutionData.g1Reason) || 'เลขาธิการฯ มอบหมายให้คณะอนุกรรมการสนับสนุนเลขาธิการฯ กลั่นกรองแล้ว';
+          // ผ่านการกลั่นกรองจากคณะอนุสนับสนุนฯ แล้ว: ซ่อน g1Box ไม่ต้องเลือกซ้ำ
+          document.getElementById('g1Box').classList.add('d-none');
+
+          // แสดงช่องความเห็นเลขาธิการฯ และเปิดให้พิมพ์/แก้ไขได้อิสระ
+          if (myOpinionBoxEl) {
+            myOpinionBoxEl.classList.remove('d-none');
+            const lbl = myOpinionBoxEl.querySelector('label');
+            if (lbl) lbl.textContent = 'ความเห็นของเลขาธิการ ป.ป.ท.';
           }
-          const subSelectBox = document.getElementById('supportSubSelectBox');
-          if (subSelectBox) subSelectBox.classList.remove('d-none');
-          const subSelect = document.getElementById('supportSubSelect');
-          if (subSelect) {
-            subSelect.disabled = true;
-            if (kase.subCommittee) subSelect.value = kase.subCommittee;
+          if (myOpinion) {
+            myOpinion.disabled = false;
+            myOpinion.readOnly = false;
+            if (!myOpinion.value.trim() || myOpinion.value.startsWith('เป็นเรื่องยุ่งยากซับซ้อน')) {
+              myOpinion.value = 'ตรวจทานรายงานและผลการกลั่นกรองของคณะอนุกรรมการสนับสนุนเลขาธิการฯ แล้ว เห็นชอบตามผลการกลั่นกรอง เห็นควรเสนอประธานกรรมการ ป.ป.ท. สั่งบรรจุวาระการประชุม';
+            }
           }
-          const myOpinion = document.getElementById('myOpinion');
-          if (myOpinion && !myOpinion.value.trim()) {
-            myOpinion.value = 'ตรวจทานรายงานและผลการกลั่นกรองของคณะอนุกรรมการสนับสนุนเลขาธิการฯ แล้ว เห็นชอบตามผลการกลั่นกรอง เห็นควรเสนอประธานกรรมการ ป.ป.ท. สั่งบรรจุวาระการประชุม';
-          }
+        } else {
+          // ยังไม่ผ่านอนุสนับสนุนฯ: แสดง g1Box ให้เลขาธิการฯ เลือกซับซ้อนหรือไม่
+          document.getElementById('g1Box').classList.remove('d-none');
         }
       }
       if (role.id === 'support_sub') document.getElementById('g2Box').classList.remove('d-none');
@@ -613,27 +607,41 @@
         if (!g1yes) return;
         const isComplex = g1yes.checked;
         const myOpinion = document.getElementById('myOpinion');
+        const myOpinionBoxEl = document.getElementById('myOpinionBox');
         const supportBox = document.getElementById('supportSubSelectBox');
-        const g1reasonBox = document.getElementById('g1reasonBox');
         const subSelect = document.getElementById('supportSubSelect');
+        const hasSupportOpinion = !!(kase.supportOpinion || kase.supportOpinion72 || kase.supportDecision);
 
-        if (g1reasonBox) g1reasonBox.classList.toggle('d-none', !isComplex);
+        if (hasSupportOpinion) {
+          // ผ่านการกลั่นกรองจากคณะอนุสนับสนุนฯ แล้ว: เปิดช่องความเห็นให้เลขาธิการฯ พิมพ์ได้เสมอ
+          if (supportBox) supportBox.classList.add('d-none');
+          if (myOpinionBoxEl) myOpinionBoxEl.classList.remove('d-none');
+          if (myOpinion) myOpinion.disabled = false;
+          return;
+        }
+
         if (supportBox) supportBox.classList.toggle('d-none', !isComplex);
 
-        if (myOpinion) {
+        if (role.id === 'secgen') {
           if (isComplex) {
-            const subVal = subSelect ? subSelect.value : '';
-            const subText = subVal ? ` (${subVal})` : '';
-            myOpinion.value = `เป็นเรื่องยุ่งยากซับซ้อน เสนอคณะอนุกรรมการสนับสนุนเลขาธิการฯ${subText}`;
-            myOpinion.disabled = true;
-            myOpinion.classList.remove('is-invalid-ecmis');
-            const valMsg = document.querySelector('.val-msg[data-for="myOpinion"]');
-            if (valMsg) valMsg.classList.remove('show');
-          } else {
-            if (myOpinion.value.startsWith("เป็นเรื่องยุ่งยากซับซ้อน เสนอคณะอนุกรรมการสนับสนุนเลขาธิการฯ")) {
-              myOpinion.value = "";
+            // ตอนเลขาส่งให้อนุสนับสนุน ไม่ต้องมีส่วนเหตุผลซับซ้อน และซ่อนช่องความเห็น
+            if (myOpinionBoxEl) myOpinionBoxEl.classList.add('d-none');
+            if (myOpinion) {
+              const subVal = subSelect ? subSelect.value : '';
+              const subText = subVal ? ` (${subVal})` : '';
+              myOpinion.value = `เป็นเรื่องยุ่งยากซับซ้อน เสนอคณะอนุกรรมการสนับสนุนเลขาธิการฯ${subText}`;
+              myOpinion.disabled = false;
+              myOpinion.classList.remove('is-invalid-ecmis');
             }
-            myOpinion.disabled = false;
+          } else {
+            // หากไม่ซับซ้อน: ให้แสดงช่องความเห็นให้เลขาธิการฯ พิมพ์ก่อนลงนามเสนอประธานฯ
+            if (myOpinionBoxEl) myOpinionBoxEl.classList.remove('d-none');
+            if (myOpinion) {
+              if (myOpinion.value.startsWith('เป็นเรื่องยุ่งยากซับซ้อน เสนอคณะอนุกรรมการสนับสนุนเลขาธิการฯ')) {
+                myOpinion.value = '';
+              }
+              myOpinion.disabled = false;
+            }
           }
         }
       }
@@ -863,7 +871,10 @@
 
       function requireOpinion() {
         const g1yes = document.getElementById('g1yes');
-        if (g1yes && g1yes.checked) {
+        const hasSupportOpinion = !!(kase.supportOpinion || kase.supportOpinion72 || kase.supportDecision);
+
+        // กรณีส่งมอบหมายให้อนุสนับสนุนฯ: ตรวจสอบเฉพาะคณะอนุกรรมการสนับสนุนฯ ที่เลือก
+        if (role.id === 'secgen' && g1yes && g1yes.checked && !hasSupportOpinion) {
           const subSelect = document.getElementById('supportSubSelect');
           if (subSelect && !subSelect.value) {
             subSelect.classList.add('is-invalid-ecmis');
@@ -872,17 +883,18 @@
           } else if (subSelect) {
             subSelect.classList.remove('is-invalid-ecmis');
           }
+          return true;
         }
 
         const el = document.getElementById('myOpinion');
         const valMsg = document.querySelector('.val-msg[data-for="myOpinion"]');
-        if (el.value.trim().length === 0) {
+        if (el && el.value.trim().length === 0) {
           el.dataset.touched = '1';
           el.classList.add('is-invalid-ecmis');
           if (valMsg) valMsg.classList.add('show');
           ECMIS.toastWarn('กรุณาระบุความเห็นก่อนดำเนินการ');
           return false;
-        } else {
+        } else if (el) {
           el.classList.remove('is-invalid-ecmis');
           if (valMsg) valMsg.classList.remove('show');
         }
@@ -1025,11 +1037,6 @@
             if (!r.isConfirmed) return;
             const g1yes = document.getElementById('g1yes');
             if (g1yes) g1yes.checked = true;
-            const grBox = document.getElementById('g1reasonBox');
-            if (grBox) grBox.classList.remove('d-none');
-            const gr = document.getElementById('g1reason');
-            if (gr && !gr.value.trim()) gr.value = 'เลขาธิการฯ พิจารณาแล้วเห็นควรมอบหมายให้คณะอนุกรรมการสนับสนุนฯ ตรวจสอบก่อน';
-            const grVal = gr ? gr.value.trim() : '';
 
             // Change status to IN_SUPPORT_SUB directly without signing
             try {
@@ -1037,10 +1044,8 @@
                 status: 'IN_SUPPORT_SUB',
                 subCommittee: chosenSub,
                 complex: true,
-                g1Reason: grVal,
                 resolutionData: {
                   subCommittee: chosenSub,
-                  g1Reason: grVal,
                   assignedBy: 'secgen',
                   assignedAtIso: new Date().toISOString()
                 }
@@ -1048,7 +1053,7 @@
               await ECMIS.logRequestEvent(kase.trr_id, kase.status, 'IN_SUPPORT_SUB', {
                 type: 'ASSIGN_SUPPORT_SUB',
                 actorRole: 'secgen',
-                data: { subCommittee: chosenSub, reason: grVal }
+                data: { subCommittee: chosenSub }
               });
             } catch (err) {
               console.error('มอบหมายไม่สำเร็จ:', err);
@@ -1185,9 +1190,6 @@
           }
 
           const complex = g1Yes();
-          if (complex && !g1.diverged && !document.getElementById('g1reason').value.trim()) {
-            ECMIS.toastWarn('กรุณาระบุเหตุผลที่ถือเป็นเรื่องยุ่งยากซับซ้อน'); return;
-          }
 
           const SEC = { name: 'นายอภิชาติ สุจริตกุล', title: 'เลขาธิการคณะกรรมการ ป.ป.ท.' };
           const needsSequential = !complex && !!kase.urgent;
@@ -1307,7 +1309,12 @@
       if (role.id === 'secgen') {
         document.querySelector('#opinionCard .card-header').innerHTML =
           '<i class="fa-solid fa-scale-unbalanced"></i> การพิจารณาของเลขาธิการฯ';
-        if (myOpinionBoxEl) myOpinionBoxEl.classList.add('d-none');
+        const hasSupportOpinion = !!(kase.supportOpinion || kase.supportOpinion72 || kase.supportDecision);
+        if (hasSupportOpinion) {
+          if (myOpinionBoxEl) myOpinionBoxEl.classList.remove('d-none');
+        } else {
+          if (myOpinionBoxEl) myOpinionBoxEl.classList.add('d-none');
+        }
         if (returnedCardEl) returnedCardEl.classList.add('d-none');
       } else {
         if (myOpinionBoxEl) myOpinionBoxEl.classList.toggle('d-none', isReturned);
