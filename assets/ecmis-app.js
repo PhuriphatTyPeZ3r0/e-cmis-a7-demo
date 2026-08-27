@@ -407,6 +407,7 @@ function isCase72(kase){
   return !!kase && (
     kase.procType === '7.2' ||
     kase.docType === 'RULING' ||
+    String(kase.status || '').endsWith('_72') ||
     String(kase.id || '').includes('1119/') ||
     String(kase.id || '').includes('1396/') ||
     String(kase.id || '').includes('1402/')
@@ -1303,6 +1304,54 @@ const CASES = [
     meetingNo:'33/2569', agendaNo:'5.4', meetingDate:'2569-06-24',
     quorumOk72:true, resolution72:'GUILTY_72',
     docType:'RULING', signPhase:'COMPLETE'
+  },
+  {
+    id:'1150/2566',
+    subject:'รายงานการไต่สวนข้อเท็จจริงเพื่อวินิจฉัยชี้มูล กรณีกล่าวหาเจ้าหน้าที่จัดซื้อจัดจ้างพัสดุครุภัณฑ์คอมพิวเตอร์โดยมิชอบ',
+    legalBase:'ม.24 วรรคท้าย',
+    status:'PENDING_SECGEN_72',
+    procType:'7.2',
+    owner:'นายสมชาย ใจซื่อ (นิติกรชำนาญการ)',
+    ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 1',
+    complainant:'บัตรสนเท่ห์/เบาะแสภายในสำนักงาน (ผู้ร้อง)',
+    accused:[
+      { no:1, name:'นายเกรียงไกร สุขเกษม', pos:'หัวหน้าเจ้าหน้าที่พัสดุ', idcard:'3-1002-0xxxx-xx-x', agency:'สำนักงาน ป.ป.ท.' },
+      { no:2, name:'นางรัตนา ชื่นใจ', pos:'เจ้าพนักงานพัสดุชำนาญงาน', idcard:'3-1005-0xxxx-xx-x', agency:'สำนักงาน ป.ป.ท.' }
+    ],
+    allegation:'ร่วมกันจัดทำเอกสารจัดซื้อจัดจ้างพัสดุครุภัณฑ์คอมพิวเตอร์อันเป็นเท็จ เอื้อประโยชน์ให้แก่ผู้เสนอราคารายหนึ่ง และตรวจรับพัสดุทั้งที่อุปกรณ์ไม่ครบถ้วนตามสัญญา',
+    receivedDate:'2569-05-10', deadline60:'2569-07-09', deadline2y:'2571-05-10', prescription:'2573-05-10',
+    docRef:'ปป 0021/0722 ลงวันที่ 10 พฤษภาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:3, slaLimit:15, subCommittee:'คณะที่ 2',
+    docType:'RULING', signPhase:'IN_PROGRESS',
+    chainOpinions:[
+      { roleId:'section_head', type:'ACCEPT', note:'ตรวจสอบสำนวนไต่สวนข้อเท็จจริงเพื่อวินิจฉัยชี้มูลแล้วเห็นชอบตามเสนอ', date:'2569-05-12' },
+      { roleId:'director', type:'ACCEPT', note:'พิจารณาแล้วเห็นชอบตามรายงานการไต่สวนเพื่อวินิจฉัยชี้มูล เสนอรองเลขาธิการฯ', date:'2569-05-14' },
+      { roleId:'deputy', type:'ACCEPT', note:'เห็นชอบตามเสนอ เสนอเลขาธิการคณะกรรมการ ป.ป.ท. เพื่อโปรดพิจารณา', date:'2569-05-15' }
+    ]
+  },
+  {
+    id:'กจ.107/2569',
+    subject:'ขอความเห็นชอบร่างระเบียบคณะกรรมการ ป.ป.ท. ว่าด้วยการคุ้มครองพยานในคดีทุจริตในภาครัฐ พ.ศ. .... (กิจกรรม 7.3)',
+    legalBase:'ระเบียบฯ',
+    status:'PENDING_SECGEN',
+    procType:'7.3',
+    generalType:'POLICY_INQUIRY_73',
+    owner:'กลุ่มงานนโยบายและยุทธศาสตร์',
+    ownerOrg:'กองกฎหมายและระเบียบ',
+    complainant:'-',
+    accused:[],
+    allegation:'เนื่องด้วยระเบียบฉบับเดิมบังคับใช้มาเป็นเวลานาน จึงเห็นควรปรับปรุงหลักเกณฑ์การคุ้มครองพยานให้สอดคล้องกับมาตรฐานสากลและเพิ่มประสิทธิภาพการปฏิบัติงาน จึงเสนอเพื่อโปรดพิจารณาให้ความเห็นชอบ',
+    receivedDate:'2569-05-18', deadline60:'2569-07-17', deadline2y:'2571-05-18', prescription:'-',
+    docRef:'กจ 0001/0107 ลงวันที่ 18 พฤษภาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:2, slaLimit:5, subCommittee:'-',
+    docType:'GENERAL', signPhase:'IN_PROGRESS',
+    chainOpinions:[
+      { roleId:'section_head', type:'ACCEPT', note:'ตรวจสอบร่างระเบียบและความจำเป็นแล้ว เห็นชอบตามเสนอ', date:'2569-05-19' },
+      { roleId:'director', type:'ACCEPT', note:'พิจารณาแล้วเห็นชอบ เสนอรองเลขาธิการฯ พิจารณา', date:'2569-05-20' },
+      { roleId:'deputy', type:'ACCEPT', note:'เห็นชอบ เสนอเลขาธิการคณะกรรมการ ป.ป.ท. ลงนามเสนอประธานฯ บรรจุวาระต่อไป', date:'2569-05-21' }
+    ]
   }
 ];
 
