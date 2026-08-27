@@ -648,11 +648,21 @@ function row(c){
     else if (c.status === 'PENDING_SIGN_ORDER_CHAIRMAN') catBadge = `<span class="meet-badge meet-affairs-ruling"><i class="fa-solid fa-file-signature me-1"></i>รอลงนามคำสั่ง ม.24</span>`;
     else catBadge = `<span class="meet-badge meet-pending"><i class="fa-solid fa-hourglass-half me-1"></i>รอสั่งการวาระปกติ</span>`;
 
-    /* PENDING_SIGN_ORDER_CHAIRMAN ไปที่ order.html ตรงๆ (หน้าจัดทำ/ลงนามคำสั่ง ม.24 จริง) ไม่ใช่
-       chairman-agenda.html (หน้าสั่งการ/บรรจุวาระ — คนละงานกัน) */
-    const chairTarget = c.status === 'PENDING_SIGN_ORDER_CHAIRMAN'
-      ? `order.html?case=${encodeURIComponent(c.id)}`
-      : `chairman-agenda.html?case=${encodeURIComponent(c.id)}`;
+    /* กำหนดหน้าเป้าหมายสำหรับประธานฯ ให้ตรงกับงานแต่ละประเภท:
+       - PENDING_SIGN_ORDER_CHAIRMAN -> order.html (จัดทำ/ลงนามคำสั่ง ม.24)
+       - PENDING_SIGN_RULING_72 -> ruling-report.html (รายงานวินิจฉัยชี้มูล 7.2)
+       - PENDING_CHAIRMAN_URGENT_72 -> urgent-agenda.html (บรรจุวาระด่วน 7.2)
+       - PENDING_CHAIRMAN / PENDING_URGENT -> chairman-agenda.html (สั่งการและบรรจุวาระปกติ) */
+    let chairTarget;
+    if (c.status === 'PENDING_SIGN_ORDER_CHAIRMAN') {
+      chairTarget = `order.html?case=${encodeURIComponent(c.id)}`;
+    } else if (c.status === 'PENDING_SIGN_RULING_72') {
+      chairTarget = `ruling-report.html?case=${encodeURIComponent(c.id)}`;
+    } else if (c.status === 'PENDING_CHAIRMAN_URGENT_72') {
+      chairTarget = `urgent-agenda.html?case=${encodeURIComponent(c.id)}`;
+    } else {
+      chairTarget = `chairman-agenda.html?case=${encodeURIComponent(c.id)}`;
+    }
 
     const typeTag = typeBadge(c, is72);
 
@@ -960,6 +970,9 @@ document.getElementById('btnClearFilter').addEventListener('click', () => {
   try {
     const live = await loadCasesFromSupabase();
     CASES = (live && live.length) ? live : ECMIS.CASES.slice();
+    if (live && live.length && typeof ECMIS.cacheLiveCases === 'function') {
+      ECMIS.cacheLiveCases(live);
+    }
   } catch (err) {
     console.error('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
     CASES = ECMIS.CASES.slice();

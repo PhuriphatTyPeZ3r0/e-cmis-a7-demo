@@ -1899,7 +1899,83 @@ function slaLabel(used, limit){
   if(used > limit) return `เกินกำหนด ${used - limit} วัน`;
   return `ใช้ไป ${used}/${limit} วัน`;
 }
-function getCase(id){ return CASES.find(c => c.id === id); }
+function getCase(id){
+  if (!id) return undefined;
+  let found = CASES.find(c => c.id === id);
+  if (found) return found;
+
+  // Check localStorage cache
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const cached = JSON.parse(localStorage.getItem('ecmis_live_cases') || '[]');
+      if (Array.isArray(cached)) {
+        found = cached.find(c => c.id === id);
+        if (found) {
+          CASES.push(found);
+          return found;
+        }
+      }
+    } catch (e) {}
+  }
+  // Check sessionStorage cache
+  if (typeof sessionStorage !== 'undefined') {
+    try {
+      const cached = JSON.parse(sessionStorage.getItem('ecmis_live_cases') || '[]');
+      if (Array.isArray(cached)) {
+        found = cached.find(c => c.id === id);
+        if (found) {
+          CASES.push(found);
+          return found;
+        }
+      }
+    } catch (e) {}
+  }
+
+  // Synchronous XHR fallback to Supabase if in browser
+  if (typeof XMLHttpRequest !== 'undefined' && typeof window !== 'undefined' && typeof supabaseRowToCase === 'function') {
+    try {
+      const xhr = new XMLHttpRequest();
+      const url = `${DEFAULT_SUPABASE_URL}/rest/v1/tbl_res_request?select=*,tbl_cmp_case!inner(*,tbl_cmp_case_accused(*))&tbl_cmp_case.tcc_no=eq.${encodeURIComponent(id)}&is_deleted=eq.false`;
+      xhr.open('GET', url, false);
+      xhr.setRequestHeader('apikey', DEFAULT_SUPABASE_KEY);
+      xhr.setRequestHeader('Authorization', `Bearer ${DEFAULT_SUPABASE_KEY}`);
+      xhr.send();
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const rows = JSON.parse(xhr.responseText);
+        if (rows && rows[0]) {
+          found = supabaseRowToCase(rows[0]);
+          if (found) {
+            CASES.push(found);
+            return found;
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  return undefined;
+}
+
+function cacheLiveCases(list) {
+  if (!Array.isArray(list) || !list.length) return;
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('ecmis_live_cases', JSON.stringify(list));
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('ecmis_live_cases', JSON.stringify(list));
+    }
+  } catch (e) {}
+  list.forEach(c => {
+    if (!c || !c.id) return;
+    const idx = CASES.findIndex(x => x.id === c.id);
+    if (idx >= 0) {
+      Object.assign(CASES[idx], c);
+    } else {
+      CASES.push(c);
+    }
+  });
+}
 /* ใช้แทนการ guard ซ้ำ ๆ ในแต่ละหน้า: ถ้าไม่พบสำนวนตาม id ที่ระบุ จะแจ้งเตือนด้วย
    Flash Toast แล้วพากลับหน้าหลักของบทบาทปัจจุบันทันที (รูปแบบเดียวกับ Page Guard
    ใน renderShell()) — หน้าที่เรียกใช้ยังต้องเช็ก `if (!kase) return;` ต่อเอง
@@ -5687,7 +5763,21 @@ function renderBackButton(opts) {
   return btn;
 }
 
-global.ECMIS = {
+// Merge cached live cases on startup if available
+if (typeof localStorage !== 'undefined') {
+    try {
+      const cached = JSON.parse(localStorage.getItem('ecmis_live_cases') || '[]');
+      if (Array.isArray(cached)) {
+        cached.forEach(c => {
+          if (c && c.id && !CASES.find(x => x.id === c.id)) {
+            CASES.push(c);
+          }
+        });
+      }
+    } catch (e) {}
+  }
+
+  global.ECMIS = {
   ROLES, STATUS, STATUS_CODE, CODE_STATUS, STATUS_STEP, FLOW_STEPS, APPROVAL_CHAIN,
   buildChainOpinions, supabaseRowToCase, toBuddhistFakeIso, addDaysToDateStr, addYearsToDateStr,
   upcomingDeadlines, pageForCase,
@@ -5705,7 +5795,7 @@ global.ECMIS = {
   UPSTREAM_CHAIN, isUpstreamRole, isUpstreamCase, isCase72, PAGE_FOR_72, pageForCase72, pageForCaseByStatus, homeHref, resolvePage,
   PAGE_PERMISSIONS, canAccessPage, inResFolder, assetUrl, getSupabaseClient, logRequestEvent, updateCaseStatus,
   PERM_DEFS, can, canEditMaster, canViewCase,
-  thaiDate, thaiDayName, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, requireCase, getRole, roleIdForLogin, LOGIN_ALLOWED_ROLE_IDS,
+  thaiDate, thaiDayName, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, requireCase, cacheLiveCases, getRole, roleIdForLogin, LOGIN_ALLOWED_ROLE_IDS,
   addBusinessDays, businessDaysBetween, resolutionSlaInfo, SUBCOMMITTEE_ROSTER,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   isAuthed, currentUsername, logout,
