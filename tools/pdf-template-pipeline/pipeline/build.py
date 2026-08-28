@@ -241,6 +241,149 @@ def _mergefield_html(text: str, labels: dict) -> str:
     return "".join(parts)
 
 
+# ---------------------------------------------------------------------------
+# semantic line roles (for porting into order.html's .doc-paper markup)
+# ---------------------------------------------------------------------------
+NUM_HEAD_RE = re.compile(r"^\s*[๐-๙0-9]+[.．]")
+MEMO_HDR_RE = re.compile(r"^\s*(ที่|วันที่|ส่วนราชการ|เรื่อง|เรียน)\b")
+SIGN_LINE_RE = re.compile(r"^\s*\(.*\)\s*$")
+
+
+def _line_role(text: str, align: str, prev_role: str) -> str:
+    """Heuristic map: a PDF text line -> an order.html .doc-paper class role.
+    Roles: title | memo-hdr | h | sign | indent
+    Overridable per line via structure-<doc>.md."""
+    t = text.strip()
+    if not t:
+        return "gap"
+    if t == "บันทึกข้อความ":
+        return "title"
+    if MEMO_HDR_RE.match(t):
+        return "memo-hdr"
+    if NUM_HEAD_RE.match(t) and len(t) <= 40:
+        return "h"
+    if SIGN_LINE_RE.match(t) or t in ("ลงนามแล้ว", "ร้อยเอก"):
+        return "sign"
+    if align == "center" and prev_role in ("sign", "gap", "title"):
+        return "sign"
+    return "indent"
+
+
+def _roles_for(lines, out_dir: Path, doc_name: str) -> list[str]:
+    """Guess a role per line, then apply overrides from structure-<doc>.md if
+    present. Always (re)writes structure-<doc>.md so a human can correct it."""
+    guessed: list[str] = []
+    prev = "gap"
+    for align, text in lines:
+        r = _line_role(text, align, prev)
+        guessed.append(r)
+        if r != "gap":
+            prev = r
+
+    override_path = out_dir / f"structure-{doc_name}.md"
+    roles = list(guessed)
+    if override_path.exists():
+        ov: dict[int, str] = {}
+        for ln in override_path.read_text(encoding="utf-8").splitlines():
+            m = re.match(
+                r"^\s*\|?\s*(\d+)\s*\|\s*(title|memo-hdr|h|sign|indent|gap)\s*\|",
+                ln)
+            if m:
+                ov[int(m.group(1))] = m.group(2)
+        for i, r in ov.items():
+            if 0 <= i < len(roles):
+                roles[i] = r
+
+    md = [f"# Structure — {doc_name}", "",
+          "role per line for the order.html port. Edit the `role` column and "
+          "re-run build to override. Roles: title | memo-hdr | h | sign | indent | gap",
+          "", "| # | role | text |", "|---|---|---|"]
+    for i, ((_, text), r) in enumerate(zip(lines, roles)):
+        md.append(f"| {i} | {r} | {escape(text.strip()[:80]) or '—'} |")
+    override_path.write_text("\n".join(md), encoding="utf-8")
+    return roles
+
+
+ROLE_TO_HTML = {
+    "title": ('<div class="doc-title" style="font-size:22px">', "</div>"),
+    "memo-hdr": ('<div class="doc-memo-hdr">', "</div>"),
+    "h": ('<div class="doc-h" style="margin-top:10px">', "</div>"),
+    "sign": ('<div class="doc-sign" style="margin-top:14px">', "</div>"),
+    "indent": ('<div class="doc-indent">', "</div>"),
+}
+
+
+def gen_order_fragment(lines, schema: dict, out_dir: Path, doc_name: str,
+                       meta: dict) -> None:
+    """Emit order-fragment.js: one `ECMIS.OrderMemoDocs["id"] = {...}` block that
+    order.html renders into its memo-mode #docTabs pane. bodyHtml keeps literal
+    {field} tokens; the order.html adapter swaps them for M() mergefield spans."""
+    roles = _roles_for(lines, out_dir, doc_name)
+
+    # merge consecutive lines of the same flowing role into one block, so a
+    # wrapped paragraph is a single .doc-indent (matches renderMemoDoc()).
+    merged: list[tuple[str, str]] = []  # (role, text)
+    for (align, text), role in zip(lines, roles):
+        t = text.strip()
+        if role == "gap" or not t:
+            merged.append(("gap", ""))
+            continue
+        if (merged and merged[-1][0] == role
+                and role in ("indent", "memo-hdr")):
+            merged[-1] = (role, merged[-1][1] + " " + t)
+        else:
+            merged.append((role, t))
+
+    html_parts = []
+    for role, text in merged:
+        if role == "gap":
+            html_parts.append('<div class="doc-gap">&nbsp;</div>')
+            continue
+        # a single-date field that still trails its literal month/year
+        text = re.sub(r"(\{doc_date\})\s*[ก-๙]+\s*[๐-๙0-9]{4}", r"\1", text)
+        open_t, close_t = ROLE_TO_HTML.get(role, ROLE_TO_HTML["indent"])
+        html_parts.append(f"{open_t}{text}{close_t}")
+    body_html = "\n".join(html_parts)
+
+    fields_js = [
+        {"id": f["id"], "label": f["label"], "type": f["type"],
+         "hint": f.get("hint", ""), "placeholder": _placeholder_for(f)}
+        for f in schema["fields"]
+    ]
+    doc_obj = {
+        "id": meta["id"],
+        "label": meta["label"],
+        "runningTitle": meta.get("runningTitle", schema["doc_name"]),
+        "docxTemplate": meta["docxTemplate"],
+        "fields": fields_js,
+        "prefill": meta.get("prefill", {}),
+        "bodyHtml": body_html,
+    }
+    js = (
+        "/* AUTO-GENERATED by tools/pdf-template-pipeline (pipeline/build.py).\n"
+        f"   Source: {schema['doc_name']}. Do not hand-edit bodyHtml/fields —\n"
+        "   edit the triage / structure files and re-run. `prefill` IS meant to\n"
+        "   be hand-filled (schema field id -> ECMIS PrefillSources key). */\n"
+        "window.ECMIS = window.ECMIS || {};\n"
+        "ECMIS.OrderMemoDocs = ECMIS.OrderMemoDocs || {};\n"
+        f"ECMIS.OrderMemoDocs[{json.dumps(meta['id'])}] = "
+        + json.dumps(doc_obj, ensure_ascii=False, indent=2) + ";\n"
+    )
+    (out_dir / "order-fragment.js").write_text(js, encoding="utf-8")
+    print(f"[build] order-fragment.js  ({len(fields_js)} fields, "
+          f"{len(html_parts)} blocks)")
+
+
+def _placeholder_for(f: dict) -> str:
+    t = f["type"]
+    if t == "date":
+        return "……………………"
+    if t == "number":
+        return "…"
+    lbl = f.get("label", "")
+    return lbl if lbl else "……………"
+
+
 def gen_preview(lines, schema: dict, out: Path) -> str:
     labels = {f["id"]: (f["label"] or f["id"]) for f in schema["fields"]}
     rows = []
@@ -474,6 +617,20 @@ document.getElementById("btnDocx").addEventListener("click", () => {{
 """
 
 
+# order.html tab metadata, keyed by the leading number of the source doc folder
+ORDER_DOC_META = {
+    "2": {"id": "notify_zone", "label": "แจ้งเขต",
+          "runningTitle": "บันทึกแจ้งรายงานการไต่สวนและวินิจฉัยชี้มูล",
+          "docxTemplate": "assets/templates/memo-7x-notify-zone.docx"},
+    "5": {"id": "transmit_kbc", "label": "ส่ง กบค.",
+          "runningTitle": "บันทึกส่งเอกสารให้กลุ่มงานบริหารติดตามคดี",
+          "docxTemplate": "assets/templates/memo-7x-transmit-kbc.docx"},
+    "6": {"id": "timebar_report", "label": "ขาดอายุความ",
+          "runningTitle": "รายงานคดีขาดอายุความ",
+          "docxTemplate": "assets/templates/memo-7x-timebar.docx"},
+}
+
+
 # ---------------------------------------------------------------------------
 def build(out_dir: Path) -> int:
     schema = json.loads((out_dir / "schema.json").read_text(encoding="utf-8"))
@@ -490,6 +647,21 @@ def build(out_dir: Path) -> int:
     gen_template_docx(lines, schema, out_dir / "template.docx")
     gen_form(schema, out_dir / "form.html")
     gen_index(schema, preview_body, out_dir / "index.html")
+
+    doc_name = schema["doc_name"]
+    meta = ORDER_DOC_META.get(doc_name.split(".", 1)[0])
+    if meta:
+        # keep any hand-filled prefill map from a prior emit
+        prev = out_dir / "order-fragment.js"
+        if prev.exists():
+            pm = re.search(r'"prefill":\s*(\{.*?\}),\n\s*"bodyHtml"',
+                           prev.read_text(encoding="utf-8"), re.S)
+            if pm:
+                try:
+                    meta = {**meta, "prefill": json.loads(pm.group(1))}
+                except json.JSONDecodeError:
+                    pass
+        gen_order_fragment(lines, schema, out_dir, doc_name, meta)
 
     missing = [i for i in all_ids if i not in matched]
     rep = [f"# Build report — {schema['doc_name']}", "",

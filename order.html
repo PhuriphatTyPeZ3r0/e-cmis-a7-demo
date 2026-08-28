@@ -241,6 +241,10 @@
               </div>
             </div>
           </div>
+
+          <!-- ฟอร์มกรอกของเอกสาร 7.x (จาก tools/pdf-template-pipeline) — สร้างจาก schema
+               ของแท็บที่เลือก แสดงเฉพาะตอน memoDocTab != 'base' -->
+          <div id="pipelineMemoCard" class="d-none"></div>
         </div>
 
         <!-- ============== MODE: AMEND (ปปท. 5-03 / 5-06 / 5-09 / เปลี่ยนแปลงองค์ประกอบ) ============== -->
@@ -352,6 +356,9 @@
               </div>
             </div>
 
+            <!-- แท็บเลือกเอกสารในโหมดบันทึกข้อความ (memo mode เท่านั้น) -->
+            <div class="ws-doc-tabs d-none" id="docTabs"></div>
+
             <!-- Symmetrical Pagination & Zoom Navigator Bar -->
             <div class="pagination-toolbar-symmetric" id="docPaginationBar">
               <!-- Left Group: View Mode & Page Jump Controls -->
@@ -412,6 +419,7 @@
   <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/build/docxtemplater.js"></script>
   <script src="assets/ecmis-app.js"></script>
   <script src="assets/ecmis-model.js"></script>
+  <script src="assets/order-memo-docs.js"></script>
   <script>
     ECMIS.renderShell('order.html');
 
@@ -653,6 +661,13 @@
       document.getElementById('panelAmend').classList.toggle('d-none', mode !== 'amend');
       document.querySelectorAll('#modeSwitch button').forEach(b =>
         b.classList.toggle('active', b.dataset.mode === mode));
+      /* แท็บเอกสาร 7.x โชว์เฉพาะโหมด memo และรีเซ็ตกลับแท็บ 'เสนอลงนาม' เสมอ */
+      const docTabsEl = document.getElementById('docTabs');
+      memoDocTab = 'base';
+      if (docTabsEl) {
+        docTabsEl.classList.toggle('d-none', mode !== 'memo' || MEMO_DOC_ORDER.length === 0);
+        if (mode === 'memo') { buildMemoTabsUI(); toggleMemoFormCards(); }
+      }
       if (mode === 'appoint') { updateDocName(); refreshSigner(); }
       if (mode === 'memo') { updateMemoDocName(); refreshMemoSigner(); }
       if (mode === 'amend') { updateAmendDocName(); refreshAmendSigner(); }
@@ -1030,6 +1045,11 @@
     });
 
     function updateMemoDocName() {
+      if (memoDocTab !== 'base' && MEMO_DOCS[memoDocTab]) {
+        document.getElementById('docName').textContent = MEMO_DOCS[memoDocTab].runningTitle
+          || MEMO_DOCS[memoDocTab].label;
+        return;
+      }
       const code = isSub ? '5-01' : '5-04';
       document.getElementById('docName').textContent = isSub
         ? `บันทึกเสนอประธานฯ เพื่อลงนามในคำสั่งแต่งตั้งคณะอนุกรรมการไต่สวน (ปปท. ${code})`
@@ -1075,7 +1095,7 @@
         b.addEventListener('click', () => handle(b.dataset.act)));
     }
 
-    function renderMemoDoc() {
+    function renderMemoBaseDoc() {
       const s = MEMO_SIGNER[isSub ? 'sub' : 'base'];
       const no = document.getElementById('memoNo').value.trim();
       const dt = ECMIS.thaiDate(document.getElementById('memoDate').value.trim());
@@ -1154,6 +1174,134 @@
       <div style="text-align:left;margin-top:18px;font-size:16pt">ปปท. ${code}</div>
     </div>`;
       paginateFromHtml(document.getElementById('docPaper'), memoHtml, `บันทึกเสนอเพื่อลงนามคำสั่งแต่งตั้ง${orderKind}`);
+    }
+
+    /* ===================================================================
+       MODE: MEMO — แท็บเอกสาร 7.x เพิ่มเติม (จาก tools/pdf-template-pipeline)
+       แท็บ 'base' = renderMemoBaseDoc() เดิม (ปปท. 5-01/5-04) ไม่แตะ
+       แท็บอื่น    = เอกสารใน ECMIS.OrderMemoDocs (แจ้งเขต / ส่ง กบค. / ขาดอายุความ)
+       =================================================================== */
+    const MEMO_DOCS = (window.ECMIS && ECMIS.OrderMemoDocs) || {};
+    const MEMO_DOC_ORDER = (window.ECMIS && ECMIS.OrderMemoDocOrder) || [];
+    let memoDocTab = 'base';
+    /* ค่าที่ผู้ใช้กรอกในแต่ละเอกสาร 7.x — { [docId]: { [fieldId]: value } }
+       เก็บถาวรผ่าน CaseStore (mock/localStorage) เท่านั้น ไม่แตะ Supabase */
+    let pipelineMemoValues = (kase.memoDocs && typeof kase.memoDocs === 'object')
+      ? JSON.parse(JSON.stringify(kase.memoDocs)) : {};
+
+    /* แหล่ง prefill: schema field id -> ค่าที่แอปรู้อยู่แล้วจากสำนวน */
+    function memoPrefillSources() {
+      const regionMatch = String(kase.ownerOrg || '').match(/เขต\s*(\d+)/);
+      return {
+        caseId: kase.id || '',
+        meetingNo: kase.meetingNo || '',
+        meetingDateISO: kase.meetingDate || '',
+        agendaNo: kase.agendaNo || '',
+        paccRegion: regionMatch ? regionMatch[1] : '',
+        ownerName: kase.owner || ''
+      };
+    }
+
+    function pipelineFieldValue(doc, f) {
+      const stored = (pipelineMemoValues[doc.id] || {})[f.id];
+      if (stored !== undefined && stored !== null && String(stored).trim() !== '') return stored;
+      const key = doc.prefill && doc.prefill[f.id];
+      if (key) {
+        const v = memoPrefillSources()[key];
+        if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+      }
+      return '';
+    }
+
+    /* แปลงค่า raw -> ข้อความที่จะโชว์ในเอกสาร (วันที่ไทย / เลขไทย) */
+    function pipelineDisplayValue(f, raw) {
+      if (raw === '' || raw === undefined || raw === null) return '';
+      if (f.type === 'date') return ECMIS.thaiDate(raw);
+      if (f.type === 'number') return ECMIS.toThaiDigits(String(raw));
+      return raw;
+    }
+
+    function buildMemoTabsUI() {
+      const host = document.getElementById('docTabs');
+      if (!host) return;
+      const tabs = [{ id: 'base', label: 'เสนอลงนาม' }]
+        .concat(MEMO_DOC_ORDER.filter(id => MEMO_DOCS[id])
+          .map(id => ({ id, label: MEMO_DOCS[id].label || id })));
+      host.innerHTML = tabs.map(t =>
+        `<button type="button" class="ws-doc-tab${t.id === memoDocTab ? ' active' : ''}" data-doc="${t.id}">${t.label}</button>`).join('');
+      host.querySelectorAll('.ws-doc-tab').forEach(btn =>
+        btn.addEventListener('click', () => {
+          memoDocTab = btn.dataset.doc;
+          host.querySelectorAll('.ws-doc-tab').forEach(x =>
+            x.classList.toggle('active', x.dataset.doc === memoDocTab));
+          toggleMemoFormCards();
+          updateMemoDocName();
+          renderMemoDoc();
+        }));
+    }
+
+    function toggleMemoFormCards() {
+      const onBase = memoDocTab === 'base';
+      document.querySelectorAll('#panelMemo > .ws-card').forEach(el =>
+        el.classList.toggle('d-none', !onBase));
+      const card = document.getElementById('pipelineMemoCard');
+      if (!card) return;
+      card.classList.toggle('d-none', onBase);
+      if (onBase) return;
+
+      const doc = MEMO_DOCS[memoDocTab];
+      if (!doc) { card.innerHTML = ''; return; }
+      const rows = doc.fields.map(f => {
+        const val = String(pipelineFieldValue(doc, f) || '');
+        const inputType = f.type === 'date' ? 'date' : (f.type === 'number' ? 'number' : 'text');
+        const control = f.type === 'textarea'
+          ? `<textarea class="form-control form-control-sm" data-pf="${f.id}" rows="3" placeholder="${f.hint || ''}">${ECMIS.escapeHtml ? ECMIS.escapeHtml(val) : val}</textarea>`
+          : `<input class="form-control form-control-sm" type="${inputType}" data-pf="${f.id}" value="${(ECMIS.escapeHtml ? ECMIS.escapeHtml(val) : val)}" placeholder="${f.hint || ''}">`;
+        return `<div class="col-md-6 mb-2"><label class="form-label mb-1">${f.label || f.id}</label>${control}</div>`;
+      }).join('');
+      card.innerHTML = `
+        <div class="ws-card mb-3">
+          <div class="card-header"><i class="fa-solid fa-file-lines"></i> ${doc.label} — กรอกข้อมูลเอกสาร</div>
+          <div class="card-body"><div class="row g-2">${rows}</div>
+            <p class="small text-muted mt-2 mb-0">ช่องที่ระบบทราบอยู่แล้ว (ครั้งที่ประชุม/วันที่/เขต ฯลฯ) เติมให้อัตโนมัติ แก้ไขทับได้</p>
+          </div>
+        </div>`;
+      card.querySelectorAll('[data-pf]').forEach(el => {
+        const save = () => {
+          pipelineMemoValues[doc.id] = pipelineMemoValues[doc.id] || {};
+          pipelineMemoValues[doc.id][el.dataset.pf] = el.value;
+          try { ECMIS.Model.CaseStore.update(kase.id, { memoDocs: pipelineMemoValues }); } catch (e) { }
+          renderMemoDoc();
+        };
+        el.addEventListener('input', save);
+        el.addEventListener('change', save);
+      });
+      applyReadOnlyLock();
+    }
+
+    function renderPipelineMemoDoc(doc) {
+      const fieldById = {};
+      doc.fields.forEach(f => { fieldById[f.id] = f; });
+      const html = doc.bodyHtml.replace(/\{(\w+)\}/g, (m, id) => {
+        const f = fieldById[id];
+        if (!f) return m;
+        return M(pipelineDisplayValue(f, pipelineFieldValue(doc, f)), f.placeholder || f.label || '……………');
+      });
+      paginateFromHtml(document.getElementById('docPaper'), html, doc.runningTitle || doc.label);
+    }
+
+    /* dispatcher: renderMemoDoc() ถูกเรียกจาก renderDoc()/refreshMemoSigner()/ฟอร์ม */
+    function renderMemoDoc() {
+      if (memoDocTab === 'base' || !MEMO_DOCS[memoDocTab]) { renderMemoBaseDoc(); return; }
+      renderPipelineMemoDoc(MEMO_DOCS[memoDocTab]);
+    }
+
+    function pipelineMemoTags(doc) {
+      const tags = {};
+      doc.fields.forEach(f => {
+        tags[f.id] = pipelineDisplayValue(f, pipelineFieldValue(doc, f)) || '……………';
+      });
+      return tags;
     }
 
     /* ===================================================================
@@ -1385,6 +1533,16 @@
       if (currentMode === 'appoint') {
         const code = FORM_CODES[isSub ? 'sub' : 'base'][caseOriginCode()];
         downloadTemplate(TEMPLATE_FILES[code], `ปปท. ${code}`);
+      } else if (currentMode === 'memo' && memoDocTab !== 'base' && MEMO_DOCS[memoDocTab]) {
+        const doc = MEMO_DOCS[memoDocTab];
+        try {
+          await generateDocx(doc.docxTemplate, pipelineMemoTags(doc),
+            `${doc.label}-${kase.id.replace('/', '_')}.docx`);
+          ECMIS.toastOk('ดาวน์โหลด .docx เรียบร้อย — แก้ไขใน Word ได้ตามปกติ');
+        } catch (e) {
+          console.error(e);
+          ECMIS.toastWarn('สร้างไฟล์ .docx ไม่สำเร็จ: ' + e.message);
+        }
       } else if (currentMode === 'memo') {
         const code = isSub ? '5-01' : '5-04';
         if (TAGGED_TEMPLATES[code]) {

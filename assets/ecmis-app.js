@@ -733,6 +733,27 @@ function act7Badge(statusName, list) {
 
 const CASES = [
   {
+    /* เคสสาธิตสำหรับ order.html?case=3027/2569 (บันทึกเสนอลงนาม + แท็บเอกสาร 7.x
+       ที่มาจาก tools/pdf-template-pipeline) — ข้อมูลจำลองชุดเต็มให้ prefill เห็นผล */
+    id:'3027/2569',
+    subject:'กล่าวหาเจ้าหน้าที่ของรัฐแห่งหนึ่ง สนับสนุนการจัดซื้อจัดจ้างโดยมิชอบ (บางฐานความผิดขาดอายุความ)',
+    legalBase:'ม.18/4',
+    status:'RESOLVED',
+    procType:'7.2',
+    owner:'นางสาวชัญญาพัชญ์ อุปหล้า', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 6',
+    complainant:'นายเกรียงไกร มั่นคง (ผู้ร้อง)',
+    accused:[
+      { no:1, name:'นายพิพัฒน์ ทองสุข', pos:'ผู้อำนวยการกอง', idcard:'3-6099-0xxxx-xx-x', agency:'หน่วยงานแห่งหนึ่ง' }
+    ],
+    allegation:'สนับสนุนให้มีการกำหนดคุณลักษณะเฉพาะเพื่อเอื้อประโยชน์แก่ผู้เสนอราคารายหนึ่ง บางกรรมและบางฐานความผิดขาดอายุความ',
+    receivedDate:'2568-11-20', deadline60:'2569-01-19', deadline2y:'2570-11-20', prescription:'2569-12-31',
+    docRef:'ปป 0004/ป278 ลงวันที่ 26 สิงหาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:2, slaLimit:15, subCommittee:null,
+    meetingNo:'61/2569', agendaNo:'5.5', meetingDate:'2569-08-19',
+    docType:'213', signPhase:'DRAFT'
+  },
+  {
     id:'1525/2558',
     subject:'กล่าวหาผู้บริหารสถานศึกษาแห่งหนึ่ง จัดซื้อครุภัณฑ์คอมพิวเตอร์ราคาสูงเกินจริง',
     legalBase:'ม.18/4',
