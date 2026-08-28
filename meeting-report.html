@@ -54,6 +54,9 @@
             <table class="table tbl-ecmis mb-0">
               <thead>
                 <tr>
+                  <th style="width:40px" class="text-center">
+                    <input type="checkbox" class="form-check-input" id="selectAllItems" title="เลือกทั้งหมด" checked>
+                  </th>
                   <th style="width:80px">วาระที่</th>
                   <th>เลขสำนวน / เรื่อง</th>
                   <th style="width:220px">มติที่ประชุม</th>
@@ -169,6 +172,7 @@
     }
 
     let items = itemsForMeeting(currentMeetNo);
+    let selectedCaseIds = new Set(items.map(c => c.id));
     if (items[0]) document.getElementById('meetDate').value = items[0].meetingDate || '';
 
     function stageLabel(c) {
@@ -178,13 +182,26 @@
 
     function renderItems() {
       const tb = document.getElementById('itemsTb');
-      document.getElementById('itemCount').textContent = items.length;
+      const allSelected = items.length > 0 && selectedCaseIds.size === items.length;
+      document.getElementById('itemCount').textContent = `เลือก ${selectedCaseIds.size}/${items.length} เรื่อง`;
       document.getElementById('emptyState').classList.toggle('d-none', items.length > 0);
+
+      const selectAllEl = document.getElementById('selectAllItems');
+      if (selectAllEl) {
+        selectAllEl.checked = allSelected;
+        selectAllEl.disabled = items.length === 0;
+        selectAllEl.indeterminate = selectedCaseIds.size > 0 && selectedCaseIds.size < items.length;
+      }
+
       tb.innerHTML = items.map(c => {
         const res = ECMIS.resolutionOf(c.resolution);
         const stage = c.resolutionStage || 1;
+        const isChecked = selectedCaseIds.has(c.id);
         return `
-    <tr>
+    <tr class="${isChecked ? '' : 'table-light text-muted opacity-75'}">
+      <td class="text-center">
+        <input type="checkbox" class="form-check-input item-check" data-id="${c.id}" ${isChecked ? 'checked' : ''}>
+      </td>
       <td>${c.agendaNo || '—'}</td>
       <td><div class="fw-medium text-truncate" style="max-width:280px" title="${c.subject}">${c.id} — ${c.subject}</div></td>
       <td><span class="st st-done" style="font-size:.7rem" title="${res ? res.label : ''}">${res ? res.group : '—'}</span></td>
@@ -195,6 +212,31 @@
       </td>
     </tr>`;
       }).join('');
+
+      tb.querySelectorAll('.item-check').forEach(cb => {
+        cb.addEventListener('change', e => {
+          const id = e.target.dataset.id;
+          if (e.target.checked) selectedCaseIds.add(id);
+          else selectedCaseIds.delete(id);
+          renderItems();
+          renderDoc();
+          renderActions();
+        });
+      });
+    }
+
+    const selectAllEl = document.getElementById('selectAllItems');
+    if (selectAllEl) {
+      selectAllEl.addEventListener('change', e => {
+        if (e.target.checked) {
+          items.forEach(c => selectedCaseIds.add(c.id));
+        } else {
+          selectedCaseIds.clear();
+        }
+        renderItems();
+        renderDoc();
+        renderActions();
+      });
     }
 
     /* ---------- เอกสาร ----------
@@ -245,7 +287,9 @@
 
       <div class="doc-h" style="margin-top:10px">ระเบียบวาระที่ ๕&emsp;เรื่องเสนอให้ที่ประชุมพิจารณา</div>`;
 
-      const flowBlocks = items.length ? items.map(c => {
+      const selectedItems = items.filter(c => selectedCaseIds.has(c.id));
+
+      const flowBlocks = selectedItems.length ? selectedItems.map(c => {
         const res = ECMIS.resolutionOf(c.resolution);
         const complainant = c.complainant ? `<div class="doc-indent" style="margin-top:2px">ผู้กล่าวหา&emsp;${M(c.complainant)}</div>` : '';
         const accusedList = (c.accused || []).length
@@ -260,7 +304,7 @@
             <strong>มติที่ประชุม</strong>&emsp;ที่ประชุมพิจารณาแล้วมีมติ${M(res ? res.label : c.resolution)}
           </div>
         </div>`;
-      }) : [`<div class="text-muted" style="margin-top:8px">— ไม่มีมติในการประชุมครั้งนี้ —</div>`];
+      }) : [`<div class="text-muted" style="margin-top:8px">— ไม่มีวาระที่เลือกในรายงานฉบับนี้ —</div>`];
 
       const signBlock = `
       <div class="doc-h" style="margin-top:16px">ระเบียบวาระที่ ๖&emsp;เรื่องอื่น ๆ</div>
@@ -281,6 +325,7 @@
     meetSelect.addEventListener('change', () => {
       currentMeetNo = meetSelect.value;
       items = itemsForMeeting(currentMeetNo);
+      selectedCaseIds = new Set(items.map(c => c.id));
       if (items[0]) document.getElementById('meetDate').value = items[0].meetingDate || '';
       renderItems(); renderDoc(); renderActions();
     });
@@ -302,12 +347,14 @@
     function renderActions() {
       const slot = document.getElementById('actionBarSlot');
       if (!mayEdit) { slot.innerHTML = ''; return; }
-      const allDone = items.length > 0 && items.every(c => (c.resolutionStage || 1) >= 6);
+      const selectedItems = items.filter(c => selectedCaseIds.has(c.id));
+      const hasSelected = selectedItems.length > 0;
+      const allDone = hasSelected && selectedItems.every(c => (c.resolutionStage || 1) >= 6);
       slot.innerHTML = `
     <button type="button" class="btn btn-outline-secondary btn-sm" data-act="save">
       <i class="fa-solid fa-floppy-disk me-1"></i>บันทึกร่างรายงาน</button>
-    <button type="button" class="btn btn-navy btn-sm" data-act="confirm" ${items.length ? '' : 'disabled'}>
-      <i class="fa-solid fa-check-double me-1"></i>${allDone ? 'รายงานการประชุมเสร็จสมบูรณ์แล้ว' : 'ยืนยันรายงานการประชุมเสร็จสมบูรณ์ — ทุกเรื่อง'}</button>`;
+    <button type="button" class="btn btn-navy btn-sm" data-act="confirm" ${hasSelected ? '' : 'disabled'}>
+      <i class="fa-solid fa-check-double me-1"></i>${allDone ? 'รายงานการประชุมเสร็จสมบูรณ์แล้ว' : (hasSelected ? `ยืนยันรายงานการประชุมเสร็จสมบูรณ์ — ${selectedItems.length} เรื่องที่เลือก` : 'กรุณาเลือกวาระที่ต้องการยืนยัน')}</button>`;
       document.querySelectorAll('#actionBarSlot [data-act]').forEach(b =>
         b.addEventListener('click', () => handle(b.dataset.act)));
     }
@@ -319,16 +366,20 @@
         return;
       }
       if (act === 'confirm') {
-        if (!items.length) return;
+        const selectedItems = items.filter(c => selectedCaseIds.has(c.id));
+        if (!selectedItems.length) {
+          ECMIS.toastWarn('กรุณาเลือกอย่างน้อย 1 วาระ');
+          return;
+        }
         ECMIS.confirmAction({
           title: 'ยืนยันรายงานการประชุมเสร็จสมบูรณ์',
-          html: `<p>รายงานการประชุมครั้งที่ <strong>${currentMeetNo}</strong> รวม <strong>${items.length}</strong> เรื่อง
-            จะถูกทำเครื่องหมายว่า "จัดทำรายงานประชุมแล้วเสร็จ" (ขั้นตอนที่ 6) ทุกเรื่อง</p>`,
+          html: `<p>รายงานการประชุมครั้งที่ <strong>${currentMeetNo}</strong> เฉพาะ <strong>${selectedItems.length}</strong> เรื่องที่เลือก
+            จะถูกทำเครื่องหมายว่า "จัดทำรายงานประชุมแล้วเสร็จ" (ขั้นตอนที่ 6)</p>`,
           confirmText: 'ยืนยันรายงานเสร็จสมบูรณ์'
         }).then(res => {
           if (!res.isConfirmed) return;
-          items.forEach(c => ECMIS.Model.CaseStore.update(c.id, { resolutionStage: 6, meetingReportDone: true }));
-          ECMIS.toastOk('บันทึกรายงานการประชุมเสร็จสมบูรณ์เรียบร้อย');
+          selectedItems.forEach(c => ECMIS.Model.CaseStore.update(c.id, { resolutionStage: 6, meetingReportDone: true }));
+          ECMIS.toastOk(`บันทึกรายงานการประชุมเสร็จสมบูรณ์เรียบร้อย (${selectedItems.length} เรื่อง)`);
           renderItems(); renderActions();
         });
       }
@@ -470,6 +521,11 @@
     });
 
     $('#btnDocx').on('click', function () {
+      const selectedItems = items.filter(c => selectedCaseIds.has(c.id));
+      if (!selectedItems.length) {
+        ECMIS.toastWarn('กรุณาเลือกอย่างน้อย 1 วาระก่อนส่งออกเอกสาร');
+        return;
+      }
       if (typeof ECMIS !== 'undefined' && typeof ECMIS.exportDocToDocx === 'function') {
         const meetName = (currentMeetNo || 'meeting').replace(/[\/\s]/g, '-');
         ECMIS.exportDocToDocx('docPaper', `รายงานการประชุม_ครั้งที่_${meetName}.docx`);
