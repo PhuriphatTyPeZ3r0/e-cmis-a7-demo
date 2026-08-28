@@ -2833,10 +2833,10 @@ function renderShell(activeHref){
     }
     const breadcrumbHtml = `
       <nav aria-label="breadcrumb" class="no-print mb-2">
-        <ol class="breadcrumb" style="font-size:0.75rem; margin:0 0 12px 0; padding:0; list-style:none; display:flex; gap:6px">
-          <li class="breadcrumb-item"><a href="${homeHref(role.id)}" style="text-decoration:none; color:var(--ecmis-navy)"><i class="fa-solid fa-house me-1"></i>Home</a></li>
-          <li class="breadcrumb-item text-muted" style="display:flex; gap:6px"><span style="margin:0 4px">/</span>${parentSection}</li>
-          <li class="breadcrumb-item active" style="display:flex; gap:6px" aria-current="page"><span style="margin:0 4px">/</span>${navLabel(activeNav, role)}</li>
+        <ol class="breadcrumb ecmis-breadcrumb">
+          <li class="breadcrumb-item"><a href="${homeHref(role.id)}"><i class="fa-solid fa-house me-1"></i>Home</a></li>
+          <li class="breadcrumb-item text-muted">${parentSection}</li>
+          <li class="breadcrumb-item active" aria-current="page">${navLabel(activeNav, role)}</li>
         </ol>
       </nav>`;
     const appMain = document.querySelector('.app-main');
