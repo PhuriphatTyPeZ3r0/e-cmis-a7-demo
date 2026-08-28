@@ -3,8 +3,13 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const srcDir = path.resolve(__dirname, '..');
-const destDir = path.resolve(srcDir, '..', 'ecmis', 'board-resolution');
-const ecmisRoot = path.resolve(srcDir, '..', 'ecmis');
+const candidateRoots = [
+  path.resolve(srcDir, '..', '..', 'ecmis'),
+  path.resolve(srcDir, '..', 'ecmis'),
+  'D:\\Samart-W\\กจ.7\\ecmis'
+];
+const ecmisRoot = candidateRoots.find(p => fs.existsSync(path.join(p, 'board-resolution')) && fs.existsSync(path.join(p, 'shared-assets'))) || candidateRoots[0];
+const destDir = path.resolve(ecmisRoot, 'board-resolution');
 
 console.log('====================================================');
 console.log(' 🚀 E-CMIS ACTIVITY 7 -> ECMIS MONOREPO MIGRATION');

@@ -1231,6 +1231,19 @@
             }
           }
 
+          /* Seam Hook: ส่งผลมติกลับ Activity 5 (intake-investigation) หากรันใน ECMIS Monorepo */
+          if (window.ECMISIntakeAggregate && typeof window.ECMISIntakeAggregate.publishBoardResult === 'function') {
+            try {
+              window.ECMISIntakeAggregate.publishBoardResult(kase, {
+                text: r.label,
+                reference: `มติ ${document.getElementById('meetNo')?.value || '38/2569'} วาระ ${kase.agendaNo || '5.12'}`,
+                by: signerName
+              });
+            } catch (e) {
+              console.warn('publishBoardResult warning:', e);
+            }
+          }
+
           ECMIS.toastOk('บันทึกมติและล็อก PDF เรียบร้อย');
           const next = (r.code === 'ACCEPT_S24P1' || r.code === 'ACCEPT_S24P3')
             ? 'order.html?case=' + encodeURIComponent(kase.id) + '&res=' + r.code
