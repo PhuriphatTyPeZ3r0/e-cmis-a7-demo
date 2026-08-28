@@ -1,0 +1,918 @@
+@page "/citizen/login"
+@layout Components.Layout.BlankLayout
+@inject NavigationManager Nav
+@inject EcmisWeb.Services.ThaiDService ThaiDSvc
+@inject EcmisWeb.Services.AuthApiService AuthApi
+@inject EcmisWeb.Services.SessionService SessionSvc
+@implements IDisposable
+
+<style>
+@@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: #0c1945; }
+
+.cl-portal {
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Sarabun', 'IBM Plex Sans Thai', sans-serif;
+    display: flex; flex-direction: column;
+}
+
+/* ═══════════════════════════════════════════════════
+   ANNOUNCEMENT BAR
+══════════════════════════════════════════════════ */
+.cl-announce {
+    background: #1d4ed8;
+    padding: 7px 40px;
+    display: flex; align-items: center; justify-content: center; gap: 20px;
+    flex-shrink: 0;
+}
+.cl-announce-text {
+    font-size: 12.5px; font-weight: 600; color: #fff;
+    display: flex; align-items: center; gap: 7px;
+}
+.cl-announce-text i { font-size: 13px; color: #93c5fd; }
+.cl-announce-dot {
+    width: 3px; height: 3px; border-radius: 50%;
+    background: rgba(255,255,255,.35); flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════
+   NAVBAR
+══════════════════════════════════════════════════ */
+.cl-nav {
+    height: 52px;
+    background: #0c1945;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    display: flex; align-items: center; justify-content: flex-end;
+    padding: 0 32px; gap: 0;
+    z-index: 50; flex-shrink: 0;
+}
+.cl-nav-brand {
+    display: flex; align-items: center; gap: 12px;
+    text-decoration: none; margin-right: auto;
+}
+.cl-nav-seal {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(145deg, rgba(255,255,255,.15), rgba(255,255,255,.06));
+    border: 1.5px solid rgba(255,255,255,.2);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+}
+.cl-nav-seal-th { font-size: 8px; font-weight: 900; color: #bfdbfe; letter-spacing: .3px; }
+.cl-nav-seal-en { font-size: 4px; font-weight: 700; color: rgba(191,219,254,.4); letter-spacing: 1.5px; }
+.cl-nav-name-th  { font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -.1px; }
+.cl-nav-name-sys { font-size: 10px; color: rgba(255,255,255,.3); margin-top: 0; display: block; }
+
+.cl-nav-links { display: flex; align-items: center; gap: 2px; }
+.cl-nav-link {
+    padding: 7px 13px; font-size: 13px; font-weight: 500;
+    color: rgba(255,255,255,.5); text-decoration: none;
+    border-radius: 7px; transition: background .18s, color .18s;
+    cursor: pointer; background: none; border: none;
+    font-family: inherit;
+}
+.cl-nav-link:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.9); }
+.cl-nav-link--active {
+    color: #fff; background: rgba(59,130,246,.2);
+    border: 1px solid rgba(59,130,246,.3);
+}
+.cl-nav-divider { width: 1px; height: 18px; background: rgba(255,255,255,.1); margin: 0 12px; }
+.cl-nav-register {
+    padding: 7px 16px; font-size: 13px; font-weight: 600; color: #fff;
+    background: #1d4ed8; border-radius: 8px; text-decoration: none;
+    transition: background .18s; border: 1px solid rgba(255,255,255,.1);
+}
+.cl-nav-register:hover { background: #1e40af; }
+
+/* ═══════════════════════════════════════════════════
+   MAIN — SPLIT
+══════════════════════════════════════════════════ */
+.cl-main {
+    flex: 1; display: flex;
+    min-height: 0; overflow: hidden;
+}
+
+/* ─── LEFT ─────────────────────────────────────── */
+.cl-left {
+    flex: 1;
+    background: linear-gradient(160deg, #0a1535 0%, #0f1e4a 25%, #152460 55%, #1a3070 80%, #1e3a8a 100%);
+    display: flex; flex-direction: column;
+    justify-content: center;
+    padding: 32px 56px;
+    position: relative; overflow: hidden;
+    cursor: default;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+.cl-left *, .cl-left *::before, .cl-left *::after {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    cursor: default;
+}
+.cl-left *::selection { background: transparent; }
+.cl-left *::-moz-selection { background: transparent; }
+
+.cl-rings {
+    position: absolute; right: -100px; bottom: -100px;
+    width: 420px; height: 420px; border-radius: 50%;
+    box-shadow:
+        0 0 0 1px   rgba(255,255,255,.05),
+        0 0 0 56px  rgba(255,255,255,.025),
+        0 0 0 112px rgba(255,255,255,.014),
+        0 0 0 168px rgba(255,255,255,.007);
+    pointer-events: none;
+}
+.cl-rings-2 {
+    position: absolute; right: -180px; top: -180px;
+    width: 360px; height: 360px; border-radius: 50%;
+    box-shadow:
+        0 0 0 1px  rgba(255,255,255,.03),
+        0 0 0 72px rgba(255,255,255,.014);
+    pointer-events: none;
+}
+
+.cl-left-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 10px; font-weight: 700; color: #60a5fa;
+    letter-spacing: 2.5px; text-transform: uppercase;
+    margin-bottom: 16px;
+    background: rgba(59,130,246,.12);
+    border: 1px solid rgba(59,130,246,.25);
+    padding: 4px 12px; border-radius: 20px; width: fit-content;
+}
+
+.cl-left-h1 {
+    font-size: 44px; font-weight: 900; color: #fff;
+    line-height: 1.16; letter-spacing: 0; margin-bottom: 14px;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    text-decoration: none !important;
+    -webkit-text-decoration: none !important;
+    -webkit-text-stroke: 0 transparent;
+}
+.cl-left-h1 *,
+.cl-left-h1::before,
+.cl-left-h1::after,
+.cl-left-h1 *::before,
+.cl-left-h1 *::after {
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    text-decoration: none !important;
+    -webkit-text-decoration: none !important;
+    -webkit-text-stroke: 0 transparent;
+}
+.cl-left-h1 em { font-style: normal; color: #60a5fa; }
+
+.cl-left-desc {
+    font-size: 14px; color: rgba(255,255,255,.5);
+    line-height: 1.7; max-width: 400px; margin-bottom: 28px;
+}
+
+.cl-features {
+    display: flex; flex-direction: column; gap: 0;
+    max-width: 380px; margin-bottom: 28px;
+}
+.cl-feature {
+    display: flex; align-items: center; gap: 14px;
+    padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.cl-feature:last-child { border-bottom: none; }
+.cl-feature-icon {
+    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(96,165,250,.1);
+    box-shadow: 0 0 0 1px rgba(96,165,250,.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; color: #93c5fd;
+}
+.cl-feature-text strong {
+    display: block; font-size: 14px; font-weight: 700;
+    color: rgba(255,255,255,.88); margin-bottom: 1px;
+}
+.cl-feature-text span { font-size: 12px; color: rgba(255,255,255,.38); }
+
+.cl-stats { display: flex; align-items: stretch; gap: 12px; }
+.cl-stat-box {
+    flex: 1; padding: 12px 16px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 18px;
+    display: flex; flex-direction: column; gap: 3px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.cl-stat-n { font-size: 24px; font-weight: 900; color: #fff; letter-spacing: -.5px; line-height: 1; }
+.cl-stat-l { font-size: 11px; color: rgba(255,255,255,.4); line-height: 1.3; }
+
+/* ─── RIGHT ─────────────────────────────────────── */
+.cl-right {
+    width: 460px; flex-shrink: 0;
+    background: #fff;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 36px 48px;
+    position: relative;
+    box-shadow: -20px 0 60px rgba(0,0,0,.18);
+    overflow-y: auto;
+    animation: cl-slide .55s cubic-bezier(.16,1,.3,1) .08s both;
+}
+@@keyframes cl-slide {
+    from { opacity: 0; transform: translateX(24px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.cl-form { width: 100%; max-width: 360px; }
+
+.cl-form-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 13px; border-radius: 20px; margin-bottom: 14px;
+    background: #f0f5ff; border: 1px solid #dbeafe;
+    font-size: 10px; font-weight: 600; color: #3b82f6;
+    letter-spacing: 1px; text-transform: uppercase;
+}
+.cl-form-title {
+    font-size: 22px; font-weight: 800; color: #0f172a;
+    letter-spacing: -.5px; margin-bottom: 4px;
+}
+.cl-form-sub { font-size: 13px; color: #94a3b8; margin-bottom: 20px; }
+
+/* Fields */
+.cl-field { margin-bottom: 13px; }
+.cl-lbl {
+    display: block; font-size: 11px; font-weight: 700;
+    color: #374151; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 7px;
+}
+.cl-iw { position: relative; }
+.cl-ico {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    font-size: 14px; color: #94a3b8; pointer-events: none; transition: color .18s;
+}
+.cl-inp {
+    width: 100%; padding: 12px 14px 12px 42px;
+    background: #f8fafc; border: 1.5px solid #eaeff7; border-radius: 12px;
+    color: #0f172a; font-family: inherit; font-size: 14.5px;
+    outline: none; transition: border-color .22s, background .22s, box-shadow .22s;
+    -webkit-appearance: none; appearance: none;
+}
+.cl-inp::placeholder { color: #c0cad5; font-weight: 300; }
+.cl-inp:focus {
+    background: #fff; border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59,130,246,.1);
+}
+.cl-iw:focus-within .cl-ico { color: #3b82f6; }
+.cl-inp-pr { padding-right: 46px; }
+.cl-eye {
+    position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    color: #94a3b8; font-size: 14px; padding: 4px; line-height: 1;
+    transition: color .15s;
+}
+.cl-eye:hover { color: #1d4ed8; }
+.cl-eye:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; border-radius: 4px; }
+
+.cl-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+}
+.cl-check {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13.5px; color: #475569; cursor: pointer;
+}
+.cl-check input { width: 15px; height: 15px; accent-color: #1d4ed8; cursor: pointer; flex-shrink: 0; }
+.cl-session-note { margin: -8px 0 14px; font-size: 12px; color: #64748b; line-height: 1.4; }
+.cl-forgot {
+    background: none; border: none; cursor: pointer; padding: 0;
+    font-family: inherit; font-size: 13.5px; color: #64748b; transition: color .15s;
+}
+.cl-forgot:hover { color: #1d4ed8; }
+
+/* Buttons */
+.cl-btn-primary {
+    width: 100%; padding: 13px 20px;
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #2554c7 60%, #3b82f6 100%);
+    color: #fff; border: none; border-radius: 12px;
+    font-family: inherit; font-size: 15px; font-weight: 700;
+    cursor: pointer; letter-spacing: .1px; margin-bottom: 12px;
+    transition: opacity .25s, transform .2s, box-shadow .25s;
+    box-shadow: 0 4px 14px rgba(29,78,216,.3);
+}
+.cl-btn-primary:hover:not(:disabled) {
+    opacity: .92; transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(29,78,216,.42);
+}
+.cl-btn-primary:active:not(:disabled) { transform: translateY(0); }
+.cl-btn-primary:focus-visible { outline: 3px solid #1d4ed8; outline-offset: 3px; }
+.cl-btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+.cl-btn-thaid {
+    width: 100%; padding: 12px 20px;
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    background: #f8faff; border: 1.5px solid #e8eef8;
+    border-radius: 12px; color: #374151;
+    font-family: inherit; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: border-color .22s, background .22s, color .22s;
+}
+.cl-btn-thaid:hover:not(:disabled) {
+    border-color: #bfdbfe; background: #eff6ff; color: #2554c7;
+}
+.cl-btn-thaid:focus-visible { outline: 3px solid #1d4ed8; outline-offset: 3px; }
+.cl-btn-thaid:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Spinner */
+.cl-spin {
+    display: inline-block; width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+    border-radius: 50%; animation: cl-sp .6s linear infinite;
+}
+@@keyframes cl-sp { to { transform: rotate(360deg); } }
+
+/* Alert */
+.cl-alert {
+    display: flex; align-items: flex-start; gap: 9px;
+    padding: 12px 14px; border-radius: 12px;
+    font-size: 13.5px; line-height: 1.55; margin-bottom: 16px;
+}
+.cl-err { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+.cl-ok  { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+
+.cl-or {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 12px; color: #d1d5db; margin: 12px 0; letter-spacing: .4px;
+}
+.cl-or::before, .cl-or::after { content: ''; flex: 1; height: 1px; background: #f1f5f9; }
+
+.cl-register-row {
+    margin-top: 14px; padding-top: 14px;
+    border-top: 1px solid #f1f5f9;
+    text-align: center; font-size: 13.5px; color: #94a3b8;
+}
+.cl-register-row a { color: #1d4ed8; font-weight: 700; text-decoration: none; margin-left: 4px; }
+.cl-register-row a:hover { text-decoration: underline; }
+
+.cl-back-btn {
+    width: 100%; background: none; border: none; cursor: pointer;
+    font-family: inherit; font-size: 13.5px; color: #94a3b8;
+    text-align: center; padding: 8px 0 0; transition: color .18s;
+}
+.cl-back-btn:hover { color: #475569; }
+
+.cl-panel-foot {
+    margin-top: 14px; padding-top: 13px;
+    border-top: 1px solid #f1f5f9;
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+}
+.cl-trust-item {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 500; color: #cbd5e1;
+}
+.cl-trust-item i { font-size: 12px; color: #94a3b8; }
+
+/* ═══════════════════════════════════════════════════
+   FOOTER
+══════════════════════════════════════════════════ */
+.cl-footer {
+    background: #0a1130;
+    border-top: 1px solid rgba(255,255,255,.06);
+    padding: 10px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px; flex-shrink: 0;
+}
+.cl-footer-left { font-size: 11.5px; color: rgba(255,255,255,.2); }
+.cl-footer-right { display: flex; align-items: center; gap: 20px; }
+.cl-footer-link {
+    font-size: 11.5px; color: rgba(255,255,255,.28); text-decoration: none;
+    background: none; border: none; cursor: pointer; font-family: inherit; padding: 0;
+    transition: color .18s;
+}
+.cl-footer-link:hover { color: rgba(255,255,255,.6); }
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════ */
+@@media (max-width: 960px) {
+    .cl-main    { flex-direction: column; }
+    .cl-left    { padding: 40px 40px 36px; }
+    .cl-left-h1 { font-size: 38px; }
+    .cl-right   { width: 100%; padding: 44px 40px 56px; animation: none; }
+}
+@@media (max-width: 640px) {
+    .cl-left    { padding: 32px 24px 28px; }
+    .cl-left-h1 { font-size: 30px; letter-spacing: -1.5px; }
+    .cl-hero    { padding: 32px 0 28px; }
+    .cl-features { display: none; }
+    .cl-right   { padding: 36px 24px 52px; }
+}
+@@media (prefers-reduced-motion: reduce) {
+    .cl-right { animation: none; }
+    .cl-spin  { animation: none; }
+}
+</style>
+
+<div class="cl-portal">
+
+    @* ── Main ── *@
+    <div class="cl-main">
+
+        @* LEFT *@
+        <div class="cl-left">
+            <div class="cl-rings" aria-hidden="true"></div>
+            <div class="cl-rings-2" aria-hidden="true"></div>
+
+            <div class="cl-left-eyebrow">
+                <i class="bi bi-grid-fill" aria-hidden="true"></i>
+                Citizen Portal
+            </div>
+            <h1 class="cl-left-h1">
+                ยื่นเรื่องร้องเรียน<br />
+                <em>ทุจริตออนไลน์</em>
+            </h1>
+            <p class="cl-left-desc">
+                ระบบรับเรื่องร้องเรียนการทุจริตของสำนักงาน ป.ป.ท.
+                เปิดให้บริการตลอด 24 ชั่วโมง ทุกจังหวัดทั่วประเทศ
+            </p>
+
+            <div class="cl-features" role="list">
+                <div class="cl-feature" role="listitem">
+                    <div class="cl-feature-icon" aria-hidden="true">
+                        <i class="bi bi-send-check-fill"></i>
+                    </div>
+                    <div class="cl-feature-text">
+                        <strong>ยื่นเรื่องได้ 15 ช่องทาง</strong>
+                        <span>ออนไลน์ โทรศัพท์ ไปรษณีย์ และอื่น ๆ</span>
+                    </div>
+                </div>
+                <div class="cl-feature" role="listitem">
+                    <div class="cl-feature-icon" aria-hidden="true">
+                        <i class="bi bi-activity"></i>
+                    </div>
+                    <div class="cl-feature-text">
+                        <strong>ติดตามสถานะแบบ Real-time</strong>
+                        <span>รับแจ้งเตือนทุกขั้นตอนการดำเนินคดี</span>
+                    </div>
+                </div>
+                <div class="cl-feature" role="listitem">
+                    <div class="cl-feature-icon" aria-hidden="true">
+                        <i class="bi bi-shield-lock-fill"></i>
+                    </div>
+                    <div class="cl-feature-text">
+                        <strong>ปลอดภัยตามมาตรฐาน PDPA</strong>
+                        <span>ข้อมูลของท่านได้รับการปกป้องตามกฎหมาย</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cl-stats" aria-label="ข้อมูลระบบ">
+                <div class="cl-stat-box">
+                    <span class="cl-stat-n">15</span>
+                    <span class="cl-stat-l">ช่องทางรับเรื่อง</span>
+                </div>
+                <div class="cl-stat-box">
+                    <span class="cl-stat-n">24/7</span>
+                    <span class="cl-stat-l">เปิดบริการตลอด</span>
+                </div>
+                <div class="cl-stat-box">
+                    <span class="cl-stat-n">77</span>
+                    <span class="cl-stat-l">จังหวัดทั่วประเทศ</span>
+                </div>
+            </div>
+        </div>
+
+        @* RIGHT *@
+        <div class="cl-right">
+            <div class="cl-form">
+
+                @if (viewMode == CitizenView.Otp)
+                {
+                    <div class="cl-form-badge"><i class="bi bi-shield-lock-fill"></i> ยืนยันตัวตน</div>
+                    <div class="cl-form-title">กรอก OTP</div>
+                    <div class="cl-form-sub">ระบบส่งรหัส OTP ไปยัง @otpEmail</div>
+
+
+
+                    @if (!string.IsNullOrEmpty(otpErr))
+                    {
+                        <div class="cl-alert cl-err" role="alert">
+                            <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
+                            <span>@otpErr</span>
+                        </div>
+                    }
+
+                    <div class="cl-field">
+                        <label class="cl-lbl" for="cl-otp">รหัส OTP (6 หลัก)</label>
+                        <div class="cl-iw">
+                            <input id="cl-otp" class="cl-inp" type="text" inputmode="numeric"
+                                   @bind="otpCode" @bind:event="oninput" @onkeydown="OnOtpKey"
+                                   placeholder="000000" maxlength="6" autocomplete="one-time-code" />
+                            <i class="bi bi-key-fill cl-ico" aria-hidden="true"></i>
+                        </div>
+                    </div>
+
+                    <button class="cl-btn-primary" @onclick="SubmitOtp"
+                            disabled="@(busy || otpCode.Length < 6)">
+                        @if (busy) { <span class="cl-spin" aria-hidden="true"></span><span>กำลังตรวจสอบ...</span> }
+                        else { <i class="bi bi-check-circle" aria-hidden="true"></i><span>ยืนยัน OTP</span> }
+                    </button>
+
+                    <button type="button" class="cl-back-btn" @onclick="ResendOtp" disabled="@busy">
+                        <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>ส่ง OTP ใหม่
+                    </button>
+                    <button type="button" class="cl-back-btn" style="margin-top:6px"
+                            @onclick='() => { viewMode = CitizenView.Main; otpErr = ""; otpCode = ""; }'>
+                        <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>กลับ
+                    </button>
+                }
+                else if (viewMode == CitizenView.ForceChangePassword)
+                {
+                    <div class="cl-form-badge"><i class="bi bi-lock-fill"></i> เปลี่ยนรหัสผ่าน</div>
+                    <div class="cl-form-title">ตั้งรหัสผ่านใหม่</div>
+                    <div class="cl-form-sub">กรุณาตั้งรหัสผ่านใหม่ก่อนเข้าใช้งาน</div>
+
+                    @if (!string.IsNullOrEmpty(changePwdErr))
+                    {
+                        <div class="cl-alert cl-err" role="alert">
+                            <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
+                            <span>@changePwdErr</span>
+                        </div>
+                    }
+
+                    <div class="cl-field">
+                        <label class="cl-lbl" for="cl-newpw">รหัสผ่านใหม่</label>
+                        <div class="cl-iw">
+                            <input id="cl-newpw" class="cl-inp cl-inp-pr"
+                                   type="@(showNewPwd ? "text" : "password")"
+                                   @bind="newPwd" @bind:event="oninput"
+                                   placeholder="อย่างน้อย 8 ตัวอักษร" autocomplete="new-password" />
+                            <i class="bi bi-lock cl-ico" aria-hidden="true"></i>
+                            <button type="button" class="cl-eye" @onclick='() => showNewPwd = !showNewPwd'>
+                                <i class="bi @(showNewPwd ? "bi-eye-slash" : "bi-eye")" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="cl-field">
+                        <label class="cl-lbl" for="cl-confirmpw">ยืนยันรหัสผ่านใหม่</label>
+                        <div class="cl-iw">
+                            <input id="cl-confirmpw" class="cl-inp cl-inp-pr"
+                                   type="@(showConfirmPwd ? "text" : "password")"
+                                   @bind="confirmPwd" @bind:event="oninput"
+                                   placeholder="กรอกรหัสผ่านอีกครั้ง" autocomplete="new-password" />
+                            <i class="bi bi-lock cl-ico" aria-hidden="true"></i>
+                            <button type="button" class="cl-eye" @onclick='() => showConfirmPwd = !showConfirmPwd'>
+                                <i class="bi @(showConfirmPwd ? "bi-eye-slash" : "bi-eye")" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button class="cl-btn-primary" @onclick="SubmitChangePassword"
+                            disabled="@(busy || string.IsNullOrWhiteSpace(newPwd) || string.IsNullOrWhiteSpace(confirmPwd))">
+                        @if (busy) { <span class="cl-spin" aria-hidden="true"></span><span>กำลังบันทึก...</span> }
+                        else { <i class="bi bi-check-circle" aria-hidden="true"></i><span>บันทึกรหัสผ่าน</span> }
+                    </button>
+                }
+                else if (viewMode == CitizenView.ForgotPassword)
+                {
+                    <div class="cl-form-badge"><i class="bi bi-envelope-fill"></i> รีเซ็ตรหัสผ่าน</div>
+                    <div class="cl-form-title">ลืมรหัสผ่าน</div>
+                    <div class="cl-form-sub">กรอกอีเมลเพื่อรับลิงก์รีเซ็ตรหัสผ่าน</div>
+
+                    @if (forgotSuccess)
+                    {
+                        <div class="cl-alert cl-ok" role="alert">
+                            <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                            <span>ส่งลิงก์รีเซ็ตไปยังอีเมลแล้ว กรุณาตรวจสอบกล่องจดหมาย</span>
+                        </div>
+                        <button class="cl-btn-primary"
+                                @onclick='() => { viewMode = CitizenView.Main; forgotSuccess = false; }'>
+                            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                            <span>กลับหน้าเข้าสู่ระบบ</span>
+                        </button>
+                    }
+                    else
+                    {
+                        @if (!string.IsNullOrEmpty(forgotErr))
+                        {
+                            <div class="cl-alert cl-err" role="alert">
+                                <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
+                                <span>@forgotErr</span>
+                            </div>
+                        }
+                        <div class="cl-field">
+                            <label class="cl-lbl" for="cl-forgot-email">อีเมล</label>
+                            <div class="cl-iw">
+                                <input id="cl-forgot-email" class="cl-inp" type="email"
+                                       @bind="forgotEmail" @bind:event="oninput"
+                                       placeholder="example@email.com"
+                                       autocomplete="email" inputmode="email" />
+                                <i class="bi bi-envelope cl-ico" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                        <button class="cl-btn-primary" @onclick="SubmitForgotPassword"
+                                disabled="@string.IsNullOrWhiteSpace(forgotEmail)">
+                            <i class="bi bi-send" aria-hidden="true"></i>
+                            <span>ส่งลิงก์รีเซ็ต</span>
+                        </button>
+                        <button type="button" class="cl-back-btn"
+                                @onclick='() => viewMode = CitizenView.Main'>
+                            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>กลับ
+                        </button>
+                    }
+                }
+                else
+                {
+                    <div class="cl-form-badge"><i class="bi bi-person-fill"></i> ประชาชนทั่วไป</div>
+                    <div class="cl-form-title">เข้าสู่ระบบ</div>
+                    <div class="cl-form-sub">E-CMIS Citizen Portal · สำนักงาน ป.ป.ท.</div>
+
+                    @if (!string.IsNullOrEmpty(loginErr))
+                    {
+                        <div class="cl-alert cl-err" role="alert">
+                            <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
+                            <span>@loginErr</span>
+                        </div>
+                    }
+
+                    <form autocomplete="@FormAutocomplete" @onsubmit="SubmitLogin" @onsubmit:preventDefault>
+                    <div class="cl-field">
+                        <label class="cl-lbl" for="cl-email">อีเมล</label>
+                        <div class="cl-iw">
+                            <input id="cl-email" name="username" class="cl-inp" type="email"
+                                   @bind="email" @bind:event="oninput"
+                                   placeholder="example@email.com"
+                                   autocomplete="@EmailAutocomplete" inputmode="email" />
+                            <i class="bi bi-envelope cl-ico" aria-hidden="true"></i>
+                        </div>
+                    </div>
+
+                    <div class="cl-field">
+                        <label class="cl-lbl" for="cl-pw">รหัสผ่าน</label>
+                        <div class="cl-iw">
+                            <input id="cl-pw" name="password" class="cl-inp cl-inp-pr"
+                                   type="@(showPw ? "text" : "password")"
+                                   @bind="password" @bind:event="oninput"
+                                   placeholder="••••••••" autocomplete="@PasswordAutocomplete" />
+                            <i class="bi bi-lock cl-ico" aria-hidden="true"></i>
+                            <button type="button" class="cl-eye" @onclick='() => showPw = !showPw'
+                                    aria-label="@(showPw ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน")">
+                                <i class="bi @(showPw ? "bi-eye-slash" : "bi-eye")" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="cl-row">
+                        <label class="cl-check">
+                            <input type="checkbox" @bind="remember" />
+                            <span title="จดจำอีเมลบนเครื่องนี้ และให้เบราว์เซอร์จัดเก็บรหัสผ่าน (ไม่เก็บรหัสผ่านในระบบ)">จดจำการเข้าสู่ระบบ</span>
+                        </label>
+                        <button type="button" class="cl-forgot"
+                                @onclick='() => { viewMode = CitizenView.ForgotPassword; loginErr = ""; }'>
+                            ลืมรหัสผ่าน?
+                        </button>
+                    </div>
+
+                    <p class="cl-session-note">หลังเข้าสู่ระบบ การใช้งานจะหมดอายุภายใน 8 ชั่วโมง</p>
+
+                    <button type="submit" class="cl-btn-primary"
+                            disabled="@(busy || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))">
+                        @if (busy)
+                        {
+                            <span class="cl-spin" aria-hidden="true"></span>
+                            <span>กำลังตรวจสอบ...</span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
+                            <span>เข้าสู่ระบบ</span>
+                        }
+                    </button>
+                    </form>
+
+                    <div class="cl-or" aria-hidden="true">หรือ</div>
+
+                    <button class="cl-btn-thaid" @onclick="LoginThaiD" disabled="@busy">
+                        <i class="bi bi-credit-card-2-front-fill" aria-hidden="true"></i>
+                        <span>เข้าสู่ระบบด้วย ThaiD</span>
+                    </button>
+
+                    <div class="cl-register-row">
+                        ยังไม่มีบัญชี?
+                        <a href="/citizen/register">ลงทะเบียนที่นี่</a>
+                    </div>
+                }
+
+                <div class="cl-panel-foot" aria-label="ใบรับรองความปลอดภัย">
+                    <div class="cl-trust-item">
+                        <i class="bi bi-shield-lock-fill" aria-hidden="true"></i>
+                        <span>ISO 27001</span>
+                    </div>
+                    <div class="cl-trust-item">
+                        <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+                        <span>PDPA</span>
+                    </div>
+                    <div class="cl-trust-item">
+                        <i class="bi bi-lock-fill" aria-hidden="true"></i>
+                        <span>TLS 1.3</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+</div>
+
+@code {
+    private enum CitizenView { Main, Otp, ForceChangePassword, ForgotPassword }
+    private CitizenView viewMode = CitizenView.Main;
+
+    // Main login
+    private string email = "", password = "", loginErr = "";
+    private bool showPw, remember, busy;
+
+    private string FormAutocomplete => remember ? "on" : "off";
+    private string EmailAutocomplete => remember ? "email" : "off";
+    private string PasswordAutocomplete => remember ? "current-password" : "off";
+
+    // OTP
+    private string pendingUsername = "", otpEmail = "", otpCode = "", otpErr = "";
+    private DateTimeOffset? otpExpiresAt;
+
+    // Force change password
+    private string newPwd = "", confirmPwd = "", changePwdErr = "";
+    private bool showNewPwd, showConfirmPwd;
+
+    // Forgot password
+    private string forgotEmail = "", forgotErr = "";
+    private bool forgotSuccess;
+
+    public void Dispose() { }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var savedUser = await SessionSvc.LoadSavedUsernameAsync();
+        if (!string.IsNullOrWhiteSpace(savedUser))
+        {
+            email = savedUser;
+            remember = true;
+            StateHasChanged();
+        }
+
+        if (await AuthApi.TryRestoreSessionAsync())
+            Nav.NavigateTo("/citizen/dashboard", forceLoad: true);
+    }
+
+    private Task SubmitLogin() => DoLogin();
+
+    private async Task DoLogin()
+    {
+        busy = true; loginErr = "";
+
+        try
+        {
+            var result = await AuthApi.LoginAsync(email.Trim(), password, remember);
+            await HandleLoginResponse(result);
+        }
+        catch (Exception ex) { loginErr = ex.Message; }
+        finally { busy = false; }
+    }
+
+    private async Task HandleLoginResponse(EcmisWeb.Services.LoginResponse result)
+    {
+        if (result.RequiresOtp)
+        {
+            pendingUsername = result.Username;
+            otpEmail        = result.Email;
+            otpExpiresAt    = result.OtpExpiresAt;
+            otpCode         = "";
+            otpErr          = "";
+            viewMode        = CitizenView.Otp;
+            StateHasChanged();
+            return;
+        }
+
+        if (result.MustChangePassword)
+        {
+            if (!string.IsNullOrWhiteSpace(result.Username))
+                pendingUsername = result.Username;
+            if (!string.IsNullOrWhiteSpace(result.AccessToken))
+            {
+                await SessionSvc.SetSessionAsync(
+                    result.AccessToken,
+                    result.RefreshToken,
+                    result.TokenType ?? "Bearer",
+                    rememberMe: remember,
+                    expiresInSeconds: result.ExpiresIn > 0 ? result.ExpiresIn : null);
+            }
+            viewMode     = CitizenView.ForceChangePassword;
+            newPwd       = "";
+            confirmPwd   = "";
+            changePwdErr = "";
+            StateHasChanged();
+            return;
+        }
+
+        await SessionSvc.ApplyAuthTokensAsync(
+            result.AccessToken,
+            result.RefreshToken,
+            result.TokenType ?? "Bearer",
+            remember,
+            result.ExpiresIn > 0 ? result.ExpiresIn : null,
+            pendingUsername.Length > 0 ? pendingUsername : email.Trim());
+
+        Nav.NavigateTo("/citizen/dashboard", forceLoad: true);
+    }
+
+    private async Task SubmitOtp()
+    {
+        otpErr = "";
+        if (string.IsNullOrWhiteSpace(pendingUsername) || string.IsNullOrWhiteSpace(otpCode))
+        { otpErr = "กรุณากรอก OTP"; return; }
+
+        busy = true;
+        try
+        {
+            var result = await AuthApi.VerifyOtpAsync(pendingUsername, otpCode.Trim());
+            await HandleLoginResponse(result);
+        }
+        catch (Exception ex) { otpErr = ex.Message; }
+        finally { busy = false; }
+    }
+
+    private async Task ResendOtp()
+    {
+        otpErr = "";
+        busy = true;
+        try
+        {
+            var result = await AuthApi.ResendOtpAsync(pendingUsername, remember);
+            otpEmail     = result.Email;
+            otpExpiresAt = result.OtpExpiresAt;
+            otpCode      = "";
+        }
+        catch (Exception ex) { otpErr = ex.Message; }
+        finally { busy = false; }
+    }
+
+    private async Task SubmitChangePassword()
+    {
+        changePwdErr = "";
+        if (string.IsNullOrWhiteSpace(newPwd) || newPwd.Length < 8)
+        { changePwdErr = "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"; return; }
+        if (newPwd != confirmPwd)
+        { changePwdErr = "รหัสผ่านไม่ตรงกัน"; return; }
+
+        busy = true;
+        try
+        {
+            var result = await AuthApi.ChangePasswordAsync(pendingUsername, otpCode, newPwd, confirmPwd);
+            await SessionSvc.ApplyAuthTokensAsync(
+                result.AccessToken,
+                result.RefreshToken,
+                result.TokenType ?? "Bearer",
+                remember,
+                result.ExpiresIn > 0 ? result.ExpiresIn : null,
+                pendingUsername);
+
+            Nav.NavigateTo("/citizen/dashboard", forceLoad: true);
+        }
+        catch (Exception ex) { changePwdErr = ex.Message; }
+        finally { busy = false; }
+    }
+
+    private async Task OnOtpKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await SubmitOtp();
+    }
+
+    private async Task LoginThaiD()
+    {
+        busy = true; loginErr = "";
+        try { await ThaiDSvc.RedirectToThaiDAsync("citizen"); }
+        catch (Exception ex) { loginErr = $"ไม่สามารถเชื่อมต่อ ThaiD ได้: {ex.Message}"; busy = false; }
+    }
+
+    private async Task SubmitForgotPassword()
+    {
+        forgotErr = "";
+        if (string.IsNullOrWhiteSpace(forgotEmail)) { forgotErr = "กรุณากรอกอีเมล"; return; }
+        busy = true;
+        try
+        {
+            var result = await AuthApi.ForgotPasswordAsync(forgotEmail.Trim());
+            if (!result.Success) { forgotErr = result.Error ?? "เกิดข้อผิดพลาด"; return; }
+            forgotSuccess = true;
+        }
+        catch (Exception ex) { forgotErr = ex.Message; }
+        finally { busy = false; }
+    }
+}

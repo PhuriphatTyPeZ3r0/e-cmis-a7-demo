@@ -1,0 +1,485 @@
+@page "/dashboard"
+@page "/user/dashboard"
+@page "/citizen/dashboard"
+@using System.Globalization
+@using EcmisWeb.Data
+@implements IAsyncDisposable
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<div class="dd-shell">
+
+    @* ══ HEADER ══ *@
+    <div class="dd-hd">
+        <div class="dd-hd-brand">
+            <div class="dd-brand-box"><i class="bi bi-speedometer2"></i></div>
+            <div class="dd-brand-text">
+                <div class="dd-brand-title">E-CMIS</div>
+                <div class="dd-brand-sub">COMMAND CENTER</div>
+            </div>
+            <div class="dd-live">
+                <span class="dd-live-dot"></span> LIVE
+            </div>
+        </div>
+
+        <div class="dd-hd-kpis">
+            <div class="dd-hd-kpi">
+                <div class="dd-hd-kpi-num kn-indigo">@complaints.Count</div>
+                <div class="dd-hd-kpi-lbl">ทั้งหมด</div>
+            </div>
+            <div class="dd-hd-kpi">
+                <div class="dd-hd-kpi-num kn-orange">@PendingCount</div>
+                <div class="dd-hd-kpi-lbl">รอดำเนินการ</div>
+            </div>
+            <div class="dd-hd-kpi">
+                <div class="dd-hd-kpi-num kn-red">@SlaExpiredCount</div>
+                <div class="dd-hd-kpi-lbl">SLA หมดอายุ</div>
+            </div>
+            <div class="dd-hd-kpi">
+                <div class="dd-hd-kpi-num kn-teal">@CompletedCount</div>
+                <div class="dd-hd-kpi-lbl">เสร็จสิ้น</div>
+            </div>
+            <div class="dd-hd-kpi">
+                <div class="dd-hd-kpi-num kn-blue">@TodayCount</div>
+                <div class="dd-hd-kpi-lbl">วันนี้</div>
+            </div>
+        </div>
+
+        <div class="dd-hd-right">
+            <div class="dd-clock">
+                <div class="dd-clock-t">@_now.ToString("HH:mm:ss")</div>
+                <div class="dd-clock-d">@_now.ToString("d MMMM yyyy", new CultureInfo("th-TH"))</div>
+            </div>
+            <button class="dd-hd-btn" @onclick="ExportToCsv">
+                <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+            </button>
+            <button class="dd-hd-btn" @onclick="ExportToJson">
+                <i class="bi bi-file-earmark-code"></i> JSON
+            </button>
+        </div>
+    </div>
+
+    @* ══ BODY — 3 column ══ *@
+    <div class="dd-body">
+
+        @* ── LEFT COLUMN ── *@
+        <div class="dd-col">
+
+            @* Urgent / SLA cases *@
+            <div class="dd-sec">
+                <div class="dd-sec-head">
+                    <div class="dd-sec-title">
+                        <span class="dd-sec-dot" style="background:#f87171"></span>
+                        เร่งด่วน / SLA
+                    </div>
+                    <span class="dd-sec-badge">@SlaCriticalCases.Count() เรื่อง</span>
+                </div>
+                <div class="dd-urgent-list">
+                    @if (SlaCriticalCases.Any())
+                    {
+                        int rank = 1;
+                        foreach (var c in SlaCriticalCases.Take(8))
+                        {
+                            var priCls  = c.DaysRemaining <= 0  ? "high"
+                                        : c.DaysRemaining < 90  ? "medium"
+                                        : "low";
+                            var chipCls = c.DaysRemaining <= 0  ? "expired"
+                                        : c.DaysRemaining < 90  ? "warn"
+                                        : "ok";
+                            var chipLbl = c.DaysRemaining <= 0  ? "หมดอายุ"
+                                        : $"+{c.DaysRemaining}ว";
+                            <div class="dd-urgent-row" @onclick='() => Nav.NavigateTo($"/complaints/{c.Id}")'>
+                                <div class="dd-urgent-rank">@rank</div>
+                                <div class="dd-priority-bar @priCls"></div>
+                                <div class="dd-urgent-body">
+                                    <div class="dd-urgent-caseno">@c.CaseNo</div>
+                                    <div class="dd-urgent-name">@c.Accused</div>
+                                    <div class="dd-urgent-agency">@c.AccusedAgency</div>
+                                </div>
+                                <div class="dd-days-chip @chipCls">@chipLbl</div>
+                            </div>
+                            rank++;
+                        }
+                    }
+                    else
+                    {
+                        <div class="dd-empty">
+                            <i class="bi bi-check-circle" style="font-size:20px;display:block;margin-bottom:5px"></i>
+                            ไม่มีเรื่องเร่งด่วน
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @* Channel breakdown *@
+            <div class="dd-sec">
+                <div class="dd-sec-head">
+                    <div class="dd-sec-title">
+                        <span class="dd-sec-dot" style="background:#818cf8"></span>
+                        ช่องทางรับเรื่อง
+                    </div>
+                    <span class="dd-sec-badge">15 ช่องทาง</span>
+                </div>
+                <div class="dd-ch-list">
+                    @foreach (var ch in AllChannelSummaries)
+                    {
+                        <div class="dd-ch-row">
+                            <div class="dd-ch-name">@ch.Name</div>
+                            <div class="dd-ch-bar-wrap">
+                                <div class="dd-ch-bar-fill" style="width:@(ch.Percent)%"></div>
+                            </div>
+                            <div class="dd-ch-num">@ch.Count</div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>@* /dd-col left *@
+
+        @* ── CENTER COLUMN ── *@
+        <div class="dd-col-center">
+
+            @* KPI strip *@
+            <div class="dd-kpi-strip">
+                <div class="dd-kpi-box k-indigo">
+                    <div class="dd-kpi-lbl"><i class="bi bi-folder2-open"></i> รวมทั้งหมด</div>
+                    <div class="dd-kpi-num">@complaints.Count</div>
+                    <div class="dd-kpi-desc">เรื่องร้องทุกข์</div>
+                    <div class="dd-kpi-sub">Single Portal ทุกช่องทาง</div>
+                </div>
+                <div class="dd-kpi-box k-orange">
+                    <div class="dd-kpi-lbl"><i class="bi bi-hourglass-split"></i> รอดำเนินการ</div>
+                    <div class="dd-kpi-num">@PendingCount</div>
+                    <div class="dd-kpi-desc">เรื่อง</div>
+                    <div class="dd-kpi-breakdown">
+                        <span>ม.18/4 <b>@PendingCount184</b></span>
+                        <span>ม.62 <b>@PendingCount62</b></span>
+                        <span>ม.58/2 <b>@PendingCount582</b></span>
+                    </div>
+                </div>
+                <div class="dd-kpi-box k-red">
+                    <div class="dd-kpi-lbl"><i class="bi bi-alarm-fill"></i> SLA หมดอายุ</div>
+                    <div class="dd-kpi-num">@SlaExpiredCount</div>
+                    <div class="dd-kpi-desc">เรื่องเกินกำหนด</div>
+                    <div class="dd-kpi-sub">ใกล้ครบ 90 วัน: @SlaNear90Count เรื่อง</div>
+                </div>
+                <div class="dd-kpi-box k-teal">
+                    <div class="dd-kpi-lbl"><i class="bi bi-check-circle-fill"></i> ดำเนินการแล้ว</div>
+                    <div class="dd-kpi-num">@CompletedCount</div>
+                    <div class="dd-kpi-desc">เรื่อง</div>
+                    <div class="dd-kpi-prog">
+                        <div class="dd-kpi-prog-fill" style="width:@PerformanceRate%"></div>
+                    </div>
+                    <div class="dd-kpi-prog-lbl">ประสิทธิผล @PerformanceRate%</div>
+                </div>
+            </div>
+
+            @* Trend chart *@
+            <div class="dd-sec" style="flex:1">
+                <div class="dd-sec-head">
+                    <div class="dd-sec-title">
+                        <span class="dd-sec-dot" style="background:#818cf8"></span>
+                        แนวโน้มรายเดือน
+                    </div>
+                    <span class="dd-sec-badge">ปีงบประมาณ 2568</span>
+                </div>
+                <div class="dd-chart-wrap">
+                    <canvas id="dashChart"></canvas>
+                </div>
+            </div>
+
+            @* Latest cases table *@
+            <div class="dd-sec">
+                <div class="dd-sec-head">
+                    <div class="dd-sec-title">
+                        <span class="dd-sec-dot" style="background:#06d6a0"></span>
+                        รายการล่าสุด
+                    </div>
+                    <button class="dd-sec-link" @onclick='() => Nav.NavigateTo("/complaints")'>
+                        ดูทั้งหมด <i class="bi bi-arrow-right-short"></i>
+                    </button>
+                </div>
+                <div style="overflow-x:auto">
+                    <table class="dd-tbl">
+                        <thead>
+                            <tr>
+                                <th>เลขสำนวน</th>
+                                <th>วันที่รับ</th>
+                                <th>ผู้ถูกร้อง</th>
+                                <th>หน่วยงาน</th>
+                                <th>ช่องทาง</th>
+                                <th>สถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in LatestComplaints)
+                            {
+                                <tr @onclick='() => Nav.NavigateTo($"/complaints/{item.Id}")'>
+                                    <td><span class="dd-cn">@item.CaseNo</span></td>
+                                    <td class="m">@ToThaiShortDate(item.ReceivedAt)</td>
+                                    <td>@item.Accused</td>
+                                    <td class="m">@item.Unit</td>
+                                    <td><span class="dd-chip-ch">@item.Channel</span></td>
+                                    <td>
+                                        <span class="dd-st @ComplaintData.StatusClass(item.Status)">
+                                            @StatusLabel(item.Status)
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>@* /dd-col-center *@
+
+        @* ── RIGHT COLUMN ── *@
+        <div class="dd-col">
+
+            @* SLA alert feed *@
+            <div class="dd-sec">
+                <div class="dd-sec-head">
+                    <div class="dd-sec-title">
+                        <span class="dd-sec-dot" style="background:#f87171;box-shadow:0 0 6px rgba(248,113,113,.6)"></span>
+                        แจ้งเตือน SLA
+                    </div>
+                    <span class="dd-sec-badge">@SlaCriticalCases.Count()</span>
+                </div>
+                <div class="dd-alerts">
+                    @if (SlaCriticalCases.Any())
+                    {
+                        @foreach (var c in SlaCriticalCases.Take(10))
+                        {
+                            var alertCls = c.DaysRemaining <= 0  ? "expired"
+                                         : c.DaysRemaining < 90  ? "warn"
+                                         : "ok";
+                            var tagLbl   = c.DaysRemaining <= 0  ? "หมดอายุ"
+                                         : $"{c.DaysRemaining}ว";
+                            <div class="dd-alert-row" @onclick='() => Nav.NavigateTo($"/complaints/{c.Id}")'>
+                                <div class="dd-alert-time">@(DateTime.Now.AddMinutes(-c.DaysRemaining % 60).ToString("HH:mm"))</div>
+                                <div class="dd-alert-dot @alertCls"></div>
+                                <div class="dd-alert-body">
+                                    <div class="dd-alert-cn">@c.CaseNo</div>
+                                    <div class="dd-alert-agency">@c.AccusedAgency</div>
+                                </div>
+                                <div class="dd-alert-tag @alertCls">@tagLbl</div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="dd-empty">
+                            <i class="bi bi-shield-check" style="font-size:20px;display:block;margin-bottom:5px"></i>
+                            SLA ทุกเรื่องปกติ
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @* Quick actions *@
+            <div class="dd-sec">
+                <div class="dd-sec-head">
+                    <div class="dd-sec-title">
+                        <span class="dd-sec-dot" style="background:#818cf8"></span>
+                        ทางลัด
+                    </div>
+                </div>
+                <div class="dd-qa-grid">
+                    <a class="dd-qa" href="/complaints/create">
+                        <div class="dd-qa-ico" style="background:linear-gradient(135deg,#4f46e5,#6366f1)">
+                            <i class="bi bi-file-earmark-plus-fill"></i>
+                        </div>
+                        <span>รับเรื่องใหม่</span>
+                    </a>
+                    <a class="dd-qa" href="/public">
+                        <div class="dd-qa-ico" style="background:linear-gradient(135deg,#059669,#06d6a0)">
+                            <i class="bi bi-cloud-arrow-down-fill"></i>
+                        </div>
+                        <span>รับอัตโนมัติ</span>
+                    </a>
+                    <a class="dd-qa" href="/complaints/routing">
+                        <div class="dd-qa-ico" style="background:linear-gradient(135deg,#c2410c,#f77f00)">
+                            <i class="bi bi-signpost-split-fill"></i>
+                        </div>
+                        <span>คัดกรอง</span>
+                    </a>
+                    <a class="dd-qa" href="/assign">
+                        <div class="dd-qa-ico" style="background:linear-gradient(135deg,#1d4ed8,#4361ee)">
+                            <i class="bi bi-person-check-fill"></i>
+                        </div>
+                        <span>มอบหมาย</span>
+                    </a>
+                    <a class="dd-qa" href="/committee">
+                        <div class="dd-qa-ico" style="background:linear-gradient(135deg,#6d28d9,#818cf8)">
+                            <i class="bi bi-chat-left-quote-fill"></i>
+                        </div>
+                        <span>บอร์ดมติ</span>
+                    </a>
+                    <a class="dd-qa" href="/complaints">
+                        <div class="dd-qa-ico" style="background:linear-gradient(135deg,#0f766e,#06d6a0)">
+                            <i class="bi bi-list-ul"></i>
+                        </div>
+                        <span>ดูทั้งหมด</span>
+                    </a>
+                </div>
+            </div>
+
+            @* Notification strips *@
+            <div class="dd-notifs">
+                @if (PendingScreeningCount > 0)
+                {
+                    <div class="dd-notif warn">
+                        <i class="bi bi-funnel-fill"></i>
+                        <span><strong>@PendingScreeningCount</strong> เรื่องรอกลั่นกรอง</span>
+                        <a href="/complaints/routing" class="dd-notif-link">จัดการ</a>
+                    </div>
+                }
+                @if (ReturnedNaccCount > 0)
+                {
+                    <div class="dd-notif danger">
+                        <i class="bi bi-alarm-fill"></i>
+                        <span><strong>@ReturnedNaccCount</strong> เรื่องต้องส่งคืน ป.ป.ช.</span>
+                        <a href="/complaints" class="dd-notif-link">ตรวจสอบ</a>
+                    </div>
+                }
+                @if (PendingScreeningCount == 0 && ReturnedNaccCount == 0)
+                {
+                    <div class="dd-notif" style="background:rgba(6,214,160,.06);border-color:rgba(6,214,160,.15);color:rgba(6,214,160,.7)">
+                        <i class="bi bi-check2-all"></i>
+                        <span>ไม่มีการแจ้งเตือนใหม่</span>
+                    </div>
+                }
+            </div>
+
+        </div>@* /dd-col right *@
+
+    </div>@* /dd-body *@
+</div>@* /dd-shell *@
+
+@code {
+    private bool _chartInitialized;
+    private bool _isDark = false;
+    private DateTime _now = DateTime.Now;
+    private System.Threading.Timer? _clockTimer;
+    private bool _clockTick;
+    private bool _needsRender = true;
+
+    protected override bool ShouldRender()
+    {
+        if (_clockTick) { _clockTick = false; return true; }
+        if (_needsRender) { _needsRender = false; return true; }
+        return false;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var saved = await JS.InvokeAsync<string>("getDashTheme");
+        _isDark = saved == "dark";
+        _needsRender = true;
+
+        _clockTimer = new System.Threading.Timer(_ =>
+        {
+            _now = DateTime.Now;
+            _clockTick = true;
+            InvokeAsync(StateHasChanged);
+        }, null, 0, 1000);
+    }
+
+    private static readonly int[]    MonthlyData = [5, 8, 12, 9, 15, 11, 18, 14, 10, 16, 22, 13];
+    private static readonly string[] MonthLabels = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_chartInitialized)
+        {
+            _chartInitialized = true;
+            await JS.InvokeVoidAsync("initDashChart", MonthLabels, MonthlyData, _isDark);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _clockTimer?.Dispose();
+        try { await JS.InvokeVoidAsync("destroyDashChart"); } catch { }
+    }
+
+    // ── Data ──────────────────────────────────────────────────────────────────
+    private IReadOnlyList<ComplaintRow> complaints => ComplaintData.Rows;
+
+    // ── KPI Counts ────────────────────────────────────────────────────────────
+    private int PendingCount          => complaints.Count(c => c.Status is "pending");
+    private int TodayCount            => complaints.Count(c => ComplaintData.IsToday(c.ReceivedAt));
+    private int CompletedCount        => complaints.Count(c => c.Status is "active" or "closed");
+    private int PendingScreeningCount => complaints.Count(c => c.RoutingStatus == "pending");
+    private int ReturnedNaccCount     => complaints.Count(c => c.Category == "ส่งคืน ป.ป.ช." || c.RoutingStatus == "returned");
+
+    // ── By Legal Type ─────────────────────────────────────────────────────────
+    private int PendingCount184 => GetCountByLegalType("18/4", "pending");
+    private int PendingCount62  => GetCountByLegalType("62",   "pending");
+    private int PendingCount582 => GetCountByLegalType("58/2", "pending");
+
+    // ── SLA Alerts ────────────────────────────────────────────────────────────
+    private IEnumerable<ComplaintRow> SlaCriticalCases => complaints
+        .Where(c => c.DaysRemaining < 180)
+        .OrderBy(c => c.DaysRemaining);
+
+    private int SlaExpiredCount => SlaCriticalCases.Count(c => c.DaysRemaining <= 0);
+    private int SlaNear90Count  => SlaCriticalCases.Count(c => c.DaysRemaining > 0 && c.DaysRemaining < 90);
+
+    // ── Table ─────────────────────────────────────────────────────────────────
+    private IEnumerable<ComplaintRow> LatestComplaints => complaints
+        .OrderByDescending(c => ComplaintData.ParseDate(c.ReceivedAt) ?? DateTime.MinValue)
+        .Take(6);
+
+    // ── Performance ───────────────────────────────────────────────────────────
+    private int PerformanceRate => 75;
+
+    // ── Channels ──────────────────────────────────────────────────────────────
+    private static readonly string[] AllChannelNames =
+    [
+        "แอปทางรัฐ", "สายด่วน 1206", "เว็บไซต์", "อีเมล", "จดหมาย",
+        "ยื่นด้วยตนเอง", "Facebook", "สปน. 1111", "หนังสือหน่วยงาน",
+        "LINE Official", "Twitter/X", "ร้องเรียนนายกฯ",
+        "สายด่วนเขต", "กล่องรับเรื่อง", "อื่นๆ"
+    ];
+
+    private IEnumerable<ChannelSummary> AllChannelSummaries
+    {
+        get
+        {
+            var grouped    = complaints.GroupBy(c => c.Channel).ToDictionary(g => g.Key, g => g.Count());
+            var mockExtras = new Dictionary<string, int>
+            {
+                ["LINE Official"]=3,["Twitter/X"]=1,["ร้องเรียนนายกฯ"]=2,
+                ["สายด่วนเขต"]=4,["กล่องรับเรื่อง"]=2,["อื่นๆ"]=1
+            };
+            var totalBase = Math.Max(complaints.Count + mockExtras.Values.Sum(), 1);
+            for (int i = 0; i < AllChannelNames.Length; i++)
+            {
+                var name  = AllChannelNames[i];
+                var count = grouped.GetValueOrDefault(name, mockExtras.GetValueOrDefault(name, 0));
+                var pct   = count == 0 ? 0 : Math.Max(3, (int)Math.Round((double)count * 100 / totalBase));
+                yield return new ChannelSummary(name, count, pct);
+            }
+        }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    private int GetCountByLegalType(string legalType, string? status = null, bool isToday = false)
+    {
+        var q = complaints.AsEnumerable()
+            .Where(c => c.CaseNo.Contains(legalType, StringComparison.OrdinalIgnoreCase));
+        if (status != null) q = q.Where(c => c.Status == status);
+        if (isToday)        q = q.Where(c => ComplaintData.IsToday(c.ReceivedAt));
+        return q.Count();
+    }
+
+    private static string StatusLabel(string status) => ComplaintData.StatusLabel(status);
+    private static string ToThaiShortDate(string s)  => ComplaintData.ToThaiShortDate(s);
+
+    private void ExportToCsv()  { }
+    private void ExportToJson() { }
+
+    private sealed record ChannelSummary(string Name, int Count, int Percent);
+}

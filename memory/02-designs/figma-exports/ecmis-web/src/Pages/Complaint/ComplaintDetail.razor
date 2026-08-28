@@ -1,0 +1,723 @@
+@page "/complaints/{Id:int}"
+@using EcmisWeb.Data
+@using EcmisWeb.Services
+@inject NavigationManager Nav
+@inject ComplaintApiService ComplaintApi
+
+@if (isLoading)
+{
+    <div class="dp-shell">
+        <div class="dp-state-center">
+            <i class="bi bi-arrow-repeat dp-spin"></i>
+            <div class="dp-state-title">กำลังโหลดข้อมูลเรื่องร้องเรียน</div>
+        </div>
+    </div>
+}
+else if (complaint is null)
+{
+    <div class="dp-shell">
+        <div class="dp-state-center">
+            <i class="bi bi-exclamation-triangle"></i>
+            <div class="dp-state-title">ไม่พบข้อมูลเรื่องร้องเรียน</div>
+            <div class="dp-state-sub">@(string.IsNullOrWhiteSpace(loadError) ? $"เลขที่ {Id} ไม่มีอยู่ในระบบ" : loadError)</div>
+            <button class="btn-navy" style="margin-top:8px" @onclick='() => Nav.NavigateTo("/complaints")'>
+                <i class="bi bi-arrow-left"></i> กลับหน้ารายการ
+            </button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="dp-shell">
+
+        @* ── Header ── *@
+        <div class="dp-header">
+            <div class="dp-header-inner">
+                <div class="dp-bc">
+                    <i class="bi bi-house-fill"></i>
+                    <a href="/">หน้าหลัก</a>
+                    <i class="bi bi-chevron-right"></i>
+                    <a href="/complaints">รายการเรื่อง</a>
+                    <i class="bi bi-chevron-right"></i>
+                    <span>@complaint.CaseNo</span>
+                </div>
+                <div class="dp-title-row">
+                    <div>
+                        <div class="dp-caseno">
+                            <i class="bi bi-folder2-open dp-caseno-ico"></i>
+                            เรื่องที่ @complaint.CaseNo
+                        </div>
+                        <div class="dp-meta-row">
+                            <span class="dp-chip dp-chip-status @ComplaintData.StatusClass(complaint.Status)">
+                                <i class="bi @ComplaintData.StatusIcon(complaint.Status)"></i>
+                                @ComplaintData.StatusLabel(complaint.Status)
+                            </span>
+                            <span class="dp-chip dp-chip-cat">@complaint.Category</span>
+                            <span class="dp-meta-item">
+                                <i class="bi bi-calendar3"></i>
+                                รับเรื่อง @ComplaintData.ToThaiShortDate(complaint.ReceivedAt)
+                            </span>
+                            <span class="dp-meta-item">
+                                <i class="bi bi-hash"></i>
+                                @complaint.TrackNo
+                            </span>
+                        </div>
+                    </div>
+                    <div class="dp-actions">
+                        <button class="dp-btn-ghost" @onclick='() => Nav.NavigateTo("/complaints")'>
+                            <i class="bi bi-arrow-left"></i> กลับ
+                        </button>
+                        @foreach (var action in availableActions)
+                        {
+                            <button class="@ActionButtonClass(action.Action)"
+                                    disabled="@actionInProgress"
+                                    title="@action.Endpoint"
+                                    @onclick="() => OpenActionModal(action)">
+                                <i class="bi @ActionIcon(action.Action)"></i> @ActionLabel(action)
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dp-body">
+
+            @if (!string.IsNullOrWhiteSpace(actionMessage))
+            {
+                <div class="dp-alert">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <span>@actionMessage</span>
+                </div>
+            }
+
+            @* ── ผู้ร้อง + ผู้ถูกร้อง ── *@
+            <div class="dp-grid-2">
+                <div class="dp-card">
+                    <div class="dp-card-head">
+                        <div class="dp-card-ico dp-ico-blue"><i class="bi bi-person-fill"></i></div>
+                        ข้อมูลผู้ร้องเรียน
+                    </div>
+                    <div class="dp-field">
+                        <div class="dp-lbl">ชื่อ-สกุล</div>
+                        <div class="dp-val">@complaint.Complainant</div>
+                    </div>
+                    <div class="dp-field">
+                        <div class="dp-lbl">ช่องทางรับเรื่อง</div>
+                        <div class="dp-val">
+                            <span class="dp-chip dp-chip-channel">@complaint.Channel</span>
+                        </div>
+                    </div>
+                    <div class="dp-field">
+                        <div class="dp-lbl">หน่วยงานรับเรื่อง</div>
+                        <div class="dp-val">@complaint.Unit</div>
+                    </div>
+                </div>
+
+                <div class="dp-card">
+                    <div class="dp-card-head">
+                        <div class="dp-card-ico dp-ico-orange"><i class="bi bi-person-exclamation"></i></div>
+                        ข้อมูลผู้ถูกร้องเรียน
+                    </div>
+                    <div class="dp-field">
+                        <div class="dp-lbl">ชื่อ-สกุล</div>
+                        <div class="dp-val">@complaint.Accused</div>
+                    </div>
+                    <div class="dp-field">
+                        <div class="dp-lbl">หน่วยงานสังกัด</div>
+                        <div class="dp-val">@complaint.AccusedAgency</div>
+                    </div>
+                    <div class="dp-field">
+                        <div class="dp-lbl">จังหวัดที่เกิดเหตุ</div>
+                        <div class="dp-val">@complaint.Province</div>
+                    </div>
+                </div>
+            </div>
+
+            @* ── รายละเอียด ── *@
+            <div class="dp-card">
+                <div class="dp-card-head">
+                    <div class="dp-card-ico dp-ico-indigo"><i class="bi bi-chat-left-text-fill"></i></div>
+                    รายละเอียดเรื่องร้องเรียน
+                </div>
+                <p class="dp-desc">@complaint.Description</p>
+                <div class="dp-desc-meta">
+                    <span><span class="dp-lbl-inline">ประเภทคดี:</span> @ComplaintData.CategoryLabel(complaint.Category)</span>
+                    <span><span class="dp-lbl-inline">ความสำคัญ:</span> @ComplaintData.PriorityLabel(complaint.Priority)</span>
+                    @if (complaint.DaysRemaining > 0 && complaint.DaysRemaining < 180)
+                    {
+                        <span class="dp-urgent-text">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            อายุความเหลือ ~@complaint.DaysRemaining วัน
+                        </span>
+                    }
+                </div>
+            </div>
+
+            @* ── Timeline + เอกสาร/คดีย่อย ── *@
+            <div class="dp-grid-2">
+                <div class="dp-card">
+                    <div class="dp-card-head">
+                        <div class="dp-card-ico dp-ico-green"><i class="bi bi-clock-history"></i></div>
+                        ไทม์ไลน์การดำเนินการ
+                    </div>
+                    <div class="dp-timeline">
+                        @if (apiTimeline.Any())
+                        {
+                            @foreach (var item in apiTimeline.OrderBy(t => t.PerformedAt))
+                            {
+                                <div class="dp-tl-item">
+                                    <div class="dp-tl-dot dp-tl-done"></div>
+                                    <div class="dp-tl-content">
+                                        <div class="dp-tl-date">@ToThaiShortDate(item.PerformedAt)</div>
+                                        <div class="dp-tl-title">@TimelineTitle(item)</div>
+                                        <div class="dp-tl-desc">
+                                            @(string.IsNullOrWhiteSpace(item.ActionNote) ? $"สถานะ: {item.ToStatus}" : item.ActionNote)
+                                            @if (!string.IsNullOrWhiteSpace(item.PerformedByName))
+                                            {
+                                                <span> — @item.PerformedByName</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="dp-tl-item">
+                                <div class="dp-tl-dot dp-tl-done"></div>
+                                <div class="dp-tl-content">
+                                    <div class="dp-tl-date">@ComplaintData.ToThaiShortDate(complaint.ReceivedAt)</div>
+                                    <div class="dp-tl-title">รับเรื่องร้องเรียน</div>
+                                    <div class="dp-tl-desc">เข้าระบบผ่านช่องทาง @complaint.Channel โดย @complaint.Unit</div>
+                                </div>
+                            </div>
+                            <div class="dp-tl-item">
+                                <div class="dp-tl-dot @(complaint.RoutingStatus != "pending" ? "dp-tl-done" : "dp-tl-active")"></div>
+                                <div class="dp-tl-content">
+                                    <div class="dp-tl-date">@ComplaintData.ToThaiShortDate(complaint.ReceivedAt)</div>
+                                    <div class="dp-tl-title">คัดกรอง/กลั่นกรองเรื่อง</div>
+                                    <div class="dp-tl-desc">ประเภท: @complaint.Category — @complaint.StatusText</div>
+                                </div>
+                            </div>
+                            @if (complaint.RoutingStatus == "routed")
+                            {
+                                <div class="dp-tl-item">
+                                    <div class="dp-tl-dot @(complaint.Status is "active" or "closed" ? "dp-tl-done" : "dp-tl-active")"></div>
+                                    <div class="dp-tl-content">
+                                        <div class="dp-tl-date">-</div>
+                                        <div class="dp-tl-title">มอบหมายสำนักไต่สวน</div>
+                                        <div class="dp-tl-desc">ส่งไปยัง @complaint.Unit เพื่อดำเนินการแสวงหาข้อเท็จจริง</div>
+                                    </div>
+                                </div>
+                                <div class="dp-tl-item">
+                                    <div class="dp-tl-dot @(complaint.Status == "closed" ? "dp-tl-done" : "")"></div>
+                                    <div class="dp-tl-content">
+                                        <div class="dp-tl-date">-</div>
+                                        <div class="dp-tl-title">ดำเนินการไต่สวน</div>
+                                        <div class="dp-tl-desc">อยู่ระหว่างแสวงหาข้อเท็จจริง</div>
+                                    </div>
+                                </div>
+                                <div class="dp-tl-item">
+                                    <div class="dp-tl-dot"></div>
+                                    <div class="dp-tl-content">
+                                        <div class="dp-tl-date">-</div>
+                                        <div class="dp-tl-title">สรุปผลและรายงาน</div>
+                                        <div class="dp-tl-desc">เสนอคณะกรรมการ ป.ป.ท. พิจารณา</div>
+                                    </div>
+                                </div>
+                            }
+                            @if (complaint.RoutingStatus == "returned")
+                            {
+                                <div class="dp-tl-item">
+                                    <div class="dp-tl-dot dp-tl-done"></div>
+                                    <div class="dp-tl-content">
+                                        <div class="dp-tl-date">-</div>
+                                        <div class="dp-tl-title">ส่งคืน ป.ป.ช.</div>
+                                        <div class="dp-tl-desc">เรื่องอยู่ในอำนาจ ป.ป.ช. ส่งภายใน 15 วัน</div>
+                                    </div>
+                                </div>
+                            }
+                            @if (complaint.RoutingStatus == "discipline")
+                            {
+                                <div class="dp-tl-item">
+                                    <div class="dp-tl-dot dp-tl-done"></div>
+                                    <div class="dp-tl-content">
+                                        <div class="dp-tl-date">-</div>
+                                        <div class="dp-tl-title">ส่ง สพท. กลุ่มงานวินัย</div>
+                                        <div class="dp-tl-desc">ร้องเรียนเจ้าหน้าที่ ป.ป.ท. ส่งตรวจสอบวันต่อวัน</div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <div class="dp-right-col">
+                    @* เอกสาร *@
+                    <div class="dp-card">
+                        <div class="dp-card-head">
+                            <div class="dp-card-ico dp-ico-indigo"><i class="bi bi-file-earmark-richtext"></i></div>
+                            สร้างเอกสาร (One-Click)
+                        </div>
+                        <div class="dp-doc-list">
+                            <button class="dp-doc-btn" @onclick="() => docGenerated = true">
+                                <i class="bi bi-file-earmark-pdf"></i>
+                                หนังสือสรุปเรื่อง (แบบ 103)
+                            </button>
+                            <button class="dp-doc-btn" @onclick="() => docGenerated = true">
+                                <i class="bi bi-envelope-paper"></i>
+                                หนังสือแจ้งผลผู้ร้อง
+                            </button>
+                            <button class="dp-doc-btn" @onclick="() => docGenerated = true">
+                                <i class="bi bi-file-earmark-text"></i>
+                                บันทึกข้อความเสนอผู้บริหาร
+                            </button>
+                        </div>
+                        @if (docGenerated)
+                        {
+                            <div class="dp-doc-ok">
+                                <i class="bi bi-check-circle-fill"></i>
+                                สร้างเอกสารสำเร็จ (Mockup) — พร้อมดาวน์โหลด
+                            </div>
+                        }
+                    </div>
+
+                    @* คดีย่อย *@
+                    <div class="dp-card">
+                        <div class="dp-card-head">
+                            <div class="dp-card-ico dp-ico-red"><i class="bi bi-diagram-3"></i></div>
+                            คดีย่อยที่เชื่อมโยง (Case Splitting)
+                        </div>
+                        @{
+                            var subCases = ComplaintData.GetSubCases(complaint.CaseNo).ToList();
+                        }
+                        @if (subCases.Any())
+                        {
+                            @foreach (var sub in subCases)
+                            {
+                                <div class="dp-split-item">
+                                    <div>
+                                        <div class="dp-split-no">เรื่องที่ @sub.CaseNo</div>
+                                        <div class="dp-split-desc">@sub.Description[..Math.Min(60, sub.Description.Length)]...</div>
+                                    </div>
+                                    <button class="dp-btn-ghost dp-btn-sm"
+                                        @onclick='() => Nav.NavigateTo($"/complaints/{sub.Id}")'>ดูรายละเอียด</button>
+                                </div>
+                            }
+                        }
+                        @if (!string.IsNullOrEmpty(complaint.ParentCaseNo))
+                        {
+                            <div class="dp-parent-ref">
+                                <i class="bi bi-link-45deg"></i>
+                                แยกจากเรื่องหลักที่ <strong>@complaint.ParentCaseNo</strong>
+                            </div>
+                        }
+                        @if (!subCases.Any() && string.IsNullOrEmpty(complaint.ParentCaseNo))
+                        {
+                            <div class="dp-empty-mini">ไม่มีคดีย่อยที่เชื่อมโยง</div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+}
+
+@if (actionModalOpen && selectedAction is not null)
+{
+    <div class="modal-backdrop-custom open" @onclick="CloseActionModal">
+        <div class="modal-box" style="max-width:640px" @onclick:stopPropagation="true">
+            <div style="font-size:18px;font-weight:800;color:var(--text-dark);margin-bottom:6px">
+                <i class="bi @ActionIcon(selectedAction.Action) me-1"></i>
+                @ActionLabel(selectedAction)
+            </div>
+            <div class="pcms-table-note mb-3">@selectedAction.Endpoint</div>
+
+            @if (selectedAction.Action == "triage")
+            {
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label-custom">ผลการคัดกรอง</label>
+                        <select class="form-control-custom" @bind="actionForm.Decision">
+                            <option value="Accept">รับดำเนินการ</option>
+                            <option value="ReturnToOmbudsman">ส่งคืน ป.ป.ช.</option>
+                            <option value="SendToDiscipline">ส่ง สพท. วินัย</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">หน่วยงานปลายทาง</label>
+                        <input class="form-control-custom" @bind="actionForm.AssignedUnitId" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label-custom">เจ้าหน้าที่รับผิดชอบ</label>
+                        <input class="form-control-custom" @bind="actionForm.AssignedOfficerName" />
+                    </div>
+                </div>
+            }
+            else if (selectedAction.Action == "create_pcms")
+            {
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label-custom">วันที่รับเข้า PCMS</label>
+                        <input type="date" class="form-control-custom" value="@actionForm.ReceiveDate.ToString("yyyy-MM-dd")"
+                               @onchange="e => { if (DateTime.TryParse(e.Value?.ToString(), out var d)) actionForm.ReceiveDate = d; }" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">หน่วยงานรับผิดชอบ</label>
+                        <input class="form-control-custom" @bind="actionForm.AssignedUnitId" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label-custom">หมายเหตุ</label>
+                        <textarea class="form-control-custom" rows="3" @bind="actionForm.Note"></textarea>
+                    </div>
+                </div>
+            }
+            else if (selectedAction.Action == "create_investigation" || selectedAction.Action == "create_assignment")
+            {
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label-custom">รหัสเจ้าหน้าที่</label>
+                        <input class="form-control-custom" @bind="actionForm.AssignedOfficerId" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">ชื่อเจ้าหน้าที่</label>
+                        <input class="form-control-custom" @bind="actionForm.AssignedOfficerName" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">หน่วยงาน</label>
+                        <input class="form-control-custom" @bind="actionForm.AssignedUnitId" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">กำหนดครบกำหนด</label>
+                        <input type="date" class="form-control-custom" value="@(actionForm.DueDate?.ToString("yyyy-MM-dd") ?? "")"
+                               @onchange="e => actionForm.DueDate = DateTime.TryParse(e.Value?.ToString(), out var d) ? d : null" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label-custom">หมายเหตุ</label>
+                        <textarea class="form-control-custom" rows="3" @bind="actionForm.Note"></textarea>
+                    </div>
+                </div>
+            }
+            else if (selectedAction.Action == "create_hardship_review")
+            {
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label-custom">ผลการตรวจสอบ</label>
+                        <select class="form-control-custom" @bind="actionForm.HardshipFound">
+                            <option value="true">พบความเดือดร้อนจริง</option>
+                            <option value="false">ไม่พบความเดือดร้อน</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">ผู้ตรวจสอบ</label>
+                        <input class="form-control-custom" @bind="actionForm.AssignedOfficerName" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label-custom">รายละเอียดผลตรวจสอบ</label>
+                        <textarea class="form-control-custom" rows="3" @bind="actionForm.HardshipDetail"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label-custom">แนวทางช่วยเหลือ/ข้อเสนอ</label>
+                        <textarea class="form-control-custom" rows="3" @bind="actionForm.RecommendedRelief"></textarea>
+                    </div>
+                </div>
+            }
+            else if (selectedAction.Action == "create_external_forwarding")
+            {
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label-custom">หน่วยงานปลายทาง</label>
+                        <input class="form-control-custom" @bind="actionForm.TargetAgencyName" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">เลขอ้างอิง</label>
+                        <input class="form-control-custom" @bind="actionForm.ReferenceNo" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label-custom">เหตุผลการส่งต่อ</label>
+                        <textarea class="form-control-custom" rows="3" @bind="actionForm.Reason"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label-custom">ฐานกฎหมาย</label>
+                        <input class="form-control-custom" @bind="actionForm.LegalBasis" />
+                    </div>
+                </div>
+            }
+            else if (selectedAction.Action == "return_to_nacc" || selectedAction.Action == "create_closure")
+            {
+                <div class="row g-3">
+                    @if (selectedAction.Action == "create_closure")
+                    {
+                        <div class="col-md-6">
+                            <label class="form-label-custom">ประเภทยุติเรื่อง</label>
+                            <input class="form-control-custom" @bind="actionForm.ClosureType" />
+                        </div>
+                    }
+                    <div class="col-md-6">
+                        <label class="form-label-custom">เลขอ้างอิง</label>
+                        <input class="form-control-custom" @bind="actionForm.ReferenceNo" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label-custom">เหตุผล</label>
+                        <textarea class="form-control-custom" rows="3" @bind="actionForm.Reason"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label-custom">ฐานกฎหมาย</label>
+                        <input class="form-control-custom" @bind="actionForm.LegalBasis" />
+                    </div>
+                    @if (selectedAction.Action == "create_closure")
+                    {
+                        <div class="col-12">
+                            <label class="form-label-custom">สรุปผล</label>
+                            <textarea class="form-control-custom" rows="3" @bind="actionForm.OutcomeSummary"></textarea>
+                        </div>
+                    }
+                </div>
+            }
+
+            <div class="text-end mt-3">
+                <button class="btn-outline-navy me-2" @onclick="CloseActionModal">ยกเลิก</button>
+                <button class="btn-navy" disabled="@actionInProgress" @onclick="ConfirmAction">
+                    @if (actionInProgress)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                    }
+                    ยืนยัน
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private ComplaintRow? complaint;
+    private IReadOnlyList<TimelineItem> apiTimeline = [];
+    private IReadOnlyList<AvailableAction> availableActions = [];
+    private bool docGenerated;
+    private bool isLoading = true;
+    private bool actionInProgress;
+    private bool actionModalOpen;
+    private AvailableAction? selectedAction;
+    private ComplaintActionInput actionForm = new();
+    private string loadError = string.Empty;
+    private string actionMessage = string.Empty;
+    private int _lastId = -1;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id == _lastId) return;
+        _lastId = Id;
+        await LoadDetail();
+        docGenerated = false;
+    }
+
+    private async Task LoadDetail()
+    {
+        isLoading = true;
+        loadError = string.Empty;
+        actionMessage = string.Empty;
+
+        try
+        {
+            var t1 = ComplaintApi.GetComplaintByIdAsync(Id);
+            var t2 = ComplaintApi.GetTimelineAsync(Id);
+            var t3 = ComplaintApi.GetAvailableActionsAsync(Id);
+            await Task.WhenAll(t1, t2, t3);
+            complaint        = t1.Result;
+            apiTimeline      = t2.Result;
+            availableActions = t3.Result;
+        }
+        catch (Exception ex)
+        {
+            complaint = null;
+            apiTimeline = [];
+            availableActions = [];
+            loadError = $"โหลดข้อมูลจาก API ไม่สำเร็จ: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OpenActionModal(AvailableAction action)
+    {
+        selectedAction = action;
+        actionForm = CreateDefaultActionInput(action.Action);
+        actionMessage = string.Empty;
+        actionModalOpen = true;
+    }
+
+    private void CloseActionModal()
+    {
+        if (actionInProgress)
+        {
+            return;
+        }
+
+        actionModalOpen = false;
+        selectedAction = null;
+    }
+
+    private async Task ConfirmAction()
+    {
+        if (selectedAction is null)
+        {
+            return;
+        }
+
+        await PerformAction(selectedAction.Action);
+    }
+
+    private async Task PerformAction(string action)
+    {
+        actionInProgress = true;
+        actionMessage = string.Empty;
+
+        try
+        {
+            if (action == "triage")
+            {
+                await ComplaintApi.RouteAsync(Id, new RoutingRequest
+                {
+                    Decision = actionForm.Decision,
+                    AssignedToUnit = actionForm.Decision == "Accept" ? actionForm.AssignedUnitId : null,
+                    AssignedToOfficer = actionForm.Decision == "Accept" ? actionForm.AssignedOfficerName : null,
+                    ReturnReason = actionForm.Decision == "ReturnToOmbudsman" ? actionForm.Reason : null,
+                    DisciplineUnit = actionForm.Decision == "SendToDiscipline" ? actionForm.AssignedUnitId : null
+                });
+            }
+            else
+            {
+                await ComplaintApi.ExecuteActionAsync(Id, action, actionForm);
+            }
+
+            actionModalOpen = false;
+            selectedAction = null;
+            await LoadDetail();
+            actionMessage = "ดำเนินการสำเร็จ และโหลดสถานะล่าสุดจาก API แล้ว";
+        }
+        catch (Exception ex)
+        {
+            actionMessage = $"ดำเนินการไม่สำเร็จ: {ex.Message}";
+        }
+        finally
+        {
+            actionInProgress = false;
+        }
+    }
+
+    private static ComplaintActionInput CreateDefaultActionInput(string action) => action switch
+    {
+        "triage" => new ComplaintActionInput
+        {
+            Decision = "Accept",
+            AssignedUnitId = "สำนักไต่สวน",
+            AssignedOfficerName = "เจ้าหน้าที่รับผิดชอบ",
+            Reason = "รับดำเนินการตามอำนาจหน้าที่"
+        },
+        "create_pcms" => new ComplaintActionInput
+        {
+            AssignedUnitId = "สำนักรับเรื่อง",
+            AssignedOfficerId = "pcms-officer",
+            Note = "ออกเลข PCMS จากหน้าเว็บ"
+        },
+        "create_investigation" => new ComplaintActionInput
+        {
+            AssignedOfficerId = "investigator-001",
+            AssignedOfficerName = "เจ้าหน้าที่ไต่สวน",
+            AssignedUnitId = "สำนักไต่สวน",
+            DueDate = DateTime.Today.AddDays(60),
+            Note = "สร้างสำนวนไต่สวนจากหน้าเว็บ"
+        },
+        "create_assignment" => new ComplaintActionInput
+        {
+            AssignedOfficerId = "officer-001",
+            AssignedOfficerName = "เจ้าหน้าที่รับผิดชอบ",
+            AssignedUnitId = "สำนักไต่สวน",
+            DueDate = DateTime.Today.AddDays(30),
+            Note = "มอบหมายงานจากหน้าเว็บ"
+        },
+        "create_hardship_review" => new ComplaintActionInput
+        {
+            AssignedOfficerId = "reviewer-001",
+            AssignedOfficerName = "เจ้าหน้าที่ตรวจสอบ",
+            LegalBasis = "ม.58/2",
+            HardshipFound = true,
+            HardshipDetail = "พบความเดือดร้อนจากข้อร้องเรียน",
+            RecommendedRelief = "แจ้งหน่วยงานที่เกี่ยวข้องดำเนินการช่วยเหลือ"
+        },
+        "create_external_forwarding" => new ComplaintActionInput
+        {
+            TargetAgencyName = "หน่วยงานภายนอก",
+            TargetAgencyCode = "EXT",
+            Reason = "ส่งต่อให้หน่วยงานที่เกี่ยวข้องดำเนินการ",
+            LegalBasis = "ตามอำนาจหน้าที่",
+            ReferenceNo = $"EXT-{DateTime.Today:yyyyMMdd}"
+        },
+        "return_to_nacc" => new ComplaintActionInput
+        {
+            Reason = "ไม่อยู่ในอำนาจ ป.ป.ท. หรืออยู่ในอำนาจ ป.ป.ช.",
+            LegalBasis = "ม.18/1",
+            ReferenceNo = $"NACC-{DateTime.Today:yyyyMMdd}"
+        },
+        "create_closure" => new ComplaintActionInput
+        {
+            Reason = "พิจารณาแล้วไม่รับดำเนินการต่อ",
+            ClosureType = "ยุติเรื่อง",
+            OutcomeSummary = "ยุติเรื่องตามผลการพิจารณา",
+            LegalBasis = "มติ/อำนาจคณะกรรมการ ป.ป.ท."
+        },
+        _ => new ComplaintActionInput()
+    };
+
+    private static string ActionButtonClass(string action) => action switch
+    {
+        "return_to_nacc" or "create_external_forwarding" => "btn-gold",
+        "create_closure" => "btn-outline-navy",
+        _ => "btn-navy"
+    };
+
+    private static string ActionIcon(string action) => action switch
+    {
+        "triage" => "bi-signpost-split",
+        "create_pcms" => "bi-hash",
+        "create_investigation" => "bi-search",
+        "create_assignment" => "bi-person-check",
+        "create_hardship_review" => "bi-clipboard2-pulse",
+        "create_external_forwarding" => "bi-arrow-right",
+        "return_to_nacc" => "bi-arrow-return-left",
+        "create_closure" => "bi-check-circle",
+        _ => "bi-play-fill"
+    };
+
+    private static string ActionLabel(AvailableAction action) =>
+        string.IsNullOrWhiteSpace(action.Label)
+            ? action.Action.Replace('_', ' ')
+            : action.Label;
+
+    private static string TimelineTitle(TimelineItem item) => item.ActionType switch
+    {
+        "created" => "รับเรื่องร้องเรียน",
+        "route" => "คัดกรอง/ส่งต่อเรื่อง",
+        "create_pcms" => "ออกเลข PCMS",
+        "create_investigation" => "ออกเลขไต่สวน",
+        "create_assignment" => "มอบหมายงาน",
+        "hardship_review" => "ตรวจสอบ ม.58/2",
+        "create_hardship_review" => "ตรวจสอบ ม.58/2",
+        "create_external_forwarding" => "ส่งต่อหน่วยงานภายนอก",
+        "return_to_nacc" => "ส่งคืน ป.ป.ช.",
+        "create_closure" => "ยุติเรื่อง",
+        _ => item.ActionType
+    };
+
+    private static string ToThaiShortDate(DateTime value)
+    {
+        var local = value.Kind == DateTimeKind.Utc ? value.ToLocalTime() : value;
+        return $"{local:dd/MM}/{local.Year + 543:00}";
+    }
+}

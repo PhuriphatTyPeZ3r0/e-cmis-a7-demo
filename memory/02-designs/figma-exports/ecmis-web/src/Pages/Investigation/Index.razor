@@ -1,0 +1,137 @@
+@page "/investigation"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+<div class="routing-page-wrap">
+    <div class="complaints-page-header">
+        <div>
+            <div class="complaints-title">
+                <i class="bi bi-clipboard-data-fill"></i>
+                <span>ดำเนินการ / รายงานความคืบหน้า</span>
+            </div>
+            <div class="complaints-subtitle">
+                ภาพรวมสำนวนคดีในชั้นไต่สวน — ติดตาม SLA และความคืบหน้าแบบ Real-time
+            </div>
+        </div>
+    </div>
+
+    @* — Overview Stats — *@
+    <div class="routing-stat-grid">
+        <div class="routing-card border-navy">
+            <div class="rc-title"><i class="bi bi-journals" style="color:var(--navy)"></i> สำนวนทั้งหมด</div>
+            <div class="rc-count" style="color:var(--navy)">@allCases.Count</div>
+            <div class="rc-desc">ในระบบทั้งหมด</div>
+        </div>
+        <div class="routing-card border-orange">
+            <div class="rc-title"><i class="bi bi-activity" style="color:var(--orange)"></i> กำลังดำเนินการ</div>
+            <div class="rc-count" style="color:var(--orange)">@investigating.Count()</div>
+            <div class="rc-desc">อยู่ระหว่างแสวงหาข้อเท็จจริง</div>
+        </div>
+        <div class="routing-card border-green">
+            <div class="rc-title"><i class="bi bi-check-circle" style="color:var(--green)"></i> สรุปแล้ว</div>
+            <div class="rc-count" style="color:var(--green)">@summarized.Count()</div>
+            <div class="rc-desc">สรุปสำนวนเสร็จสิ้น</div>
+        </div>
+        <div class="routing-card border-red">
+            <div class="rc-title"><i class="bi bi-alarm" style="color:var(--red)"></i> SLA Warning</div>
+            <div class="rc-count" style="color:var(--red)">@slaWarning.Count()</div>
+            <div class="rc-desc">เหลือไม่ถึง 15 วัน</div>
+        </div>
+    </div>
+
+    @* — Case Table — *@
+    <div class="complaints-table-card">
+        <div class="complaints-table-head">
+            <div>
+                <div class="complaints-table-title">สำนวนคดีทั้งหมด</div>
+                <div class="complaints-table-subtitle">แสดงภาพรวม SLA และสถานะทุกสำนวน</div>
+            </div>
+            <div class="complaints-filter-group">
+                <div class="complaints-search-box">
+                    <i class="bi bi-search"></i>
+                    <input placeholder="ค้นหาเลขสำนวน..." @bind="searchText" @bind:event="oninput" />
+                </div>
+                <select class="complaints-status-select" @bind="statusFilter">
+                    <option value="">ทุกสถานะ</option>
+                    <option value="unassigned">รอมอบหมาย</option>
+                    <option value="investigating">กำลังไต่สวน</option>
+                    <option value="opinion">รอความเห็น</option>
+                    <option value="summarized">สรุปแล้ว</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto">
+            <table class="complaints-table">
+                <thead>
+                    <tr>
+                        <th>เลขสำนวน</th>
+                        <th>ผู้ถูกร้อง</th>
+                        <th>นักสืบ</th>
+                        <th>สำนัก</th>
+                        <th>SLA</th>
+                        <th>ขยาย</th>
+                        <th>สถานะ</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in filtered)
+                    {
+                        <tr>
+                            <td><span class="complaints-case-no">@item.CaseNo</span></td>
+                            <td>
+                                <div style="font-size:13px;font-weight:600">@item.Accused</div>
+                                <div style="font-size:11px;color:var(--text-muted)">@item.AccusedAgency</div>
+                            </td>
+                            <td style="font-size:12px">@(item.Investigator == "-" ? "—" : item.Investigator)</td>
+                            <td style="font-size:12px">@item.Division</td>
+                            <td style="min-width:140px">
+                                <div class="sla-bar-wrap">
+                                    <div class="sla-bar">
+                                        <div class="sla-fill @InvestigationData.SlaClass(item)"
+                                            style="width:@((int)InvestigationData.SlaPercent(item))%"></div>
+                                    </div>
+                                    <span class="sla-text @InvestigationData.SlaClass(item)">
+                                        @item.DaysUsed/@item.MaxDays
+                                    </span>
+                                </div>
+                            </td>
+                            <td style="text-align:center;font-size:12px">@item.ExtensionCount/2</td>
+                            <td>
+                                <span class="complaints-status-chip @InvestigationData.StatusClass(item.Status)">
+                                    @InvestigationData.StatusLabel(item.Status)
+                                </span>
+                            </td>
+                            <td>
+                                <button class="complaints-manage-btn"
+                                    @onclick='() => Nav.NavigateTo($"/investigation/{item.Id}")'>ดู</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string searchText = string.Empty;
+    private string statusFilter = string.Empty;
+
+    private IReadOnlyList<InvestigationCase> allCases => InvestigationData.Cases;
+
+    private IEnumerable<InvestigationCase> investigating =>
+        allCases.Where(c => c.Status == "investigating");
+    private IEnumerable<InvestigationCase> summarized =>
+        allCases.Where(c => c.Status is "summarized" or "closed");
+    private IEnumerable<InvestigationCase> slaWarning =>
+        allCases.Where(c => InvestigationData.DaysRemaining(c) <= 15);
+
+    private IEnumerable<InvestigationCase> filtered =>
+        allCases.Where(c =>
+            (string.IsNullOrWhiteSpace(searchText)
+                || c.CaseNo.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+                || c.Accused.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            && (string.IsNullOrWhiteSpace(statusFilter) || c.Status == statusFilter));
+}

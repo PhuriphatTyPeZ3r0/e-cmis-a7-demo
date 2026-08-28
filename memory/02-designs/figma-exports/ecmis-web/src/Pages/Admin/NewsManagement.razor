@@ -1,0 +1,378 @@
+@page "/admin/news"
+@using EcmisWeb.Services
+@inject CentralSupportApiService CentralSupportApi
+
+<PageTitle>จัดการข่าวประชาสัมพันธ์ — E-CMIS Admin</PageTitle>
+
+<div style="background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 60%,#1e3575 100%);border-radius:18px;padding:28px 32px;margin-bottom:24px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-40px;right:-40px;width:220px;height:220px;border-radius:50%;background:rgba(201,168,76,.08);pointer-events:none"></div>
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">
+                    <i class="bi bi-newspaper" style="color:var(--navy-deep)"></i>
+                </div>
+                <div>
+                    <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.2">จัดการข่าวประชาสัมพันธ์</div>
+                    <div style="font-size:12px;color:rgba(255,255,255,.5)">Public News Management — Central Support</div>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px 16px;min-width:80px;text-align:center">
+                <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em">Draft</div>
+                <div style="font-size:22px;font-weight:900;color:#fbbf24;line-height:1">@news.Count(n => n.Status == "draft")</div>
+            </div>
+            <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px 16px;min-width:80px;text-align:center">
+                <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em">เผยแพร่แล้ว</div>
+                <div style="font-size:22px;font-weight:900;color:#4ade80;line-height:1">@news.Count(n => n.Status == "published")</div>
+            </div>
+            <button class="btn-navy" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25)" @onclick="LoadNews" disabled="@loading">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+            <a href="/admin/news-categories" class="btn-navy" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);text-decoration:none">
+                <i class="bi bi-tags"></i> หมวดหมู่ข่าว
+            </a>
+            <button class="btn-navy" @onclick="NewArticle">
+                <i class="bi bi-plus-lg"></i> สร้างข่าวใหม่
+            </button>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:center">
+        <i class="bi bi-exclamation-triangle-fill"></i>@error
+    </div>
+}
+@if (!string.IsNullOrWhiteSpace(successMsg))
+{
+    <div style="background:#ecfdf5;color:#065f46;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:center">
+        <i class="bi bi-check-circle-fill"></i>@successMsg
+    </div>
+}
+
+<div style="display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:16px;align-items:start">
+    @* — News list — *@
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(15,23,42,.05)">
+        <div style="padding:12px 16px;border-bottom:1px solid #f1f5f9;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            @foreach (var (label, val) in new[] { ("ทั้งหมด",""), ("Draft","draft"), ("เผยแพร่แล้ว","published") })
+            {
+                <button class="@(statusFilter == val ? "btn-navy" : "btn-outline-navy")"
+                        style="font-size:12px;padding:5px 12px"
+                        @onclick="() => { statusFilter = val; }">@label</button>
+            }
+            <input @bind="searchQuery" @bind:event="oninput" @onkeyup="@(async e => { if (e.Key == "Enter") await LoadNews(); })"
+                   placeholder="ค้นหาหัวข้อ..."
+                   style="border:1px solid #d7dde8;border-radius:8px;padding:6px 10px;font-size:13px;outline:none;flex:1;min-width:120px" />
+            <button class="btn-outline-navy" style="font-size:12px;padding:5px 10px" @onclick="LoadNews">
+                <i class="bi bi-search"></i>
+            </button>
+        </div>
+
+        @if (loading)
+        {
+            <div style="padding:32px;text-align:center;color:#94a3b8">กำลังโหลด...</div>
+        }
+        else if (FilteredNews.Count == 0)
+        {
+            <div style="padding:32px;text-align:center;color:#94a3b8">ไม่มีข่าว</div>
+        }
+        else
+        {
+            @foreach (var n in FilteredNews)
+            {
+                var isSelected = editItem?.Id == n.Id;
+                <div style="padding:14px 16px;border-bottom:1px solid #f1f5f9;display:flex;align-items:flex-start;gap:12px;cursor:pointer;background:@(isSelected?"#f0f4ff":"#fff")"
+                     @onclick="() => StartEdit(n)">
+                    <div style="flex:1;min-width:0">
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+                            <span class="badge bg-light text-dark border" style="font-size:10px">@n.Category</span>
+                            <span class="@NewsBadgeClass(n.Status)" style="font-size:10px">@NewsStatusLabel(n.Status)</span>
+                        </div>
+                        <div style="font-weight:700;color:var(--navy-deep);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@n.Title</div>
+                        <div style="font-size:11px;color:#94a3b8;margin-top:2px">@n.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                    </div>
+                    <button class="btn-outline-navy" style="font-size:11px;padding:4px 8px;flex-shrink:0;color:#dc2626;border-color:#dc2626"
+                            @onclick:stopPropagation="true"
+                            @onclick="() => ConfirmDelete(n)">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                </div>
+            }
+        }
+    </div>
+
+    @* — Edit/Create panel — *@
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px;box-shadow:0 4px 16px rgba(15,23,42,.05)">
+        @if (editItem is null && !isCreating)
+        {
+            <div style="text-align:center;color:#94a3b8;padding:32px 0">
+                <i class="bi bi-pencil-square" style="font-size:28px;margin-bottom:8px;display:block"></i>
+                เลือกข่าวเพื่อแก้ไข หรือกด "สร้างข่าวใหม่"
+            </div>
+        }
+        else
+        {
+            <div style="font-size:15px;font-weight:800;color:var(--navy-deep);margin-bottom:14px">
+                @(isCreating ? "สร้างข่าวใหม่" : $"แก้ไข: {editItem?.Title}")
+            </div>
+
+            <div style="display:grid;gap:8px">
+                <label style="font-size:12px;font-weight:700;color:var(--navy-deep)">หมวดหมู่</label>
+                <select @bind="formCategory" style="width:100%;border:1px solid #d7dde8;border-radius:8px;padding:8px 10px;outline:none">
+                    <option>ประกาศ</option>
+                    <option>ข่าวสาร</option>
+                    <option>กิจกรรม</option>
+                    <option>ทั่วไป</option>
+                </select>
+
+                <label style="font-size:12px;font-weight:700;color:var(--navy-deep)">หัวข้อ *</label>
+                <input @bind="formTitle" placeholder="หัวข้อข่าว" style="width:100%;border:1px solid #d7dde8;border-radius:8px;padding:8px 10px;outline:none" />
+
+                <label style="font-size:12px;font-weight:700;color:var(--navy-deep)">สรุปย่อ</label>
+                <textarea @bind="formSummary" rows="2" placeholder="ข้อความสรุป..." style="width:100%;border:1px solid #d7dde8;border-radius:8px;padding:8px 10px;resize:vertical;outline:none"></textarea>
+
+                <label style="font-size:12px;font-weight:700;color:var(--navy-deep)">เนื้อหา *</label>
+                <textarea @bind="formBody" rows="6" placeholder="รายละเอียดข่าว..." style="width:100%;border:1px solid #d7dde8;border-radius:8px;padding:8px 10px;resize:vertical;outline:none"></textarea>
+
+                <label style="font-size:12px;font-weight:700;color:var(--navy-deep)">URL รูปหน้าปก</label>
+                <input @bind="formCoverUrl" placeholder="https://..." style="width:100%;border:1px solid #d7dde8;border-radius:8px;padding:8px 10px;outline:none" />
+
+                <label style="font-size:12px;font-weight:700;color:var(--navy-deep)">URL เอกสารแนบ</label>
+                <input @bind="formAttachUrl" placeholder="/files/..." style="width:100%;border:1px solid #d7dde8;border-radius:8px;padding:8px 10px;outline:none" />
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+                <button class="btn-outline-navy" @onclick="CancelEdit" style="flex:1">ยกเลิก</button>
+                <button class="btn-outline-navy" @onclick="TogglePreview" style="flex:1">
+                    <i class="bi bi-eye"></i> Preview
+                </button>
+                <button class="btn-outline-navy" @onclick="() => SaveNews(false)" disabled="@submitting" style="flex:1">
+                    <i class="bi bi-floppy2"></i> Draft
+                </button>
+                <button class="btn-navy" @onclick="() => SaveNews(true)" disabled="@submitting" style="flex:1">
+                    <i class="bi bi-send-fill"></i> เผยแพร่
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+@if (showPreview)
+{
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px">
+        <div style="background:#fff;border-radius:16px;max-width:720px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.3)">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #f1f5f9">
+                <div style="font-size:15px;font-weight:800;color:var(--navy-deep)"><i class="bi bi-eye"></i> Preview ข่าว</div>
+                <button @onclick="() => showPreview = false" style="background:none;border:none;cursor:pointer;font-size:20px;color:#64748b">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+            <div style="padding:24px 28px">
+                <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+                    <span class="badge bg-primary">@(string.IsNullOrWhiteSpace(formCategory) ? "ทั่วไป" : formCategory)</span>
+                </div>
+                <h2 style="color:var(--navy-deep);font-size:22px;font-weight:800;margin:0 0 12px">@(string.IsNullOrWhiteSpace(formTitle) ? "(ยังไม่ระบุหัวข้อ)" : formTitle)</h2>
+                @if (!string.IsNullOrWhiteSpace(formSummary))
+                {
+                    <div style="background:#f8fafc;border-left:4px solid var(--navy-mid);padding:12px 16px;border-radius:0 8px 8px 0;margin-bottom:16px;color:#475569;font-style:italic;line-height:1.55">@formSummary</div>
+                }
+                @if (!string.IsNullOrWhiteSpace(formCoverUrl))
+                {
+                    <img src="@formCoverUrl" style="width:100%;max-height:260px;object-fit:cover;border-radius:8px;margin-bottom:14px" alt="" />
+                }
+                <div style="color:#374151;font-size:15px;line-height:1.7;white-space:pre-wrap">@(string.IsNullOrWhiteSpace(formBody) ? "(ยังไม่มีเนื้อหา)" : formBody)</div>
+                @if (!string.IsNullOrWhiteSpace(formAttachUrl))
+                {
+                    <div style="margin-top:18px">
+                        <span style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:var(--navy-deep);color:#fff;border-radius:8px;font-size:13px;font-weight:700">
+                            <i class="bi bi-paperclip"></i> เอกสารแนบ
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@if (deleteConfirm is not null)
+{
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center">
+        <div style="background:#fff;border-radius:16px;padding:28px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+            <h3 style="margin:0 0 10px;color:var(--navy-deep)"><i class="bi bi-trash3-fill" style="color:#dc2626"></i> ยืนยันการลบ</h3>
+            <p style="color:#475569;margin-bottom:18px">ต้องการลบข่าว "<strong>@deleteConfirm.Title</strong>" ใช่หรือไม่?</p>
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+                <button class="btn-outline-navy" @onclick="() => deleteConfirm = null">ยกเลิก</button>
+                <button class="btn-navy" style="background:#dc2626;border-color:#dc2626" @onclick="ExecuteDelete" disabled="@submitting">
+                    ลบข่าว
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<AdminNewsDto> news = new();
+    private AdminNewsDto? editItem;
+    private AdminNewsDto? deleteConfirm;
+    private bool isCreating;
+    private string statusFilter = "";
+    private string searchQuery = "";
+    private string formCategory = "ประกาศ";
+    private string formTitle = "";
+    private string formSummary = "";
+    private string formBody = "";
+    private string formCoverUrl = "";
+    private string formAttachUrl = "";
+    private bool loading = true;
+    private bool submitting;
+    private bool showPreview;
+    private string error = "";
+    private string successMsg = "";
+
+    private List<AdminNewsDto> FilteredNews =>
+        string.IsNullOrEmpty(statusFilter)
+            ? news
+            : news.Where(n => n.Status == statusFilter).ToList();
+
+    protected override async Task OnInitializedAsync() => await LoadNews();
+
+    private async Task LoadNews()
+    {
+        loading = true;
+        error = "";
+        try
+        {
+            news = await CentralSupportApi.GetAdminNewsAsync(q: searchQuery);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void NewArticle()
+    {
+        isCreating = true;
+        editItem = null;
+        ClearForm();
+        successMsg = "";
+        error = "";
+    }
+
+    private void StartEdit(AdminNewsDto n)
+    {
+        editItem = n;
+        isCreating = false;
+        formCategory = n.Category;
+        formTitle = n.Title;
+        formSummary = n.Summary;
+        formBody = n.Body;
+        formCoverUrl = n.CoverImageUrl;
+        formAttachUrl = n.AttachmentUrl;
+        successMsg = "";
+        error = "";
+    }
+
+    private void CancelEdit()
+    {
+        editItem = null;
+        isCreating = false;
+        showPreview = false;
+        ClearForm();
+    }
+
+    private void TogglePreview() => showPreview = !showPreview;
+
+    private void ClearForm()
+    {
+        formCategory = "ประกาศ";
+        formTitle = "";
+        formSummary = "";
+        formBody = "";
+        formCoverUrl = "";
+        formAttachUrl = "";
+    }
+
+    private async Task SaveNews(bool publish)
+    {
+        if (string.IsNullOrWhiteSpace(formTitle) || string.IsNullOrWhiteSpace(formBody))
+        {
+            error = "กรุณาระบุหัวข้อและเนื้อหาข่าว";
+            return;
+        }
+        submitting = true;
+        error = "";
+        successMsg = "";
+        try
+        {
+            if (isCreating)
+            {
+                await CentralSupportApi.CreatePublicNewsAsync(formCategory, formTitle, formSummary, formBody, formCoverUrl, formAttachUrl, publish);
+                successMsg = publish ? "เผยแพร่ข่าวแล้ว" : "บันทึก Draft แล้ว";
+            }
+            else if (editItem is not null)
+            {
+                await CentralSupportApi.UpdatePublicNewsAsync(editItem.Id, formCategory, formTitle, formSummary, formBody, formCoverUrl, formAttachUrl, publish);
+                successMsg = publish ? "เผยแพร่ข่าวแล้ว" : "อัปเดต Draft แล้ว";
+            }
+            CancelEdit();
+            await LoadNews();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private void ConfirmDelete(AdminNewsDto n)
+    {
+        deleteConfirm = n;
+    }
+
+    private async Task ExecuteDelete()
+    {
+        if (deleteConfirm is null) return;
+        submitting = true;
+        try
+        {
+            await CentralSupportApi.DeletePublicNewsAsync(deleteConfirm.Id);
+            successMsg = "ลบข่าวแล้ว";
+            deleteConfirm = null;
+            if (editItem?.Id == deleteConfirm?.Id) CancelEdit();
+            await LoadNews();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private static string NewsStatusLabel(string status) => status switch
+    {
+        "draft" => "Draft",
+        "published" => "เผยแพร่แล้ว",
+        _ => status
+    };
+
+    private static string NewsBadgeClass(string status) => status switch
+    {
+        "draft" => "badge bg-warning text-dark",
+        "published" => "badge bg-success",
+        _ => "badge bg-secondary"
+    };
+}

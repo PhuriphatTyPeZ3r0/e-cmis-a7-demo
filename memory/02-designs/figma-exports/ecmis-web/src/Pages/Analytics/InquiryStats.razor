@@ -1,0 +1,527 @@
+@page "/analytics/inquiry-stats"
+@layout MainLayout
+@implements IDisposable
+@using EcmisWeb.Data
+@inject IJSRuntime JS
+
+<div class="cs-shell">
+
+    <div class="cs-header">
+        <div class="cs-header-inner">
+            <div class="cs-bc">
+                <i class="bi bi-house-fill"></i>
+                <a href="/">หน้าหลัก</a>
+                <i class="bi bi-chevron-right"></i>
+                <span>วิเคราะห์และรายงานผล</span>
+                <i class="bi bi-chevron-right"></i>
+                <span>สถิติการไต่สวน</span>
+            </div>
+            <div class="cs-ph-row">
+                <div>
+                    <div class="cs-title">สถิติการไต่สวน</div>
+                    <div class="cs-sub">TOR 12.4 · ไต่สวนเบื้องต้นและไต่สวนชี้มูล · SLA 30+30+30+30 วัน</div>
+                </div>
+                <div class="cs-actions">
+                    <button type="button" class="btn-ghost-d" @onclick="PrintReportAsync">
+                        <i class="bi bi-printer"></i> พิมพ์ PDF
+                    </button>
+                    <button type="button" class="btn-accent" @onclick="ExportCsvAsync">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cs-body">
+
+        @* ── FR-025: KPI แยก ไต่สวนเบื้องต้น vs ชี้มูล ── *@
+        <div class="cs-stats-row">
+            <div class="sc sc-blue">
+                <div class="sc-head">คดีทั้งหมด</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@_filtered.Count.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-hint">ปีงบประมาณที่เลือก</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-green">
+                <div class="sc-head">ไต่สวนเบื้องต้น</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@PrelimCount.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-up">@PrelimActive อยู่ระหว่าง</span>
+                        <span class="sc-hint">คดีตาม SLA 60 วัน</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-orange">
+                <div class="sc-head">ไต่สวนชี้มูล</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@MeritCount.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-flat">@MeritActive อยู่ระหว่าง</span>
+                        <span class="sc-hint">คดีตาม SLA 120 วัน</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-red">
+                <div class="sc-head">ใกล้/เกิน SLA</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@NearSlaCount.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-down">@ExpiredCount เกินกำหนด</span>
+                        <span class="sc-hint">เหลือ ≤45 วัน</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="table-card">
+            <div class="tc-head">
+                <div class="tc-row1">
+                    <div>
+                        <div class="tc-title">วิเคราะห์สถิติการไต่สวน</div>
+                        <div class="tc-sub">กรองปีงบประมาณ ประเภทการไต่สวน ผลการไต่สวน สถานะ หรือผู้รับผิดชอบ</div>
+                    </div>
+                    <div class="tc-meta">
+                        <span class="bdg-nv">ทั้งหมด @_all.Count</span>
+                        <span class="bdg-gd">แสดง @_filtered.Count</span>
+                    </div>
+                </div>
+            </div>
+
+            @* ── FR-031: Filter row ── *@
+            <div class="filter-row">
+                <div class="fgrp">
+                    <label class="flbl" for="iqFiscalYear">ปีงบประมาณ</label>
+                    <select id="iqFiscalYear" class="fsel" @bind="_fiscalYear">
+                        <option value="">ทั้งหมด</option>
+                        @foreach (var yr in _fiscalYears)
+                        {
+                            <option value="@yr">@yr</option>
+                        }
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="iqInvType">ประเภทการไต่สวน</label>
+                    <select id="iqInvType" class="fsel" @bind="_invType">
+                        <option value="">ทั้งหมด</option>
+                        <option value="ไต่สวนเบื้องต้น">ไต่สวนเบื้องต้น</option>
+                        <option value="ไต่สวนชี้มูล">ไต่สวนชี้มูล</option>
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="iqCategory">ประเภทคดี</label>
+                    <select id="iqCategory" class="fsel" @bind="_category">
+                        <option value="">ทั้งหมด</option>
+                        @foreach (var cat in _categories)
+                        {
+                            <option value="@cat">@cat</option>
+                        }
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="iqResult">ผลการไต่สวน</label>
+                    <select id="iqResult" class="fsel" @bind="_resultFilter">
+                        <option value="">ทั้งหมด</option>
+                        <option value="ชี้มูล">ชี้มูล</option>
+                        <option value="ไม่ชี้มูล">ไม่ชี้มูล</option>
+                        <option value="ยุติเรื่อง">ยุติเรื่อง</option>
+                        <option value="ส่งต่อหน่วยงานอื่น">ส่งต่อหน่วยงานอื่น</option>
+                        <option value="อยู่ระหว่าง">อยู่ระหว่าง</option>
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="iqStatus">สถานะ</label>
+                    <select id="iqStatus" class="fsel" @bind="_statusFilter">
+                        <option value="">สถานะทั้งหมด</option>
+                        @foreach (var st in _statuses)
+                        {
+                            <option value="@st">@InvestigationData.StatusLabel(st)</option>
+                        }
+                    </select>
+                </div>
+                <button type="button" class="btn-accent btn-sm-f" @onclick="OnApplyFilter">
+                    <i class="bi bi-search"></i> แสดงผล
+                </button>
+                <button type="button" class="fbtn" @onclick="OnResetFilter">
+                    <i class="bi bi-x-lg"></i> ล้างค่า
+                </button>
+            </div>
+
+            @if (_noData)
+            {
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <span>ไม่พบข้อมูลตามเงื่อนไขที่เลือก กรุณาเปลี่ยนตัวกรอง</span>
+                </div>
+            }
+            else
+            {
+                <div class="cs-charts-wrap layout-fill">
+                    @* ── Top: สถานะ | FR-026 ผลไต่สวน | FR-029 ประเภทคดี ── *@
+                    <div class="cs-charts-top">
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-bar-chart-fill"></i> สถานะคดีไต่สวน</div>
+                            <div class="cs-chart-canvas"><canvas id="iqChartStatus"></canvas></div>
+                        </div>
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-pie-chart-fill"></i> ผลการไต่สวน</div>
+                            <div class="cs-chart-canvas"><canvas id="iqChartResult"></canvas></div>
+                        </div>
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-diagram-3-fill"></i> ประเภทคดี ม.18/4 vs ม.62</div>
+                            <div class="cs-chart-canvas"><canvas id="iqChartCategory"></canvas></div>
+                        </div>
+                    </div>
+
+                    @* ── Bottom: แนวโน้มข้ามปี (FR-030) ── *@
+                    <div class="cs-charts-bot">
+                        <div class="cs-chart-card" style="grid-column:span 2">
+                            <div class="cs-chart-title"><i class="bi bi-graph-up-arrow"></i> แนวโน้มรับคดีรายเดือน เปรียบเทียบข้ามปีงบประมาณ</div>
+                            <div class="cs-chart-canvas"><canvas id="iqChartYearCompare"></canvas></div>
+                        </div>
+                        <div class="cs-chart-card has-table">
+                            <div class="cs-chart-title"><i class="bi bi-table"></i> สรุปผลการไต่สวน</div>
+                            <table class="cs-status-table">
+                                <thead><tr><th>ผล</th><th>จำนวน</th><th>%</th></tr></thead>
+                                <tbody>
+                                    @foreach (var (label, count, color) in ResultSummaryRows())
+                                    {
+                                        <tr>
+                                            <td><span style="color:@color;font-weight:700">@label</span></td>
+                                            <td>@count.ToString("N0")</td>
+                                            <td>@Pct(count)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                @* ── FR-027/028: SLA table ── *@
+                <div class="tc-head" style="margin-top:1.5rem">
+                    <div class="tc-row1">
+                        <div>
+                            <div class="tc-title"><i class="bi bi-clock-history"></i> ตัวชี้วัด SLA — คดีที่ใกล้/เกินกำหนด</div>
+                            <div class="tc-sub" style="font-size:11px">
+                                SLA เบื้องต้น 60 วัน (30+30) · ชี้มูล 120 วัน (30+30+30+30) ·
+                                <span class="sla-chip sla-warning">เหลือง ≤45 วัน</span>
+                                <span class="sla-chip sla-danger">แดง ≤30 วัน</span>
+                                <span class="sla-chip sla-expired">เกินกำหนด</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @if (_nearDeadline.Count == 0)
+                {
+                    <div class="empty-state">
+                        <i class="bi bi-check-circle-fill" style="color:#06d6a0"></i>
+                        <span>ไม่มีคดีที่ใกล้หรือเกินกำหนด SLA</span>
+                    </div>
+                }
+                else
+                {
+                    <table class="cs-status-table" id="exportTable">
+                        <thead>
+                            <tr>
+                                <th>เลขคดี</th>
+                                <th>ประเภท</th>
+                                <th>ชื่อเรื่อง</th>
+                                <th>SLA (วัน)</th>
+                                <th>ใช้ไป</th>
+                                <th>สถานะ SLA</th>
+                                <th>ผลการไต่สวน</th>
+                                <th>ผู้รับผิดชอบ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in _nearDeadline)
+                            {
+                                var slaClass = InvestigationData.SlaClass(c);
+                                var slaLabel = InvestigationData.SlaChipLabel(c);
+                                var descTrunc = c.Description.Length > 55 ? c.Description[..55] + "…" : c.Description;
+                                <tr>
+                                    <td>@c.CaseNo</td>
+                                    <td><span class="iq-invtype-chip @(c.InvType == "ไต่สวนเบื้องต้น" ? "iq-prelim" : "iq-merit")">@c.InvType</span></td>
+                                    <td title="@c.Description">@descTrunc</td>
+                                    <td>@c.MaxDays</td>
+                                    <td>@c.DaysUsed</td>
+                                    <td><span class="sla-chip @slaClass">@slaLabel</span></td>
+                                    <td>
+                                        @if (c.Result != "อยู่ระหว่าง")
+                                        {
+                                            <span class="sla-chip @InvestigationData.ResultClass(c.Result)">@c.Result</span>
+                                        }
+                                        else { <span style="color:#94a3b8">-</span> }
+                                    </td>
+                                    <td>@c.Investigator</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+
+                @* ── Export footer ── *@
+                <div class="cs-footer">
+                    <span class="cs-footer-info">
+                        แสดงผล <strong>@_filtered.Count.ToString("N0") คดี</strong>
+                        @if (!string.IsNullOrEmpty(_fiscalYear))  { <span> · ปีงบฯ @_fiscalYear</span> }
+                        @if (!string.IsNullOrEmpty(_invType))     { <span> · @_invType</span> }
+                        @if (!string.IsNullOrEmpty(_category))    { <span> · @_category</span> }
+                        @if (!string.IsNullOrEmpty(_resultFilter)){ <span> · @_resultFilter</span> }
+                        @if (!string.IsNullOrEmpty(_statusFilter)) { <span> · @InvestigationData.StatusLabel(_statusFilter)</span> }
+                    </span>
+                    <div class="cs-footer-btns">
+                        <button type="button" class="btn-ghost-d" @onclick="PrintReportAsync">
+                            <i class="bi bi-printer"></i> พิมพ์ PDF
+                        </button>
+                        <button type="button" class="btn-accent" @onclick="ExportCsvAsync">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+            }
+        </section>
+    </div>
+</div>
+
+@code {
+    private List<InvestigationCase> _all          = new();
+    private List<InvestigationCase> _filtered     = new();
+    private List<InvestigationCase> _nearDeadline = new();
+    private DotNetObjectReference<InquiryStats>? _dotNetRef;
+
+    private string _fiscalYear   = "";
+    private string _invType      = "";
+    private string _category     = "";
+    private string _resultFilter = "";
+    private string _statusFilter = "";
+
+    private bool _noData      = false;
+    private bool _chartsReady = false;
+    private bool _isDark      = true;
+
+    private List<string> _fiscalYears = new();
+    private List<string> _statuses    = new();
+    private List<string> _categories  = new();
+
+    // ── FR-025: KPI ──────────────────────────────────────────────────────────
+    private int PrelimCount  => _filtered.Count(c => c.InvType == "ไต่สวนเบื้องต้น");
+    private int MeritCount   => _filtered.Count(c => c.InvType == "ไต่สวนชี้มูล");
+    private int PrelimActive => _filtered.Count(c => c.InvType == "ไต่สวนเบื้องต้น" && c.Status != "closed");
+    private int MeritActive  => _filtered.Count(c => c.InvType == "ไต่สวนชี้มูล"    && c.Status != "closed");
+    private int NearSlaCount => _filtered.Count(c => InvestigationData.DaysRemaining(c) <= 45 && c.Status != "closed");
+    private int ExpiredCount => _filtered.Count(c => InvestigationData.DaysRemaining(c) <= 0  && c.Status != "closed");
+
+    private string Pct(int n) => _filtered.Count == 0 ? "0%" : $"{(int)Math.Round((double)n * 100 / _filtered.Count)}%";
+
+    // ── Fiscal year helpers ───────────────────────────────────────────────────
+    private static (int Year, int Month) ParseBEDate(string s)
+    {
+        var p = s.Split('/');
+        return p.Length == 3
+               && int.TryParse(p[1], out var m) && int.TryParse(p[2], out var y)
+               ? (y, m) : (0, 0);
+    }
+
+    private static string GetFiscalYear(string dateStr)
+    {
+        var (year, month) = ParseBEDate(dateStr);
+        if (year == 0) return "";
+        return (month >= 10 ? year : year - 1).ToString();
+    }
+
+    // ── Chart data ────────────────────────────────────────────────────────────
+    private (string[] Labels, int[] Data, string[] Colors) StatusBucketData()
+    {
+        var labels = new[] { "รอมอบหมาย", "ไต่สวน", "รอความเห็น", "สรุปสำนวน", "ปิดเรื่อง" };
+        var colors = new[] { "#fbbf24", "#6366f1", "#f77f00", "#a855f7", "#06d6a0" };
+        var counts = new[]
+        {
+            _filtered.Count(c => c.Status is "unassigned" or "assigned" or "accepted"),
+            _filtered.Count(c => c.Status == "investigating"),
+            _filtered.Count(c => c.Status == "opinion"),
+            _filtered.Count(c => c.Status == "summarized"),
+            _filtered.Count(c => c.Status == "closed")
+        };
+        return (labels, counts, colors);
+    }
+
+    // FR-026: ผลการไต่สวน 4 ตัว
+    private (string[] Labels, int[] Data, string[] Colors) ResultDoughnutData()
+    {
+        var labels = new[] { "ชี้มูล", "ไม่ชี้มูล", "ยุติเรื่อง", "ส่งต่อหน่วยงานอื่น", "อยู่ระหว่าง" };
+        var colors = new[] { "#06d6a0", "#f87171", "#fbbf24", "#6366f1", "#94a3b8" };
+        var data   = labels.Select(l => _filtered.Count(c => c.Result == l)).ToArray();
+        return (labels, data, colors);
+    }
+
+    private IEnumerable<(string Label, int Count, string Color)> ResultSummaryRows()
+    {
+        var (labels, data, colors) = ResultDoughnutData();
+        return labels.Select((l, i) => (Label: l, Count: data[i], Color: colors[i]));
+    }
+
+    // FR-029: ประเภทคดี ม.18/4 vs ม.62
+    private (string[] Labels, int[] Data, string[] Colors) CategoryData()
+    {
+        var labels = _filtered.Select(c => c.Category).Distinct().OrderBy(x => x).ToArray();
+        var colors = new[] { "#6366f1", "#f59e0b", "#06d6a0", "#f43f5e" };
+        var data   = labels.Select(l => _filtered.Count(c => c.Category == l)).ToArray();
+        return (labels, data, colors);
+    }
+
+    // FR-030: multi-year trend
+    private static readonly string[] ThaiMonths =
+        { "ต.ค.", "พ.ย.", "ธ.ค.", "ม.ค.", "ก.พ.", "มี.ค.",
+          "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย." };
+    private static readonly int[] FiscalMonthOrder = { 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+    private (string[] Labels, object[] Datasets) YearCompareData()
+    {
+        var years = _all
+            .Select(c => GetFiscalYear(c.ReceivedDate))
+            .Where(fy => !string.IsNullOrEmpty(fy) && int.TryParse(fy, out _))
+            .Select(int.Parse)
+            .Distinct().OrderBy(y => y).ToList();
+
+        var colors = new[] { "#6366f1", "#f59e0b", "#06d6a0", "#f43f5e" };
+        var datasets = years.Select((fy, i) => (object)new
+        {
+            label = $"ปีงบ {fy}",
+            color = colors[i % colors.Length],
+            data  = FiscalMonthOrder.Select(m =>
+                _all.Count(c =>
+                {
+                    var (yr, mo) = ParseBEDate(c.ReceivedDate);
+                    if (yr == 0) return false;
+                    var cFy = mo >= 10 ? yr : yr - 1;
+                    return cFy == fy && mo == m;
+                })
+            ).ToArray()
+        }).ToArray();
+
+        return (ThaiMonths, datasets);
+    }
+
+    // ── Filter ────────────────────────────────────────────────────────────────
+    private void ApplyFilter()
+    {
+        _chartsReady = false;
+        var q = _all.AsEnumerable();
+        if (!string.IsNullOrEmpty(_fiscalYear))
+            q = q.Where(c => GetFiscalYear(c.ReceivedDate) == _fiscalYear);
+        if (!string.IsNullOrEmpty(_invType))
+            q = q.Where(c => c.InvType == _invType);
+        if (!string.IsNullOrEmpty(_category))
+            q = q.Where(c => c.Category == _category);
+        if (!string.IsNullOrEmpty(_resultFilter))
+            q = q.Where(c => c.Result == _resultFilter);
+        if (!string.IsNullOrEmpty(_statusFilter))
+            q = q.Where(c => c.Status == _statusFilter);
+
+        _filtered = q.ToList();
+        _noData   = _filtered.Count == 0;
+
+        // FR-028: คดีที่ SLA เหลือ ≤45 วัน และยังไม่ปิด
+        _nearDeadline = _filtered
+            .Where(c => c.Status != "closed" && InvestigationData.DaysRemaining(c) <= 45)
+            .OrderBy(c => InvestigationData.DaysRemaining(c))
+            .ToList();
+    }
+
+    private async Task OnApplyFilter()  { ApplyFilter(); await InvokeAsync(StateHasChanged); }
+    private async Task OnResetFilter()  { _fiscalYear = _invType = _category = _resultFilter = _statusFilter = ""; ApplyFilter(); await InvokeAsync(StateHasChanged); }
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    protected override Task OnInitializedAsync()
+    {
+        _all = InvestigationData.Cases.ToList();
+        _fiscalYears = _all
+            .Select(c => GetFiscalYear(c.ReceivedDate))
+            .Where(fy => !string.IsNullOrEmpty(fy))
+            .Distinct().OrderByDescending(x => x).ToList();
+        _statuses   = _all.Select(c => c.Status).Distinct().OrderBy(x => x).ToList();
+        _categories = _all.Select(c => c.Category).Distinct().OrderBy(x => x).ToList();
+        ApplyFilter();
+        return Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var theme = await JS.InvokeAsync<string?>("localStorage.getItem", "dashTheme");
+            _isDark    = theme == "dark";
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("registerAnalyticsComponent", _dotNetRef);
+        }
+        if (!_noData && !_chartsReady)
+        {
+            _chartsReady = true;
+            await RenderChartsAsync();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnThemeChangedAsync(bool isDark)
+    {
+        _isDark = isDark;
+        await RenderChartsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RenderChartsAsync()
+    {
+        await Task.Yield();
+
+        var (stLabels, stData, stColors) = StatusBucketData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "iqChartStatus", "bar",
+            stLabels, stData.Cast<object>().ToArray(), stColors, _isDark);
+
+        var (rLabels, rData, rColors) = ResultDoughnutData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "iqChartResult", "doughnut",
+            rLabels, rData.Cast<object>().ToArray(), rColors, _isDark);
+
+        var (catLabels, catData, catColors) = CategoryData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "iqChartCategory", "bar",
+            catLabels, catData.Cast<object>().ToArray(), catColors, _isDark);
+
+        var (yLabels, yDatasets) = YearCompareData();
+        await JS.InvokeVoidAsync("initMultiSeriesChart", "iqChartYearCompare", "line",
+            yLabels, yDatasets, _isDark);
+    }
+
+    // ── Export ────────────────────────────────────────────────────────────────
+    private async Task ExportCsvAsync()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("CaseNo,InvType,Category,Accused,Result,Status,Investigator,ReceivedDate,DaysUsed,MaxDays,DaysRemaining");
+        foreach (var c in _filtered)
+        {
+            sb.AppendLine(string.Join(",",
+                c.CaseNo, c.InvType, c.Category,
+                $"\"{c.Accused}\"",
+                c.Result,
+                InvestigationData.StatusLabel(c.Status),
+                $"\"{c.Investigator}\"",
+                c.ReceivedDate, c.DaysUsed, c.MaxDays,
+                InvestigationData.DaysRemaining(c)));
+        }
+        await JS.InvokeVoidAsync("ecmis.downloadTextFile",
+            $"inquiry_stats_{DateTime.Now:yyyyMMdd}.csv", "text/csv;charset=utf-8;", sb.ToString(), true);
+    }
+
+    private async Task PrintReportAsync()
+    {
+        var title = $"<h2>รายงานสถิติการไต่สวน TOR 12.4 ป.ป.ท. | {DateTime.Now:dd/MM/yyyy}</h2>";
+        var table = await JS.InvokeAsync<string>("eval", "document.getElementById('exportTable')?.outerHTML ?? '<p>ไม่มีข้อมูล SLA</p>'");
+        await JS.InvokeVoidAsync("ecmis.printReport", "สถิติการไต่สวน", title + table);
+    }
+
+    public void Dispose() => _dotNetRef?.Dispose();
+}

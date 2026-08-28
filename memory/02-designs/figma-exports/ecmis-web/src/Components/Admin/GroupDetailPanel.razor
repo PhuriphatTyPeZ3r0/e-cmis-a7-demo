@@ -1,0 +1,186 @@
+@inject AdminApiService AdminApi
+@inject NavigationManager Nav
+
+<div class="group-detail-panel">
+    @if (!SelectedGroupId.HasValue)
+    {
+        <div style="text-align:center;padding:48px 24px;color:#94a3b8">
+            <i class="bi bi-hand-index-thumb" style="font-size:36px;display:block;margin-bottom:10px;opacity:.35"></i>
+            <div style="font-size:13px;font-weight:600">เลือกชุดสิทธิ์ทางซ้าย</div>
+            <div style="font-size:12px;margin-top:4px">แล้วตั้งเมนูหรือดูสมาชิก</div>
+        </div>
+    }
+    else
+    {
+        <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid #eaecf2;padding-bottom:10px">
+            <button type="button" @onclick="@(() => DetailTab = "menu")"
+                    style="padding:6px 14px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;
+                           background:@(DetailTab == "menu" ? "var(--navy-deep)" : "#f1f5f9");
+                           color:@(DetailTab == "menu" ? "#fff" : "var(--text-muted)")">
+                <i class="bi bi-grid-3x3-gap me-1"></i>เมนู
+            </button>
+            <button type="button" @onclick="@(() => _ = SelectMembersTabAsync())"
+                    style="padding:6px 14px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;
+                           background:@(DetailTab == "members" ? "var(--navy-deep)" : "#f1f5f9");
+                           color:@(DetailTab == "members" ? "#fff" : "var(--text-muted)")">
+                <i class="bi bi-people-fill me-1"></i>สมาชิก @(MemberCount > 0 ? $"({MemberCount})" : "")
+            </button>
+        </div>
+
+        @if (DetailTab == "menu")
+        {
+            <RolePermissionMatrix @ref="_matrix" SelectedRoleId="SelectedGroupId" OnSaved="OnMatrixSaved" />
+        }
+        else
+        {
+            @if (membersLoading)
+            {
+                <div style="padding:32px;text-align:center;color:var(--text-muted)">
+                    <i class="bi bi-arrow-clockwise" style="animation:spin 1s linear infinite;font-size:22px"></i>
+                    <div style="margin-top:8px;font-size:12.5px">กำลังโหลดสมาชิก...</div>
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(membersError))
+            {
+                <div style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;font-size:12.5px">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>@membersError
+                </div>
+            }
+            else if (members.Count == 0)
+            {
+                <div style="text-align:center;padding:36px 16px;color:var(--text-muted)">
+                    <i class="bi bi-person-x" style="font-size:32px;opacity:.4"></i>
+                    <div style="margin-top:8px;font-size:13px">ยังไม่มีสมาชิกในชุดสิทธิ์นี้</div>
+                    <div style="font-size:11.5px;margin-top:4px">มอบได้ที่แท็บ <strong>มอบสิทธิ์การเข้าถึง</strong></div>
+                </div>
+            }
+            else
+            {
+                <div style="max-height:52vh;overflow-y:auto">
+                    @foreach (var m in members)
+                    {
+                        <div style="padding:10px 12px;background:#f8fafc;border-radius:9px;margin-bottom:8px;border:1px solid #eaecf2">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <div style="min-width:0">
+                                    <a href="/admin/users/@m.UserId" style="font-size:13px;font-weight:700;color:var(--navy-deep);text-decoration:none">@(string.IsNullOrWhiteSpace(m.FullName) ? m.Username : m.FullName)</a>
+                                    <div style="font-size:11px;color:var(--text-muted)">@m.Username · @m.Email</div>
+                                    <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+                                        @if (!string.IsNullOrWhiteSpace(m.OrgName)) { <span>@m.OrgName</span> }
+                                        @if (!string.IsNullOrWhiteSpace(m.PositionName)) { <span> · @m.PositionName</span> }
+                                        @if (m.AssignedAt.HasValue) { <span> · มอบ @m.AssignedAt.Value.ToLocalTime().ToString("dd/MM/yy")</span> }
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                                    @if (m.AccountStatus == "active")
+                                    {
+                                        <span class="status-badge status-active" style="font-size:10px">ใช้งาน</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-badge status-inactive" style="font-size:10px">@m.AccountStatus</span>
+                                    }
+                                    @if (CanRevokeMembers)
+                                    {
+                                        <button type="button" @onclick="@(() => RevokeMemberAsync(m))" disabled="@revokingAuthId == m.AuthId"
+                                                class="btn btn-sm" style="font-size:10px;padding:2px 8px;background:#fff;border:1px solid #fca5a5;color:#dc2626">
+                                            @if (revokingAuthId == m.AuthId) { <span class="spinner-border spinner-border-sm"></span> }
+                                            else { <span>ถอน</span> }
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int? SelectedGroupId { get; set; }
+    [Parameter] public bool CanRevokeMembers { get; set; }
+    [Parameter] public EventCallback OnMembersChanged { get; set; }
+    [Parameter] public EventCallback OnMatrixSaved { get; set; }
+
+    private RolePermissionMatrix? _matrix;
+    private string DetailTab = "menu";
+    private List<FunctionGroupMemberDto> members = new();
+    private bool membersLoading;
+    private string? membersError;
+    private int? revokingAuthId;
+    private int? loadedGroupId;
+    private int MemberCount => members.Count;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!SelectedGroupId.HasValue)
+        {
+            members = new();
+            loadedGroupId = null;
+            DetailTab = "menu";
+            return;
+        }
+
+        if (SelectedGroupId != loadedGroupId && DetailTab == "members")
+            await LoadMembersAsync();
+    }
+
+    private async Task SelectMembersTabAsync()
+    {
+        DetailTab = "members";
+        await LoadMembersAsync();
+    }
+
+    private async Task LoadMembersAsync()
+    {
+        if (!SelectedGroupId.HasValue) return;
+        membersLoading = true;
+        membersError = null;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            members = await AdminApi.GetFunctionGroupMembersAsync(SelectedGroupId.Value);
+            loadedGroupId = SelectedGroupId;
+        }
+        catch (Exception ex)
+        {
+            membersError = ex.Message;
+            members = new();
+        }
+        finally
+        {
+            membersLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public async Task ReloadMatrixAsync()
+    {
+        if (_matrix is not null)
+            await _matrix.ReloadAsync();
+        if (DetailTab == "members" && SelectedGroupId.HasValue)
+            await LoadMembersAsync();
+    }
+
+    private async Task RevokeMemberAsync(FunctionGroupMemberDto m)
+    {
+        revokingAuthId = m.AuthId;
+        membersError = null;
+        try
+        {
+            await AdminApi.RemoveUserGroupAsync(m.UserId, m.AuthId);
+            await LoadMembersAsync();
+            await OnMembersChanged.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            membersError = ex.Message;
+        }
+        finally
+        {
+            revokingAuthId = null;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+}

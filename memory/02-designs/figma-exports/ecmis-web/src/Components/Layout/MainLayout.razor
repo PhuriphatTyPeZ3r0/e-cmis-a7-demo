@@ -1,0 +1,325 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Nav
+@inject EcmisWeb.Services.CurrentUserService CurrentUserSvc
+@inject EcmisWeb.Services.SystemAccessApiService SystemApi
+@inject EcmisWeb.Services.SessionService SessionSvc
+@inject EcmisWeb.Services.AuthApiService AuthApi
+@inject EcmisWeb.Services.AuthRedirectService AuthRedirect
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="layout-container @(!sidebarOpen ? "sidebar-collapsed" : "") @(_isLight ? "app-light" : "")" style="--sidebar-collapsed: @(sidebarOpen ? 0 : 1)" @onclick="CloseUserMenu">
+    <NavMenu @key="@NavMenuInstanceKey" SidebarOpen="@sidebarOpen" OnClose="CloseSidebar" CurrentUser="currentUser" />
+
+    <div class="sidebar-overlay @(sidebarOpen ? "open" : "")" @onclick="CloseSidebar"></div>
+
+<header class="topbar">
+    <button class="hamburger-btn @(sidebarOpen ? "active" : "")" @onclick="ToggleSidebar" title="เมนู">
+        <i class="bi @(sidebarOpen ? "bi-x-lg" : "bi-list")"></i>
+    </button>
+
+    <div class="topbar-search">
+        <i class="bi bi-search"></i>
+        <input type="text" placeholder="ค้นหาเลขเรื่อง ผู้ถูกร้อง หน่วยงาน..." />
+    </div>
+
+    <div class="topbar-actions">
+        <div class="icon-btn" title="แจ้งเตือน" @onclick='() => notifOpen = true'>
+            <i class="bi bi-bell-fill"></i>
+            <span class="notif-dot"></span>
+        </div>
+        <div class="icon-btn" title="คู่มือ" @onclick='() => manualOpen = true'>
+            <i class="bi bi-book-fill"></i>
+        </div>
+        <div class="icon-btn" title="ติดต่อ" @onclick='() => contactOpen = true'>
+            <i class="bi bi-telephone-fill"></i>
+        </div>
+
+        <button class="icon-btn" title="@(_isLight ? "เปลี่ยนเป็นโหมดมืด" : "เปลี่ยนเป็นโหมดสว่าง")"
+                @onclick="ToggleTheme" @onclick:stopPropagation="true">
+            <i class="bi @(_isLight ? "bi-moon-stars-fill" : "bi-sun-fill")"></i>
+        </button>
+
+        <div class="topbar-divider"></div>
+
+        <div class="user-menu-wrap">
+            <button type="button" class="user-pill" @onclick="ToggleUserMenu" @onclick:stopPropagation="true" aria-haspopup="menu" aria-expanded="@userMenuOpen">
+                <div class="user-pill-avatar">@UserInitials</div>
+                <div class="user-pill-text">
+                    <div class="user-pill-name">@UserDisplayName</div>
+                    <div class="user-pill-role">@UserRoleLabel</div>
+                </div>
+                <i class="bi bi-chevron-down user-pill-chevron @(userMenuOpen ? "rotated" : "")"></i>
+            </button>
+            @if (userMenuOpen)
+            {
+                <div class="um-panel" @onclick:stopPropagation="true">
+
+                    @* ── Header: ชื่อ + ตำแหน่ง ── *@
+                    <div class="um-header">
+                        <div class="um-avatar">@UserInitials</div>
+                        <div class="um-name">
+                            <div class="um-name-text">@UserDisplayName</div>
+                            <div class="um-role-badge">
+                                <i class="bi bi-person-badge" style="font-size:10px;"></i>
+                                @UserRoleLabel
+                            </div>
+                        </div>
+                    </div>
+
+                    @* ── Divider ── *@
+                    <div class="um-divider"></div>
+
+                    @* ── Email ── *@
+                    <div class="um-row">
+                        <i class="bi bi-envelope um-row-icon"></i>
+                        <span>@(currentUser?.Email ?? "-")</span>
+                    </div>
+
+                    @* ── Divider ── *@
+                    <div class="um-divider"></div>
+
+                    @* ── Logout ── *@
+                    <button type="button" class="um-logout" @onclick="LogoutAsync">
+                        <i class="bi bi-box-arrow-right um-logout-icon"></i>
+                        <span>ออกจากระบบ</span>
+                    </button>
+
+                </div>
+            }
+        </div>
+    </div>
+</header>
+
+<main class="main-content">
+    <div class="page-body">
+        @Body
+    </div>
+</main>
+
+@if (notifOpen)
+{
+    <div class="modal-backdrop-custom open" @onclick='() => notifOpen = false'>
+        <div class="modal-box" style="width:420px" @onclick:stopPropagation="true">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div style="font-size:17px;font-weight:800;color:var(--navy-deep)">
+                    <i class="bi bi-bell-fill me-2" style="color:var(--gold)"></i>การแจ้งเตือน
+                </div>
+                <i class="bi bi-x-lg" style="cursor:pointer;font-size:18px;color:var(--text-muted)" @onclick='() => notifOpen = false'></i>
+            </div>
+            <div class="d-flex flex-column gap-2">
+                <div style="background:#fff3e8;border-radius:10px;padding:12px 14px;border-left:3px solid var(--orange)">
+                    <div style="font-size:13px;font-weight:700;color:var(--orange)">เรื่องใหม่รอพิจารณา</div>
+                    <div style="font-size:12px;color:var(--text-dark);margin-top:4px">มีรายการจากระบบอัตโนมัติ 4 รายการ</div>
+                </div>
+                <div style="background:#fde8e8;border-radius:10px;padding:12px 14px;border-left:3px solid var(--red)">
+                    <div style="font-size:13px;font-weight:700;color:var(--red)">ติดตามผลครบกำหนด</div>
+                    <div style="font-size:12px;color:var(--text-dark);margin-top:4px">มาตรา 58/2 ใกล้ครบกำหนด 2 รายการ</div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (manualOpen)
+{
+    <div class="modal-backdrop-custom open" @onclick='() => manualOpen = false'>
+        <div class="modal-box" style="width:520px" @onclick:stopPropagation="true">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div style="font-size:16px;font-weight:800;color:var(--navy-deep)">คู่มือการใช้งาน</div>
+                <i class="bi bi-x-lg" style="cursor:pointer" @onclick='() => manualOpen = false'></i>
+            </div>
+            <div style="font-size:13px;color:var(--text-dark)">
+                ไฟล์คู่มือ: <code>020469\คู่มือ การใช้งานระบบ PCMS.pdf</code>
+            </div>
+        </div>
+    </div>
+}
+
+@if (contactOpen)
+{
+    <div class="modal-backdrop-custom open" @onclick='() => contactOpen = false'>
+        <div class="modal-box" style="width:520px" @onclick:stopPropagation="true">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div style="font-size:16px;font-weight:800;color:var(--navy-deep)">ช่องทางประสานงาน</div>
+                <i class="bi bi-x-lg" style="cursor:pointer" @onclick='() => contactOpen = false'></i>
+            </div>
+            <div style="font-size:13px;line-height:1.8">
+                <div>itsupport@pacc.go.th</div>
+                <div>1907 / 08 5352 8425</div>
+            </div>
+        </div>
+    </div>
+}
+
+</div>
+
+@code {
+    private bool notifOpen;
+    private bool manualOpen;
+    private bool contactOpen;
+    private bool sidebarOpen = false;
+    private bool userMenuOpen;
+    private bool _isLight = true;
+    private EcmisWeb.Services.CurrentUserDto? currentUser;
+
+    /// <summary>Force NavMenu remount when user or permission set changes (avoids stale sidebar from cache).</summary>
+    private string NavMenuInstanceKey =>
+        currentUser is null
+            ? "anon"
+            : $"{currentUser.Username}:{currentUser.Permissions?.Length ?? 0}";
+
+    private const string SidebarStateKey = "ecmis-sidebar-open";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Nav.LocationChanged += OnLocationChanged;
+
+        if (!await SessionSvc.IsAuthenticatedAsync())
+        {
+            await AuthRedirect.RedirectToLoginAsync("session-expired");
+            return;
+        }
+
+        if (!await SessionSvc.EnsureValidSessionAsync())
+        {
+            await AuthRedirect.RedirectToLoginAsync("session-expired");
+            return;
+        }
+
+        currentUser = await CurrentUserSvc.GetCurrentUserAsync();
+        if (currentUser is null && await SessionSvc.TryRestoreSessionAsync())
+            currentUser = await CurrentUserSvc.GetCurrentUserAsync();
+
+        if (currentUser is null)
+        {
+            await AuthRedirect.RedirectToLoginAsync("session-expired");
+            return;
+        }
+
+        try
+        {
+            var stored = await JS.InvokeAsync<string?>("localStorage.getItem", SidebarStateKey);
+            sidebarOpen = stored != "false";
+        }
+        catch { sidebarOpen = true; }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        try
+        {
+            var theme = await JS.InvokeAsync<string?>("localStorage.getItem", "dashTheme");
+            var isLight = theme != "dark";
+            if (isLight != _isLight)
+            {
+                _isLight = isLight;
+                StateHasChanged();
+            }
+        }
+        catch { }
+    }
+
+    private async Task ToggleTheme()
+    {
+        _isLight = !_isLight;
+        var theme = _isLight ? "light" : "dark";
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", "dashTheme", theme);
+            await JS.InvokeVoidAsync("reinitDashChartIfNeeded", !_isLight);
+            await JS.InvokeVoidAsync("reinitAnalyticsChartsIfNeeded", !_isLight);
+        }
+        catch { }
+        StateHasChanged();
+    }
+
+    private async Task ToggleSidebar()
+    {
+        sidebarOpen = !sidebarOpen;
+        await PersistSidebarStateAsync();
+        StateHasChanged();
+    }
+
+    private void ToggleUserMenu(Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
+    {
+        userMenuOpen = !userMenuOpen;
+    }
+
+    private void CloseUserMenu() => userMenuOpen = false;
+
+    private async Task CloseSidebar()
+    {
+        sidebarOpen = false;
+        await PersistSidebarStateAsync();
+        StateHasChanged();
+    }
+
+    private async Task PersistSidebarStateAsync()
+    {
+        try { await JS.InvokeVoidAsync("localStorage.setItem", SidebarStateKey, sidebarOpen ? "true" : "false"); }
+        catch { /* best-effort */ }
+    }
+
+    // Auto-close sidebar on navigation (mobile UX)
+    private async void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        userMenuOpen = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LogoutAsync()
+    {
+        try
+        {
+            await AuthApi.LogoutAsync();
+        }
+        catch
+        {
+            // Always clear local session even if admin API is unreachable.
+        }
+
+        await SessionSvc.ClearSessionAsync();
+        CurrentUserSvc.InvalidateCache();
+        SystemApi.InvalidateMenuCache();
+        userMenuOpen = false;
+        Nav.NavigateTo("/login", replace: true);
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
+    }
+
+    private string UserDisplayName
+    {
+        get
+        {
+            var name = $"{currentUser?.FirstName} {currentUser?.LastName}".Trim();
+            return string.IsNullOrWhiteSpace(name) ? currentUser?.Username ?? "ผู้ใช้งาน" : name;
+        }
+    }
+
+    private string UserInitials
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(currentUser?.FirstName))
+                return currentUser.FirstName[..1].ToUpperInvariant();
+            if (!string.IsNullOrWhiteSpace(currentUser?.Username))
+                return currentUser.Username[..1].ToUpperInvariant();
+            return "U";
+        }
+    }
+
+    private bool HasRole(string role) =>
+        currentUser?.Roles.Any(x => string.Equals(x, role, StringComparison.OrdinalIgnoreCase)) == true;
+
+    private string UserRoleLabel =>
+        HasRole("super_admin") ? "Super Admin" :
+        HasRole("admin")       ? "Admin หน่วยงาน" :
+        HasRole("officer")     ? "เจ้าหน้าที่" :
+        currentUser?.UserType  ?? "";
+
+}

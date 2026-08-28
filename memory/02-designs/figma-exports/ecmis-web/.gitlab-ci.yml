@@ -1,0 +1,57 @@
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+
+build:
+  stage: build
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  script:
+    - dotnet restore
+    - dotnet build --no-restore
+  only:
+    - develop
+    - main
+    - /^feature\/.*/
+    - /^release\/.*/
+
+test:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  script:
+    - dotnet test tests/unit
+  only:
+    - develop
+    - main
+    - /^feature\/.*/
+
+deploy:dev:
+  stage: deploy
+  script:
+    - echo "Deploy Web to Dev"
+  environment:
+    name: development
+  only:
+    - develop
+
+deploy:staging:
+  stage: deploy
+  script:
+    - echo "Deploy Web to Staging"
+  environment:
+    name: staging
+  only:
+    - /^release\/.*/
+
+deploy:production:
+  stage: deploy
+  script:
+    - echo "Deploy Web to Production"
+  environment:
+    name: production
+  when: manual
+  only:
+    - main

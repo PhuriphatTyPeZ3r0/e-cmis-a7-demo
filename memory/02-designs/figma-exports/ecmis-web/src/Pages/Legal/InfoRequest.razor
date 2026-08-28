@@ -1,0 +1,87 @@
+@page "/legal/info-request"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+<div class="routing-page-wrap">
+    <div class="complaints-page-header">
+        <div>
+            <div class="complaints-title">
+                <i class="bi bi-clipboard-check-fill" style="color:var(--green)"></i>
+                <span>ระบบบริหารจัดการข้อมูลข่าวสารทางคดี</span>
+            </div>
+            <div class="complaints-subtitle">
+                บันทึกคำร้องและตรวจสอบการพิจารณาอนุญาตผู้ขอคัดสำเนาเอกสารพยานหลักฐานจากสำนวน
+            </div>
+        </div>
+        <div class="complaints-actions">
+            <button class="btn-outline-navy" @onclick='() => Nav.NavigateTo("/legal")'>
+                <i class="bi bi-arrow-left"></i> กลับไป Dashboard
+            </button>
+        </div>
+    </div>
+
+    @* — High level summary — *@
+    <div style="display:flex;gap:15px;margin-bottom:14px">
+        <div class="routing-card border-navy" style="flex:1;background:#fff;padding:15px">
+            <div style="font-size:12px;color:var(--text-muted)">คำร้องทั้งหมด (ปีปฏิทินปัจจุบัน)</div>
+            <div style="font-size:24px;font-weight:700;color:var(--navy-deep)">@LegalData.InfoRequests.Count <span style="font-size:14px;color:#aaa">รายการ</span></div>
+        </div>
+        <div class="routing-card border-orange" style="flex:1;background:#fff;padding:15px">
+             <div style="font-size:12px;color:var(--text-muted)">รอผลการพิจารณาอนุญาต</div>
+            <div style="font-size:24px;font-weight:700;color:var(--orange)">@LegalData.InfoRequests.Count(r => r.Status == "pending") <span style="font-size:14px;color:#aaa">คำร้อง</span></div>
+        </div>
+    </div>
+
+    <div class="complaints-table-card">
+        <div class="complaints-table-head">
+            <div>
+                <div class="complaints-table-title">ตารางการอนุญาตเปิดเผยสำนวน</div>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto">
+            <table class="complaints-table">
+                <thead>
+                    <tr>
+                        <th>เลขที่ใบคำร้อง</th>
+                        <th>ชื่อผู้ยื่นคำร้อง</th>
+                        <th>เลขสำนวนคดีที่ขอดู</th>
+                        <th>วันที่รับคำร้อง</th>
+                        <th style="min-width:140px">มติพิจารณาจาก กบค.</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in LegalData.InfoRequests)
+                    {
+                        <tr>
+                            <td><span style="font-weight:700;font-size:14px">@r.RequestNo</span></td>
+                            <td><div style="font-size:13px;font-weight:600">@r.RequesterName</div></td>
+                            <td>
+                                <a href="#" style="font-size:12px;font-weight:700;color:var(--navy);text-decoration:underline">
+                                    <i class="bi bi-folder2-open"></i> @r.TargetCaseNo
+                                </a>
+                            </td>
+                            <td><span style="font-size:12px">@r.RequestDate</span></td>
+                            <td>
+                                <span class="complaints-status-chip @LegalData.InfoRequestStatusClass(r.Status)">
+                                    @LegalData.InfoRequestStatusLabel(r.Status)
+                                </span>
+                            </td>
+                            <td>
+                                @if (r.Status == "pending")
+                                {
+                                    <button class="btn btn-navy" style="padding:4px 10px;font-size:12px">ตรวจสอบลงมติ</button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-outline-navy" style="padding:4px 10px;font-size:12px">ดูรายละเอียด</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

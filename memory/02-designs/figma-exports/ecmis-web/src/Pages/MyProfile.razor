@@ -1,0 +1,543 @@
+@page "/me/profile"
+@page "/me/roles"
+@inject EcmisWeb.Services.SystemAccessApiService SystemApi
+@inject EcmisWeb.Services.CurrentUserService CurrentUser
+@inject EcmisWeb.Services.UserApiService UserApi
+@using EcmisWeb.Services
+
+@* ── HERO ── *@
+<div style="background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 55%,#1e3575 100%);border-radius:18px;padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden" class="fade-in">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold-light),var(--gold),transparent)"></div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center">
+                <i class="bi bi-person-badge-fill" style="font-size:20px;color:var(--navy-deep)"></i>
+            </div>
+            <div>
+                <div style="font-size:19px;font-weight:800;color:#fff">สิทธิ์ของฉัน</div>
+                <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px">@WelcomeName · @MeEmail</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(ActionMessage))
+{
+    <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#15803d">
+        <i class="bi bi-check-circle-fill me-2"></i>@ActionMessage
+    </div>
+}
+@if (!string.IsNullOrEmpty(ActionError))
+{
+    <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#991b1b">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@ActionError
+    </div>
+}
+
+<div class="row g-3">
+
+    @* ── Edit Profile ── *@
+    <div class="col-md-6">
+        <div class="ecmis-card mb-3">
+            <div class="ecmis-card-header">
+                <div class="ecmis-card-title"><span class="badge-dot"></span>แก้ไขข้อมูลส่วนตัว</div>
+            </div>
+            <div style="padding:14px 20px">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">ชื่อ <span style="color:#e53e3e">*</span></label>
+                        <input @bind="EditFirstName" class="form-control form-control-sm" style="font-size:12.5px;border-radius:8px" placeholder="ชื่อ" />
+                    </div>
+                    <div class="col-6">
+                        <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">นามสกุล <span style="color:#e53e3e">*</span></label>
+                        <input @bind="EditLastName" class="form-control form-control-sm" style="font-size:12.5px;border-radius:8px" placeholder="นามสกุล" />
+                    </div>
+                    <div class="col-12">
+                        <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">อีเมลราชการ</label>
+                        <input @bind="EditEmailMain" type="email" class="form-control form-control-sm" style="font-size:12.5px;border-radius:8px" placeholder="name@pacc.go.th" />
+                    </div>
+                    <div class="col-12">
+                        <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">อีเมลสำรอง</label>
+                        <input @bind="EditEmailBackup" type="email" class="form-control form-control-sm" style="font-size:12.5px;border-radius:8px" placeholder="personal@example.com (ถ้ามี)" />
+                    </div>
+                    <div class="col-12">
+                        <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">เบอร์โทรศัพท์</label>
+                        <input @bind="EditPhone" class="form-control form-control-sm" style="font-size:12.5px;border-radius:8px" placeholder="เบอร์โทรศัพท์" />
+                    </div>
+                </div>
+                <button @onclick="SaveProfileAsync" disabled="@(ProfileSaving || string.IsNullOrWhiteSpace(EditFirstName) || string.IsNullOrWhiteSpace(EditLastName))" class="btn btn-sm mt-3" style="background:var(--navy-deep);color:#fff;border:none;font-size:12px;border-radius:8px;padding:6px 14px;font-weight:700">
+                    @if (ProfileSaving) { <span class="spinner-border spinner-border-sm me-1" style="width:11px;height:11px;border-width:2px"></span> }
+                    <i class="bi bi-floppy me-1"></i>บันทึก
+                </button>
+            </div>
+        </div>
+
+    @* ── My Roles ── *@
+        <div class="ecmis-card mb-3">
+            <div class="ecmis-card-header">
+                <div class="ecmis-card-title"><span class="badge-dot"></span>สิทธิ์ของฉัน</div>
+                <div style="font-size:12px;color:var(--text-muted)">@MyRoles.Count รายการ</div>
+            </div>
+            <div style="padding:14px 20px">
+                @if (!MyRoles.Any())
+                {
+                    <div style="color:var(--text-muted);font-size:12.5px">— ยังไม่มีสิทธิ์ —</div>
+                }
+                else
+                {
+                    @foreach (var r in MyRoles)
+                    {
+                        <div style="padding:10px 12px;background:#f8fafc;border-radius:9px;margin-bottom:8px">
+                            <div style="display:flex;align-items:center;justify-content:space-between">
+                                <div>
+                                    <span style="border-radius:5px;padding:3px 8px;font-size:11px;font-weight:700;background:#edf3ff;color:#1a3575">@r.Code</span>
+                                    <span style="font-size:13px;font-weight:700;color:var(--navy-deep);margin-left:8px">@r.Name</span>
+                                </div>
+                                <div style="font-size:11px;color:var(--text-muted)">@(r.Permissions?.Length ?? 0) สิทธิ์</div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(r.Description))
+                            {
+                                <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px">@r.Description</div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        @* Request org / role change *@
+        <div class="ecmis-card mb-3">
+            <div class="ecmis-card-header">
+                <div class="ecmis-card-title"><span class="badge-dot"></span>ยื่นคำขอแก้ไขข้อมูล</div>
+            </div>
+            <div style="padding:14px 20px">
+
+                @* Org change form *@
+                <div style="background:#f8fafc;border-radius:10px;padding:12px;margin-bottom:10px">
+                    <div style="font-size:12.5px;font-weight:700;color:var(--navy-deep);margin-bottom:6px"><i class="bi bi-building me-1"></i>ขอเปลี่ยนหน่วยงาน</div>
+                    @if (!string.IsNullOrEmpty(CurrentOrgName))
+                    {
+                        <div style="font-size:11px;color:#475569;margin-bottom:6px"><i class="bi bi-geo-alt me-1"></i>ปัจจุบัน: <strong>@CurrentOrgName</strong></div>
+                    }
+                    <select @bind="OrgChangeTargetId" class="form-select form-select-sm mb-2" style="font-size:12.5px;border-radius:8px">
+                        <option value="0">— เลือกหน่วยงานใหม่ —</option>
+                        @foreach (var o in Orgs)
+                        {
+                            <option value="@o.Id">@o.NameTh</option>
+                        }
+                    </select>
+                    <input @bind="OrgChangeReason" class="form-control form-control-sm mb-2" style="font-size:12.5px;border-radius:8px" placeholder="เหตุผล * (บังคับ)" />
+                    @if (OrgChangeTargetId == 0 || !IsReasonValid(OrgChangeReason))
+                    {
+                        <p style="margin:0 0 6px;font-size:11px;color:#b45309"><i class="bi bi-info-circle me-1"></i>เลือกหน่วยงานและกรอกเหตุผลอย่างน้อย 3 ตัวอักษร</p>
+                    }
+                    <button @onclick="SubmitOrgTransferAsync" disabled="@(Busy || OrgChangeTargetId == 0 || !IsReasonValid(OrgChangeReason))" class="btn btn-sm" style="background:var(--navy-deep);color:#fff;border:none;font-size:12px;border-radius:8px;padding:6px 14px;font-weight:700"><i class="bi bi-send me-1"></i>ส่งคำขอ</button>
+                </div>
+
+                @* Position change form *@
+                <div style="background:#f8fafc;border-radius:10px;padding:12px;margin-bottom:10px">
+                    <div style="font-size:12.5px;font-weight:700;color:var(--navy-deep);margin-bottom:6px"><i class="bi bi-person-badge me-1"></i>ขอเปลี่ยนตำแหน่ง (ชื่อตำแหน่งในองค์กร)</div>
+                    @if (!string.IsNullOrEmpty(CurrentPositionName))
+                    {
+                        <div style="font-size:11px;color:#475569;margin-bottom:4px"><i class="bi bi-person-check me-1"></i>ปัจจุบัน: <strong>@CurrentPositionName</strong></div>
+                    }
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">เช่น เจ้าหน้าที่ นักสืบ — ไม่ใช่สิทธิ์เข้าเมนูระบบ</div>
+                    <select @bind="PositionChangeTargetId" class="form-select form-select-sm mb-2" style="font-size:12.5px;border-radius:8px">
+                        <option value="0">— เลือกชื่อตำแหน่งใหม่ —</option>
+                        @foreach (var p in Positions)
+                        {
+                            <option value="@p.Id">@ChangeRequestDisplay.FormatPositionOption(p.NameTh, p.Code)</option>
+                        }
+                    </select>
+                    <input @bind="PositionChangeReason" class="form-control form-control-sm mb-2" style="font-size:12.5px;border-radius:8px" placeholder="เหตุผล * (บังคับ)" />
+                    @if (PositionChangeTargetId == 0 || !IsReasonValid(PositionChangeReason))
+                    {
+                        <p style="margin:0 0 6px;font-size:11px;color:#b45309"><i class="bi bi-info-circle me-1"></i>เลือกชื่อตำแหน่งและกรอกเหตุผลอย่างน้อย 3 ตัวอักษร</p>
+                    }
+                    <button @onclick="SubmitPositionChangeAsync" disabled="@(Busy || PositionChangeTargetId == 0 || !IsReasonValid(PositionChangeReason))" class="btn btn-sm" style="background:var(--navy-deep);color:#fff;border:none;font-size:12px;border-radius:8px;padding:6px 14px;font-weight:700"><i class="bi bi-send me-1"></i>ส่งคำขอ</button>
+                </div>
+
+                @* Grantable permission group request *@
+                <div style="background:#f8fafc;border-radius:10px;padding:12px">
+                    <div style="font-size:12.5px;font-weight:700;color:var(--navy-deep);margin-bottom:6px"><i class="bi bi-shield-shaded me-1"></i>ขอเพิ่มกลุ่มสิทธิ์ในระบบ</div>
+                    @if (MyRoles.Any())
+                    {
+                        <div style="font-size:11px;color:#475569;margin-bottom:4px"><i class="bi bi-shield-check me-1"></i>ปัจจุบัน: <strong>@string.Join(", ", MyRoles.Select(r => r.Name))</strong></div>
+                    }
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">สิทธิ์ใช้งานเมนู/ฟังก์ชัน เช่น ผู้ดูแลหน่วยงาน</div>
+                    <select @bind="RoleChangeTargetId" class="form-select form-select-sm mb-2" style="font-size:12.5px;border-radius:8px">
+                        <option value="0">— เลือกกลุ่มสิทธิ์ที่ต้องการ —</option>
+                        @foreach (var r in AvailableRoles)
+                        {
+                            <option value="@r.Id">@ChangeRequestDisplay.FormatGrantableGroupOption(r.Name, r.Code)</option>
+                        }
+                    </select>
+                    <input @bind="RoleChangeReason" class="form-control form-control-sm mb-2" style="font-size:12.5px;border-radius:8px" placeholder="เหตุผล * (บังคับ)" />
+                    @if (RoleChangeTargetId == 0 || !IsReasonValid(RoleChangeReason))
+                    {
+                        <p style="margin:0 0 6px;font-size:11px;color:#b45309"><i class="bi bi-info-circle me-1"></i>เลือกกลุ่มสิทธิ์และกรอกเหตุผลอย่างน้อย 3 ตัวอักษร</p>
+                    }
+                    <button @onclick="SubmitRoleChangeAsync" disabled="@(Busy || RoleChangeTargetId == 0 || !IsReasonValid(RoleChangeReason))" class="btn btn-sm" style="background:var(--navy-deep);color:#fff;border:none;font-size:12px;border-radius:8px;padding:6px 14px;font-weight:700"><i class="bi bi-send me-1"></i>ส่งคำขอ</button>
+                </div>
+            </div>
+        </div>
+
+        @* Transfer request history *@
+        <div class="ecmis-card mb-3">
+            <div class="ecmis-card-header">
+                <div class="ecmis-card-title"><span class="badge-dot"></span>ประวัติคำขอเปลี่ยนหน่วยงาน</div>
+                <div style="font-size:12px;color:var(--text-muted)">@MyTransfers.Count รายการ</div>
+            </div>
+            <div style="padding:14px 20px;max-height:220px;overflow-y:auto">
+                @if (!MyTransfers.Any())
+                {
+                    <div style="color:var(--text-muted);font-size:12.5px">— ยังไม่มีคำขอ —</div>
+                }
+                else
+                {
+                    @foreach (var t in MyTransfers)
+                    {
+                        <div style="padding:8px 0;border-bottom:1px dashed #eaecf2">
+                            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+                                <div style="font-size:12.5px">
+                                    <strong>@t.FromOrgName</strong>
+                                    <i class="bi bi-arrow-right mx-1" style="font-size:11px;color:#94a3b8"></i>
+                                    <strong>@t.ToOrgName</strong>
+                                </div>
+                                <span style="border-radius:5px;padding:2px 7px;font-size:10.5px;font-weight:700;background:@ChangeRequestDisplay.StatusBg(t.Status);color:@ChangeRequestDisplay.StatusColor(t.Status)">@ChangeRequestDisplay.StatusLabel(t.Status)</span>
+                            </div>
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">
+                                @t.RequestedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
+                                @if (!string.IsNullOrWhiteSpace(t.Reason)) { <span> · @t.Reason</span> }
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(t.ReviewNote) && t.Status is "approved" or "rejected")
+                            {
+                                <div style="font-size:11px;color:#64748b;margin-top:2px">หมายเหตุ: @t.ReviewNote</div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        @* History of change requests *@
+        <div class="ecmis-card">
+            <div class="ecmis-card-header">
+                <div class="ecmis-card-title"><span class="badge-dot"></span>ประวัติคำขอ</div>
+                <div style="font-size:12px;color:var(--text-muted)">@MyChanges.Count รายการ</div>
+            </div>
+            <div style="padding:14px 20px;max-height:280px;overflow-y:auto">
+                @if (!MyChanges.Any())
+                {
+                    <div style="color:var(--text-muted);font-size:12.5px">— ยังไม่มีคำขอ —</div>
+                }
+                else
+                {
+                    @foreach (var c in MyChanges)
+                    {
+                        <div style="padding:8px 0;border-bottom:1px dashed #eaecf2">
+                            <div style="display:flex;justify-content:space-between;align-items:baseline">
+                                <div>
+                                    <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;background:#e0f2fe;color:#0369a1">@ChangeTypeLabel(c.RequestType)</span>
+                                    <span style="font-size:12.5px;margin-left:6px">@ChangeTargetName(c)</span>
+                                </div>
+                                <span style="border-radius:5px;padding:2px 7px;font-size:10.5px;font-weight:700;background:@ChangeRequestDisplay.StatusBg(c.Status);color:@ChangeRequestDisplay.StatusColor(c.Status)">@ChangeRequestDisplay.StatusLabel(c.Status)</span>
+                            </div>
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">@c.RequestedAt.ToLocalTime().ToString("dd/MM/yy HH:mm") · @c.Reason</div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ── System Access ── *@
+    <div class="col-md-6">
+
+        <div class="ecmis-card mb-3">
+            <div class="ecmis-card-header">
+                <div class="ecmis-card-title"><span class="badge-dot"></span>ระบบงานที่ฉันเข้าได้</div>
+                <div style="font-size:12px;color:var(--text-muted)">@MyAccess.Count(a => a.Status == "approved") รายการ</div>
+            </div>
+            <div style="padding:14px 20px">
+                @if (!MyAccess.Any())
+                {
+                    <div style="color:var(--text-muted);font-size:12.5px">— ยังไม่มีการขอเข้าระบบงาน —</div>
+                }
+                else
+                {
+                    @foreach (var a in MyAccess)
+                    {
+                        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #eaecf2;border-radius:10px;margin-bottom:6px">
+                            <div style="width:32px;height:32px;border-radius:8px;background:@(string.IsNullOrEmpty(a.Color)?"#1B3178":a.Color);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                                <i class="bi @(string.IsNullOrEmpty(a.Icon)?"bi-shield-fill-check":a.Icon)" style="color:#fff;font-size:14px"></i>
+                            </div>
+                            <div style="flex:1;min-width:0">
+                                <div style="font-size:13px;font-weight:700;color:var(--navy-deep)">
+                                    @(string.IsNullOrEmpty(a.SystemName) ? a.SystemCode : a.SystemName)
+                                </div>
+                                <div style="font-size:11px;color:var(--text-muted);font-family:monospace">@a.SystemCode</div>
+                            </div>
+                            <span style="border-radius:5px;padding:3px 9px;font-size:11px;font-weight:700;background:@ChangeRequestDisplay.StatusBg(a.Status);color:@ChangeRequestDisplay.StatusColor(a.Status)">@ChangeRequestDisplay.StatusLabel(a.Status)</span>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        @* Activity log *@
+        <div class="ecmis-card mb-3">
+            <div class="ecmis-card-header">
+                <div class="ecmis-card-title"><span class="badge-dot"></span>ประวัติการใช้งาน (50 ล่าสุด)</div>
+                <div style="font-size:12px;color:var(--text-muted)">@ActivityLog.Count รายการ</div>
+            </div>
+            <div style="padding:14px 20px;max-height:340px;overflow-y:auto">
+                @if (!ActivityLog.Any())
+                {
+                    <div style="color:var(--text-muted);font-size:12.5px">— ยังไม่มีประวัติ —</div>
+                }
+                else
+                {
+                    @foreach (var log in ActivityLog)
+                    {
+                        <div style="padding:8px 0;border-bottom:1px dashed #eaecf2">
+                            <div style="display:flex;justify-content:space-between;align-items:baseline">
+                                <div style="font-size:12.5px;font-weight:700;color:var(--navy-deep)">@log.Action</div>
+                                <div style="font-size:10.5px;color:var(--text-muted)">@log.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")</div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(log.TargetTable))
+                            {
+                                <div style="font-size:11px;color:#94a3b8;margin-top:2px;font-family:monospace">@log.TargetTable</div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        @* Request new system access *@
+        <div class="ecmis-card">
+            <div class="ecmis-card-header">
+                <div class="ecmis-card-title"><span class="badge-dot"></span>ขอเข้าระบบงานเพิ่ม</div>
+            </div>
+            <div style="padding:14px 20px">
+                <select @bind="ReqSystemId" class="form-select form-select-sm mb-2" style="font-size:12.5px;border-radius:8px">
+                    <option value="0">— เลือกระบบงาน —</option>
+                    @foreach (var s in AvailableSystems)
+                    {
+                        <option value="@s.Id">@s.Code · @s.NameTh</option>
+                    }
+                </select>
+                <textarea @bind="ReqReason" rows="2" class="form-control form-control-sm mb-2" style="font-size:12.5px;border-radius:8px" placeholder="เหตุผลในการขอเข้าระบบ * (บังคับ)"></textarea>
+                @if (ReqSystemId != 0 && !IsReasonValid(ReqReason))
+                {
+                    <p style="margin:0 0 6px;font-size:11px;color:#b45309"><i class="bi bi-info-circle me-1"></i>กรอกเหตุผลอย่างน้อย 3 ตัวอักษร</p>
+                }
+                <button @onclick="SubmitAccessRequestAsync" disabled="@(Busy || ReqSystemId == 0 || !IsReasonValid(ReqReason))" class="btn btn-sm" style="background:var(--navy-deep);color:#fff;border:none;font-size:12px;border-radius:8px;padding:6px 14px;font-weight:700"><i class="bi bi-send me-1"></i>ส่งคำขอ</button>
+
+                @if (SystemsCatalogLoaded && AvailableSystems.Count == 0)
+                {
+                    <div style="font-size:11.5px;color:var(--text-muted);margin-top:8px"><i class="bi bi-info-circle me-1"></i>คุณมีสิทธิ์เข้าหรือคำขอค้างอยู่ทุกระบบงานแล้ว</div>
+                }
+                else if (!SystemsCatalogLoaded && string.IsNullOrEmpty(SystemsCatalogError))
+                {
+                    <div style="font-size:11.5px;color:var(--text-muted);margin-top:8px"><i class="bi bi-info-circle me-1"></i>กำลังโหลดรายการระบบงาน…</div>
+                }
+                else if (!string.IsNullOrEmpty(SystemsCatalogError))
+                {
+                    <div style="font-size:11.5px;color:#b45309;margin-top:8px"><i class="bi bi-exclamation-circle me-1"></i>@SystemsCatalogError</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string WelcomeName = "";
+    private string MeEmail = "";
+    private bool Busy;
+    private bool ProfileSaving;
+    private string? ActionMessage;
+    private string? ActionError;
+
+    private string EditFirstName = "";
+    private string EditLastName = "";
+    private string EditEmailMain = "";
+    private string EditEmailBackup = "";
+    private string EditPhone = "";
+
+    private List<MyRoleDto> MyRoles = new();
+    private List<MySystemAccessDto> MyAccess = new();
+    private List<MyChangeRequestDto> MyChanges = new();
+    private List<MyTransferRequestDto> MyTransfers = new();
+    private List<SystemDto> AllSystems = new();
+    private List<LookupOrgDto> Orgs = new();
+    private List<LookupRoleDto> AvailableRoles = new();
+    private List<LookupPositionDto> Positions = new();
+    private List<MyActivityLogDto> ActivityLog = new();
+    private bool SystemsCatalogLoaded;
+    private string? SystemsCatalogError;
+
+    private int ReqSystemId;
+    private string ReqReason = "";
+
+    private string CurrentOrgName = "";
+    private string CurrentPositionName = "";
+
+    private int OrgChangeTargetId;
+    private string OrgChangeReason = "";
+
+    private int RoleChangeTargetId;
+    private string RoleChangeReason = "";
+
+    private int PositionChangeTargetId;
+    private string PositionChangeReason = "";
+
+    private List<SystemDto> AvailableSystems => AllSystems
+        .Where(s => s.IsActive && !MyAccess.Any(a => a.SystemId == s.Id && (a.Status == "approved" || a.Status == "pending")))
+        .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var me = await CurrentUser.GetCurrentUserAsync();
+        if (me != null)
+        {
+            WelcomeName = string.IsNullOrEmpty($"{me.FirstName} {me.LastName}".Trim()) ? me.Username : $"{me.FirstName} {me.LastName}".Trim();
+            MeEmail = me.Email;
+            EditFirstName = me.FirstName ?? "";
+            EditLastName = me.LastName ?? "";
+            EditEmailMain = string.IsNullOrWhiteSpace(me.EmailMain) ? me.Email ?? "" : me.EmailMain;
+            EditEmailBackup = me.EmailBackup ?? "";
+            CurrentOrgName = me.OrgName ?? "";
+            CurrentPositionName = me.PositionName ?? "";
+        }
+        await LoadAllAsync();
+    }
+
+    private async Task LoadAllAsync()
+    {
+        ActionError = null;
+        SystemsCatalogLoaded = false;
+        SystemsCatalogError = null;
+
+        await LoadSafeAsync("สิทธิ์ของฉัน", async () => MyRoles = await SystemApi.MyRolesAsync());
+        await LoadSafeAsync("ระบบงานที่เข้าได้", async () => MyAccess = await SystemApi.MySystemAccessAsync());
+        await LoadSafeAsync("ประวัติคำขอ", async () => MyChanges = await SystemApi.MyChangeRequestsAsync());
+        await LoadSafeAsync("หน่วยงาน", async () => Orgs = await SystemApi.LookupOrganizationsAsync());
+        await LoadSafeAsync("กลุ่มสิทธิ์", async () => AvailableRoles = await SystemApi.LookupRolesAsync("grantable"));
+        await LoadSafeAsync("ตำแหน่ง", async () => Positions = await SystemApi.LookupPositionsAsync("selfService"));
+        await LoadSafeAsync("ประวัติการใช้งาน", async () => ActivityLog = await SystemApi.GetMyActivityLogAsync());
+        await LoadSafeAsync("คำขอย้ายหน่วยงาน", async () => MyTransfers = await UserApi.GetMyTransferRequestsAsync());
+
+        try
+        {
+            AllSystems = await SystemApi.ListPublicSystemsAsync(modulesOnly: false);
+            SystemsCatalogLoaded = true;
+        }
+        catch (Exception ex)
+        {
+            AllSystems = new();
+            SystemsCatalogError = ex.Message;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task LoadSafeAsync(string section, Func<Task> load)
+    {
+        try
+        {
+            await load();
+        }
+        catch (Exception ex)
+        {
+            if (string.IsNullOrEmpty(ActionError))
+                ActionError = $"โหลด{section}ไม่สำเร็จ: {ex.Message}";
+        }
+    }
+
+    private async Task SubmitAccessRequestAsync()
+    {
+        Busy = true; ActionMessage = null; ActionError = null;
+        try
+        {
+            await SystemApi.RequestSystemAccessAsync(ReqSystemId, ReqReason);
+            ActionMessage = "ส่งคำขอเข้าระบบงานแล้ว — รอการอนุมัติ";
+            ReqSystemId = 0; ReqReason = "";
+            await LoadAllAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; StateHasChanged(); }
+    }
+
+    private async Task SaveProfileAsync()
+    {
+        ProfileSaving = true; ActionMessage = null; ActionError = null;
+        try
+        {
+            await UserApi.UpdateProfileAsync(
+                EditFirstName.Trim(),
+                EditLastName.Trim(),
+                string.IsNullOrWhiteSpace(EditEmailMain) ? null : EditEmailMain.Trim(),
+                string.IsNullOrWhiteSpace(EditEmailBackup) ? null : EditEmailBackup.Trim(),
+                string.IsNullOrWhiteSpace(EditPhone) ? null : EditPhone.Trim());
+            WelcomeName = $"{EditFirstName.Trim()} {EditLastName.Trim()}".Trim();
+            MeEmail = string.IsNullOrWhiteSpace(EditEmailMain) ? EditEmailBackup.Trim() : EditEmailMain.Trim();
+            CurrentUser.InvalidateCache();
+            ActionMessage = "บันทึกข้อมูลส่วนตัวเรียบร้อยแล้ว";
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { ProfileSaving = false; StateHasChanged(); }
+    }
+
+    private async Task SubmitOrgTransferAsync()
+    {
+        Busy = true; ActionMessage = null; ActionError = null;
+        try
+        {
+            await SystemApi.RequestOrgChangeAsync(OrgChangeTargetId, OrgChangeReason.Trim());
+            ActionMessage = "ส่งคำขอเปลี่ยนหน่วยงานแล้ว";
+            OrgChangeTargetId = 0; OrgChangeReason = "";
+            await LoadAllAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; StateHasChanged(); }
+    }
+
+    private async Task SubmitRoleChangeAsync()
+    {
+        Busy = true; ActionMessage = null; ActionError = null;
+        try
+        {
+            await SystemApi.RequestRoleChangeAsync(RoleChangeTargetId, RoleChangeReason);
+            ActionMessage = "ส่งคำขอเพิ่มกลุ่มสิทธิ์แล้ว";
+            RoleChangeTargetId = 0; RoleChangeReason = "";
+            await LoadAllAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; StateHasChanged(); }
+    }
+
+    private async Task SubmitPositionChangeAsync()
+    {
+        Busy = true; ActionMessage = null; ActionError = null;
+        try
+        {
+            await SystemApi.RequestPositionChangeAsync(PositionChangeTargetId, PositionChangeReason);
+            ActionMessage = "ส่งคำขอเปลี่ยนตำแหน่งแล้ว";
+            PositionChangeTargetId = 0; PositionChangeReason = "";
+            await LoadAllAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; StateHasChanged(); }
+    }
+
+    private static bool IsReasonValid(string? reason) =>
+        !string.IsNullOrWhiteSpace(reason) && reason.Trim().Length >= 3;
+
+    private static string ChangeTypeLabel(string type) => ChangeRequestDisplay.TypeLabel(type);
+
+    private static string ChangeTargetName(MyChangeRequestDto c) =>
+        ChangeRequestDisplay.TargetLabel(c.RequestType, c.TargetOrgName, c.TargetPositionName, c.TargetRoleName);
+
+}

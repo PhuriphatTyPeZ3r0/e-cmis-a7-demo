@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- HomeController serves this page at nested routes (/court-cases/prosecution-court, ...).
+         Without <base>, every relative URL below resolves against /court-cases/ and 404s, and
+         Blazor's NavigationManager takes document.baseURI as its base, breaking ToBaseRelativePath(). -->
+    <base href="/" />
+    <title>E-CMIS — สำนักงาน ป.ป.ท.</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Google Fonts: Sarabun -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <!-- SweetAlert2 Dark Theme -->
+    <link href="https://cdn.jsdelivr.net/npm/@@sweetalert2/theme-dark@5/dark.css" rel="stylesheet" media="(prefers-color-scheme: dark)">
+    
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/app.css" />
+    <link rel="stylesheet" href="/law-page.styles.css" />
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    
+    <!-- MudBlazor & Radzen CSS -->
+    <link href="/_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <link href="/_content/Radzen.Blazor/css/default.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="layout-container">
+        <!-- Reusable Blazor Sidebar -->
+        <!-- ServerPrerendered, not Server: with "Server" the sidebar emits no server-side HTML and
+             exists only once the SignalR circuit connects, so any failure to load blazor.server.js
+             leaves the page with no navigation at all. Its JS interop lives in OnAfterRenderAsync,
+             which does not run during prerender, so prerendering is safe here. -->
+        <component type="typeof(law_page.Components.Shared.EcmisSidebar)" render-mode="ServerPrerendered" />
+
+        <!-- Global Header (Topbar) -->
+        <header class="topbar">
+            <div class="topbar-content d-flex align-items-center w-100 justify-content-between">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="sidebar-toggle-btn" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-label="Toggle Sidebar">
+                        <i class="bi bi-list"></i>
+                    </button>
+
+                    <!-- Global Search -->
+                    <label class="search-box mb-0">
+                        <i class="bi bi-search" style="font-size: 13px;"></i>
+                        <input type="text" placeholder="ค้นหาเลขเรื่อง ผู้ถูกร้อง หน่วยงาน..." aria-label="ค้นหา" />
+                    </label>
+
+                    <div id="app-breadcrumb" class="d-none d-xxl-block" style="font-size: 11.5px; color: var(--text-muted); margin-left: 8px;">
+                        งานกฎหมายในทางคดี &nbsp;›&nbsp; <span id="breadcrumb-current" style="font-weight: 700;">แดชบอร์ดสถิติคดี</span>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <!-- Notifications -->
+                    <button class="top-icon-btn position-relative" id="notification-btn" title="การแจ้งเตือน" aria-label="การแจ้งเตือน">
+                        <i class="bi bi-bell-fill"></i>
+                        <span class="position-absolute rounded-circle"
+                              style="width: 8px; height: 8px; background: #FF5A5F; right: 10px; top: 10px; border: 1.5px solid #FFFFFF;"></span>
+                    </button>
+
+                    <!-- Theme Toggle -->
+                    <button class="top-icon-btn" onclick="toggleTheme()" id="theme-toggle-btn" title="เปลี่ยนโหมดสี" aria-label="เปลี่ยนโหมดสี">
+                        <i class="bi bi-moon-fill" id="theme-icon"></i>
+                    </button>
+
+                    <!-- User Pill -->
+                    <div class="profile-chip d-flex align-items-center gap-2" aria-label="บัญชีผู้ใช้">
+                        <span class="rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                              style="width: 30px; height: 30px; background: var(--primary-light); color: #fff; font-size: 12px; flex-shrink: 0;">O</span>
+                        <span class="lh-1 text-start d-none d-md-block">
+                            <span class="d-block fw-bold" style="font-size: 12.5px; color: var(--text-main);">officer</span>
+                            <span class="d-block" style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">Super Admin</span>
+                        </span>
+                        <i class="bi bi-chevron-down d-none d-md-inline" style="font-size: 10px; color: var(--text-muted); margin-left: 4px;"></i>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Inner CSHTML Page Content -->
+            <div class="container-fluid px-0">
+                @RenderBody()
+            </div>
+        </main>
+    </div>
+
+    <!-- MudBlazor & Radzen JS -->
+    <script src="/_content/MudBlazor/MudBlazor.min.js"></script>
+    <script src="/_content/Radzen.Blazor/Radzen.Blazor.js"></script>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Domain logic (pure, unit-tested via `node --test tests/`). Must load before app.js. -->
+    <script src="/domain.js"></script>
+    <!-- Custom Page Script -->
+    <script src="/app.js"></script>
+
+    <!-- Blazor Interactive Server scripts: loaded last so switchView() and other -->
+    <!-- window globals exist before the circuit connects and becomes interactive -->
+    <script src="/_framework/blazor.server.js"></script>
+</body>
+
+</html>

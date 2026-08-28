@@ -1,0 +1,101 @@
+<div class="wr-right-column wr-kpi-alerts-panel">
+    <div class="wr-kpi-matrix">
+        <div class="wr-kpi-card blue-glow">
+            <div class="kpi-icon"><i class="bi bi-folder-check"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-title">คดีอยู่ระหว่างดำเนินการ</div>
+                <div class="kpi-value text-blue">@ActiveCases <small>คดี</small></div>
+                @if (!string.IsNullOrEmpty(KpiSub1))
+                {
+                    <div class="kpi-sub">@((MarkupString)KpiSub1)</div>
+                }
+            </div>
+        </div>
+        <div class="wr-kpi-card green-glow">
+            <div class="kpi-icon"><i class="bi bi-currency-dollar"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-title">มูลค่าความเสียหาย</div>
+                <div class="kpi-value text-green">@DamageValue <small>ล้านบาท</small></div>
+                <div class="kpi-sub">ป้องกันได้ <strong class="wr-saved-strong">@SavedValue ลบ.</strong></div>
+            </div>
+        </div>
+        <div class="wr-kpi-card purple-glow">
+            <div class="kpi-icon"><i class="bi bi-flag-fill"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-title">Red Flag วันนี้</div>
+                <div class="kpi-value text-purple">@RedFlagCount <small>รายการ</small></div>
+                @if (!string.IsNullOrEmpty(KpiSub3))
+                {
+                    <div class="kpi-sub">@((MarkupString)KpiSub3)</div>
+                }
+            </div>
+        </div>
+        <div class="wr-kpi-card gold-glow">
+            <div class="kpi-icon"><i class="bi bi-chat-left-dots-fill"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-title">ร้องเรียนทั้งหมด</div>
+                <div class="kpi-value text-gold">@TotalComplaints <small>เรื่อง</small></div>
+                @if (!string.IsNullOrEmpty(KpiSub4))
+                {
+                    <div class="kpi-sub">@((MarkupString)KpiSub4)</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (HeaderExtra is not null)
+    {
+        @HeaderExtra
+    }
+
+    @if (ShowAlerts)
+    {
+    <div class="table-card an-flex-card panel-glow wr-alerts-card flex-grow-1" style="min-height: 0; display: flex; flex-direction: column;">
+        <div class="tc-head">
+            <div class="tc-row1">
+                <div class="tc-title"><i class="bi bi-bell-fill wr-alert-icon"></i> ALERT & RED FLAG (แจ้งเตือนความเสี่ยง)</div>
+                <div class="tc-meta"><button type="button" class="wr-link-action wr-link-btn" @onclick="OnViewAlerts">ดูทั้งหมด</button></div>
+            </div>
+        </div>
+        <div class="an-scroll wr-alerts-scroll">
+            @if (Alerts.Count == 0)
+            {
+                <div class="p-4 text-center an-muted">ไม่มีรายการแจ้งเตือนในหมวดหมู่นี้</div>
+            }
+            else
+            {
+                @foreach (var alert in Alerts)
+                {
+                    <div class="an-alert-row">
+                        <span class="an-alert-time">@alert.Time</span>
+                        <span class="an-alert-tag @alert.Level">@alert.Type</span>
+                        <div class="an-alert-body">
+                            <div class="an-strong">@alert.Title</div>
+                            <div class="an-muted">@alert.Detail</div>
+                        </div>
+                        <span class="wr-risk-score @ScoreClass(alert.Score)">@alert.Score%</span>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int ActiveCases { get; set; }
+    [Parameter] public int DamageValue { get; set; }
+    [Parameter] public int SavedValue { get; set; }
+    [Parameter] public int RedFlagCount { get; set; }
+    [Parameter] public int TotalComplaints { get; set; }
+    [Parameter] public string? KpiSub1 { get; set; }
+    [Parameter] public string? KpiSub3 { get; set; }
+    [Parameter] public string? KpiSub4 { get; set; }
+    [Parameter] public IReadOnlyList<WarRoomAlertRow> Alerts { get; set; } = [];
+    [Parameter] public bool ShowAlerts { get; set; } = true;
+    [Parameter] public RenderFragment? HeaderExtra { get; set; }
+    [Parameter] public EventCallback OnViewAlerts { get; set; }
+
+    private static string ScoreClass(int score) =>
+        score >= 85 ? "risk-red" : score >= 75 ? "risk-orange" : "risk-yellow";
+}

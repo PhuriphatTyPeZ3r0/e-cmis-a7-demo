@@ -1,0 +1,805 @@
+@page "/analytics/complaint-register"
+@layout MainLayout
+@implements IDisposable
+@using EcmisWeb.Data
+@inject IJSRuntime JS
+
+<div class="cs-shell">
+
+    <div class="cs-header">
+        <div class="cs-header-inner">
+            <div class="cs-bc">
+                <i class="bi bi-house-fill"></i>
+                <a href="/">หน้าหลัก</a>
+                <i class="bi bi-chevron-right"></i>
+                <span>วิเคราะห์และรายงานผล</span>
+                <i class="bi bi-chevron-right"></i>
+                <span>ทะเบียนควบคุม</span>
+            </div>
+            <div class="cs-ph-row">
+                <div>
+                    <div class="cs-title">ทะเบียนควบคุมเรื่องร้องเรียน</div>
+                    <div class="cs-sub">TOR 12.5 · ทะเบียนควบคุมและติดตามสถานะ SLA เรื่องร้องเรียนของสำนักงาน ป.ป.ท.</div>
+                </div>
+                <div class="cs-actions">
+                    <button type="button" class="btn-ghost-d" @onclick="PrintReportAsync">
+                        <i class="bi bi-printer"></i>
+                        พิมพ์ PDF
+                    </button>
+                    <button type="button" class="btn-accent" @onclick="ExportCsvAsync">
+                        <i class="bi bi-file-earmark-spreadsheet"></i>
+                        Export Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cs-body">
+
+        @* ── KPI Stats ── *@
+        <div class="cs-stats-row">
+            <div class="sc sc-blue">
+                <div class="sc-head">ยอดรวมทะเบียน</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@_filtered.Count.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-hint">ช่วงที่เลือก</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-green">
+                <div class="sc-head">เสร็จสิ้นในกำหนด%</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@SlaCompliancePct()</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-up">@SlaCompliantCount() เรื่อง</span>
+                        <span class="sc-hint">ของที่ปิดแล้ว</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-red">
+                <div class="sc-head">เรื่องค้างเกิน 30 วัน</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@OverdueCount().ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-down">เกิน SLA</span>
+                        <span class="sc-hint">ยังไม่ปิด</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-orange">
+                <div class="sc-head">รับใหม่เดือนนี้</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@NewThisMonthCount().ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-flat">เดือน @DateTime.Now.ToString("MMM", new System.Globalization.CultureInfo("th-TH"))</span>
+                        <span class="sc-hint">เรื่องใหม่</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ── Filter + Charts card ── *@
+        <section class="table-card">
+            <div class="tc-head">
+                <div class="tc-row1">
+                    <div>
+                        <div class="tc-title">กรองข้อมูลทะเบียน</div>
+                        <div class="tc-sub">กรองช่วงวันที่ ประเภทเรื่อง ช่องทางรับ หรือสถานะ แล้วกด แสดงผล</div>
+                    </div>
+                    <div class="tc-meta">
+                        <span class="bdg-nv">ทั้งหมด @_all.Count</span>
+                        <span class="bdg-gd">แสดง @_filtered.Count</span>
+                    </div>
+                </div>
+            </div>
+
+            @* ── FR-039: Filter ── *@
+            <div class="filter-row">
+                <div class="fgrp">
+                    <label class="flbl" for="crFiscalYear">ปีงบประมาณ</label>
+                    <select id="crFiscalYear" class="fsel" @bind="_fiscalYear">
+                        <option value="">ทั้งหมด</option>
+                        @foreach (var fy in _fiscalYears)
+                        {
+                            <option value="@fy">@fy</option>
+                        }
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="crZone">หน่วยงาน</label>
+                    <select id="crZone" class="fsel" @bind="_zone">
+                        <option value="">ทั้งหมด</option>
+                        @foreach (var z in _zones)
+                        {
+                            <option value="@z">@z</option>
+                        }
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="crStatus">สถานะ</label>
+                    <select id="crStatus" class="fsel" @bind="_status">
+                        <option value="">สถานะทั้งหมด</option>
+                        <option value="pending">รอดำเนินการ</option>
+                        <option value="active">กำลังดำเนินการ</option>
+                        <option value="closed">แล้วเสร็จ</option>
+                        <option value="transfer">ยุติ/ส่งคืน</option>
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="crCategory">ประเภทเรื่อง</label>
+                    <select id="crCategory" class="fsel" @bind="_category">
+                        <option value="">ทั้งหมด</option>
+                        @foreach (var cat in _categories)
+                        {
+                            <option value="@cat">@ComplaintData.CategoryLabel(cat)</option>
+                        }
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="crFrom">จาก</label>
+                    <input id="crFrom" type="date" class="finp"
+                           value="@_fromDate" @onchange="@(e => _fromDate = e.Value?.ToString() ?? "")" />
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="crTo">ถึง</label>
+                    <input id="crTo" type="date" class="finp"
+                           value="@_toDate" @onchange="@(e => _toDate = e.Value?.ToString() ?? "")" />
+                </div>
+                <button type="button" class="btn-accent btn-sm-f" @onclick="OnApplyFilter">
+                    <i class="bi bi-search"></i> แสดงผล
+                </button>
+                <button type="button" class="fbtn" @onclick="OnResetFilter">
+                    <i class="bi bi-x-lg"></i> ล้างค่า
+                </button>
+            </div>
+
+            @if (_noData)
+            {
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <span>ไม่พบข้อมูลตามเงื่อนไขที่เลือก กรุณาเปลี่ยนตัวกรอง</span>
+                </div>
+            }
+            else
+            {
+                <div class="cs-charts-wrap layout-fill">
+                    <div class="cs-charts-top">
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-graph-up"></i> แนวโน้มรับ/ปิด ต่อเดือน (12 เดือน)</div>
+                            <div class="cs-chart-canvas"><canvas id="crChartTrend"></canvas></div>
+                        </div>
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-bar-chart-fill"></i> จำนวนตามประเภทเรื่อง</div>
+                            <div class="cs-chart-canvas"><canvas id="crChartCategory"></canvas></div>
+                        </div>
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-broadcast"></i> ช่องทางรับเรื่อง</div>
+                            <div class="cs-chart-canvas"><canvas id="crChartChannel"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="cs-charts-bot">
+                        @* FR-036: quarterly chart *@
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-calendar3-range"></i> รับเรื่องรายไตรมาส</div>
+                            <div class="cs-chart-canvas"><canvas id="crChartQuarterly"></canvas></div>
+                        </div>
+                        @* FR-037: multi-year comparison *@
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-graph-up-arrow"></i> เปรียบเทียบข้ามปีงบประมาณ</div>
+                            <div class="cs-chart-canvas"><canvas id="crChartYearCompare"></canvas></div>
+                        </div>
+                        <div class="cs-chart-card has-table">
+                            <div class="cs-chart-title"><i class="bi bi-circle-half"></i> สัดส่วนสถานะเรื่อง</div>
+                            <div class="cs-chart-canvas cs-chart-canvas-sm"><canvas id="crChartStatus"></canvas></div>
+                            <table class="cs-status-table">
+                                <thead>
+                                    <tr><th>สถานะ</th><th>จำนวน</th><th>สัดส่วน</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var (label, count, color) in StatusSummaryRows())
+                                    {
+                                        <tr>
+                                            <td><span style="color:@color;font-weight:700">@label</span></td>
+                                            <td>@count.ToString("N0")</td>
+                                            <td>@StatusPct(count)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                @* ── FR-035: เรื่องค้างแยกตามหน่วยงาน ── *@
+                <div class="tc-head" style="margin-top:1.5rem">
+                    <div class="tc-row1">
+                        <div>
+                            <div class="tc-title"><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b"></i> เรื่องค้างดำเนินการเกิน 30 วัน แยกตามหน่วยงาน</div>
+                            <div class="tc-sub" style="font-size:11px;color:#94a3b8">เฉพาะสถานะที่ยังไม่ปิด และรับมาเกิน 30 วันแล้ว</div>
+                        </div>
+                    </div>
+                </div>
+                @if (!OverdueByZoneRows().Any())
+                {
+                    <div class="empty-state" style="margin-bottom:1rem">
+                        <i class="bi bi-check-circle-fill" style="color:#06d6a0"></i>
+                        <span>ไม่มีเรื่องค้างเกิน 30 วัน</span>
+                    </div>
+                }
+                else
+                {
+                    <table class="cs-status-table" style="margin-bottom:1.5rem">
+                        <thead>
+                            <tr><th>หน่วยงาน</th><th>ค้างทั้งหมด</th><th>รอดำเนินการ</th><th>กำลังดำเนินการ</th><th>เกินนานสุด (วัน)</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in OverdueByZoneRows())
+                            {
+                                <tr>
+                                    <td style="font-weight:700">@row.Zone</td>
+                                    <td><span class="sla-chip sla-danger">@row.Total เรื่อง</span></td>
+                                    <td>@row.Pending</td>
+                                    <td>@row.Active</td>
+                                    <td style="color:#f87171;font-weight:700">@row.MaxDays วัน</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+
+                @* ── FR-038: Completion Rate แยก Zone ── *@
+                <div class="tc-head" style="margin-top:0.5rem">
+                    <div class="tc-row1">
+                        <div class="tc-title"><i class="bi bi-bar-chart-steps"></i> อัตราดำเนินการแล้วเสร็จ (Completion Rate) แยกหน่วยงาน</div>
+                    </div>
+                </div>
+                <table class="cs-status-table" style="margin-bottom:1.5rem">
+                    <thead>
+                        <tr><th>หน่วยงาน</th><th>รับทั้งหมด</th><th>แล้วเสร็จ</th><th>Completion Rate</th><th>SLA ในกำหนด</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in CompletionRateByZone())
+                        {
+                            var pct = row.Total == 0 ? 0 : (int)Math.Round((double)row.Closed * 100 / row.Total);
+                            var slaRate = row.Closed == 0 ? "N/A" : $"{(int)Math.Round((double)row.SlaCompliant * 100 / row.Closed)}%";
+                            <tr>
+                                <td style="font-weight:700">@row.Zone</td>
+                                <td>@row.Total</td>
+                                <td>@row.Closed</td>
+                                <td>
+                                    <div style="display:flex;align-items:center;gap:8px">
+                                        <div style="flex:1;background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden">
+                                            <div style="width:@pct%;background:@(pct>=70?"#06d6a0":pct>=40?"#fbbf24":"#f87171");height:100%;border-radius:4px"></div>
+                                        </div>
+                                        <span style="font-weight:700;min-width:36px">@pct%</span>
+                                    </div>
+                                </td>
+                                <td>@slaRate</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @* ── Data Table ── *@
+                <table class="cs-status-table" id="exportTable">
+                    <thead>
+                        <tr>
+                            <th>เลขทะเบียน</th>
+                            <th>วันรับ</th>
+                            <th>ประเภท</th>
+                            <th>ช่องทาง</th>
+                            <th>สถานะ</th>
+                            <th>SLA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in _filtered.Take(100))
+                        {
+                            var sla = GetSlaStatus(r);
+                            <tr>
+                                <td>@r.CaseNo</td>
+                                <td>@r.ReceivedAt</td>
+                                <td>@ComplaintData.CategoryLabel(r.Category)</td>
+                                <td>@r.Channel</td>
+                                <td>@ComplaintData.StatusLabel(r.Status)</td>
+                                <td>
+                                    @if (sla == "ในกำหนด")
+                                    {
+                                        <span style="color:#06d6a0;font-weight:700">ในกำหนด</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:#f87171;font-weight:700">เกินกำหนด</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @* ── Export footer ── *@
+                <div class="cs-footer">
+                    <span class="cs-footer-info">
+                        แสดงผล <strong>@Math.Min(_filtered.Count, 100).ToString("N0") เรื่อง</strong>
+                        @if (!string.IsNullOrEmpty(_fromDate) || !string.IsNullOrEmpty(_toDate))
+                        {
+                            <span> · @_fromDate – @_toDate</span>
+                        }
+                        @if (!string.IsNullOrEmpty(_category)) { <span> · @ComplaintData.CategoryLabel(_category)</span> }
+                        @if (!string.IsNullOrEmpty(_channel)) { <span> · @_channel</span> }
+                        @if (!string.IsNullOrEmpty(_status)) { <span> · @ComplaintData.StatusLabel(_status)</span> }
+                    </span>
+                    <div class="cs-footer-btns">
+                        <button type="button" class="btn-ghost-d" @onclick="PrintReportAsync">
+                            <i class="bi bi-printer"></i> พิมพ์ PDF
+                        </button>
+                        <button type="button" class="btn-accent" @onclick="ExportCsvAsync">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+            }
+        </section>
+    </div>
+</div>
+
+@code {
+    // ── Mock Data ──────────────────────────────────────────────────────────────
+    private static readonly List<ComplaintRow> _mockData = new()
+    {
+        new(2001, 1,  "CR-001/2567", "WEB-0001", "15/10/2566", "รับเรื่องแล้ว", "ปปท.เขต1", "เว็บไซต์",      "active",   "นายสมชาย ใจดี",       "นายก อบต.ดอนเมือง",   "อบต.ดอนเมือง",        "ม.18/4",        "routed",     "กรุงเทพมหานคร", "เรียกรับเงินค่าอนุมัติใบอนุญาต",          "high",   200),
+        new(2002, 2,  "CR-002/2567", "WEB-0002", "20/10/2566", "รับเรื่องแล้ว", "ปปท.เขต1", "เว็บไซต์",      "pending",  "น.ส.วันดี รักเรียน",  "นายประเสริฐ ทองดี",   "สำนักงานเขตบางซื่อ",  "ม.18/4",        "pending",    "กรุงเทพมหานคร", "ปฏิบัติหน้าที่โดยมิชอบ",                 "medium", 300),
+        new(2003, 3,  "CR-003/2567", "APP-0003", "05/11/2566", "รับเรื่องแล้ว", "ปปท.เขต2", "แอปพลิเคชัน",   "active",   "นายกิตติ สุขใจ",      "นายอำนวย มั่งมี",     "กรมที่ดิน",           "ม.58/2",        "routed",     "เชียงใหม่",     "ออกเอกสารสิทธิ์ที่ดินโดยมิชอบ",          "high",   190),
+        new(2004, 4,  "CR-004/2567", "MAIL-004", "12/11/2566", "รับเรื่องแล้ว", "ปปท.เขต2", "ไปรษณีย์",      "closed",   "นางมาลี จันทร์เพ็ญ",  "นายเอกชัย ราชวงค์",   "เทศบาลนครขอนแก่น",    "ม.18/4",        "routed",     "ขอนแก่น",       "ใช้งบประมาณส่วนตัวในนามหน่วยงาน",        "medium",   0),
+        new(2005, 5,  "CR-005/2567", "BOX-0005", "18/11/2566", "รับเรื่องแล้ว", "ปปท.เขต3", "ตู้รับเรื่อง",  "pending",  "ไม่เปิดเผยตัวตน",     "นายสมศักดิ์ ดีงาม",   "อบจ.ชลบุรี",          "ม.58/2",        "pending",    "ชลบุรี",        "ล่าช้าในการออกใบอนุญาต",                 "low",    220),
+        new(2006, 6,  "CR-006/2567", "WEB-0006", "25/11/2566", "รับเรื่องแล้ว", "ปปท.เขต3", "เว็บไซต์",      "transfer", "นายธนา วงศ์ดี",       "นายอดิศร ชัยกุล",     "กรมศุลกากร",          "ส่งคืน ป.ป.ช.", "returned",   "สมุทรปราการ",   "ร่ำรวยผิดปกติ มีทรัพย์สินเกินรายได้",   "high",    10),
+        new(2007, 7,  "CR-007/2567", "APP-0007", "02/12/2566", "รับเรื่องแล้ว", "ปปท.เขต4", "แอปพลิเคชัน",   "active",   "น.ส.สุดา รักดี",      "พ.ต.อ.สมบัติ มั่งมี", "สถานีตำรวจบ้านโป่ง",  "ม.18/4",        "routed",     "ราชบุรี",       "ตำรวจเรียกรับสินบน",                     "high",   175),
+        new(2008, 8,  "CR-008/2567", "MAIL-008", "10/12/2566", "รับเรื่องแล้ว", "ปปท.เขต4", "ไปรษณีย์",      "closed",   "นายวิทยา ซื่อสัตย์",  "นายพิเชษฐ์ ทรงอำนาจ","อบต.หนองแค",          "ม.18/4",        "routed",     "สระบุรี",       "เจ้าหน้าที่แสวงหาประโยชน์ส่วนตัว",      "low",      0),
+        new(2009, 9,  "CR-009/2567", "BOX-0009", "18/12/2566", "รับเรื่องแล้ว", "ปปท.เขต5", "ตู้รับเรื่อง",  "pending",  "ไม่เปิดเผยตัวตน",     "นายชาติชาย เชิดชู",   "เทศบาลเมืองระยอง",    "ม.58/2",        "pending",    "ระยอง",         "ไม่ปฏิบัติตามคำสั่งศาล",                 "medium", 185),
+        new(2010, 10, "CR-010/2567", "WEB-0010", "26/12/2566", "รับเรื่องแล้ว", "ปปท.เขต5", "เว็บไซต์",      "active",   "นายอำนวย รักชาติ",    "กลุ่มเจ้าหน้าที่",    "กรมศุลกากร",          "ม.18/4",        "routed",     "สมุทรปราการ",   "เรียกรับผลประโยชน์อย่างเป็นระบบ",       "high",   168),
+        new(2011, 11, "CR-011/2567", "APP-0011", "05/01/2567", "รับเรื่องแล้ว", "ปปท.เขต1", "แอปพลิเคชัน",   "closed",   "นางสมศรี อำนาจดี",   "นายวิชิต มาตรา",      "อบต.ดอนเมือง",        "ม.18/4",        "routed",     "นนทบุรี",       "เรียกรับเงินสินบน",                      "high",     0),
+        new(2012, 12, "CR-012/2567", "MAIL-012", "14/01/2567", "รับเรื่องแล้ว", "ปปท.เขต2", "ไปรษณีย์",      "pending",  "นายประสิทธิ์ ดีใจ",   "นายอนันต์ เลิศล้ำ",   "สำนักงานที่ดินปทุมธานี","ม.58/2",       "pending",    "ปทุมธานี",      "ที่ดินถูกออกโฉนดทับที่ทำกิน",           "medium", 155),
+        new(2013, 13, "CR-013/2567", "BOX-0013", "22/01/2567", "รับเรื่องแล้ว", "ปปท.เขต2", "ตู้รับเรื่อง",  "active",   "น.ส.กาญจนา สว่าง",   "นายสุรชัย อำนาจเจริญ","กรมศุลกากร",          "ม.18/4",        "routed",     "สมุทรปราการ",   "เจ้าหน้าที่ศุลกากรเรียกรับผลประโยชน์",  "high",   147),
+        new(2014, 14, "CR-014/2567", "WEB-0014", "30/01/2567", "รับเรื่องแล้ว", "ปปท.เขต3", "เว็บไซต์",      "transfer", "หน่วยงานร้องเรียน",   "นายวิสันต์ ชาญชัย",   "กรมสรรพากร",          "ส่งคืน ป.ป.ช.", "returned",   "กรุงเทพมหานคร", "หลบเลี่ยงภาษีรายใหญ่",                  "high",    15),
+        new(2015, 15, "CR-015/2567", "APP-0015", "08/02/2567", "รับเรื่องแล้ว", "ปปท.เขต3", "แอปพลิเคชัน",   "pending",  "นายชัยวัฒน์ มีสุข",   "นายพิสิทธิ์ สุขเกษม", "กรมโยธาธิการ",        "ม.58/2",        "pending",    "นครราชสีมา",    "ก่อสร้างทับแนวเขตสาธารณะ",              "medium", 115),
+        new(2016, 16, "CR-016/2567", "MAIL-016", "16/02/2567", "รับเรื่องแล้ว", "ปปท.เขต4", "ไปรษณีย์",      "active",   "ไม่เปิดเผยตัวตน",     "นายเดชา อาจหาญ",      "อบต.โคกสว่าง",        "ม.18/4",        "routed",     "หนองบัวลำภู",   "ทุจริตงบประมาณโครงการถนน",              "high",   104),
+        new(2017, 17, "CR-017/2567", "BOX-0017", "24/02/2567", "รับเรื่องแล้ว", "ปปท.เขต4", "ตู้รับเรื่อง",  "closed",   "นางรำไพ เจริญสุข",   "น.ส.สุภาพร ดวงดาว",   "สำนักงานสาธารณสุข",   "ม.18/4",        "routed",     "อุดรธานี",      "เรียกรับเงินค่ารักษาพยาบาล",            "medium",   0),
+        new(2018, 18, "CR-018/2567", "WEB-0018", "05/03/2567", "รับเรื่องแล้ว", "ปปท.เขต5", "เว็บไซต์",      "active",   "นายสุดใจ ศรีสวัสดิ์", "นายนิรันดร์ มั่นคง",  "กรมพัฒนาที่ดิน",      "ม.58/2",        "routed",     "เพชรบูรณ์",     "ออกเอกสารสิทธิ์ที่ดินป่าสงวน",         "high",    90),
+        new(2019, 19, "CR-019/2567", "APP-0019", "13/03/2567", "รับเรื่องแล้ว", "ปปท.เขต1", "แอปพลิเคชัน",   "pending",  "น.ส.ปิยะดา รักษ์ดี",  "นายประยุทธ คงมั่น",   "เทศบาลตำบลท่าขอนยาง","ม.18/4",        "pending",    "มหาสารคาม",     "ผู้บริหารเอื้อประโยชน์พวกพ้อง",        "medium",  80),
+        new(2020, 20, "CR-020/2567", "MAIL-020", "21/03/2567", "รับเรื่องแล้ว", "ปปท.เขต2", "ไปรษณีย์",      "closed",   "นายกมล เพชรดี",       "นายสุทธิ ทรงวุฒิ",    "กรมการปกครอง",        "ม.58/2",        "routed",     "นครสวรรค์",     "ปกปิดข้อมูลทะเบียนราษฎร",              "low",      0),
+        new(2021, 21, "CR-021/2567", "BOX-0021", "29/03/2567", "รับเรื่องแล้ว", "ปปท.เขต2", "ตู้รับเรื่อง",  "transfer", "ไม่เปิดเผยตัวตน",     "นายสุพจน์ แสงสว่าง",  "สำนักงาน ป.ป.ป.",     "ส่งคืน ป.ป.ช.", "returned",   "ลพบุรี",        "ฉ้อโกงเงินของรัฐ",                      "high",    30),
+        new(2022, 22, "CR-022/2567", "WEB-0022", "06/04/2567", "รับเรื่องแล้ว", "ปปท.เขต3", "เว็บไซต์",      "active",   "นายธีระ วงศ์วิไล",    "นายยุทธนา อิ่มเอิบ",  "กรมทรัพยากรน้ำ",      "ม.18/4",        "routed",     "เชียงราย",      "เรียกรับสินบนในการออกใบอนุญาต",        "high",    57),
+        new(2023, 23, "CR-023/2567", "APP-0023", "14/04/2567", "รับเรื่องแล้ว", "ปปท.เขต4", "แอปพลิเคชัน",   "pending",  "น.ส.ณัฐสุดา กมลดี",  "นายรัชพล สุขประเสริฐ","อบต.นาสาร",           "ม.58/2",        "pending",    "สุราษฎร์ธานี",  "ปล่อยปละละเลยให้ทิ้งของเสียอุตสาหกรรม","medium",  49),
+        new(2024, 24, "CR-024/2567", "MAIL-024", "22/04/2567", "รับเรื่องแล้ว", "ปปท.เขต5", "ไปรษณีย์",      "closed",   "นายอาทิตย์ ดาวรุ่ง",  "นายสิปปกร ทองแท้",    "กรมสวัสดิการ",        "ม.18/4",        "routed",     "สงขลา",         "เจ้าหน้าที่เบียดบังเงินสวัสดิการ",    "high",     0),
+        new(2025, 25, "CR-025/2567", "BOX-0025", "30/04/2567", "รับเรื่องแล้ว", "ปปท.เขต1", "ตู้รับเรื่อง",  "active",   "ไม่เปิดเผยตัวตน",     "นายอิทธิพล ชัยชนะ",   "เทศบาลเมืองนราธิวาส", "ม.18/4",        "routed",     "นราธิวาส",      "นายกเทศมนตรีเรียกรับสินบน",           "high",    33),
+        new(2026, 26, "CR-026/2567", "WEB-0026", "08/05/2567", "รับเรื่องแล้ว", "ปปท.เขต1", "เว็บไซต์",      "pending",  "นางสาวรุ่งนภา ใสสะอาด","นายสุรศักดิ์ วิไลวงศ์","กรมชลประทาน",        "ม.58/2",        "pending",    "พิษณุโลก",      "ผูกขาดสัญญาจ้างเหมา",                 "medium",  25),
+        new(2027, 27, "CR-027/2567", "APP-0027", "16/05/2567", "รับเรื่องแล้ว", "ปปท.เขต2", "แอปพลิเคชัน",   "active",   "นายณัฐวุฒิ พลังดี",   "นางสาวพรทิพย์ เจริญ", "สำนักงานเกษตร",       "ม.18/4",        "routed",     "กาฬสินธุ์",     "ทุจริตจัดซื้อจัดจ้างเมล็ดพันธุ์",    "medium",  17),
+        new(2028, 28, "CR-028/2567", "MAIL-028", "24/05/2567", "รับเรื่องแล้ว", "ปปท.เขต2", "ไปรษณีย์",      "closed",   "หน่วยงานร้องเรียน",   "นายไพโรจน์ มณีรัตน์", "กรมพัฒนาชุมชน",       "ม.18/4",        "routed",     "ร้อยเอ็ด",      "เบียดบังงบประมาณพัฒนาชุมชน",          "low",      0),
+        new(2029, 29, "CR-029/2567", "BOX-0029", "01/06/2567", "รับเรื่องแล้ว", "ปปท.เขต3", "ตู้รับเรื่อง",  "transfer", "ไม่เปิดเผยตัวตน",     "นายพิชัย ดีเด่น",     "กรมบังคับคดี",        "ส่งคืน ป.ป.ช.", "returned",   "นครปฐม",        "ยักยอกทรัพย์ในคดีล้มละลาย",          "high",     5),
+        new(2030, 30, "CR-030/2567", "WEB-0030", "09/06/2567", "รับเรื่องแล้ว", "ปปท.เขต3", "เว็บไซต์",      "active",   "นายธีรศักดิ์ สุขใจ",  "นายปิยะ ตั้งมั่น",    "กรมทางหลวงชนบท",      "ม.18/4",        "routed",     "สุพรรณบุรี",    "เรียกรับเงินค่าก่อสร้างถนน",          "high",     0),
+        new(2031, 31, "CR-031/2567", "APP-0031", "17/06/2567", "รับเรื่องแล้ว", "ปปท.เขต4", "แอปพลิเคชัน",   "pending",  "น.ส.จุไรรัตน์ เย็นใจ","นายสงคราม วีรชัย",    "กรมการค้าภายใน",      "ม.58/2",        "pending",    "ราชบุรี",       "ปล่อยปละราคาสินค้าผูกขาด",           "medium",   0),
+        new(2032, 32, "CR-032/2567", "MAIL-032", "25/06/2567", "รับเรื่องแล้ว", "ปปท.เขต4", "ไปรษณีย์",      "closed",   "นายสมพงษ์ แสนดี",    "นางสาวดาวเรือง เรือง", "สำนักงานสาธารณสุขจ.", "ม.18/4",        "routed",     "บึงกาฬ",        "เบียดบังยาและเวชภัณฑ์",              "medium",   0),
+        new(2033, 33, "CR-033/2567", "BOX-0033", "01/07/2567", "รับเรื่องแล้ว", "ปปท.เขต5", "ตู้รับเรื่อง",  "active",   "ไม่เปิดเผยตัวตน",     "นายอดุล คงคา",        "อบต.บ้านแท่น",        "ม.18/4",        "routed",     "ชัยภูมิ",       "นายก อบต. ทุจริตที่ดินสาธารณะ",     "high",     0),
+        new(2034, 34, "CR-034/2567", "WEB-0034", "09/07/2567", "รับเรื่องแล้ว", "ปปท.เขต5", "เว็บไซต์",      "pending",  "นายสุภาพ ดีงาม",      "นายนิคม ทองแก้ว",     "กรมอุตสาหกรรมพื้นฐาน","ม.58/2",        "pending",    "เลย",           "ล่าช้าในการต่อใบอนุญาตโรงงาน",      "low",      0),
+        new(2035, 35, "CR-035/2567", "APP-0035", "17/07/2567", "รับเรื่องแล้ว", "ปปท.เขต1", "แอปพลิเคชัน",   "active",   "นางจิตรลดา สว่าง",   "นายบรรจง เพ็ชรสมุทร", "กรมประมง",            "ม.18/4",        "routed",     "สมุทรสาคร",     "เรียกรับค่าตรวจสอบโรงงานประมง",     "high",     0),
+        new(2036, 36, "CR-036/2567", "MAIL-036", "25/07/2567", "รับเรื่องแล้ว", "ปปท.เขต2", "ไปรษณีย์",      "transfer", "นายสมศักดิ์ พลพฤกษ์", "นายรัตนชัย วุฒิ",     "กรมป่าไม้",           "ส่งคืน ป.ป.ช.", "returned",   "เชียงใหม่",     "ออกใบอนุญาตตัดไม้ผิดกฎหมาย",       "high",     0),
+        new(2037, 37, "CR-037/2567", "BOX-0037", "01/08/2567", "รับเรื่องแล้ว", "ปปท.เขต2", "ตู้รับเรื่อง",  "pending",  "ไม่เปิดเผยตัวตน",     "นายสรวิชญ์ ทองไทย",   "กรมสรรพสามิต",        "ม.18/4",        "pending",    "ภูเก็ต",        "เรียกรับค่าตรวจสอบสถานบริการ",      "medium",   0),
+        new(2038, 38, "CR-038/2567", "WEB-0038", "09/08/2567", "รับเรื่องแล้ว", "ปปท.เขต3", "เว็บไซต์",      "active",   "น.ส.ปภาวรินทร์ สวย",  "นายเจษฎา ชาติพันธ์",  "กรมพัฒนาพลังงาน",     "ม.58/2",        "routed",     "กระบี่",        "อนุมัติโครงการโซลาร์ฟาร์มไม่ชอบด้วยกฎหมาย","medium",0),
+        new(2039, 39, "CR-039/2567", "APP-0039", "17/08/2567", "รับเรื่องแล้ว", "ปปท.เขต3", "แอปพลิเคชัน",   "closed",   "นายเจนวิทย์ สุขสันต์", "นางธิดา มณีมาศ",     "สำนักงานที่ดินจ.ตรัง","ม.18/4",        "routed",     "ตรัง",          "ออกโฉนดทับที่ป่าสงวน",             "high",     0),
+        new(2040, 40, "CR-040/2567", "MAIL-040", "25/08/2567", "รับเรื่องแล้ว", "ปปท.เขต4", "ไปรษณีย์",      "pending",  "นายประดิษฐ์ ดาวเรือง", "นายสมชาย อำนวย",     "เทศบาลนครหาดใหญ่",    "ม.58/2",        "pending",    "สงขลา",         "ไม่ดูแลระบบระบายน้ำสร้างความเดือดร้อน","low",     0),
+        new(2041, 41, "CR-041/2567", "BOX-0041", "02/09/2567", "รับเรื่องแล้ว", "ปปท.เขต4", "ตู้รับเรื่อง",  "active",   "ไม่เปิดเผยตัวตน",     "นายพงษ์พันธ์ ยั่งยืน", "กรมทรัพยากรทางทะเล", "ม.18/4",        "routed",     "ชุมพร",         "อนุมัติขุดเจาะในเขตทะเลสงวน",     "high",     0),
+        new(2042, 42, "CR-042/2567", "WEB-0042", "10/09/2567", "รับเรื่องแล้ว", "ปปท.เขต5", "เว็บไซต์",      "transfer", "นายอรรถกร วิทยา",     "นายเสรี สมบูรณ์",     "กรมการค้าต่างประเทศ", "ส่งคืน ป.ป.ช.", "returned",   "สมุทรปราการ",   "ร่ำรวยผิดปกติจากการนำเข้า",        "high",     0),
+        new(2043, 43, "CR-043/2567", "APP-0043", "18/09/2567", "รับเรื่องแล้ว", "ปปท.เขต1", "แอปพลิเคชัน",   "pending",  "น.ส.อรทัย รักงาม",    "นายมานพ คีรีวงค์",    "อบต.เมืองใหม่",       "ม.18/4",        "pending",    "นครศรีธรรมราช", "ทุจริตงบประมาณโครงการหมู่บ้าน",   "medium",   0),
+        new(2044, 44, "CR-044/2568", "MAIL-044", "05/10/2567", "รับเรื่องแล้ว", "ปปท.เขต1", "ไปรษณีย์",      "active",   "นายอัครชัย ตรีวงศ์",  "นายอดิเรก ประดิษฐ์",  "กรมทางหลวง",          "ม.18/4",        "routed",     "ประจวบคีรีขันธ์","เรียกรับเงินค่าก่อสร้างทางด่วน",  "high",    28),
+        new(2045, 45, "CR-045/2568", "BOX-0045", "13/10/2567", "รับเรื่องแล้ว", "ปปท.เขต2", "ตู้รับเรื่อง",  "pending",  "ไม่เปิดเผยตัวตน",     "นายชนาธิป สมัคร",     "สำนักงานเขตพระโขนง",  "ม.58/2",        "pending",    "กรุงเทพมหานคร", "ไม่ออกหนังสือรับรอง",              "low",     20),
+        new(2046, 46, "CR-046/2568", "WEB-0046", "21/10/2567", "รับเรื่องแล้ว", "ปปท.เขต2", "เว็บไซต์",      "active",   "นายฐิติวัฒน์ สุขดี",  "นายปภัส ทรงพล",       "กรมสวัสดิการแรงงาน",  "ม.18/4",        "routed",     "สมุทรสาคร",     "เรียกรับค่าธรรมเนียมแรงงานต่างด้าว","high",   12),
+        new(2047, 47, "CR-047/2568", "APP-0047", "29/10/2567", "รับเรื่องแล้ว", "ปปท.เขต3", "แอปพลิเคชัน",   "closed",   "นางสาวปัณณธร ศรีดี",  "นายปุณณวิช ชัยศรี",   "สำนักงานศึกษาธิการ",  "ม.18/4",        "routed",     "นครราชสีมา",    "ทุจริตงบพัฒนาโรงเรียน",           "medium",   0),
+        new(2048, 48, "CR-048/2568", "MAIL-048", "06/11/2567", "รับเรื่องแล้ว", "ปปท.เขต3", "ไปรษณีย์",      "active",   "นายธรรมนูญ วิถีไทย",  "นายปริญญ์ กมลรัตน์",  "กรมวิชาการเกษตร",     "ม.58/2",        "routed",     "ขอนแก่น",       "อนุมัติสารเคมีอันตรายผิดกฎ",      "medium",   3),
+        new(2049, 49, "CR-049/2568", "BOX-0049", "14/11/2567", "รับเรื่องแล้ว", "ปปท.เขต4", "ตู้รับเรื่อง",  "pending",  "ไม่เปิดเผยตัวตน",     "นายฐนกร สมบัติ",      "กรมพัฒนาฝีมือแรงงาน", "ม.18/4",        "pending",    "อุบลราชธานี",   "เบียดบังงบฝึกอบรม",               "low",      0),
+        new(2050, 50, "CR-050/2568", "WEB-0050", "22/11/2567", "รับเรื่องแล้ว", "ปปท.เขต5", "เว็บไซต์",      "transfer", "นายบดินทร์ ศรีสุข",   "นายณัฐพงศ์ เพชรพราว", "กรมสรรพากร",          "ส่งคืน ป.ป.ช.", "returned",   "กรุงเทพมหานคร", "ฝ่าฝืนกฎการออกใบกำกับภาษีปลอม",  "high",     0),
+    };
+
+    // ── State ──────────────────────────────────────────────────────────────────
+    private readonly List<ComplaintRow> _all = _mockData;
+    private List<ComplaintRow> _filtered = new();
+    private DotNetObjectReference<ComplaintRegister>? _dotNetRef;
+
+    private string _fromDate    = "";
+    private string _toDate      = "";
+    private string _fiscalYear  = "";   // FR-039
+    private string _zone        = "";   // FR-039
+    private string _category    = "";
+    private string _channel     = "";
+    private string _status      = "";
+
+    private bool _noData      = false;
+    private bool _chartsReady = false;
+    private bool _isDark      = true;
+
+    private List<string> _categories  = new();
+    private List<string> _channels    = new();
+    private List<string> _zones       = new();   // FR-039
+    private List<string> _fiscalYears = new();   // FR-039
+
+    // ── KPI helpers ────────────────────────────────────────────────────────────
+    private bool IsOverdue(ComplaintRow r)
+    {
+        if (r.Status is "closed" or "transfer") return false;
+        var d = ComplaintData.ParseDate(r.ReceivedAt);
+        return d.HasValue && (DateTime.Today - d.Value).TotalDays > 30;
+    }
+
+    private bool IsSlaCompliant(ComplaintRow r)
+    {
+        var d = ComplaintData.ParseDate(r.ReceivedAt);
+        return d.HasValue && (DateTime.Today - d.Value).TotalDays <= 30;
+    }
+
+    private int OverdueCount() => _filtered.Count(r => IsOverdue(r));
+    private int NewThisMonthCount() =>
+        _filtered.Count(r =>
+        {
+            var d = ComplaintData.ParseDate(r.ReceivedAt);
+            return d.HasValue && d.Value.Month == DateTime.Now.Month && d.Value.Year == DateTime.Now.Year;
+        });
+
+    private int SlaCompliantCount()
+    {
+        var closed = _filtered.Where(r => r.Status is "closed" or "transfer").ToList();
+        return closed.Count(r => IsSlaCompliant(r));
+    }
+
+    private string SlaCompliancePct()
+    {
+        var closedCount = _filtered.Count(r => r.Status is "closed" or "transfer");
+        if (closedCount == 0) return "N/A";
+        return $"{(int)Math.Round((double)SlaCompliantCount() * 100 / closedCount)}%";
+    }
+
+    private string GetSlaStatus(ComplaintRow r)
+    {
+        if (r.Status is "closed" or "transfer")
+            return IsSlaCompliant(r) ? "ในกำหนด" : "เกินกำหนด";
+        return IsOverdue(r) ? "เกินกำหนด" : "ในกำหนด";
+    }
+
+    // ── Fiscal-year helper ─────────────────────────────────────────────────────
+    private static string GetFiscalYear(ComplaintRow r)
+    {
+        var d = ComplaintData.ParseDate(r.ReceivedAt);
+        if (!d.HasValue) return "";
+        // BE fiscal: Oct-Dec of year Y → FY Y+1; Jan-Sep of year Y → FY Y
+        // d.Value is Gregorian; convert to BE year = d.Year + 543
+        int beYear = d.Value.Year + 543;
+        return (d.Value.Month >= 10 ? beYear + 1 : beYear).ToString();
+    }
+
+    // ── FR-035: overdue by zone ────────────────────────────────────────────────
+    private record OverdueZoneRow(string Zone, int Total, int Pending, int Active, int MaxDays);
+
+    private List<OverdueZoneRow> OverdueByZoneRows() =>
+        _filtered
+            .Where(r => IsOverdue(r))
+            .GroupBy(r => r.Unit)
+            .Select(g => new OverdueZoneRow(
+                g.Key,
+                g.Count(),
+                g.Count(r => r.Status == "pending"),
+                g.Count(r => r.Status == "active"),
+                g.Max(r => { var d = ComplaintData.ParseDate(r.ReceivedAt); return d.HasValue ? (int)(DateTime.Today - d.Value).TotalDays : 0; })
+            ))
+            .OrderByDescending(x => x.Total)
+            .ToList();
+
+    // ── FR-038: completion rate by zone ───────────────────────────────────────
+    private record CompletionRow(string Zone, int Total, int Closed, int SlaCompliant);
+
+    private List<CompletionRow> CompletionRateByZone() =>
+        _filtered
+            .GroupBy(r => r.Unit)
+            .Select(g => new CompletionRow(
+                g.Key,
+                g.Count(),
+                g.Count(r => r.Status is "closed" or "transfer"),
+                g.Count(r => r.Status is "closed" or "transfer" && IsSlaCompliant(r))
+            ))
+            .OrderByDescending(x => x.Total)
+            .ToList();
+
+    // ── FR-036: quarterly chart data ──────────────────────────────────────────
+    private (string[] Labels, int[] Data) QuarterlyChartData()
+    {
+        // Q1 ต.ค.-ธ.ค. | Q2 ม.ค.-มี.ค. | Q3 เม.ย.-มิ.ย. | Q4 ก.ค.-ก.ย.
+        var quarters = new[]
+        {
+            ("Q1 ต.ค.-ธ.ค.", new[] {10,11,12}),
+            ("Q2 ม.ค.-มี.ค.", new[] {1,2,3}),
+            ("Q3 เม.ย.-มิ.ย.", new[] {4,5,6}),
+            ("Q4 ก.ค.-ก.ย.", new[] {7,8,9}),
+        };
+        var labels = quarters.Select(q => q.Item1).ToArray();
+        var data   = quarters.Select(q =>
+            _filtered.Count(r =>
+            {
+                var d = ComplaintData.ParseDate(r.ReceivedAt);
+                return d.HasValue && q.Item2.Contains(d.Value.Month);
+            })
+        ).ToArray();
+        return (labels, data);
+    }
+
+    // ── FR-037: multi-year comparison ─────────────────────────────────────────
+    private static readonly string[] ThaiMonths =
+        { "ต.ค.", "พ.ย.", "ธ.ค.", "ม.ค.", "ก.พ.", "มี.ค.",
+          "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย." };
+    private static readonly int[] FiscalMonthOrder = { 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+    private (string[] Labels, object[] Datasets) YearCompareData()
+    {
+        var years = _all
+            .Select(GetFiscalYear)
+            .Where(fy => !string.IsNullOrEmpty(fy) && int.TryParse(fy, out _))
+            .Select(int.Parse)
+            .Distinct().OrderBy(y => y).ToList();
+
+        var colors = new[] { "#6366f1", "#f59e0b", "#06d6a0", "#f43f5e" };
+        var datasets = years.Select((fy, i) => (object)new
+        {
+            label = $"ปีงบ {fy}",
+            color = colors[i % colors.Length],
+            data  = FiscalMonthOrder.Select(m =>
+                _all.Count(r =>
+                {
+                    var d = ComplaintData.ParseDate(r.ReceivedAt);
+                    if (!d.HasValue) return false;
+                    int beYear = d.Value.Year + 543;
+                    int cFy = d.Value.Month >= 10 ? beYear + 1 : beYear;
+                    return cFy == fy && d.Value.Month == m;
+                })
+            ).ToArray()
+        }).ToArray();
+        return (ThaiMonths, datasets);
+    }
+
+    // ── Lifecycle ──────────────────────────────────────────────────────────────
+    protected override async Task OnInitializedAsync()
+    {
+        _categories  = _all.Select(r => r.Category).Distinct().OrderBy(x => x).ToList();
+        _channels    = _all.Select(r => r.Channel).Distinct().OrderBy(x => x).ToList();
+        _zones       = _all.Select(r => r.Unit).Distinct().OrderBy(x => x).ToList();
+        _fiscalYears = _all.Select(GetFiscalYear).Where(fy => !string.IsNullOrEmpty(fy))
+                           .Distinct().OrderByDescending(x => x).ToList();
+        ApplyFilter();
+        await Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var theme = await JS.InvokeAsync<string?>("localStorage.getItem", "dashTheme");
+            _isDark = theme == "dark";
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("registerAnalyticsComponent", _dotNetRef);
+        }
+        if (!_noData && !_chartsReady)
+        {
+            _chartsReady = true;
+            await RenderChartsAsync();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnThemeChangedAsync(bool isDark)
+    {
+        _isDark = isDark;
+        await RenderChartsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // ── Filtering ──────────────────────────────────────────────────────────────
+    private void ApplyFilter()
+    {
+        _chartsReady = false;
+        var q = _all.AsEnumerable();
+        if (!string.IsNullOrEmpty(_fiscalYear))
+            q = q.Where(r => GetFiscalYear(r) == _fiscalYear);
+        if (!string.IsNullOrEmpty(_zone))
+            q = q.Where(r => r.Unit == _zone);
+        if (DateTime.TryParse(_fromDate, out var from))
+            q = q.Where(r => { var d = ComplaintData.ParseDate(r.ReceivedAt); return d == null || d >= from; });
+        if (DateTime.TryParse(_toDate, out var to))
+            q = q.Where(r => { var d = ComplaintData.ParseDate(r.ReceivedAt); return d == null || d <= to; });
+        if (!string.IsNullOrEmpty(_category)) q = q.Where(r => r.Category == _category);
+        if (!string.IsNullOrEmpty(_channel))  q = q.Where(r => r.Channel  == _channel);
+        if (!string.IsNullOrEmpty(_status))   q = q.Where(r => r.Status   == _status);
+
+        // Sort by ReceivedAt descending
+        _filtered = q
+            .OrderByDescending(r => ComplaintData.ParseDate(r.ReceivedAt) ?? DateTime.MinValue)
+            .ToList();
+        _noData = _filtered.Count == 0;
+    }
+
+    private async Task OnApplyFilter()
+    {
+        ApplyFilter();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnResetFilter()
+    {
+        _fromDate = _toDate = _fiscalYear = _zone = _category = _channel = _status = "";
+        ApplyFilter();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // ── Chart Data ─────────────────────────────────────────────────────────────
+    private (string[] Labels, int[] Received, int[] Closed) TrendChartData()
+    {
+        var thaiMonths = new[] { "ต.ค.", "พ.ย.", "ธ.ค.", "ม.ค.", "ก.พ.", "มี.ค.",
+                                 "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย." };
+        // Use fiscal year 2567 (Oct 2566 – Sep 2567)
+        var fiscalMonths = new (int Year, int Month)[]
+        {
+            (2566, 10), (2566, 11), (2566, 12),
+            (2567,  1), (2567,  2), (2567,  3),
+            (2567,  4), (2567,  5), (2567,  6),
+            (2567,  7), (2567,  8), (2567,  9),
+        };
+
+        int ReceivedInMonth(int buddhistYear, int month)
+        {
+            var gregYear = buddhistYear - 543;
+            return _filtered.Count(r =>
+            {
+                var d = ComplaintData.ParseDate(r.ReceivedAt);
+                return d.HasValue && d.Value.Year == gregYear && d.Value.Month == month;
+            });
+        }
+        int ClosedInMonth(int buddhistYear, int month)
+        {
+            var gregYear = buddhistYear - 543;
+            return _filtered.Count(r =>
+            {
+                if (r.Status is not ("closed" or "transfer")) return false;
+                var d = ComplaintData.ParseDate(r.ReceivedAt);
+                return d.HasValue && d.Value.Year == gregYear && d.Value.Month == month;
+            });
+        }
+
+        var received = fiscalMonths.Select(m => ReceivedInMonth(m.Year, m.Month)).ToArray();
+        var closed   = fiscalMonths.Select(m => ClosedInMonth(m.Year, m.Month)).ToArray();
+        return (thaiMonths, received, closed);
+    }
+
+    private (string[] Labels, int[] Data) CategoryChartData()
+    {
+        var groups = _filtered
+            .GroupBy(r => r.Category)
+            .OrderByDescending(g => g.Count())
+            .ToList();
+        return (
+            groups.Select(g => ComplaintData.CategoryLabel(g.Key)).ToArray(),
+            groups.Select(g => g.Count()).ToArray()
+        );
+    }
+
+    private (string[] Labels, int[] Data, string[] Colors) SlaChartData()
+    {
+        var inTime   = _filtered.Count(r => r.Status is "closed" or "transfer" && IsSlaCompliant(r));
+        var overdue  = _filtered.Count(r => IsOverdue(r));
+        var inProgress = _filtered.Count(r => r.Status is not ("closed" or "transfer") && !IsOverdue(r));
+        return (
+            new[] { "ในกำหนด", "เกินกำหนด", "ยังดำเนินการ" },
+            new[] { inTime, overdue, inProgress },
+            new[] { "#06d6a0", "#f87171", "#fbbf24" }
+        );
+    }
+
+    private (string[] Labels, int[] Data, string[] Colors) ChannelChartData()
+    {
+        var groups = _filtered.GroupBy(r => r.Channel).OrderByDescending(g => g.Count()).ToList();
+        var colors = new[] { "#6366f1", "#06d6a0", "#f77f00", "#f87171", "#a855f7", "#00bcd4" };
+        return (
+            groups.Select(g => g.Key).ToArray(),
+            groups.Select(g => g.Count()).ToArray(),
+            groups.Select((_, i) => colors[i % colors.Length]).ToArray()
+        );
+    }
+
+    private (string[] Labels, int[] Data, string[] Colors) StatusChartData()
+    {
+        var keys = new[] { "pending", "active", "closed", "transfer" };
+        var labels = keys.Select(ComplaintData.StatusLabel).ToArray();
+        var colors = new[] { "#fbbf24", "#6366f1", "#06d6a0", "#a855f7" };
+        var data = keys.Select(k => _filtered.Count(r => r.Status == k)).ToArray();
+        return (labels, data, colors);
+    }
+
+    private IEnumerable<(string Label, int Count, string Color)> StatusSummaryRows()
+    {
+        var (labels, data, colors) = StatusChartData();
+        return labels.Select((label, i) => (Label: label, Count: data[i], Color: colors[i]));
+    }
+
+    private string StatusPct(int count) =>
+        _filtered.Count == 0 ? "0%" : $"{(int)Math.Round((double)count * 100 / _filtered.Count)}%";
+
+    // ── Chart Rendering ────────────────────────────────────────────────────────
+    private async Task RenderChartsAsync()
+    {
+        await Task.Yield();
+
+        var (tLabels, tReceived, tClosed) = TrendChartData();
+        await JS.InvokeVoidAsync("initTrendChart", "crChartTrend", tLabels,
+            tReceived.Cast<object>().ToArray(), tClosed.Cast<object>().ToArray(), _isDark);
+
+        var (catLabels, catData) = CategoryChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "crChartCategory", "bar",
+            catLabels, catData.Cast<object>().ToArray(),
+            new[] { "#6366f1", "#06d6a0", "#fbbf24", "#f87171", "#a855f7" }, _isDark);
+
+        var (chLabels, chData, chColors) = ChannelChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "crChartChannel", "doughnut",
+            chLabels, chData.Cast<object>().ToArray(), chColors, _isDark);
+
+        var (slaLabels, slaData, slaColors) = SlaChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "crChartSla", "doughnut",
+            slaLabels, slaData.Cast<object>().ToArray(), slaColors, _isDark);
+
+        var (stLabels, stData, stColors) = StatusChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "crChartStatus", "doughnut",
+            stLabels, stData.Cast<object>().ToArray(), stColors, _isDark);
+
+        // FR-036: quarterly
+        var (qLabels, qData) = QuarterlyChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "crChartQuarterly", "bar",
+            qLabels, qData.Cast<object>().ToArray(),
+            new[] { "#6366f1", "#06d6a0", "#f59e0b", "#f43f5e" }, _isDark);
+
+        // FR-037: multi-year comparison
+        var (yLabels, yDatasets) = YearCompareData();
+        await JS.InvokeVoidAsync("initMultiSeriesChart", "crChartYearCompare", "line",
+            yLabels, yDatasets, _isDark);
+    }
+
+    // ── Export ─────────────────────────────────────────────────────────────────
+    private async Task ExportCsvAsync()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("CaseNo,ReceivedAt,Category,Channel,Status,SlaStatus,ElapsedDays");
+        foreach (var r in _filtered)
+        {
+            var d = ComplaintData.ParseDate(r.ReceivedAt);
+            var elapsed = d.HasValue ? (int)(DateTime.Today - d.Value).TotalDays : 0;
+            var slaStatus = GetSlaStatus(r);
+            sb.AppendLine(string.Join(",",
+                r.CaseNo,
+                r.ReceivedAt,
+                ComplaintData.CategoryLabel(r.Category),
+                r.Channel,
+                ComplaintData.StatusLabel(r.Status),
+                slaStatus,
+                elapsed));
+        }
+        await JS.InvokeVoidAsync("ecmis.downloadTextFile",
+            $"complaint_register_{DateTime.Now:yyyyMMdd}.csv", "text/csv;charset=utf-8;", sb.ToString(), true);
+    }
+
+    private async Task PrintReportAsync()
+    {
+        var title = $"<h2>ทะเบียนควบคุมเรื่องร้องเรียน TOR 12.5 ป.ป.ท. | {DateTime.Now:dd/MM/yyyy}</h2>";
+        var table = await JS.InvokeAsync<string>("eval", "document.getElementById('exportTable').outerHTML");
+        await JS.InvokeVoidAsync("ecmis.printReport", "ทะเบียนควบคุมเรื่องร้องเรียน", title + table);
+    }
+
+    // ── Dispose ────────────────────────────────────────────────────────────────
+    public void Dispose()
+    {
+        _dotNetRef?.Dispose();
+    }
+}

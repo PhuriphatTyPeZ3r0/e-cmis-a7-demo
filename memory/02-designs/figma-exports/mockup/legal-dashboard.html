@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-CMIS — แดชบอร์ดคดีศาล</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://ecmis-web-ta31.vercel.app/css/ecmis.css?v=20260603-dd-global" rel="stylesheet">
+<style>
+/* หน้านี้ใช้ Master Layout จริงจาก ecmis.css (sidebar/topbar/card/table) ตามเว็บ https://ecmis-web-ta31.vercel.app */
+.grid-2col{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+@media (max-width:1100px){.grid-2col{grid-template-columns:1fr}}
+.qa-grid-legal{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+@media (max-width:900px){.qa-grid-legal{grid-template-columns:repeat(3,1fr)}}
+.stat-row-legal{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:20px}
+@media (max-width:1100px){.stat-row-legal{grid-template-columns:repeat(2,1fr)}}
+.mini-legend-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0}
+</style>
+</head>
+<body>
+<div class="layout-container app-light">
+<aside class="sidebar open" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-logo-mark">ป.ป.ท.</div>
+    <div class="brand-text"><div class="brand-title">E-CMIS</div><div class="brand-sub">COMPLAINT MANAGEMENT</div></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-inbox-fill"></i><span>รับเรื่องร้องเรียน</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/complaints"><i class="bi bi-inbox-fill"></i> รายการทั้งหมด</a><a class="nav-sublink" href="/complaints/create"><i class="bi bi-inbox-fill"></i> รับเรื่องใหม่</a></div></div>
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-search"></i><span>แสวงหาข้อเท็จจริง</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/assign"><i class="bi bi-search"></i> มอบหมายงาน</a><a class="nav-sublink" href="/cases"><i class="bi bi-search"></i> รายการคดี/งาน</a></div></div>
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-people-fill"></i><span>มติคณะกรรมการ ป.ป.ท.</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/committee"><i class="bi bi-people-fill"></i> กำหนดการวาระ</a></div></div>
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-file-earmark-person"></i><span>การดำเนินการตามหมายจับ</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/arrest-warrant"><i class="bi bi-file-earmark-person"></i> แดชบอร์ดหมายจับ</a></div></div>
+    <div class="nav-group"><div class="nav-group-toggle open"><div class="nav-group-label"><i class="bi bi-bank2"></i><span>งานกฎหมายและคดีศาล</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items open">
+        <a class="nav-sublink active" href="/legal"><i class="bi bi-bank2"></i> แดชบอร์ดคดีศาล</a>
+        <a class="nav-sublink" href="/legal/court"><i class="bi bi-bank2"></i> ติดตามการพิจารณา</a>
+        <a class="nav-sublink" href="/legal/admin-case"><i class="bi bi-bank2"></i> ทะเบียนคดีปกครอง</a>
+        <a class="nav-sublink" href="/legal/info-request"><i class="bi bi-bank2"></i> บริการข้อมูลข่าวสาร</a>
+      </div></div>
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-bar-chart-line-fill"></i><span>วิเคราะห์/รายงาน</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/analytics/legal-stats"><i class="bi bi-bank2"></i> สถิติกระบวนการกฎหมายคดี</a><a class="nav-sublink" href="/analytics/warrant-witness"><i class="bi bi-shield-lock-fill"></i> สถิติหมายจับและคุ้มครองพยาน</a></div></div>
+  </nav>
+  <div class="sidebar-footer"><div class="user-card"><div class="user-avatar">P</div><div><div class="user-name">phuriphathem</div><div class="user-role">Super Admin</div></div></div></div>
+</aside>
+
+<header class="topbar">
+  <button class="hamburger-btn" title="เมนู"><i class="bi bi-list"></i></button>
+  <div class="topbar-search"><i class="bi bi-search"></i><input type="text" placeholder="ค้นหาเลขสำนวน ผู้ถูกกล่าวหา หน่วยงาน..."></div>
+  <div class="topbar-actions">
+    <div class="icon-btn" title="แจ้งเตือน"><i class="bi bi-bell-fill"></i><span class="notif-dot"></span></div>
+    <div class="icon-btn" title="คู่มือ"><i class="bi bi-book-fill"></i></div>
+    <div class="topbar-divider"></div>
+    <div class="user-menu-wrap"><button type="button" class="user-pill"><div class="user-pill-avatar">P</div><div class="user-pill-text"><div class="user-pill-name">phuriphathem</div><div class="user-pill-role">Super Admin</div></div><i class="bi bi-chevron-down user-pill-chevron"></i></button></div>
+  </div>
+</header>
+
+<main class="main-content">
+<div class="page-body">
+
+  <div class="breadcrumb-custom" style="margin-bottom:8px;">งานกฎหมายและคดีศาล <i class="bi bi-chevron-right" style="font-size:9px"></i> <span>แดชบอร์ดคดีศาล</span></div>
+  <div class="page-header">
+    <div><div class="page-title">แดชบอร์ดกระบวนการด้านกฎหมายในทางคดี</div>
+      <div class="page-subtitle">ภาพรวมสำนวนคดีชั้นอัยการ/ศาล (LAW001) · คดีปกครอง (LAW003) · คำร้องข้อมูลข่าวสาร (LAW002) — กิจกรรมที่ 10</div></div>
+    <div class="detail-actions"><button class="btn-outline-navy"><i class="bi bi-download"></i> Export</button><button class="btn-navy"><i class="bi bi-arrow-clockwise"></i> รีเฟรชข้อมูล</button></div>
+  </div>
+
+  <div class="stat-row-legal">
+    <div class="stat-card stat-card-navy fade-in"><div class="stat-icon"><i class="bi bi-folder2-open"></i></div><div class="stat-label">สำนวนคดีทั้งหมด (LAW001)</div><div class="stat-value">248</div><div class="stat-change">ปีงบประมาณ 2569</div><i class="bi bi-folder2-open stat-card-bg-icon"></i></div>
+    <div class="stat-card stat-card-blue fade-in"><div class="stat-icon"><i class="bi bi-hourglass-split"></i></div><div class="stat-label">อยู่ระหว่างอัยการ/ศาล</div><div class="stat-value">213</div><div class="stat-change">อัยการ 96 · ศาล 117</div><i class="bi bi-hourglass-split stat-card-bg-icon"></i></div>
+    <div class="stat-card stat-card-red fade-in"><div class="stat-icon"><i class="bi bi-alarm-fill"></i></div><div class="stat-label">ใกล้ครบกำหนด ≤ 30 วัน</div><div class="stat-value">12</div><div class="stat-change">อายุความ 8 · นัดศาล 4</div><i class="bi bi-alarm-fill stat-card-bg-icon"></i></div>
+    <div class="stat-card stat-card-teal fade-in"><div class="stat-icon"><i class="bi bi-bank"></i></div><div class="stat-label">คดีปกครอง (LAW003)</div><div class="stat-value">37</div><div class="stat-change">ชนะ 68% · แพ้ 22%</div><i class="bi bi-bank stat-card-bg-icon"></i></div>
+    <div class="stat-card stat-card-gold fade-in"><div class="stat-icon"><i class="bi bi-file-earmark-text-fill"></i></div><div class="stat-label">คำร้องข้อมูลข่าวสาร (LAW002)</div><div class="stat-value">86</div><div class="stat-change">รอพิจารณา 23</div><i class="bi bi-file-earmark-text-fill stat-card-bg-icon"></i></div>
+  </div>
+
+  <div class="qa-grid-legal" style="margin-bottom:22px;">
+    <a class="quick-action" href="/legal/court"><div class="qa-icon"><i class="bi bi-bank2"></i></div><span class="qa-label">ติดตามการพิจารณา</span></a>
+    <a class="quick-action" href="/legal/admin-case"><div class="qa-icon"><i class="bi bi-building"></i></div><span class="qa-label">คดีปกครอง</span></a>
+    <a class="quick-action" href="/legal/info-request"><div class="qa-icon"><i class="bi bi-file-earmark-text"></i></div><span class="qa-label">ข้อมูลข่าวสาร</span></a>
+    <a class="quick-action" href="/arrest-warrant"><div class="qa-icon"><i class="bi bi-file-earmark-person"></i></div><span class="qa-label">แดชบอร์ดหมายจับ</span></a>
+    <a class="quick-action" href="/committee"><div class="qa-icon"><i class="bi bi-people-fill"></i></div><span class="qa-label">วาระ/มติบอร์ด</span></a>
+    <a class="quick-action" href="/analytics/legal-stats"><div class="qa-icon"><i class="bi bi-bar-chart-line-fill"></i></div><span class="qa-label">สถิติ/รายงาน</span></a>
+  </div>
+
+  <div class="grid-2col">
+    <div>
+      <div class="ecmis-card fade-in" style="margin-bottom:20px;">
+        <div class="ecmis-card-header"><div class="ecmis-card-title"><span class="badge-dot"></span> งานใกล้ครบกำหนด (SLA / อายุความ)</div><span class="status-badge status-urgent">7 เรื่อง</span></div>
+        <div class="ecmis-card-body">
+          <div class="timeline-step" style="margin:0;">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0;">
+            <div class="summary-row"><span class="summary-label">ปปท. 087/2568</span><span class="summary-value">อายุความคงเหลือ</span><span class="status-badge status-urgent">15 วัน</span></div>
+            <div class="summary-row"><span class="summary-label">บ 22/2568</span><span class="summary-value">ครบกำหนดยื่นอุทธรณ์</span><span class="status-badge status-urgent">7 วัน</span></div>
+            <div class="summary-row"><span class="summary-label">ปปท. 121/2569</span><span class="summary-value">กำหนดยื่นอุทธรณ์ (ชั้นต้น)</span><span class="status-badge status-pending">18 วัน</span></div>
+            <div class="summary-row"><span class="summary-label">สขร. 042/2569</span><span class="summary-value">พิจารณาคำร้องข้อมูล</span><span class="status-badge status-pending">5 วัน</span></div>
+            <div class="summary-row"><span class="summary-label">บ 44/2569</span><span class="summary-value">นัดไต่สวนศาลปกครอง</span><span class="status-badge status-active">4 วัน</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ecmis-card fade-in">
+        <div class="ecmis-card-header"><div class="ecmis-card-title"><span class="badge-dot"></span> สำนวนคดีล่าสุด</div><a href="/legal/court" style="font-size:12px;color:var(--navy);font-weight:600;">ดูทั้งหมด <i class="bi bi-arrow-right-short"></i></a></div>
+        <div class="ecmis-card-body" style="padding:0;">
+          <div style="overflow-x:auto;">
+          <table class="ecmis-table">
+            <thead><tr><th>เลขสำนวน</th><th>ประเภท</th><th>ผู้ถูกกล่าวหา</th><th>สถานะ</th><th>ครบกำหนด</th></tr></thead>
+            <tbody>
+              <tr><td><strong>ปปท. 121/2569</strong></td><td>สั่งฟ้อง</td><td>นายวรพล เจริญสุข</td><td><span class="status-badge status-pending">อยู่ระหว่างชั้นอุทธรณ์</span></td><td>18 วัน</td></tr>
+              <tr><td><strong>ปปท. 115/2569</strong></td><td>ไม่ฟ้อง</td><td>นายสมชาย วงศ์ดี</td><td><span class="status-badge status-active">รอคำวินิจฉัยอัยการ</span></td><td>15 ก.ค. 69</td></tr>
+              <tr><td><strong>ปปท. 108/2569</strong></td><td>ถอนฟ้อง</td><td>นางวิภา ชัยชนะ</td><td><span class="status-badge status-urgent">อสส. ชี้ขาด</span></td><td>30 ก.ย. 69</td></tr>
+              <tr><td><strong>บ 44/2569</strong></td><td>คดีปกครอง</td><td>นายก้องภพ ฯ</td><td><span class="status-badge status-review">เสนอบอร์ดมอบอำนาจ</span></td><td>6 ก.ค. 69</td></tr>
+              <tr><td><strong>สขร. 042/2569</strong></td><td>ขอข้อมูลข่าวสาร</td><td>นายพงศกร มีทรัพย์</td><td><span class="status-badge status-pending">อยู่ระหว่างพิจารณา</span></td><td>เหลือ 5 วัน</td></tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="ecmis-card fade-in" style="margin-bottom:20px;">
+        <div class="ecmis-card-header"><div class="ecmis-card-title"><span class="badge-dot"></span> เชื่อมโยงหมายจับ</div></div>
+        <div class="ecmis-card-body">
+          <div class="alert-banner alert-danger-custom" style="margin-bottom:12px;"><i class="bi bi-exclamation-triangle-fill"></i> 1 สำนวนอยู่ระหว่างติดตามจับกุม</div>
+          <div class="summary-row"><span class="summary-label">ปปท. 133/2569</span><span class="summary-value">ออกหมายจับ 2 มิ.ย. 69</span></div>
+          <a href="/arrest-warrant" class="btn-outline-navy" style="display:block;text-align:center;margin-top:10px;">ไปที่แดชบอร์ดหมายจับ</a>
+        </div>
+      </div>
+
+      <div class="ecmis-card fade-in">
+        <div class="ecmis-card-header"><div class="ecmis-card-title"><span class="badge-dot"></span> ผลคดีปกครอง แยกชั้นศาล</div></div>
+        <div class="ecmis-card-body">
+          <div class="mini-legend-row"><div class="legend-item"><span class="legend-dot" style="background:var(--green)"></span> ศาลปกครองชั้นต้น (24 คดี)</div><strong>71% ชนะ</strong></div>
+          <div class="progress-custom" style="margin-bottom:14px;"><div class="progress-fill" style="width:71%"></div></div>
+          <div class="mini-legend-row"><div class="legend-item"><span class="legend-dot" style="background:var(--navy-mid)"></span> ศาลปกครองสูงสุด (13 คดี)</div><strong>62% ชนะ</strong></div>
+          <div class="progress-custom"><div class="progress-fill" style="width:62%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</main>
+</div>
+</body>
+</html>

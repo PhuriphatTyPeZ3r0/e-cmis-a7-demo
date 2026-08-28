@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Seed A5 — ใส่ข้อมูลจำลอง</title>
+<style>
+  body{font-family:'Prompt',sans-serif;background:#f4f6f8;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+  .card{background:#fff;border-radius:14px;padding:2.2rem;max-width:560px;box-shadow:0 8px 30px rgba(11,58,111,.12);text-align:center}
+  h1{font-size:1.25rem;color:#0b3a6f;margin:0 0 .4rem}
+  p{color:#40566b;font-size:.9rem;line-height:1.6}
+  .ok{color:#1e6141;font-weight:600}
+  .err{color:#a52c25;font-weight:600}
+  a{display:inline-block;margin-top:1rem;padding:.6rem 1.2rem;background:#0b3a6f;color:#fff;border-radius:8px;text-decoration:none;font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>ใส่ข้อมูลจำลองกิจกรรมที่ 5</h1>
+  <p id="msg">กำลังทำงาน...</p>
+</div>
+
+<script src="assets/activity5-role-model.js?v=20260821a" defer></script>
+<script src="assets/activity5-workspace.js?v=20260821k" defer></script>
+<script>
+(function () {
+  const KEY = 'ecmis-a4-workspace-v3';
+  const out = document.getElementById('msg');
+  const done = (ok, text) => {
+    out.className = ok ? 'ok' : 'err';
+    out.textContent = text;
+    if (ok) {
+      const a = document.createElement('a');
+      a.href = 'staff-workflow.html?view=a5';
+      a.textContent = 'เปิดหน้าระบบไต่สวน (A5) →';
+      document.querySelector('.card').appendChild(a);
+    }
+  };
+
+  function run() {
+    try {
+      const EX = window.EXMIS;
+      if (!EX || !EX.createInquiry) { done(false, 'EXMIS ยังไม่โหลด — รอ 1 วิ แล้วลองใหม่ (กด F5)'); return; }
+      const store = JSON.parse(localStorage.getItem(KEY) || '{}');
+
+      function mk(id, track, pin, subject, complainant, citizen, phone, email, address, agency, channel, province, region, registry, received, type, place, detail, damage, decision, caseNo, letterNo, ems, dest, hist) {
+        const caseData = {
+          id, trackingYear: track, trackingCode: pin, subject, complainant,
+          citizenId: citizen, id4: String(citizen || '').slice(-4), phone, email, address,
+          agency, channel, province, region, registry, decision,
+          received, receivedAt: new Date().toISOString(), type, place, detail, damage,
+          request: 'ขอให้ตรวจสอบข้อเท็จจริงและแจ้งผล',
+          attachments: [{ name: 'เอกสารประกอบคำร้อง.pdf', type: 'PDF', pages: 5, size: '1.2 MB', desc: 'หนังสือร้องเรียนและเอกสารประกอบ' }]
+        };
+        const documentData = {
+          decision, documentSubject: subject, caseNumber: caseNo,
+          dispatchLetterNo: letterNo, dispatchLetterDate: new Date().toISOString().slice(0, 10),
+          dispatchEms: ems, dispatchDestinationUnit: dest,
+          dispatchSendMethod: 'EMS', dispatchSentDate: new Date().toISOString().slice(0, 10),
+          dispatchConfirmedAt: new Date().toISOString(),
+          approvedBy: 'ผู้อำนวยการกองบริหารคดี', approvedAt: new Date().toISOString()
+        };
+        const state = {
+          caseData, documentData,
+          workflow: { stage: 'activity5-dispatch', complete: true, owner: 'officer', status: 'ส่งถึงเขตผู้รับผิดชอบแล้ว — รอธุรการคดีรับสำนวน' },
+          decisionHistory: (hist || []).map(t => ({ text: t, time: new Date().toLocaleString('th-TH') }))
+        };
+        state.inquiry = EX.createInquiry(state);
+        return state;
+      }
+
+      store['ECMIS-2569-000190'] = mk('ECMIS-2569-000190', '690010', '7213',
+        'ร้องเรียนการจัดซื้อวัสดุสำนักงานไม่เป็นไปตามระเบียบ', 'นายสมชาย ใจดี', '1100100123456',
+        '0812341234', 'somchai.jaidee@gmail.com', '123/45 ถนนสุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพฯ 10110',
+        'สำนักงานจัดการทรัพย์สินภาครัฐ', 'Website', 'กรุงเทพมหานคร', 'เขต 2', { srr: '0112/2569', kbk: '0090/2569' },
+        '12 สิงหาคม 2569 10:30 น.', 'การจัดซื้อจัดจ้าง', 'สำนักงานจัดการทรัพย์สินภาครัฐ',
+        'พบการกำหนดคุณลักษณะเฉพาะเอื้อต่อผู้ประกอบการรายใดรายหนึ่ง', 'งบประมาณเสียหายประมาณ 250,000 บาท',
+        '18/1ก', '0042/2569', 'ปป 0004.2/0135', 'EV123456789TH', 'เขต 2',
+        ['รับเรื่องผ่าน Website — ออกเลขติดตาม 690010', 'กลั่นกรองเรื่องซ้ำ — เรื่องใหม่', 'ผอ.กบค. อนุมัติรับตรวจสอบ — ออกเลขสำนวน 0042/2569', 'จัดส่งสำนวนไปเขต 2 (EMS)']);
+
+      store['ECMIS-2569-000189'] = mk('ECMIS-2569-000189', '690011', '8432',
+        'ร้องเรียนการเรียกรับผลประโยชน์ในการอนุมัติใบอนุญาต', 'นายวิชัย กล้าหาญ', '1300100909013',
+        '0894569090', 'wichai.kla@yahoo.com', '45/6 หมู่ 7 ตำบลในเมือง อำเภอเมืองขอนแก่น จ.ขอนแก่น 40000',
+        'เทศบาลเมืองตัวอย่าง', 'Walk-in', 'ขอนแก่น', 'เขต 4', { srr: '0105/2569', kbk: '0088/2569' },
+        '11 สิงหาคม 2569 09:15 น.', 'เรียกรับผลประโยชน์', 'เทศบาลเมืองตัวอย่าง',
+        'เจ้าหน้าที่เรียกรับเงินเพื่อเร่งรัดการออกใบอนุญาต', 'ค่าธรรมเนียมเกินอัตราที่กำหนด',
+        '18/4', '0041/2569', 'ปป 0004.2/0136', 'EV987654321TH', 'เขต 4',
+        ['รับเรื่องหน้าเคาน์เตอร์ (Walk-in) — ออกเลขติดตาม 690011', 'กลั่นกรอง — เรื่องใหม่', 'ผอ.กบค. อนุมัติ — ออกเลขสำนวน 0041/2569', 'จัดส่งสำนวนไปเขต 4 (EMS)']);
+
+      const m62 = store['ECMIS-2569-000188'] = mk('ECMIS-2569-000188', '690012', '1904',
+        'ส่งเรื่องกล่าวหาการทุจริตงบประมาณโครงการ (ม.62)', 'สำนักงาน ป.ป.ช.', '',
+        '', '', '', 'องค์การบริหารส่วนจังหวัดตัวอย่าง', 'ม.62 (ป.ป.ช.)', 'นนทบุรี', 'ส่วนกลาง',
+        { office: '0143/2569', kbk: '0091/2569' },
+        '11 สิงหาคม 2569 13:45 น.', 'เรื่องส่งจาก ป.ป.ช. ตามมาตรา 62', 'จังหวัดนนทบุรี',
+        'ป.ป.ช. ส่งเรื่องกล่าวหาพร้อมสำนวนเพื่อให้ตรวจสอบอำนาจและดำเนินการ', 'อยู่ระหว่างตรวจสอบอำนาจ',
+        '18/1ข', '0043/2569', 'ปป 0004.2/0137', 'EV555000111TH', 'ส่วนกลาง',
+        ['รับเรื่องจาก ป.ป.ช. (ม.62) — ออกเลขติดตาม 690012', 'ตรวจสอบความครบถ้วนของสำนวน', 'จัดส่งสำนวนให้หน่วยงานรับผิดชอบ']);
+      m62.inquiry.intake.m62 = { flag: true, sourceLetter: 'หนังสือ ป.ป.ช. ที่ ปปช 0005/2569', sourceMtiDate: '2026-07-28', ageCheck: '', report65Letter: '', report65Date: '', recalled: false };
+
+      store['ECMIS-2569-000187'] = mk('ECMIS-2569-000187', '690013', '5582',
+        'ขอให้ตรวจสอบปัญหาความเดือดร้อนจากโครงการก่อสร้าง', 'นางสาวรัตนา แสงทอง', '1200100456781',
+        '0867897812', 'rattana.sangthong@hotmail.com', '88/12 หมู่ 3 ตำบลแสนสุข อำเภอเมืองชลบุรี จ.ชลบุรี 20000',
+        'องค์การบริหารส่วนตำบลตัวอย่าง', 'จดหมาย', 'ชลบุรี', 'เขต 3', { srr: '0103/2569' },
+        '10 สิงหาคม 2569 15:20 น.', 'ความเดือดร้อนจากโครงการ', 'ตำบลแสนสุข จังหวัดชลบุรี',
+        'โครงการก่อสร้างไม่แล้วเสร็จตามสัญญา', 'ประชาชนได้รับความเดือดร้อน',
+        '58/2', '', 'ปป 0004.2/0138', 'EV555000222TH', 'เขต 3',
+        ['รับเรื่องทางจดหมาย — ออกเลขติดตาม 690013', 'ตรวจสอบข้อเท็จจริง 58/2 (ไม่ออกเลขสำนวน)', 'จัดส่งเอกสารไปเขต 3']);
+
+      localStorage.setItem(KEY, JSON.stringify(store));
+      const a5Count = Object.keys(store).filter(k => k.startsWith('ECMIS-2569-00018') || k === 'ECMIS-2569-000190').length;
+      done(true, 'ใส่ข้อมูลสำเร็จ ' + a5Count + ' เคส (รวมทั้งหมดใน store: ' + Object.keys(store).length + ') — กำลังไปหน้า A5...');
+      setTimeout(() => { location.href = 'staff-workflow.html?view=a5'; }, 900);
+    } catch (err) {
+      done(false, 'ผิดพลาด: ' + (err && err.message ? err.message : err));
+    }
+  }
+
+  if (document.readyState === 'complete') run();
+  else window.addEventListener('load', run);
+})();
+</script>
+</body>
+</html>

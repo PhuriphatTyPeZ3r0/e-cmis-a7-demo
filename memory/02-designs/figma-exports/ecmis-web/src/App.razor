@@ -1,0 +1,32 @@
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <ErrorBoundary @ref="_errorBoundary">
+            <ChildContent>
+                <RouteView RouteData="@routeData" DefaultLayout="@typeof(Components.Layout.MainLayout)" />
+                <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+            </ChildContent>
+            <ErrorContent Context="ex">
+                <div style="padding:40px;font-family:Sarabun,sans-serif;max-width:700px;margin:auto">
+                    <div style="color:#c00;font-size:18px;font-weight:700;margin-bottom:12px">⚠️ เกิดข้อผิดพลาด</div>
+                    <pre style="background:#fee;border:1px solid #fcc;padding:16px;border-radius:8px;font-size:12px;overflow-x:auto;white-space:pre-wrap">@ex.ToString()</pre>
+                    <button style="margin-top:16px;padding:8px 20px;background:#1a3575;color:#fff;border:none;border-radius:6px;cursor:pointer" @onclick='() => _errorBoundary?.Recover()'>รีเซ็ต</button>
+                </div>
+            </ErrorContent>
+        </ErrorBoundary>
+    </Found>
+    <NotFound>
+        <PageTitle>ไม่พบหน้านี้</PageTitle>
+        <LayoutView Layout="@typeof(Components.Layout.MainLayout)">
+            <div class="page-header">
+                <div>
+                    <div class="page-title">404 — ไม่พบหน้านี้</div>
+                    <div class="page-subtitle">ลิงก์ที่คุณเข้าถึงไม่มีในระบบ</div>
+                </div>
+            </div>
+        </LayoutView>
+    </NotFound>
+</Router>
+
+@code {
+    private ErrorBoundary? _errorBoundary;
+}

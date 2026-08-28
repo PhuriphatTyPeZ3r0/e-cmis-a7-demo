@@ -1,0 +1,868 @@
+#a5App [data-a5-report-mode="edit"] { --a5r-ink: #102a43; --a5r-muted: #61758a; --a5r-line: #d9e2ec; display: grid; gap: 0; min-width: 0; background: #fff; }
+#a5App .document-workspace:has(.ws-editor [data-a5-report-mode="edit"]) { grid-template-columns: minmax(0, 48%) minmax(0, 52%); }
+#a5App .document-workspace.pane-collapsed { grid-template-columns: minmax(0, 1fr) 44px; }
+#a5App .document-workspace.pane-collapsed:has(.ws-editor [data-a5-report-mode="edit"]) { grid-template-columns: minmax(0, 1fr) 44px; }
+#a5App .document-workspace.pane-collapsed .ws-doc-pane > :not(.ws-doc-pane-rail) { opacity: 0; visibility: hidden; pointer-events: none; }
+#a5App [data-a5-report-mode="edit"] .a5r-command-bar { position: sticky; top: 0; z-index: 8; display: grid; grid-template-columns: minmax(0, 1fr); gap: .65rem; padding: .8rem 0; border-bottom: 2px solid var(--a5r-ink); background: rgba(255, 255, 255, .97); }
+#a5App [data-a5-report-mode="edit"] .a5r-command-summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: .75rem; min-width: 0; }
+#a5App [data-a5-report-mode="edit"] .a5r-command-title small { display: block; color: #76591d; font-size: .68rem; font-weight: 700; letter-spacing: .04em; }
+#a5App [data-a5-report-mode="edit"] .a5r-command-title h2 { margin: .12rem 0 0; color: var(--a5r-ink); font-size: 1rem; line-height: 1.35; }
+#a5App [data-a5-report-mode="edit"] .a5r-command-progress { display: grid; grid-template-columns: 4.5rem auto; gap: .1rem .45rem; align-items: center; color: var(--a5r-muted); font-size: .72rem; white-space: nowrap; }
+#a5App [data-a5-report-mode="edit"] .a5r-command-progress strong { color: var(--a5r-ink); font-size: 1.05rem; }
+#a5App [data-a5-report-mode="edit"] .a5r-command-progress > span { grid-column: 1 / -1; text-align: right; }
+#a5App [data-a5-report-mode="edit"] .a5r-command-meter { width: 4.5rem; height: .38rem; border: 0; border-radius: 999px; overflow: hidden; background: #d9e2ec; accent-color: #2d6a4f; }
+#a5App [data-a5-report-mode="edit"] .a5r-command-meter::-webkit-progress-bar { border-radius: 999px; background: #d9e2ec; }
+#a5App [data-a5-report-mode="edit"] .a5r-command-meter::-webkit-progress-value { border-radius: 999px; background: #2d6a4f; }
+#a5App [data-a5-report-mode="edit"] .a5r-command-meter::-moz-progress-bar { border-radius: 999px; background: #2d6a4f; }
+#a5App [data-a5-report-mode="edit"] .a5r-command-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+#a5App [data-a5-report-mode="edit"] .a5r-command-actions .ws-button { width: 100%; min-width: 0; min-height: 44px; white-space: nowrap; overflow-wrap: normal; }
+#a5App [data-a5-report-mode="edit"] .a5r-edit-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: .75rem; align-items: start; padding-top: .75rem; }
+#a5App [data-a5-report-mode="edit"] .a5r-rail { position: static; display: flex; width: 100%; min-width: 0; overflow-x: auto; border-bottom: 1px solid var(--a5r-line); scrollbar-width: thin; }
+#a5App [data-a5-report-mode="edit"] .a5r-tab { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); flex: 0 0 12rem; gap: .45rem; width: 12rem; min-height: 58px; padding: .62rem .55rem; border: 0; border-right: 1px solid var(--a5r-line); background: #fff; color: var(--a5r-muted); cursor: pointer; font: inherit; text-align: left; }
+#a5App [data-a5-report-mode="edit"] .a5r-tab:hover { color: var(--a5r-ink); background: #f7f9fb; }
+#a5App [data-a5-report-mode="edit"] .a5r-tab.is-active { box-shadow: inset 0 -3px #76591d; color: var(--a5r-ink); }
+#a5App [data-a5-report-mode="edit"] .a5r-tab-number { color: #76591d; font-size: .76rem; font-weight: 700; }
+#a5App [data-a5-report-mode="edit"] .a5r-tab-copy { display: grid; gap: .08rem; }
+#a5App [data-a5-report-mode="edit"] .a5r-tab-label { font-size: .78rem; font-weight: 700; line-height: 1.35; }
+#a5App [data-a5-report-mode="edit"] .a5r-tab small { color: var(--a5r-muted); font-size: .67rem; font-weight: 400; }
+#a5App [data-a5-report-mode="edit"] .a5r-tab-status { display: flex; align-items: center; gap: .3rem; min-width: 0; }
+#a5App [data-a5-report-mode="edit"] .a5r-tab-dot { width: .42rem; height: .42rem; flex: none; border: 1px solid #8294a5; border-radius: 50%; background: #fff; }
+#a5App [data-a5-report-mode="edit"] .a5r-tab[data-a5-report-group-state="partial"] .a5r-tab-dot { border-color: #9c7a32; background: #d7b65b; }
+#a5App [data-a5-report-mode="edit"] .a5r-tab[data-a5-report-group-state="complete"] .a5r-tab-dot { border-color: #2d6a4f; background: #2d6a4f; }
+#a5App [data-a5-report-mode="edit"] .a5r-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: start; min-width: 0; }
+#a5App [data-a5-report-mode="edit"] .a5r-form { display: grid; min-width: 0; }
+#a5App [data-a5-report-mode="edit"] .a5r-form-head { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; gap: .75rem; padding: 0 0 .7rem; border-bottom: 2px solid var(--a5r-ink); background: transparent; }
+#a5App [data-a5-report-mode="edit"] .a5r-form-head-title small { display: block; margin-bottom: .12rem; color: var(--a5r-muted); font-size: .67rem; }
+#a5App [data-a5-report-mode="edit"] .a5r-form-head-title strong { display: block; color: var(--a5r-ink); font-size: .95rem; line-height: 1.35; }
+#a5App [data-a5-report-mode="edit"] .a5r-form-head-badge { color: #76591d; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+#a5App [data-a5-report-mode="edit"] .a5r-form-head-badge.complete { color: #2d6a4f; }
+#a5App [data-a5-report-mode="edit"] .a5r-form-head-badge.empty { color: var(--a5r-muted); }
+#a5App [data-a5-report-mode="edit"] .a5r-form-nav { display: flex; gap: .25rem; }
+#a5App [data-a5-report-mode="edit"] .a5r-form-groups,
+#a5App [data-a5-report-mode="edit"] .a5r-group { display: grid; gap: 0; }
+#a5App [data-a5-report-mode="edit"] .a5r-group > section { padding: 1.1rem 0 1.25rem; border: 0; border-bottom: 1px solid var(--a5r-line); background: transparent; box-shadow: none; }
+#a5App [data-a5-report-mode="edit"] .a5r-group > section h3 { display: flex; align-items: center; gap: .5rem; margin: 0 0 .8rem; padding: 0; border: 0; color: var(--a5r-ink); font-size: .9rem; }
+#a5App [data-a5-report-mode="edit"] .a5r-group > section h3 span { display: inline-grid; place-items: center; min-width: 1.65rem; height: 1.65rem; border: 1px solid #b9c7d3; border-radius: 50%; color: #76591d; font-size: .72rem; font-variant-numeric: tabular-nums; }
+#a5App [data-a5-report-mode="edit"] .a5-report-row-list { display: grid; gap: .75rem; margin-top: .65rem; }
+#a5App [data-a5-report-mode="edit"] .a5-report-row-list > fieldset { min-width: 0; margin: 0; padding: .85rem; border: 1px solid #d3dde6; border-radius: .4rem; background: #f8fafc; }
+#a5App [data-a5-report-mode="edit"] .a5-report-row-list > fieldset > legend { padding: 0 .35rem; color: #76591d; font-size: .72rem; font-weight: 700; }
+#a5App [data-a5-report-mode="edit"] .a5-report-row-list > fieldset > .ws-actions { position: static !important; inset: auto !important; display: flex; justify-content: flex-end; gap: .35rem; width: auto; margin-top: .7rem; padding: 0; border: 0; background: transparent; box-shadow: none; transform: none; }
+#a5App [data-a5-report-mode="edit"] .a5-report-row-list > fieldset > .ws-actions .ws-button { min-height: 40px; }
+#a5App [data-a5-report-mode="edit"] .a5-report-field { display: grid; gap: .35rem; margin-top: .7rem; color: #17232e; font-weight: 700; }
+#a5App [data-a5-report-mode="edit"] .a5-report-field > span { color: #33465c; }
+#a5App [data-a5-report-mode="edit"] .a5-report-field input,
+#a5App [data-a5-report-mode="edit"] .a5-report-field select,
+#a5App [data-a5-report-mode="edit"] .a5-report-field textarea { width: 100%; min-height: 44px; box-sizing: border-box; padding: .5rem .6rem; border: 1px solid #c6d2dc; border-radius: .25rem; font: inherit; font-weight: 400; transition: border-color .15s, box-shadow .15s; }
+#a5App [data-a5-report-mode="edit"] .a5-report-field textarea { min-height: 6rem; }
+#a5App [data-a5-report-mode="edit"] .a5-report-field input:focus,
+#a5App [data-a5-report-mode="edit"] .a5-report-field select:focus,
+#a5App [data-a5-report-mode="edit"] .a5-report-field textarea:focus { outline: none; border-color: #174f8a; box-shadow: 0 0 0 3px rgba(23, 79, 138, .14); }
+#a5App [data-a5-report-mode="edit"] .a5-report-derived { padding: .65rem 0 .65rem .8rem; border-left: 2px solid #b8c5d1; background: transparent; color: #263746; }
+#a5App [data-a5-report-mode="edit"] .a5-report-errors { color: #263746; }
+#a5App [data-a5-report-mode="edit"] .a5-report-errors p { margin: .2rem 0; color: #9c3d10; }
+#a5App [data-a5-report-mode="edit"] .a5r-preview { position: sticky; top: 5.2rem; display: grid; overflow: hidden; border: 1px solid #c4cfda; background: #e6ebf0; }
+#a5App [data-a5-report-mode="edit"] .a5r-preview-head { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .5rem .7rem; background: #082b50; color: #fff; font-size: .82rem; font-weight: 700; flex-wrap: wrap; }
+#a5App [data-a5-report-mode="edit"] .a5r-preview-pagenav { display: inline-flex; align-items: center; gap: .3rem; font-weight: 400; }
+#a5App [data-a5-report-mode="edit"] .a5r-preview-pagenav button { min-width: 2rem; height: 2rem; border: 1px solid #9fb3c5; background: #fff; cursor: pointer; color: #082b50; }
+#a5App [data-a5-report-mode="edit"] .a5r-preview-pagenav button:hover { background: #eef3f8; }
+#a5App [data-a5-report-mode="edit"] .a5r-preview-pagenav output { min-width: 3.2rem; text-align: center; color: #dbe6ef; font-weight: 600; }
+#a5App [data-a5-report-mode="edit"] .a5r-preview-canvas { max-height: 74vh; padding: 1.1rem; overflow: auto; background: #d9e0e7; }
+#a5App [data-a5-report-mode="edit"] .a5r-preview-canvas .a5-paper-page { min-height: 190mm; max-width: 210mm; margin: 0 auto; border: 1px solid #cdd6de; background: #fff; box-shadow: 0 3px 14px rgba(8, 43, 80, .22); }
+#a5App .a5-report-paper { max-width: 210mm; margin: 0 auto; }
+#a5App .a5-report-paper .a5-paper-page { min-height: 270mm; box-sizing: border-box; padding: 12mm; border-bottom: 1px dashed #aebdca; background: #fff; }
+#a5App .a5-report-paper header { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #17232e; padding-bottom: .5rem; }
+#a5App .a5-report-blank { color: #8a97a5; }
+#a5App .ws-doc-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: .55rem; }
+#a5App .ws-doc-toolbar > .ws-doc-tabs { grid-column: 1 / -1; min-width: 0; padding-bottom: .55rem; border-bottom: 1px solid #d9e2ec; }
+#a5App .ws-doc-toolbar .ws-doc-tab { min-height: 44px; }
+#a5App .ws-doc-toolbar .ws-doc-jump { min-width: 0; margin-left: 0; }
+#a5App .ws-doc-toolbar .ws-doc-jump select { min-width: 0; min-height: 44px; }
+#a5App .ws-doc-toolbar > .ws-button { min-height: 44px; white-space: nowrap; }
+#a5App .ws-doc-toolbar > .ws-doc-pane-toggle { width: 44px; height: 44px; padding: 0; }
+#a5App .ws-doc-toolbar > .ws-status { justify-self: end; }
+@media (max-width: 1279px) {
+  #a5App .document-workspace:has(.ws-editor [data-a5-report-mode="edit"]) { grid-template-columns: minmax(0, 1fr); }
+  #a5App [data-a5-report-mode="edit"] .a5r-body { grid-template-columns: 1fr; }
+  #a5App [data-a5-report-mode="edit"] .a5r-preview { position: static; }
+  #a5App .a5-report-paper { max-width: 100%; overflow-wrap: anywhere; }
+}
+@media (max-width: 720px) {
+  #a5App [data-a5-report-mode="edit"] .a5r-command-summary { grid-template-columns: minmax(0, 1fr); }
+  #a5App [data-a5-report-mode="edit"] .a5r-form-head { grid-template-columns: minmax(0, 1fr) auto; }
+  #a5App [data-a5-report-mode="edit"] .a5r-form-nav { grid-column: 1 / -1; justify-content: space-between; }
+  #a5App .ws-doc-toolbar { grid-template-columns: minmax(0, 1fr) auto; }
+  #a5App .ws-doc-toolbar .ws-doc-jump { grid-column: 1; }
+}
+#a5App .a5-f7-paper .a5-paper-page { font-family: 'TH Sarabun PSK', 'Sarabun', 'Prompt', sans-serif; font-size: 13px; line-height: 1.6; color: #111; font-weight: 400; position: relative; padding: 58px 58px 64px !important; min-height: 1123px; height: auto; overflow: visible; border-bottom: 0 !important; background: #fff; }
+#a5App .a5-f7-paper .a5-paper-page > header { display: block; border: 0; padding: 0; }
+#a5App .a5-f7-head { margin-bottom: .6rem; }
+#a5App .a5-f7-docref { text-align: right; margin: 0 0 .2rem; }
+#a5App .a5-f7-crest { text-align: center; margin: .1rem 0 .3rem; }
+#a5App .a5-f7-crest .a5-garuda { position: static; display: block; margin: 0 auto; }
+#a5App .a5-f7-org { font-size: 16px; font-weight: 700; text-align: center; margin: .1rem 0; }
+#a5App .a5-f7-title { font-size: 18px; font-weight: 700; text-align: center; margin: .05rem 0 .4rem; }
+#a5App .a5-f7-meta { margin: .15rem 0; line-height: 1.6; }
+#a5App .a5-f7-date { text-align: center; }
+#a5App .a5-f7-section { margin: 0 0 .5rem; }
+#a5App .a5-f7-section-title { font-size: 15px; font-weight: 700; margin: .5rem 0 .25rem; }
+#a5App .a5-f7-sub { font-weight: 600; margin: .25rem 0 .12rem; padding-left: 1.6rem; }
+#a5App .a5-f7-branch { font-weight: 600; margin: .28rem 0 .15rem; padding-left: 1.6rem; }
+#a5App .a5-f7-item { margin: .12rem 0; line-height: 1.6; font-weight: 400; }
+#a5App .a5-f7-item-sub { padding-left: 3.4rem; }
+#a5App .a5-f7-item-sub > .a5-f7-sub-no { display: inline-block; min-width: 3.4rem; margin-left: -3.4rem; }
+#a5App .a5-f7-note { font-size: 11px; color: #555; font-style: italic; margin: .1rem 0; }
+#a5App .a5-f7-pptmark { margin: 1.4rem 0 0; }
+#a5App .a5-f7-pagenum { text-align: center; margin: 0 0 .3rem; }
+#a5App .a5-f7-signatures { display: flex; flex-direction: column; gap: 1.1rem; margin-top: 1.6rem; }
+#a5App .a5-f7-sign { text-align: center; }
+#a5App .a5-f7-sig-line { margin: .12rem 0; }
+#a5App .a5-form5-paper, #a5App .a5-form6-paper { font-family: 'TH Sarabun PSK', 'Sarabun', 'Prompt', sans-serif; font-size: 13px; line-height: 1.6; color: #111; padding: 58px 58px 64px !important; min-height: 1123px; background: #fff; border-bottom: 0 !important; }
+#a5App .a5-form5-paper header, #a5App .a5-form6-paper header { display: block; border: 0; padding: 0; }
+#a5App .a5-f5-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+#a5App .a5-f5-top .a5-garuda-f5 { position: static; order: 2; flex: 0 0 auto; }
+#a5App .a5-f5-address { text-align: right; font-size: 12.5px; line-height: 1.5; }
+#a5App .a5-f5-date, #a5App .a5-f6-date { text-align: center; margin: .55rem 0 .85rem; }
+#a5App .a5-f6-head { text-align: center; margin-bottom: 1.1rem; }
+#a5App .a5-f6-garuda { margin: 0 0 .3rem; }
+#a5App .a5-f6-org { font-size: 14px; font-weight: 700; margin: .15rem 0; }
+#a5App .a5-f6-title { font-size: 15px; font-weight: 700; margin: .2rem 0 .35rem; }
+#a5App .a5-form5-paper .a5-form5-signoff { text-align: right; }
+#a5App .a5-form5-footer { text-align: center; margin-top: 1.2rem; }
+#a5App .a5-f5-pptmark { margin: 1.2rem 0 0; }
+#a5App .a5-f7-paper .a5-f4-slot { display: inline-block; min-width: 4rem; border-bottom: 1px dotted #333; padding: 0 .15rem; }
+#a5App .a5-f7-paper .a5-f4-dots { display: inline-block; min-width: 3rem; border-bottom: 1px dotted #333; padding: 0 .15rem; }
+#a5App .a5-f7-paper .a5-f4-date { min-width: 7rem; }
+@media print { #a5App .a5-f7-paper .a5-paper-page { break-after: page; border: 0; } #a5App .a5-f7-paper .a5-paper-page:last-child { break-after: auto; } }
+
+/* ---------- Phase 4: แบบ ปปท. 4 (Form 4) — renderer ตรงแบบพิมพ์จริง ---------- */
+#a5App .a5-f4-paper .a5-paper-page { font-family: 'TH Sarabun PSK', 'Sarabun', 'Prompt', sans-serif; font-size: 13px; line-height: 1.6; color: #111; font-weight: 400; position: relative; padding: 58px 58px 64px !important; min-height: 1123px; height: auto; overflow: visible; border-bottom: 0 !important; background: #fff; }
+#a5App .ws-paper-stage:has(.a5-f4-paper) { overflow: auto; max-height: calc(100vh - 165px); }
+#a5App .a5-f4-paper { transform-origin: top center; }
+#a5App .a5-f4-paper .a5-paper-page > header { display: block; border: 0; padding: 0; }
+#a5App .a5-f4-paper .a5-f4-memo-head { display: block !important; }
+#a5App .a5-f4-paper .a5-f4-memo-title { white-space: nowrap; flex: 0 0 auto; }
+#a5App .a5-f4-paper .a5-f4-pagenum { text-align: center; margin: -.4rem 0 .5rem; color: #44546a; }
+#a5App .a5-f4-paper .a5-f4-page-head { border-bottom: 1px solid #17232e; padding-bottom: .4rem; margin-bottom: .9rem; }
+#a5App .a5-f4-paper .a5-f4-page-head strong { font-size: .9rem; }
+#a5App .a5-f4-paper .a5-f4-page-head span { font-size: .82rem; color: #44546a; }
+#a5App .a5-f4-memo-head { margin-bottom: .55rem; }
+#a5App .a5-f4-memo-top { display: grid; grid-template-columns: auto 1fr auto; align-items: center; margin-bottom: .5rem; }
+#a5App .a5-f4-garuda { flex: 0 0 auto; justify-self: start; }
+#a5App .a5-f4-memo-title { font-size: 24px; font-weight: 700; margin: 0; text-align: center; white-space: nowrap; }
+#a5App .a5-f4-paper .a5-f4-memo-top::after { content: ''; width: 52px; }
+#a5App .a5-f4-paper .a5-f4-garuda { width: 52px; height: 56px; }
+#a5App .a5-f4-paper .a5-f4-memo-label { font-weight: 700; }
+#a5App .a5-f4-paper .a5-f4-memo-subject { text-decoration: underline; }
+#a5App .a5-f4-memo-row { margin: .15rem 0; line-height: 1.6; }
+#a5App .a5-f4-memo-grid { display: flex; justify-content: flex-start; gap: 4rem; }
+#a5App .a5-f4-memo-agency { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+#a5App .a5-f4-memo-agency .a5-f4-memo-row { display: flex; align-items: baseline; gap: .35rem; flex: 1 1 auto; }
+#a5App .a5-f4-memo-agency .a5-f4-dots { flex: 1 1 auto; border-bottom: 1px dotted #333; min-width: 3rem; letter-spacing: .05em; }
+#a5App .a5-f4-memo-agency .a5-f4-memo-tel { flex: 0 0 auto; white-space: nowrap; }
+#a5App .a5-f4-memo-tag { color: #555; font-size: .9rem; }
+#a5App .a5-f4-section { margin: 0 0 .5rem; }
+#a5App .a5-f4-section-title { font-size: 15px; font-weight: 700; margin: .5rem 0 .28rem; }
+#a5App .a5-f4-section-title b { font-weight: 700; }
+#a5App .a5-f4-sec-desc { font-weight: 400; }
+#a5App .a5-f4-sub { font-weight: 600; margin: .3rem 0 .15rem; padding-left: 2.1rem; }
+#a5App .a5-f4-branch { font-weight: 400; margin: .3rem 0 .2rem; padding-left: 2.1rem; }
+#a5App .a5-f4-item { margin: .15rem 0; line-height: 1.6; font-weight: 400; }
+#a5App .a5-f4-item-sub { padding-left: 3.4rem; }
+#a5App .a5-f4-item-sub > .a5-f4-sub-no { display: inline-block; min-width: 3.4rem; margin-left: -3.4rem; }
+#a5App .a5-f4-label { font-weight: 600; margin: .3rem 0 .1rem; }
+#a5App .a5-f4-note { font-size: 11px; color: #555; font-style: italic; margin: .08rem 0; }
+#a5App .a5-f4-slot { display: inline-block; min-width: 4rem; border-bottom: 1px dotted #333; padding: 0 .15rem; letter-spacing: .05em; }
+#a5App .a5-f4-dots { display: inline-block; min-width: 3rem; border-bottom: 1px dotted #333; padding: 0 .15rem; letter-spacing: .05em; }
+#a5App .a5-f4-date { min-width: 6rem; }
+#a5App .a5-f4-cb { display: inline-block; width: 1.1em; text-align: center; font-weight: 700; }
+#a5App .a5-f4-table { width: 100% !important; max-width: 100% !important; table-layout: fixed; border-collapse: collapse; margin: .2rem 0 .4rem; }
+#a5App .a5-f4-table td { border: 1px solid #9aa8b5; padding: .25rem .4rem; font-weight: 400; word-break: break-word; overflow-wrap: anywhere; }
+#a5App .a5-f4-table .a5-f4-slot { min-width: 0 !important; max-width: 100%; box-sizing: border-box; display: inline-block; }
+#a5App .a5-f4-nested { margin: .12rem 0 .2rem 1.4rem; }
+#a5App .a5-f4-s14-1.selected { background: #f2f6fa; outline: 1px solid #9db8d0; }
+#a5App .a5-f4-s18-grid { display: inline-flex; gap: 1.2rem; margin: 0 .4rem; vertical-align: middle; }
+#a5App .a5-f4-s18-col { display: inline-flex; flex-direction: column; gap: .1rem; }
+#a5App .a5-f4-sig { display: flex; flex-direction: column; gap: .1rem; margin: .5rem 0 .7rem 2.5rem; max-width: 16rem; }
+#a5App .a5-f4-sig-line { display: flex; align-items: baseline; gap: .25rem; margin: 0; }
+#a5App .a5-f4-sig-label { white-space: nowrap; }
+#a5App .a5-f4-sig-dots { flex: 1 1 auto; }
+#a5App .a5-f4-pptmark { position: absolute; bottom: 8mm; left: 12mm; font-size: .85rem; margin: 0; }
+#a5App .a5-f4-boardcover { border-top: 2px solid #17232e; margin-top: .7rem; padding-top: .6rem; }
+@media (prefers-reduced-motion: reduce) { #a5App .a5-report-editor * { scroll-behavior: auto; } }
+#a5App [data-a5-report-mode="edit"].a5r-editor-full { max-width: none; margin: 0; padding: 0; border: 0; background: #fff; box-shadow: none; }
+.ws-doc-pane:has(.a5r-editor-full) .doc-edit-bar, .ws-doc-pane:has(.a5r-editor-full) .doc-edit-fab, .ws-doc-pane:has(.a5r-editor-full) .a5-doc-edit-actions { display: none !important; }
+#a5App .a5r-inspector,
+#a5App .a5r-inspector.a5r-editor-full { --a5r-ink: #102a43; --a5r-muted: #61758a; --a5r-line: #d9e2ec; --a5r-paper: #fff; max-width: none; margin: 0; padding: 0; border: 0; border-radius: 0; background: var(--a5r-paper); box-shadow: none; }
+#a5App .a5r-inspect-head { display: flex; align-items: end; justify-content: space-between; gap: 1rem; padding: .15rem 0 1rem; border-bottom: 2px solid var(--a5r-ink); }
+#a5App .a5r-inspect-head small { color: var(--a5r-muted); font-size: .72rem; letter-spacing: .025em; }
+#a5App .a5r-inspect-head h2 { margin: .2rem 0 0; color: var(--a5r-ink); font-size: 1.2rem; line-height: 1.35; }
+#a5App .a5r-inspect-head p { margin: 0; color: var(--a5r-muted); font-size: .78rem; }
+#a5App .a5r-progress.a5r-inspect-progress { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; height: auto; padding: .65rem 0; border: 0; border-bottom: 1px solid var(--a5r-line); border-radius: 0; background: transparent; overflow: visible; }
+#a5App .a5r-inspect-progress span { position: static; display: inline; width: auto; min-width: 0; margin: 0; padding: 0; border-radius: 0; background: transparent; box-shadow: none; color: var(--a5r-ink); font-size: .8rem; font-weight: 700; }
+#a5App .a5r-inspect-progress strong { color: var(--a5r-muted); font-size: .75rem; font-weight: 500; }
+#a5App .a5r-inspect-layout { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+#a5App .a5r-inspect-index { position: sticky; top: 1rem; padding-top: 1rem; }
+#a5App .a5r-inspect-index ol { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--a5r-line); }
+#a5App .a5r-inspect-index li { display: grid; grid-template-columns: 1.45rem minmax(0, 1fr); gap: .1rem .45rem; padding: .62rem 0; border-bottom: 1px solid var(--a5r-line); color: var(--a5r-muted); }
+#a5App .a5r-inspect-index li > span { grid-row: 1 / span 2; display: flex; align-items: center; justify-content: center; width: 1.35rem; height: 1.35rem; border: 1px solid #9fb3c8; border-radius: 50%; color: var(--a5r-ink); font-size: .68rem; font-weight: 700; }
+#a5App .a5r-inspect-index li[data-a5-report-group-state="complete"] > span { border-color: #2d6a4f; color: #2d6a4f; }
+#a5App .a5r-inspect-index li[data-a5-report-group-state="partial"] > span { border-color: #9c7a32; color: #76591d; }
+#a5App .a5r-inspect-index strong { color: var(--a5r-ink); font-size: .76rem; line-height: 1.35; }
+#a5App .a5r-inspect-index small { color: var(--a5r-muted); font-size: .67rem; }
+#a5App .a5r-inspector .a5r-form-groups { gap: 0; }
+#a5App .a5r-inspector .a5r-inspect-group { display: grid; gap: 0; padding: 1.2rem 0 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+#a5App .a5r-inspect-group + .a5r-inspect-group { margin-top: 1.4rem; }
+#a5App .a5r-inspect-group > header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: .65rem; padding-bottom: .55rem; border-bottom: 2px solid var(--a5r-ink); }
+#a5App .a5r-inspect-group > header span { color: #76591d; font-size: .72rem; font-weight: 700; text-transform: uppercase; }
+#a5App .a5r-inspect-group > header h2 { margin: 0; color: var(--a5r-ink); font-size: 1.02rem; }
+#a5App .a5r-inspect-group > header small { color: var(--a5r-muted); font-size: .7rem; }
+#a5App .a5r-inspector .a5r-inspect-group > .a5r-inspect-section { padding: 1rem 0; border: 0; border-bottom: 1px solid var(--a5r-line); border-radius: 0; background: transparent; box-shadow: none; }
+#a5App .a5r-inspector .a5r-inspect-section > h3 { margin: 0 0 .7rem; padding: 0; border: 0; color: var(--a5r-ink); font-size: .88rem; }
+#a5App .a5r-inspect-data { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem 1.25rem; margin: 0; }
+#a5App .a5r-inspect-data > div { min-width: 0; }
+#a5App .a5r-inspect-data dt { margin: 0 0 .14rem; color: var(--a5r-muted); font-size: .7rem; font-weight: 600; }
+#a5App .a5r-inspect-data dd { margin: 0; color: #172b3f; font-size: .82rem; line-height: 1.55; overflow-wrap: anywhere; white-space: pre-wrap; }
+#a5App .a5r-inspect-list { display: grid; gap: .8rem; margin: 0; padding: 0; list-style: none; counter-reset: a5r-inspect-row; }
+#a5App .a5r-inspect-list > li { position: relative; padding: 0 0 .8rem 2rem; border-bottom: 1px dashed var(--a5r-line); counter-increment: a5r-inspect-row; }
+#a5App .a5r-inspect-list > li:last-child { padding-bottom: 0; border-bottom: 0; }
+#a5App .a5r-inspect-list > li::before { content: counter(a5r-inspect-row); position: absolute; top: 0; left: 0; display: flex; align-items: center; justify-content: center; width: 1.35rem; height: 1.35rem; border: 1px solid #9fb3c8; border-radius: 50%; color: var(--a5r-ink); font-size: .68rem; font-weight: 700; }
+#a5App .a5r-inspect-empty { margin: 0; color: #7b8997; font-size: .8rem; font-style: italic; }
+@media (max-width: 760px) {
+  #a5App .a5r-inspect-head { align-items: start; flex-direction: column; }
+  #a5App .a5r-inspect-layout { grid-template-columns: minmax(0, 1fr); gap: .35rem; }
+  #a5App .a5r-inspect-index { position: static; overflow-x: auto; padding: .75rem 0 .25rem; }
+  #a5App .a5r-inspect-index ol { display: flex; width: max-content; max-width: none; border-top: 0; }
+  #a5App .a5r-inspect-index li { width: 10rem; flex: none; padding: .55rem .7rem; border-top: 1px solid var(--a5r-line); border-right: 1px solid var(--a5r-line); }
+  #a5App .a5r-inspect-index li:first-child { border-left: 1px solid var(--a5r-line); }
+  #a5App .a5r-inspect-data { grid-template-columns: minmax(0, 1fr); }
+  #a5App .a5r-inspect-progress { align-items: start; flex-direction: column; gap: .15rem; }
+}
+#a5App .a5-report-644-editor, #a5App .a5-post-document-editor { display: grid; gap: 1rem; }
+#a5App .a5-report-644-editor section { padding: 1rem; border: 1px solid #cbd5df; background: #fff; }
+#a5App .a5-report-644-editor textarea { width: 100%; min-height: 9rem; box-sizing: border-box; font: inherit; }
+#a5App .a5-post-document-editor ol { display: grid; gap: .65rem; padding: 0; list-style: none; }
+#a5App .a5-post-document-editor li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .35rem 1rem; align-items: center; padding: .75rem; border: 1px solid #cbd5df; background: #fff; }
+#a5App .a5-post-document-editor li span, #a5App .a5-post-document-editor li small { grid-column: 1; color: #52606d; }
+#a5App .a5-post-document-editor li button { grid-column: 2; grid-row: 1 / span 3; min-height: 44px; }
+#a5App .a5-post-document-paper table { width: 100%; border-collapse: collapse; }
+#a5App .a5-post-document-paper th, #a5App .a5-post-document-paper td { padding: .5rem; border: 1px solid #aebdca; text-align: left; vertical-align: top; }
+@media (max-width: 720px) { #a5App .a5-post-document-editor li { grid-template-columns: 1fr; } #a5App .a5-post-document-editor li button { grid-column: 1; grid-row: auto; } }
+
+/* ===== แบบ ปปท. 5/6 — หนังสือแจ้งข้อกล่าวหา/บันทึกการแจ้งข้อกล่าวหา (Phase 6) ===== */
+#a5App .a5-form5-editor, #a5App .a5-form6-editor { display: grid; gap: 1rem; }
+#a5App .a5-form5-editor section, #a5App .a5-form6-editor section { padding: 1rem; border: 1px solid #cbd5df; background: #fff; }
+#a5App .a5-form5-editor section h3, #a5App .a5-form6-editor section h3 { margin: 0 0 .7rem; padding: 0 0 .5rem; border-bottom: 1px solid #d9e2ec; color: #102a43; font-size: .9rem; }
+#a5App .a5-form5-editor section h4, #a5App .a5-form6-editor section h4 { margin: .9rem 0 .5rem; color: #33465c; font-size: .82rem; }
+#a5App .a5-form5-editor .a5-report-field, #a5App .a5-form6-editor .a5-report-field { display: grid; gap: .3rem; margin-top: .6rem; color: #17232e; font-weight: 700; }
+#a5App .a5-form5-editor .a5-report-field:first-child, #a5App .a5-form6-editor .a5-report-field:first-child { margin-top: 0; }
+#a5App .a5-form5-editor .a5-report-field > span, #a5App .a5-form6-editor .a5-report-field > span { color: #33465c; font-size: .82rem; }
+#a5App .a5-form5-editor .a5-report-field input, #a5App .a5-form5-editor .a5-report-field textarea,
+#a5App .a5-form6-editor .a5-report-field input, #a5App .a5-form6-editor .a5-report-field textarea { width: 100%; min-height: 42px; box-sizing: border-box; padding: .5rem .6rem; border: 1px solid #c6d2dc; border-radius: .25rem; font: inherit; font-weight: 400; transition: border-color .15s, box-shadow .15s; }
+#a5App .a5-form5-editor .a5-report-field textarea, #a5App .a5-form6-editor .a5-report-field textarea { min-height: 5.5rem; }
+#a5App .a5-form5-editor .a5-report-field input:focus, #a5App .a5-form5-editor .a5-report-field textarea:focus,
+#a5App .a5-form6-editor .a5-report-field input:focus, #a5App .a5-form6-editor .a5-report-field textarea:focus { outline: none; border-color: #174f8a; box-shadow: 0 0 0 3px rgba(23, 79, 138, .14); }
+#a5App .a5-form5-editor .a5-report-field input:disabled, #a5App .a5-form5-editor .a5-report-field textarea:disabled,
+#a5App .a5-form6-editor .a5-report-field input:disabled, #a5App .a5-form6-editor .a5-report-field textarea:disabled { background: #f2f5f8; color: #52606d; }
+#a5App .a5-report-644-row { margin-top: .7rem; padding: .8rem; border: 1px solid #d3dde6; border-radius: .4rem; background: #f8fafc; }
+#a5App .a5-report-644-row:first-child { margin-top: 0; }
+#a5App .a5-report-644-row > strong { display: block; margin-bottom: .4rem; color: #76591d; font-size: .72rem; font-weight: 700; }
+#a5App .a5-form6-category { display: flex; flex-wrap: wrap; gap: .5rem 1.1rem; margin: 0 0 .6rem; padding: 0; border: 0; }
+#a5App .a5-form6-category legend { padding: 0; color: #33465c; font-size: .82rem; font-weight: 700; }
+#a5App .a5-form6-category label { display: inline-flex; align-items: center; gap: .35rem; font-weight: 400; }
+#a5App .a5-form56-accused { margin-top: 1rem; padding: 1rem; border: 1px solid #b9c7d3; border-radius: .5rem; background: #fbfcfd; }
+#a5App .a5-form56-accused:first-child { margin-top: 0; }
+#a5App .a5-form56-accused > h4 { margin: 0 0 .8rem; color: #102a43; font-size: .95rem; }
+#a5App .a5-form56-accused details { margin-top: .8rem; border: 1px solid #d9e2ec; border-radius: .4rem; background: #fff; }
+#a5App .a5-form56-accused details:first-of-type { margin-top: 0; }
+#a5App .a5-form56-accused details > summary { padding: .7rem .9rem; color: #102a43; font-weight: 700; font-size: .85rem; cursor: pointer; }
+#a5App .a5-form56-accused details[open] > summary { border-bottom: 1px solid #d9e2ec; }
+#a5App .a5-form56-accused details > *:not(summary) { padding: 0 .2rem; }
+#a5App .a5-form56-accused details > .ws-policy-note, #a5App .a5-form56-accused details > .a5-form5-editor, #a5App .a5-form56-accused details > .a5-form6-editor, #a5App .a5-form56-accused details > .ws-actions, #a5App .a5-form56-accused details > .ws-history { margin: .8rem .9rem; }
+#a5App .a5-form56-accused details > .ws-actions:last-child { margin-bottom: .9rem; }
+#a5App .a5-notice-accused-picker { max-width: 210mm; margin: 0 auto 1rem; }
+
+/* ---------- Phase 9: Forms 8–10 — หนังสือราชการ 1 หน้า Verbatim Authentic Layout ---------- */
+#a5App .a5-letter-paper {
+  font-family: 'TH Sarabun PSK', 'Sarabun', 'Prompt', sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #111;
+  padding: 48px 56px 48px 64px !important;
+  min-height: 1123px;
+  max-width: 210mm;
+  margin: 0 auto 1.5rem auto;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  box-sizing: border-box;
+}
+#a5App .a5-letter-head-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  margin-bottom: 0.6rem;
+}
+#a5App .a5-letter-head-left {
+  text-align: left;
+}
+#a5App .a5-letter-no {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+#a5App .a5-letter-head-center {
+  text-align: center;
+  padding: 0 10px;
+}
+#a5App .a5-letter-head-center img.a5-garuda {
+  display: block;
+  margin: 0 auto;
+}
+#a5App .a5-letter-head-right {
+  text-align: left;
+  padding-left: 1.2rem;
+}
+#a5App .a5-letter-org {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+#a5App .a5-letter-date-row {
+  text-align: center;
+  margin: 0.4rem 0 0.8rem 22%;
+  font-size: 14px;
+}
+#a5App .a5-letter-meta {
+  margin-bottom: 0.8rem;
+  font-size: 14px;
+}
+#a5App .a5-letter-subject,
+#a5App .a5-letter-to,
+#a5App .a5-letter-refline,
+#a5App .a5-letter-attach {
+  margin: 0.2rem 0;
+  line-height: 1.5;
+}
+#a5App .a5-attach-sub {
+  display: block;
+  padding-left: 6.2rem;
+  font-size: 13.5px;
+}
+#a5App .a5-letter-content {
+  font-size: 14px;
+  line-height: 1.6;
+}
+#a5App .a5-p-indent {
+  text-indent: 2.6rem;
+  text-align: justify;
+  text-justify: inter-word;
+  margin: 0.4rem 0;
+}
+#a5App .a5-letter-sign-block {
+  margin-left: 45%;
+  margin-top: 1.8rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-size: 14px;
+}
+#a5App .a5-sign-respect {
+  margin-bottom: 2.2rem;
+}
+#a5App .a5-sign-slot {
+  text-align: center;
+}
+#a5App .a5-sign-name {
+  margin: 0.15rem 0;
+}
+#a5App .a5-sign-title {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+#a5App .a5-sign-sub {
+  font-size: 13px;
+  color: #333;
+}
+#a5App .a5-letter-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 1.6rem;
+  font-size: 13px;
+  line-height: 1.35;
+}
+#a5App .a5-footer-contact p {
+  margin: 0.1rem 0;
+}
+#a5App .a5-hint-sub {
+  color: #666;
+  font-size: 12px;
+}
+#a5App .a5-footer-code {
+  font-weight: 600;
+  font-size: 13px;
+}
+#a5App .a5-dot {
+  display: inline-block;
+  min-width: 40px;
+  border-bottom: 1px dotted #333;
+  text-align: center;
+  padding: 0 4px;
+  vertical-align: baseline;
+  line-height: 1.2;
+}
+
+/* ---------- Forms 11–13: Court Documents Authentic Verbatim Layout ---------- */
+#a5App .a5-court-paper {
+  font-family: 'TH Sarabun PSK', 'Sarabun', 'Prompt', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111;
+  max-width: 210mm;
+  margin: 0 auto 1.5rem auto;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  box-sizing: border-box;
+}
+#a5App .a5-court-page-1,
+#a5App .a5-court-page-2,
+#a5App .a5-court-page-3,
+#a5App .a5-form12-paper {
+  padding: 44px 52px 44px 58px;
+  min-height: 1123px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+#a5App .a5-court-head-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.3rem;
+}
+#a5App .a5-court-caption {
+  font-size: 13.5px;
+  line-height: 1.25;
+  margin: 0;
+  font-weight: 500;
+}
+#a5App .a5-court-ref-rt {
+  font-size: 14px;
+  font-weight: 500;
+  text-align: right;
+}
+#a5App .a5-court-req-block {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 13.5px;
+  margin-bottom: 0.3rem;
+}
+#a5App .a5-court-judge-line {
+  display: flex;
+  align-items: baseline;
+  font-size: 14px;
+  margin-bottom: 0.25rem;
+}
+#a5App .a5-grow {
+  flex-grow: 1;
+}
+#a5App .a5-court-date-rt {
+  text-align: right;
+  margin: 0.2rem 0;
+  font-size: 14px;
+}
+#a5App .a5-court-center-title {
+  text-align: center;
+  margin: 0.35rem 0;
+  font-size: 15px;
+  font-weight: bold;
+}
+#a5App .a5-court-party-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0.25rem 0 0.5rem;
+  font-size: 14px;
+}
+#a5App .a5-party-role-rt {
+  font-weight: bold;
+  text-align: right;
+}
+#a5App .a5-court-content {
+  flex-grow: 1;
+  font-size: 14px;
+  line-height: 1.55;
+}
+#a5App .a5-court-row {
+  margin: 0.22rem 0;
+  line-height: 1.5;
+}
+#a5App .a5-court-p {
+  margin: 0.25rem 0;
+  text-align: justify;
+  text-justify: inter-word;
+}
+#a5App .a5-court-p-indent {
+  text-indent: 2.5rem;
+  text-align: justify;
+  text-justify: inter-word;
+  margin: 0.25rem 0;
+}
+#a5App .a5-court-p-indent2 {
+  text-indent: 4.5rem;
+  text-align: justify;
+  text-justify: inter-word;
+  margin: 0.22rem 0;
+}
+#a5App .a5-court-cbline {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin: 0.35rem 0 0.35rem 2.5rem;
+}
+#a5App .a5-cbtxt {
+  display: inline;
+}
+#a5App .a5-court-cbline .a5-cbtxt {
+  display: block;
+  text-indent: -1.3em;
+  padding-left: 1.3em;
+}
+#a5App .a5-court-pgfoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 0.8rem;
+  font-size: 13px;
+}
+#a5App .a5-court-pgno {
+  text-align: center;
+  font-size: 13.5px;
+  margin-bottom: 0.5rem;
+}
+#a5App .a5-court-respect {
+  text-align: center;
+  margin: 0.8rem 0 1rem 25%;
+  font-size: 14px;
+}
+#a5App .a5-court-sign-stack {
+  margin-left: 20%;
+  margin-top: 1rem;
+}
+#a5App .a5-court-sign-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0.35rem 0;
+  font-size: 14px;
+}
+#a5App .a5-sign-role-rt {
+  margin-left: auto;
+  font-weight: 500;
+}
+#a5App .a5-sign-dots-court {
+  display: inline-block;
+  width: 25px;
+}
+#a5App .a5-court-title {
+  text-align: center;
+  font-size: 16px;
+  font-weight: bold;
+  margin: 0.4rem 0 0.6rem;
+}
+#a5App .a5-court-right {
+  text-align: right;
+  margin: 0.2rem 0;
+  font-size: 14px;
+}
+#a5App .a5-court-sign-block-rt {
+  margin-left: 45%;
+  margin-top: 1.6rem;
+  text-align: center;
+  font-size: 14px;
+}
+#a5App .a5-court-head-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  align-items: start;
+  margin-bottom: 0.4rem;
+}
+#a5App .a5-court-left-title {
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: bold;
+  margin: 0;
+}
+#a5App .a5-court-right-meta {
+  text-align: right;
+  font-size: 14px;
+  line-height: 1.4;
+}
+#a5App .a5-court-order-title {
+  text-align: center;
+  font-size: 15px;
+  font-weight: bold;
+  margin: 0.7rem 0 0.35rem;
+}
+#a5App .a5-court-sign-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0.7rem 0 0.7rem 35%;
+  text-align: right;
+}
+#a5App .a5-pg-break {
+  height: 1px;
+  border-bottom: 1px dashed #ccc;
+  margin: 1.5rem 0;
+  page-break-after: always;
+}
+#a5App .a5-solid {
+  display: inline-block;
+  min-width: 40px;
+  border-bottom: 1px solid #333;
+  text-align: center;
+  padding: 0 4px;
+  vertical-align: baseline;
+  line-height: 1.2;
+}
+
+/* ---------- Forms 14–15: หมายจับ Authentic Layout ---------- */
+#a5App .a5-warrant-page-1,
+#a5App .a5-warrant-page-2 {
+  padding: 40px 52px 40px 58px;
+  min-height: 1123px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+#a5App .a5-warrant-head-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.2rem;
+  font-size: 13px;
+}
+#a5App .a5-warrant-badge {
+  border: 1px solid #333;
+  padding: 1px 6px;
+  margin-left: 6px;
+  font-size: 12px;
+}
+#a5App .a5-circle-sym {
+  font-size: 14px;
+}
+#a5App .a5-warrant-court-use {
+  border: 1px solid #333;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+#a5App .a5-court-crest-center {
+  text-align: center;
+  margin: 0.1rem 0 0.3rem;
+}
+#a5App .a5-court-crest-center img.a5-garuda {
+  display: block;
+  margin: 0 auto;
+}
+#a5App .a5-king-title {
+  text-align: center;
+  font-size: 15px;
+  font-weight: bold;
+  margin: 0.2rem 0;
+}
+#a5App .a5-court-cbsub {
+  display: flex;
+  gap: 1.5rem;
+  margin: 0.15rem 0 0.2rem 4.5rem;
+  font-size: 13.5px;
+}
+#a5App .a5-court-flip-hint {
+  font-size: 12px;
+  margin-top: 0.2rem;
+}
+#a5App .a5-court-warrant-note {
+  border-top: 1px solid #ddd;
+  padding-top: 0.4rem;
+  margin-top: 0.4rem;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #333;
+}
+#a5App .a5-court-sign-block-center {
+  text-align: center;
+  margin: 1.2rem auto 1rem;
+  font-size: 14px;
+}
+#a5App .a5-court-warn-title {
+  text-align: center;
+  font-size: 15px;
+  font-weight: bold;
+  margin: 1.2rem 0 0.4rem;
+}
+
+/* ---------- Form 16: ตำหนิรูปพรรณ Authentic Layout ---------- */
+#a5App .a5-trait-page-1,
+#a5App .a5-trait-page-2 {
+  padding: 38px 48px 38px 54px;
+  min-height: 1123px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+#a5App .a5-trait-head-grid {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+#a5App .a5-photo-box-tr14 {
+  width: 90px;
+  height: 110px;
+  border: 1px solid #444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: #555;
+  background: #fbfbfb;
+}
+#a5App .a5-trait-head-mid {
+  text-align: center;
+}
+#a5App .a5-trait-head-mid img.a5-garuda {
+  display: block;
+  margin: 0 auto;
+}
+#a5App .a5-trait-org-title {
+  margin: 0.1rem 0;
+  font-size: 14px;
+}
+#a5App .a5-trait-doc-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin: 0.15rem 0;
+}
+#a5App .a5-trait-doc-hint {
+  font-size: 11.5px;
+  color: #555;
+  margin: 0;
+}
+#a5App .a5-trait-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.35rem 0;
+  font-size: 13px;
+}
+#a5App .a5-trait-table th {
+  border: 1px solid #777;
+  padding: 3px 6px;
+  text-align: left;
+  width: 95px;
+  font-weight: bold;
+  background: #f5f5f5;
+  vertical-align: top;
+}
+#a5App .a5-trait-table td {
+  border: 1px solid #777;
+  padding: 3px 6px;
+  text-align: left;
+  line-height: 1.35;
+}
+#a5App .a5-trait-opt {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  margin-right: 8px;
+  margin-bottom: 2px;
+  white-space: nowrap;
+}
+#a5App .a5-attach-indent {
+  padding-left: 6.2rem;
+  margin: 0.15rem 0;
+}
+
+/* ---------- Form 19: บันทึกข้อความ Layout ---------- */
+#a5App .a5-memo-header {
+  margin-bottom: 0.8rem;
+  border-bottom: 2px solid #222;
+  padding-bottom: 0.5rem;
+}
+#a5App .a5-memo-title-row {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+#a5App .a5-memo-title-text {
+  font-size: 24px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  margin: 0;
+}
+#a5App .a5-memo-meta-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 14.5px;
+}
+#a5App .a5-memo-attach-list {
+  padding-left: 2rem;
+  margin: 0.3rem 0;
+  line-height: 1.45;
+}
+
+/* ---------- Form 20: แบบผนึกซองขอหมายจับ Layout ---------- */
+#a5App .a5-form20-paper {
+  padding: 45px 55px;
+  min-height: 800px;
+}
+#a5App .a5-envelope-box {
+  border: 2px solid #333;
+  padding: 30px 40px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 680px;
+  box-sizing: border-box;
+}
+#a5App .a5-envelope-meta {
+  font-size: 16px;
+  line-height: 1.5;
+}
+#a5App .a5-env-subject {
+  font-weight: bold;
+  font-size: 17px;
+  margin-bottom: 0.3rem;
+}
+#a5App .a5-envelope-org {
+  font-size: 15px;
+  line-height: 1.4;
+  margin-top: 0.5rem;
+}
+#a5App .a5-envelope-case {
+  font-size: 15px;
+  font-weight: bold;
+}
+#a5App .a5-envelope-charge {
+  border: 1px dashed #666;
+  padding: 12px 16px;
+  background: #fafafa;
+  font-size: 14px;
+  line-height: 1.5;
+}
+#a5App .a5-envelope-warrant-count {
+  font-size: 15px;
+  line-height: 1.45;
+}
+#a5App .a5-envelope-petitioner {
+  margin-top: 1rem;
+  font-size: 15px;
+  line-height: 1.45;
+}

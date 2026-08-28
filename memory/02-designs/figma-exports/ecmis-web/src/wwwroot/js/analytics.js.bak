@@ -1,0 +1,718 @@
+// Default to dark theme if user has not saved a preference
+if (!localStorage.getItem("dashTheme")) {
+    localStorage.setItem("dashTheme", "dark");
+}
+
+window._analyticsCharts = {};
+
+// Defined early so it's always available regardless of partial load
+window.initTrendChart = function (canvasId, labels, thisYearData, lastYearData, isDark) {
+    if (window._analyticsCharts[canvasId]) {
+        window._analyticsCharts[canvasId].destroy();
+        delete window._analyticsCharts[canvasId];
+    }
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    isDark = isDark !== false;
+    const gridColor  = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(13,27,62,0.07)';
+    const tickColor  = isDark ? 'rgba(255,255,255,0.4)'  : 'rgba(13,27,62,0.5)';
+    const tooltipBg  = isDark ? 'rgba(8,12,28,0.95)'     : 'rgba(255,255,255,0.97)';
+    const tooltipTxt = isDark ? '#fff'                    : '#1a3575';
+
+    window._analyticsCharts[canvasId] = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'ปีนี้',
+                    data: thisYearData,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99,102,241,0.08)',
+                    fill: true,
+                    tension: 0.35,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#6366f1'
+                },
+                {
+                    label: 'ปีที่แล้ว',
+                    data: lastYearData,
+                    borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.35,
+                    borderWidth: 1.5,
+                    borderDash: [5, 4],
+                    pointRadius: 2,
+                    pointBackgroundColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: { color: tickColor, font: { family: 'Sarabun', size: 10 }, boxWidth: 20, padding: 10 }
+                },
+                tooltip: {
+                    backgroundColor: tooltipBg,
+                    titleColor: tooltipTxt,
+                    bodyColor: tooltipTxt,
+                    borderColor: 'rgba(128,128,128,0.2)',
+                    borderWidth: 1
+                }
+            },
+            scales: {
+                x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { family: 'Sarabun', size: 10 } } },
+                y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { family: 'Sarabun', size: 10 } }, beginAtZero: true }
+            }
+        }
+    });
+};
+
+window.initAnalyticsChart = function (canvasId, type, labels, data, bgColors, isDark) {
+    if (window._analyticsCharts[canvasId]) {
+        window._analyticsCharts[canvasId].destroy();
+        delete window._analyticsCharts[canvasId];
+    }
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    isDark = isDark !== false;
+    const gridColor  = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(13,27,62,0.07)';
+    const tickColor  = isDark ? 'rgba(255,255,255,0.4)'  : 'rgba(13,27,62,0.5)';
+    const tooltipBg  = isDark ? 'rgba(8,12,28,0.95)'     : 'rgba(255,255,255,0.97)';
+    const tooltipTxt = isDark ? '#fff'                    : '#1a3575';
+
+    const isHorizontal = type === 'bar-h';
+    const chartType = isHorizontal ? 'bar' : type;
+
+    const defaultColors = labels.map((_, i) => `hsl(${(i * 47 + 200) % 360},55%,${isDark ? 55 : 48}%)`);
+
+    const config = {
+        type: chartType,
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: bgColors && bgColors.length ? bgColors : defaultColors,
+                borderColor: 'transparent',
+                borderWidth: 0,
+                borderRadius: (type === 'bar' || isHorizontal) ? 4 : 0,
+                hoverOffset: type === 'doughnut' ? 6 : 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: isHorizontal ? 'y' : 'x',
+            plugins: {
+                legend: {
+                    display: type === 'doughnut',
+                    position: 'right',
+                    labels: { color: tickColor, font: { family: 'Sarabun', size: 11 }, padding: 12, boxWidth: 12 }
+                },
+                tooltip: {
+                    backgroundColor: tooltipBg,
+                    titleColor: tooltipTxt,
+                    bodyColor: tickColor,
+                    borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(13,27,62,0.12)',
+                    borderWidth: 1,
+                    padding: 10
+                }
+            },
+            scales: type === 'doughnut' ? {} : {
+                x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { family: 'Sarabun', size: 11 } } },
+                y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { family: 'Sarabun', size: 11 } }, beginAtZero: true }
+            },
+            cutout: type === 'doughnut' ? '62%' : undefined
+        }
+    };
+
+    window._analyticsCharts[canvasId] = new Chart(canvas.getContext('2d'), config);
+};
+
+window.initGroupedBarChart = function (canvasId, labels, datasets, isDark) {
+    if (window._analyticsCharts[canvasId]) {
+        window._analyticsCharts[canvasId].destroy();
+        delete window._analyticsCharts[canvasId];
+    }
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    isDark = isDark !== false;
+    const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(13,27,62,0.07)';
+    const tickColor = isDark ? 'rgba(255,255,255,0.4)'  : 'rgba(13,27,62,0.5)';
+    const tooltipBg = isDark ? 'rgba(8,12,28,0.95)'     : 'rgba(255,255,255,0.97)';
+
+    window._analyticsCharts[canvasId] = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: datasets.map(ds => ({ ...ds, borderRadius: 4 }))
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: tickColor, font: { family: 'Sarabun', size: 11 }, boxWidth: 12 }
+                },
+                tooltip: {
+                    backgroundColor: tooltipBg,
+                    titleColor: tickColor,
+                    bodyColor: tickColor,
+                    borderColor: gridColor,
+                    borderWidth: 1,
+                    padding: 10
+                }
+            },
+            scales: {
+                x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { family: 'Sarabun', size: 11 } } },
+                y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { family: 'Sarabun', size: 11 } }, beginAtZero: true }
+            }
+        }
+    });
+};
+
+window.initGaugeChart = function (canvasId, value, max, isDark) {
+    if (window._analyticsCharts[canvasId]) {
+        window._analyticsCharts[canvasId].destroy();
+        delete window._analyticsCharts[canvasId];
+    }
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    isDark = isDark !== false;
+    const tooltipBg  = isDark ? 'rgba(8,12,28,0.95)'     : 'rgba(255,255,255,0.97)';
+    const tooltipTxt = isDark ? '#fff'                    : '#1a3575';
+    const remainder = Math.max(0, max - value);
+    const pct = Math.round((value * 100) / max);
+
+    window._analyticsCharts[canvasId] = new Chart(canvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: ['เสี่ยงสูญ', 'ปลอดภัย'],
+            datasets: [{
+                data: [value, remainder],
+                backgroundColor: ['#f59e0b', isDark ? 'rgba(255,255,255,0.08)' : 'rgba(13,27,62,0.08)'],
+                borderWidth: 0,
+                hoverOffset: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            rotation: -90,
+            circumference: 180,
+            cutout: '75%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: tooltipBg,
+                    titleColor: tooltipTxt,
+                    bodyColor: tooltipTxt,
+                    borderColor: 'rgba(128,128,128,0.2)',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(ctx) {
+                            const v = ctx.raw;
+                            const p = Math.round((v * 100) / (value + remainder));
+                            return ctx.label + ': ' + v + 'M (' + p + '%)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+};
+
+window.destroyAllAnalyticsCharts = function () {
+    Object.values(window._analyticsCharts).forEach(c => { try { c.destroy(); } catch (_) {} });
+    window._analyticsCharts = {};
+};
+
+window._analyticsComponent = null;
+
+window.registerAnalyticsComponent = function (dotNetRef) {
+    window._analyticsComponent = dotNetRef;
+};
+
+window._warRoomClockTimer = window._warRoomClockTimer || null;
+
+window.startWarRoomClock = function () {
+    const el = document.getElementById('wrClock');
+    if (!el) return;
+
+    const pad = (n) => String(n).padStart(2, '0');
+    const tick = () => {
+        const now = new Date();
+        el.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    };
+
+    tick();
+    if (window._warRoomClockTimer) clearInterval(window._warRoomClockTimer);
+    window._warRoomClockTimer = setInterval(tick, 1000);
+};
+
+window.stopWarRoomClock = function () {
+    if (window._warRoomClockTimer) {
+        clearInterval(window._warRoomClockTimer);
+        window._warRoomClockTimer = null;
+    }
+};
+
+window.reinitAnalyticsChartsIfNeeded = function (isDark) {
+    window.destroyAllAnalyticsCharts();
+    if (window._analyticsComponent) {
+        window._analyticsComponent.invokeMethodAsync('OnThemeChangedAsync', isDark);
+    }
+};
+
+window._thailandRiskMaps = window._thailandRiskMaps || {};
+
+window.initThailandRiskMap3D = function (canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    if (window._thailandRiskMaps[canvasId]) {
+        window._thailandRiskMaps[canvasId].resize();
+        return;
+    }
+
+    const staticMode = new URLSearchParams(window.location.search).has("mapstatic");
+    const state = {
+        geojson: null,
+        frame: 0,
+        renderer: null,
+        resize() {
+            if (state.renderer) state.renderer.resize();
+            else if (state.geojson) drawThailandGeoMap(canvas, state.geojson, state.frame);
+        },
+        dispose() {
+            if (state.renderer) state.renderer.dispose();
+        }
+    };
+    window._thailandRiskMaps[canvasId] = state;
+
+    fetch("data/th-all.topo.json")
+        .then(response => response.json())
+        .then(mapData => {
+            state.geojson = mapData;
+            state.renderer = createThailandThreeMap(canvas, mapData);
+            const resizeObserver = new ResizeObserver(() => state.resize());
+            resizeObserver.observe(canvas);
+
+            const renderFrame = () => {
+                if (state.renderer) state.renderer.render(state.frame);
+                else drawThailandGeoMap(canvas, mapData, state.frame);
+            };
+
+            if (staticMode) {
+                state.frame = 0.84;
+                state.resize();
+                renderFrame();
+                return;
+            }
+
+            const animate = () => {
+                if (!document.body.contains(canvas)) {
+                    resizeObserver.disconnect();
+                    state.dispose();
+                    delete window._thailandRiskMaps[canvasId];
+                    return;
+                }
+                state.frame += 0.012;
+                renderFrame();
+                requestAnimationFrame(animate);
+            };
+            animate();
+        })
+        .catch(() => {
+            drawThailandGeoMap(canvas, null, 0);
+        });
+
+    // ── Click handler: province detection → Blazor Modal ──
+    if (!canvas.dataset.clickRegistered) {
+        canvas.dataset.clickRegistered = "true";
+        canvas.style.cursor = "pointer";
+        canvas.addEventListener("click", function (e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width;
+            const y = (e.clientY - rect.top) / rect.height;
+
+            let province = "กรุงเทพมหานคร";
+            if (y < 0.38) province = "เชียงใหม่";
+            else if (y > 0.65) province = "สงขลา";
+            else if (x > 0.54 && y < 0.54) province = "นครราชสีมา";
+            else if (x > 0.50 && y >= 0.54) province = "ชลบุรี";
+
+            if (window._analyticsComponent) {
+                window._analyticsComponent.invokeMethodAsync("ClickProvince", province);
+            }
+        });
+    }
+};
+
+function createThailandThreeMap(canvas, geojson) {
+    if (!window.THREE) return null;
+
+    try {
+        const THREE = window.THREE;
+        const regions = extractGeoPolygons(geojson).filter(region => polygonArea(region.rings[0]) > 0.0002);
+        if (!regions.length) return null;
+
+        const bounds = getGeoBounds(regions);
+        const centerLon = (bounds.minX + bounds.maxX) / 2;
+        const centerLat = (bounds.minY + bounds.maxY) / 2;
+        const mapScale = 12.2 / (bounds.maxY - bounds.minY);
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "high-performance" });
+        renderer.setClearColor(0x000000, 0);
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+        const scene = new THREE.Scene();
+        const mapGroup = new THREE.Group();
+        scene.add(mapGroup);
+
+        const project = ([lon, lat], z = 0) => new THREE.Vector3(
+            (lon - centerLon) * mapScale,
+            (lat - centerLat) * mapScale,
+            z
+        );
+
+        regions.forEach(region => {
+            const ring = region.rings[0];
+            if (ring.length < 4) return;
+
+            const shape = new THREE.Shape(ring.map(point => project(point, 0)));
+            region.rings.slice(1).forEach(holeRing => {
+                if (holeRing.length < 4) return;
+                const hole = new THREE.Path(holeRing.map(point => project(point, 0)));
+                shape.holes.push(hole);
+            });
+
+            const center = polygonCentroid(ring);
+            const topColor = riskColorForPoint(center);
+            const sideColor = shadeHexColor(topColor, -32);
+            const geometry = new THREE.ExtrudeGeometry(shape, {
+                depth: 0.22,
+                bevelEnabled: true,
+                bevelSize: 0.018,
+                bevelThickness: 0.035,
+                bevelSegments: 1
+            });
+
+            const mesh = new THREE.Mesh(geometry, [
+                new THREE.MeshStandardMaterial({ color: topColor, roughness: 0.72, metalness: 0.04 }),
+                new THREE.MeshStandardMaterial({ color: sideColor, roughness: 0.9, metalness: 0.02 })
+            ]);
+            mapGroup.add(mesh);
+
+            const outlinePoints = ring.map(point => project(point, 0.255));
+            const outlineGeometry = new THREE.BufferGeometry().setFromPoints(outlinePoints);
+            const outline = new THREE.LineLoop(outlineGeometry, new THREE.LineBasicMaterial({
+                color: 0x101827,
+                transparent: true,
+                opacity: 0.7
+            }));
+            mapGroup.add(outline);
+        });
+
+        const ambient = new THREE.AmbientLight(0xffffff, 1.2);
+        const key = new THREE.DirectionalLight(0xffffff, 1.65);
+        key.position.set(-4, -7, 11);
+        const rim = new THREE.DirectionalLight(0x93c5fd, 0.85);
+        rim.position.set(6, 3, 8);
+        scene.add(ambient, key, rim);
+
+        const camera = new THREE.OrthographicCamera(-6, 6, 7.2, -7.2, 0.1, 100);
+        camera.position.set(0, 0, 18);
+        camera.lookAt(0, 0, 0);
+        mapGroup.rotation.x = 0;
+        mapGroup.rotation.z = 0;
+        mapGroup.rotation.y = 0;
+
+        const resize = () => {
+            const rect = canvas.getBoundingClientRect();
+            const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+            renderer.setPixelRatio(pixelRatio);
+            renderer.setSize(rect.width, rect.height, false);
+            const aspect = rect.width / Math.max(rect.height, 1);
+            const viewHeight = 7.35;
+            camera.top = viewHeight;
+            camera.bottom = -viewHeight;
+            camera.left = -viewHeight * aspect;
+            camera.right = viewHeight * aspect;
+            camera.updateProjectionMatrix();
+        };
+
+        resize();
+
+        return {
+            resize,
+            render(frame) {
+                mapGroup.rotation.z = Math.sin(frame * 0.8) * 0.006;
+                mapGroup.rotation.y = Math.sin(frame * 0.55) * 0.006;
+                renderer.render(scene, camera);
+            },
+            dispose() {
+                mapGroup.traverse(node => {
+                    if (node.geometry) node.geometry.dispose();
+                    if (node.material) {
+                        const materials = Array.isArray(node.material) ? node.material : [node.material];
+                        materials.forEach(material => material.dispose());
+                    }
+                });
+                renderer.dispose();
+            }
+        };
+    } catch (_) {
+        return null;
+    }
+}
+
+function drawThailandGeoMap(canvas, geojson, frame) {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const width = Math.max(1, Math.floor(rect.width * dpr));
+    const height = Math.max(1, Math.floor(rect.height * dpr));
+    if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+    }
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, rect.width, rect.height);
+
+    const polygons = geojson ? extractGeoPolygons(geojson) : [];
+    if (!polygons.length) return;
+
+    const bounds = getGeoBounds(polygons);
+    const padding = Math.min(rect.width, rect.height) * 0.09;
+    const mapWidth = rect.width - padding * 2;
+    const mapHeight = rect.height - padding * 2;
+    const scale = Math.min(mapWidth / (bounds.maxX - bounds.minX), mapHeight / (bounds.maxY - bounds.minY));
+    const offsetX = (rect.width - (bounds.maxX - bounds.minX) * scale) / 2;
+    const offsetY = (rect.height - (bounds.maxY - bounds.minY) * scale) / 2;
+    const tilt = Math.sin(frame) * 0.012;
+
+    const project = ([lon, lat]) => [
+        offsetX + (lon - bounds.minX) * scale + (lat - bounds.minY) * scale * tilt,
+        offsetY + (bounds.maxY - lat) * scale
+    ];
+
+    ctx.save();
+    ctx.translate(0, 2 + Math.sin(frame * 0.8) * 1.5);
+
+    for (let layer = 10; layer >= 1; layer--) {
+        ctx.save();
+        ctx.translate(layer * 1.6, layer * 1.7);
+        ctx.fillStyle = layer > 6 ? "rgba(15,23,42,.34)" : "rgba(30,41,59,.52)";
+        ctx.strokeStyle = "rgba(96,165,250,.05)";
+        drawGeoPolygons(ctx, polygons, project, () => ctx.fill(), () => ctx.stroke());
+        ctx.restore();
+    }
+
+    ctx.shadowColor = "rgba(0,0,0,.45)";
+    ctx.shadowBlur = 24;
+    ctx.shadowOffsetY = 16;
+    drawGeoPolygons(ctx, polygons, project, (polygon) => {
+        const center = polygonCentroid(polygon.rings[0]);
+        ctx.fillStyle = riskColorForPoint(center);
+        ctx.fill();
+    }, null);
+
+    ctx.shadowColor = "transparent";
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = "rgba(8,13,26,.82)";
+    drawGeoPolygons(ctx, polygons, project, null, () => ctx.stroke());
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(203,213,225,.22)";
+    drawGeoPolygons(ctx, polygons.filter(p => polygonArea(p.rings[0]) > 0.02), project, null, () => ctx.stroke());
+
+    [
+        [100.5, 13.75, "81%"],
+        [98.98, 18.79, "72%"],
+        [101.2, 12.68, "76%"],
+        [99.85, 7.01, "83%"]
+    ].forEach(([lon, lat, label]) => drawCanvasHotspot(ctx, project([lon, lat]), label));
+
+    ctx.restore();
+}
+
+function extractGeoPolygons(geojson) {
+    if (geojson.type === "Topology") {
+        return extractTopoPolygons(geojson);
+    }
+
+    const features = geojson.type === "FeatureCollection"
+        ? geojson.features
+        : [{ geometry: geojson.geometry || geojson, properties: geojson.properties || {} }];
+    const regions = [];
+
+    features.forEach(feature => {
+        const geometry = feature.geometry;
+        if (!geometry) return;
+        if (geometry.type === "Polygon") {
+            regions.push({ rings: geometry.coordinates, properties: feature.properties || {} });
+        }
+        if (geometry.type === "MultiPolygon") {
+            geometry.coordinates.forEach(rings => regions.push({ rings, properties: feature.properties || {} }));
+        }
+    });
+
+    return regions;
+}
+
+function extractTopoPolygons(topology) {
+    const object = topology.objects?.default || Object.values(topology.objects || {})[0];
+    const geometries = object?.type === "GeometryCollection" ? object.geometries : [object].filter(Boolean);
+    const regions = [];
+
+    geometries.forEach(geometry => {
+        if (geometry.type === "Polygon") {
+            regions.push({ rings: topoPolygonToRings(topology, geometry.arcs), properties: geometry.properties || {} });
+        }
+        if (geometry.type === "MultiPolygon") {
+            geometry.arcs.forEach(polygonArcs => {
+                regions.push({ rings: topoPolygonToRings(topology, polygonArcs), properties: geometry.properties || {} });
+            });
+        }
+    });
+
+    return regions.filter(region => region.rings.length && region.rings[0].length > 3);
+}
+
+function topoPolygonToRings(topology, polygonArcs) {
+    return polygonArcs.map(ringArcs => {
+        const ring = [];
+        ringArcs.forEach((arcIndex, arcPosition) => {
+            const points = decodeTopoArc(topology, arcIndex);
+            points.forEach((point, pointIndex) => {
+                if (arcPosition > 0 && pointIndex === 0) return;
+                ring.push(point);
+            });
+        });
+        return ring;
+    });
+}
+
+function decodeTopoArc(topology, arcIndex) {
+    const shouldReverse = arcIndex < 0;
+    const sourceArc = topology.arcs[shouldReverse ? ~arcIndex : arcIndex] || [];
+    const transform = topology.transform || { scale: [1, 1], translate: [0, 0] };
+    let x = 0;
+    let y = 0;
+    const points = sourceArc.map(([dx, dy]) => {
+        x += dx;
+        y += dy;
+        return [
+            x * transform.scale[0] + transform.translate[0],
+            y * transform.scale[1] + transform.translate[1]
+        ];
+    });
+    return shouldReverse ? points.reverse() : points;
+}
+
+function getGeoBounds(polygons) {
+    const bounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+    polygons.forEach(polygon => polygon.rings.forEach(ring => ring.forEach(([x, y]) => {
+        bounds.minX = Math.min(bounds.minX, x);
+        bounds.minY = Math.min(bounds.minY, y);
+        bounds.maxX = Math.max(bounds.maxX, x);
+        bounds.maxY = Math.max(bounds.maxY, y);
+    })));
+    return bounds;
+}
+
+function drawGeoPolygons(ctx, polygons, project, fill, stroke) {
+    polygons.forEach(polygon => {
+        ctx.beginPath();
+        polygon.rings.forEach(ring => {
+            ring.forEach((point, index) => {
+                const [x, y] = project(point);
+                if (index === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.closePath();
+        });
+        if (fill) fill(polygon);
+        if (stroke) stroke(polygon);
+    });
+}
+
+function polygonCentroid(ring) {
+    let x = 0;
+    let y = 0;
+    ring.forEach(point => {
+        x += point[0];
+        y += point[1];
+    });
+    return [x / ring.length, y / ring.length];
+}
+
+function polygonArea(ring) {
+    let area = 0;
+    for (let i = 0; i < ring.length; i++) {
+        const current = ring[i];
+        const next = ring[(i + 1) % ring.length];
+        area += current[0] * next[1] - next[0] * current[1];
+    }
+    return Math.abs(area / 2);
+}
+
+function riskColorForPoint([lon, lat]) {
+    if (lat > 18.6) return "#84cc16";
+    if (lat > 16.4 && lon < 100.5) return "#eab308";
+    if (lon > 101.05 && lat > 11.3) return "#f97316";
+    if (lat < 8.9) return "#f97316";
+    if (lon < 99.4 && lat < 15.7) return "#dc2626";
+    if (lat > 13.2 && lat < 16.9) return "#facc15";
+    return "#ef4444";
+}
+
+function shadeHexColor(hex, amount) {
+    const value = parseInt(hex.replace("#", ""), 16);
+    const r = Math.max(0, Math.min(255, (value >> 16) + amount));
+    const g = Math.max(0, Math.min(255, ((value >> 8) & 255) + amount));
+    const b = Math.max(0, Math.min(255, (value & 255) + amount));
+    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
+function drawCanvasHotspot(ctx, [x, y], label) {
+    ctx.save();
+    ctx.font = "800 12px Sarabun, sans-serif";
+    const width = ctx.measureText(label).width + 28;
+    ctx.fillStyle = "rgba(15,23,42,.88)";
+    ctx.strokeStyle = label === "81%" || label === "83%" ? "rgba(248,113,113,.72)" : "rgba(251,191,36,.72)";
+    ctx.lineWidth = 1;
+    roundRect(ctx, x - width / 2, y - 13, width, 26, 13);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath();
+    ctx.arc(x - width / 2 + 12, y, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = label === "81%" || label === "83%" ? "#fca5a5" : "#fde68a";
+    ctx.fillText(label, x - width / 2 + 21, y + 4);
+    ctx.restore();
+}
+
+function roundRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + width, y, x + width, y + height, radius);
+    ctx.arcTo(x + width, y + height, x, y + height, radius);
+    ctx.arcTo(x, y + height, x, y, radius);
+    ctx.arcTo(x, y, x + width, y, radius);
+    ctx.closePath();
+}
+

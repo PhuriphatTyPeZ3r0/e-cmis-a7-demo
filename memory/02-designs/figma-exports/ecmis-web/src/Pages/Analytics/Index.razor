@@ -1,0 +1,2256 @@
+@page "/analytics"
+@layout MainLayout
+@implements IDisposable
+@using EcmisWeb.Data
+@using System.Globalization
+@using EcmisWeb.Pages.Analytics.Components
+@inject ComplaintApiService ComplaintApi
+@inject IComplaintStatsService Stats
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<div class="cs-shell an-fullscreen @(_isDark ? "" : "app-light") @(SelectedVersion == 6 ? "v6-active" : "") @(ShareMode ? "v6-share" : "")">
+
+    @* ══ WAR ROOM HEADER ══ *@
+    <div class="wr-topbar">
+        <div class="wr-logo-area">
+            <div class="wr-logo-seal">
+                <i class="bi bi-shield-shaded" style="font-size: 20px; color: #0b0f1e;"></i>
+            </div>
+            <div class="wr-logo-text-block">
+                <div class="wr-logo-title">ศอ.สท. WAR ROOM</div>
+                <div class="wr-logo-sub">ศูนย์อำนวยการต่อต้านการทุจริตแห่งชาติ</div>
+                <div class="wr-logo-en">NATIONAL ANTI-CORRUPTION COMMAND CENTER</div>
+            </div>
+        </div>
+
+        @* Content Switcher Tab Navigation *@
+        <div class="wr-topbar-tabs">
+            @if (SelectedVersion != 6)
+            {
+                @* แท็บเหล่านี้ขับเคลื่อนเฉพาะ layout เก่า (ActiveTab ใช้ใน V1) — V6 ซ่อนเพื่อลดความซ้ำซ้อน *@
+                <div class="wr-tab-item @(ActiveTab == "ภาพรวม" ? "active" : "")" @onclick='() => SwitchTab("ภาพรวม")'><i class="bi bi-speedometer2"></i> ภาพรวม</div>
+                <div class="wr-tab-item @(ActiveTab == "จัดซื้อจัดจ้าง" ? "active" : "")" @onclick='() => SwitchTab("จัดซื้อจัดจ้าง")'><i class="bi bi-bank"></i> จัดซื้อจัดจ้าง</div>
+                <div class="wr-tab-item @(ActiveTab == "ใบอนุญาต" ? "active" : "")" @onclick='() => SwitchTab("ใบอนุญาต")'><i class="bi bi-file-earmark-text"></i> ใบอนุญาต</div>
+                <div class="wr-tab-item @(ActiveTab == "ร้องเรียน" ? "active" : "")" @onclick='() => SwitchTab("ร้องเรียน")'><i class="bi bi-envelope"></i> ร้องเรียน</div>
+                <div class="wr-tab-item @(ActiveTab == "คดีเผชิญเหตุฯ" ? "active" : "")" @onclick='() => SwitchTab("คดีเผชิญเหตุฯ")'><i class="bi bi-folder-check"></i> คดีเผชิญเหตุฯ</div>
+                <div class="wr-tab-item @(ActiveTab == "รายงาน" ? "active" : "")" @onclick='() => SwitchTab("รายงาน")'><i class="bi bi-file-earmark-bar-graph"></i> รายงาน</div>
+                <a href="/analytics/director-report" class="wr-tab-item" style="text-decoration:none;"><i class="bi bi-person-badge-fill"></i> รายงานผู้บริหาร</a>
+            }
+            @if (SelectedVersion == 6)
+            {
+                @* V6: ใช้พื้นที่แท็บเดิมวางตัวกรอง/ค้นหา — ตัดแถบ controls แยกทิ้ง ข้อมูลกลางได้พื้นที่คืน *@
+                <div class="v6-inline-controls">
+                    <div class="v6-toggle-buttons">
+                        <button class="v6-toggle-btn @(SelectedYearMode == "fiscal" ? "active" : "")" @onclick='() => ChangeV6YearMode("fiscal")'>ปีงบประมาณ</button>
+                        <button class="v6-toggle-btn @(SelectedYearMode == "calendar" ? "active" : "")" @onclick='() => ChangeV6YearMode("calendar")'>ปีปฏิทิน</button>
+                    </div>
+                    <select class="v6-select" @onchange="OnV6WarningTypeChanged">
+                        <option value="all">ความเสี่ยงรวมทุกประเภท</option>
+                        <option value="road">โครงการก่อสร้างถนน</option>
+                        <option value="procure">จัดซื้อจัดจ้างทั่วไป</option>
+                        <option value="duty">ปฏิบัติหน้าที่มิชอบ</option>
+                        <option value="license">ทุจริตใบอนุญาต</option>
+                    </select>
+                </div>
+            }
+            @if (ShareMode)
+            {
+                <span class="wr-readonly-badge"><i class="bi bi-eye-fill"></i> มุมมองอ่านอย่างเดียว</span>
+            }
+        </div>
+
+        <div class="wr-topbar-right">
+            @if (_showDevMode)
+            {
+                @* Layout Version Controls (V1 - V6) *@
+                <div class="wr-version-selector">
+                    <span class="wr-ver-label">DEV VERSION:</span>
+                    <button class="wr-ver-btn @(SelectedVersion == 1 ? "active" : "")" @onclick="() => SwitchVersion(1)">V1</button>
+                    <button class="wr-ver-btn @(SelectedVersion == 2 ? "active" : "")" @onclick="() => SwitchVersion(2)">V2</button>
+                    <button class="wr-ver-btn @(SelectedVersion == 3 ? "active" : "")" @onclick="() => SwitchVersion(3)">V3</button>
+                    <button class="wr-ver-btn @(SelectedVersion == 4 ? "active" : "")" @onclick="() => SwitchVersion(4)">V4</button>
+                    <button class="wr-ver-btn @(SelectedVersion == 5 ? "active" : "")" @onclick="() => SwitchVersion(5)">V5</button>
+                    <button class="wr-ver-btn @(SelectedVersion == 6 ? "active" : "")" @onclick="() => SwitchVersion(6)">V6</button>
+                </div>
+            }
+            
+            <div class="wr-export-wrapper" style="position:relative;">
+                <button class="wr-export-btn" @onclick="ToggleFullscreenAsync" title="ดูเต็มจอ (กด ESC เพื่อออก)">
+                    <i class="bi bi-arrows-fullscreen"></i>
+                </button>
+                @if (!ShareMode)
+                {
+                    <button class="wr-export-btn" @onclick="ToggleSharePanelAsync" title="แชร์ให้ผู้บริหาร (อ่านอย่างเดียว)">
+                        <i class="bi bi-share-fill"></i>
+                    </button>
+                    <button class="wr-export-btn wr-btn-gold" @onclick="OpenReportModal" title="Export">
+                        <i class="bi bi-download"></i>
+                        <span>Export</span>
+                    </button>
+                }
+                @if (_showSharePanel)
+                {
+                    <div class="wr-share-panel font-sarabun">
+                        <div class="wr-share-head">
+                            <strong><i class="bi bi-share-fill"></i> แชร์มุมมองอ่านอย่างเดียว</strong>
+                            <button class="v6-close-btn" @onclick="() => _showSharePanel = false">&times;</button>
+                        </div>
+                        <label class="wr-share-lbl">อายุลิงก์</label>
+                        <select class="wr-share-select" @onchange="OnShareExpiryChangedAsync">
+                            <option value="1">1 ชั่วโมง</option>
+                            <option value="24">24 ชั่วโมง</option>
+                            <option value="168" selected>7 วัน</option>
+                            <option value="720">30 วัน</option>
+                        </select>
+                        <label class="wr-share-lbl">ลิงก์</label>
+                        <div class="wr-share-linkrow">
+                            <input class="wr-share-input" readonly value="@_shareUrl" />
+                            <button class="wr-share-copy" @onclick="CopyShareLinkAsync">@(_shareCopied ? "คัดลอกแล้ว ✓" : "คัดลอก")</button>
+                        </div>
+                        <div class="wr-share-qrwrap">
+                            <div id="shareQrBox"></div>
+                            <small>สแกนเพื่อเปิดดูบนมือถือ/แท็บเล็ต</small>
+                        </div>
+                        @if (_shareIsLocalhost)
+                        {
+                            <small class="wr-share-warn"><i class="bi bi-exclamation-triangle-fill"></i> ระบบเปิดอยู่ที่ localhost — ลิงก์/QR นี้เปิดได้เฉพาะบนเครื่องนี้เท่านั้น
+                                ถ้าจะให้เครื่องอื่นดู ให้เปิดระบบผ่าน IP เครือข่าย (เช่น http://192.168.x.x:5050) แล้วกดแชร์ใหม่ หรือใช้เวอร์ชันที่ deploy แล้ว</small>
+                        }
+                        <small class="wr-share-note">ผู้รับลิงก์ดูข้อมูลได้อย่างเดียว ไม่ต้องเข้าสู่ระบบ · ลิงก์หมดอายุอัตโนมัติ</small>
+                    </div>
+                }
+            </div>
+            <div class="wr-clock">
+                <span id="wrClock">10:24:36</span>
+                <small>23 พฤษภาคม 2567</small>
+            </div>
+            <div class="wr-live-badge"><span class="wr-live-dot"></span> LIVE</div>
+            @if (!ShareMode)
+            {
+                <div class="wr-tab-item-settings" @onclick="ToggleDevMode" style="cursor:pointer;" title="โหมดนักพัฒนา"><i class="bi bi-gear-fill"></i></div>
+            }
+        </div>
+    </div>
+
+    @* ══ WAR ROOM BODY ══ *@
+    <div class="an-body">
+
+        @if (SelectedVersion == 1)
+        {
+            @* ── VERSION 1: Operational Command Center ── *@
+            @* ── ROW 1: TOP 10 / HEATMAP / KPI + ALERTS ── *@
+            <div class="wr-grid-top">
+
+                @* 1. TOP 10 โครงการเสี่ยงสูงสุด (ฟิลเตอร์ตามแท็บ) *@
+                <div class="table-card an-flex-card panel-glow">
+                    <div class="tc-head">
+                        <div class="tc-row1">
+                            <div class="tc-title"><i class="bi bi-exclamation-octagon-fill" style="color:#ef4444"></i> TOP 10 โครงการเสี่ยงสูงสุด [@ActiveTab]</div>
+                            <div class="tc-meta"><span class="bdg-nv">RISK SCORE</span></div>
+                        </div>
+                    </div>
+                    <div class="an-scroll">
+                        <table class="an-tbl">
+                            <thead>
+                                <tr>
+                                    <th>ลำดับ</th>
+                                    <th>ชื่อโครงการ</th>
+                                    <th>หน่วยงาน</th>
+                                    <th>มูลค่าโครงการ</th>
+                                    <th>RISK SCORE</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (FilteredRiskRows.Count == 0)
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center an-muted py-4">ไม่พบโครงการเสี่ยงในหมวดหมู่นี้</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    int index = 1;
+                                    @foreach (var item in FilteredRiskRows)
+                                    {
+                                        <tr>
+                                            <td><span class="an-rank @(index <= 3 ? "top3" : "")">@index</span></td>
+                                            <td>
+                                                <div class="an-strong">@item.Title</div>
+                                            </td>
+                                            <td class="an-muted">@item.Owner</td>
+                                            <td class="an-muted" style="color: #60a5fa; font-weight: 600;">@item.Budget</td>
+                                            <td><span class="wr-risk-score @ScoreClass(item.Score)">@item.Score%</span></td>
+                                        </tr>
+                                        index++;
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="panel-foot-action">
+                        <button class="btn-panel-action" @onclick='() => ClickProvince("ท็อปโครงการเสี่ยงทั้งหมด")'>ดูทั้งหมด <i class="bi bi-arrow-right-short"></i></button>
+                    </div>
+                </div>
+
+                @* 2. RISK HEATMAP แผนที่ความเสี่ยง (คลิกแสดง Modal) *@
+                <div class="table-card an-flex-card panel-glow">
+                    <div class="tc-head">
+                        <div class="tc-row1">
+                            <div class="tc-title"><i class="bi bi-map-fill" style="color:#10b981"></i> แผนที่ความเสี่ยงทั่วประเทศ (RISK HEATMAP)</div>
+                            <div class="tc-meta">
+                                <select class="wr-select-map" @onchange="OnMapTypeChanged">
+                                    <option value="ภาพรวม">ดูตามประเภท</option>
+                                    <option value="จัดซื้อจัดจ้าง">จัดซื้อจัดจ้าง</option>
+                                    <option value="ใบอนุญาต">ใบอนุญาต</option>
+                                    <option value="ร้องเรียน">เรื่องร้องเรียน</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="an-scroll an-map-scroll">
+                        <div class="wr-map-layout">
+                            <div class="wr-thai-map wr-thai-map-3d" role="img" aria-label="โมเดล 3D แผนที่ประเทศไทย">
+                                <canvas id="thailandRiskMap" class="wr-thailand-canvas"></canvas>
+                                <div class="wr-map-legend">
+                                    <span><i class="risk-low"></i>ความเสี่ยงต่ำ</span>
+                                    <span><i class="risk-mid"></i>ความเสี่ยงปานกลาง</span>
+                                    <span><i class="risk-high"></i>ความเสี่ยงสูง</span>
+                                    <span><i class="risk-critical"></i>ความเสี่ยงสูงมาก</span>
+                                </div>
+                            </div>
+                            <div class="wr-map-side">
+                                <div class="an-map-metric">
+                                    <div class="an-muted">ความเสี่ยงรายภูมิภาค</div>
+                                </div>
+                                @foreach (var region in _regions)
+                                {
+                                    <div class="an-row">
+                                        <span>@region.Name</span>
+                                        <strong class="@ScoreTextClass(region.Score)">@region.Score% · @RiskLabel(region.Score)</strong>
+                                    </div>
+                                }
+                                
+                                <div class="an-mini-head" style="margin-top: 10px;">จังหวัดที่มีความเสี่ยงสูงสุด (คลิกเพื่อดูข้อมูล)</div>
+                                @foreach (var province in _byProvince.Take(5))
+                                {
+                                    <div class="an-row wr-clickable-row" @onclick="() => ClickProvince(province.Name)">
+                                        <span>@(province.Index + 1). @province.Name <i class="bi bi-info-circle ms-1" style="font-size: 10px; opacity:0.6;"></i></span>
+                                        <strong class="wr-badge-score">@province.Score%</strong>
+                                    </div>
+                                }
+                                
+                                <button class="btn-panel-action" style="width: 100%; margin-top: 12px; text-align: center; display: block;" @onclick='() => ClickProvince("กรุงเทพมหานคร")'>ดูแผนที่เชิงลึก <i class="bi bi-arrow-right-short"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* 3. KPI REAL-TIME + ALERTS *@
+                <div class="wr-right-column">
+                    
+                    @* KPI Matrix (4 cards) *@
+                    <div class="wr-kpi-matrix">
+                        <div class="wr-kpi-card blue-glow">
+                            <div class="kpi-icon"><i class="bi bi-folder-check"></i></div>
+                            <div class="kpi-body">
+                                <div class="kpi-title">คดีอยู่ระหว่างดำเนินการ</div>
+                                <div class="kpi-value text-blue">@KpiActiveCount <small>คดี</small></div>
+                                <div class="kpi-sub"><span class="kpi-up"><i class="bi bi-arrow-up-short"></i> เพิ่มขึ้น 12%</span></div>
+                            </div>
+                        </div>
+                        <div class="wr-kpi-card green-glow">
+                            <div class="kpi-icon"><i class="bi bi-currency-dollar"></i></div>
+                            <div class="kpi-body">
+                                <div class="kpi-title">มูลค่าความเสียหาย</div>
+                                <div class="kpi-value text-green">@KpiDamageCount <small>ล้านบาท</small></div>
+                                <div class="kpi-sub">ป้องกันได้ <strong style="color:#10b981">@KpiSavedCount ลบ.</strong></div>
+                            </div>
+                        </div>
+                        <div class="wr-kpi-card purple-glow">
+                            <div class="kpi-icon"><i class="bi bi-flag-fill"></i></div>
+                            <div class="kpi-body">
+                                <div class="kpi-title">Red Flag วันนี้</div>
+                                <div class="kpi-value text-purple">@KpiRedFlagCount <small>รายการ</small></div>
+                                <div class="kpi-sub"><span class="kpi-up"><i class="bi bi-arrow-up-short"></i> เพิ่มขึ้น 23%</span></div>
+                            </div>
+                        </div>
+                        <div class="wr-kpi-card gold-glow">
+                            <div class="kpi-icon"><i class="bi bi-chat-left-dots-fill"></i></div>
+                            <div class="kpi-body">
+                                <div class="kpi-title">ร้องเรียนทั้งหมด</div>
+                                <div class="kpi-value text-gold">@KpiTotalComplaints <small>เรื่อง</small></div>
+                                <div class="kpi-sub"><span class="kpi-up"><i class="bi bi-arrow-up-short"></i> เพิ่มขึ้น 15%</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* ALERT & RED FLAG *@
+                    <div class="table-card an-flex-card panel-glow flex-grow-1" style="min-height: 0; display: flex; flex-direction: column;">
+                        <div class="tc-head">
+                            <div class="tc-row1">
+                                <div class="tc-title"><i class="bi bi-bell-fill" style="color:#f87171"></i> ALERT & RED FLAG (แจ้งเตือนความเสี่ยง)</div>
+                                <div class="tc-meta"><a href="#" class="wr-link-action" @onclick='() => ClickProvince("ประวัติการแจ้งเตือนภัยทั้งหมด")'>ดูทั้งหมด</a></div>
+                            </div>
+                        </div>
+                        <div class="an-scroll flex-grow-1">
+                            @if (FilteredAlerts.Count == 0)
+                            {
+                                <div class="p-4 text-center an-muted">ไม่มีรายการแจ้งเตือนในหมวดหมู่นี้</div>
+                            }
+                            else
+                            {
+                                @foreach (var alert in FilteredAlerts)
+                                {
+                                    <div class="an-alert-row">
+                                        <span class="an-alert-time">@alert.Time</span>
+                                        <span class="an-alert-tag @alert.Level">@alert.Type</span>
+                                        <div class="an-alert-body">
+                                            <div class="an-strong">@alert.Title</div>
+                                            <div class="an-muted">@alert.Detail</div>
+                                        </div>
+                                        <span class="wr-risk-score @ScoreClass(alert.Score)">@alert.Score%</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            @* ── ROW 2: TRIPLE CHART / ACTION TRACKING ── *@
+            <div class="wr-grid-bottom">
+
+                @* 1. สถิติข้อมูลภาพรวม (สลับกราฟรายชั่วโมงเมื่อกดแท็บ ร้องเรียน) *@
+                <div class="table-card an-flex-card panel-glow">
+                    <div class="tc-head">
+                        <div class="tc-row1">
+                            <div class="tc-title">
+                                <i class="bi bi-bar-chart-line-fill" style="color: #6366f1;"></i> 
+                                @(ActiveTab == "ร้องเรียน" ? "สถิติเรื่องร้องเรียนรายชั่วโมง (ในรอบ 24 ชม.)" : "สถิติข้อมูลภาพรวม")
+                            </div>
+                            <div class="tc-meta">
+                                <select class="wr-select-map">
+                                    <option>7 วันล่าสุด</option>
+                                    <option>30 วันล่าสุด</option>
+                                    <option>ปีงบประมาณนี้</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="tc-sub">
+                            @(ActiveTab == "ร้องเรียน" 
+                                ? "ข้อมูลวิเคราะห์รายชั่วโมง ตรวจพบการร้องเรียนสูงสุดช่วงเวลา 09:00 - 11:00 น." 
+                                : $"จำนวนเรื่องร้องเรียน {KpiTotalComplaints} เรื่อง (+15% จาก 7 วันที่แล้ว)")
+                        </div>
+                    </div>
+                    <div class="an-scroll p-3">
+                        <div class="wr-triple-charts">
+                            <div class="wr-sub-chart">
+                                <div class="wr-sub-chart-title">@(ActiveTab == "ร้องเรียน" ? "เรื่องร้องเรียนสะสมรายชั่วโมง (09:00-11:00 Peak)" : "จำนวนเรื่องร้องเรียน")</div>
+                                <div class="wr-sub-chart-canvas"><canvas id="chartMonthly"></canvas></div>
+                            </div>
+                            <div class="wr-sub-chart">
+                                <div class="wr-sub-chart-title">ประเภทความเสี่ยง</div>
+                                <div class="wr-sub-chart-canvas"><canvas id="chartRisk"></canvas></div>
+                                <div class="wr-donut-legend">
+                                    <div><i style="background:#dc2626"></i>จัดซื้อจัดจ้าง 48%</div>
+                                    <div><i style="background:#ea580c"></i>ใบอนุญาต 25%</div>
+                                    <div><i style="background:#d97706"></i>งบประมาณ 15%</div>
+                                    <div><i style="background:#65a30d"></i>บุคลากร 7%</div>
+                                    <div><i style="background:#2563eb"></i>อื่นๆ 5%</div>
+                                </div>
+                            </div>
+                            <div class="wr-sub-chart">
+                                <div class="wr-sub-chart-title">มูลค่าความเสียหาย (ล้านบาท)</div>
+                                <div class="wr-sub-chart-canvas"><canvas id="chartInvestigation"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* 2. ACTION TRACKING (ติดตามการสั่งการ) *@
+                <div class="table-card an-flex-card panel-glow">
+                    <div class="tc-head">
+                        <div class="tc-row1">
+                            <div class="tc-title"><i class="bi bi-list-check" style="color:#14b8a6"></i> ACTION TRACKING (ติดตามการสั่งการ) [@ActiveTab]</div>
+                            <div class="tc-meta"><a href="#" class="wr-link-action" @onclick='() => ClickProvince("ติดตามการสั่งการทั้งหมด")'>ดูทั้งหมด</a></div>
+                        </div>
+                    </div>
+                    <div class="an-scroll">
+                        <table class="an-tbl">
+                            <thead>
+                                <tr>
+                                    <th>ลำดับ</th>
+                                    <th>เรื่อง / โครงการ</th>
+                                    <th>หน่วยงานรับผิดชอบ</th>
+                                    <th>สถานะ</th>
+                                    <th>วันที่สั่งการ</th>
+                                    <th>กำหนดแล้วเสร็จ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (FilteredActions.Count == 0)
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center an-muted py-4">ไม่มีงานติดตามที่อยู่ในหมวดหมู่นี้</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    int actIdx = 1;
+                                    @foreach (var item in FilteredActions)
+                                    {
+                                        <tr>
+                                            <td>@actIdx</td>
+                                            <td>
+                                                <div class="an-strong">@item.Title</div>
+                                            </td>
+                                            <td class="an-muted">@item.Owner</td>
+                                            <td><span class="an-dot @item.Level"></span>@item.Status</td>
+                                            <td class="an-muted">@item.Due</td>
+                                            <td class="an-muted" style="color: #f87171;">@item.Deadline</td>
+                                        </tr>
+                                        actIdx++;
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        }
+        else if (SelectedVersion == 2)
+        {
+            @* ── VERSION 2: Executive Strategic Dashboard ── *@
+            <div style="display: grid; grid-template-rows: auto 1fr; gap: 12px; min-height: 0; flex: 1;">
+                <div class="wr-grid-top v2-grid-layout" style="display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 12px; min-height: 0;">
+                    
+                    @* 1. 5 อันดับกระทรวงจัดซื้อจัดจ้างเสี่ยงภัยสูงสุด (มูลค่าความเสียหาย) *@
+                    <div class="table-card an-flex-card panel-glow wr-hud-card">
+                        <div class="tc-head">
+                            <div class="tc-row1">
+                                <div class="tc-title"><i class="bi bi-bank" style="color:var(--wr-blue)"></i> 5 อันดับกระทรวงจัดซื้อจัดจ้างเสี่ยงภัยสูงสุด (มูลค่าเสี่ยงสะสม)</div>
+                                <span class="bdg-nv" style="background: rgba(59, 130, 246, 0.15); color: var(--wr-blue);">STRATEGIC FINANCIAL</span>
+                            </div>
+                        </div>
+                        <div class="chart-container" style="flex: 1; min-height: 180px; padding: 15px; position: relative;">
+                            <canvas id="chartMinistryV2" style="height: 100%; width: 100%;"></canvas>
+                        </div>
+                    </div>
+
+                    @* 2. แผนที่ยุทธศาสตร์เชิงพื้นที่แบบมินิ *@
+                    <div class="table-card an-flex-card panel-glow wr-hud-card">
+                        <div class="tc-head">
+                            <div class="tc-row1">
+                                <div class="tc-title"><i class="bi bi-geo-alt-fill" style="color:var(--wr-green)"></i> แผนที่ความเสี่ยงพื้นที่สั่งการ</div>
+                                <span class="bdg-nv" style="background: rgba(16, 185, 129, 0.15); color: var(--wr-green);">GEOLOCATION MAP</span>
+                            </div>
+                        </div>
+                        <div style="flex: 1; display: grid; grid-template-columns: 1.15fr 1fr; padding: 12px; gap: 12px; min-height: 180px;">
+                            <div style="position: relative; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.1); border-radius: 6px;">
+                                <canvas id="thailandRiskMapV2" class="wr-thailand-canvas" style="max-height: 100%; max-width: 100%;"></canvas>
+                            </div>
+                            <div style="display: flex; flex-direction: column; justify-content: center; gap: 8px;">
+                                <div class="an-mini-head" style="font-weight: 800; letter-spacing: 0.05em; color: var(--wr-text-muted);">ดัชนีประสิทธิภาพป้องปราม</div>
+                                <div style="background: rgba(16, 185, 129, 0.05); padding: 8px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.15);">
+                                    <small class="an-muted" style="font-size: 0.65rem; display: block; color: var(--wr-text-muted);">ประสิทธิภาพภาพรวม</small>
+                                    <strong style="font-size: 1.05rem; color: var(--wr-green); font-weight: 800;">94.2% · ระดับสูงมาก</strong>
+                                </div>
+                                <div style="background: rgba(59, 130, 246, 0.05); padding: 8px; border-radius: 6px; border: 1px solid rgba(59, 130, 246, 0.15);">
+                                    <small class="an-muted" style="font-size: 0.65rem; display: block; color: var(--wr-text-muted);">งบประมาณกู้คืนสะสม</small>
+                                    <strong style="font-size: 1.05rem; color: var(--wr-blue); font-weight: 800;">@KpiSavedCount ล้านบาท</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* 3. KPI การเงินขนาดใหญ่ของผู้บริหาร *@
+                    <div class="wr-right-column" style="display: flex; flex-direction: column; gap: 12px;">
+                        <div class="table-card panel-glow wr-hud-card" style="flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 16px; background: linear-gradient(135deg, rgba(239, 68, 68, 0.07), rgba(0, 0, 0, 0)) !important; border-left: 4px solid #ef4444 !important; min-height: 85px;">
+                            <small class="an-muted" style="font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(239, 68, 68, 0.85);">งบประมาณจัดซื้อเสี่ยงสะสมวันนี้</small>
+                            <div style="font-size: 2.2rem; font-weight: 900; color: #ef4444; margin: 4px 0; line-height: 1; font-family: monospace;">@KpiDamageCount <span style="font-size: 0.9rem; font-weight: 600; color: var(--wr-text-muted);">ล้านบาท</span></div>
+                            <div style="font-size: 0.65rem; color: #f87171; font-weight: bold;"><i class="bi bi-arrow-up-short"></i> สูงกว่ารอบสัปดาห์ที่แล้ว 18.2%</div>
+                        </div>
+                        <div class="table-card panel-glow wr-hud-card" style="flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 16px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.07), rgba(0, 0, 0, 0)) !important; border-left: 4px solid var(--wr-green) !important; min-height: 85px;">
+                            <small class="an-muted" style="font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(16, 185, 129, 0.85);">คะแนนรวมธรรมาภิบาลแห่งชาติ</small>
+                            <div style="font-size: 2.2rem; font-weight: 900; color: var(--wr-green); margin: 4px 0; line-height: 1; font-family: monospace;">88.5 <span style="font-size: 0.9rem; font-weight: 600; color: var(--wr-text-muted);">/ 100</span></div>
+                            <div style="font-size: 0.65rem; color: #34d399; font-weight: bold;"><i class="bi bi-check-circle-fill"></i> ผ่านเกณฑ์มาตรฐานสากล</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="wr-grid-bottom" style="display: grid; grid-template-columns: 2fr 1.05fr; gap: 12px; min-height: 0;">
+                    @* 1. กราฟแนวโน้มงบประมาณเสี่ยงระยะยาว *@
+                    <div class="table-card an-flex-card panel-glow wr-hud-card">
+                        <div class="tc-head">
+                            <div class="tc-row1">
+                                <div class="tc-title"><i class="bi bi-graph-up-arrow" style="color:var(--wr-purple)"></i> แนวโน้มอัตราเสี่ยงทุจริตงบประมาณแผ่นดินปี 2568 - 2569</div>
+                                <span class="bdg-nv" style="background: rgba(139, 92, 246, 0.15); color: var(--wr-purple);">LONG-TERM PROJECTION</span>
+                            </div>
+                        </div>
+                        <div class="chart-container" style="flex: 1; min-height: 180px; padding: 15px; position: relative;">
+                            <canvas id="chartTrendV2" style="height: 100%; width: 100%;"></canvas>
+                        </div>
+                    </div>
+
+                    @* 2. กล่องติดตามคำสั่งการด่วนผู้บริหาร *@
+                    <div class="table-card an-flex-card panel-glow wr-hud-card">
+                        <div class="tc-head">
+                            <div class="tc-row1">
+                                <div class="tc-title"><i class="bi bi-check2-square" style="color:var(--wr-gold)"></i> สถานะคำสั่งการด่วนผู้บริหาร (Executive Directives)</div>
+                                <span class="bdg-nv" style="background: rgba(200, 169, 110, 0.15); color: var(--wr-gold);">SLA MONITOR</span>
+                            </div>
+                        </div>
+                        <div class="an-scroll" style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+                            @foreach (var item in _allActions.Take(3))
+                            {
+                                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(128,128,128,0.04); padding: 8px 12px; border-radius: 6px; border-left: 3px solid @(item.Level == "red" ? "#ef4444" : item.Level == "amber" ? "#f59e0b" : "#10b981"); border-top: 1px solid rgba(255,255,255,0.02); border-right: 1px solid rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                    <div>
+                                        <div style="font-size: 0.75rem; font-weight: 800; color: var(--wr-text-main);">@item.Title</div>
+                                        <small class="an-muted" style="font-size: 0.65rem;">ผู้บัญชาการสั่งการ · @item.Owner รับผิดชอบ</small>
+                                    </div>
+                                    <span style="font-size: 0.62rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: var(--wr-text-main); font-weight: 700;">@item.Status</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (SelectedVersion == 3)
+        {
+            @* ── VERSION 3: Geographic Risk Intelligence ── *@
+            <div style="display: grid; grid-template-columns: 1.8fr 1fr; gap: 12px; min-height: 0; flex: 1;">
+                @* 1. แผนที่ประเทศไทยขนาดยักษ์ *@
+                <div class="table-card an-flex-card panel-glow wr-hud-card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+                    <div class="tc-head" style="padding: 12px 16px;">
+                        <div class="tc-row1">
+                            <div class="tc-title"><i class="bi bi-geo-alt-fill" style="color:var(--wr-green)"></i> ระบบสารสนเทศภูมิศาสตร์ความเสี่ยงทุจริต (Geographic Risk GIS Screen)</div>
+                            <span class="bdg-nv" style="background: rgba(16, 185, 129, 0.15); color: var(--wr-green);"><span class="wr-live-dot" style="margin-right: 4px;"></span>LIVE SCANNED</span>
+                        </div>
+                    </div>
+                    <div style="flex: 1; position: relative; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.15); min-height: 380px;">
+                        <canvas id="thailandRiskMapV3" class="wr-thailand-canvas" style="height: 100%; width: 100%; max-height: calc(100vh - 210px);"></canvas>
+                        
+                        @* monospaced cyber radar coordinates *@
+                        <div class="wr-map-hud-overlay">
+                            <span><span>SYS:</span> <span style="color:#00ff66">ONLINE</span></span>
+                            <span><span>FPS:</span> <span>60.00</span></span>
+                            <span><span>LAT:</span> <span>13.7367° N</span></span>
+                            <span><span>LON:</span> <span>100.5231° E</span></span>
+                            <span><span>SECTOR:</span> <span>TH-ALL</span></span>
+                            <span><span>SENSORS:</span> <span style="color:#60a5fa">ACTIVE</span></span>
+                            <span><span>TARGETS:</span> <span style="color:#ef4444; font-weight:bold;">@_byProvince.Count DETECTED</span></span>
+                        </div>
+
+                        <div class="wr-map-legend" style="position: absolute; bottom: 15px; left: 15px; background: rgba(6, 8, 20, 0.85); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--wr-card-border); display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+                            <span style="display: flex; align-items: center; gap: 6px; font-size: 0.68rem; font-weight: 700; color: #e2e8f0; margin-bottom: 2px;"><i class="risk-low" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: #10b981;"></i>ความเสี่ยงต่ำ (&lt; 65%)</span>
+                            <span style="display: flex; align-items: center; gap: 6px; font-size: 0.68rem; font-weight: 700; color: #e2e8f0; margin-bottom: 2px;"><i class="risk-mid" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: #facc15;"></i>ความเสี่ยงปานกลาง (65-74%)</span>
+                            <span style="display: flex; align-items: center; gap: 6px; font-size: 0.68rem; font-weight: 700; color: #e2e8f0; margin-bottom: 2px;"><i class="risk-high" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: #f97316;"></i>ความเสี่ยงสูง (75-84%)</span>
+                            <span style="display: flex; align-items: center; gap: 6px; font-size: 0.68rem; font-weight: 700; color: #e2e8f0;"><i class="risk-critical" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: #ef4444;"></i>ความเสี่ยงสูงมาก (&gt;= 85%)</span>
+                        </div>
+                    </div>
+                </div>
+
+                @* 2. ตารางและชาร์ตประเภทคดีภูมิภาค *@
+                <div style="display: flex; flex-direction: column; gap: 12px; min-height: 0;">
+                    <div class="table-card an-flex-card panel-glow wr-hud-card" style="flex: 1.2; min-height: 200px;">
+                        <div class="tc-head">
+                            <div class="tc-row1">
+                                <div class="tc-title"><i class="bi bi-card-list" style="color:var(--wr-blue)"></i> จังหวัดเป้าหมายตรวจสอบเข้มข้นสูงสุด (Target Area Radar)</div>
+                                <span class="bdg-nv" style="background: rgba(59, 130, 246, 0.15); color: var(--wr-blue);">TOP DETECTED</span>
+                            </div>
+                        </div>
+                        <div class="an-scroll">
+                            <table class="an-tbl">
+                                <thead>
+                                    <tr><th>ลำดับ</th><th>จังหวัด</th><th>ดัชนีเสี่ยงเฉลี่ย</th><th>ระดับอันตราย</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var province in _byProvince)
+                                    {
+                                        <tr class="wr-clickable-row" @onclick="() => ClickProvince(province.Name)">
+                                            <td><span class="an-rank @(province.Index + 1 <= 3 ? "top3" : "")">@(province.Index + 1)</span></td>
+                                            <td><strong>@province.Name</strong> <i class="bi bi-info-circle ms-1 text-blue" style="font-size: 9px; opacity: 0.8;"></i></td>
+                                            <td style="font-weight: 800; color: #ef4444; font-family: monospace; font-size: 0.78rem;">@province.Score%</td>
+                                            <td><span class="wr-risk-score @ScoreClass(province.Score)">@RiskLabel(province.Score)</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="table-card an-flex-card panel-glow wr-hud-card" style="flex: 1; min-height: 150px;">
+                        <div class="tc-head">
+                            <div class="tc-row1">
+                                <div class="tc-title"><i class="bi bi-pie-chart-fill" style="color:var(--wr-purple)"></i> สัดส่วนประเภทความเสี่ยงแผ่นดิน</div>
+                                <span class="bdg-nv" style="background: rgba(139, 92, 246, 0.15); color: var(--wr-purple);">RATIO</span>
+                            </div>
+                        </div>
+                        <div class="an-scroll p-3" style="display: grid; grid-template-columns: 1.1fr 1fr; align-items: center; justify-content: center; gap: 10px;">
+                            <div style="position: relative; height: 100px;">
+                                <canvas id="chartRiskV3" style="max-height: 100px; max-width: 100%;"></canvas>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.65rem;">
+                                <div style="font-weight: bold;"><i style="background:#dc2626; width:8px; height:8px; display:inline-block; border-radius:50%; margin-right:4px;"></i>จัดซื้อฯ 48%</div>
+                                <div style="font-weight: bold;"><i style="background:#ea580c; width:8px; height:8px; display:inline-block; border-radius:50%; margin-right:4px;"></i>ใบอนุญาต 25%</div>
+                                <div style="font-weight: bold;"><i style="background:#d97706; width:8px; height:8px; display:inline-block; border-radius:50%; margin-right:4px;"></i>งบประมาณ 15%</div>
+                                <div style="font-weight: bold;"><i style="background:#65a30d; width:8px; height:8px; display:inline-block; border-radius:50%; margin-right:4px;"></i>บุคลากร 7%</div>
+                                <div style="font-weight: bold;"><i style="background:#2563eb; width:8px; height:8px; display:inline-block; border-radius:50%; margin-right:4px;"></i>อื่นๆ 5%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (SelectedVersion == 4)
+        {
+            @* ── VERSION 4: Temporal & Forecast Dashboard ── *@
+            <div style="display: flex; flex-direction: column; gap: 12px; min-height: 0; flex: 1;">
+                @* 1. กราฟแนวโน้มเวลาเต็มหน้ากว้าง *@
+                <div class="table-card an-flex-card panel-glow wr-hud-card" style="flex: 0.9; min-height: 160px;">
+                    <div class="tc-head">
+                        <div class="tc-row1">
+                            <div class="tc-title"><i class="bi bi-clock-history" style="color:var(--wr-blue)"></i> การเฝ้าระวังเชิงความถี่: ดัชนีเรื่องร้องเรียนรายชั่วโมงเทียบกับคลื่นคาดการณ์</div>
+                            <span class="bdg-nv" style="background: rgba(59, 130, 246, 0.15); color: var(--wr-blue);"><span class="wr-live-dot" style="background: var(--wr-blue); margin-right: 4px;"></span>AI DEEP SCANNING</span>
+                        </div>
+                        <div class="tc-sub">ตรวจพบช่วงสัญญาณผิดปกติสะสมสูงสุดเวลา 09:00 - 11:00 น. (Peak Index Alert Pattern)</div>
+                    </div>
+                    <div style="flex: 1; min-height: 100px; padding: 12px; position: relative;">
+                        <canvas id="chartTrendV4" style="height: 100%; width: 100%;"></canvas>
+                    </div>
+                </div>
+
+                @* 2. 3 คอลัมน์ด้านล่าง *@
+                <div style="display: grid; grid-template-columns: 1fr 1.15fr 0.85fr; gap: 12px; flex: 1.1; min-height: 0;">
+                    @* คอลัมน์ 1: คาดการณ์ความเสี่ยงรายภาค 30 วันล่วงหน้า *@
+                    <div class="table-card an-flex-card panel-glow wr-hud-card" style="min-height: 180px;">
+                        <div class="tc-head">
+                            <div class="tc-row1">
+                                <div class="tc-title"><i class="bi bi-graph-up" style="color:var(--wr-green)"></i> พยากรณ์ความเสี่ยง 30 วันล่วงหน้า</div>
+                                <span class="bdg-nv" style="background: rgba(16, 185, 129, 0.15); color: var(--wr-green);">FORECAST</span>
+                            </div>
+                        </div>
+                        <div class="an-scroll">
+                            <table class="an-tbl">
+                                <thead>
+                                    <tr><th>ภูมิภาค</th><th>ดัชนีคาดการณ์</th><th>แนวโน้มดัชนี</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var region in _regions)
+                                    {
+                                        <tr>
+                                            <td><strong>@region.Name</strong></td>
+                                            <td style="font-weight: 800; color:var(--wr-blue); font-family: monospace;">@(region.Score + 4)%</td>
+                                            <td style="font-weight: bold;"><span style="color:#ef4444;"><i class="bi bi-arrow-up-right"></i> +4.0%</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    @* คอลัมน์ 2: Anomaly Alert Log -> Using monospaced green diagnostic terminal! *@
+                    <div class="table-card an-flex-card panel-glow wr-hud-card" style="min-height: 180px;">
+                        <div class="tc-head">
+                            <div class="tc-row1">
+                                <div class="tc-title"><i class="bi bi-terminal" style="color:#00ff66"></i> สถานะความเสี่ยงผิดสังเกต (Anomaly Cyber Logs)</div>
+                                <span class="bdg-nv" style="background: rgba(0, 255, 102, 0.15); color: #00ff66; font-family: monospace;">STABLE</span>
+                            </div>
+                        </div>
+                        <div class="an-scroll" style="padding: 8px;">
+                            <div class="wr-terminal-window" style="height: 100%; min-height: 140px; margin: 0;">
+                                <div class="wr-terminal-line">
+                                    <span class="wr-terminal-time">[SYS_INIT]</span>
+                                    <span class="wr-terminal-text" style="color: #00ff66;">AI AGENT VERIFYING SYSTEM REGISTRY...</span>
+                                </div>
+                                <div class="wr-terminal-line">
+                                    <span class="wr-terminal-time">[SYS_INFO]</span>
+                                    <span class="wr-terminal-text" style="color: #00ff66;">CORE ENGINE ONLINE - ACTIVE POOL WATCHER</span>
+                                </div>
+                                @foreach (var alert in _allAlerts.Where(a => a.Level == "red" || a.Level == "amber").Take(4))
+                                {
+                                    <div class="wr-terminal-line">
+                                        <span class="wr-terminal-time">[@alert.Time]</span>
+                                        <span class="wr-terminal-status" style="color: @(alert.Level == "red" ? "#ff453a" : "#ffd60a")">[@alert.Level.ToUpper()]</span>
+                                        <span class="wr-terminal-text">@alert.Type: @alert.Title (SCORE:@alert.Score%)</span>
+                                    </div>
+                                }
+                                <div class="wr-terminal-line">
+                                    <span class="wr-terminal-time">[SYS_DONE]</span>
+                                    <span class="wr-terminal-text" style="color: #00ff66; text-shadow: 0 0 4px #00ff66;">LISTENING ON SOCKET e-GP / GFMIS...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* คอลัมน์ 3: เกจวัดดัชนี SLA ประจำปี *@
+                    <div class="table-card an-flex-card panel-glow wr-hud-card" style="min-height: 180px;">
+                        <div class="tc-head">
+                            <div class="tc-row1">
+                                <div class="tc-title"><i class="bi bi-compass" style="color:var(--wr-gold)"></i> อัตราบรรลุเป้าหมายมาตรการ (SLA Matrix)</div>
+                                <span class="bdg-nv" style="background: rgba(200, 169, 110, 0.15); color: var(--wr-gold);">TARGET</span>
+                            </div>
+                        </div>
+                        <div class="an-scroll p-3" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap: 8px;">
+                            <div style="position:relative; width: 80px; height: 80px;">
+                                <canvas id="chartComparisonV4" style="max-height:80px; max-width:80px;"></canvas>
+                            </div>
+                            <div style="text-align:center;">
+                                <strong style="font-size: 1.15rem; color:var(--wr-green); font-family: monospace; font-weight: 900;">88.2% SLA</strong>
+                                <small class="an-muted" style="display:block; font-size:0.65rem; font-weight: 700; color: var(--wr-text-muted);">บรรลุเป้าหมายการป้องกันภาครัฐ</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (SelectedVersion == 5)
+        {
+            @* ── VERSION 5: NOC Crisis Command Center ── *@
+            <div style="display: grid; grid-template-columns: 1.15fr 1fr; gap: 12px; min-height: 0; flex: 1;">
+                
+                @* 1. ฝั่งซ้าย: Live Alert Feed ไหลสด -> Flashing Red corner hud-card! *@
+                <div class="table-card an-flex-card panel-glow wr-hud-card wr-hud-card-red" style="display:flex; flex-direction:column; min-height:300px;">
+                    <div class="tc-head" style="border-bottom-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05);">
+                        <div class="tc-row1">
+                            <div class="tc-title" style="color: #f87171;"><span class="wr-live-dot" style="margin-right:6px;"></span> แหล่งข้อมูลเตือนภัยและล็อคเป้าทุจริตด่วน (Live NOC Stream)</div>
+                            <span class="bdg-nv" style="background:#ef4444; color:#fff; font-weight:900; animation: wr-pulse 1.2s infinite; box-shadow: 0 0 10px rgba(239, 68, 68, 0.45);">CRITICAL RISK DETECTED</span>
+                        </div>
+                    </div>
+                    <div class="an-scroll" style="padding: 12px; display:flex; flex-direction:column; gap: 8px; background: rgba(0, 0, 0, 0.15);">
+                        @foreach (var alert in _allAlerts)
+                        {
+                            <div style="display:flex; gap:12px; padding:10px; background: rgba(239, 68, 68, 0.04); border:1px solid @(alert.Level == "red" ? "rgba(239, 68, 68, 0.3)" : alert.Level == "amber" ? "rgba(245, 158, 11, 0.25)" : "rgba(59, 130, 246, 0.2)"); border-radius:6px; position:relative; align-items:center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                <div style="width:8px; height:8px; background:@(alert.Level == "red" ? "#ef4444" : alert.Level == "amber" ? "#f59e0b" : "#3b82f6"); border-radius:50%; flex-shrink:0; @(alert.Level == "red" ? "animation: wr-pulse 1.2s infinite;" : "")"></div>
+                                <div style="flex:1;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <strong style="font-size:0.75rem; color:#fff; font-weight: 800;">@alert.Title</strong>
+                                        <span style="font-size:0.6rem; color:var(--wr-text-muted); font-family: monospace; font-weight: bold;">@alert.Time น.</span>
+                                    </div>
+                                    <div style="font-size:0.65rem; color:var(--wr-text-muted); margin-top:2px;">@alert.Detail</div>
+                                </div>
+                                <span class="wr-risk-score @ScoreClass(alert.Score)" style="font-size: 0.65rem; padding: 2px 4px; flex-shrink:0;">@alert.Score%</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @* 2. ฝั่งขวา: Joint Command Board & SLA *@
+                <div style="display:flex; flex-direction:column; gap:12px; min-height:0;">
+                    @* บอร์ดติดตามงานเผชิญเหตุและประสานงานด่วน *@
+                    <div class="table-card an-flex-card panel-glow wr-hud-card" style="flex:1.4; min-height:180px;">
+                        <div class="tc-head">
+                            <div class="tc-row1">
+                                <div class="tc-title"><i class="bi bi-shield-fill-check" style="color:var(--wr-blue)"></i> บอร์ดประสานงานปราบปรามทุจริตด่วน (Joint Command Board)</div>
+                                <span class="bdg-nv" style="background: rgba(59, 130, 246, 0.15); color: var(--wr-blue);">SECURITY DEPT</span>
+                            </div>
+                        </div>
+                        <div class="an-scroll">
+                            <table class="an-tbl">
+                                <thead>
+                                    <tr><th>เรื่องสืบสวนเร่งด่วน</th><th>ผู้รับผิดชอบหลัก</th><th>คำสั่งด่วนหน้างาน</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in _allActions.Take(3))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div style="font-size:0.75rem; font-weight:800; color:#fff;">@item.Title</div>
+                                                <small class="an-muted" style="font-size:0.6rem;">สแกนดัชนีวิกฤตเมื่อ @item.Due</small>
+                                            </td>
+                                            <td class="an-muted" style="font-size:0.7rem; font-weight:bold;">@item.Owner</td>
+                                            <td style="display:flex; gap:6px; border:none; padding: 8px 4px; align-items: center;">
+                                                <button class="wr-tactical-btn" style="font-size: 0.58rem; padding: 3px 6px; border-radius: 4px; margin: 0;" @onclick='() => ClickProvince("ส่งทีมร่วมปราบปรามทันที: " + item.Title)'>ส่งทีม</button>
+                                                <button class="wr-tactical-btn wr-tactical-btn-blue" style="font-size: 0.58rem; padding: 3px 6px; border-radius: 4px; margin: 0;" @onclick='() => ClickProvince("ระงับงบประมาณชั่วคราว: " + item.Title)'>ระงับงบ</button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        @* Tactical interactive operations panel *@
+                        <div style="padding: 10px; border-top: 1px solid var(--wr-card-border); background: rgba(0, 0, 0, 0.2);">
+                            <div class="an-mini-head" style="margin-bottom: 6px; font-weight: 800; color: #ef4444; font-size: 0.6rem; letter-spacing: 0.05em;"><i class="bi bi-radioactive"></i> CRISIS CONTROLLER DIRECT ACCESS</div>
+                            <div class="wr-tactical-grid">
+                                <button class="wr-tactical-btn" @onclick='() => ClickProvince("ส่งกองบังคับการร่วม (ป.ป.ท./ป.ป.ช.) ลุยหน้างานตรวจสอบทันควัน")'>
+                                    <i class="bi bi-shield-fill-exclamation"></i> สั่งการ ป.ป.ท. ด่วน
+                                </button>
+                                <button class="wr-tactical-btn wr-tactical-btn-blue" @onclick='() => ClickProvince("ประสาน ป.ป.ช. ยื่นคัดค้าน TOR")'>
+                                    <i class="bi bi-shield-fill-check"></i> ประสาน ป.ป.ช.
+                                </button>
+                                <button class="wr-tactical-btn wr-tactical-btn-blue" @onclick='() => ClickProvince("ประสาน DSI สืบสวนเชิงลึกทางการเงิน")'>
+                                    <i class="bi bi-cash-coin"></i> ประสาน DSI
+                                </button>
+                                <button class="wr-tactical-btn" @onclick='() => ClickProvince("สั่งระงับธุรกรรมและการเบิกจ่ายเงินแผ่นดินโครงการเป้าหมายทั้งหมด")' style="border-color: #ef4444; color: #ef4444; font-weight: bold;">
+                                    <i class="bi bi-slash-circle-fill"></i> ระงับธุรกรรมด่วน
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* SLA KPI chart *@
+                    <div class="table-card an-flex-card panel-glow wr-hud-card" style="flex:1; min-height:120px;">
+                        <div class="tc-head">
+                            <div class="tc-row1">
+                                <div class="tc-title"><i class="bi bi-clock-fill" style="color:var(--wr-green)"></i> ดัชนีความเร็วตอบสนองภัยคุกคามสะสม (Response Time SLA)</div>
+                                <span class="bdg-nv" style="background: rgba(16, 185, 129, 0.15); color: var(--wr-green);">RESPONSE RATE</span>
+                            </div>
+                        </div>
+                        <div class="an-scroll p-3" style="display:grid; grid-template-columns:1fr 1.2fr; align-items:center; justify-content:center; gap: 10px;">
+                            <div style="position:relative; max-height:80px; display: flex; align-items: center; justify-content: center;">
+                                <canvas id="chartSlaV5" style="max-height:80px; max-width:100%;"></canvas>
+                            </div>
+                            <div style="display:flex; flex-direction:column; justify-content:center;">
+                                <div style="font-size: 1.25rem; font-weight:900; color:var(--wr-green); font-family: monospace;">88% SLA ACCELERATION</div>
+                                <div style="font-size:0.6rem; color:var(--wr-text-muted); font-weight: 700; margin-top: 2px;">ตรวจเข้าหน้างานได้ภายใน 24 ชม. ของสัญญาณเตือน Red Flag เพื่อให้สามารถระงับยับยั้งความเสียหายได้อย่างทันเวลาก่อนที่จะมีการอนุมัติเสร็จสมบูรณ์</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (SelectedVersion == 6)
+        {
+            @* ── VERSION 6: Next-Gen War Room (กิจกรรม 12 & 4 Feedback) ── *@
+            <div class="v6-layout font-sarabun">
+                
+                @* แถวหลักกลาง: แบ่งสัดส่วน 3 คอลัมน์ (29% | 42% | 29%) *@
+                @* โครงสร้างแบบ Asymmetric Cyber HUD Grid Layout เพื่อความแปลกใหม่ของ ป.ป.ท. *@
+                @* โครงสร้างใหม่: แผนที่ประเทศไทยฝั่งซ้ายยาวเต็มแกน (Left Sidebar Map) และ Dashboard ฝั่งขวา *@
+                <div class="v6-main-layout">
+                    
+                    @* คอลัมน์ซ้าย (32%): แผนที่ความเสี่ยงประเทศไทยแนวตั้งยาวเต็มหน้าจอ *@
+                    <div class="v6-main-left">
+                        @* แผงหลัก: แผนที่ประเทศไทย *@
+                        <div class="table-card an-flex-card panel-glow map-hud-card" style="position:relative; flex: 1; min-height: 0; display: flex; flex-direction: column;">
+                            <div class="tc-head">
+                                <div class="tc-row1">
+                                    <div class="tc-title"><i class="bi bi-map-fill text-emerald"></i> แผนที่เรื่องร้องเรียนรายเขต ปปท. (ปีงบ 2569)</div>
+                                    <span class="bdg-nv border-emerald text-emerald font-monospace uppercase">รวม @_heatTotal เรื่อง</span>
+                                </div>
+                            </div>
+                            <div class="v6-map-area" style="flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative;">
+                                <ThailandHeatmap Zones="_heatZones" MaxValue="_heatMax" ValueLabel="เรื่องร้องเรียน" SelectedZone="SelectedHeatZone" OnZoneClick="OnHeatZoneClick" />
+                                <div style="text-align:center; font-size:12px; color:#94a3b8; padding:4px 0; flex-shrink:0;">
+                                    ส่วนกลาง (กปท.1–5 + กอท.): <b style="color:#e2e8f0">@_centralCount</b> เรื่อง — ไม่มีอาณาเขตบนแผนที่
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    
+                    @* คอลัมน์ขวา (68%): Dashboard ข้อมูลอื่นๆ ทั้งหมด *@
+                    <div class="v6-main-right">
+                        @* 1. แผง KPI 6 ใบ: ยอดรวม 2 + มาตรา 4 (Horizontal Law HUD Panels) *@
+                        <div class="v6-law-hud-row">
+                            <div class="v6-sec-card border-yellow v6-sec-card-click" title="กดเพื่อดูแยกรายปี" @onclick='() => OpenMetricDrillAsync("accum")'>
+                                <div class="v6-sec-header" style="flex-direction: column; align-items: flex-start;">
+                                    <span class="v6-sec-title">สะสมทั้งหมด</span>
+                                    <span class="v6-sec-subtitle">พ.ศ. 2551–2569</span>
+                                </div>
+                                <div class="v6-sec-value">
+                                    @_accumTotal.ToString("N0") <small>เรื่อง</small>
+                                </div>
+                            </div>
+
+                            <div class="v6-sec-card border-cyan v6-sec-card-click" title="กดเพื่อดูแยกรายเขต" @onclick='() => OpenMetricDrillAsync("all")'>
+                                <div class="v6-sec-header" style="flex-direction: column; align-items: flex-start;">
+                                    <span class="v6-sec-title">รับปีงบ 2569</span>
+                                    <span class="v6-sec-subtitle">ณ 30 พ.ย. 2568</span>
+                                </div>
+                                <div class="v6-sec-value text-emerald">
+                                    @_heatTotal <small>เรื่อง</small>
+                                </div>
+                            </div>
+
+                            <div class="v6-sec-card border-cyan v6-sec-card-click" title="กดเพื่อดูรายละเอียด" @onclick='() => OpenMetricDrillAsync("M181k")'>
+                                <div class="v6-sec-header" style="flex-direction: column; align-items: flex-start;">
+                                    <span class="v6-sec-title">ม.18/1ก</span>
+                                    <span class="v6-sec-subtitle">ไต่สวนเอง</span>
+                                </div>
+                                <div class="v6-sec-value text-cyan">
+                                    @V6Sec18_1gVal <small>เรื่อง</small>
+                                </div>
+                            </div>
+
+                            <div class="v6-sec-card border-blue v6-sec-card-click" title="กดเพื่อดูแยกรายเขต" @onclick='() => OpenMetricDrillAsync("M184")'>
+                                <div class="v6-sec-header" style="flex-direction: column; align-items: flex-start;">
+                                    <span class="v6-sec-title">ม.18/4</span>
+                                    <span class="v6-sec-subtitle">พงส. ส่งสำนวน</span>
+                                </div>
+                                <div class="v6-sec-value text-blue">
+                                    @V6Sec18_4Val <small>เรื่อง</small>
+                                </div>
+                            </div>
+
+                            <div class="v6-sec-card border-purple v6-sec-card-click" title="กดเพื่อดูแยกรายเขต" @onclick='() => OpenMetricDrillAsync("M62")'>
+                                <div class="v6-sec-header" style="flex-direction: column; align-items: flex-start;">
+                                    <span class="v6-sec-title">ม.62 / 18/1(ข)</span>
+                                    <span class="v6-sec-subtitle">ทำเองรับเอง</span>
+                                </div>
+                                <div class="v6-sec-value text-purple">
+                                    @V6Sec62Val <small>เรื่อง</small>
+                                </div>
+                            </div>
+
+                            <div class="v6-sec-card border-yellow v6-sec-card-click" title="กดเพื่อดูรายละเอียด" @onclick='() => OpenMetricDrillAsync("M582")'>
+                                <div class="v6-sec-header" style="flex-direction: column; align-items: flex-start;">
+                                    <span class="v6-sec-title">ม.58/2</span>
+                                    <span class="v6-sec-subtitle">ไต่สวนเร่งด่วน</span>
+                                </div>
+                                <div class="v6-sec-value text-yellow">
+                                    @V6Sec58_2Val <small>เรื่อง</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        @* 2. จัดกล่องข้อมูลแถวกลาง: กราฟเปรียบเทียบคดีย้อนหลัง (60%) และ SLA Alerts (40%) เคียงข้างกันเพื่อแก้ปัญหาความกว้างเกินไป *@
+                        <div class="v6-alerts-container">
+                            
+                            @* กราฟเปรียบเทียบ ย้อนหลัง (อดีต vs ปัจจุบัน) ย้ายขึ้นมาอยู่แถวกลางเพื่อให้ได้หน้ากว้างสมส่วน *@
+                            <div class="table-card an-flex-card panel-glow" style="flex: 1.6; display: flex; flex-direction: column; min-height: 0;">
+                                <div class="tc-head">
+                                    <div class="tc-row1">
+                                        <div class="tc-title">
+                                            <i class="bi bi-graph-up text-cyan"></i> 
+                                            เปรียบเทียบคดีสะสมย้อนหลังรายปี — มิติ: @(SelectedYearMode == "fiscal" ? "ปีงบประมาณ" : "ปีปฏิทิน")
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="v6-chart-box" style="flex: 1; padding: 10px; min-height: 0;">
+                                    <canvas id="chartCompareV6" style="width: 100%; height: 100%; min-height: 160px;"></canvas>
+                                </div>
+                            </div>
+
+                            @* SLA & Ageing Alerts บีบให้แคบลงเหลือ 40% เพื่อให้อยู่ในรูปทรงแนวตั้งที่อ่านง่ายและกระชับ *@
+                            <div class="table-card an-flex-card panel-glow" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+                                <div class="tc-head">
+                                    <div class="tc-row1">
+                                        <div class="tc-title"><i class="bi bi-alarm-fill text-rose"></i> แจ้งเตือนกรอบเวลาคดีค้าง SLA & AGEING</div>
+                                    </div>
+                                </div>
+                                <div class="v6-sla-alerts" style="flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 10px; gap: 10px;">
+                                    <div class="v6-sla-kpis" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                        <div class="v6-sla-kpi-card bg-yellow-dark v6-sla-kpi-click" title="กดเพื่อดูรายการ" @onclick='() => OpenSlaPopup("yellow")'>
+                                            <div class="v6-kpi-val text-yellow">@V6SlaYellowVal <small>คดี</small></div>
+                                            <div class="v6-kpi-lbl">เกิน 45 วัน (เตือนเหลือง)</div>
+                                        </div>
+                                        <div class="v6-sla-kpi-card bg-red-dark v6-sla-kpi-click" title="กดเพื่อดูรายการ" @onclick='() => OpenSlaPopup("red")'>
+                                            <div class="v6-kpi-val text-red">@V6SlaRedVal <small>คดี</small></div>
+                                            <div class="v6-kpi-lbl">เกิน 60 วัน (เลยกำหนดแดง)</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="v6-sla-list an-scroll" style="flex: 1; min-height: 0;">
+                                        @foreach (var c in SlaCases.Take(3))
+                                        {
+                                            <div class="v6-sla-item @(c.Bucket == "red" ? "border-l-red" : "border-l-yellow") v6-sla-item-click" style="margin-bottom: 6px; padding: 6px 8px;" title="กดเพื่อดูรายละเอียด" @onclick="() => OpenSlaCase(c)">
+                                                <div class="v6-sla-header">
+                                                    <span class="v6-sla-time @(c.Bucket == "red" ? "bg-danger" : "bg-warning text-dark")">@(c.Bucket == "red" ? "เลยกำหนด" : "แจ้งเตือน") @c.DaysOver วัน</span>
+                                                    <strong class="v6-sla-title">@c.Title</strong>
+                                                </div>
+                                                <small class="v6-sla-desc">@c.CaseNo · รับเรื่อง @ThaiShortDate(c.ReceivedAt) · @ComplaintStatsData.ZoneLabel(c.Zone) · @c.Stage</small>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        @* 3. แถวล่าง: เหลือ 2 กล่อง คือ Top 5 ช่องทางรับเรื่อง (span 4) และ รายการคดีรับใหม่ (span 8) *@
+                        <div class="v6-bottom-grid">
+                            @* Top 5 ช่องทางรับเรื่อง (span 4) *@
+                            <div class="table-card an-flex-card panel-glow" style="grid-column: span 4; display: flex; flex-direction: column;">
+                                <div class="tc-head">
+                                    <div class="tc-row1">
+                                        <div class="tc-title"><i class="bi bi-pie-chart-fill text-purple"></i> Top 5 ช่องทางรับเรื่อง</div>
+                                    </div>
+                                </div>
+                                <div class="v6-chart-box d-flex flex-column align-items-center justify-content-center p-3" style="flex: 1; min-height: 0;">
+                                    <div style="width:160px; height:160px; position:relative; flex-shrink:0; margin-bottom: 12px;">
+                                        <canvas id="chartIntakeV6"></canvas>
+                                    </div>
+                                    <div class="v6-channels-legend font-sarabun text-center w-100 d-flex flex-wrap justify-content-center gap-2" style="font-size: 0.74rem; line-height: 1.5;">
+                                        <div><i style="background:#3b82f6; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px;"></i> ม.62: @IntakeM62Val</div>
+                                        <div><i style="background:#06b6d4; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px;"></i> เว็บ: @IntakeWebVal</div>
+                                        <div><i style="background:#a855f7; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px;"></i> ไปรษณีย์: @IntakePostVal</div>
+                                        <div><i style="background:#eab308; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px;"></i> สายด่วน: @IntakeCallVal</div>
+                                        <div><i style="background:#10b981; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px;"></i> ทางรัฐ: @IntakeAppVal</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @* รายการคดีจริง (อ้างอิง เล่ม พย. 68) ขยายความกว้างเต็ม span 8 *@
+                            <div class="table-card an-flex-card panel-glow flex-grow-1" style="grid-column: span 8; display: flex; flex-direction: column;">
+                                <div class="tc-head">
+                                    <div class="tc-row1">
+                                        <div class="tc-title"><i class="bi bi-list-task text-cyan"></i> รายการคดีรับใหม่ (เล่ม พย. 68)</div>
+                                    </div>
+                                </div>
+                                <div class="an-scroll" style="flex: 1; overflow-y: auto; min-height: 120px;">
+                                    <table class="an-tbl font-sarabun table-sm" style="font-size:0.74rem; width: 100%;">
+                                        <thead>
+                                            <tr><th>เลขรับ</th><th>หัวข้อ</th><th>หน่วยงาน</th><th>ประเภท</th><th>สถานะ</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr><td>สนง-ปปท/2569/0142</td><td>ทุจริตจัดซื้อครุภัณฑ์ อบต.</td><td>ปปท. เขต 4</td><td class="text-cyan">ม.18/1ก</td><td><span class="badge bg-warning text-dark">สืบสวนเบื้องต้น</span></td></tr>
+                                            <tr><td>สนง-ปปท/2569/0310</td><td>ก่อสร้างถนนไม่ได้มาตรฐาน อบต.</td><td>ปปท. เขต 1</td><td class="text-blue">ม.18/4</td><td><span class="badge bg-info">แสวงหาข้อเท็จจริง</span></td></tr>
+                                            <tr><td>สนง-ปปท/2569/0099</td><td>เจ้าหน้าที่เรียกรับผลประโยชน์การออกใบอนุญาต</td><td>กปท. เขต 4</td><td class="text-purple">ม.62</td><td><span class="badge bg-success">ชี้มูลความผิดแล้ว</span></td></tr>
+                                            <tr><td>สนง-ปปท/2569/0025</td><td>ทุจริตงบสร้างฝายกักเก็บน้ำ อบจ.</td><td>ปปท. เขต 5</td><td class="text-yellow">ม.58/2</td><td><span class="badge bg-danger">เร่งด่วนล่าช้า</span></td></tr>
+                                            <tr><td>สนง-ปปท/2569/0056</td><td>จัดซื้อครุภัณฑ์ทางการแพทย์โรงพยาบาล</td><td>ปปท. เขต 6</td><td class="text-blue">ม.18/4</td><td><span class="badge bg-info">แสวงหาข้อเท็จจริง</span></td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if ((_drillZone is not null || _drillMetric is not null) && _drillSnap is not null)
+                        {
+                            <div class="v6-drill-overlay" @onclick="CloseDrill">
+                                <div class="v6-drill-modal" @onclick:stopPropagation>
+                            @* ── DRILL-DOWN VIEW: ข้อมูลเขต/จังหวัด จบในหน้าเดียว ── *@
+                            <div class="v6-drill-bar panel-glow">
+                                <nav class="v6-crumbs">
+                                    <button class="v6-crumb" @onclick="CloseDrill"><i class="bi bi-house-fill"></i> ประเทศ</button>
+                                    @if (_drillMetric is not null)
+                                    {
+                                        <span class="v6-crumb-sep">›</span>
+                                        @if (_drillZone is null)
+                                        { <span class="v6-crumb-current">@MetricLabel(_drillMetric)</span> }
+                                        else
+                                        { <button class="v6-crumb" @onclick="DrillBackToMetricAsync">@MetricLabel(_drillMetric)</button> }
+                                    }
+                                    @if (_drillZone is not null)
+                                    {
+                                        <span class="v6-crumb-sep">›</span>
+                                        @if (_drillProvince is null && _drillDim is null)
+                                        { <span class="v6-crumb-current">@ComplaintStatsData.ZoneLabel(_drillZone.Value)</span> }
+                                        else
+                                        { <button class="v6-crumb" @onclick="DrillBackToZone">@ComplaintStatsData.ZoneLabel(_drillZone.Value)</button> }
+                                        @if (_drillProvince is not null)
+                                        {
+                                            <span class="v6-crumb-sep">›</span>
+                                            @if (_drillDim is null)
+                                            { <span class="v6-crumb-current">@_drillProvince</span> }
+                                            else
+                                            { <button class="v6-crumb" @onclick="DrillBackFromDim">@_drillProvince</button> }
+                                        }
+                                        @if (_drillDim is not null)
+                                        {
+                                            <span class="v6-crumb-sep">›</span>
+                                            @if (_drillCase is null)
+                                            { <span class="v6-crumb-current">@_drillDim.Value.Label</span> }
+                                            else
+                                            {
+                                                <button class="v6-crumb" @onclick="DrillBackToCaseList">@_drillDim.Value.Label</button>
+                                                <span class="v6-crumb-sep">›</span>
+                                                <span class="v6-crumb-current">@CaseIdentity.Describe(_drillCase).CaseNo</span>
+                                            }
+                                        }
+                                    }
+                                </nav>
+                                <div class="v6-drill-actions">
+                                    <span class="v6-drill-total">@((_drillMetric == "accum" && _drillZone is null ? _drillSnap.Kpi.Accumulated : _drillSnap.Kpi.ReceivedThisYear).ToString("N0")) <small>เรื่อง</small></span>
+                                    @if (!ShareMode && _drillZone is not null)
+                                    {
+                                        <a class="v6-drill-link" href="/analytics/complaint-stats?zone=@_drillZone">สถิติฉบับเต็ม <i class="bi bi-box-arrow-up-right"></i></a>
+                                    }
+                                    <button class="v6-close-btn" @onclick="CloseDrill">&times;</button>
+                                </div>
+                            </div>
+
+                            @if (_drillCase is not null)
+                            {
+                                var d = CaseIdentity.Describe(_drillCase);
+                                <div class="v6-sla-detail">
+                                    <span class="v6-sla-time @StatusChip(_drillCase.Status)" style="align-self:flex-start;">@ComplaintStatsData.StatusLabel(_drillCase.Status)</span>
+                                    <h3>@d.Title</h3>
+                                    <div class="v6-sla-fields">
+                                        <div><span>เลขสำนวน</span><strong>@d.CaseNo</strong></div>
+                                        <div><span>ผู้รับผิดชอบสำนวน</span><strong>@d.Owner</strong></div>
+                                        <div><span>มาตรา</span><strong>@ComplaintStatsData.LegalTypeLabel(_drillCase.Type)</strong></div>
+                                        <div><span>หน่วยรับผิดชอบ</span><strong>@ComplaintStatsData.ZoneLabel(_drillCase.Zone)</strong></div>
+                                        <div><span>จังหวัดที่เกิดเหตุ</span><strong>@_drillCase.Province</strong></div>
+                                        <div><span>วันที่รับเรื่อง</span><strong>@ThaiShortDate(_drillCase.ReceivedAt)</strong></div>
+                                        <div><span>ช่องทางรับเรื่อง</span><strong>@ComplaintStatsData.ChannelTotals[_drillCase.ChannelIndex].Label</strong></div>
+                                        <div><span>สถานะปัจจุบัน</span><strong>@ComplaintStatsData.StatusLabel(_drillCase.Status)</strong></div>
+                                    </div>
+                                    <small class="v6-sla-note">ชื่อเรื่อง เลขสำนวน และผู้รับผิดชอบเป็นข้อมูลสังเคราะห์ผูกกับรายการสถิติ — ข้อมูลฉบับจริงจะเชื่อมจากระบบ ecmis-investigation</small>
+                                </div>
+                            }
+                            else if (_drillDim is not null)
+                            {
+                                <div class="v6-drill-bars" style="max-height: 420px;">
+                                    @foreach (var r in DrillDimCases())
+                                    {
+                                        var d = CaseIdentity.Describe(r);
+                                        <button class="v6-bar-row v6-bar-row-click v6-sla-case-row" @onclick="() => SelectDrillCase(r)">
+                                            <span class="v6-sla-caseno">@d.CaseNo</span>
+                                            <span class="v6-bar-lbl" style="flex:1;">@d.Title</span>
+                                            <span class="v6-case-owner"><i class="bi bi-person-fill"></i> @d.Owner</span>
+                                            <i class="bi bi-chevron-right v6-bar-go"></i>
+                                        </button>
+                                    }
+                                </div>
+                                <small class="v6-sla-note">คลิกคดีเพื่อดูรายละเอียดและผู้รับผิดชอบสำนวน</small>
+                            }
+                            else if (_drillZone is not null)
+                            {
+                            <div class="v6-alerts-container">
+                                <div class="table-card an-flex-card panel-glow v6-drill-card">
+                                    <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-diagram-2 text-cyan"></i> ตามมาตรา</div></div></div>
+                                    <div class="v6-drill-bars an-scroll">
+                                        @foreach (var r in DrillTypeRows())
+                                        {
+                                            <button class="v6-bar-row v6-bar-row-click" title="กดเพื่อดูรายการคดี" @onclick="() => SelectDrillDim(r.Label, rec => rec.Type == r.Type)">
+                                                <span class="v6-bar-lbl">@r.Label</span>
+                                                <div class="v6-bar-track"><div class="v6-bar-fill" style="width:@BarWidth(r.Count, DrillTypeRows().Select(x => (x.Label, x.Count)))"></div></div>
+                                                <span class="v6-bar-num">@r.Count</span>
+                                                <i class="bi bi-chevron-right v6-bar-go"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="table-card an-flex-card panel-glow v6-drill-card">
+                                    <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-activity text-emerald"></i> ตามสถานะ</div></div></div>
+                                    <div class="v6-drill-bars an-scroll">
+                                        @foreach (var r in DrillStatusRows())
+                                        {
+                                            <button class="v6-bar-row v6-bar-row-click" title="กดเพื่อดูรายการคดี" @onclick="() => SelectDrillDim(r.Label, rec => rec.Status == r.Status)">
+                                                <span class="v6-bar-lbl">@r.Label</span>
+                                                <div class="v6-bar-track"><div class="v6-bar-fill fill-emerald" style="width:@BarWidth(r.Count, DrillStatusRows().Select(x => (x.Label, x.Count)))"></div></div>
+                                                <span class="v6-bar-num">@r.Count</span>
+                                                <i class="bi bi-chevron-right v6-bar-go"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="table-card an-flex-card panel-glow v6-drill-card">
+                                    <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-calendar3 text-purple"></i> รายเดือน</div></div></div>
+                                    <div class="v6-drill-bars an-scroll">
+                                        @foreach (var r in DrillMonthRows())
+                                        {
+                                            <button class="v6-bar-row v6-bar-row-click" title="กดเพื่อดูรายการคดี" @onclick="() => SelectDrillDim(r.Label, rec => MonthLabel(rec.ReceivedAt) == r.Label)">
+                                                <span class="v6-bar-lbl">@r.Label</span>
+                                                <div class="v6-bar-track"><div class="v6-bar-fill fill-purple" style="width:@BarWidth(r.Count, DrillMonthRows())"></div></div>
+                                                <span class="v6-bar-num">@r.Count</span>
+                                                <i class="bi bi-chevron-right v6-bar-go"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="v6-bottom-grid">
+                                <div class="table-card an-flex-card panel-glow" style="grid-column: span 12; display: flex; flex-direction: column;">
+                                    <div class="tc-head">
+                                        <div class="tc-row1">
+                                            <div class="tc-title">
+                                                <i class="bi bi-pin-map-fill text-yellow"></i>
+                                                @(_drillProvince is null ? "จังหวัดในเขต (คลิกเพื่อเจาะต่อ)" : "ช่องทางรับเรื่องของจังหวัด")
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="v6-drill-bars an-scroll" style="flex:1; min-height:0;">
+                                        @if (_drillProvince is null)
+                                        {
+                                            @foreach (var p in _drillSnap.TopProvinces.Take(10))
+                                            {
+                                                <button class="v6-bar-row v6-bar-row-click" @onclick="() => DrillProvince(p.Label)">
+                                                    <span class="v6-bar-lbl">@p.Label</span>
+                                                    <div class="v6-bar-track"><div class="v6-bar-fill fill-yellow" style="width:@BarWidth(p.Count, _drillSnap.TopProvinces.Select(t => (t.Label, t.Count)))"></div></div>
+                                                    <span class="v6-bar-num">@p.Count</span>
+                                                    <i class="bi bi-chevron-right v6-bar-go"></i>
+                                                </button>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            @foreach (var c in DrillChannelRows())
+                                            {
+                                                <button class="v6-bar-row v6-bar-row-click" title="กดเพื่อดูรายการคดี" @onclick="() => SelectDrillDim(c.Label, rec => rec.ChannelIndex == c.Index)">
+                                                    <span class="v6-bar-lbl">@c.Label</span>
+                                                    <div class="v6-bar-track"><div class="v6-bar-fill fill-yellow" style="width:@BarWidth(c.Count, DrillChannelRows().Select(x => (x.Label, x.Count)))"></div></div>
+                                                    <span class="v6-bar-num">@c.Count</span>
+                                                    <i class="bi bi-chevron-right v6-bar-go"></i>
+                                                </button>
+                                            }
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            }
+                            else if (_drillMetric == "accum")
+                            {
+                                <div class="v6-bottom-grid">
+                                    <div class="table-card an-flex-card panel-glow" style="grid-column: span 12; display: flex; flex-direction: column;">
+                                        <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-graph-up text-yellow"></i> รับเรื่องสะสมรายปี พ.ศ. 2551–2569</div></div></div>
+                                        <div class="v6-drill-bars an-scroll" style="flex:1; min-height:0;">
+                                            @foreach (var y in _drillSnap.YearlyTrend.Bars)
+                                            {
+                                                <div class="v6-bar-row">
+                                                    <span class="v6-bar-lbl">พ.ศ. @y.Label</span>
+                                                    <div class="v6-bar-track"><div class="v6-bar-fill fill-yellow" style="width:@BarWidth(y.Count, _drillSnap.YearlyTrend.Bars.Select(b => (b.Label, b.Count)))"></div></div>
+                                                    <span class="v6-bar-num">@y.Count.ToString("N0")</span>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            else if (MetricHasZoneData)
+                            {
+                                <div class="v6-bottom-grid">
+                                    <div class="table-card an-flex-card panel-glow" style="grid-column: span 12; display: flex; flex-direction: column;">
+                                        <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-diagram-3-fill text-cyan"></i> แยกรายเขตทั้ง 15 หน่วย — คลิกเขตเพื่อเจาะต่อ</div></div></div>
+                                        <div class="v6-drill-bars an-scroll" style="flex:1; min-height:0;">
+                                            @foreach (var u in DrillZoneUnits())
+                                            {
+                                                <button class="v6-bar-row v6-bar-row-click" @onclick="() => DrillZoneFromListAsync(u.Zone)">
+                                                    <span class="v6-bar-lbl">@u.Label</span>
+                                                    <div class="v6-bar-track"><div class="v6-bar-fill" style="width:@BarWidth(u.Count, DrillZoneUnits().Select(x => (x.Label, x.Count)))"></div></div>
+                                                    <span class="v6-bar-num">@u.Count</span>
+                                                    <i class="bi bi-chevron-right v6-bar-go"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="v6-bottom-grid">
+                                    <div class="table-card an-flex-card panel-glow" style="grid-column: span 12; display:flex; align-items:center; justify-content:center;">
+                                        <div style="text-align:center; color: var(--v6-text-muted); padding: 30px; font-size: 0.85rem; line-height: 1.7;">
+                                            <i class="bi bi-plug" style="font-size:1.6rem; display:block; margin-bottom:8px;"></i>
+                                            ตัวเลข "@MetricLabel(_drillMetric!)" มาจากข้อมูลกิจกรรมไต่สวน (กิจกรรม 12)<br />
+                                            ข้อมูลแยกรายเขตของมาตรานี้จะแสดงเมื่อเชื่อมต่อระบบ ecmis-investigation
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                                </div>
+                            </div>
+                        }
+
+                        @if (_slaPopup is not null)
+                        {
+                            <div class="v6-drill-overlay" @onclick="CloseSlaPopup">
+                                <div class="v6-drill-modal v6-sla-modal" @onclick:stopPropagation>
+                                    <div class="v6-drill-bar panel-glow">
+                                        <nav class="v6-crumbs">
+                                            @if (_slaZone is null)
+                                            { <span class="v6-crumb-current">@SlaBucketTitle</span> }
+                                            else
+                                            {
+                                                <button class="v6-crumb" @onclick="SlaBackToZones">@SlaBucketTitle</button>
+                                                <span class="v6-crumb-sep">›</span>
+                                                @if (_slaCase is null)
+                                                { <span class="v6-crumb-current">@ComplaintStatsData.ZoneLabel(_slaZone.Value)</span> }
+                                                else
+                                                {
+                                                    <button class="v6-crumb" @onclick="SlaBackToCases">@ComplaintStatsData.ZoneLabel(_slaZone.Value)</button>
+                                                    <span class="v6-crumb-sep">›</span>
+                                                    <span class="v6-crumb-current">@_slaCase.CaseNo</span>
+                                                }
+                                            }
+                                        </nav>
+                                        <div class="v6-drill-actions">
+                                            @if (_slaCase is not null)
+                                            { <span class="v6-drill-total">@_slaCase.DaysOver <small>วัน</small></span> }
+                                            else if (_slaZone is not null)
+                                            { <span class="v6-drill-total">@SlaBucketCases().Count(c => c.Zone == _slaZone) <small>คดี</small></span> }
+                                            else
+                                            { <span class="v6-drill-total">@SlaBucketCases().Count() <small>คดี</small></span> }
+                                            <button class="v6-close-btn" @onclick="CloseSlaPopup">&times;</button>
+                                        </div>
+                                    </div>
+                                    @if (_slaCase is not null)
+                                    {
+                                        <div class="v6-sla-detail">
+                                            <span class="v6-sla-time @(_slaCase.Bucket == "red" ? "bg-danger" : "bg-warning text-dark")" style="align-self:flex-start;">@(_slaCase.Bucket == "red" ? "เลยกำหนด" : "แจ้งเตือน") @_slaCase.DaysOver วัน</span>
+                                            <h3>@_slaCase.Title</h3>
+                                            <div class="v6-sla-fields">
+                                                <div><span>เลขสำนวน</span><strong>@_slaCase.CaseNo</strong></div>
+                                                <div><span>มาตรา</span><strong>@_slaCase.LegalLabel</strong></div>
+                                                <div><span>หน่วยรับผิดชอบ</span><strong>@ComplaintStatsData.ZoneLabel(_slaCase.Zone)</strong></div>
+                                                <div><span>วันที่รับเรื่อง</span><strong>@ThaiShortDate(_slaCase.ReceivedAt)</strong></div>
+                                                <div><span>ขั้นตอนปัจจุบัน</span><strong>@_slaCase.Stage</strong></div>
+                                                <div><span>กรอบเวลา</span><strong>@(_slaCase.Bucket == "red" ? "เกินกรอบสืบสวน 60 วัน" : "เกินกรอบเตือนภัย 45 วัน")</strong></div>
+                                            </div>
+                                            <small class="v6-sla-note">ข้อมูลรายคดีชุดนี้สังเคราะห์ให้ยอดตรงแดชบอร์ด — การเปิดสำนวนฉบับจริงจะพร้อมใช้เมื่อเชื่อมต่อระบบ ecmis-investigation</small>
+                                        </div>
+                                    }
+                                    else if (_slaZone is not null)
+                                    {
+                                        <div class="v6-drill-bars">
+                                            @foreach (var c in SlaBucketCases().Where(x => x.Zone == _slaZone))
+                                            {
+                                                <button class="v6-bar-row v6-bar-row-click v6-sla-case-row" @onclick="() => OpenSlaCase(c)">
+                                                    <span class="v6-sla-time @(c.Bucket == "red" ? "bg-danger" : "bg-warning text-dark")">@c.DaysOver วัน</span>
+                                                    <span class="v6-sla-caseno">@c.CaseNo</span>
+                                                    <span class="v6-bar-lbl" style="flex:1;">@c.Title</span>
+                                                    <i class="bi bi-chevron-right v6-bar-go"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="v6-drill-bars">
+                                            @foreach (var g in SlaZoneGroups())
+                                            {
+                                                <button class="v6-bar-row v6-bar-row-click" @onclick="() => SlaSelectZone(g.Zone)">
+                                                    <span class="v6-bar-lbl">@g.Label</span>
+                                                    <div class="v6-bar-track"><div class="v6-bar-fill @(_slaPopup == "red" ? "" : "fill-yellow")" style="width:@BarWidth(g.Count, SlaZoneGroups().Select(x => (x.Label, x.Count)))"></div></div>
+                                                    <span class="v6-bar-num">@g.Count</span>
+                                                    <i class="bi bi-chevron-right v6-bar-go"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                        <small class="v6-sla-note">คลิกเขตเพื่อดูรายการคดีในเขตนั้น — รวมทั้งหมด @SlaBucketCases().Count() คดี</small>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+</div>
+
+@* ══ INTERACTIVE PROVINCE DETAILS MODAL ══ *@
+@if (_showProvinceModal)
+{
+    <div class="wr-modal-overlay @(_isDark ? "" : "app-light")"
+         style="@(!_isDark ? "--wr-card-bg:#ffffff; --wr-card-border:#dde1ec; --wr-text-main:#0d1b42; --wr-text-muted:rgba(13,27,66,0.55); --wr-topbar-bg:#ffffff;" : "")"
+         @onclick="CloseProvinceModal">
+        <div class="wr-modal-card panel-glow" @onclick:stopPropagation>
+            <div class="wr-modal-head">
+                <div class="wr-modal-title">
+                    <i class="bi bi-geo-alt-fill text-gold me-2"></i> สถิติความเสี่ยงจังหวัด: @_selectedProvinceName
+                </div>
+                <button class="wr-modal-close-btn" @onclick="CloseProvinceModal"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="wr-modal-body">
+                <div class="wr-modal-score-block">
+                    <div class="wr-modal-score-item">
+                        <span class="lbl">RISK SCORE</span>
+                        <strong class="@ScoreTextClass(_selectedProvinceScore)">@_selectedProvinceScore%</strong>
+                    </div>
+                    <div class="wr-modal-score-item">
+                        <span class="lbl">ระดับความเสี่ยง</span>
+                        <span class="wr-risk-score @ScoreClass(_selectedProvinceScore)">@RiskLabel(_selectedProvinceScore)</span>
+                    </div>
+                    <div class="wr-modal-score-item">
+                        <span class="lbl">จำนวนคำร้องเรียน</span>
+                        <strong style="color: #38bdf8;">@_selectedProvinceCount เรื่อง</strong>
+                    </div>
+                </div>
+                
+                <div class="wr-modal-cases-list">
+                    <div class="an-mini-head">ประเด็นการทุจริตที่มีการร้องเรียนจริงสูงสุด</div>
+                    @foreach (var c in _selectedProvinceCases)
+                    {
+                        <div class="wr-modal-case-row">
+                            <i class="bi bi-exclamation-triangle-fill text-orange"></i>
+                            <span>@c</span>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="wr-modal-foot">
+                <button class="btn-accent" @onclick="CloseProvinceModal">ตกลง / ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ══ REPORT CENTER MODAL ══ *@
+@if (_showReportModal)
+{
+    <div class="rpt-modal-overlay" @onclick="CloseReportModal">
+        <div class="rpt-modal" @onclick:stopPropagation="true">
+
+            <div class="rpt-modal-head">
+                <div>
+                    <h2><i class="bi bi-file-earmark-bar-graph me-2" style="color:#3b82f6;"></i>ศูนย์สร้างรายงาน — Report Center</h2>
+                    <small>เลือกเดือนที่ต้องการรายงาน แล้วเลือกประเภทรายงาน</small>
+                </div>
+                <button class="rpt-modal-close" @onclick="CloseReportModal"><i class="bi bi-x-lg"></i></button>
+            </div>
+
+            @* ── Month Picker ── *@
+            <div class="rpt-month-bar">
+                <i class="bi bi-calendar3 me-2" style="color:#3b82f6;"></i>
+                <label style="font-weight:700;margin-right:10px;">เดือนที่รายงาน:</label>
+                <select class="rpt-month-select" @bind="_reportMonthIdx">
+                    @for (int i = 0; i < _fiscalMonths.Length; i++)
+                    {
+                        var fi = i;
+                        <option value="@fi">@_fiscalMonths[fi].Name @_fiscalMonths[fi].Year</option>
+                    }
+                </select>
+                <span class="rpt-month-note">ข้อมูล ณ วันที่ @_fiscalMonths[_reportMonthIdx].LastDay @_fiscalMonths[_reportMonthIdx].Name @_fiscalMonths[_reportMonthIdx].Year</span>
+            </div>
+
+            <div class="rpt-modal-body">
+                @* Card A — เล่ม พย68 *@
+                <div class="rpt-type-card rpt-card-full @(_selectedReports.Contains("lm_py68") ? "selected" : "")" @onclick='() => ToggleReport("lm_py68")'>
+                    <div class="rpt-card-check"></div>
+                    <div class="rpt-card-icon">📖</div>
+                    <div class="rpt-card-text">
+                        <div class="rpt-card-title">เล่มสถิติรับเรื่องร้องเรียน</div>
+                        <div class="rpt-card-desc">ตารางสะสมรายปี 2551–2569 · ตารางรายเดือน · Matrix กอง/สำนัก · กราฟแท่งรายปีและรายเดือน รวม 5 หน้า ข้อมูล ณ 30 พย. 2568</div>
+                        <span class="rpt-card-tag tag-table">ตาราง + กราฟ</span>
+                    </div>
+                </div>
+
+                @* Card B — จังหวัด พย68 *@
+                <div class="rpt-type-card rpt-card-full @(_selectedReports.Contains("province") ? "selected" : "")" @onclick='() => ToggleReport("province")'>
+                    <div class="rpt-card-check"></div>
+                    <div class="rpt-card-icon">🗺️</div>
+                    <div class="rpt-card-text">
+                        <div class="rpt-card-title">รายงานจังหวัด Top 10 + รายจังหวัดทั้งหมด</div>
+                        <div class="rpt-card-desc">Top 10 จังหวัดรับผิดชอบรับเรื่องมากสุด + ตารางจังหวัดทั้งหมด 77 จังหวัด ปีงบประมาณ 2569 ข้อมูล ณ 30 พย. 2568</div>
+                        <span class="rpt-card-tag tag-matrix">จังหวัด</span>
+                    </div>
+                </div>
+
+                @* Card C — กลุ่มภารกิจ *@
+                <div class="rpt-type-card rpt-card-full @(_selectedReports.Contains("director") ? "selected" : "")" @onclick='() => ToggleReport("director")'>
+                    <div class="rpt-card-check"></div>
+                    <div class="rpt-card-icon">📊</div>
+                    <div class="rpt-card-text">
+                        <div class="rpt-card-title">รายงานผู้บริหารรายเดือน</div>
+                        <div class="rpt-card-desc">Presentation deck 9 สไลด์ · เปรียบเทียบรับเรื่อง 2568/2569 · ไต่สวนเบื้องต้น/ชี้มูล · หลังมีมติ · งบประมาณ · จะเปิดหน้ารายงานผู้บริหารเพื่อ Export PDF</div>
+                        <span class="rpt-card-tag tag-chart">Presentation</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rpt-modal-foot">
+                <div class="rpt-foot-left">เลือกแล้ว @_selectedReports.Count รายงาน · ประจำเดือน @_fiscalMonths[_reportMonthIdx].Name @_fiscalMonths[_reportMonthIdx].Year</div>
+                <div class="rpt-foot-right">
+                    <button class="rpt-btn rpt-btn-cancel" @onclick="CloseReportModal">
+                        <i class="bi bi-x"></i> ยกเลิก
+                    </button>
+                    <button class="rpt-btn rpt-btn-csv" @onclick="ExportReportCsvAsync" disabled="@(_selectedReports.Count == 0)">
+                        <i class="bi bi-filetype-csv"></i> Export CSV
+                    </button>
+                    <button class="rpt-btn rpt-btn-pdf" @onclick="ExportReportPdfAsync" disabled="@(_selectedReports.Count == 0)">
+                        <i class="bi bi-filetype-pdf"></i> สร้าง PDF
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+}
+
+@code {
+    private bool _loading = true;
+    private bool _isDark = false;
+    private bool _chartsInitialized;
+    private DotNetObjectReference<Index>? _dotNetRef;
+    private IReadOnlyList<ComplaintRow> _rows = [];
+    private int _total;
+
+    public string ActiveTab { get; set; } = "ภาพรวม";
+    public int SelectedVersion { get; set; } = 6;
+    private bool _showDevMode = false;
+
+    private void ToggleDevMode() => _showDevMode = !_showDevMode;
+
+    // Province Modal States
+    private bool _showProvinceModal = false;
+    private string _selectedProvinceName = "";
+    private int _selectedProvinceScore = 0;
+    private int _selectedProvinceCount = 0;
+    private List<string> _selectedProvinceCases = new();
+
+    // V6 State Variables
+    private string SelectedYearMode = "fiscal"; // "fiscal" = ปีงบประมาณ, "calendar" = ปีปฏิทิน
+    private string SelectedWarningType = "all"; // "all", "road", "procure", "duty", "license"
+
+    // Zone heatmap (V6) — ข้อมูลจริงจาก IComplaintStatsService
+    private Dictionary<int, ZoneHeatValue> _heatZones = new();
+    private int _heatMax;
+    private int _heatTotal;
+    private int _accumTotal;
+    private int _centralCount;
+
+    private List<RegionScore> GetV6Regions()
+    {
+        if (SelectedWarningType == "road")
+        {
+            return [
+                new("ภาคเหนือ", 45),
+                new("ตะวันออกเฉียงเหนือ", 85),
+                new("ภาคกลาง", 52),
+                new("ตะวันออก", 60),
+                new("ภาคใต้", 70)
+            ];
+        }
+        if (SelectedWarningType == "procure")
+        {
+            return [
+                new("ภาคเหนือ", 80),
+                new("ตะวันออกเฉียงเหนือ", 65),
+                new("ภาคกลาง", 89),
+                new("ตะวันออก", 75),
+                new("ภาคใต้", 55)
+            ];
+        }
+        if (SelectedWarningType == "duty")
+        {
+            return [
+                new("ภาคเหนือ", 60),
+                new("ตะวันออกเฉียงเหนือ", 62),
+                new("ภาคกลาง", 90),
+                new("ตะวันออก", 82),
+                new("ภาคใต้", 68)
+            ];
+        }
+        if (SelectedWarningType == "license")
+        {
+            return [
+                new("ภาคเหนือ", 50),
+                new("ตะวันออกเฉียงเหนือ", 48),
+                new("ภาคกลาง", 72),
+                new("ตะวันออก", 95),
+                new("ภาคใต้", 60)
+            ];
+        }
+        return [
+            new("ภาคเหนือ", 72),
+            new("ตะวันออกเฉียงเหนือ", 68),
+            new("ภาคกลาง", 81),
+            new("ตะวันออก", 76),
+            new("ภาคใต้", 65)
+        ];
+    }
+
+    // Dynamic Law Sections V6 (อ้างอิง กิจกรรม 12 และเล่ม พย. 68)
+    private int V6Sec18_1gVal => SelectedYearMode == "fiscal" ? 142 : 128;
+    private int V6Sec18_4Val => SelectedYearMode == "fiscal" ? 394 : 352;
+    private int V6Sec62Val => SelectedYearMode == "fiscal" ? 163 : 151;
+    private int V6Sec58_2Val => SelectedYearMode == "fiscal" ? 25 : 21;
+    
+    private int V6TotalCases => V6Sec18_1gVal + V6Sec18_4Val + V6Sec62Val + V6Sec58_2Val;
+    
+    // คำนวณเปอร์เซ็นต์ความก้าวหน้า
+    private double V6Sec18_1gPct => V6TotalCases > 0 ? (double)V6Sec18_1gVal / V6TotalCases * 100 : 0;
+    private double V6Sec18_4Pct => V6TotalCases > 0 ? (double)V6Sec18_4Val / V6TotalCases * 100 : 0;
+    private double V6Sec62Pct => V6TotalCases > 0 ? (double)V6Sec62Val / V6TotalCases * 100 : 0;
+    private double V6Sec58_2Pct => V6TotalCases > 0 ? (double)V6Sec58_2Val / V6TotalCases * 100 : 0;
+
+    // Dynamic SLA V6
+    private int V6SlaYellowVal => SelectedYearMode == "fiscal" ? 175 : 158;
+    private int V6SlaRedVal => SelectedYearMode == "fiscal" ? 82 : 74;
+
+    // Dynamic Intake V6
+    private int IntakeM62Val => SelectedYearMode == "fiscal" ? 163 : 151;
+    private int IntakeWebVal => SelectedYearMode == "fiscal" ? 99 : 92;
+    private int IntakePostVal => SelectedYearMode == "fiscal" ? 94 : 85;
+    private int IntakeCallVal => SelectedYearMode == "fiscal" ? 68 : 61;
+    private int IntakeAppVal => SelectedYearMode == "fiscal" ? 33 : 30;
+
+    // Dynamic SLA Logs
+    private sealed record M62DrilldownRow(string Region, int Received, int Accum);
+    private List<M62DrilldownRow> GetM62DrilldownRows()
+    {
+        int multiplier = SelectedYearMode == "fiscal" ? 1 : 0;
+        return new List<M62DrilldownRow>
+        {
+            new("ปปท. เขต 4 (อีสานตอนบน)", 25 + 3 * multiplier, 98 + 12 * multiplier),
+            new("ปปท. เขต 1 (ภาคกลางตอนบน)", 19 + 2 * multiplier, 73 + 8 * multiplier),
+            new("กปท. เขต 4 (กรุงเทพฯ)", 11 + 2 * multiplier, 43 + 5 * multiplier),
+            new("ปปท. เขต 5 (อีสานตอนล่าง)", 11 + 1 * multiplier, 48 + 4 * multiplier),
+            new("กปท. เขต 1 (กรุงเทพฯ)", 7 + 1 * multiplier, 24 + 3 * multiplier),
+            new("ปปท. เขต 9 (ภาคใต้ตอนล่าง)", 2, 25 + 2 * multiplier),
+            new("กปท. เขต 2 (กรุงเทพฯ)", 8 + 1 * multiplier, 34 + 3 * multiplier),
+            new("ปปท. เขต 2 (ภาคกลางตอนล่าง)", 6, 38 + 3 * multiplier),
+            new("ปปท. เขต 6 (ภาคเหนือตอนบน)", 9 + 1 * multiplier, 39 + 4 * multiplier),
+            new("ปปท. เขต 7 (ภาคเหนือตอนล่าง)", 5 + 1 * multiplier, 38 + 3 * multiplier),
+            new("ปปท. เขต 8 (ภาคใต้ตอนบน)", 8 + 1 * multiplier, 25 + 2 * multiplier),
+            new("กปท. เขต 5 (กรุงเทพฯ)", 7 + 1 * multiplier, 44 + 4 * multiplier),
+            new("กอท. (กองอำนวยการข่าวพิเศษ)", 12 + 1 * multiplier, 25 + 2 * multiplier),
+            new("กปท. เขต 3 (กรุงเทพฯ)", 5 + 1 * multiplier, 14 + 2 * multiplier)
+        };
+    }
+
+    private async Task ChangeV6YearMode(string mode)
+    {
+        SelectedYearMode = mode;
+        _slaCases = []; // ตัวเลข SLA ต่างตามมุมมองปี → ให้ generator สร้างชุดใหม่
+        await Task.Delay(10); // UI yield
+        await RenderChartsAsync();
+    }
+
+    private void OnV6WarningTypeChanged(ChangeEventArgs e)
+        => SelectedWarningType = e.Value?.ToString() ?? "all";
+
+    private void GoToZoneStats(int zone) => Nav.NavigateTo($"/analytics/complaint-stats?zone=Pt{zone}");
+
+    private async Task ToggleFullscreenAsync() => await JS.InvokeVoidAsync("toggleWarRoomFullscreen");
+
+    // ── แชร์มุมมองอ่านอย่างเดียว (ลิงก์ + QR, อายุลิงก์เลือกได้) ──
+    [Parameter] public bool ShareMode { get; set; }
+
+    private bool _showSharePanel;
+    private bool _shareCopied;
+    private int _shareHours = 168; // ค่าเริ่มต้น 7 วัน
+    private string? _shareUrl;
+    private bool _shareIsLocalhost;
+
+    private async Task ToggleSharePanelAsync()
+    {
+        _showSharePanel = !_showSharePanel;
+        if (_showSharePanel) await RegenerateShareLinkAsync();
+    }
+
+    private async Task OnShareExpiryChangedAsync(ChangeEventArgs e)
+    {
+        _shareHours = int.TryParse(e.Value?.ToString(), out var h) ? h : 168;
+        await RegenerateShareLinkAsync();
+    }
+
+    private async Task RegenerateShareLinkAsync()
+    {
+        _shareCopied = false;
+        var token = ShareToken.Create(DateTime.UtcNow.AddHours(_shareHours));
+        _shareUrl = $"{Nav.BaseUri}share/warroom/{token}";
+        _shareIsLocalhost = new Uri(Nav.BaseUri).IsLoopback;
+        StateHasChanged();
+        await Task.Delay(60); // รอ DOM มี #shareQrBox ก่อนวาด QR
+        await JS.InvokeVoidAsync("renderShareQr", "shareQrBox", _shareUrl);
+    }
+
+    private async Task CopyShareLinkAsync()
+    {
+        if (_shareUrl is null) return;
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _shareUrl);
+        _shareCopied = true;
+    }
+
+    // ── Drill-down ในหน้าเดียว: ประเทศ → (เมตริก) → เขต → จังหวัด ──
+    private Zone? _drillZone;
+    private string? _drillProvince;
+    private string? _drillMetric;   // null | accum | all | M62 | M184 | M181k | M582
+    private LegalType? _drillType;  // filter มาตราที่พ่วงมากับเมตริก
+    private (string Label, Func<StatRecord, bool> Pred)? _drillDim; // เจาะจากแท่งมิติใดๆ → รายการคดี
+    private StatRecord? _drillCase;   // คดีรายตัว
+    private StatsSnapshot? _drillSnap;
+
+    private void SelectDrillDim(string label, Func<StatRecord, bool> pred) { _drillDim = (label, pred); _drillCase = null; }
+    private void DrillBackToCaseList() => _drillCase = null;
+    private void SelectDrillCase(StatRecord r) => _drillCase = r;
+    private void DrillBackFromDim() { _drillDim = null; _drillCase = null; }
+    private void ResetDrillCaseLevel() { _drillDim = null; _drillCase = null; }
+
+    private IEnumerable<StatRecord> DrillDimCases()
+        => _drillSnap is null || _drillDim is null ? [] : _drillSnap.Rows.Where(_drillDim.Value.Pred);
+
+    private static string MonthLabel(DateTime d)
+    {
+        string[] m = { "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค." };
+        return $"{m[d.Month - 1]} {d.Year}";
+    }
+
+    private IEnumerable<(int Index, string Label, int Count)> DrillChannelRows()
+        => _drillSnap is null ? [] : _drillSnap.Channels.All
+            .Select((c, i) => (i, c.Label, c.Count))
+            .Where(x => x.Count > 0)
+            .OrderByDescending(x => x.Count);
+
+    private static string StatusChip(CaseStatus s) => s switch
+    {
+        CaseStatus.Pending => "bg-warning text-dark",
+        CaseStatus.Review => "bg-info text-dark",
+        CaseStatus.Active => "bg-primary",
+        CaseStatus.Transfer => "bg-purple",
+        CaseStatus.Closed => "bg-success",
+        _ => "bg-danger",
+    };
+
+    private static string MetricLabel(string m) => m switch
+    {
+        "accum" => "สะสมทั้งหมด 2551–2569",
+        "all" => "รับปีงบ 2569",
+        "M62" => "ม.62 / 18/1(ข) ทำเองรับเอง",
+        "M184" => "ม.18/4 พงส. ส่งสำนวน",
+        "M181k" => "ม.18/1ก ไต่สวนเอง",
+        "M582" => "ม.58/2 ไต่สวนเร่งด่วน",
+        _ => m,
+    };
+
+    private bool MetricHasZoneData => _drillMetric is "all" or "M62" or "M184";
+
+    private async Task OpenMetricDrillAsync(string metric)
+    {
+        _drillMetric = metric;
+        _drillZone = null;
+        _drillProvince = null;
+        _drillType = metric switch
+        {
+            "M62" => LegalType.M62,
+            "M184" => LegalType.M18_4_2,
+            _ => null,
+        };
+        _drillSnap = await Stats.GetSnapshotAsync(StatsFilter.Default with { Type = _drillType });
+    }
+
+    private IEnumerable<(Zone Zone, string Label, int Count)> DrillZoneUnits()
+        => _drillSnap is null ? [] : _drillSnap.Rows
+            .GroupBy(r => r.Zone)
+            .OrderByDescending(g => g.Count())
+            .Select(g => (g.Key, ComplaintStatsData.ZoneLabel(g.Key), g.Count()));
+
+    private async Task DrillZoneFromListAsync(Zone z)
+    {
+        _drillZone = z;
+        ResetDrillCaseLevel();
+        _drillProvince = null;
+        _drillSnap = await Stats.GetSnapshotAsync(StatsFilter.Default with { Type = _drillType, Zone = z });
+    }
+
+    private async Task DrillBackToMetricAsync()
+    {
+        if (_drillMetric is null) { CloseDrill(); return; }
+        ResetDrillCaseLevel();
+        _drillZone = null;
+        _drillProvince = null;
+        _drillSnap = await Stats.GetSnapshotAsync(StatsFilter.Default with { Type = _drillType });
+    }
+
+    private int? SelectedHeatZone
+        => _drillZone is Zone z && z.ToString().StartsWith("Pt") ? int.Parse(z.ToString()[2..]) : null;
+
+    private async Task OnHeatZoneClick(int zone)
+    {
+        if (!Enum.TryParse<Zone>($"Pt{zone}", out var z)) return;
+        if (_drillZone == z && _drillProvince is null && _drillMetric is null) { CloseDrill(); return; }
+        _drillMetric = null;
+        _drillType = null;
+        _drillZone = z;
+        ResetDrillCaseLevel();
+        _drillProvince = null;
+        _drillSnap = await Stats.GetSnapshotAsync(StatsFilter.Default with { Zone = z });
+    }
+
+    private async Task DrillProvince(string province)
+    {
+        if (_drillZone is not Zone z) return;
+        ResetDrillCaseLevel();
+        _drillProvince = province;
+        _drillSnap = await Stats.GetSnapshotAsync(StatsFilter.Default with { Type = _drillType, Zone = z, Province = province });
+    }
+
+    private async Task DrillBackToZone()
+    {
+        if (_drillZone is not Zone z) return;
+        ResetDrillCaseLevel();
+        _drillProvince = null;
+        _drillSnap = await Stats.GetSnapshotAsync(StatsFilter.Default with { Type = _drillType, Zone = z });
+    }
+
+    private void CloseDrill()
+    {
+        ResetDrillCaseLevel();
+        _drillZone = null;
+        _drillProvince = null;
+        _drillMetric = null;
+        _drillType = null;
+        _drillSnap = null;
+    }
+
+    // ── SLA popup: ตัวเลข → รายเขต → รายการคดี → รายละเอียด (ข้อมูลสังเคราะห์ deterministic) ──
+    private string? _slaPopup;     // null | yellow | red
+    private Zone? _slaZone;
+    private SlaCase? _slaCase;
+    private IReadOnlyList<SlaCase> _slaCases = [];
+
+    private IReadOnlyList<SlaCase> SlaCases
+        => _slaCases.Count > 0 ? _slaCases : _slaCases = SlaCaseData.GenerateCases(V6SlaYellowVal, V6SlaRedVal);
+
+    private string SlaBucketTitle
+        => _slaPopup == "red" ? "คดีเกิน 60 วัน (เลยกำหนดแดง)" : "คดีเกิน 45 วัน (เตือนเหลือง)";
+
+    private void OpenSlaPopup(string kind) { _slaPopup = kind; _slaZone = null; _slaCase = null; }
+
+    private void OpenSlaCase(SlaCase c)
+    {
+        _slaPopup ??= c.Bucket;
+        _slaZone ??= c.Zone;
+        _slaCase = c;
+    }
+
+    private void SlaSelectZone(Zone z) { _slaZone = z; _slaCase = null; }
+    private void SlaBackToZones() { _slaZone = null; _slaCase = null; }
+    private void SlaBackToCases() => _slaCase = null;
+    private void CloseSlaPopup() { _slaPopup = null; _slaZone = null; _slaCase = null; }
+
+    private IEnumerable<SlaCase> SlaBucketCases()
+        => SlaCases.Where(c => c.Bucket == _slaPopup);
+
+    private IEnumerable<(Zone Zone, string Label, int Count)> SlaZoneGroups()
+        => SlaBucketCases().GroupBy(c => c.Zone)
+            .OrderByDescending(g => g.Count())
+            .Select(g => (g.Key, ComplaintStatsData.ZoneLabel(g.Key), g.Count()));
+
+    private static string ThaiShortDate(DateTime d)
+    {
+        string[] m = { "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค." };
+        return $"{d.Day} {m[d.Month - 1]} {d.Year}";
+    }
+
+    private IEnumerable<(LegalType Type, string Label, int Count)> DrillTypeRows()
+        => _drillSnap is null ? [] : _drillSnap.Rows
+            .GroupBy(r => r.Type)
+            .OrderByDescending(g => g.Count())
+            .Select(g => (g.Key, ComplaintStatsData.LegalTypeLabel(g.Key), g.Count()));
+
+    private IEnumerable<(CaseStatus Status, string Label, int Count)> DrillStatusRows()
+        => _drillSnap is null ? [] : _drillSnap.Rows
+            .GroupBy(r => r.Status)
+            .OrderByDescending(g => g.Count())
+            .Select(g => (g.Key, ComplaintStatsData.StatusLabel(g.Key), g.Count()));
+
+    private IEnumerable<(string Label, int Count)> DrillMonthRows()
+        => _drillSnap is null ? [] : _drillSnap.Monthly.ByMonth.Select(m => (m.Label, m.Count));
+
+    private static string BarWidth(int value, IEnumerable<(string Label, int Count)> rows)
+    {
+        var max = rows.Select(r => r.Count).DefaultIfEmpty(0).Max();
+        return max <= 0 ? "0%" : $"{Math.Round(100.0 * value / max, 1).ToString(System.Globalization.CultureInfo.InvariantCulture)}%";
+    }
+
+    // Data Source Collections
+    private readonly IReadOnlyList<RiskRow> _allRiskRows =
+    [
+        new(1, "ก่อสร้างอาคารสำนักงานแห่งใหม่", "กรมโยธาธิการฯ", "1,250 ลบ.", 92, "จัดซื้อจัดจ้าง"),
+        new(2, "ก่อสร้างระบบประปาหมู่บ้าน", "การประปาส่วนภูมิภาค", "980 ลบ.", 89, "จัดซื้อจัดจ้าง"),
+        new(3, "จัดซื้อครุภัณฑ์ทางการแพทย์", "กระทรวงสาธารณสุข", "870 ลบ.", 87, "จัดซื้อจัดจ้าง"),
+        new(4, "อนุมัติใบอนุญาตโรงงานพลาสติก", "กรมโรงงานฯ", "530 ลบ.", 82, "ใบอนุญาต"),
+        new(5, "ออกใบอนุญาตก่อสร้างโรงงานเคมี", "อบต.บางปู", "420 ลบ.", 78, "ใบอนุญาต"),
+        new(6, "ก่อสร้างถนนสายหลัก อ.เมือง", "กรมทางหลวง", "650 ลบ.", 85, "จัดซื้อจัดจ้าง"),
+        new(7, "การเรียกผลประโยชน์อนุมัติสิทธิ์", "กรมที่ดิน", "380 ลบ.", 75, "ใบอนุญาต"),
+        new(8, "ร้องเรียนเจ้าหน้าที่เรียกรับเงินสินบน", "สำนักงานเขต", "120 ลบ.", 72, "ร้องเรียน"),
+        new(9, "ทุจริตเงินเยียวยาเกษตรกร จ.ชลบุรี", "กระทรวงเกษตรฯ", "290 ลบ.", 70, "ร้องเรียน"),
+        new(10, "ก่อสร้างสะพานข้ามแม่น้ำ", "กรมโยธาธิการฯ", "260 ลบ.", 69, "จัดซื้อจัดจ้าง")
+    ];
+
+    private readonly IReadOnlyList<RegionScore> _regions =
+    [
+        new("ภาคเหนือ", 72),
+        new("ตะวันออกเฉียงเหนือ", 68),
+        new("ภาคกลาง", 81),
+        new("ตะวันออก", 76),
+        new("ภาคใต้", 65)
+    ];
+
+    private readonly IReadOnlyList<ProvinceScore> _byProvince =
+    [
+        new(0, "ชลบุรี", 92),
+        new(1, "นครราชสีมา", 89),
+        new(2, "กรุงเทพมหานคร", 88),
+        new(3, "ขอนแก่น", 85),
+        new(4, "สงขลา", 83)
+    ];
+
+    private readonly IReadOnlyList<AlertRow> _allAlerts =
+    [
+        new("10:15", "red", "จัดซื้อจัดจ้าง", "พบความผิดปกติ TOR ล็อคสเปก", "โครงการก่อสร้างอาคารสำนักงานแห่งใหม่ กรมโยธาธิการฯ", 92),
+        new("10:12", "red", "จัดซื้อจัดจ้าง", "เสนอราคาสูงกว่ากลาง 30%", "โครงการจัดซื้อครุภัณฑ์ทางการแพทย์ กระทรวงสาธารณสุข", 87),
+        new("09:58", "amber", "ใบอนุญาต", "อนุมัติใบอนุญาตเร็วผิดปกติ", "โรงงานผลิตพลาสติก จ.ระยอง", 76),
+        new("09:45", "amber", "จัดซื้อจัดจ้าง", "ผู้ชนะการเสนอราคา รายเดิมซ้ำ 5 ครั้ง", "อบต.หนองแสง จ.สระแก้ว", 72),
+        new("09:30", "yellow", "ร้องเรียน", "ได้รับเรื่องร้องเรียน ตามพฤติการณ์", "โรงพยาบาลแห่งหนึ่ง จ.นครศรีธรรมราช", 69),
+        new("08:50", "red", "ใบอนุญาต", "อนุมัติการประเมินสิทธิ์ที่ดินทับซ้อน", "สำนักงานที่ดิน จ.ภูเก็ต", 81),
+        new("08:15", "yellow", "ร้องเรียน", "เจ้าหน้าที่ข่มขู่เรียกรับสินบน", "ด่านตรวจทางหลวง จ.ขอนแก่น", 64)
+    ];
+
+    private readonly IReadOnlyList<ActionRow> _allActions =
+    [
+        new(1, "ก่อสร้างอาคารสำนักงานแห่งใหม่", "ป.ป.ท.", "กำลังตรวจสอบ", "green", "23 พ.ค. 67", "30 พ.ค. 67", "จัดซื้อจัดจ้าง"),
+        new(2, "จัดซื้อครุภัณฑ์ทางการแพทย์", "ป.ป.ช.", "ช่วงสอบสวน", "amber", "22 พ.ค. 67", "15 มิ.ย. 67", "จัดซื้อจัดจ้าง"),
+        new(3, "อนุมัติใบอนุญาตโรงงานพลาสติก", "DSI", "รวบรวมหลักฐาน", "amber", "21 พ.ค. 67", "10 มิ.ย. 67", "ใบอนุญาต"),
+        new(4, "โครงการระบบประปาหมู่บ้าน", "สตง.", "ตรวจสอบแล้วเสร็จ", "green", "20 พ.ค. 67", "18 พ.ค. 67", "จัดซื้อจัดจ้าง"),
+        new(5, "ก่อสร้างถนนสายหลัก อ.เมือง", "ป.ป.ท.", "ส่งต่อหน่วยงานสอบสวน", "red", "19 พ.ค. 67", "25 พ.ค. 67", "จัดซื้อจัดจ้าง"),
+        new(6, "อนุมัติสิทธิ์ที่ดินเขากระโดง", "ป.ป.ช.", "รวบรวมหลักฐาน", "amber", "18 พ.ค. 67", "20 มิ.ย. 67", "ใบอนุญาต"),
+        new(7, "สืบสวนทุจริตเบิกจ่ายเบี้ยผู้สูงอายุ", "ป.ป.ท.", "ช่วงสอบสวน", "amber", "15 พ.ค. 67", "30 พ.ค. 67", "ร้องเรียน")
+    ];
+
+    // Computed Filter Properties
+    private List<RiskRow> FilteredRiskRows => ActiveTab == "ภาพรวม" 
+        ? _allRiskRows.ToList() 
+        : _allRiskRows.Where(r => r.Category == ActiveTab).ToList();
+
+    private List<AlertRow> FilteredAlerts => ActiveTab == "ภาพรวม"
+        ? _allAlerts.ToList()
+        : _allAlerts.Where(a => a.Type == ActiveTab).ToList();
+
+    private List<ActionRow> FilteredActions => ActiveTab == "ภาพรวม"
+        ? _allActions.ToList()
+        : _allActions.Where(a => a.Category == ActiveTab).ToList();
+
+    // KPI Counters based on Filter Category
+    private int KpiTotalComplaints => ActiveTab == "ภาพรวม" ? _total : _rows.Count(r => TranslateCategory(r.Category) == ActiveTab);
+    private int KpiActiveCount => ActiveTab == "ภาพรวม" ? 1246 : (ActiveTab == "จัดซื้อจัดจ้าง" ? 784 : (ActiveTab == "ใบอนุญาต" ? 312 : 150));
+    private int KpiDamageCount => ActiveTab == "ภาพรวม" ? 8745 : (ActiveTab == "จัดซื้อจัดจ้าง" ? 6240 : (ActiveTab == "ใบอนุญาต" ? 1850 : 655));
+    private int KpiSavedCount => ActiveTab == "ภาพรวม" ? 3210 : (ActiveTab == "จัดซื้อจัดจ้าง" ? 2180 : (ActiveTab == "ใบอนุญาต" ? 840 : 190));
+    private int KpiRedFlagCount => ActiveTab == "ภาพรวม" ? 189 : (ActiveTab == "จัดซื้อจัดจ้าง" ? 95 : (ActiveTab == "ใบอนุญาต" ? 64 : 30));
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var theme = await JS.InvokeAsync<string?>("localStorage.getItem", "dashTheme");
+            _isDark = !ShareMode && theme == "dark";
+        }
+        catch { }
+
+        try
+        {
+            _rows = await ComplaintApi.GetComplaintsAsync();
+            _total = _rows.Count;
+        }
+        catch
+        {
+            _rows = []; // backend ภายนอกล่ม/ออฟไลน์ — แดชบอร์ดส่วนที่เหลือต้องยังทำงาน (สำคัญกับหน้าแชร์)
+            _total = 0;
+        }
+        _loading = false;
+
+        var snap = await Stats.GetSnapshotAsync(StatsFilter.Default);
+        foreach (var r in snap.Zones.ByRegion)
+        {
+            if (HeatmapLogic.ZoneFromRegionLabel(r.Label) is int zi)
+                _heatZones[zi] = new ZoneHeatValue(r.Count, r.Count);
+            else
+                _centralCount += r.Count;
+        }
+        _heatMax = _heatZones.Count > 0 ? _heatZones.Values.Max(v => v.Value) : 0;
+        _heatTotal = snap.Kpi.ReceivedThisYear;
+        _accumTotal = snap.Kpi.Accumulated;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (ShareMode) await JS.InvokeVoidAsync("initShareRotate");
+            try
+            {
+                var theme = await JS.InvokeAsync<string?>("localStorage.getItem", "dashTheme");
+                _isDark = !ShareMode && theme == "dark";
+            }
+            catch { }
+
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("registerAnalyticsComponent", _dotNetRef);
+            await JS.InvokeVoidAsync("startWarRoomClock");
+        }
+
+        if (!_loading && !_chartsInitialized)
+        {
+            _chartsInitialized = true;
+            await RenderChartsAsync();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnThemeChangedAsync(bool isDark)
+    {
+        _isDark = isDark;
+        await RenderChartsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // Switch active tabs (ภาพรวม, จัดซื้อจัดจ้าง, etc.)
+    private async Task SwitchTab(string tabName)
+    {
+        ActiveTab = tabName;
+        // Re-render charts with appropriate data
+        await RenderChartsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // Switch version between V1 - V5
+    private async Task SwitchVersion(int verNo)
+    {
+        SelectedVersion = verNo;
+        _chartsInitialized = false;
+        
+        await Task.Delay(150); // Give time for canvas elements of the new version to mount in Blazor DOM
+        await RenderChartsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // Interactive Province Click
+    [JSInvokable]
+    public void ClickProvince(string provinceName)
+    {
+        _selectedProvinceName = provinceName;
+        var stats = _byProvince.FirstOrDefault(p => p.Name == provinceName) 
+                    ?? new ProvinceScore(99, provinceName, 74);
+                    
+        _selectedProvinceScore = stats.Score;
+        _selectedProvinceCount = stats.Name == "ชลบุรี" ? 34 : (stats.Name == "นครราชสีมา" ? 28 : (stats.Name == "กรุงเทพมหานคร" ? 54 : 18));
+        
+        _selectedProvinceCases = stats.Name == "ชลบุรี" 
+            ? new List<string> { "ทุจริตประมูลจัดซื้อระบบไฟฟ้าแสงสว่าง", "เรียกรับสินบนอนุมัติการประเมินสิทธิ์ที่ดิน", "เจ้าหน้าที่ทุจริตเงินเยียวยาเกษตรกร" }
+            : (stats.Name == "กรุงเทพมหานคร" 
+                ? new List<string> { "ทุจริต TOR โครงการจัดซื้อครุภัณฑ์แพทย์", "การเรียกรับผลประโยชน์อนุมัติสิ่งก่อสร้าง", "การละเว้นการปฏิบัติหน้าที่ราชการเขต" } 
+                : new List<string> { "เจ้าหน้าที่ทุจริตโครงการก่อสร้างประปา", "เรียกเงินใต้โต๊ะออกสิทธิ์ที่ทำกิน", "พบผู้รับเหมารายเดียวชนะงานซ้ำซ้อน" });
+
+        _showProvinceModal = true;
+        StateHasChanged();
+    }
+
+    private void CloseProvinceModal()
+    {
+        _showProvinceModal = false;
+        StateHasChanged();
+    }
+
+    private void OnMapTypeChanged(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString() ?? "ภาพรวม";
+        _ = SwitchTab(val);
+    }
+
+    // ── Report Center Modal ──────────────────────────────────────
+    private static readonly (string Name, int Year, int LastDay)[] _fiscalMonths =
+    [
+        ("ตุลาคม",     2568, 31), ("พฤศจิกายน", 2568, 30), ("ธันวาคม",   2568, 31),
+        ("มกราคม",    2569, 31), ("กุมภาพันธ์", 2569, 28), ("มีนาคม",    2569, 31),
+        ("เมษายน",    2569, 30), ("พฤษภาคม",   2569, 31), ("มิถุนายน",  2569, 30),
+        ("กรกฎาคม",   2569, 31), ("สิงหาคม",   2569, 31), ("กันยายน",   2569, 30),
+    ];
+    // คำนวณ fiscal month index จากเดือนปัจจุบัน (ต.ค.=0 ... ก.ย.=11)
+    private static int CurrentFiscalMonthIdx()
+    {
+        var m = DateTime.Now.Month;
+        return m >= 10 ? m - 10 : m + 2;
+    }
+    private int _reportMonthIdx = CurrentFiscalMonthIdx();
+    private bool _showReportModal = false;
+    private HashSet<string> _selectedReports = new HashSet<string> { "lm_py68" };
+
+    private void OpenReportModal() => _showReportModal = true;
+    private void CloseReportModal() => _showReportModal = false;
+
+    private void ToggleReport(string key)
+    {
+        if (!_selectedReports.Remove(key))
+            _selectedReports.Add(key);
+    }
+
+    private async Task ExportReportCsvAsync()
+    {
+        _showReportModal = false;
+        var data = BuildExportData();
+        await JS.InvokeVoidAsync("exportAnalyticsCsv", data);
+    }
+
+    private async Task ExportReportPdfAsync()
+    {
+        _showReportModal = false;
+        if (_selectedReports.Contains("director"))
+        {
+            await JS.InvokeVoidAsync("open", "/analytics/director-report", "_blank");
+            return;
+        }
+        var fm = _fiscalMonths[_reportMonthIdx];
+        var config = new
+        {
+            types          = _selectedReports.ToArray(),
+            yearMode       = SelectedYearMode == "fiscal" ? "ปีงบประมาณ 2569" : "ปีปฏิทิน 2568",
+            reportMonth    = fm.Name,
+            reportYear     = fm.Year,
+            reportDate     = $"{fm.LastDay} {fm.Name} {fm.Year}",
+            reportMonthIdx = _reportMonthIdx,
+        };
+        await JS.InvokeVoidAsync("generateOfficialReport", config);
+    }
+
+    private object BuildExportData()
+    {
+        var now = DateTime.Now;
+        var thaiMonths = new[] { "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม" };
+        var reportDate = $"{now.Day} {thaiMonths[now.Month - 1]} {now.Year + 543}";
+
+        return new
+        {
+            reportDate,
+            yearMode = SelectedYearMode == "fiscal" ? "ปีงบประมาณ 2568" : "ปีปฏิทิน 2568",
+            totalCases = V6TotalCases,
+            lawSections = new[]
+            {
+                new { label = "มาตรา 18(1)(ง) พรบ.ป.ป.ท.", value = V6Sec18_1gVal, pct = $"{V6Sec18_1gPct:F2}" },
+                new { label = "มาตรา 18(4) พรบ.ป.ป.ท.", value = V6Sec18_4Val, pct = $"{V6Sec18_4Pct:F2}" },
+                new { label = "มาตรา 62 พรบ.ป.ป.ช.", value = V6Sec62Val, pct = $"{V6Sec62Pct:F2}" },
+                new { label = "มาตรา 58/2 พรบ.ป.ป.ท.", value = V6Sec58_2Val, pct = $"{V6Sec58_2Pct:F2}" }
+            },
+            intakeChannels = new[]
+            {
+                new { label = "ม.62 (ยื่นตรง)", value = IntakeM62Val },
+                new { label = "เว็บไซต์", value = IntakeWebVal },
+                new { label = "ไปรษณีย์", value = IntakePostVal },
+                new { label = "สายด่วน 1206", value = IntakeCallVal },
+                new { label = "ทางรัฐ (แอป)", value = IntakeAppVal }
+            },
+            m62Rows = GetM62DrilldownRows().Select(r => new { r.Region, r.Received, r.Accum }).ToList()
+        };
+    }
+
+    public void Dispose()
+    {
+        _dotNetRef?.Dispose();
+        try
+        {
+            _ = JS.InvokeVoidAsync("stopWarRoomClock");
+        }
+        catch { }
+    }
+
+    private async Task RenderChartsAsync()
+    {
+        if (SelectedVersion == 1)
+        {
+            if (ActiveTab == "ร้องเรียน")
+            {
+                // 2. ร้องเรียน ทำข้อมูลรายชั่วโมง (Hourly Complaint Chart)
+                // แสดง 24 แท่งชั่วโมง โดยเน้นช่วงพีค 09:00 - 11:00 น.
+                await JS.InvokeVoidAsync("initTrendChart", "chartMonthly", 
+                    new[] { "00:00", "02:00", "04:00", "06:00", "08:00", "09:00", "10:00", "11:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00" }, 
+                    new object[] { 2, 1, 3, 8, 22, 35, 58, 42, 18, 29, 31, 15, 9, 4 },
+                    new object[] { 1, 1, 2, 5, 14, 21, 38, 28, 12, 18, 20, 10, 6, 2 }, _isDark);
+            }
+            else
+            {
+                // 1. กราฟจำนวนเรื่องร้องเรียนปกติ (Line Chart)
+                await JS.InvokeVoidAsync("initTrendChart", "chartMonthly", 
+                    new[] { "17 พ.ค.", "18 พ.ค.", "19 พ.ค.", "20 พ.ค.", "21 พ.ค.", "22 พ.ค.", "23 พ.ค." }, 
+                    new object[] { 220, 480, 180, 690, 310, 890, 620 },
+                    new object[] { 180, 320, 150, 450, 240, 600, 520 }, _isDark);
+            }
+
+            // 2. กราฟความเสียหาย (Bar Chart)
+            await JS.InvokeVoidAsync("initAnalyticsChart", "chartInvestigation", "bar",
+                new[] { "17 พ.ค.", "18 พ.ค.", "19 พ.ค.", "20 พ.ค.", "21 พ.ค.", "22 พ.ค.", "23 พ.ค." },
+                new object[] { 1100, 1800, 800, 2200, 1500, 2900, KpiDamageCount },
+                new[] { "#3b82f6" }, _isDark);
+
+            // 3. กราฟวงกลมประเภทความเสี่ยง (Doughnut Chart)
+            await JS.InvokeVoidAsync("initAnalyticsChart", "chartRisk", "doughnut",
+                new[] { "จัดซื้อจัดจ้าง", "ใบอนุญาต", "งบประมาณ", "บุคลากร", "อื่นๆ" },
+                new object[] { 48, 25, 15, 7, 5 },
+                new[] { "#dc2626", "#ea580c", "#d97706", "#65a30d", "#2563eb" }, _isDark);
+
+            await JS.InvokeVoidAsync("initThailandRiskMap3D", "thailandRiskMap");
+        }
+        else if (SelectedVersion == 2)
+        {
+            // V2: Horizontal Bar Chart, Mini Map, Trend Chart
+            await JS.InvokeVoidAsync("initAnalyticsChart", "chartMinistryV2", "bar-h",
+                new[] { "กระทรวงคมนาคม", "กระทรวงมหาดไทย", "กระทรวงสาธารณสุข", "กระทรวงเกษตรฯ", "กระทรวงศึกษาธิการ" },
+                new object[] { 6240, 3120, 1850, 950, 480 },
+                new[] { "#ef4444", "#f97316", "#f59e0b", "#3b82f6", "#10b981" }, _isDark);
+
+            await JS.InvokeVoidAsync("initTrendChart", "chartTrendV2", 
+                new[] { "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค." }, 
+                new object[] { 4500, 5200, 6100, 5800, 6900, 7800, 8745 },
+                new object[] { 3800, 4200, 4800, 5100, 5500, 6200, 6900 }, _isDark);
+
+            await JS.InvokeVoidAsync("initThailandRiskMap3D", "thailandRiskMapV2");
+        }
+        else if (SelectedVersion == 3)
+        {
+            // V3: Giant 3D Thailand Map, Regional Doughnut Chart
+            await JS.InvokeVoidAsync("initThailandRiskMap3D", "thailandRiskMapV3");
+
+            await JS.InvokeVoidAsync("initAnalyticsChart", "chartRiskV3", "doughnut",
+                new[] { "จัดซื้อจัดจ้าง", "ใบอนุญาต", "งบประมาณ", "บุคลากร", "อื่นๆ" },
+                new object[] { 48, 25, 15, 7, 5 },
+                new[] { "#dc2626", "#ea580c", "#d97706", "#65a30d", "#2563eb" }, _isDark);
+        }
+        else if (SelectedVersion == 4)
+        {
+            // V4: Full-width Time series line chart, SLA compass gauge
+            await JS.InvokeVoidAsync("initTrendChart", "chartTrendV4", 
+                new[] { "00:00", "02:00", "04:00", "06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00" }, 
+                new object[] { 12, 8, 5, 20, 110, 245, 150, 185, 210, 95, 60, 30 },
+                new object[] { 8, 4, 3, 15, 80, 195, 130, 160, 175, 70, 45, 20 }, _isDark);
+
+            await JS.InvokeVoidAsync("initAnalyticsChart", "chartComparisonV4", "doughnut",
+                new[] { "สำเร็จ", "เป้าหมายที่เหลือ" },
+                new object[] { 88, 12 },
+                new[] { "#10b981", "rgba(128,128,128,0.15)" }, _isDark);
+        }
+        else if (SelectedVersion == 5)
+        {
+            // V5: SLA response time doughnut chart
+            await JS.InvokeVoidAsync("initAnalyticsChart", "chartSlaV5", "doughnut",
+                new[] { "ในเกณฑ์ SLA", "เกินกำหนด" },
+                new object[] { 88, 12 },
+                new[] { "#10b981", "#ef4444" }, _isDark);
+        }
+        else if (SelectedVersion == 6)
+        {
+            // Intake channels Top 5
+            await JS.InvokeVoidAsync("initAnalyticsChart", "chartIntakeV6", "doughnut",
+                new[] { "ม.62 (ป.ป.ช. ส่งมอบ)", "เว็บไซต์ (pacc.go.th)", "ไปรษณีย์", "สายด่วน 1206", "แอพพลิเคชันทางรัฐ" },
+                new object[] { 163, 99, 94, 68, 33 },
+                new[] { "#0f2d5e", "#c8a96e", "#1e3a8a", "#e5d5b7", "#60a5fa" }, _isDark);
+
+            // Backlog / intake trend compare (past vs present)
+            if (SelectedYearMode == "fiscal")
+            {
+                // Fiscal year mode: show 2561-2569 intake
+                await JS.InvokeVoidAsync("initTrendChart", "chartCompareV6",
+                    new[] { "2561", "2562", "2563", "2564", "2565", "2566", "2567", "2568", "2569" },
+                    new object[] { 3196, 2045, 1374, 659, 264, 433, 697, 1511, 560 }, // Current / Actual
+                    new object[] { 2800, 1900, 1200, 500, 200, 380, 600, 1200, 450 }, _isDark); // Historical Target
+            }
+            else
+            {
+                // Calendar year mode: show 2560-2568 (since 2569 isn't complete in calendar year yet)
+                await JS.InvokeVoidAsync("initTrendChart", "chartCompareV6",
+                    new[] { "2560", "2561", "2562", "2563", "2564", "2565", "2566", "2567", "2568" },
+                    new object[] { 4500, 3100, 2100, 1400, 700, 300, 480, 750, 1511 }, // Actual
+                    new object[] { 4200, 2900, 1900, 1300, 600, 250, 400, 700, 1350 }, _isDark); // Target
+            }
+        }
+    }
+
+    private static string ScoreClass(int score) => score >= 85 ? "risk-red" : score >= 75 ? "risk-orange" : "risk-yellow";
+    private static string ScoreTextClass(int score) => score >= 85 ? "c-red" : score >= 75 ? "c-orange" : score >= 65 ? "c-amber" : "c-green";
+    
+    private static string RiskLabel(int score) =>
+        score >= 85 ? "สูงมาก" :
+        score >= 75 ? "สูง" :
+        score >= 60 ? "ปานกลาง" : "ต่ำ";
+
+    private string TranslateCategory(string catCode)
+    {
+        if (catCode.Contains("18/4")) return "จัดซื้อจัดจ้าง";
+        if (catCode.Contains("58/2")) return "ใบอนุญาต";
+        return "ร้องเรียน";
+    }
+
+    private sealed record RiskRow(int Rank, string Title, string Owner, string Budget, int Score, string Category);
+    private sealed record RegionScore(string Name, int Score);
+    private sealed record ProvinceScore(int Index, string Name, int Score);
+    private sealed record AlertRow(string Time, string Level, string Type, string Title, string Detail, int Score);
+    private sealed record ActionRow(int Rank, string Title, string Owner, string Status, string Level, string Due, string Deadline, string Category);}

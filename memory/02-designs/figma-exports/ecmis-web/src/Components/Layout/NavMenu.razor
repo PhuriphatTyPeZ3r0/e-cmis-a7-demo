@@ -1,0 +1,451 @@
+@implements IDisposable
+<aside class="sidebar @(SidebarOpen ? "open" : "collapsed")" id="sidebar">
+    <button class="sidebar-close-btn" @onclick="OnClose">
+        <i class="bi bi-x-lg"></i>
+    </button>
+    <div class="sidebar-brand">
+        <div class="sidebar-logo-mark" style="width:44px;height:44px;min-width:44px;min-height:44px;flex:0 0 44px;aspect-ratio:1 / 1;border-radius:50%;border:2px solid var(--gold);background:linear-gradient(135deg,var(--gold-light),var(--gold));display:flex;align-items:center;justify-content:center;color:var(--navy-deep);font-weight:800;font-size:14px;line-height:1;text-align:center;white-space:nowrap">
+            ป.ป.ท.
+        </div>
+        <div class="brand-text">
+            <div class="brand-title">E-CMIS</div>
+            <div class="brand-sub">COMPLAINT MANAGEMENT</div>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        @if (_menuLoading && _menuModules.Count == 0)
+        {
+            <div style="padding:16px 12px;font-size:12px;color:rgba(255,255,255,.55);text-align:center">
+                <span class="spinner-border spinner-border-sm" style="width:14px;height:14px;border-width:2px"></span>
+                <div style="margin-top:8px">กำลังโหลดเมนู...</div>
+            </div>
+        }
+        else if (_navReady && _menuModules.Count == 0)
+        {
+            @* Intentionally empty: dashboard shortcut is hidden from the sidebar. *@
+        }
+        else if (_navReady)
+        {
+            @foreach (var module in _menuModules.OrderBy(m => m.DisplayOrder).ThenBy(m => m.Code))
+            {
+                if (IsHiddenSidebarModule(module.Code))
+                    continue;
+
+                var subMenus = GetSidebarMenus(module);
+                if (subMenus.Count == 0)
+                    continue;
+
+                @if (IsSingleTopLinkModule(module.Code))
+                {
+                    var link = subMenus[0];
+                    <div class="nav-item-custom">
+                        <NavLink class="nav-link-custom" href="@link.Route" Match="NavLinkMatch.Prefix" title="@module.NameTh">
+                            <i class="@IconClass(module.Icon)"></i>
+                            @if (SidebarOpen) { <span>@module.NameTh</span> }
+                        </NavLink>
+                    </div>
+                }
+                else
+                {
+                    var open = IsGroupOpen(module.Code);
+                    <div class="nav-group">
+                        <div class="nav-group-toggle @(open ? "open" : "")" @onclick="() => ToggleGroup(module.Code)" title="@module.NameTh">
+                            <div class="nav-group-label" style="@(module.Code == "mod.migration" ? "color:var(--navy)" : null)">
+                                <i class="@IconClass(module.Icon)"></i>
+                                <span>@module.NameTh</span>
+                            </div>
+                            <i class="bi bi-chevron-down nav-group-arrow"></i>
+                        </div>
+                        <div class="nav-group-items @(open ? "open" : "")">
+                            @foreach (var item in subMenus)
+                            {
+                                <a class="nav-sublink @(IsActive(item.Route) ? "active" : "")" href="@item.Route">
+                                    <i class="@IconClass(item.Icon)"></i> @item.NameTh
+                                    @if (IsApprovalsRoute(item.Route) && PendingApprovalsBadge > 0)
+                                    {
+                                        <span class="nav-badge">@PendingApprovalsBadge</span>
+                                    }
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        }
+
+    </nav>
+    <div class="sidebar-footer">
+        @if (SidebarOpen)
+        {
+            <div class="user-card">
+                <div class="user-avatar">@UserInitials</div>
+                <div>
+                    <div class="user-name">@UserDisplayName</div>
+                    <div class="user-role">@UserRoleLabel</div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="user-avatar user-avatar-mini">@UserInitials</div>
+        }
+    </div>
+</aside>
+
+@code {
+    [Parameter] public bool SidebarOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EcmisWeb.Services.CurrentUserDto? CurrentUser { get; set; }
+
+    [Inject] private RegistrationService RegSvc { get; set; } = default!;
+    [Inject] private EcmisWeb.Services.SystemAccessApiService SystemApi { get; set; } = default!;
+    [Inject] private NavigationManager Nav { get; set; } = default!;
+
+    private List<MenuSystemDto> _menuModules = new();
+    private HashSet<string> visibleMenuRoutes = new(StringComparer.OrdinalIgnoreCase);
+    private HashSet<string> accessibleSystems = new(StringComparer.OrdinalIgnoreCase);
+    private HashSet<string> menuCatalogSystems = new(StringComparer.OrdinalIgnoreCase);
+    private HashSet<string> visibleMenuSystems = new(StringComparer.OrdinalIgnoreCase);
+    private Dictionary<string, bool> _groupOpen = new(StringComparer.OrdinalIgnoreCase);
+    private bool isSuperAdmin;
+    private int PendingApprovalsBadge;
+    private bool _menuLoaded;
+    private bool _userReady; // CurrentUser พร้อม → แสดงเมนูที่ใช้ role/permission เท่านั้น
+    private bool _navReady = true;  // แสดงเมนูหลักทันที แล้วค่อย refine ตาม permission เมื่อ API พร้อม
+
+    protected override async Task OnInitializedAsync()
+    {
+        Nav.LocationChanged += OnLocationChanged;
+        SetActiveGroup(Nav.Uri);
+        await LoadMenuAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // UserReady ใช้สำหรับเมนูที่ต้องใช้ Permission — ตั้งทันทีที่ CurrentUser พร้อม
+        if (CurrentUser != null && !_userReady)
+            _userReady = true;
+
+        // โหลด menu เพียงครั้งเดียว — _menuLoading ป้องกัน concurrent call
+        if (!_menuLoaded && !_menuLoading)
+            await LoadMenuAsync();
+        else if (CurrentUser != null && _menuLoaded && !_navReady)
+        {
+            // API กลับมาก่อน CurrentUser — flip navReady โดยไม่ต้องเรียก StateHasChanged เอง
+            // (Blazor re-render หลัง OnParametersSetAsync อัตโนมัติ)
+            _navReady = true;
+        }
+    }
+
+    private bool _menuLoading;
+
+    private async Task LoadMenuAsync()
+    {
+        if (_menuLoading) return;
+        _menuLoading = true;
+
+        try
+        {
+            try
+            {
+                await FetchMenuFromApiAsync();
+                if (_menuModules.Count == 0)
+                {
+                    SystemApi.InvalidateMenuCache();
+                    await FetchMenuFromApiAsync();
+                }
+                _menuLoaded = true;
+            }
+            catch
+            {
+                _menuModules.Clear();
+                visibleMenuRoutes.Clear();
+                _menuLoaded = true;
+                isSuperAdmin = HasRole("super_admin");
+            }
+
+            // เมนูหลักถูก render ไว้ก่อนแล้ว ขั้นนี้แค่ refine ตาม permission จาก API
+            _navReady = true;
+            if (CurrentUser != null) _userReady = true;
+
+            // โหลด badges หลัง nav พร้อม — ทำใน background ไม่บล็อก render
+            _ = LoadBadgesAsync();
+        }
+        finally
+        {
+            _menuLoading = false;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ReloadMenuAsync()
+    {
+        SystemApi.InvalidateMenuCache();
+        _menuLoaded = false;
+        _menuModules.Clear();
+        await LoadMenuAsync();
+    }
+
+    private async Task FetchMenuFromApiAsync()
+    {
+        var menu = await SystemApi.MyMenuAsync();
+        isSuperAdmin = menu?.IsSuperAdmin ?? false;
+        if (!isSuperAdmin && HasRole("super_admin"))
+            isSuperAdmin = true;
+
+        _menuModules = menu?.Modules is { Count: > 0 } mods
+            ? mods
+            : menu?.Systems ?? new();
+
+        accessibleSystems.Clear();
+        menuCatalogSystems.Clear();
+        visibleMenuSystems.Clear();
+        visibleMenuRoutes.Clear();
+
+        if (menu?.Systems is { Count: > 0 } legacySystems)
+        {
+            foreach (var s in legacySystems)
+            {
+                if (string.IsNullOrEmpty(s.Code)) continue;
+                accessibleSystems.Add(s.Code);
+                if (s.Menus.Count > 0) menuCatalogSystems.Add(s.Code);
+                foreach (var item in s.Menus)
+                {
+                    if (!string.IsNullOrWhiteSpace(item.Route) && !item.Route.Contains('{'))
+                    {
+                        visibleMenuRoutes.Add(NormalizeRoute(item.Route));
+                        visibleMenuSystems.Add(s.Code);
+                    }
+                }
+            }
+        }
+
+        foreach (var s in _menuModules)
+        {
+            if (!string.IsNullOrWhiteSpace(s.Code))
+                accessibleSystems.Add(s.Code);
+            if (s.Menus.Count > 0 && !string.IsNullOrWhiteSpace(s.Code))
+                menuCatalogSystems.Add(s.Code);
+
+            foreach (var item in s.Menus)
+            {
+                if (!string.IsNullOrWhiteSpace(item.Route) && !item.Route.Contains('{'))
+                {
+                    visibleMenuRoutes.Add(NormalizeRoute(item.Route));
+                    if (!string.IsNullOrWhiteSpace(s.Code))
+                        visibleMenuSystems.Add(s.Code);
+                }
+            }
+        }
+    }
+
+    private static string IconClass(string? icon)
+    {
+        if (string.IsNullOrWhiteSpace(icon)) return "bi-circle";
+        var i = icon.Trim();
+        if (i.StartsWith("bi ", StringComparison.Ordinal)) return i;
+        if (i.StartsWith("bi-", StringComparison.Ordinal)) return "bi " + i;
+        return "bi bi-" + i;
+    }
+
+    private async Task LoadBadgesAsync()
+    {
+        if (!CanApproveAny) return;
+        try
+        {
+            var pAccessTask = SafeCountAsync(() => SystemApi.PendingSystemAccessAsync());
+            var pOrgTask    = SafeCountAsync(() => SystemApi.PendingChangeRequestsAsync("org"));
+            var pRoleTask   = SafeCountAsync(() => SystemApi.PendingChangeRequestsAsync("role"));
+            await Task.WhenAll(pAccessTask, pOrgTask, pRoleTask);
+            PendingApprovalsBadge = pAccessTask.Result + pOrgTask.Result + pRoleTask.Result;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch { PendingApprovalsBadge = 0; }
+    }
+
+    private static async Task<int> SafeCountAsync<T>(Func<Task<List<T>>> fn)
+    {
+        try { return (await fn()).Count; } catch { return 0; }
+    }
+
+    private List<MenuItemDto> GetSidebarMenus(MenuSystemDto module)
+    {
+        if (!_menuLoaded)
+            return module.Menus.Where(m => IsSidebarRoute(m.Route)).ToList();
+
+        return module.Menus
+            .Where(m => IsSidebarRoute(m.Route) && CanSeeMenuItem(m) && IsAdminSidebarItem(module.Code, m.Code))
+            .OrderBy(m => m.DisplayOrder)
+            .ThenBy(m => m.Code)
+            .ToList();
+    }
+
+    private bool CanSeeMenuItem(MenuItemDto item)
+    {
+        if (isSuperAdmin || !_menuLoaded)
+            return true;
+        if (string.IsNullOrWhiteSpace(item.Route))
+            return false;
+        return visibleMenuRoutes.Contains(NormalizeRoute(item.Route));
+    }
+
+    private static bool IsSidebarRoute(string? route) =>
+        !string.IsNullOrWhiteSpace(route) && !route.Contains('{');
+
+    private static bool IsAdminSidebarItem(string moduleCode, string itemCode)
+    {
+        if (!string.Equals(moduleCode, "mod.admin", StringComparison.OrdinalIgnoreCase))
+            return true;
+        return itemCode.StartsWith("admin.", StringComparison.OrdinalIgnoreCase)
+            && itemCode is not (
+                "admin.registration.detail" or
+                "admin.news_categories" or
+                "admin.api_keys.create" or
+                "admin.public_relations" or
+                "admin.user.detail" or
+                "admin.system.menus");
+    }
+
+    private static bool IsSingleTopLinkModule(string moduleCode) =>
+        moduleCode is "mod.dashboard";
+
+    private static bool IsHiddenSidebarModule(string moduleCode) =>
+        moduleCode is "mod.dashboard" or "mod.migration";
+
+    private static bool IsApprovalsRoute(string? route) =>
+        string.Equals(NormalizeRoute(route ?? ""), "/admin/approvals", StringComparison.Ordinal);
+
+    private bool IsGroupOpen(string moduleCode) =>
+        _groupOpen.GetValueOrDefault(moduleCode);
+
+    private void ToggleGroup(string moduleCode)
+    {
+        _groupOpen[moduleCode] = !IsGroupOpen(moduleCode);
+    }
+
+    private static string NormalizeRoute(string route)
+    {
+        var normalized = route.Trim();
+        if (!normalized.StartsWith('/'))
+            normalized = "/" + normalized;
+        return normalized.TrimEnd('/').ToLowerInvariant();
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        SetActiveGroup(e.Location);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void SetActiveGroup(string url)
+    {
+        var path = new Uri(url).AbsolutePath.ToLower().TrimEnd('/');
+        _groupOpen.Clear();
+        foreach (var module in _menuModules)
+        {
+            if (IsHiddenSidebarModule(module.Code))
+                continue;
+            if (IsSingleTopLinkModule(module.Code))
+                continue;
+            if (module.Menus.Any(m => PathMatches(path, m.Route)))
+                _groupOpen[module.Code] = true;
+        }
+    }
+
+    private static bool PathMatches(string path, string? route)
+    {
+        if (!IsSidebarRoute(route))
+            return false;
+        var r = NormalizeRoute(route!);
+        return path == r || path.StartsWith(r + "/", StringComparison.Ordinal);
+    }
+
+    private bool IsActive(string? route)
+    {
+        if (string.IsNullOrWhiteSpace(route)) return false;
+        var currentPath = new Uri(Nav.Uri).AbsolutePath.ToLowerInvariant().TrimEnd('/');
+        var targetPath = NormalizeRoute(route);
+        return currentPath == targetPath;
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
+    }
+
+    private int PendingCount => RegSvc.CountByStatus(RegistrationStatus.Pending);
+
+    private bool HasRole(string role)
+    {
+        if (CurrentUser?.Roles is not { Length: > 0 } roles)
+            return false;
+
+        if (string.Equals(role, "super_admin", StringComparison.OrdinalIgnoreCase))
+            return roles.Any(x =>
+                string.Equals(x, "super_admin", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(x, "SUPER_ADMIN", StringComparison.OrdinalIgnoreCase));
+
+        return roles.Any(x => string.Equals(x, role, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private bool HasGroup(string groupCode) =>
+        CurrentUser?.Roles.Any(x => string.Equals(x, groupCode, StringComparison.OrdinalIgnoreCase)) == true;
+
+    private bool CanManageUsers =>
+        HasGroup("super_admin") || HasGroup("org_admin");
+
+    private bool CanReadRegistrations =>
+        HasGroup("super_admin") || HasGroup("org_admin") || HasGroup("officer");
+
+    private bool CanReadReports =>
+        HasGroup("super_admin") || HasGroup("central_support");
+
+    private bool CanManagePermissions =>
+        HasGroup("super_admin");
+
+    private bool CanApproveAny =>
+        HasGroup("super_admin") || HasGroup("org_admin");
+
+    private bool CanManageOrgs =>
+        HasGroup("super_admin") || HasGroup("org_admin");
+
+    private bool CanManageCentralSupport =>
+        HasGroup("super_admin") || HasGroup("central_support");
+
+    private bool CanManageSystems =>
+        HasGroup("super_admin");
+
+    private bool CanMigrate =>
+        HasGroup("super_admin");
+
+    private string UserDisplayName
+    {
+        get
+        {
+            var name = $"{CurrentUser?.FirstName} {CurrentUser?.LastName}".Trim();
+            return string.IsNullOrWhiteSpace(name) ? CurrentUser?.Username ?? "ผู้ใช้งาน" : name;
+        }
+    }
+
+    private string UserInitials
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(CurrentUser?.FirstName))
+                return CurrentUser.FirstName[..1].ToUpperInvariant();
+            if (!string.IsNullOrWhiteSpace(CurrentUser?.Username))
+                return CurrentUser.Username[..1].ToUpperInvariant();
+            return "U";
+        }
+    }
+
+    private string UserRoleLabel =>
+        HasRole("super_admin") ? "Super Admin" :
+        HasRole("admin") || HasRole("org_admin") ? "Admin หน่วยงาน" :
+        _menuLoaded && _menuModules.Count == 0 ? "ไม่มีสิทธิ์เมนู" :
+        HasRole("officer") ? "เจ้าหน้าที่" :
+        CurrentUser?.UserType ?? "";
+
+}

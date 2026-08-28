@@ -1,0 +1,239 @@
+@page "/thaid-callback"
+@layout Components.Layout.BlankLayout
+@inject NavigationManager Nav
+@inject EcmisWeb.Services.ThaiDService ThaiDSvc
+@inject EcmisWeb.Services.AuthApiService AuthApi
+@inject EcmisWeb.Services.SessionService SessionSvc
+@inject EcmisWeb.Services.CurrentUserService CurrentUserSvc
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #050b18; }
+
+.cb-root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Sarabun', sans-serif;
+    background: #050b18;
+    color: #fff;
+    gap: 20px;
+    padding: 32px;
+}
+
+.cb-logo {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: .06em;
+    color: #c8a96e;
+}
+
+.cb-card {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(200,169,110,.18);
+    border-radius: 16px;
+    padding: 36px 40px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+}
+
+.cb-spinner {
+    width: 44px; height: 44px;
+    border: 3px solid rgba(200,169,110,.2);
+    border-top-color: #c8a96e;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    margin: 0 auto 20px;
+}
+@@keyframes spin { to { transform: rotate(360deg); } }
+
+.cb-title   { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.cb-sub     { font-size: 14px; color: rgba(255,255,255,.5); line-height: 1.6; }
+
+.cb-err-ico { font-size: 40px; color: #f87171; margin-bottom: 12px; }
+.cb-err-title { font-size: 18px; font-weight: 700; color: #f87171; margin-bottom: 8px; }
+.cb-err-msg { font-size: 13px; color: rgba(255,255,255,.5); margin-bottom: 24px; }
+
+.cb-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 24px; border-radius: 8px; border: none; cursor: pointer;
+    font-size: 14px; font-weight: 600; font-family: inherit;
+    background: rgba(200,169,110,.15);
+    border: 1px solid rgba(200,169,110,.3);
+    color: #c8a96e;
+    transition: background .2s;
+}
+.cb-btn:hover { background: rgba(200,169,110,.25); }
+</style>
+
+<div class="cb-root">
+    <div class="cb-logo">E‑CMIS</div>
+
+    <div class="cb-card">
+        @if (_state == CbState.Processing)
+        {
+            <div class="cb-spinner"></div>
+            <div class="cb-title">กำลังตรวจสอบตัวตน</div>
+            <div class="cb-sub">รอสักครู่...</div>
+        }
+        else if (_state == CbState.Error)
+        {
+            <div class="cb-err-ico"><i class="bi bi-shield-x"></i></div>
+            <div class="cb-err-title">ยืนยันตัวตนไม่สำเร็จ</div>
+            <div class="cb-err-msg">@_errorMessage</div>
+            <button class="cb-btn" @onclick="GoBack">
+                <i class="bi bi-arrow-left"></i> กลับ
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    private enum CbState { Processing, Error }
+    private CbState _state = CbState.Processing;
+    private string _errorMessage = "";
+    private string _backUrl = "/login";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri   = new Uri(Nav.Uri);
+        var query = ParseQuery(uri.Query);
+
+        var flow  = query.GetValueOrDefault("flow",  "");
+        var @ref  = query.GetValueOrDefault("ref",   "");
+        var error = query.GetValueOrDefault("error", "");
+
+        _backUrl = flow switch
+        {
+            "register" => "/register",
+            "register_citizen" => "/register/citizen",
+            _ => "/login"
+        };
+
+        // ThaiD ส่ง error กลับมา
+        if (!string.IsNullOrEmpty(error))
+        {
+            ShowError($"ThaiD ตอบกลับด้วย error: {error}");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(@ref))
+        {
+            ShowError("ไม่ได้รับ ref token จากระบบ กรุณาลองใหม่");
+            return;
+        }
+
+        try
+        {
+            if (flow == "login")
+                await HandleLoginAsync(@ref);
+            else if (flow == "register" || flow == "register_citizen")
+                await HandleRegisterAsync(@ref, flow);
+            else
+                ShowError($"flow ไม่ถูกต้อง: {flow}");
+        }
+        catch (Exception ex)
+        {
+            ShowError($"เชื่อมต่อระบบไม่สำเร็จ: {ex.Message}");
+        }
+    }
+
+    // ── Login ──────────────────────────────────────────────────────
+    private async Task HandleLoginAsync(string @ref)
+    {
+        var result = await AuthApi.VerifyThaiDLoginAsync(@ref);
+
+        if (result.MustChangePassword)
+        {
+            // Store result for Login page to pick up
+            var json = System.Text.Json.JsonSerializer.Serialize(result);
+            await ThaiDSvc.StoreRawAsync("thaid_login_result", json);
+            Nav.NavigateTo("/login");
+        }
+        else
+        {
+            await SessionSvc.SetSessionAsync(result.AccessToken, result.RefreshToken, string.IsNullOrWhiteSpace(result.TokenType) ? "Bearer" : result.TokenType);
+            var user = await CurrentUserSvc.GetCurrentUserAsync();
+            var nextUrl = string.IsNullOrWhiteSpace(user?.NextUrl) ? "/dashboard" : user.NextUrl;
+            Nav.NavigateTo(nextUrl, forceLoad: true);
+        }
+    }
+
+    // ── Register (อาจ auto-login ถ้ามีบัญชีแล้ว) — รองรับทั้ง Officer และ Citizen ──
+    private async Task HandleRegisterAsync(string @ref, string requestedFlow)
+    {
+        // TOBE 14.1.1: backend ตอบ 2 รูปแบบ — มีบัญชีแล้ว (auto-login) หรือยังไม่มี (กรอก Register)
+        var resolved = await AuthApi.FetchThaiDIdentityAsync(@ref);
+
+        if (resolved.ExistingAccount)
+        {
+            await SessionSvc.SetSessionAsync(
+                resolved.AccessToken,
+                resolved.RefreshToken,
+                string.IsNullOrWhiteSpace(resolved.TokenType) ? "Bearer" : resolved.TokenType);
+
+            // mustChangePassword: ส่งกลับหน้า Login ใน mode ForceChangePassword
+            // (Register page ไม่มี force change view → ใช้ /login เป็น hub)
+            if (resolved.MustChangePassword)
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    username = resolved.Username,
+                    email = resolved.Email,
+                    mustChangePassword = true,
+                    accessToken = resolved.AccessToken,
+                    refreshToken = resolved.RefreshToken
+                });
+                await ThaiDSvc.StoreRawAsync("thaid_login_result", json);
+                Nav.NavigateTo("/login");
+                return;
+            }
+
+            var user = await CurrentUserSvc.GetCurrentUserAsync();
+            var nextUrl = string.IsNullOrWhiteSpace(user?.NextUrl) ? "/dashboard" : user.NextUrl;
+            Nav.NavigateTo(nextUrl, forceLoad: true);
+            return;
+        }
+
+        if (resolved.Identity is null)
+        {
+            ShowError("ไม่ได้รับข้อมูล ThaiD กรุณาลองใหม่");
+            return;
+        }
+
+        resolved.Identity.Reference = @ref;
+        await ThaiDSvc.StoreIdentityAsync(resolved.Identity);
+
+        // Citizen flow → ไปหน้า /register/citizen, Officer flow → /register
+        var targetPage = requestedFlow == "register_citizen" ? "/register/citizen" : "/register";
+        Nav.NavigateTo(targetPage);
+    }
+
+    private void ShowError(string msg)
+    {
+        _errorMessage = msg;
+        _state = CbState.Error;
+    }
+
+    private void GoBack() => Nav.NavigateTo(_backUrl);
+
+    private static Dictionary<string, string> ParseQuery(string queryString)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var q = queryString.TrimStart('?');
+        if (string.IsNullOrEmpty(q)) return result;
+
+        foreach (var pair in q.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var idx = pair.IndexOf('=');
+            if (idx < 0) continue;
+            var key = Uri.UnescapeDataString(pair[..idx].Replace('+', ' '));
+            var val = Uri.UnescapeDataString(pair[(idx + 1)..].Replace('+', ' '));
+            result.TryAdd(key, val);
+        }
+        return result;
+    }
+}

@@ -1,0 +1,184 @@
+@page "/person-check"
+@using EcmisWeb.Data
+
+<div class="routing-page-wrap">
+    <div class="complaints-page-header">
+        <div>
+            <div class="complaints-title">
+                <i class="bi bi-person-badge-fill"></i>
+                <span>ตรวจสอบบุคคล / ฐานข้อมูลผู้ถูกร้อง</span>
+            </div>
+            <div class="complaints-subtitle">
+                ค้นหาและตรวจสอบประวัติผู้ถูกร้องเรียนจากฐานข้อมูลทุกสำนวนในระบบ (Deduplication)
+            </div>
+        </div>
+    </div>
+
+    @* — Search — *@
+    <div class="detail-card" style="margin-bottom:14px">
+        <div class="detail-card-title">
+            <div class="icon-box navy"><i class="bi bi-search"></i></div>
+            ค้นหาบุคคล
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <input class="form-control-custom" style="flex:1;min-width:200px" placeholder="ชื่อ-สกุล ผู้ถูกร้อง"
+                @bind="searchName" @bind:event="oninput" />
+            <input class="form-control-custom" style="flex:1;min-width:200px" placeholder="หน่วยงานสังกัด"
+                @bind="searchAgency" @bind:event="oninput" />
+            <input class="form-control-custom" style="width:150px" placeholder="จังหวัด"
+                @bind="searchProvince" @bind:event="oninput" />
+            <button class="btn-navy" @onclick="Search">
+                <i class="bi bi-search"></i> ค้นหา
+            </button>
+        </div>
+    </div>
+
+    @* — AI Deduplication Alert — *@
+    @if (searched && duplicates.Any())
+    {
+        <div class="detail-card" style="margin-bottom:14px;border-left:4px solid var(--orange)">
+            <div class="detail-card-title">
+                <div class="icon-box orange"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                <span style="color:var(--orange)">AI ตรวจพบเรื่องที่อาจซ้ำซ้อน (Deduplication)</span>
+            </div>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">
+                ระบบตรวจสอบพบบุคคลนี้ปรากฏในหลายสำนวน — กรุณาตรวจสอบว่าเป็นเรื่องเดียวกันหรือไม่
+            </p>
+            @foreach (var d in duplicates)
+            {
+                <div class="case-split-item">
+                    <div>
+                        <div class="case-no">@d.Accused — @d.AccusedAgency</div>
+                        <div class="case-desc">
+                            เรื่องที่ @d.CaseNo | @d.Channel | @ComplaintData.StatusLabel(d.Status)
+                        </div>
+                    </div>
+                    <span class="category-chip @ComplaintData.CategoryClass(d.Category)">@d.Category</span>
+                </div>
+            }
+        </div>
+    }
+
+    @* — Results — *@
+    @if (searched)
+    {
+        <div class="complaints-table-card">
+            <div class="complaints-table-head">
+                <div>
+                    <div class="complaints-table-title">ผลการค้นหา</div>
+                    <div class="complaints-table-subtitle">พบ @results.Count() รายการจากเรื่องร้องเรียนในระบบ</div>
+                </div>
+            </div>
+            <div style="overflow-x:auto">
+                <table class="complaints-table">
+                    <thead>
+                        <tr>
+                            <th>ผู้ถูกร้อง</th>
+                            <th>หน่วยงาน</th>
+                            <th>จังหวัด</th>
+                            <th>เลขที่เรื่อง</th>
+                            <th>ประเภท</th>
+                            <th>สถานะ</th>
+                            <th>ความสำคัญ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (results.Any())
+                        {
+                            @foreach (var r in results)
+                            {
+                                <tr>
+                                    <td style="font-weight:700">@r.Accused</td>
+                                    <td>@r.AccusedAgency</td>
+                                    <td>@r.Province</td>
+                                    <td><span class="complaints-case-no">@r.CaseNo</span></td>
+                                    <td>
+                                        <span class="category-chip @ComplaintData.CategoryClass(r.Category)">
+                                            @r.Category
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="complaints-status-chip @ComplaintData.StatusClass(r.Status)">
+                                            <i class="bi @ComplaintData.StatusIcon(r.Status)"></i>
+                                            @ComplaintData.StatusLabel(r.Status)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="priority-dot @r.Priority" title="@ComplaintData.PriorityLabel(r.Priority)"></span>
+                                        @ComplaintData.PriorityLabel(r.Priority)
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="complaints-empty">ไม่พบข้อมูลตามเงื่อนไขที่ค้นหา</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        @* — Quick stats — *@
+        <div class="detail-grid">
+            <div class="detail-card">
+                <div class="detail-card-title">
+                    <div class="icon-box blue"><i class="bi bi-bar-chart-line-fill"></i></div>
+                    สถิติผู้ถูกร้องตามหน่วยงาน
+                </div>
+                @foreach (var group in ComplaintData.Rows.GroupBy(r => r.AccusedAgency).OrderByDescending(g => g.Count()).Take(6))
+                {
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(26,47,107,.05)">
+                        <span style="font-size:12px;font-weight:600">@group.Key</span>
+                        <span style="font-size:12px;font-weight:800;color:var(--navy-mid)">@group.Count() เรื่อง</span>
+                    </div>
+                }
+            </div>
+            <div class="detail-card">
+                <div class="detail-card-title">
+                    <div class="icon-box green"><i class="bi bi-geo-alt-fill"></i></div>
+                    สถิติตามจังหวัด
+                </div>
+                @foreach (var group in ComplaintData.Rows.GroupBy(r => r.Province).OrderByDescending(g => g.Count()).Take(6))
+                {
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(26,47,107,.05)">
+                        <span style="font-size:12px;font-weight:600">@group.Key</span>
+                        <span style="font-size:12px;font-weight:800;color:var(--green)">@group.Count() เรื่อง</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string searchName = string.Empty;
+    private string searchAgency = string.Empty;
+    private string searchProvince = string.Empty;
+    private bool searched;
+
+    private IEnumerable<ComplaintRow> results = Enumerable.Empty<ComplaintRow>();
+    private IEnumerable<ComplaintRow> duplicates = Enumerable.Empty<ComplaintRow>();
+
+    private void Search()
+    {
+        searched = true;
+        results = ComplaintData.Rows.Where(r =>
+            (string.IsNullOrWhiteSpace(searchName)
+                || r.Accused.Contains(searchName, StringComparison.OrdinalIgnoreCase))
+            && (string.IsNullOrWhiteSpace(searchAgency)
+                || r.AccusedAgency.Contains(searchAgency, StringComparison.OrdinalIgnoreCase))
+            && (string.IsNullOrWhiteSpace(searchProvince)
+                || r.Province.Contains(searchProvince, StringComparison.OrdinalIgnoreCase)));
+
+        // AI deduplication: group by accused name and find those with >1 occurrence
+        duplicates = results
+            .GroupBy(r => r.Accused)
+            .Where(g => g.Count() > 1)
+            .SelectMany(g => g);
+    }
+}

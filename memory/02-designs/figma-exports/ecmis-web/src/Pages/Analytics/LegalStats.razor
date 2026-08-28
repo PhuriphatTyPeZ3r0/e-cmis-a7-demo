@@ -1,0 +1,502 @@
+@page "/analytics/legal-stats"
+@layout MainLayout
+@implements IDisposable
+@using EcmisWeb.Data
+@inject IJSRuntime JS
+
+<div class="cs-shell">
+
+    <div class="cs-header">
+        <div class="cs-header-inner">
+            <div class="cs-bc">
+                <i class="bi bi-house-fill"></i>
+                <a href="/">หน้าหลัก</a>
+                <i class="bi bi-chevron-right"></i>
+                <span>วิเคราะห์และรายงานผล</span>
+                <i class="bi bi-chevron-right"></i>
+                <span>สถิติกระบวนการด้านกฎหมาย</span>
+            </div>
+            <div class="cs-ph-row">
+                <div>
+                    <div class="cs-title">สถิติกระบวนการด้านกฎหมาย | TOR 12.6</div>
+                    <div class="cs-sub">วิเคราะห์สถิติคดีอาญา แพ่ง และปกครอง แยกตามศาล ชั้นศาล ผลคดี และปีงบประมาณ</div>
+                </div>
+                <div class="cs-actions">
+                    <button type="button" class="btn-ghost-d" @onclick="PrintReportAsync">
+                        <i class="bi bi-printer"></i> พิมพ์ PDF
+                    </button>
+                    <button type="button" class="btn-accent" @onclick="ExportCsvAsync">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cs-body">
+
+        @* ── KPI Row ── *@
+        <div class="cs-stats-row" style="grid-template-columns:repeat(4,1fr)">
+            <div class="sc sc-blue">
+                <div class="sc-head">คดีทั้งหมด</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@KpiTotal.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-up">อาญา @KpiCriminal</span>
+                        <span class="sc-hint">แพ่ง @KpiCivil / ปกครอง @KpiAdmin</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-green">
+                <div class="sc-head">กำลังดำเนินการ</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@KpiActive.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-hint">จาก @KpiTotal คดีทั้งหมด</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-orange">
+                <div class="sc-head">อัตราชนะคดี</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@KpiWinPct</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-up">@KpiWin ชนะ</span>
+                        <span class="sc-hint">จาก @KpiClosed คดีที่สิ้นสุด</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-red">
+                <div class="sc-head">คดีอุทธรณ์/ฎีกา (รอ)</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@KpiAppealPending.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-hint">ยังไม่มีผลสุดท้าย</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ── Filter Row (FR-047) ── *@
+        <section class="table-card">
+            <div class="tc-head">
+                <div class="tc-row1">
+                    <div>
+                        <div class="tc-title">วิเคราะห์และสืบค้นข้อมูลคดี</div>
+                        <div class="tc-sub">กรองตามประเภทคดี ศาล ผลคดี และปีงบประมาณ</div>
+                    </div>
+                    <div class="tc-meta">
+                        <span class="bdg-nv">แสดง @_filteredCases.Count รายการ</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-row">
+                <div class="fgrp">
+                    <label class="flbl" for="lgCaseType">ประเภทคดี</label>
+                    <select id="lgCaseType" class="fsel" @bind="_filterCaseType">
+                        <option value="">ทั้งหมด</option>
+                        <option value="อาญา">อาญา</option>
+                        <option value="แพ่ง">แพ่ง</option>
+                        <option value="ปกครอง">ปกครอง</option>
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="lgCourt">ศาล</label>
+                    <select id="lgCourt" class="fsel" @bind="_filterCourt">
+                        <option value="">ทั้งหมด</option>
+                        <option value="ศาลอาญาคดีทุจริตและประพฤติมิชอบ">ศาลอาญาคดีทุจริตฯ</option>
+                        <option value="ศาลแพ่ง">ศาลแพ่ง</option>
+                        <option value="ศาลปกครองกลาง">ศาลปกครองกลาง</option>
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="lgResult">ผลคดี</label>
+                    <select id="lgResult" class="fsel" @bind="_filterResult">
+                        <option value="">ทั้งหมด</option>
+                        <option value="ชนะ">ชนะคดี</option>
+                        <option value="แพ้">แพ้คดี</option>
+                        <option value="ถอนฟ้อง">ถอนฟ้อง</option>
+                        <option value="ยุติ">ยุติคดี</option>
+                        <option value="อยู่ระหว่าง">อยู่ระหว่างดำเนินการ</option>
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="lgYear">ปีงบประมาณ</label>
+                    <select id="lgYear" class="fsel" @bind="_filterYear">
+                        <option value="0">ทั้งหมด</option>
+                        <option value="2566">2566</option>
+                        <option value="2567">2567</option>
+                        <option value="2568">2568</option>
+                        <option value="2569">2569</option>
+                    </select>
+                </div>
+                <button type="button" class="fbtn" @onclick="OnResetFilter">
+                    <i class="bi bi-x-lg"></i> ล้างค่า
+                </button>
+            </div>
+
+            @* ── Charts (FR-041, 042, 043, 044, 046) ── *@
+            <div class="cs-charts-wrap layout-fill">
+                <div class="cs-charts-top">
+                    <div class="cs-chart-card">
+                        <div class="cs-chart-title"><i class="bi bi-bar-chart-fill"></i> ประเภทคดี (อาญา/แพ่ง/ปกครอง)</div>
+                        <div class="cs-chart-canvas"><canvas id="lgChartCaseType"></canvas></div>
+                    </div>
+                    <div class="cs-chart-card">
+                        <div class="cs-chart-title"><i class="bi bi-pie-chart-fill"></i> ศาลที่รับพิจารณา</div>
+                        <div class="cs-chart-canvas"><canvas id="lgChartCourt"></canvas></div>
+                    </div>
+                    <div class="cs-chart-card">
+                        <div class="cs-chart-title"><i class="bi bi-layers-fill"></i> ผลคดีแยกตามชั้นศาล</div>
+                        <div class="cs-chart-canvas"><canvas id="lgChartResult"></canvas></div>
+                    </div>
+                </div>
+                <div class="cs-charts-bot">
+                    <div class="cs-chart-card" style="grid-column:span 2">
+                        <div class="cs-chart-title"><i class="bi bi-clock-history"></i> ระยะเวลาเฉลี่ยการดำเนินคดีแยกตามศาล เปรียบเทียบรายปีงบประมาณ (วัน)</div>
+                        <div class="cs-chart-canvas"><canvas id="lgChartDuration"></canvas></div>
+                    </div>
+                    <div class="cs-chart-card">
+                        <div class="cs-chart-title"><i class="bi bi-graph-up-arrow"></i> แนวโน้มอัตราชนะคดีรายปีงบประมาณ (%)</div>
+                        <div class="cs-chart-canvas"><canvas id="lgChartWinTrend"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            @* ── FR-045: คดีอุทธรณ์/ฎีกาที่อยู่ระหว่างดำเนินการ ── *@
+            <div class="tc-head" style="margin-top:1.5rem">
+                <div class="tc-row1">
+                    <div>
+                        <div class="tc-title"><i class="bi bi-exclamation-circle-fill" style="color:#f59e0b"></i> คดีอุทธรณ์/ฎีกาที่อยู่ระหว่างดำเนินการ</div>
+                        <div class="tc-sub" style="font-size:11px;color:#94a3b8">เฉพาะคดีที่ยังไม่มีผลสุดท้าย และอยู่ในชั้นอุทธรณ์หรือฎีกา</div>
+                    </div>
+                    <div class="tc-meta">
+                        <span class="bdg-nv">@AppealPendingCases.Count รายการ</span>
+                    </div>
+                </div>
+            </div>
+            @if (!AppealPendingCases.Any())
+            {
+                <div class="empty-state" style="margin-bottom:1rem">
+                    <i class="bi bi-check-circle-fill" style="color:#06d6a0"></i>
+                    <span>ไม่มีคดีอุทธรณ์/ฎีกาที่อยู่ระหว่างดำเนินการ</span>
+                </div>
+            }
+            else
+            {
+                <table class="cs-status-table" style="margin-bottom:1.5rem">
+                    <thead>
+                        <tr>
+                            <th>เลขคดี</th>
+                            <th>ชื่อผู้ถูกกล่าวหา/จำเลย</th>
+                            <th>ประเภทคดี</th>
+                            <th>ศาล</th>
+                            <th>ชั้นศาลปัจจุบัน</th>
+                            <th>ปีงบประมาณ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in AppealPendingCases)
+                        {
+                            <tr>
+                                <td style="font-weight:700">@c.CaseNo</td>
+                                <td>@c.AccusedName</td>
+                                <td>@c.CaseType</td>
+                                <td style="font-size:11px">@c.Court</td>
+                                <td><span class="lg-chip @LegalData.StageClass(c.Stage)">@LegalData.StageLabel(c.Stage)</span></td>
+                                <td>@c.FiscalYear</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+            @* ── Main Table (FR-047) ── *@
+            <div class="tc-head" style="margin-top:0.5rem">
+                <div class="tc-row1">
+                    <div class="tc-title"><i class="bi bi-table"></i> รายการคดีทั้งหมด</div>
+                    <div class="tc-meta"><span class="bdg-nv">@_filteredCases.Count รายการ</span></div>
+                </div>
+            </div>
+            @if (!_filteredCases.Any())
+            {
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <span>ไม่พบข้อมูลตามเงื่อนไขที่เลือก กรุณาเปลี่ยนตัวกรอง</span>
+                </div>
+                <table class="cs-status-table" id="exportTable" style="display:none"><thead><tr><th></th></tr></thead><tbody></tbody></table>
+            }
+            else
+            {
+                <table class="cs-status-table" id="exportTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>เลขคดี</th>
+                            <th>ชื่อผู้ถูกกล่าวหา/จำเลย</th>
+                            <th>ประเภทคดี</th>
+                            <th>ศาล</th>
+                            <th>ชั้นศาล</th>
+                            <th>ผลคดี</th>
+                            <th>ปีงบ</th>
+                            <th>ระยะเวลา (วัน)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{ int seq = 0; }
+                        @foreach (var c in _filteredCases)
+                        {
+                            seq++;
+                            <tr>
+                                <td style="color:#94a3b8">@seq</td>
+                                <td style="font-weight:700;white-space:nowrap">@c.CaseNo</td>
+                                <td>@c.AccusedName</td>
+                                <td>@c.CaseType</td>
+                                <td style="font-size:11px">@c.Court</td>
+                                <td><span class="lg-chip @LegalData.StageClass(c.Stage)">@LegalData.StageLabel(c.Stage)</span></td>
+                                <td><span class="lg-chip @LegalData.ResultClass(c.Result)">@LegalData.ResultLabel(c.Result)</span></td>
+                                <td>@c.FiscalYear</td>
+                                <td style="text-align:right">@(c.DurationDays > 0 ? c.DurationDays.ToString("N0") : "-")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+            <div class="cs-footer">
+                <span class="cs-footer-info">
+                    แสดงผล <strong>@_filteredCases.Count รายการ</strong> จากทั้งหมด @LegalData.LegalCases.Count คดี
+                </span>
+                <div class="cs-footer-btns">
+                    <button type="button" class="btn-ghost-d" @onclick="PrintReportAsync">
+                        <i class="bi bi-printer"></i> พิมพ์ PDF
+                    </button>
+                    <button type="button" class="btn-accent" @onclick="ExportCsvAsync">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</div>
+
+@code {
+    private DotNetObjectReference<LegalStats>? _dotNetRef;
+    private bool _isDark = true;
+    private bool _chartsReady = false;
+
+    // ── Filters (FR-047) ─────────────────────────────────────────────────────
+    private string _filterCaseType = "";
+    private string _filterCourt    = "";
+    private string _filterResult   = "";
+    private int    _filterYear     = 0;
+
+    // ── KPI computed ─────────────────────────────────────────────────────────
+    private int    KpiTotal         => LegalData.LegalCases.Count;
+    private int    KpiCriminal      => LegalData.LegalCases.Count(c => c.CaseType == "อาญา");
+    private int    KpiCivil         => LegalData.LegalCases.Count(c => c.CaseType == "แพ่ง");
+    private int    KpiAdmin         => LegalData.LegalCases.Count(c => c.CaseType == "ปกครอง");
+    private int    KpiActive        => LegalData.LegalCases.Count(c => c.Result == "อยู่ระหว่าง");
+    private int    KpiClosed        => LegalData.LegalCases.Count(c => c.Result != "อยู่ระหว่าง");
+    private int    KpiWin           => LegalData.LegalCases.Count(c => c.Result == "ชนะ");
+    private string KpiWinPct        => KpiClosed == 0 ? "0%" : $"{(int)Math.Round(KpiWin * 100.0 / KpiClosed)}%";
+    private int    KpiAppealPending => LegalData.LegalCases.Count(c => c.Result == "อยู่ระหว่าง" && (c.Stage == "อุทธรณ์" || c.Stage == "ฎีกา"));
+
+    // ── Filtered table ───────────────────────────────────────────────────────
+    private List<LegalCase> _filteredCases =>
+        LegalData.LegalCases
+            .Where(c => string.IsNullOrEmpty(_filterCaseType) || c.CaseType == _filterCaseType)
+            .Where(c => string.IsNullOrEmpty(_filterCourt)    || c.Court    == _filterCourt)
+            .Where(c => string.IsNullOrEmpty(_filterResult)   || c.Result   == _filterResult)
+            .Where(c => _filterYear == 0 || c.FiscalYear == _filterYear)
+            .ToList();
+
+    // ── FR-045: คดีอุทธรณ์/ฎีกาที่อยู่ระหว่าง ──────────────────────────────
+    private List<LegalCase> AppealPendingCases =>
+        LegalData.LegalCases
+            .Where(c => c.Result == "อยู่ระหว่าง" && (c.Stage == "อุทธรณ์" || c.Stage == "ฎีกา"))
+            .ToList();
+
+    // ── Chart data builders ──────────────────────────────────────────────────
+
+    // FR-041: ประเภทคดี (bar)
+    private (string[] Labels, int[] Counts, string[] Colors) CaseTypeChartData()
+    {
+        var types  = new[] { "อาญา", "แพ่ง", "ปกครอง" };
+        var colors = new[] { "#6366f1", "#f77f00", "#06d6a0" };
+        var counts = types.Select(t => LegalData.LegalCases.Count(c => c.CaseType == t)).ToArray();
+        return (types, counts, colors);
+    }
+
+    // FR-043: ศาลที่รับพิจารณา (doughnut)
+    private (string[] Labels, int[] Counts, string[] Colors) CourtChartData()
+    {
+        var courts = new[]
+        {
+            "ศาลอาญาคดีทุจริตและประพฤติมิชอบ",
+            "ศาลแพ่ง",
+            "ศาลปกครองกลาง"
+        };
+        var shortLabels = new[] { "ศาลอาญาคดีทุจริตฯ", "ศาลแพ่ง", "ศาลปกครองกลาง" };
+        var colors      = new[] { "#6366f1", "#f77f00", "#06d6a0" };
+        var counts      = courts.Select(ct => LegalData.LegalCases.Count(c => c.Court == ct)).ToArray();
+        return (shortLabels, counts, colors);
+    }
+
+    // FR-042: ผลคดีแยกตามชั้นศาล (grouped bar via initMultiSeriesChart type=bar)
+    private object[] ResultByStageDatasets()
+    {
+        var stages    = new[] { "อัยการ", "ศาลชั้นต้น", "อุทธรณ์", "ฎีกา" };
+        var results   = new[] { "ชนะ", "แพ้", "ถอนฟ้อง", "ยุติ" };
+        var colors    = new[] { "#06d6a0", "#f87171", "#fbbf24", "#a855f7" };
+        var allClosed = LegalData.LegalCases.Where(c => c.Result != "อยู่ระหว่าง").ToList();
+
+        return results.Select((r, i) => (object)new
+        {
+            label = LegalData.ResultLabel(r),
+            color = colors[i],
+            data  = stages.Select(s => (object)allClosed.Count(c => c.Stage == s && c.Result == r)).ToArray()
+        }).ToArray();
+    }
+
+    // FR-044: ระยะเวลาเฉลี่ยแยกศาลรายปี (grouped bar)
+    private object[] DurationByCourtDatasets()
+    {
+        var courts  = new[] { "ศาลอาญาคดีทุจริตและประพฤติมิชอบ", "ศาลแพ่ง", "ศาลปกครองกลาง" };
+        var labels  = new[] { "ศาลอาญาคดีทุจริตฯ", "ศาลแพ่ง", "ศาลปกครองกลาง" };
+        var colors  = new[] { "#6366f1", "#f77f00", "#06d6a0" };
+        var years   = new[] { 2566, 2567, 2568, 2569 };
+
+        return courts.Select((ct, i) => (object)new
+        {
+            label = labels[i],
+            color = colors[i],
+            data  = years.Select(y =>
+            {
+                var cases = LegalData.LegalCases
+                    .Where(c => c.Court == ct && c.FiscalYear == y && c.DurationDays > 0)
+                    .Select(c => c.DurationDays).ToList();
+                return (object)(cases.Count > 0 ? (int)cases.Average() : 0);
+            }).ToArray()
+        }).ToArray();
+    }
+
+    // FR-046: อัตราชนะคดีรายปี (line)
+    private (string[] Years, object[] WinRates) WinTrendData()
+    {
+        var years = new[] { 2566, 2567, 2568, 2569 };
+        var rates = years.Select(y =>
+        {
+            var closed = LegalData.LegalCases.Where(c => c.FiscalYear == y && c.Result != "อยู่ระหว่าง").ToList();
+            var wins   = closed.Count(c => c.Result == "ชนะ");
+            return (object)(closed.Count == 0 ? 0 : (int)Math.Round(wins * 100.0 / closed.Count));
+        }).ToArray();
+        return (years.Select(y => y.ToString()).ToArray(), rates);
+    }
+
+    // ── Lifecycle ────────────────────────────────────────────────────────────
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var theme = await JS.InvokeAsync<string?>("localStorage.getItem", "dashTheme");
+            _isDark    = theme == "dark";
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("registerAnalyticsComponent", _dotNetRef);
+        }
+        if (!_chartsReady)
+        {
+            _chartsReady = true;
+            await RenderChartsAsync();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnThemeChangedAsync(bool isDark)
+    {
+        _isDark = isDark;
+        await RenderChartsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnResetFilter()
+    {
+        _filterCaseType = "";
+        _filterCourt    = "";
+        _filterResult   = "";
+        _filterYear     = 0;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RenderChartsAsync()
+    {
+        await Task.Yield();
+
+        // FR-041: ประเภทคดี bar
+        var (ctLabels, ctCounts, ctColors) = CaseTypeChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "lgChartCaseType", "bar",
+            ctLabels, ctCounts.Cast<object>().ToArray(), ctColors, _isDark);
+
+        // FR-043: ศาลที่รับพิจารณา doughnut
+        var (courtLabels, courtCounts, courtColors) = CourtChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "lgChartCourt", "doughnut",
+            courtLabels, courtCounts.Cast<object>().ToArray(), courtColors, _isDark);
+
+        // FR-042: ผลคดีแยกชั้นศาล grouped bar
+        var stageLabels   = new[] { "อัยการพิจารณา", "ศาลชั้นต้น", "ชั้นอุทธรณ์", "ชั้นฎีกา" };
+        var resultDatasets = ResultByStageDatasets();
+        await JS.InvokeVoidAsync("initMultiSeriesChart", "lgChartResult", "bar",
+            stageLabels, resultDatasets, _isDark);
+
+        // FR-044: ระยะเวลาเฉลี่ยรายศาลรายปี grouped bar
+        var yearLabels       = new[] { "2566", "2567", "2568", "2569" };
+        var durationDatasets = DurationByCourtDatasets();
+        await JS.InvokeVoidAsync("initMultiSeriesChart", "lgChartDuration", "bar",
+            yearLabels, durationDatasets, _isDark);
+
+        // FR-046: อัตราชนะรายปี line
+        var (winYears, winRates) = WinTrendData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "lgChartWinTrend", "line",
+            winYears, winRates,
+            new[] { "#06d6a0", "#06d6a0", "#06d6a0", "#06d6a0" }, _isDark);
+    }
+
+    // ── Export / Print (FR-048) ──────────────────────────────────────────────
+
+    private async Task ExportCsvAsync()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("เลขคดี,ชื่อผู้ถูกกล่าวหา/จำเลย,ประเภทคดี,ศาล,ชั้นศาล,ผลคดี,ปีงบประมาณ,ระยะเวลา(วัน)");
+        foreach (var c in _filteredCases)
+        {
+            sb.AppendLine(string.Join(",",
+                c.CaseNo,
+                c.AccusedName,
+                c.CaseType,
+                $"\"{c.Court}\"",
+                LegalData.StageLabel(c.Stage),
+                LegalData.ResultLabel(c.Result),
+                c.FiscalYear,
+                c.DurationDays > 0 ? c.DurationDays.ToString() : ""));
+        }
+        await JS.InvokeVoidAsync("ecmis.downloadTextFile",
+            $"legal_stats_{DateTime.Now:yyyyMMdd}.csv",
+            "text/csv;charset=utf-8;",
+            sb.ToString(), true);
+    }
+
+    private async Task PrintReportAsync()
+    {
+        var title = $"<h2>รายงานสถิติกระบวนการด้านกฎหมาย TOR 12.6 ป.ป.ท. | {DateTime.Now:dd/MM/yyyy}</h2>";
+        var table = await JS.InvokeAsync<string>("eval", "document.getElementById('exportTable').outerHTML");
+        await JS.InvokeVoidAsync("ecmis.printReport", "สถิติกระบวนการด้านกฎหมาย", title + table);
+    }
+
+    public void Dispose()
+    {
+        _dotNetRef?.Dispose();
+    }
+}

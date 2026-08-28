@@ -1,0 +1,199 @@
+@inject AdminApiService AdminApi
+@inject SystemAccessApiService SystemApi
+
+<div class="role-perm-matrix">
+    @if (matrixLoading)
+    {
+        <div style="padding:32px;text-align:center;color:var(--text-muted)">
+            <i class="bi bi-arrow-clockwise" style="animation:spin 1s linear infinite;font-size:22px"></i>
+            <div style="margin-top:8px;font-size:12.5px">กำลังโหลดสิทธิ์โมดูล...</div>
+        </div>
+    }
+    else if (!SelectedRoleId.HasValue)
+    {
+        <div style="text-align:center;padding:48px 24px;color:#94a3b8">
+            <i class="bi bi-hand-index-thumb" style="font-size:36px;display:block;margin-bottom:10px;opacity:.35"></i>
+            <div style="font-size:13px;font-weight:600">เลือกกลุ่มสิทธิ์ทางซ้าย</div>
+            <div style="font-size:12px;margin-top:4px">แล้วติ๊กโมดูลที่กลุ่มนี้ใช้ได้</div>
+        </div>
+    }
+    else
+    {
+        var selRole = roles.FirstOrDefault(r => r.Id == SelectedRoleId.Value);
+        var selRoleId = SelectedRoleId.Value;
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+            <div>
+                <div style="font-size:14px;font-weight:800;color:var(--navy-deep)">@(selRole?.Name ?? "กลุ่มสิทธิ์")</div>
+                @if (selRole is not null)
+                {
+                    <code style="font-size:10.5px;color:#94a3b8">@selRole.Code</code>
+                }
+            </div>
+            @if (changedRoles.Contains(selRoleId))
+            {
+                <button class="btn btn-sm" style="background:var(--navy-deep);color:#fff;font-size:11.5px;border-radius:7px;padding:5px 14px;font-weight:700"
+                        @onclick="SaveMatrixAsync" disabled="@matrixSaving">
+                    @if (matrixSaving) { <span><i class="bi bi-arrow-clockwise me-1"></i>กำลังบันทึก...</span> }
+                    else { <span><i class="bi bi-floppy me-1"></i>บันทึกโมดูล</span> }
+                </button>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(matrixError))
+        {
+            <div style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12.5px">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>@matrixError
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(matrixSuccess))
+        {
+            <div style="background:#ecfdf5;color:#065f46;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12.5px">
+                <i class="bi bi-check-circle-fill me-1"></i>@matrixSuccess
+            </div>
+        }
+
+        @if (menuTree.Modules.Count == 0)
+        {
+            <div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px">ยังไม่มีโครงเมนู mod.*</div>
+        }
+        else
+        {
+            <div style="max-height:52vh;overflow-y:auto;padding-right:4px">
+                @foreach (var module in MatrixModules.OrderBy(m => m.Sort).ThenBy(m => m.Code))
+                {
+                    var childIds = module.Children.Select(c => c.Id).ToList();
+                    var (checkedCount, allChecked, partial) = GetModuleSelection(selRoleId, childIds);
+                    <div style="margin-bottom:12px;border:1px solid #e8ecf4;border-radius:10px;overflow:hidden">
+                        <label style="display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;background:linear-gradient(90deg,#eef2f9,#fff);border-bottom:1px solid #e8ecf4;margin:0">
+                            <input type="checkbox" checked="@allChecked"
+                                   @onchange="e => ToggleModule(selRoleId, module, e.Value is bool b && b)"
+                                   style="width:17px;height:17px;accent-color:var(--navy-deep)" />
+                            <span style="flex:1">
+                                <span style="font-size:13px;font-weight:800;color:#0d1b3e">@module.NameTh</span>
+                                <span style="font-size:11px;color:#6b7a99;margin-left:6px">(@checkedCount/@childIds.Count)</span>
+                                @if (partial)
+                                {
+                                    <span style="font-size:10px;font-weight:700;color:#b45309;background:#fef3c7;padding:2px 6px;border-radius:10px;margin-left:4px">บางส่วน</span>
+                                }
+                            </span>
+                        </label>
+                        @foreach (var (child, idx) in module.Children.Select((c, i) => (c, i)))
+                        {
+                            var hasIt = rolePermMatrix.TryGetValue(selRoleId, out var rset) && rset.Contains(child.Id);
+                            <label style="display:flex;align-items:flex-start;gap:10px;padding:8px 14px 8px 36px;cursor:pointer;border-bottom:1px solid #f0f2f8;margin:0;
+                                          background:@(hasIt ? "rgba(42,74,143,.04)" : (idx % 2 == 0 ? "#fbfcff" : "#fff"))">
+                                <input type="checkbox" checked="@hasIt"
+                                       @onchange="e => ToggleMatrix(selRoleId, child.Id, e.Value is bool b && b)"
+                                       style="width:15px;height:15px;margin-top:2px;accent-color:var(--navy-deep)" />
+                                <span style="flex:1;min-width:0;font-size:12.5px;font-weight:600;color:#0d1b3e">@child.NameTh</span>
+                            </label>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int? SelectedRoleId { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private MenuPermissionTreeResult menuTree = new();
+    private List<RoleWithPermissionsDto> roles = new();
+    private Dictionary<int, HashSet<int>> rolePermMatrix = new();
+    private HashSet<int> changedRoles = new();
+    private bool matrixLoading = true;
+    private bool matrixSaving;
+    private string? matrixError;
+    private string? matrixSuccess;
+    private IEnumerable<MenuPermissionModuleDto> MatrixModules =>
+        menuTree.Modules.OrderBy(m => m.Sort).ThenBy(m => m.Code);
+
+    protected override async Task OnInitializedAsync() => await LoadMatrixDataAsync();
+
+    public async Task ReloadAsync()
+    {
+        await LoadMatrixDataAsync();
+        StateHasChanged();
+    }
+
+    private async Task LoadMatrixDataAsync()
+    {
+        matrixLoading = true;
+        matrixError = null;
+        try
+        {
+            var t1 = AdminApi.GetRolesAsync();
+            var t2 = AdminApi.GetMenuPermissionTreeAsync();
+            await Task.WhenAll(t1, t2);
+            roles = await t1;
+            menuTree = await t2;
+            rolePermMatrix = roles.ToDictionary(r => r.Id, r => new HashSet<int>(r.PermissionIds));
+            changedRoles.Clear();
+        }
+        catch (Exception ex) { matrixError = ex.Message; }
+        finally { matrixLoading = false; }
+    }
+
+    private void ToggleMatrix(int roleId, int permId, bool value)
+    {
+        if (!rolePermMatrix.ContainsKey(roleId)) rolePermMatrix[roleId] = new();
+        if (value) rolePermMatrix[roleId].Add(permId);
+        else rolePermMatrix[roleId].Remove(permId);
+        changedRoles.Add(roleId);
+        matrixSuccess = null;
+    }
+
+    private void ToggleModule(int roleId, MenuPermissionModuleDto module, bool enabled)
+    {
+        if (!rolePermMatrix.ContainsKey(roleId)) rolePermMatrix[roleId] = new();
+        if (enabled) rolePermMatrix[roleId].Add(module.Id);
+        else rolePermMatrix[roleId].Remove(module.Id);
+        foreach (var child in module.Children)
+        {
+            if (enabled) rolePermMatrix[roleId].Add(child.Id);
+            else rolePermMatrix[roleId].Remove(child.Id);
+        }
+        changedRoles.Add(roleId);
+        matrixSuccess = null;
+    }
+
+    private (int checkedCount, bool allChecked, bool partial) GetModuleSelection(int roleId, List<int> childIds)
+    {
+        if (childIds.Count == 0) return (0, false, false);
+        if (!rolePermMatrix.TryGetValue(roleId, out var set)) return (0, false, false);
+        var n = childIds.Count(id => set.Contains(id));
+        return (n, n == childIds.Count, n > 0 && n < childIds.Count);
+    }
+
+    private async Task SaveMatrixAsync()
+    {
+        if (!SelectedRoleId.HasValue || !changedRoles.Contains(SelectedRoleId.Value))
+        {
+            matrixSuccess = "ไม่มีการเปลี่ยนแปลง";
+            return;
+        }
+        matrixSaving = true;
+        matrixError = null;
+        matrixSuccess = null;
+        try
+        {
+            var roleId = SelectedRoleId.Value;
+            var permIds = rolePermMatrix.TryGetValue(roleId, out var set) ? set : new HashSet<int>();
+            var moduleRoots = menuTree.Modules
+                .Where(m => permIds.Contains(m.Id) || m.Children.Any(c => permIds.Contains(c.Id)))
+                .Select(m => m.Id)
+                .ToList();
+            await AdminApi.SetRolePermissionsAsync(roleId, permIds, moduleIds: moduleRoots, viewOnly: true);
+            SystemApi.InvalidateMenuCache();
+            matrixSuccess = "บันทึกโมดูลให้กลุ่มแล้ว";
+            changedRoles.Remove(roleId);
+            roles = await AdminApi.GetRolesAsync();
+            rolePermMatrix = roles.ToDictionary(r => r.Id, r => new HashSet<int>(r.PermissionIds));
+            await OnSaved.InvokeAsync();
+        }
+        catch (Exception ex) { matrixError = ex.Message; }
+        finally { matrixSaving = false; }
+    }
+}

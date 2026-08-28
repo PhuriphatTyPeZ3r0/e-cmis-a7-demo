@@ -1,0 +1,575 @@
+@page "/analytics/discipline-stats"
+@layout MainLayout
+@implements IDisposable
+@using EcmisWeb.Data
+@inject IJSRuntime JS
+
+<div class="cs-shell">
+
+    <div class="cs-header">
+        <div class="cs-header-inner">
+            <div class="cs-bc">
+                <i class="bi bi-house-fill"></i>
+                <a href="/">หน้าหลัก</a>
+                <i class="bi bi-chevron-right"></i>
+                <span>วิเคราะห์และรายงานผล</span>
+                <i class="bi bi-chevron-right"></i>
+                <span>สถิติกระบวนการวินัย</span>
+            </div>
+            <div class="cs-ph-row">
+                <div>
+                    <div class="cs-title">สถิติกระบวนการวินัย</div>
+                    <div class="cs-sub">TOR 12.9 · ติดตามสถานะคดีอาญาและวินัยหลังมติคณะกรรมการ ป.ป.ท.</div>
+                </div>
+                <div class="cs-actions">
+                    <button type="button" class="btn-ghost-d" @onclick="PrintReportAsync">
+                        <i class="bi bi-printer"></i>
+                        พิมพ์ PDF
+                    </button>
+                    <button type="button" class="btn-accent" @onclick="ExportCsvAsync">
+                        <i class="bi bi-file-earmark-spreadsheet"></i>
+                        Export Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cs-body">
+
+        @* ── KPI Cards ── *@
+        <div class="cs-stats-row">
+            <div class="sc sc-blue">
+                <div class="sc-head">คดีที่ต้องดำเนินการ</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@_filtered.Count.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-hint">ช่วงที่เลือก</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-green">
+                <div class="sc-head">ดำเนินการแล้ว%</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@PctCompleted()</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-up">@CountCompleted().ToString("N0") ราย</span>
+                        <span class="sc-hint">ของทั้งหมด</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-red">
+                <div class="sc-head">รอดำเนินการเกิน 60 วัน</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@CountOverdue().ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-down">เกินกรอบเวลา</span>
+                        <span class="sc-hint">คดี</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-orange">
+                <div class="sc-head">สำเร็จเดือนนี้</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@CountClosedThisMonth().ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-up">เดือน @DateTime.Now.ToString("MM/yyyy")</span>
+                        <span class="sc-hint">คดี</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ── Filter + Charts card ── *@
+        <section class="table-card">
+            <div class="tc-head">
+                <div class="tc-row1">
+                    <div>
+                        <div class="tc-title">วิเคราะห์สถิติกระบวนการวินัย</div>
+                        <div class="tc-sub">กรองประเภทคดี สถานะวินัย หน่วยงาน หรือปีงบประมาณ แล้วกด แสดงผล</div>
+                    </div>
+                    <div class="tc-meta">
+                        <span class="bdg-nv">ทั้งหมด @_all.Count</span>
+                        <span class="bdg-gd">แสดง @_filtered.Count</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-row">
+                <div class="fgrp">
+                    <label class="flbl" for="dsCaseType">ประเภทคดี</label>
+                    <select id="dsCaseType" class="fsel" @bind="_filterCaseType">
+                        <option value="">ทุกประเภท</option>
+                        <option value="criminal">อาญา</option>
+                        <option value="discipline">วินัย</option>
+                        <option value="both">อาญาและวินัย</option>
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="dsDisciplineStatus">สถานะวินัย</label>
+                    <select id="dsDisciplineStatus" class="fsel" @bind="_filterDisciplineStatus">
+                        <option value="">ทุกสถานะ</option>
+                        <option value="not_started">ยังไม่ดำเนินการ</option>
+                        <option value="awaiting_agency">รอต้นสังกัดพิจารณา</option>
+                        <option value="follow_up_1">ติดตามครั้งที่ 1</option>
+                        <option value="follow_up_2">ติดตามครั้งที่ 2</option>
+                        <option value="Agency_responded">ต้นสังกัดแจ้งผลแล้ว</option>
+                        <option value="closed">ปิดและยุติเรื่อง</option>
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="dsAgency">หน่วยงาน</label>
+                    <select id="dsAgency" class="fsel" @bind="_filterAgency">
+                        <option value="">ทุกหน่วยงาน</option>
+                        @foreach (var agency in _agencies)
+                        {
+                            <option value="@agency">@agency</option>
+                        }
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="dsFiscalYear">ปีงบประมาณ</label>
+                    <select id="dsFiscalYear" class="fsel" @bind="_filterYear">
+                        <option value="">ทุกปี</option>
+                        @foreach (var year in _years)
+                        {
+                            <option value="@year">@year</option>
+                        }
+                    </select>
+                </div>
+                <button type="button" class="btn-accent btn-sm-f" @onclick="OnApplyFilter">
+                    <i class="bi bi-search"></i> แสดงผล
+                </button>
+                <button type="button" class="fbtn" @onclick="OnResetFilter">
+                    <i class="bi bi-x-lg"></i> ล้างค่า
+                </button>
+            </div>
+
+            @if (_noData)
+            {
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <span>ไม่พบข้อมูลตามเงื่อนไขที่เลือก กรุณาเปลี่ยนตัวกรอง</span>
+                </div>
+            }
+            else
+            {
+                <div class="cs-charts-wrap layout-fill">
+                    <div class="cs-charts-top">
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-bar-chart-fill"></i> ประเภทคดี</div>
+                            <div class="cs-chart-canvas"><canvas id="dsChartType"></canvas></div>
+                        </div>
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-graph-up"></i> แนวโน้มปิดคดีรายเดือน</div>
+                            <div class="cs-chart-canvas"><canvas id="dsChartResolved"></canvas></div>
+                        </div>
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-pie-chart-fill"></i> สัดส่วนสถานะคดี</div>
+                            <div class="cs-chart-canvas"><canvas id="dsChartStatus"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="cs-charts-bot">
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-building"></i> Top 10 หน่วยงานผู้ถูกกล่าวหา</div>
+                            <div class="cs-chart-canvas"><canvas id="dsChartAgency"></canvas></div>
+                        </div>
+                        <div class="cs-chart-card has-table">
+                            <div class="cs-chart-title"><i class="bi bi-clock-history"></i> รายการที่รอดำเนินการ (สรุป)</div>
+                            <table class="cs-status-table">
+                                <thead>
+                                    <tr><th>เลขคดี</th><th>ผู้ถูกกล่าวหา</th><th>วันที่ผ่านมา</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var c in PendingRows().Take(8))
+                                    {
+                                        <tr>
+                                            <td>@c.CaseNo</td>
+                                            <td>@c.Accused</td>
+                                            <td style="@(c.DaysPassedSinceResolution > 60 ? "color:#f87171;font-weight:700" : "")">@c.DaysPassedSinceResolution วัน</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tc-head" style="margin-top:1.5rem;">
+                    <div class="tc-row1">
+                        <div>
+                            <div class="tc-title">รายการที่รอดำเนินการ</div>
+                            <div class="tc-sub">คดีที่ยังไม่ได้รับการดำเนินการ เรียงตามวันที่ผ่านมามากที่สุด</div>
+                        </div>
+                        <div class="tc-meta">
+                            <span class="bdg-nv">@PendingRows().Count() ราย</span>
+                        </div>
+                    </div>
+                </div>
+
+                <table class="cs-status-table" id="exportTable">
+                    <thead>
+                        <tr>
+                            <th>เลขคดี</th>
+                            <th>ชื่อผู้ถูกกล่าวหา</th>
+                            <th>ประเภทคดี</th>
+                            <th>วันได้รับมติ</th>
+                            <th>วันที่ผ่านมา</th>
+                            <th>สถานะอาญา</th>
+                            <th>สถานะวินัย</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!PendingRows().Any())
+                        {
+                            <tr>
+                                <td colspan="7" style="text-align:center;padding:1.5rem;color:var(--cs-muted);">
+                                    <i class="bi bi-check-circle-fill" style="color:#06d6a0;margin-right:.5rem;"></i>
+                                    ไม่มีรายการที่รอดำเนินการ
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var c in PendingRows())
+                            {
+                                <tr>
+                                    <td>@c.CaseNo</td>
+                                    <td>@c.Accused</td>
+                                    <td>@TypeLabel(c.CaseType)</td>
+                                    <td>@c.ResolutionDate</td>
+                                    <td style="@(c.DaysPassedSinceResolution > 60 ? "color:#f87171;font-weight:700;" : "")">
+                                        @c.DaysPassedSinceResolution วัน
+                                        @if (c.DaysPassedSinceResolution > 60)
+                                        {
+                                            <i class="bi bi-exclamation-circle-fill" style="margin-left:.25rem;"></i>
+                                        }
+                                    </td>
+                                    <td>@PostCommitteeData.StatusLabel(c.CriminalStatus)</td>
+                                    <td>@PostCommitteeData.StatusLabel(c.DisciplineStatus)</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+
+                @* ── Footer ── *@
+                <div class="cs-footer">
+                    <span class="cs-footer-info">
+                        แสดงผล <strong>@_filtered.Count.ToString("N0") คดี</strong>
+                        @if (!string.IsNullOrEmpty(_filterCaseType)) { <span> · @TypeLabel(_filterCaseType)</span> }
+                        @if (!string.IsNullOrEmpty(_filterAgency)) { <span> · @_filterAgency</span> }
+                        @if (!string.IsNullOrEmpty(_filterYear)) { <span> · ปีงบประมาณ @_filterYear</span> }
+                    </span>
+                    <div class="cs-footer-btns">
+                        <button type="button" class="btn-ghost-d" @onclick="PrintReportAsync">
+                            <i class="bi bi-printer"></i> พิมพ์ PDF
+                        </button>
+                        <button type="button" class="btn-accent" @onclick="ExportCsvAsync">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+            }
+        </section>
+    </div>
+</div>
+
+@code {
+    private List<PostCase> _all = new();
+    private List<PostCase> _filtered = new();
+    private DotNetObjectReference<DisciplineStats>? _dotNetRef;
+
+    private string _filterCaseType       = "";
+    private string _filterDisciplineStatus = "";
+    private string _filterAgency         = "";
+    private string _filterYear           = "";
+
+    private List<string> _agencies = new();
+    private List<string> _years    = new();
+
+    private bool _noData      = false;
+    private bool _chartsReady = false;
+    private bool _isDark      = true;
+
+    // ── Derived predicates ──────────────────────────────────────────────────
+
+    private static bool IsCompleted(PostCase c) =>
+        c.CriminalStatus == "sent_to_prosecutor" ||
+        c.DisciplineStatus is "Agency_responded" or "closed";
+
+    private static bool IsPending(PostCase c) =>
+        c.CriminalStatus == "not_started" && c.DisciplineStatus == "not_started";
+
+    private static bool IsInProgress(PostCase c) =>
+        !IsCompleted(c) &&
+        (c.CriminalStatus != "not_started" || c.DisciplineStatus != "not_started");
+
+    private static bool IsLate(PostCase c) =>
+        c.CriminalStatus == "delayed" ||
+        (c.DaysPassedSinceResolution > 60 && !IsCompleted(c));
+
+    private static string TypeLabel(string type) => type switch
+    {
+        "criminal"  => "อาญา",
+        "discipline" => "วินัย",
+        "both"      => "อาญาและวินัย",
+        _           => type
+    };
+
+    // ── KPI helpers ─────────────────────────────────────────────────────────
+
+    private int   CountCompleted()      => _filtered.Count(IsCompleted);
+    private int   CountOverdue()        => _filtered.Count(c => c.DaysPassedSinceResolution > 60 && !IsCompleted(c));
+    private string PctCompleted()
+    {
+        if (_filtered.Count == 0) return "0%";
+        return $"{(int)Math.Round((double)CountCompleted() * 100 / _filtered.Count)}%";
+    }
+    private int CountClosedThisMonth()
+    {
+        int thisMonth = DateTime.Now.Month;
+        int thisYear  = DateTime.Now.Year;
+        return _filtered.Count(c =>
+            c.DisciplineStatus == "closed" &&
+            TryParseResolutionDate(c.ResolutionDate, out var d) &&
+            d.Month == thisMonth && d.Year == thisYear);
+    }
+
+    // ── Table rows ──────────────────────────────────────────────────────────
+
+    private IEnumerable<PostCase> PendingRows() =>
+        _filtered
+            .Where(c => !IsCompleted(c))
+            .OrderByDescending(c => c.DaysPassedSinceResolution);
+
+    // ── Date parsing ────────────────────────────────────────────────────────
+
+    private static bool TryParseResolutionDate(string raw, out DateTime result)
+    {
+        // Format: DD/MM/YYYY (Thai Buddhist year possible; treat as Gregorian)
+        result = default;
+        if (string.IsNullOrEmpty(raw)) return false;
+        var parts = raw.Split('/');
+        if (parts.Length != 3) return false;
+        if (!int.TryParse(parts[0], out int day)   ||
+            !int.TryParse(parts[1], out int month) ||
+            !int.TryParse(parts[2], out int year))
+            return false;
+        // Convert Thai Buddhist year if needed (BE > 2500 typically)
+        if (year > 2500) year -= 543;
+        try { result = new DateTime(year, month, day); return true; }
+        catch { return false; }
+    }
+
+    private static int ParseYear(string resolutionDate)
+    {
+        if (TryParseResolutionDate(resolutionDate, out var d)) return d.Year;
+        return 0;
+    }
+
+    // ── Chart data ──────────────────────────────────────────────────────────
+
+    private (string[] Labels, int[] Data, string[] Colors) TypeChartData()
+    {
+        var buckets = new (string Key, string Label, string Color)[]
+        {
+            ("criminal",   "อาญา",         "#f87171"),
+            ("discipline", "วินัย",         "#6366f1"),
+            ("both",       "อาญาและวินัย", "#fbbf24"),
+        };
+        return (
+            buckets.Select(b => b.Label).ToArray(),
+            buckets.Select(b => _filtered.Count(c => c.CaseType == b.Key)).ToArray(),
+            buckets.Select(b => b.Color).ToArray()
+        );
+    }
+
+    private (string[] Labels, int[] Closed, int[] Zeros) TrendChartData()
+    {
+        var thaiMonths = new[] { "ต.ค.", "พ.ย.", "ธ.ค.", "ม.ค.", "ก.พ.", "มี.ค.",
+                                 "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย." };
+        // Fiscal year months: Oct(10)..Sep(9)
+        var fiscalMonths = new[] { 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+        int refYear = _filtered
+            .Select(c => { TryParseResolutionDate(c.ResolutionDate, out var d); return d.Year; })
+            .Where(y => y > 0)
+            .DefaultIfEmpty(DateTime.Today.Year)
+            .Max();
+
+        var closed = fiscalMonths.Select(m =>
+        {
+            int y = m >= 10 ? refYear : refYear + 1;
+            return _filtered.Count(c =>
+                c.DisciplineStatus == "closed" &&
+                TryParseResolutionDate(c.ResolutionDate, out var d) &&
+                d.Month == m && d.Year == y);
+        }).ToArray();
+
+        return (thaiMonths, closed, new int[12]);
+    }
+
+    private (string[] Labels, int[] Data, string[] Colors) StatusChartData()
+    {
+        int completed   = _filtered.Count(IsCompleted);
+        int inProgress  = _filtered.Count(IsInProgress);
+        int pending     = _filtered.Count(IsPending);
+        int late        = _filtered.Count(IsLate);
+
+        return (
+            new[] { "ดำเนินการแล้ว", "กำลังดำเนินการ", "รอดำเนินการ", "ล่าช้า" },
+            new[] { completed, inProgress, pending, late },
+            new[] { "#06d6a0", "#6366f1", "#fbbf24", "#f87171" }
+        );
+    }
+
+    private (string[] Labels, int[] Data) AgencyChartData()
+    {
+        var groups = _filtered
+            .GroupBy(c => c.AccusedAgency)
+            .OrderByDescending(g => g.Count())
+            .Take(10)
+            .ToList();
+        return (
+            groups.Select(g => g.Key).ToArray(),
+            groups.Select(g => g.Count()).ToArray()
+        );
+    }
+
+    // ── Filter ──────────────────────────────────────────────────────────────
+
+    private void ApplyFilter()
+    {
+        _chartsReady = false;
+        var q = _all.AsEnumerable();
+        if (!string.IsNullOrEmpty(_filterCaseType))
+            q = q.Where(c => c.CaseType == _filterCaseType);
+        if (!string.IsNullOrEmpty(_filterDisciplineStatus))
+            q = q.Where(c => c.DisciplineStatus == _filterDisciplineStatus);
+        if (!string.IsNullOrEmpty(_filterAgency))
+            q = q.Where(c => c.AccusedAgency == _filterAgency);
+        if (!string.IsNullOrEmpty(_filterYear) && int.TryParse(_filterYear, out int yr))
+            q = q.Where(c => ParseYear(c.ResolutionDate) == yr);
+        _filtered = q.ToList();
+        _noData   = _filtered.Count == 0;
+    }
+
+    private async Task OnApplyFilter()
+    {
+        ApplyFilter();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnResetFilter()
+    {
+        _filterCaseType        = "";
+        _filterDisciplineStatus = "";
+        _filterAgency          = "";
+        _filterYear            = "";
+        ApplyFilter();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // ── Lifecycle ────────────────────────────────────────────────────────────
+
+    protected override Task OnInitializedAsync()
+    {
+        _all      = PostCommitteeData.Cases.ToList();
+        _agencies = _all.Select(c => c.AccusedAgency).Distinct().OrderBy(x => x).ToList();
+        _years    = _all
+            .Select(c => ParseYear(c.ResolutionDate))
+            .Where(y => y > 0)
+            .Distinct()
+            .OrderByDescending(y => y)
+            .Select(y => y.ToString())
+            .ToList();
+        ApplyFilter();
+        return Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var theme = await JS.InvokeAsync<string?>("localStorage.getItem", "dashTheme");
+            _isDark    = theme == "dark";
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("registerAnalyticsComponent", _dotNetRef);
+        }
+        if (!_noData && !_chartsReady)
+        {
+            _chartsReady = true;
+            await RenderChartsAsync();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnThemeChangedAsync(bool isDark)
+    {
+        _isDark = isDark;
+        await RenderChartsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // ── Chart rendering ──────────────────────────────────────────────────────
+
+    private async Task RenderChartsAsync()
+    {
+        await Task.Yield();
+
+        var (typeLabels, typeData, typeColors) = TypeChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "dsChartType", "bar",
+            typeLabels, typeData.Cast<object>().ToArray(), typeColors, _isDark);
+
+        var (trendLabels, trendClosed, trendZeros) = TrendChartData();
+        await JS.InvokeVoidAsync("initTrendChart", "dsChartResolved",
+            trendLabels, trendClosed.Cast<object>().ToArray(), trendZeros.Cast<object>().ToArray(), _isDark);
+
+        var (stLabels, stData, stColors) = StatusChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "dsChartStatus", "doughnut",
+            stLabels, stData.Cast<object>().ToArray(), stColors, _isDark);
+
+        var (agLabels, agData) = AgencyChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "dsChartAgency", "bar-h",
+            agLabels, agData.Cast<object>().ToArray(),
+            new[] { "#6366f1" }, _isDark);
+    }
+
+    // ── Export / Print ───────────────────────────────────────────────────────
+
+    private async Task ExportCsvAsync()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("CaseNo,Accused,AccusedAgency,CaseType,ResolutionDate,DaysPassedSinceResolution,CriminalStatus,DisciplineStatus");
+        foreach (var c in _filtered)
+        {
+            sb.AppendLine(string.Join(",",
+                c.CaseNo,
+                c.Accused,
+                c.AccusedAgency,
+                c.CaseType,
+                c.ResolutionDate,
+                c.DaysPassedSinceResolution.ToString(),
+                c.CriminalStatus,
+                c.DisciplineStatus));
+        }
+        await JS.InvokeVoidAsync("ecmis.downloadTextFile",
+            $"discipline_stats_{DateTime.Now:yyyyMMdd}.csv",
+            "text/csv;charset=utf-8;",
+            sb.ToString(),
+            true);
+    }
+
+    private async Task PrintReportAsync()
+    {
+        var title = $"<h2>รายงานสถิติกระบวนการวินัย TOR 12.9 ป.ป.ท. | {DateTime.Now:dd/MM/yyyy}</h2>";
+        var table = await JS.InvokeAsync<string>("eval", "document.getElementById('exportTable').outerHTML");
+        await JS.InvokeVoidAsync("ecmis.printReport", "สถิติกระบวนการวินัย", title + table);
+    }
+
+    public void Dispose()
+    {
+        _dotNetRef?.Dispose();
+    }
+}

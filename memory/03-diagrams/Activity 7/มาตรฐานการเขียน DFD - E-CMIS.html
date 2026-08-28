@@ -1,0 +1,500 @@
+<title>มาตรฐานการเขียน DFD — E-CMIS</title>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --surface: #ffffff;
+    --surface-2: #eef1f5;
+    --text: #1b2430;
+    --text-muted: #57657a;
+    --accent: #2456a6;
+    --accent-ink: #163c80;
+    --accent-soft: #dce6f5;
+    --rule: #d7dce3;
+    --warn: #a6720a;
+    --warn-soft: #faf1de;
+    --good: #2f7a4d;
+    --good-soft: #e6f3ea;
+    --code-bg: #101820;
+    --code-text: #dbe6ef;
+    --shadow: 0 1px 2px rgba(20, 30, 45, 0.06), 0 8px 24px rgba(20, 30, 45, 0.05);
+    --font-ui: "TH Sarabun New", "Sarabun", "Leelawadee UI", "Segoe UI", sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Consolas, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12161c;
+      --surface: #1a2029;
+      --surface-2: #212934;
+      --text: #e8edf3;
+      --text-muted: #9aa8ba;
+      --accent: #7aa8ed;
+      --accent-ink: #bcd4f8;
+      --accent-soft: #22344f;
+      --rule: #2c3542;
+      --warn: #e0a64c;
+      --warn-soft: #3a2f19;
+      --good: #6ec48e;
+      --good-soft: #1c3324;
+      --code-bg: #0b1016;
+      --code-text: #cfe0ee;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12161c;
+    --surface: #1a2029;
+    --surface-2: #212934;
+    --text: #e8edf3;
+    --text-muted: #9aa8ba;
+    --accent: #7aa8ed;
+    --accent-ink: #bcd4f8;
+    --accent-soft: #22344f;
+    --rule: #2c3542;
+    --warn: #e0a64c;
+    --warn-soft: #3a2f19;
+    --good: #6ec48e;
+    --good-soft: #1c3324;
+    --code-bg: #0b1016;
+    --code-text: #cfe0ee;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--accent); }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px 96px; }
+
+  header.top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--rule);
+  }
+  header.top .inner {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 10px 24px;
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  header.top .brand {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--accent-ink);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+  nav.jump { display: flex; gap: 4px 16px; flex-wrap: wrap; font-size: 14.5px; }
+  nav.jump a { color: var(--text-muted); text-decoration: none; }
+  nav.jump a:hover { color: var(--accent); }
+
+  .hero { padding: 56px 0 36px; border-bottom: 1px solid var(--rule); }
+  .hero .eyebrow {
+    font-size: 13.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 700;
+  }
+  .hero h1 {
+    margin: 10px 0 12px;
+    font-size: clamp(28px, 4.4vw, 40px);
+    line-height: 1.18;
+    font-weight: 700;
+    color: var(--accent-ink);
+    text-wrap: balance;
+  }
+  .hero p.lede {
+    max-width: 62ch;
+    color: var(--text-muted);
+    font-size: 19px;
+    margin: 0;
+  }
+  .hero .meta {
+    margin-top: 22px;
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+    font-size: 14.5px;
+    color: var(--text-muted);
+  }
+  .hero .meta b { color: var(--text); font-weight: 700; }
+
+  section { padding: 44px 0; border-bottom: 1px solid var(--rule); }
+  section:last-of-type { border-bottom: none; }
+  section h2 {
+    font-size: 25px;
+    font-weight: 700;
+    color: var(--accent-ink);
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  section .sub { color: var(--text-muted); margin: 0 0 24px; max-width: 68ch; }
+  section h3 { font-size: 18.5px; font-weight: 700; margin: 28px 0 10px; }
+
+  p { max-width: 68ch; }
+  ul, ol { max-width: 68ch; padding-left: 1.3em; }
+  li { margin: 6px 0; }
+  ul.wide, ol.wide { max-width: none; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 20px 22px;
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
+
+  .compare {
+    border-radius: 10px;
+    padding: 16px 18px 18px;
+    border: 1px solid var(--rule);
+  }
+  .compare.bad { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 35%, var(--rule)); }
+  .compare.good { background: var(--good-soft); border-color: color-mix(in srgb, var(--good) 35%, var(--rule)); }
+  .compare .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    margin-bottom: 10px;
+  }
+  .compare.bad .tag { color: var(--warn); }
+  .compare.good .tag { color: var(--good); }
+  .compare svg { width: 100%; height: auto; display: block; }
+  .compare p { margin: 10px 0 0; font-size: 15px; color: var(--text-muted); max-width: none; }
+
+  table { border-collapse: collapse; width: 100%; margin: 6px 0 4px; font-size: 15.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { color: var(--text-muted); font-weight: 700; font-size: 13.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td code, th code { font-family: var(--font-mono); font-size: 13.5px; }
+  .tbl-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--rule); }
+  .tbl-wrap table { margin: 0; }
+  .tbl-wrap th, .tbl-wrap td { white-space: nowrap; }
+  .swatch {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border-radius: 4px;
+    border: 1px solid var(--rule);
+    vertical-align: -2px;
+    margin-right: 6px;
+  }
+
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    border-radius: 10px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+    line-height: 1.6;
+    box-shadow: var(--shadow);
+  }
+  pre code { font-family: inherit; }
+  .code-label {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    margin: 22px 0 8px;
+  }
+
+  .steps { counter-reset: step; list-style: none; padding-left: 0; max-width: none; }
+  .steps li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    gap: 14px;
+    margin: 0 0 16px;
+  }
+  .steps li::before {
+    content: counter(step);
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .steps li > div p { margin: 2px 0 0; color: var(--text-muted); }
+  .steps li > div b { font-size: 16.5px; }
+
+  .checklist { list-style: none; padding: 0; max-width: none; }
+  .checklist li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--rule);
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist .box {
+    flex: none;
+    width: 20px; height: 20px;
+    border-radius: 5px;
+    border: 2px solid var(--accent);
+    margin-top: 2px;
+  }
+
+  footer.end {
+    padding: 40px 0 10px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  ::selection { background: var(--accent-soft); }
+</style>
+
+<header class="top">
+  <div class="inner">
+    <div class="brand">มาตรฐาน DFD · E-CMIS</div>
+    <nav class="jump">
+      <a href="#structure">โครงสร้างไฟล์</a>
+      <a href="#tokens">สไตล์และสี</a>
+      <a href="#level0">Level 0</a>
+      <a href="#level1">Level 1</a>
+      <a href="#pitfalls">ข้อผิดพลาดที่พบ</a>
+      <a href="#snippets">Style string</a>
+      <a href="#checklist">Checklist</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">คู่มืออ้างอิงภายในทีม</div>
+    <h1>มาตรฐานการเขียน Data Flow Diagram สำหรับ E-CMIS</h1>
+    <p class="lede">
+      สรุปแนวทางการวาด Context Diagram (Level 0) และ Data Flow Diagram ระดับที่ 1
+      ที่สรุปได้จากการจัดทำกิจกรรมที่ 7 (ระบบบริหารจัดการกระบวนงานพิจารณาและดำเนินการตามมติคณะกรรมการ ป.ป.ท.)
+      เพื่อให้ทีมนำไปใช้วาด DFD ของกิจกรรมอื่น ๆ ในชุดเดียวกันได้ผลลัพธ์ที่สอดคล้องกัน
+      ทั้งรูปแบบภาพและวิธีจัดเรียงเส้นเชื่อม
+    </p>
+    <div class="meta">
+      <div><b>อ้างอิงจาก</b> Data Flow Level 0,1,2 กิจกรรมที่ 4, กิจกรรมที่ 14, กิจกรรมที่ 7</div>
+      <div><b>รูปแบบไฟล์</b> .drawio (mxGraph XML)</div>
+      <div><b>ฟอนต์มาตรฐาน</b> TH Sarabun New</div>
+    </div>
+  </div>
+
+  <section id="structure">
+    <h2>โครงสร้างไฟล์และการแบ่งหน้า</h2>
+    <p class="sub">ไฟล์ .drawio หนึ่งไฟล์ต่อหนึ่งกิจกรรม บรรจุหลายหน้า (diagram) เรียงตามลำดับชั้นของ DFD</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>หน้า</th><th>ชื่อหน้า (diagram name)</th><th>เนื้อหา</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>Level 0</code></td><td>Context Diagram — กระบวนการทั้งกิจกรรมแสดงเป็นกล่องเดียว ล้อมรอบด้วย external entity ทั้งหมด</td></tr>
+          <tr><td>2</td><td><code>Level 1</code></td><td>แตกกระบวนการ "0" เป็นกระบวนการย่อยที่มีหมายเลข (1, 2, 3, ...) แต่ละกระบวนการมี entity ของตัวเอง</td></tr>
+          <tr><td>3+</td><td><code>Level 2 (n.n)</code></td><td>แตกกระบวนการย่อยที่ซับซ้อนต่อ ถ้าจำเป็น (ใช้รูปแบบเดียวกับ Level 1)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>ตั้งชื่อไฟล์ตามแบบ <code>Data Flow Level 0,1,2 กิจกรรมที่ N.drawio</code> หรือ <code>Context Diagram กิจกรรมที่ N.drawio</code> ให้สอดคล้องกับไฟล์ของกิจกรรมก่อนหน้า</p>
+  </section>
+
+  <section id="tokens">
+    <h2>สไตล์และสีที่ใช้ตลอดทั้งชุด</h2>
+    <p class="sub">ค่าเหล่านี้คัดลอกมาจากไฟล์กิจกรรมที่ 4, 14 และ 7 ตรงกัน — ใช้ค่าเดียวกันทุกกิจกรรมเพื่อความสม่ำเสมอ</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>องค์ประกอบ</th><th>ค่า</th></tr></thead>
+        <tbody>
+          <tr><td>ฟอนต์ทั้งหมด</td><td><code>fontFamily=TH Sarabun New</code></td></tr>
+          <tr><td>ขนาดตัวอักษร กล่องกระบวนการ</td><td><code>fontSize=20</code>, ตัวหนา</td></tr>
+          <tr><td>ขนาดตัวอักษร กล่อง entity</td><td><code>fontSize=18–20</code></td></tr>
+          <tr><td>ขนาดตัวอักษร label เส้นเชื่อม</td><td><code>fontSize=14</code></td></tr>
+          <tr><td>สีเส้นขอบ / เส้นเชื่อม</td><td><span class="swatch" style="background:#000"></span><code>strokeColor=#000000</code></td></tr>
+          <tr><td>สีพื้นกล่อง</td><td><span class="swatch" style="background:#fff;border-color:#999"></span><code>fillColor=#ffffff</code> (ไม่ใช้สีไล่ระดับ ไม่ใช้สีแยกประเภท entity)</td></tr>
+          <tr><td>ความหนาเส้นขอบกล่อง</td><td><code>strokeWidth=1.5</code></td></tr>
+          <tr><td>ความหนาเส้นขอบกระบวนการ</td><td><code>strokeWidth=2</code></td></tr>
+          <tr><td>มุมกล่อง entity</td><td><code>rounded=0</code> (เหลี่ยม)</td></tr>
+          <tr><td>มุมกล่องกระบวนการ</td><td><code>rounded=1</code> (มน เล็กน้อย)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><b>ข้อสำคัญ:</b> อย่าใช้สีแยกประเภท entity (เช่น เหลืองสำหรับหน่วยงานภายนอก) — ไฟล์ต้นแบบทุกไฟล์ใช้ขาว-ดำล้วน ระบุความเป็นภายนอก/ภายในด้วย<b>ข้อความในกล่อง</b>เท่านั้น เช่น "(หน่วยงานภายนอก)"</p>
+  </section>
+
+  <section id="level0">
+    <h2>กฎการวาด Level 0 — Context Diagram</h2>
+    <p class="sub">กระบวนการทั้งกิจกรรมแสดงเป็นกล่องเดียวตรงกลาง ล้อมรอบด้วย entity ภายนอก</p>
+
+    <ol class="steps">
+      <li><div><b>กล่องกระบวนการกลาง</b><p>ใช้ <code>swimlane</code> ที่มีค่า (value) เป็น <code>"0"</code> เสมอ ข้างในมีกล่องข้อความลูก (child) แสดงชื่อระบบ + ชื่อกิจกรรมเต็ม</p></div></li>
+      <li><div><b>ตั้งชื่อ entity แบบ E1, E2, E3...</b><p>เรียงตามลำดับที่ปรากฏในกระบวนการ ไม่ต้องเรียงตามความสำคัญ — ใช้เลขเดิมอ้างอิงต่อใน Level 1 ได้</p></div></li>
+      <li><div><b>จัดผังแบบตาราง ไม่ใช่วงกลม</b><p>วาง entity เป็น 4 กลุ่มรอบกล่องกระบวนการ: บน / ล่าง / ซ้าย / ขวา แต่ละกลุ่มเรียงเป็นแถวขนานกับด้านของกล่องกระบวนการ</p></div></li>
+      <li><div><b>เส้นเชื่อมทิศทางเดียวต่อ 1 data flow</b><p>ถ้า entity มีทั้งส่งและรับข้อมูล ให้วาด 2 เส้นแยกกัน แต่ละเส้นหัวลูกศรทิศทางเดียวและมี label ของตัวเอง — ห้ามรวมเป็นเส้นเดียวหัวลูกศรสองข้าง</p></div></li>
+      <li><div><b>เส้นเชื่อมต้องเป็นเส้นตั้งฉาก (orthogonal)</b><p>ใช้ <code>edgeStyle=orthogonalEdgeStyle</code> และกำหนดจุดเชื่อม <code>entryX/entryY</code>, <code>exitX/exitY</code> ให้ชัดเจนเสมอ ห้ามปล่อยให้โปรแกรมสุ่มจุดเอง</p></div></li>
+    </ol>
+
+    <h3>ตัวอย่างการเปรียบเทียบ</h3>
+    <div class="grid2">
+      <div class="compare bad">
+        <span class="tag">✕ ผิด — ผังวงกลม เส้นทแยงมุม</span>
+        <svg viewBox="0 0 260 200" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="130" cy="100" r="20" fill="none" stroke="var(--warn)" stroke-width="2"/>
+          <g stroke="var(--warn)" stroke-width="1.6">
+            <line x1="130" y1="100" x2="40" y2="30"/>
+            <line x1="130" y1="100" x2="220" y2="30"/>
+            <line x1="130" y1="100" x2="230" y2="110"/>
+            <line x1="130" y1="100" x2="210" y2="180"/>
+            <line x1="130" y1="100" x2="70" y2="185"/>
+            <line x1="130" y1="100" x2="20" y2="130"/>
+          </g>
+          <g fill="none" stroke="var(--warn)" stroke-width="1.6">
+            <rect x="24" y="14" width="32" height="20"/>
+            <rect x="204" y="14" width="32" height="20"/>
+            <rect x="216" y="98" width="32" height="20"/>
+            <rect x="194" y="166" width="32" height="20"/>
+            <rect x="54" y="171" width="32" height="20"/>
+            <rect x="4" y="116" width="32" height="20"/>
+          </g>
+        </svg>
+        <p>Entity เรียงเป็นวงกลม เส้นทแยงมุมเข้าจุดศูนย์กลางจุดเดียว มองดูรกและไม่ตรงธรรมเนียม DFD</p>
+      </div>
+      <div class="compare good">
+        <span class="tag">✓ ถูก — ผังตาราง เส้นตั้งฉาก</span>
+        <svg viewBox="0 0 260 200" xmlns="http://www.w3.org/2000/svg">
+          <rect x="108" y="82" width="44" height="36" rx="4" fill="none" stroke="var(--good)" stroke-width="2"/>
+          <g fill="none" stroke="var(--good)" stroke-width="1.6">
+            <rect x="60" y="14" width="46" height="20"/>
+            <rect x="154" y="14" width="46" height="20"/>
+            <rect x="60" y="166" width="46" height="20"/>
+            <rect x="154" y="166" width="46" height="20"/>
+            <rect x="4" y="90" width="46" height="20"/>
+            <rect x="210" y="90" width="46" height="20"/>
+          </g>
+          <g stroke="var(--good)" stroke-width="1.6">
+            <path d="M83,34 L83,60 L118,60 L118,82"/>
+            <path d="M177,34 L177,60 L142,60 L142,82"/>
+            <path d="M83,166 L83,140 L118,140 L118,118"/>
+            <path d="M177,166 L177,140 L142,140 L142,118"/>
+            <path d="M50,100 L108,100"/>
+            <path d="M210,100 L152,100"/>
+          </g>
+        </svg>
+        <p>Entity เรียงเป็น 4 กลุ่มรอบกล่องกระบวนการ เส้นตั้งฉากเข้าจุดต่างกันของแต่ละด้าน ไม่มีเส้นทับ/ตัดกัน</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="level1">
+    <h2>กฎการวาด Level 1 — แตกกระบวนการย่อย</h2>
+    <p class="sub">ขยายกล่องกระบวนการ "0" ออกเป็นกระบวนการย่อยที่มีหมายเลขกำกับ ตามลำดับขั้นตอนจริงของงาน</p>
+    <ul class="wide">
+      <li><b>ตั้งชื่อกระบวนการย่อยเป็นตัวเลข</b> 1, 2, 3, ... ต่อเนื่องจาก Level 0 พร้อมข้อความอ้างอิงกิจกรรมย่อยในวงเล็บ เช่น <code>[กิจกรรมที่ 7.1]</code></li>
+      <li><b>แต่ละกระบวนการย่อยมีกลุ่ม entity ของตัวเอง</b> จัดวางแบบเดียวกับ Level 0 (บน/ล่าง/ซ้าย/ขวา รอบกล่องกระบวนการนั้น ๆ)</li>
+      <li><b>Entity ที่ใช้ซ้ำในหลายกระบวนการ ให้วาดซ้ำและต่อท้ายด้วย <code>*</code></b> เช่น <code>E2</code> ปรากฏในกระบวนการ 1, แล้วปรากฏอีกครั้งในกระบวนการ 3 ให้เขียนเป็น <code>E2*</code> — ห้ามลากเส้นข้ามคลัสเตอร์ไกล ๆ เพราะจะทำให้เส้นตัดกัน</li>
+      <li><b>วาดเส้นเชื่อมระหว่างกระบวนการ</b> เฉพาะกรณีที่งานไหลต่อกันจริง (เช่น กระบวนการ 1 → 2 → 3) โดยเว้นด้านที่ต้องต่อเชื่อมนั้นว่างจาก entity เพื่อให้เส้นวิ่งผ่านที่ว่างได้โดยไม่ชนกล่องอื่น</li>
+    </ul>
+  </section>
+
+  <section id="pitfalls">
+    <h2>ข้อผิดพลาดที่พบระหว่างทำกิจกรรมที่ 7</h2>
+    <p class="sub">บันทึกไว้กันพลาดซ้ำ — เรียงตามลำดับที่แก้ไขจริง</p>
+    <div class="grid2">
+      <div class="compare bad">
+        <span class="tag">✕ ลองก่อน</span>
+        <p style="color:var(--text)">จัดวาง entity เป็นวงกลมรอบกระบวนการ ลากเส้นตรงทแยงมุมเข้าจุดศูนย์กลาง</p>
+        <p><b>ปัญหา:</b> ไม่ตรงธรรมเนียม DFD/ผังงานที่ใช้จริง มองดูเหมือนใยแมงมุม ไม่มีหลักในการอ่าน</p>
+      </div>
+      <div class="compare good">
+        <span class="tag">✓ แก้เป็น</span>
+        <p style="color:var(--text)">จัดวาง entity เป็น 4 กลุ่มรอบกล่องกระบวนการ (บน/ล่าง/ซ้าย/ขวา) เส้นตั้งฉาก</p>
+        <p><b>ผล:</b> อ่านง่าย ตรงตามผังต้นแบบของกิจกรรมที่ 4 และ 14</p>
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:18px;">
+      <div class="compare bad">
+        <span class="tag">✕ ลองก่อน</span>
+        <p style="color:var(--text)">รวมข้อมูลเข้า-ออกของ entity เดียวกันเป็นเส้นเดียว หัวลูกศรสองข้าง (↔)</p>
+        <p><b>ปัญหา:</b> ไม่ตรงหลัก DFD ที่ 1 เส้น = 1 data flow ทิศทางเดียวเสมอ ทำให้อ่านไม่ออกว่าอันไหนคือข้อมูลเข้า อันไหนคือข้อมูลออก</p>
+      </div>
+      <div class="compare good">
+        <span class="tag">✓ แก้เป็น</span>
+        <p style="color:var(--text)">แยกเป็น 2 เส้น แต่ละเส้นหัวลูกศรทิศทางเดียว มี label ของตัวเอง</p>
+        <p><b>ผล:</b> ตรงตามไฟล์ต้นแบบ อ่านทิศทางข้อมูลได้ชัดเจนทันที</p>
+      </div>
+    </div>
+    <h3 style="margin-top:32px;">วิธีป้องกันเส้นทับ/ตัดกัน</h3>
+    <ul class="wide">
+      <li>กำหนด <code>entryX/entryY</code> และ <code>exitX/exitY</code> ของทุกเส้นแบบตายตัว อย่าปล่อยให้ drawio หาจุดเชื่อมเอง</li>
+      <li>ในกลุ่ม entity เดียวกัน (เช่น ด้านบนของกระบวนการ) ให้กระจายจุดเชื่อมบนขอบกระบวนการเรียงตามลำดับซ้าย→ขวา ไม่ให้ซ้ำจุดกัน</li>
+      <li>ก่อนบันทึกไฟล์ ให้ตรวจสอบด้วยสคริปต์คำนวณ bounding box ของทุกกล่อง (กระบวนการ + entity + label) ว่าไม่มีคู่ใดทับกัน</li>
+    </ul>
+  </section>
+
+  <section id="snippets">
+    <h2>Style string อ้างอิง (คัดลอกไปใช้ได้ทันที)</h2>
+    <p class="sub">ค่าเดียวกับที่ใช้ในไฟล์กิจกรรมที่ 7 — แทนที่ค่าตัวเลขตำแหน่ง (x, y, entryX ฯลฯ) ตามผังจริงของแต่ละกิจกรรม</p>
+
+    <div class="code-label">กล่องกระบวนการ (process)</div>
+    <pre><code>style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;
+fillColor=#ffffff;horizontalStack=0;resizeParent=1;resizeParentMax=0;
+resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#ffffff;
+rounded=1;arcSize=10;strokeWidth=2;fontFamily=TH Sarabun New;
+fontColor=#000000;fontSize=20;startSize=30;"
+value="1"</code></pre>
+
+    <div class="code-label">กล่อง entity</div>
+    <pre><code>style="html=1;whiteSpace=wrap;rounded=0;strokeColor=#000000;
+fillColor=#ffffff;fontFamily=TH Sarabun New;align=center;
+verticalAlign=middle;fontColor=#000000;strokeWidth=1.5;
+fontSize=20;spacing=10;"
+value="E1 ชื่อหน่วยงาน/บทบาท"</code></pre>
+
+    <div class="code-label">เส้นเชื่อม (ทิศทางเดียว)</div>
+    <pre><code>style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;
+jettySize=auto;html=1;endArrow=block;endFill=1;startArrow=none;
+strokeColor=#000000;strokeWidth=1.5;fontFamily=TH Sarabun New;
+fontSize=14;fontColor=#000000;labelBackgroundColor=#ffffff;
+align=center;exitX=0.4;exitY=1;entryX=0.2;entryY=0;
+exitDx=0;exitDy=0;entryDx=0;entryDy=0;"
+value="ชื่อข้อมูล/เอกสารที่ไหล"</code></pre>
+  </section>
+
+  <section id="checklist">
+    <h2>Checklist ก่อนส่งงาน</h2>
+    <p class="sub">ไล่ทีละข้อก่อนส่งไฟล์ .drawio ให้ทีมตรวจ</p>
+    <ul class="checklist">
+      <li><span class="box"></span><div>กล่องกระบวนการกลางของ Level 0 ใช้เลข "0" และมีชื่อระบบ + ชื่อกิจกรรมครบ</div></li>
+      <li><span class="box"></span><div>Entity ทุกตัวตั้งชื่อแบบ E1, E2, E3... ต่อเนื่องไม่ข้ามเลข</div></li>
+      <li><span class="box"></span><div>ทุกเส้นเป็นทิศทางเดียว (1 เส้น = 1 data flow) ไม่มีหัวลูกศรสองข้าง</div></li>
+      <li><span class="box"></span><div>ทุกเส้นเป็นเส้นตั้งฉาก และกำหนด entryX/exitX ชัดเจนแล้ว</div></li>
+      <li><span class="box"></span><div>Entity จัดวางเป็น 4 กลุ่มรอบกระบวนการ ไม่ใช่วงกลม</div></li>
+      <li><span class="box"></span><div>ไม่มีกล่องหรือ label ใดทับกัน (ตรวจด้วยสคริปต์หรือดูด้วยตาในทุกจุด)</div></li>
+      <li><span class="box"></span><div>ใช้ฟอนต์ TH Sarabun New และสีขาว-ดำล้วนตามมาตรฐาน ไม่มีสีแยกประเภท entity</div></li>
+      <li><span class="box"></span><div>Level 1 ใช้ entity ซ้ำแบบมี <code>*</code> ต่อท้าย แทนการลากเส้นข้ามคลัสเตอร์ไกล ๆ</div></li>
+    </ul>
+  </section>
+
+  <footer class="end">
+    สรุปจากกระบวนการจัดทำ Context Diagram และ Level 1 ของกิจกรรมที่ 7 — ใช้เป็นแนวทางเดียวกันสำหรับกิจกรรมอื่นในชุด E-CMIS
+  </footer>
+</div>

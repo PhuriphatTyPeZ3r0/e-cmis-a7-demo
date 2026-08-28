@@ -1,0 +1,138 @@
+@using System.Globalization
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<div class="thm-root">
+    @if (_loadFailed)
+    {
+        <div class="thm-msg">ไม่สามารถโหลดแผนที่ได้</div>
+    }
+    else if (_map is null)
+    {
+        <div class="thm-msg">กำลังโหลดแผนที่...</div>
+    }
+    else
+    {
+        <div class="thm-banner" style="color:@BannerColor">@BannerText</div>
+        <div class="thm-svg-wrap">
+            <svg viewBox="@_map.ViewBox" preserveAspectRatio="xMidYMid meet" role="img"
+                 aria-label="แผนที่ @ValueLabel รายเขต ปปท." @onmouseout="ClearHover">
+                @foreach (var loc in _map.Locations)
+                {
+                    var zone = HeatmapLogic.ProvinceZone.TryGetValue(loc.Id, out var zz) ? zz : (int?)null;
+                    <path d="@loc.Path"
+                          fill="@FillFor(zone)"
+                          stroke="@(zone is not null && zone == _hoverZone ? "#0f172a" : "#ffffff")"
+                          stroke-width="@(zone is not null && zone == _hoverZone ? "1.6" : "0.7")"
+                          style="cursor:@(zone is null ? "default" : "pointer");opacity:@(IsDimmed(zone) ? "0.22" : "1")"
+                          @onmouseover="() => SetHover(zone)"
+                          @onclick="() => ClickZone(zone)">
+                        <title>@TitleFor(zone)</title>
+                    </path>
+                }
+                @* Razor สงวนแท็ก <text> ไว้ จึงต้องปล่อย label เป็น markup ดิบ (ไม่มี event จึงปลอดภัย) *@
+                @((MarkupString)CentroidLabelsMarkup())
+            </svg>
+        </div>
+        <div class="thm-legend">
+            <span>น้อย</span>
+            @foreach (var t in new[] { 0d, 0.25, 0.5, 0.75, 1d })
+            {
+                <span class="thm-dotcol">
+                    <i style="background:@HeatmapLogic.ColorForT(t)"></i>
+                    <small>@((int)Math.Round(t * MaxValue))</small>
+                </span>
+            }
+            <span>มาก</span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyDictionary<int, ZoneHeatValue> Zones { get; set; } = new Dictionary<int, ZoneHeatValue>();
+    [Parameter] public int MaxValue { get; set; }
+    [Parameter] public string ValueLabel { get; set; } = "เรื่องร้องเรียน";
+    [Parameter] public int? SelectedZone { get; set; }   // เขตที่ drill อยู่ — เขตอื่นจะจางลง
+    [Parameter] public EventCallback<int> OnZoneClick { get; set; }
+
+    private const string NoData = "#e5e7eb";
+    private const string NoZone = "#f1f5f9";
+
+    private static Task<ProvinceMapData?>? _mapTask;   // โหลด JSON ครั้งเดียวต่อ session
+    private ProvinceMapData? _map;
+    private bool _loadFailed;
+    private int? _hoverZone;
+    private Dictionary<int, (double X, double Y)> _centroids = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // HttpClient ตัว default ของแอปชี้ไป ecmis-admin API — ต้องประกอบ URL จาก host ของหน้าเว็บเอง
+            _mapTask ??= Http.GetFromJsonAsync<ProvinceMapData>(Nav.BaseUri + "data/thai-provinces.json");
+            _map = await _mapTask;
+            if (_map is null || _map.Locations.Count == 0) { _loadFailed = true; return; }
+            _centroids = HeatmapLogic.ComputeCentroids(_map.Locations);
+        }
+        catch
+        {
+            _mapTask = null; // อย่า cache ความล้มเหลว — ให้ลองใหม่เมื่อ component ถูกสร้างครั้งถัดไป
+            _loadFailed = true;
+        }
+    }
+
+    private void SetHover(int? zone) { if (zone is int z) _hoverZone = z; }
+    private void ClearHover() => _hoverZone = null;
+
+    private async Task ClickZone(int? zone)
+    {
+        if (zone is int z) await OnZoneClick.InvokeAsync(z);
+    }
+
+    private string FillFor(int? zone)
+    {
+        if (zone is not int z) return NoZone;
+        if (!Zones.TryGetValue(z, out var zv) || zv.Total == 0) return NoData;
+        return HeatmapLogic.ColorForT(HeatmapLogic.TFor(zv.Value, MaxValue));
+    }
+
+    private string ValueText(int z)
+        => Zones.TryGetValue(z, out var zv)
+            ? (zv.Value == zv.Total ? $"{zv.Value}" : $"{zv.Value}/{zv.Total}")
+            : "0";
+
+    private string TitleFor(int? zone)
+        => zone is int z
+            ? $"ปปท. {HeatmapLogic.ZoneName(z)} — {ValueText(z)} เรื่อง (คลิกเพื่อดูสถิติเขต)"
+            : "ส่วนกลาง (ไม่ใช่เขตพื้นที่)";
+
+    private string BannerColor
+        => _hoverZone is int z && Zones.TryGetValue(z, out var zv)
+            ? HeatmapLogic.ColorForT(HeatmapLogic.TFor(zv.Value, MaxValue))
+            : "#94a3b8";
+
+    private string BannerText
+        => _hoverZone is int z
+            ? $"ปปท. {HeatmapLogic.ZoneName(z)} — {ValueText(z)} เรื่อง"
+            : "ชี้ที่เขตเพื่อดูตัวเลข · คลิกเพื่อดูสถิติเขต";
+
+    private bool IsDimmed(int? zone)
+        => SelectedZone is int s && zone != s;
+
+    private string CentroidLabelsMarkup()
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var (zone, c) in _centroids)
+        {
+            if (!Zones.TryGetValue(zone, out var zv) || zv.Total == 0) continue;
+            var dim = IsDimmed(zone) ? "opacity:0.25;" : "";
+            sb.Append($"<text x=\"{Inv(c.X)}\" y=\"{Inv(c.Y)}\" text-anchor=\"middle\" dominant-baseline=\"central\" " +
+                      $"font-size=\"28\" font-weight=\"800\" fill=\"#ffffff\" stroke=\"rgba(15,23,42,0.55)\" " +
+                      $"stroke-width=\"5\" paint-order=\"stroke\" style=\"pointer-events:none;{dim}\">{zv.Value}</text>");
+        }
+        return sb.ToString();
+    }
+
+    private static string Inv(double v) => v.ToString("0.#", CultureInfo.InvariantCulture);
+}

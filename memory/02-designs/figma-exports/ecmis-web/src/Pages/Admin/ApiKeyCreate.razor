@@ -1,0 +1,337 @@
+@page "/admin/api-keys/create"
+@inject ApiKeyApiService ApiKeyService
+@inject NavigationManager Nav
+@using EcmisWeb.Services
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+<div style="background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 55%,#1e3575 100%);border-radius:18px;padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden" class="fade-in">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold-light),var(--gold),transparent)"></div>
+    <div style="display:flex;align-items:center;gap:14px">
+        <a href="/admin/api-keys" style="color:rgba(255,255,255,.55);font-size:18px;text-decoration:none"><i class="bi bi-arrow-left"></i></a>
+        <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center">
+            <i class="bi bi-key-fill" style="font-size:20px;color:var(--navy-deep)"></i>
+        </div>
+        <div>
+            <div style="font-size:19px;font-weight:800;color:#fff">ออก API Key</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px">TOBE 14.4.5 — API Data Publishing</div>
+        </div>
+    </div>
+</div>
+
+@* Step progress bar *@
+<div style="background:#fff;border-radius:16px;border:1px solid #eaecf2;padding:20px 28px;margin-bottom:20px;box-shadow:0 2px 12px rgba(13,27,62,.05)" class="fade-in">
+    <div style="display:flex;gap:0;align-items:center">
+        @for (var i = 1; i <= 4; i++)
+        {
+            var si = i;
+            var done = Step > si;
+            var active = Step == si;
+            <div style="flex:1;display:flex;align-items:center">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                    <div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;
+                                background:@(done?"#16a34a":active?"var(--navy-deep)":"#e2e8f0");
+                                color:@(done||active?"#fff":"#8A96A8")">
+                        @if (done) { <i class="bi bi-check-lg"></i> } else { @si }
+                    </div>
+                    <div style="font-size:10px;font-weight:600;color:@(active?"var(--navy-deep)":"#8A96A8");white-space:nowrap">@StepLabel(si)</div>
+                </div>
+                @if (si < 4)
+                {
+                    <div style="flex:1;height:2px;margin:0 8px;background:@(Step>si?"#16a34a":"#e2e8f0");margin-bottom:16px"></div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<div style="background:#fff;border-radius:16px;border:1px solid #eaecf2;padding:28px;box-shadow:0 2px 12px rgba(13,27,62,.05)" class="fade-in">
+
+    @* ── Step 1: เลือก Endpoint ─────────────────────────────────────────── *@
+    @if (Step == 1)
+    {
+        <div style="font-size:16px;font-weight:800;color:#0B1940;margin-bottom:6px">เลือก Dataset Endpoint</div>
+        <div style="font-size:13px;color:#64748b;margin-bottom:24px">เลือกชุดข้อมูลที่หน่วยงานต้องการเข้าถึง</div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px">
+            @foreach (var ep in Endpoints)
+            {
+                var epc = ep;
+                <div @onclick="@(() => { EndpointCode = epc.code; })"
+                     style="border:2px solid @(EndpointCode==epc.code?"var(--navy-deep)":"#e2e8f0");border-radius:12px;padding:16px 18px;cursor:pointer;transition:all .2s;
+                            background:@(EndpointCode==epc.code?"#f0f4ff":"#fff")">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                        <div style="width:36px;height:36px;border-radius:10px;background:@(EndpointCode==epc.code?"var(--navy-deep)":"#f1f5f9");display:flex;align-items:center;justify-content:center">
+                            <i class="bi bi-@epc.icon" style="font-size:16px;color:@(EndpointCode==epc.code?"#fff":"#64748b")"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:800;font-size:13px;color:#0B1940">@epc.code.ToUpper()</div>
+                            <code style="font-size:10px;color:#6366f1">/api/v1/@epc.path</code>
+                        </div>
+                        @if (EndpointCode == epc.code)
+                        {
+                            <i class="bi bi-check-circle-fill ms-auto" style="color:var(--navy-deep);font-size:18px"></i>
+                        }
+                    </div>
+                    <div style="font-size:12px;color:#64748b">@epc.desc</div>
+                    @if (epc.isPii)
+                    {
+                        <div style="margin-top:8px;background:#fef3c7;border-radius:6px;padding:4px 8px;font-size:11px;color:#92400e"><i class="bi bi-shield-fill me-1"></i>ข้อมูล PII ถูก mask ทั้งหมด</div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div style="margin-top:24px;display:flex;justify-content:flex-end">
+            <button @onclick="@(() => { if (!string.IsNullOrEmpty(EndpointCode)) Step = 2; else Err = "กรุณาเลือก Endpoint"; })"
+                    style="background:var(--navy-deep);color:#fff;border:none;border-radius:10px;padding:10px 28px;font-size:13px;font-weight:700;cursor:pointer">
+                ถัดไป <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+        </div>
+        @if (!string.IsNullOrEmpty(Err)) { <div style="color:#dc2626;font-size:12px;margin-top:8px;text-align:right">@Err</div> }
+    }
+
+    @* ── Step 2: ข้อมูลหน่วยงาน ─────────────────────────────────────────── *@
+    @if (Step == 2)
+    {
+        <div style="font-size:16px;font-weight:800;color:#0B1940;margin-bottom:6px">ข้อมูลหน่วยงาน</div>
+        <div style="font-size:13px;color:#64748b;margin-bottom:24px">ระบุข้อมูลหน่วยงานที่จะเข้าถึง Endpoint <code>@EndpointCode</code></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div>
+                <label style="@Label">ชื่อหน่วยงาน *</label>
+                <input @bind="AgencyName" placeholder="เช่น กรมสอบสวนคดีพิเศษ" style="@Input" />
+            </div>
+            <div>
+                <label style="@Label">รหัสหน่วยงาน (slug) *</label>
+                <input @bind="AgencyCode" placeholder="เช่น dsi" style="@Input" />
+            </div>
+            <div>
+                <label style="@Label">ชื่อผู้ติดต่อ *</label>
+                <input @bind="ContactName" placeholder="ชื่อ-นามสกุล" style="@Input" />
+            </div>
+            <div>
+                <label style="@Label">อีเมลผู้ติดต่อ *</label>
+                <input @bind="ContactEmail" type="email" placeholder="name@agency.go.th" style="@Input" />
+            </div>
+            <div style="grid-column:1/-1">
+                <label style="@Label">วัตถุประสงค์การใช้งาน *</label>
+                <textarea @bind="Purpose" placeholder="อธิบายวัตถุประสงค์..." rows="3"
+                          style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:13px;font-family:'Sarabun',sans-serif;resize:vertical"></textarea>
+            </div>
+        </div>
+
+        <div style="margin-top:24px;display:flex;justify-content:space-between">
+            <button @onclick="@(() => Step = 1)" style="@BackBtn">← ย้อนกลับ</button>
+            <button @onclick="ValidateStep2" style="@NextBtn">ถัดไป <i class="bi bi-arrow-right ms-1"></i></button>
+        </div>
+        @if (!string.IsNullOrEmpty(Err)) { <div style="color:#dc2626;font-size:12px;margin-top:8px;text-align:right">@Err</div> }
+    }
+
+    @* ── Step 3: กำหนดวันหมดอายุ ─────────────────────────────────────────── *@
+    @if (Step == 3)
+    {
+        <div style="font-size:16px;font-weight:800;color:#0B1940;margin-bottom:6px">กำหนดวันหมดอายุ</div>
+        <div style="font-size:13px;color:#64748b;margin-bottom:24px">API Key จะหมดอายุตามวันที่เลือก</div>
+
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px">
+            @foreach (var (label, months) in new[] { ("6 เดือน",6), ("1 ปี (แนะนำ)",12), ("2 ปี",24) })
+            {
+                var m = months;
+                var lbl = label;
+                <button @onclick="@(() => { ExpiresAt = DateTime.Today.AddMonths(m); CustomDate = ExpiresAt.ToString("yyyy-MM-dd"); })"
+                        style="border:2px solid @(ExpiresAt==DateTime.Today.AddMonths(m)?"var(--navy-deep)":"#e2e8f0");border-radius:10px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;
+                               background:@(ExpiresAt==DateTime.Today.AddMonths(m)?"#f0f4ff":"#fff");color:#0B1940">
+                    @lbl
+                </button>
+            }
+        </div>
+        <div>
+            <label style="@Label">หรือเลือกวันที่กำหนดเอง</label>
+            <input type="date" value="@CustomDate"
+                   @onchange="@(e => { CustomDate = e.Value?.ToString() ?? ""; OnCustomDateChanged(); })"
+                   min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")"
+                   style="@Input;max-width:240px" />
+        </div>
+        <div style="margin-top:16px;background:#f0f4ff;border-radius:10px;padding:14px 18px;font-size:13px;color:#0B1940">
+            <i class="bi bi-calendar-check me-2" style="color:var(--navy-deep)"></i>
+            Key จะหมดอายุวันที่ <strong>@ExpiresAt.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("th-TH"))</strong>
+        </div>
+
+        <div style="margin-top:24px;display:flex;justify-content:space-between">
+            <button @onclick="@(() => Step = 2)" style="@BackBtn">← ย้อนกลับ</button>
+            <button @onclick="@(() => Step = 4)" style="@NextBtn">ถัดไป <i class="bi bi-arrow-right ms-1"></i></button>
+        </div>
+    }
+
+    @* ── Step 4: ยืนยัน + แสดง Key ──────────────────────────────────────── *@
+    @if (Step == 4)
+    {
+        @if (CreatedResult is null)
+        {
+            <div style="font-size:16px;font-weight:800;color:#0B1940;margin-bottom:6px">ยืนยันการออก API Key</div>
+            <div style="font-size:13px;color:#64748b;margin-bottom:24px">ตรวจสอบข้อมูลก่อนยืนยัน</div>
+
+            <div style="background:#f8fafc;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:10px;font-size:13px;margin-bottom:24px">
+                <div style="display:grid;grid-template-columns:140px 1fr;gap:4px 12px">
+                    <span style="color:#8A96A8;font-weight:600">Endpoint</span>
+                    <code style="color:#6366f1">@EndpointCode — /api/v1/@EndpointPath(EndpointCode)</code>
+                    <span style="color:#8A96A8;font-weight:600">หน่วยงาน</span>
+                    <span>@AgencyName (@AgencyCode)</span>
+                    <span style="color:#8A96A8;font-weight:600">ผู้ติดต่อ</span>
+                    <span>@ContactName · @ContactEmail</span>
+                    <span style="color:#8A96A8;font-weight:600">วัตถุประสงค์</span>
+                    <span>@Purpose</span>
+                    <span style="color:#8A96A8;font-weight:600">หมดอายุ</span>
+                    <span>@ExpiresAt.ToString("dd/MM/yyyy")</span>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Err))
+            {
+                <div style="background:#fee2e2;border:1.5px solid #fecaca;border-radius:10px;padding:12px 16px;font-size:13px;color:#991b1b;margin-bottom:16px">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>@Err
+                </div>
+            }
+
+            <div style="display:flex;justify-content:space-between">
+                <button @onclick="@(() => Step = 3)" style="@BackBtn">← ย้อนกลับ</button>
+                <button @onclick="SubmitAsync" disabled="@Saving"
+                        style="background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--navy-deep);border:none;border-radius:10px;padding:10px 28px;font-size:13px;font-weight:800;cursor:pointer">
+                    @if (Saving) { <i class="bi bi-hourglass-split me-2"></i>} <i class="bi bi-key-fill me-2"></i>ออก API Key
+                </button>
+            </div>
+        }
+        else
+        {
+            @* Success — show raw key ONCE *@
+            <div style="text-align:center;padding:20px 0 10px">
+                <div style="width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,#16a34a,#22c55e);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+                    <i class="bi bi-check-lg" style="font-size:28px;color:#fff"></i>
+                </div>
+                <div style="font-size:20px;font-weight:800;color:#0B1940">ออก API Key สำเร็จ!</div>
+                <div style="font-size:13px;color:#64748b;margin-top:4px">คัดลอก Key นี้ไว้ทันที — ระบบจะไม่แสดงอีก</div>
+            </div>
+
+            <div style="background:#0B1940;border-radius:12px;padding:18px 20px;margin:20px 0;display:flex;align-items:center;gap:12px">
+                <code style="flex:1;color:#a5f3fc;font-size:14px;word-break:break-all">@CreatedResult.RawKey</code>
+                <button @onclick="CopyKeyAsync"
+                        style="background:#1e3575;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
+                    <i class="bi bi-clipboard me-1"></i>@CopyLabel
+                </button>
+            </div>
+
+            <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 16px;font-size:12px;color:#15803d;margin-bottom:20px">
+                <i class="bi bi-shield-check me-2"></i>
+                API Key นี้ใช้ Header <code>X-API-Key: {key}</code> กับ Endpoint
+                <code>/api/v1/@EndpointPath(CreatedResult.EndpointCode)</code> —
+                หมดอายุ @CreatedResult.ExpiresAt.LocalDateTime.ToString("dd/MM/yyyy")
+            </div>
+
+            <div style="display:flex;gap:10px;justify-content:center">
+                <button @onclick="@(() => Nav.NavigateTo("/admin/api-keys"))"
+                        style="background:var(--navy-deep);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:13px;font-weight:700;cursor:pointer">
+                    <i class="bi bi-list-ul me-2"></i>ดูรายการ API Keys
+                </button>
+                <button @onclick="Reset"
+                        style="border:1.5px solid var(--navy-deep);background:#fff;color:var(--navy-deep);border-radius:10px;padding:10px 24px;font-size:13px;font-weight:700;cursor:pointer">
+                    <i class="bi bi-plus me-2"></i>ออก Key ใหม่
+                </button>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private int Step = 1;
+    private string EndpointCode = "";
+    private string AgencyName = "";
+    private string AgencyCode = "";
+    private string ContactName = "";
+    private string ContactEmail = "";
+    private string Purpose = "";
+    private DateTime ExpiresAt = DateTime.Today.AddYears(1);
+    private string CustomDate = DateTime.Today.AddYears(1).ToString("yyyy-MM-dd");
+    private bool Saving;
+    private string Err = "";
+    private ApiKeyCreateResult? CreatedResult;
+    private string CopyLabel = "คัดลอก";
+
+    private static readonly (string code, string path, string icon, string desc, bool isPii)[] Endpoints =
+    [
+        ("ds-001","case_statistics","bar-chart-fill","สถิติคดีรายปี-เดือน-ประเภท-หน่วยงาน",false),
+        ("ds-002","case_types","tags-fill","รายการประเภทคดีและสถานะการใช้งาน",false),
+        ("ds-003","agencies","building","รายการหน่วยงานและที่ตั้งภูมิภาค",false),
+        ("ds-004","cases_masked","incognito","รายการคดีพร้อมปกปิด PII ทั้งหมด",true),
+        ("ds-005","performance","speedometer2","ประสิทธิภาพการดำเนินคดีรายเดือน",false),
+    ];
+
+    private void ValidateStep2()
+    {
+        Err = "";
+        if (string.IsNullOrWhiteSpace(AgencyName)) { Err = "กรุณาระบุชื่อหน่วยงาน"; return; }
+        if (string.IsNullOrWhiteSpace(AgencyCode)) { Err = "กรุณาระบุรหัสหน่วยงาน"; return; }
+        if (string.IsNullOrWhiteSpace(ContactName)) { Err = "กรุณาระบุชื่อผู้ติดต่อ"; return; }
+        if (string.IsNullOrWhiteSpace(ContactEmail) || !ContactEmail.Contains('@')) { Err = "กรุณาระบุอีเมลที่ถูกต้อง"; return; }
+        if (string.IsNullOrWhiteSpace(Purpose)) { Err = "กรุณาระบุวัตถุประสงค์"; return; }
+        Step = 3;
+    }
+
+    private void OnCustomDateChanged()
+    {
+        if (DateTime.TryParse(CustomDate, out var d) && d > DateTime.Today)
+            ExpiresAt = d;
+    }
+
+    private async Task SubmitAsync()
+    {
+        Err = "";
+        Saving = true;
+        try
+        {
+            var req = new ApiKeyCreateRequest(
+                AgencyName.Trim(), AgencyCode.Trim().ToLowerInvariant(),
+                ContactName.Trim(), ContactEmail.Trim(),
+                Purpose.Trim(), EndpointCode,
+                new DateTimeOffset(ExpiresAt, TimeSpan.Zero));
+            CreatedResult = await ApiKeyService.CreateAsync(req);
+            if (CreatedResult is null) Err = "เกิดข้อผิดพลาด — หน่วยงานนี้อาจมี Key ที่ใช้งานอยู่แล้ว";
+        }
+        catch { Err = "เกิดข้อผิดพลาดในการสร้าง API Key"; }
+        finally { Saving = false; }
+    }
+
+    private async Task CopyKeyAsync()
+    {
+        if (CreatedResult is null) return;
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", CreatedResult.RawKey);
+        CopyLabel = "คัดลอกแล้ว!";
+        await Task.Delay(2000);
+        CopyLabel = "คัดลอก";
+    }
+
+    private void Reset()
+    {
+        Step = 1; EndpointCode = ""; AgencyName = ""; AgencyCode = "";
+        ContactName = ""; ContactEmail = ""; Purpose = "";
+        ExpiresAt = DateTime.Today.AddYears(1);
+        CustomDate = ExpiresAt.ToString("yyyy-MM-dd");
+        CreatedResult = null; Err = ""; CopyLabel = "คัดลอก";
+    }
+
+    private static string EndpointPath(string code) => Endpoints.FirstOrDefault(e => e.code == code).path ?? code;
+
+    private static string StepLabel(int step) => step switch
+    {
+        1 => "เลือก Endpoint",
+        2 => "ข้อมูลหน่วยงาน",
+        3 => "วันหมดอายุ",
+        4 => "ยืนยัน",
+        _ => ""
+    };
+
+    private const string Label = "font-size:12px;color:#64748b;font-weight:600;display:block;margin-bottom:4px";
+    private const string Input = "width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;font-family:'Sarabun',sans-serif";
+    private const string BackBtn = "border:1.5px solid #e2e8f0;background:#fff;border-radius:10px;padding:10px 20px;font-size:13px;cursor:pointer;color:#374151";
+    private const string NextBtn = "background:var(--navy-deep);color:#fff;border:none;border-radius:10px;padding:10px 28px;font-size:13px;font-weight:700;cursor:pointer";
+}

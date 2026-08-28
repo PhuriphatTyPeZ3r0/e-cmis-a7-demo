@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เข้าสู่ระบบ | E-CMIS</title>
+
+<!-- Google Font: Thai (body + serif display for headings) -->
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Bootstrap 5 -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+<!-- SweetAlert2 -->
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<link href="./intake-investigation/assets/ecmis-rich.css" rel="stylesheet">
+<link href="./intake-investigation/assets/human-verification.css" rel="stylesheet">
+<link href="./intake-investigation/assets/public-form-consistency.css" rel="stylesheet">
+<script src="./intake-investigation/assets/ecmis.js" defer></script>
+<script src="./intake-investigation/assets/human-verification.js" defer></script>
+<script src="./intake-investigation/assets/qrcode-generator.js" defer></script>
+
+<style>
+:root{
+  --ecmis-navy:#0a2647;
+  --ecmis-navy-2:#123b63;
+  --ecmis-navy-dark:#051425;
+  --ecmis-gold:#c9a227;
+  --ecmis-gold-light:#e6c765;
+  --ecmis-red:#a5322a;
+  --ecmis-bg:#f7f6f2;
+  --ecmis-ink:#20262e;
+  --serif:'Noto Serif Thai','Prompt',serif;
+}
+body{
+  font-family:'Prompt',sans-serif;
+  background:var(--ecmis-bg);
+  color:var(--ecmis-ink);
+  letter-spacing:.1px;
+}
+h1,h2,h3,h4,h5,h6{ font-family:var(--serif); }
+
+/* ---------- High contrast (same pattern as the rest of the site) ---------- */
+body.high-contrast{ background:#000 !important; color:#fff !important; }
+body.high-contrast .navbar,
+body.high-contrast .site-footer,
+body.high-contrast .login-card-wrap,
+body.high-contrast .auth-tabs,
+body.high-contrast .input-icon-group,
+body.high-contrast .thaid-qr-box{
+  background:#000 !important; color:#fff !important; border-color:#fff !important;
+}
+body.high-contrast a{ color:#ffd400 !important; }
+body.high-contrast .field-label,
+body.high-contrast .auth-tab,
+body.high-contrast .form-check-label,
+body.high-contrast .login-divider span,
+body.high-contrast .login-footnote,
+body.high-contrast .thaid-instructions,
+body.high-contrast .thaid-countdown,
+body.high-contrast .text-muted{
+  color:#fff !important;
+}
+body.high-contrast .form-control{
+  background:#111 !important; color:#fff !important; border-color:#fff !important;
+}
+body.high-contrast .form-control::placeholder{ color:#9aa4b5 !important; }
+body.high-contrast .input-icon-group i{ color:#fff !important; }
+body.high-contrast .auth-tab.active{ background:#fff !important; color:#000 !important; }
+
+/* ---------- Accessibility toolbar (reused site-wide) ---------- */
+.a11y-bar{
+  background:var(--ecmis-navy-dark);
+  color:#cfd8e6;
+  font-size:.78rem;
+  border-bottom:1px solid rgba(201,162,39,.25);
+}
+.a11y-bar a, .a11y-bar button{ color:#e8edf5; text-decoration:none; font-size:.78rem; }
+.a11y-bar button{
+  background:transparent; border:1px solid rgba(255,255,255,.25);
+  border-radius:20px; padding:2px 10px; margin-left:4px; transition:.2s;
+}
+.a11y-bar button:hover{ background:var(--ecmis-gold); color:#1a1a1a; border-color:var(--ecmis-gold); }
+.util-divider{ width:1px; height:14px; background:rgba(255,255,255,.2); display:inline-block; margin:0 12px; }
+.util-link{ background:transparent; border:none; color:#b9c4d6; font-size:.78rem; padding:0; transition:.2s; }
+.util-link:hover{ color:var(--ecmis-gold-light); }
+
+/* ---------- Navbar (reused site-wide) ---------- */
+.navbar-ecmis{
+  background:linear-gradient(180deg, var(--ecmis-navy) 0%, #0d2e54 100%);
+  padding-top:1rem; padding-bottom:1rem;
+  border-bottom:2px solid var(--ecmis-gold);
+  box-shadow:0 4px 18px rgba(0,0,0,.18);
+}
+.navbar-ecmis .navbar-nav{ align-items:center; }
+.brand-badge{
+  width:50px;height:50px; border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  margin-right:12px; flex:0 0 auto;
+}
+.brand-badge img{ width:100%;height:100%; object-fit:contain; filter:drop-shadow(0 2px 6px rgba(0,0,0,.45)); }
+.navbar-ecmis .navbar-brand{ color:#fff; font-weight:600; line-height:1.2; font-family:var(--serif); letter-spacing:.5px; min-width:0; }
+.navbar-ecmis .navbar-brand > span:last-child{ min-width:0; }
+.navbar-ecmis .navbar-brand small{ display:block; font-size:.95rem; font-weight:400; opacity:.9; font-family:'Prompt',sans-serif; letter-spacing:.2px; line-height:1.3; }
+@media (max-width:991.98px){ .navbar-ecmis .navbar-brand small{ font-size:.8rem; } }
+.navbar-ecmis .nav-link{
+  color:#dbe3ef !important; font-weight:400; position:relative;
+  display:inline-flex; align-items:center;
+  margin:0 6px; padding-left:.85rem !important; padding-right:.85rem !important;
+  white-space:nowrap; font-size:.92rem; letter-spacing:.15px;
+}
+.navbar-ecmis .nav-link:hover{ color:var(--ecmis-gold-light) !important; }
+.navbar-ecmis .nav-link.active-login{ color:var(--ecmis-gold-light) !important; font-weight:600; }
+@media (min-width:1400px) and (max-width:1599.98px){
+  .navbar-ecmis .navbar-brand small{ max-width:285px; font-size:.7rem; }
+  .navbar-ecmis .nav-link{ font-size:.75rem; margin:0 1px; padding-left:.3rem !important; padding-right:.3rem !important; }
+}
+@media (max-width:575.98px){
+  .a11y-bar .container{ gap:.35rem; }
+  .a11y-bar .container > div{ min-width:0; }
+  .a11y-bar .d-flex{ flex-wrap:wrap; row-gap:.3rem; }
+  .navbar-ecmis .navbar-brand{ max-width:calc(100% - 62px); }
+  .navbar-ecmis .navbar-brand small{ display:none; }
+  .brand-badge{ width:42px; height:42px; margin-right:8px; }
+}
+
+/* ---------- Page header band (reused site-wide) ---------- */
+.form-page-header{
+  background:
+    radial-gradient(circle at 88% 0%, rgba(201,162,39,.16), transparent 42%),
+    linear-gradient(140deg, var(--ecmis-navy-dark) 0%, var(--ecmis-navy) 45%, var(--ecmis-navy-2) 100%);
+  color:#fff;
+  padding:36px 0 76px;
+}
+.breadcrumb-form{ display:flex; align-items:center; gap:.5rem; list-style:none; padding:0; margin:0 0 1rem; font-size:.8rem; }
+.breadcrumb-form a{ color:rgba(255,255,255,.7); text-decoration:none; }
+.breadcrumb-form a:hover{ color:var(--ecmis-gold-light); }
+.breadcrumb-form li.active{ color:var(--ecmis-gold-light); }
+.breadcrumb-form i{ font-size:.6rem; color:rgba(255,255,255,.4); }
+.eyebrow{
+  display:inline-flex; align-items:center; gap:.5rem;
+  font-size:.72rem; font-weight:600; letter-spacing:1.6px; text-transform:uppercase;
+  color:var(--ecmis-gold-light);
+}
+.eyebrow::before{ content:""; width:22px; height:2px; background:var(--ecmis-gold-light); display:inline-block; }
+.form-page-header h1{ font-size:1.7rem; font-weight:700; margin:.6rem 0 .75rem; }
+.form-page-header .subtitle{ font-size:.92rem; opacity:.82; max-width:640px; margin-bottom:0; line-height:1.7; }
+
+/* ---------- Login card (overlaps the header band, same layering as the form stepper) ---------- */
+.login-card-wrap{
+  background:#fff; border-radius:18px; box-shadow:0 14px 34px -14px rgba(15,35,65,.22);
+  padding:2rem 2rem 1.75rem; max-width:460px; margin:-48px auto 3rem;
+}
+.auth-tabs{
+  display:flex; gap:4px; background:#f1f3f7; border-radius:12px; padding:5px; margin-bottom:1.75rem;
+}
+.auth-tab{
+  flex:1; border:none; background:transparent; color:#6b7280; font-size:.86rem; font-weight:600;
+  padding:.6rem .5rem; border-radius:9px; display:flex; align-items:center; justify-content:center; gap:.45rem;
+  transition:.2s; cursor:pointer;
+}
+.auth-tab.active{ background:#fff; color:var(--ecmis-navy); box-shadow:0 2px 8px rgba(15,35,65,.1); }
+.auth-tab i{ font-size:.8rem; }
+
+.field-label{ font-weight:500; color:var(--ecmis-ink); font-size:.86rem; margin-bottom:.4rem; display:block; }
+.input-icon-group{
+  display:flex; align-items:center; border:1px solid #dfe3ea; border-radius:10px;
+  background:#fff; padding:0 .9rem; transition:.2s;
+}
+.input-icon-group:focus-within{ border-color:var(--ecmis-gold); box-shadow:0 0 0 .2rem rgba(201,162,39,.15); }
+.input-icon-group i{ color:#9aa4b5; font-size:.9rem; flex:0 0 auto; }
+.input-icon-group input{
+  border:none; outline:none; box-shadow:none; background:transparent; font-size:.92rem;
+  padding:.68rem .6rem; width:100%;
+}
+.password-toggle{ background:none; border:none; color:#9aa4b5; padding:.3rem; flex:0 0 auto; }
+.password-toggle:hover{ color:var(--ecmis-navy); }
+
+.login-options{ display:flex; align-items:center; justify-content:space-between; margin:1rem 0 1.5rem; font-size:.85rem; flex-wrap:wrap; gap:.5rem; }
+.login-options a{ color:var(--ecmis-navy); text-decoration:none; font-weight:500; }
+.login-options a:hover{ color:var(--ecmis-gold); text-decoration:underline; }
+
+.btn-login-submit{
+  width:100%; background:linear-gradient(135deg, var(--ecmis-navy), var(--ecmis-navy-2));
+  color:#fff; border:none; border-radius:10px; padding:.85rem; font-weight:600; font-size:.96rem;
+  display:flex; align-items:center; justify-content:center; gap:.6rem; transition:.2s;
+}
+.btn-login-submit:hover{ filter:brightness(1.12); color:#fff; transform:translateY(-1px); }
+.login-email-link-hit{display:block;width:100%;height:14px;margin:5px 0 0;padding:0;border:0;background:transparent;opacity:0;cursor:pointer}
+.login-main-entry-hit{display:block;width:100%;max-width:460px;height:14px;margin:-2.65rem auto 2.1rem;padding:0;border:0;background:transparent;opacity:0;cursor:pointer}
+
+.login-divider{ display:flex; align-items:center; gap:.9rem; margin:1.75rem 0; }
+.login-divider::before, .login-divider::after{ content:""; flex:1; height:1px; background:#e5e8ee; }
+.login-divider span{ font-size:.78rem; color:#9aa4b5; }
+
+.login-footnote{ text-align:center; font-size:.84rem; color:#6b7280; margin-bottom:0; }
+.login-footnote a{ color:var(--ecmis-navy); font-weight:600; text-decoration:none; }
+.login-footnote a:hover{ color:var(--ecmis-gold); }
+
+/* ThaID panel */
+.thaid-panel{ text-align:center; }
+.thaid-badge{
+  display:inline-flex; align-items:center; gap:.5rem; background:rgba(10,38,71,.06); border:1px solid rgba(10,38,71,.15);
+  color:var(--ecmis-navy); font-size:.78rem; font-weight:600; padding:.35rem .9rem; border-radius:20px; margin-bottom:1.1rem;
+}
+.thaid-badge i{ color:var(--ecmis-gold); }
+.thaid-instructions{ font-size:.86rem; color:#6b7280; margin-bottom:1.25rem; line-height:1.7; }
+.thaid-qr-box{
+  width:180px; height:180px; margin:0 auto 1rem; padding:10px; background:#fff;
+  border:1px solid #e5e8ee; border-radius:14px; box-shadow:0 8px 22px rgba(15,35,65,.08);
+  display:flex; align-items:center; justify-content:center; position:relative;
+}
+.thaid-qr-box img{ width:100%; height:100%; object-fit:contain; border-radius:6px; }
+.thaid-qr-expired{
+  position:absolute; inset:10px; background:rgba(255,255,255,.94); border-radius:8px;
+  display:none; flex-direction:column; align-items:center; justify-content:center; gap:.5rem; font-size:.78rem; color:var(--ecmis-red);
+}
+.thaid-qr-expired.show{ display:flex; }
+.thaid-countdown{ font-size:.8rem; color:#6b7280; margin-bottom:1.5rem; }
+.thaid-countdown b{ color:var(--ecmis-navy); }
+.btn-thaid-refresh{
+  background:#fff; border:1.5px solid var(--ecmis-navy); color:var(--ecmis-navy);
+  font-size:.78rem; padding:.35rem .9rem; border-radius:20px;
+}
+.btn-thaid-demo{
+  width:100%; background:linear-gradient(135deg,var(--ecmis-gold-light),var(--ecmis-gold));
+  color:#1a1a1a; border:none; border-radius:10px; padding:.75rem; font-weight:600; font-size:.88rem;
+  display:flex; align-items:center; justify-content:center; gap:.5rem; transition:.2s;
+}
+.btn-thaid-demo:hover{ filter:brightness(1.06); color:#1a1a1a; }
+.thaid-approved-hit{
+  display:block; width:100%; height:14px; padding:0; margin:2px 0 0; border:0;
+  background:transparent; opacity:0; cursor:pointer;
+}
+
+/* ---------- ThaiD registration-status dialog ---------- */
+.thaid-status-popup{ border-radius:20px !important; overflow:hidden; }
+.thaid-pending-card{ text-align:left; font-family:'Prompt',sans-serif; }
+.thaid-pending-hero{
+  padding:18px; border-radius:14px; color:#fff;
+  background:linear-gradient(135deg,#0a2647,#123b63);
+  display:flex; align-items:flex-start; gap:13px;
+}
+.thaid-pending-hero i{ color:var(--ecmis-gold-light); font-size:1.55rem; margin-top:2px; }
+.thaid-pending-hero strong{ display:block; font-size:1rem; margin-bottom:3px; }
+.thaid-pending-hero span{ display:block; color:rgba(255,255,255,.76); font-size:.8rem; line-height:1.55; }
+.thaid-approved-hero{ padding:24px; gap:16px; }
+.thaid-approved-hero i{ font-size:2.1rem; }
+.thaid-approved-hero strong{ font-size:1.32rem; line-height:1.42; margin-bottom:8px; }
+.thaid-approved-hero span{ font-size:1rem; line-height:1.72; color:rgba(255,255,255,.88); }
+.thaid-pending-meta{ margin-top:14px; border:1px solid #e6eaf0; border-radius:12px; overflow:hidden; }
+.thaid-pending-meta div{ display:flex; justify-content:space-between; gap:12px; padding:10px 12px; font-size:.8rem; border-bottom:1px solid #edf0f4; }
+.thaid-pending-meta div:last-child{ border-bottom:none; }
+.thaid-pending-meta span{ color:#6b7280; }.thaid-pending-meta b{ color:var(--ecmis-navy); text-align:right; }
+.thaid-pending-note{ display:flex; gap:8px; align-items:flex-start; margin:14px 2px 0; color:#64748b; font-size:.78rem; line-height:1.6; }
+.thaid-pending-note i{ color:var(--ecmis-gold); margin-top:2px; }
+.thaid-pending-admin-hit{ width:18px; height:40px; margin-right:4px; padding:0; border:0; background:transparent; opacity:0; cursor:pointer; }
+
+/* ---------- Footer (reused site-wide) ---------- */
+.site-footer{ background:var(--ecmis-navy-dark); color:#aebada; padding-top:3.5rem; border-top:3px solid var(--ecmis-gold); }
+.site-footer h6{ color:#fff; font-weight:600; margin-bottom:1.1rem; font-family:var(--serif); letter-spacing:.4px; font-size:.95rem; text-transform:uppercase; }
+.site-footer a{ color:#aebada; text-decoration:none; font-size:.88rem; transition:.2s; }
+.site-footer a:hover{ color:var(--ecmis-gold-light); padding-left:2px; }
+.footer-bottom{ background:#03101f; font-size:.78rem; color:#7b879e; }
+.social-icon{
+  width:36px;height:36px;border-radius:50%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+  display:inline-flex;align-items:center;justify-content:center; margin-right:8px; color:#fff !important; transition:.2s;
+}
+.social-icon:hover{ background:var(--ecmis-gold); color:#1a1a1a !important; }
+
+/* ---------- Cookie consent banner (same pattern as the rest of the site) ---------- */
+.cookie-banner{
+  position:fixed; left:0; right:0; bottom:0;
+  z-index:1050;
+  background:var(--ecmis-navy-dark);
+  border-top:3px solid var(--ecmis-gold);
+  color:#dbe3ef;
+  padding:1rem 1.25rem;
+  transform:translateY(120%);
+  transition:transform .5s ease;
+  box-shadow:0 -10px 30px rgba(0,0,0,.35);
+}
+.cookie-banner.show{ transform:translateY(0); }
+.cookie-banner a{ color:var(--ecmis-gold-light); }
+.cookie-banner .btn-cookie-accept{
+  background:linear-gradient(135deg, var(--ecmis-gold-light), var(--ecmis-gold));
+  color:#1a1a1a; font-weight:600; border:none;
+}
+.cookie-banner .btn-cookie-accept:hover{ color:#1a1a1a; filter:brightness(1.05); }
+.cookie-banner .btn-cookie-settings{
+  background:transparent;
+  border:1px solid rgba(255,255,255,.4);
+  color:#fff;
+}
+.cookie-banner .btn-cookie-settings:hover{ background:rgba(255,255,255,.1); color:#fff; }
+
+/* demo hint — hover/focus shows all usernames */
+.demo-hint-wrap{position:relative;cursor:default}
+.demo-hint-trigger{color:#0b3a6f;text-decoration:underline dotted 1px;cursor:help}
+.demo-hint-panel{display:none;position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:30;background:#fff;border:1px solid #c9d6e8;border-radius:12px;box-shadow:0 10px 28px rgba(11,58,111,.18);padding:10px 12px;max-height:52vh;overflow:auto}
+.demo-hint-wrap:hover .demo-hint-panel,.demo-hint-wrap:focus-within .demo-hint-panel{display:block}
+.demo-hint-panel table{width:100%;border-collapse:collapse;font-size:.82rem}
+.demo-hint-panel th{text-align:left;color:#6b7280;font-weight:600;padding:4px 6px;border-bottom:1px solid #e5eaf0}
+.demo-hint-panel td{padding:4px 6px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+.demo-hint-panel code{background:#f1f5f9;padding:1px 5px;border-radius:6px;font-size:.78rem;cursor:pointer}
+.demo-hint-panel code:hover{background:#e3ecf5}
+.demo-hint-panel .hint-act{font-weight:700;color:#0b3a6f}
+.demo-hint-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.demo-hint-head strong{font-size:.84rem;color:#0b3a6f}
+.demo-hint-head small{color:#6b7280}
+
+</style>
+<script src="./shared-assets/auth.js"></script>
+
+</head>
+<body>
+
+<!-- ============ Accessibility bar ============ -->
+<div class="a11y-bar py-1">
+  <div class="container d-flex justify-content-between align-items-center flex-wrap">
+    <div>
+      <i class="fa-solid fa-phone-volume me-1"></i> สายด่วน ป.ป.ท. 1206 &nbsp;|&nbsp;
+      <i class="fa-solid fa-envelope me-1"></i> pacc@pacc.go.th
+    </div>
+    <div class="d-flex align-items-center">
+      <span class="me-2">ขนาดตัวอักษร:</span>
+      <button type="button" onclick="changeFontSize(-1)">A-</button>
+      <button type="button" onclick="changeFontSize(0)">A</button>
+      <button type="button" onclick="changeFontSize(1)">A+</button>
+      <button type="button" class="ms-2" onclick="toggleContrast()"><i class="fa-solid fa-circle-half-stroke"></i> ปรับสี</button>
+      <span class="util-divider"></span>
+      <a href="./index.html" class="util-link"><i class="fa-solid fa-house me-1"></i>กลับหน้าหลัก</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Navbar ============ -->
+<nav class="navbar navbar-expand-xxl navbar-ecmis sticky-top">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center" href="./index.html">
+      <span class="brand-badge"><img src="https://www.pacc.go.th/images/pacc_logo.png" alt="ตราสำนักงาน ป.ป.ท."></span>
+      <span>
+        E-CMIS
+        <small>สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ (ป.ป.ท.)</small>
+      </span>
+    </a>
+    <button class="navbar-toggler bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="เปิดหรือปิดเมนูหลัก">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMain">
+      <ul class="navbar-nav mx-auto mt-3 mt-xl-0">
+        <li class="nav-item"><a class="nav-link" href="./index.html#home">หน้าแรก</a></li>
+        <li class="nav-item"><a class="nav-link" href="./index.html#channels">ช่องทางร้องเรียน</a></li>
+        <li class="nav-item"><a class="nav-link" href="./intake-investigation/tracking.html">ติดตามเรื่องร้องเรียน</a></li>
+        <li class="nav-item"><a class="nav-link" href="./index.html#stats">สถิติภาพรวม</a></li>
+        <li class="nav-item"><a class="nav-link" href="./index.html#riskmap">แผนที่ความเสี่ยง</a></li>
+        <li class="nav-item"><a class="nav-link" href="./index.html#news">ข่าวสาร/ประกาศ</a></li>
+        <li class="nav-item"><a class="nav-link" href="./index.html#faq">คู่มือ/FAQ</a></li>
+        <li class="nav-item"><a class="nav-link" href="./index.html#footer">ติดต่อเรา</a></li>
+        <li class="nav-item"><a class="nav-link active-login" href="./login.html">เข้าสู่ระบบ</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ Page header ============ -->
+<section class="form-page-header">
+  <div class="container">
+    <ul class="breadcrumb-form">
+      <li><a href="./index.html">หน้าแรก</a></li>
+      <li><i class="fa-solid fa-chevron-right"></i></li>
+      <li class="active">เข้าสู่ระบบ</li>
+    </ul>
+    <span class="eyebrow">ระบบสำหรับเจ้าหน้าที่ ป.ป.ท.</span>
+    <h1>เข้าสู่ระบบ</h1>
+    <p class="subtitle">ยินดีต้อนรับสู่ระบบ E-CMIS สำนักงาน ป.ป.ท. กรุณาเข้าสู่ระบบด้วยชื่อผู้ใช้งานหรือยืนยันตัวตนด้วย ThaID</p>
+  </div>
+</section>
+
+<!-- ============ Login card ============ -->
+<div class="container">
+  <div class="login-card-wrap">
+    <div class="ecmis-prototype-notice demo-hint-wrap" role="note" tabindex="0" aria-describedby="demoHintPanel">
+      <i class="fa-solid fa-flask" aria-hidden="true"></i>
+      <span>
+        <strong>เข้าสู่ระบบสำหรับเจ้าหน้าที่</strong><br>
+        หน้าจอนี้จำลองการเข้าสู่ระบบเท่านั้น ยังไม่เชื่อมระบบยืนยันตัวตนจริง
+        <span class="demo-credentials">บัญชีผู้ใช้งานแยกตามกิจกรรม รหัสผ่านทุกบัญชี <b>1234</b> — <span class="demo-hint-trigger">วางเมาส์/แตะที่นี่เพื่อดูรหัส <i class="fa-solid fa-eye"></i></span></span>
+      </span>
+      <div class="demo-hint-panel" id="demoHintPanel" role="region" aria-label="รายชื่อบัญชีทดสอบ"></div>
+    </div>
+
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" id="tabBtn-credentials" onclick="switchAuthTab('credentials')">
+        <i class="fa-solid fa-user"></i>Username / Email
+      </button>
+      <button type="button" class="auth-tab" id="tabBtn-thaid" onclick="switchAuthTab('thaid')">
+        <i class="fa-solid fa-id-card"></i>ThaID
+      </button>
+    </div>
+
+    <!-- Username / Email panel -->
+    <div id="authPanel-credentials">
+      <form onsubmit="handleLogin(event)">
+        <div class="mb-3">
+          <label class="field-label">ชื่อผู้ใช้งานหรืออีเมล</label>
+          <div class="input-icon-group">
+            <i class="fa-solid fa-user"></i>
+            <input type="text" id="loginUsername" placeholder="กรอกชื่อผู้ใช้งานหรืออีเมล" autocomplete="username" required>
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="field-label">รหัสผ่าน</label>
+          <div class="input-icon-group">
+            <i class="fa-solid fa-lock"></i>
+            <input type="password" id="loginPassword" placeholder="กรอกรหัสผ่าน" autocomplete="current-password" required>
+            <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" aria-label="แสดงหรือซ่อนรหัสผ่าน">
+              <i class="fa-solid fa-eye" id="passwordToggleIcon"></i>
+            </button>
+          </div>
+        </div>
+        <div class="login-options">
+          <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" id="rememberMe">
+            <label class="form-check-label" for="rememberMe">จดจำการเข้าสู่ระบบ</label>
+          </div>
+          <a href="#" onclick="openForgotPassword(); return false;">ลืมรหัสผ่าน?</a>
+        </div>
+        <div data-human-verification="credential-login"></div>
+        <button type="submit" class="btn-login-submit">
+          <i class="fa-solid fa-right-to-bracket"></i>เข้าสู่ระบบ
+        </button>
+      </form>
+    </div>
+
+    <!-- ThaID panel -->
+    <div id="authPanel-thaid" class="d-none">
+      <div class="thaid-panel">
+        <div class="thaid-badge"><i class="fa-solid fa-id-card"></i>เข้าสู่ระบบด้วย ThaID</div>
+        <p class="thaid-instructions">เปิดแอปพลิเคชัน <b>ThaID</b> บนโทรศัพท์มือถือของท่าน แล้วสแกน QR โค้ดด้านล่างเพื่อยืนยันตัวตนและเข้าสู่ระบบ</p>
+        <div class="thaid-qr-box">
+          <img id="thaidQrImg" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="QR สำหรับเข้าสู่ระบบด้วย ThaID">
+          <div class="thaid-qr-expired" id="thaidQrExpired">
+            <i class="fa-solid fa-rotate-right fa-lg"></i>
+            <span>QR หมดอายุแล้ว</span>
+            <button type="button" class="btn-thaid-refresh" onclick="refreshThaidQr()">ขอ QR ใหม่</button>
+          </div>
+        </div>
+        <div class="thaid-countdown" id="thaidCountdown">QR จะหมดอายุใน <b id="thaidCountdownNum">120</b> วินาที</div>
+        <button type="button" class="btn-thaid-demo" onclick="simulateThaidScan()">
+          <i class="fa-solid fa-mobile-screen-button"></i>จำลองการสแกนสำเร็จ (สาธิต)
+        </button>
+        <button type="button" class="thaid-approved-hit" onclick="simulateApprovedThaiDStatus()" aria-label="ทดสอบสถานะคำขอที่อนุมัติแล้ว"></button>
+      </div>
+    </div>
+
+    <div class="login-divider"><span>หรือ</span></div>
+    <p class="login-footnote">ยังไม่มีบัญชีผู้ใช้งาน? <a href="./register.html">ลงทะเบียนเจ้าหน้าที่</a></p>
+    <button type="button" class="login-email-link-hit" onclick="window.location.href='./set-password.html?source=email-link'" aria-label="ทดสอบลิงก์ตั้งรหัสผ่านจากอีเมล"></button>
+  </div>
+  <button type="button" class="login-main-entry-hit" onclick="enterDemoBackOffice()" aria-label="ทดสอบเข้าสู่ Staff Workflow ด้วย ThaiD"></button>
+</div>
+
+<!-- ============ Footer ============ -->
+<footer class="site-footer pb-4" id="footer">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <h6><i class="fa-solid fa-shield-halved me-2" style="color:var(--ecmis-gold)"></i>E-CMIS</h6>
+        <p class="small">สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ (ป.ป.ท.)<br>
+        99 หมู่ 4 อาคารซอฟต์แวร์พาร์ค ถ.แจ้งวัฒนะ ต.คลองเกลือ อ.ปากเกร็ด จ.นนทบุรี 11120</p>
+        <div class="mt-3">
+          <a href="#" class="social-icon" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+          <a href="#" class="social-icon" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+          <a href="#" class="social-icon" aria-label="LINE"><i class="fa-brands fa-line"></i></a>
+          <a href="#" class="social-icon" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <h6>สำนักงาน ป.ป.ท. เขตพื้นที่</h6>
+        <div class="row row-cols-2 small">
+          <div class="col"><a href="#">เขต 1 (กรุงเทพฯ)</a></div>
+          <div class="col"><a href="#">เขต 2 (ชลบุรี)</a></div>
+          <div class="col"><a href="#">เขต 3 (นครราชสีมา)</a></div>
+          <div class="col"><a href="#">เขต 4 (ขอนแก่น)</a></div>
+          <div class="col"><a href="#">เขต 5 (เชียงใหม่)</a></div>
+          <div class="col"><a href="#">เขต 6 (พิษณุโลก)</a></div>
+          <div class="col"><a href="#">เขต 7 (ราชบุรี)</a></div>
+          <div class="col"><a href="#">เขต 8 (สุราษฎร์ธานี)</a></div>
+          <div class="col"><a href="#">เขต 9 (สงขลา)</a></div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <h6>ลิงก์ที่เกี่ยวข้อง</h6>
+        <ul class="list-unstyled small">
+          <li class="mb-2"><a href="./index.html"><i class="fa-solid fa-angle-right me-1"></i>กลับหน้าหลัก E-CMIS</a></li>
+          <li class="mb-2"><a href="#"><i class="fa-solid fa-angle-right me-1"></i>สำนักงาน ป.ป.ช.</a></li>
+          <li class="mb-2"><a href="#"><i class="fa-solid fa-angle-right me-1"></i>นโยบายความเป็นส่วนตัว (PDPA)</a></li>
+          <li class="mb-2"><a href="./index.html#faq"><i class="fa-solid fa-angle-right me-1"></i>คำถามที่พบบ่อย</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom text-center py-3 mt-4">
+    &copy; 2569 สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ (ป.ป.ท.) — E-CMIS
+  </div>
+</footer>
+
+<!-- ============ Cookie consent banner ============ -->
+<div class="cookie-banner" id="cookieBanner">
+  <div class="container d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div class="d-flex align-items-start gap-3">
+      <i class="fa-solid fa-cookie-bite fa-2x flex-shrink-0" style="color:var(--ecmis-gold-light)"></i>
+      <div class="small">
+        เว็บไซต์นี้ใช้คุกกี้เพื่อให้ท่านได้รับประสบการณ์ที่ดีในการใช้งานเว็บไซต์ และเพื่อวิเคราะห์การใช้งานของผู้ใช้
+        ท่านสามารถจัดการการตั้งค่าคุกกี้ได้ตามต้องการ
+        <br>
+        <a href="https://www.pacc.go.th/home/view_content/54/8127" target="_blank" rel="noopener">อ่านนโยบายคุกกี้</a>
+      </div>
+    </div>
+    <div class="d-flex gap-2 flex-shrink-0">
+      <button type="button" class="btn btn-cookie-settings btn-sm px-3" onclick="openCookieSettings()">ตั้งค่าคุกกี้</button>
+      <button type="button" class="btn btn-cookie-accept btn-sm px-3" onclick="acceptCookies()">ยอมรับทั้งหมด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Scripts ============ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+// --- accessibility bar helpers (same behaviour as the rest of the site) ---
+let fontStep = 0;
+function changeFontSize(dir){
+  if(dir === 0){ fontStep = 0; }
+  else { fontStep = Math.max(-2, Math.min(3, fontStep + dir)); }
+  document.documentElement.style.fontSize = (16 + fontStep*2) + 'px';
+}
+function toggleContrast(){ document.body.classList.toggle('high-contrast'); }
+
+// --- auth tab switching ---
+function switchAuthTab(tab){
+  const isCredentials = tab === 'credentials';
+  document.getElementById('tabBtn-credentials').classList.toggle('active', isCredentials);
+  document.getElementById('tabBtn-thaid').classList.toggle('active', !isCredentials);
+  document.getElementById('authPanel-credentials').classList.toggle('d-none', !isCredentials);
+  document.getElementById('authPanel-thaid').classList.toggle('d-none', isCredentials);
+  if(!isCredentials){ startThaidFlow(); }
+}
+
+// --- password visibility ---
+function togglePasswordVisibility(){
+  const input = document.getElementById('loginPassword');
+  const icon = document.getElementById('passwordToggleIcon');
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  icon.className = show ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+}
+
+function enterStaffWorkflow(authMethod){
+  try{
+    if(window.ECMIS && typeof window.ECMIS.createDemoSession === 'function'){
+      window.ECMIS.createDemoSession(authMethod);
+    } else {
+      sessionStorage.setItem('ecmis-demo-session', JSON.stringify({
+        authMethod,
+        displayName:'เจ้าหน้าที่สาธิต',
+        roles:['admin','officer','director-center','director-division'],
+        activeRole:'admin',
+        signedInAt:new Date().toISOString()
+      }));
+    }
+  } catch(error){
+    console.warn('ไม่สามารถบันทึก demo session ได้', error);
+  }
+}
+
+// --- username/email login (mock) ---
+function handleLogin(event){
+  event.preventDefault();
+  if(!window.PACCHumanVerification.require('credential-login')) return;
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if(!username || !password){
+    Swal.fire({icon:'warning', title:'กรุณากรอกข้อมูลให้ครบถ้วน', confirmButtonColor:'#0b2e59'});
+    return;
+  }
+  /* ตรวจกับทะเบียนเจ้าหน้าที่จริง (shared-assets/auth.js)
+     เดิม hardcode demo.staff/demo1234 — ตอนนี้ระบบมีเจ้าหน้าที่จริงตามตำแหน่ง
+     และสิทธิ์เข้ากิจกรรมคำนวณจากตำแหน่งของแต่ละคน                              */
+  const account = window.ECMISAuth.login(username, password);
+  if(!account){
+    Swal.fire({
+      icon:'error',
+      title:'ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง',
+      html:'กดปุ่ม <b>เลือกผู้ใช้งานตามกิจกรรมที่รับผิดชอบ</b> เพื่อดูรายชื่อเจ้าหน้าที่',
+      confirmButtonColor:'#0b2e59'
+    });
+    return;
+  }
+  const submitButton = event.currentTarget.querySelector('[type="submit"]');
+  submitButton.disabled = true;
+  submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>กำลังเข้าสู่ระบบ';
+  Swal.fire({
+    icon:'success',
+    title:'เข้าสู่ระบบสำเร็จ',
+    html:'<b>'+account.displayName+'</b><br><small>'+(account.title||'')+'<br>'+(account.org||'')+'</small>',
+    timer:900,
+    showConfirmButton:false
+  });
+  setTimeout(() => {
+    const qp = new URLSearchParams(location.search);
+    let next = qp.get('next');
+    if(!next){
+      // hub rule: 1 กิจกรรม -> เข้าหน้างานตรง, หลายกิจกรรม/demo -> my-work (hub)
+      const vis = (account.visible && account.visible.length) ? account.visible.slice() : [];
+      if(vis.length === 1){
+        try{ next = './' + window.ECMISAuth.actEntry(vis[0]); }catch(e){ next = './my-work.html'; }
+      } else {
+        next = './my-work.html';
+      }
+    }
+    location.href = next;
+  }, 950);
+}
+
+function openForgotPassword(){
+  Swal.fire({
+    title:'ลืมรหัสผ่าน',
+    input:'email',
+    inputPlaceholder:'กรอกอีเมลที่ใช้ลงทะเบียน',
+    showCancelButton:true,
+    confirmButtonText:'ส่งลิงก์รีเซ็ตรหัสผ่าน',
+    cancelButtonText:'ยกเลิก',
+    confirmButtonColor:'#0b2e59'
+  }).then(res => {
+    if(res.isConfirmed && res.value){
+      Swal.fire({icon:'success', title:'ส่งอีเมลแล้ว', text:'กรุณาตรวจสอบกล่องจดหมายของท่านเพื่อรีเซ็ตรหัสผ่าน', confirmButtonColor:'#0b2e59'});
+    }
+  });
+}
+
+function contactAdmin(){
+  Swal.fire({
+    icon:'info',
+    title:'ติดต่อผู้ดูแลระบบ',
+    html:'บัญชีผู้ใช้งาน E-CMIS จัดสรรให้เฉพาะเจ้าหน้าที่ที่ได้รับอนุญาตเท่านั้น<br>กรุณาติดต่อสายด่วน <b>1206</b> หรืออีเมล <b>pacc@pacc.go.th</b>',
+    confirmButtonColor:'#0b2e59'
+  });
+}
+
+// --- ThaID QR login flow (mock) ---
+let thaidTimer = null;
+let thaidSeconds = 120;
+let thaidStarted = false;
+function generateThaidToken(){
+  return 'THAID-' + Math.random().toString(36).slice(2, 10).toUpperCase();
+}
+function renderThaidQr(){
+  const token = generateThaidToken();
+  const qr = qrcode(0, 'M');
+  qr.addData(token);
+  qr.make();
+  document.getElementById('thaidQrImg').src = qr.createDataURL(5, 12);
+  document.getElementById('thaidQrExpired').classList.remove('show');
+}
+function startThaidFlow(){
+  if(thaidStarted) return;
+  thaidStarted = true;
+  renderThaidQr();
+  thaidSeconds = 120;
+  updateThaidCountdown();
+  thaidTimer = setInterval(() => {
+    thaidSeconds--;
+    updateThaidCountdown();
+    if(thaidSeconds <= 0){
+      clearInterval(thaidTimer);
+      document.getElementById('thaidQrExpired').classList.add('show');
+    }
+  }, 1000);
+}
+function updateThaidCountdown(){
+  document.getElementById('thaidCountdownNum').textContent = Math.max(thaidSeconds, 0);
+}
+function refreshThaidQr(){
+  clearInterval(thaidTimer);
+  renderThaidQr();
+  thaidSeconds = 120;
+  updateThaidCountdown();
+  thaidTimer = setInterval(() => {
+    thaidSeconds--;
+    updateThaidCountdown();
+    if(thaidSeconds <= 0){
+      clearInterval(thaidTimer);
+      document.getElementById('thaidQrExpired').classList.add('show');
+    }
+  }, 1000);
+}
+function enterDemoBackOffice(){
+  if(window.Swal){
+    Swal.fire({
+      title:'กำลังยืนยันตัวตนกับ ThaiD...',
+      allowOutsideClick:false,
+      allowEscapeKey:false,
+      didOpen:function(){ Swal.showLoading(); }
+    });
+  }
+  try{
+    var auth = window.ECMISAuth;
+    if(auth && typeof auth.login === 'function') auth.login('demo','demo');
+  }catch(error){ console.warn('ไม่สามารถเตรียม session สาธิตได้',error); }
+  window.setTimeout(function(){
+    window.location.href = './gmail-two-factor.html';
+  },1300);
+}
+function escapeStatusHtml(value){
+  return String(value || '-').replace(/[&<>'"]/g, function(ch){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch];
+  });
+}
+function getThaiDRegistration(){
+  try{
+    var query = new URLSearchParams(location.search);
+    var trackingId = query.get('registration');
+    var requests = JSON.parse(localStorage.getItem('ecmis-registration-requests') || '[]');
+    if(!Array.isArray(requests)) return null;
+    // Remove the old hidden-demo state, which used to overwrite a pending request.
+    var resetLegacyDemo = false;
+    requests.forEach(function(item){
+      if(item && item.status === 'approved' && item.approvedAt && !item.approvedBy){
+        item.status = 'pending';
+        delete item.approvedAt;
+        resetLegacyDemo = true;
+      }
+    });
+    if(resetLegacyDemo) localStorage.setItem('ecmis-registration-requests',JSON.stringify(requests));
+    if(trackingId){
+      return requests.find(function(item){ return item && item.trackingId === trackingId && (item.status === 'pending' || item.status === 'approved'); }) || null;
+    }
+    return requests.slice().reverse().find(function(item){ return item && (item.status === 'pending' || item.status === 'approved'); }) || null;
+  }catch(error){
+    console.warn('ไม่สามารถอ่านสถานะคำขอลงทะเบียนได้', error);
+    return null;
+  }
+}
+function maskRegistrationEmail(email){
+  var parts = String(email || '').trim().split('@');
+  if(parts.length !== 2 || !parts[0]) return 'อีเมลที่ท่านลงทะเบียนไว้';
+  return parts[0].charAt(0) + '****@' + parts[1];
+}
+function resendPasswordSetupLink(request){
+  try{
+    var requests = JSON.parse(localStorage.getItem('ecmis-registration-requests') || '[]');
+    if(Array.isArray(requests)){
+      requests = requests.map(function(item){
+        if(item && item.trackingId === request.trackingId){
+          item.passwordSetupLastSentAt = new Date().toISOString();
+        }
+        return item;
+      });
+      localStorage.setItem('ecmis-registration-requests',JSON.stringify(requests));
+    }
+  }catch(error){ console.warn('ไม่สามารถบันทึกเวลาส่งลิงก์ตั้งรหัสผ่าน', error); }
+  Swal.fire({
+    icon:'success',
+    title:'ส่งลิงก์ตั้งรหัสผ่านแล้ว',
+    html:'<div style="line-height:1.7;color:#475569">ระบบได้ส่งลิงก์สำหรับตั้งรหัสผ่านไปยัง Gmail ที่ท่านลงทะเบียนไว้<br><strong>'+escapeStatusHtml(maskRegistrationEmail(request.gmail || request.email))+'</strong> แล้ว</div>',
+    confirmButtonText:'รับทราบ',
+    confirmButtonColor:'#0b2e59',
+    customClass:{popup:'thaid-status-popup'}
+  });
+}
+function showThaiDRegistrationApproved(request){
+  Swal.fire({
+    icon:'success',
+    title:'คำขอของท่านได้รับการอนุมัติแล้ว',
+    html:'<div class="thaid-pending-card">'
+      + '<div class="thaid-pending-hero thaid-approved-hero"><i class="fa-solid fa-envelope-circle-check"></i><div><strong>พร้อมตั้งรหัสผ่านเพื่อเข้าใช้งาน</strong><span>ระบบได้ส่งลิงก์สำหรับตั้งรหัสผ่านไปยัง Gmail ที่ท่านลงทะเบียนไว้</span></div></div>'
+      + '<div class="thaid-pending-note"><i class="fa-solid fa-circle-info"></i><span>เพื่อความปลอดภัย โปรดตั้งรหัสผ่านผ่านลิงก์ในอีเมลเท่านั้น</span></div></div>',
+    showCancelButton:true,
+    confirmButtonText:'ส่งลิงก์ตั้งรหัสผ่านอีกครั้ง',
+    cancelButtonText:'รับทราบ',
+    confirmButtonColor:'#0b2e59',
+    cancelButtonColor:'#6b7280',
+    customClass:{popup:'thaid-status-popup'}
+  }).then(function(result){
+    if(result.isConfirmed) resendPasswordSetupLink(request);
+    else renderThaidQr();
+  });
+}
+function showThaiDRegistrationPending(request){
+  var statusNote = request.thaiDMode === 'demo'
+    ? 'ข้อมูลและสถานะนี้เป็นการสาธิตจากหน้า register'
+    : 'ระบบตรวจพบคำขอลงทะเบียนที่ยื่นผ่าน ThaiD';
+  Swal.fire({
+    icon:'info',
+    title:'คำขออยู่ระหว่างรออนุมัติ',
+    html:'<div class="thaid-pending-card">'
+      + '<div class="thaid-pending-hero"><i class="fa-solid fa-user-clock"></i><div><strong>รอ Admin หน่วยงานของท่านอนุมัติ</strong><span>เมื่ออนุมัติแล้ว ระบบจะแจ้งผลและเปิดสิทธิ์การเข้าใช้งานให้ท่าน</span></div></div>'
+      + '<div class="thaid-pending-meta"><div><span>ชื่อผู้ใช้งาน</span><b>'+escapeStatusHtml(request.username)+'</b></div>'
+      + '<div><span>หน่วยงาน</span><b>'+escapeStatusHtml(request.bureau)+'</b></div></div>'
+      + '<div class="thaid-pending-note"><i class="fa-solid fa-circle-info"></i><span>'+statusNote+'</span></div></div>',
+    confirmButtonText:'รับทราบ',
+    confirmButtonColor:'#0b2e59',
+    customClass:{popup:'thaid-status-popup'},
+    didOpen:function(popup){
+      var actions = popup.querySelector('.swal2-actions');
+      var confirm = popup.querySelector('.swal2-confirm');
+      if(!actions || !confirm || actions.querySelector('.thaid-pending-admin-hit')) return;
+      var hiddenAdminButton = document.createElement('button');
+      hiddenAdminButton.type = 'button';
+      hiddenAdminButton.className = 'thaid-pending-admin-hit';
+      hiddenAdminButton.setAttribute('aria-label','เปิดหน้า staff workflow สำหรับทดสอบ');
+      hiddenAdminButton.addEventListener('click',function(){
+        window.location.href = './intake-investigation/staff-workflow.html?role=admin&queue=unassigned';
+      });
+      actions.insertBefore(hiddenAdminButton,confirm);
+    }
+  }).then(function(){ renderThaidQr(); });
+}
+function simulateApprovedThaiDStatus(){
+  if(window.Swal){
+    Swal.fire({
+      title:'กำลังยืนยันตัวตนกับ ThaiD...',
+      allowOutsideClick:false,
+      didOpen:() => Swal.showLoading()
+    });
+  }
+  setTimeout(function(){
+    if(window.Swal) Swal.close();
+    try{
+      var query = new URLSearchParams(location.search);
+      var trackingId = query.get('registration');
+      var requests = JSON.parse(localStorage.getItem('ecmis-registration-requests') || '[]');
+      if(!Array.isArray(requests)) requests = [];
+      var target = trackingId
+        ? requests.find(function(item){ return item && item.trackingId === trackingId && item.status === 'pending'; })
+        : requests.slice().reverse().find(function(item){ return item && item.status === 'pending'; });
+      if(!target){
+        Swal.fire({icon:'info',title:'ไม่พบคำขอลงทะเบียน',text:'กรุณาส่งคำขอลงทะเบียนก่อนทดสอบสถานะอนุมัติ',confirmButtonText:'รับทราบ',confirmButtonColor:'#0b2e59'});
+        return;
+      }
+      clearInterval(thaidTimer);
+      // Demo only: preserve the stored request so normal scan keeps showing pending.
+      showThaiDRegistrationApproved(Object.assign({},target,{status:'approved'}));
+    }catch(error){
+      console.warn('ไม่สามารถจำลองสถานะอนุมัติได้',error);
+    }
+  },1300);
+}
+function simulateThaidScan(){
+  if(window.Swal){
+    Swal.fire({
+      title:'กำลังยืนยันตัวตนกับ ThaID...',
+      allowOutsideClick:false,
+      didOpen:() => Swal.showLoading()
+    });
+  }
+  setTimeout(() => {
+    clearInterval(thaidTimer);
+    Swal.close();
+    // สร้าง session ThaID ชั่วคราวเพื่อให้ popup ใช้สิทธิ์จริง
+    try{
+      // ลอง login ด้วย demo ที่เห็นทุกกิจกรรม เพื่อให้ popup มีตัวเลือกครบ
+      var A = window.ECMISAuth;
+      var demoUser = A && A.USERS ? A.USERS.find(function(u){ return u.u === 'demo' || u.act === '*'; }) : null;
+      // ถ้าไม่มี demo ให้ใช้บัญชีแรกที่เห็นหลาย ก
+      if(demoUser && A.login){
+        var a = A.login(demoUser.u, demoUser.p);
+        if(a && a.visible) window._thaidTempAccount = a;
+      }
+    }catch(e){}
+    var registration = getThaiDRegistration();
+    if(registration){
+      if(registration.status === 'approved') showThaiDRegistrationApproved(registration);
+      else showThaiDRegistrationPending(registration);
+      return;
+    }
+    openThaidGPicker();
+  }, 1300);
+}
+function openThaidGPicker(){
+  var A = window.ECMISAuth;
+  var vis = [];
+  try{
+    var acct = window._thaidTempAccount || (A.getAuth && A.getAuth());
+    vis = (acct && acct.visible) ? acct.visible.slice() : (A.ACT_KEYS ? A.ACT_KEYS.slice() : []);
+  }catch(e){ vis = []; }
+  // กรอง data-migration ออก (ไม่ใช่ WSO)
+  vis = vis.filter(function(k){ return k !== 'data-migration'; });
+  if(vis.length === 0) vis = ['intake-investigation'];
+  var opts = vis.map(function(k){
+    var th = (A.actTh ? A.actTh(k) : k);
+    var short = (A.actShort ? A.actShort(k) : k);
+    var label = short ? short + ' — ' + th : k;
+    return '<option value="'+k+'">'+ label +'</option>';
+  }).join('');
+  Swal.fire({
+    title:'ยืนยันตัวตนสำเร็จ',
+    html: '<p class="text-muted small mb-2">เลือกกิจกรรมที่ต้องการเข้าใช้งาน (โดย ThaID)</p>'
+        + '<select id="thaidGSelect" class="form-select">'+ opts +'</select>',
+    showCancelButton:true,
+    confirmButtonText:'เข้าใช้งาน',
+    cancelButtonText:'ยกเลิก',
+    confirmButtonColor:'#0b2e59',
+    preConfirm:function(){
+      var sel=document.getElementById('thaidGSelect');
+      var v=sel ? sel.value : '';
+      if(!v){ Swal.showValidationMessage('กรุณาเลือกกิจกรรม'); return false; }
+      return v;
+    }
+  }).then(function(res){
+    if(res.isConfirmed){
+      var g=res.value;
+      var next='./' + (A.actEntry ? A.actEntry(g) : (g + '/index.html'));
+      location.href = next;
+    } else {
+      // ยกเลิก ให้กลับไปหน้า login
+      renderThaidQr();
+    }
+  });
+}
+
+// --- Cookie consent banner (same behaviour as the rest of the site) ---
+function acceptCookies(){
+  const banner = document.getElementById('cookieBanner');
+  if(banner) banner.classList.remove('show');
+}
+function openCookieSettings(){
+  Swal.fire({
+    title: 'ตั้งค่าคุกกี้',
+    html: `
+      <div class="text-start small">
+        <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+          <div><b>คุกกี้ที่จำเป็น</b><br><span class="text-muted">จำเป็นต่อการทำงานของเว็บไซต์ ไม่สามารถปิดได้</span></div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" checked disabled>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+          <div><b>คุกกี้เพื่อการวิเคราะห์</b><br><span class="text-muted">ช่วยให้เราเข้าใจการใช้งานเว็บไซต์</span></div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" id="ckAnalytics" checked>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center py-2">
+          <div><b>คุกกี้เพื่อการโฆษณา</b><br><span class="text-muted">ปรับเนื้อหาให้ตรงความสนใจของท่าน</span></div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" id="ckMarketing">
+          </div>
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: 'บันทึกการตั้งค่า',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#0b2e59'
+  }).then((result) => {
+    if(result.isConfirmed){ acceptCookies(); }
+  });
+}
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const banner = document.getElementById('cookieBanner');
+    if(banner) banner.classList.add('show');
+  }, 700);
+  const query = new URLSearchParams(location.search);
+  if(query.get('auth') === 'thaid') switchAuthTab('thaid');
+  if(query.get('password-set') === '1'){
+    history.replaceState({},document.title,'./login.html');
+    Swal.fire({
+      icon:'success',
+      title:'ตั้งรหัสผ่านสำเร็จ',
+      text:'กรุณาเข้าสู่ระบบเพื่อใช้งาน Back Office',
+      confirmButtonText:'รับทราบ',
+      confirmButtonColor:'#0b2e59'
+    });
+  }
+});
+</script>
+
+
+
+<script>
+(function(){
+  function buildHintPanel(){
+    var panel=document.getElementById('demoHintPanel');
+    if(!panel || !window.ECMISAuth || !window.ECMISAuth.USERS) return;
+    var A=window.ECMISAuth;
+    // group by act in ACT_KEYS order
+    var rows=A.USERS.filter(function(u){ return u.act !== 'data-migration'; }).map(function(u){
+      var act=u.act==='*'?'*':u.act;
+      var th=A.actTh? A.actTh(act): act;
+      var short=A.actShort? A.actShort(act): act;
+      return {act:act, th:th, short:short, u:u};
+    });
+    rows.sort(function(a,b){
+      if(a.act==='*') return 1; if(b.act==='*') return -1;
+      return (A.ACT_KEYS.indexOf(a.act)-A.ACT_KEYS.indexOf(b.act)) || a.u.u.localeCompare(b.u.u);
+    });
+    var html='<div class="demo-hint-head"><strong>บัญชีทดสอบ (คลิกเพื่อกรอก)</strong><small>รหัสผ่านทุกบัญชี 1234 ยกเว้น demo/demo</small></div>'
+      +'<table><thead><tr><th>กิจกรรม</th><th>ผู้ใช้</th><th>รหัสผ่าน</th></tr></thead><tbody>';
+    rows.forEach(function(r){
+      var u=r.u;
+      var pass=u.p;
+      var actLabel = r.act==='*' ? 'ทุกกิจกรรม (ทดสอบ)' : r.short;
+      html+='<tr><td class="hint-act">'+actLabel+'</td>'
+        +'<td><code data-fill-u="'+u.u+'" data-fill-p="'+pass+'" title="คลิกเพื่อกรอก">'+u.u+'</code><br><small style="color:#6b7280">'+u.name+'</small></td>'
+        +'<td><code data-fill-u="'+u.u+'" data-fill-p="'+pass+'">'+pass+'</code></td></tr>';
+    });
+    html+='</tbody></table>';
+    panel.innerHTML=html;
+    panel.addEventListener('click', function(e){
+      var c=e.target.closest('[data-fill-u]');
+      if(!c) return;
+      var u=c.getAttribute('data-fill-u'), p=c.getAttribute('data-fill-p');
+      var iu=document.getElementById('loginUsername'), ip=document.getElementById('loginPassword');
+      if(iu) iu.value=u; if(ip) ip.value=p;
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', buildHintPanel);
+  else buildHintPanel();
+  setTimeout(buildHintPanel, 800);
+})();
+</script>
+
+</body>
+</html>

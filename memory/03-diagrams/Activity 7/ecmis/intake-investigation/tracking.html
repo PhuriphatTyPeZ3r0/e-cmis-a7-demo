@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ติดตามเรื่องร้องเรียน | E-CMIS</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/ecmis.css" />
+    <link rel="stylesheet" href="assets/human-verification.css" />
+    <link rel="stylesheet" href="assets/public-form-consistency.css" />
+    <link rel="stylesheet" href="assets/tracking.css" />
+    <script src="assets/ecmis.js" defer></script>
+    <script src="assets/human-verification.js" defer></script>
+  </head>
+  <body class="tracking-page">
+    <a class="skip" href="#main">ข้ามไปเนื้อหาหลัก</a>
+    <header class="site-head">
+      <div class="shell nav">
+        <a class="brand" href="index.html"
+          ><img
+            class="brand-logo"
+            src="https://www.pacc.go.th/images/pacc_logo.png"
+            width="50"
+            height="50"
+            alt="ตราสำนักงาน ป.ป.ท."
+          /><span>E-CMIS<small>ติดตามเรื่องร้องเรียน</small></span></a
+        ><button
+          type="button"
+          class="menu-btn"
+          data-menu
+          aria-expanded="false"
+          aria-controls="trackingNav"
+        >
+          เมนู
+        </button>
+        <nav class="nav-links" id="trackingNav" data-nav aria-label="เมนูหลัก">
+          <a href="index.html">หน้าหลัก</a
+          ><a href="complaint-form.html">ยื่นเรื่อง</a
+          ><a href="login.html">เจ้าหน้าที่</a>
+        </nav>
+      </div>
+    </header>
+    <main id="main">
+      <section class="hero tracking-hero">
+        <div class="shell tracking-hero__inner">
+          <p class="kicker">บริการประชาชน</p>
+          <h1>ดูความคืบหน้าโดยใช้เลขติดตาม</h1>
+          <p class="lede">
+            ระบบแสดงเฉพาะข้อมูลที่ปลอดภัยต่อสาธารณะ ไม่แสดงรายละเอียดงานภายใน
+            บุคคลที่รับผิดชอบ หรือข้อมูลคู่กรณี
+          </p>
+        </div>
+      </section>
+      <section class="section tracking-section">
+        <div class="shell grid two tracking-layout">
+          <div class="tracking-lookup-column">
+            <form class="panel tracking-card tracking-lookup" id="lookup">
+              <p class="tracking-section-label">ตรวจสอบสถานะ</p>
+              <h2>ค้นหาเรื่อง</h2>
+              <div class="tracking-pair">
+                <div class="field">
+                  <label for="serviceNumber">เลขรับบริการ 6 หลัก</label>
+                  <input id="serviceNumber" type="text" inputmode="numeric" pattern="[0-9]{6}" placeholder="690001" maxlength="6" autocomplete="off" />
+                  <span class="hint">ปี พ.ศ. 2 หลัก และลำดับ 4 หลัก</span>
+                </div>
+                <div class="field">
+                  <label for="trackingPin">รหัสติดตาม 4 หลัก</label>
+                  <input id="trackingPin" type="password" inputmode="numeric" pattern="[0-9]{4}" placeholder="5424" maxlength="4" autocomplete="off" />
+                  <span class="hint">ตัวเลข 4 หลักที่ได้รับตอนยื่นเรื่อง</span>
+                </div>
+              </div>
+              <p class="tracking-feedback" id="trackingFeedback" aria-live="polite"></p>
+              <p class="hint" id="rateLimitCountdown" aria-live="polite" hidden></p>
+              <div data-human-verification="tracking-lookup"></div>
+              <button type="submit" class="primary tracking-submit" id="lookupSubmit">ตรวจสอบสถานะ</button>
+            </form>
+            <button
+              class="button secondary tracking-recovery-open"
+              type="button"
+              id="forgotOpen"
+            >
+              ลืมเลขติดตาม
+            </button>
+          </div>
+          <aside class="panel tracking-card tracking-guide" id="trackingGuide">
+            <p class="kicker">ข้อมูลยืนยันการติดตาม</p>
+            <h2>เตรียมข้อมูลก่อนค้นหา</h2>
+            <ol>
+              <li>กรอกเลขรับบริการ เช่น <strong>690001</strong></li>
+              <li>กรอกรหัสติดตาม 4 หลัก เช่น <strong>5424</strong></li>
+              <li>ยืนยันว่าไม่ใช่โปรแกรมอัตโนมัติ แล้วกด “ตรวจสอบสถานะ”</li>
+            </ol>
+            <p class="privacy-note">ระบบจะแสดงเฉพาะสถานะที่เปิดเผยต่อผู้ร้องได้ และไม่แสดงข้อมูลการพิจารณาภายใน</p>
+          </aside>
+          <section class="panel tracking-card tracking-result" id="result" hidden aria-live="polite">
+            <div class="tracking-result__head">
+              <div>
+                <span class="status-chip public">สถานะสาธารณะ</span>
+                <h2>อยู่ระหว่างพิจารณา</h2>
+              </div>
+              <p class="token" id="shownNo"></p>
+            </div>
+            <div class="notice"><strong>เลขรับบริการ:</strong> 690001<br /><strong>เลขหนังสือส่งหน่วยงานภายนอก:</strong> จะแสดงเมื่อสำนักงานออกหนังสือแล้ว</div>
+            <ol class="timeline">
+              <li>
+                <strong>รับข้อมูลแล้ว</strong
+                ><time>31 กรกฎาคม 2569 · เวลาโดยประมาณ</time
+                ><span>ระบบได้รับข้อมูลร้องเรียน</span>
+              </li>
+              <li>
+                <strong>ตรวจความครบถ้วนแล้ว</strong><time>1 สิงหาคม 2569</time
+                ><span>เรื่องเข้าสู่ขั้นตอนพิจารณาของหน่วยงาน</span>
+              </li>
+              <li>
+                <strong>อยู่ระหว่างพิจารณา</strong
+                ><time>อัปเดตล่าสุด 2 สิงหาคม 2569</time
+                ><span>ไม่มีรายละเอียดภายในเปิดเผยในช่องทางนี้</span>
+              </li>
+            </ol>
+          </section>
+        </div>
+      </section>
+    </main>
+    <footer class="site-foot">
+      <div class="shell">
+        <p>
+          ผู้ร้องที่ไม่ระบุข้อมูลติดต่อจำเป็นต้องเก็บเลขติดตามไว้ด้วยตนเอง และติดตามผ่านเว็บไซต์นี้
+        </p>
+        <button type="button" class="version" data-version>
+          E-CMIS · ติดตามเรื่องร้องเรียน
+        </button>
+      </div>
+    </footer>
+    <dialog class="tracking-dialog" id="forgot" aria-labelledby="forgotTitle">
+      <div class="dialog-body tracking-dialog__body">
+        <p class="tracking-section-label">กู้คืนข้อมูล</p>
+        <h2 id="forgotTitle">ขอรับลิงก์กู้คืนเลขติดตาม</h2>
+        <p>
+          กรุณากรอกอีเมลที่ใช้ยื่นเรื่อง ระบบจะส่งลิงก์สำหรับกู้คืนหมายเลขติดตาม
+          หากข้อมูลตรงกับคำร้องในระบบ
+        </p>
+        <form id="forgotForm">
+          <div class="field">
+            <label for="recoveryEmail">อีเมล</label
+            ><input
+              id="recoveryEmail"
+              type="email"
+              autocomplete="email"
+              required
+            />
+          </div>
+          <div class="actions dialog-actions public-action-pair">
+            <button type="button" class="button secondary" id="forgotClose">
+              ยกเลิก
+            </button>
+            <button type="submit" class="primary">ส่งคำขอ</button>
+          </div>
+          <div data-human-verification="tracking-recovery"></div>
+        </form>
+        <p class="hint">
+          แนวทางการใช้งาน: ส่งลิงก์ยืนยันแบบใช้ครั้งเดียวภายในกำหนดเวลา และบันทึกการใช้งานเพื่อความปลอดภัย
+        </p>
+        <p id="forgotResult" aria-live="polite"></p>
+      </div>
+    </dialog>
+    <dialog class="tracking-dialog" id="themeLab" aria-labelledby="themeTitle">
+      <div class="dialog-body">
+        <h2 id="themeTitle">Theme Lab</h2>
+        <div class="theme-grid">
+          <button type="button" class="theme-choice" data-theme-choice="01">
+            01 สารบบรับเรื่อง</button
+          ><button type="button" class="theme-choice" data-theme-choice="02">
+            02 สัญญาณ 1206</button
+          ><button type="button" class="theme-choice" data-theme-choice="03">
+            03 แผนที่เขต</button
+          ><button type="button" class="theme-choice" data-theme-choice="04">
+            04 ตรารับดิจิทัล</button
+          ><button type="button" class="theme-choice" data-theme-choice="05">
+            05 กระดาษความมั่นคง</button
+          ><button type="button" class="theme-choice" data-theme-choice="06">
+            06 ห้องสำนวน
+          </button>
+        </div>
+        <div class="actions">
+          <button type="button" class="secondary" data-close-theme>ปิด</button>
+        </div>
+      </div>
+    </dialog>
+    <script>
+      const params = new URLSearchParams(location.search),
+        lookup = document.getElementById("lookup"),
+        serviceNumber = document.getElementById("serviceNumber"),
+        trackingPin = document.getElementById("trackingPin"),
+        feedback = document.getElementById("trackingFeedback"),
+        result = document.getElementById("result"),
+        shownNo = document.getElementById("shownNo"),
+        trackingGuide = document.getElementById("trackingGuide"),
+        lookupSubmit = document.getElementById("lookupSubmit"),
+        rateLimitCountdown = document.getElementById("rateLimitCountdown"),
+        forgot = document.getElementById("forgot");
+      const RATE_LIMIT_KEY = "ecmis-tracking-rate-limit-v1";
+      const RATE_LIMIT_FAILURES = 5;
+      const RATE_LIMIT_LOCK_MS = 15 * 60 * 1000;
+      let rateLimitTimer = null;
+      function readRateLimits() {
+        try {
+          const raw = localStorage.getItem(RATE_LIMIT_KEY);
+          if (!raw) return { available: true, buckets: {} };
+          const parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== "object" || !parsed.buckets || typeof parsed.buckets !== "object" || Array.isArray(parsed.buckets)) {
+            return { available: true, buckets: {} };
+          }
+          const isCorrupt = Object.values(parsed.buckets).some((bucket) =>
+            !bucket || typeof bucket !== "object" || !Number.isInteger(bucket.failures) || bucket.failures < 1 || (bucket.lockedUntil !== null && !Number.isFinite(bucket.lockedUntil))
+          );
+          if (isCorrupt) return { available: true, buckets: {} };
+          return { available: true, buckets: parsed.buckets };
+        } catch {
+          return { available: false, buckets: {} };
+        }
+      }
+      function writeRateLimits(buckets) {
+        try {
+          localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({ buckets }));
+          return true;
+        } catch {
+          return false;
+        }
+      }
+      function activeLock(serviceNo, now = Date.now()) {
+        if (!serviceNo) return null;
+        const stored = readRateLimits();
+        if (!stored.available) return null;
+        const bucket = stored.buckets[serviceNo];
+        if (!bucket || !Number.isFinite(bucket.lockedUntil)) return null;
+        if (bucket.lockedUntil <= now) {
+          delete stored.buckets[serviceNo];
+          writeRateLimits(stored.buckets);
+          return null;
+        }
+        return bucket.lockedUntil;
+      }
+      function recordFailedLookup(serviceNo, now = Date.now()) {
+        const stored = readRateLimits();
+        if (!stored.available) return null;
+        const previous = stored.buckets[serviceNo];
+        const failures = (Number.isInteger(previous?.failures) && previous.failures > 0 ? previous.failures : 0) + 1;
+        const lockedUntil = failures >= RATE_LIMIT_FAILURES ? now + RATE_LIMIT_LOCK_MS : null;
+        stored.buckets[serviceNo] = { failures, lockedUntil };
+        return writeRateLimits(stored.buckets) ? lockedUntil : null;
+      }
+      function clearRateLimit(serviceNo) {
+        const stored = readRateLimits();
+        if (!stored.available || !Object.hasOwn(stored.buckets, serviceNo)) return;
+        delete stored.buckets[serviceNo];
+        writeRateLimits(stored.buckets);
+      }
+      function formatCountdown(milliseconds) {
+        const seconds = Math.max(0, Math.ceil(milliseconds / 1000));
+        return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+      }
+      function renderLock(lockedUntil) {
+        const remaining = lockedUntil - Date.now();
+        if (remaining <= 0) {
+          refreshRateLimit();
+          return;
+        }
+        lookupSubmit.disabled = true;
+        rateLimitCountdown.hidden = false;
+        rateLimitCountdown.textContent = `ลองใหม่ได้ใน ${formatCountdown(remaining)}`;
+        feedback.textContent = "ระงับการตรวจสอบชั่วคราวเนื่องจากยืนยันข้อมูลไม่สำเร็จหลายครั้ง";
+        trackingGuide.hidden = false;
+        result.hidden = true;
+      }
+      function refreshRateLimit() {
+        const serviceNo = window.ECMIS.parseServiceNumber(serviceNumber.value);
+        const lockedUntil = activeLock(serviceNo);
+        if (lockedUntil) {
+          renderLock(lockedUntil);
+          if (!rateLimitTimer) rateLimitTimer = setInterval(refreshRateLimit, 1000);
+          return true;
+        }
+        lookupSubmit.disabled = false;
+        rateLimitCountdown.hidden = true;
+        rateLimitCountdown.textContent = "";
+        if (rateLimitTimer) {
+          clearInterval(rateLimitTimer);
+          rateLimitTimer = null;
+        }
+        return false;
+      }
+      function guardedLookup() {
+        const normalizedServiceNo = window.ECMIS.parseServiceNumber(serviceNumber.value);
+        const lockedUntil = activeLock(normalizedServiceNo);
+        if (lockedUntil) {
+          renderLock(lockedUntil);
+          return;
+        }
+        [serviceNumber, trackingPin].forEach((input) => input.classList.remove("invalid"));
+        const credentials = window.ECMIS.parseTrackingCredentials(serviceNumber.value, trackingPin.value);
+        let savedCases = [], workspaceCases = {};
+        try {
+          const storedCases = JSON.parse(localStorage.getItem("ecmis-demo-cases") || "[]");
+          if (Array.isArray(storedCases)) savedCases = storedCases;
+          workspaceCases = JSON.parse(localStorage.getItem("ecmis-a4-workspace-v3") || "{}");
+          savedCases.push(...Object.values(workspaceCases).map((state) => ({
+            yearSequence: state?.caseData?.trackingYear,
+            pin: state?.caseData?.trackingCode,
+          })));
+        } catch {
+          savedCases = [];
+          workspaceCases = {};
+        }
+        const demoCase = { yearSequence: "690001", pin: "5424" };
+        const candidate = credentials && [demoCase, ...savedCases].find((record) =>
+          window.ECMIS.parseServiceNumber(record?.yearSequence) === credentials.serviceNumber
+        );
+        const expectedPin = candidate && window.ECMIS.parseFourDigits(candidate.pin);
+        const authorized = Boolean(candidate && expectedPin === credentials.pin);
+        if (!authorized) {
+          const newLock = credentials && recordFailedLookup(credentials.serviceNumber);
+          if (newLock) {
+            renderLock(newLock);
+            if (!rateLimitTimer) rateLimitTimer = setInterval(refreshRateLimit, 1000);
+            return;
+          }
+          feedback.textContent = "ไม่สามารถยืนยันข้อมูลสำหรับติดตามเรื่องได้";
+          [serviceNumber, trackingPin].forEach((input) => input.classList.add("invalid"));
+          trackingGuide.hidden = false;
+          result.hidden = true;
+          return;
+        }
+        clearRateLimit(credentials.serviceNumber);
+        serviceNumber.value = credentials.serviceNumber;
+        trackingPin.value = credentials.pin;
+        const matchedWorkspaceState = Object.values(workspaceCases).find((state) => state?.caseData?.trackingYear === credentials.serviceNumber) || null;
+        shownNo.textContent = credentials.serviceNumber;
+        feedback.textContent = "พบข้อมูลสถานะล่าสุดแล้ว";
+        trackingGuide.hidden = true;
+        result.hidden = false;
+        if (matchedWorkspaceState?.workflow?.complete && matchedWorkspaceState?.documentData?.decision === "send-nacc") {
+          const data = matchedWorkspaceState.documentData;
+          result.querySelector("h2").textContent = "ส่งสำนักงาน ป.ป.ช. แล้ว";
+          result.querySelector(".notice").innerHTML = `<strong>เลขรับบริการ:</strong> ${matchedWorkspaceState.caseData.trackingYear}<br><strong>เลขหนังสือส่งสำนักงาน ป.ป.ช.:</strong> ${data.naccLetterNo}<br><strong>วันที่จัดส่ง:</strong> ${data.naccSentDate}<br><strong>เลข EMS:</strong> ${data.naccEms || "ไม่ได้ใช้ EMS"}<br><strong>มติบอร์ด:</strong> ${data.naccBoardNo}`;
+          const timeline = result.querySelector(".timeline");
+          if (!timeline.querySelector("[data-nacc-forwarded]")) timeline.insertAdjacentHTML("beforeend", `<li data-nacc-forwarded><strong>ส่งสำนักงาน ป.ป.ช. แล้ว</strong><time>${data.naccSentDate}</time><span>เลขหนังสือ ${data.naccLetterNo}${data.naccEms ? ` · EMS ${data.naccEms}` : ""}</span></li>`);
+        } else if (matchedWorkspaceState?.documentData?.approvedAt && matchedWorkspaceState?.documentData?.caseNumber) {
+          const data = matchedWorkspaceState.documentData;
+          const issuedAt = data.caseNumberIssuedAt || data.approvedAt;
+          const issuedAtText = issuedAt ? new Date(issuedAt).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" }) : "ล่าสุด";
+          result.querySelector("h2").textContent = data.publicStatus || "สำนักงานได้รับเรื่องของท่านไว้แล้ว และจะดำเนินการเรื่องของท่านต่อไป";
+          result.querySelector(".notice").innerHTML = `<strong>เลขรับบริการ:</strong> ${matchedWorkspaceState.caseData.trackingYear}<br><strong>เลขสำนวน:</strong> ${data.caseNumber}<br><strong>ผู้รับผิดชอบ:</strong> ${data.assignedOfficer || "สำนักงาน ป.ป.ท."}<br><strong>ช่องทางติดต่อ:</strong> สายด่วน 1206`;
+          const timeline = result.querySelector(".timeline");
+          if (!timeline.querySelector("[data-case-issued]")) timeline.insertAdjacentHTML("beforeend", `<li data-case-issued><strong>ผอ.กบค. ลงนามอนุมัติ</strong><time>${issuedAtText}</time><span>ระบบออกเลขสำนวน ${data.caseNumber}</span></li>`);
+        }
+      }
+      lookup.addEventListener("submit", (e) => {
+        e.preventDefault();
+        if (!window.PACCHumanVerification.require("tracking-lookup")) return;
+        guardedLookup();
+      });
+      serviceNumber.addEventListener("input", refreshRateLimit);
+      addEventListener("load", () => {
+        serviceNumber.value = params.get("serviceNumber") || params.get("yearSequence") || "";
+        const qrPin = params.get("pin") || params.get("code") || "";
+        if (qrPin) trackingPin.value = qrPin;
+        if (serviceNumber.value && qrPin) {
+          guardedLookup();
+        } else if (serviceNumber.value) {
+          feedback.textContent = "กรอกรหัสติดตามและข้อมูลยืนยันที่เกี่ยวข้อง แล้วจึงตรวจสอบสถานะ";
+          trackingPin.focus();
+        }
+        refreshRateLimit();
+      });
+      document.getElementById("forgotOpen").onclick = () => forgot.showModal();
+      document.getElementById("forgotClose").onclick = () => forgot.close();
+      document.getElementById("forgotForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        if (!window.PACCHumanVerification.require("tracking-recovery")) return;
+        document.getElementById("forgotResult").textContent =
+          "ระบบได้ส่งลิงก์ใช้ครั้งเดียวสำหรับกู้คืนหมายเลขติดตามไปยังอีเมลที่ระบุแล้ว";
+        e.target.reset();
+      });
+    </script>
+  </body>
+</html>

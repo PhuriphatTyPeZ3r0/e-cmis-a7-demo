@@ -1,0 +1,636 @@
+@page "/admin/master-data"
+@page "/admin/organizations"
+@page "/admin/positions"
+@inject EcmisWeb.Services.SystemAccessApiService SystemApi
+@inject NavigationManager Nav
+@using EcmisWeb.Services
+
+<div style="background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 55%,#1e3575 100%);border-radius:18px;padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden" class="fade-in">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold-light),var(--gold),transparent)"></div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div style="display:flex;align-items:center;gap:14px">
+            <a href="/admin/dashboard" style="color:rgba(255,255,255,.55);font-size:18px;text-decoration:none"><i class="bi bi-arrow-left"></i></a>
+            <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center">
+                <i class="bi bi-database-fill" style="font-size:20px;color:var(--navy-deep)"></i>
+            </div>
+            <div>
+                <div style="font-size:19px;font-weight:800;color:#fff">ข้อมูลหลัก</div>
+                <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px">หน่วยงาน · ตำแหน่ง · ข้อมูลอ้างอิง</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="background:#fff;border-radius:16px;border:1px solid #eaecf2;margin-bottom:20px;overflow:hidden;box-shadow:0 2px 12px rgba(13,27,62,.05)" class="fade-in">
+    <div style="display:flex;border-bottom:1px solid #eaecf2;background:linear-gradient(180deg,#fafbff,#fff);padding:0 8px">
+        <button @onclick="@(() => ActiveTab = "org")"
+                style="padding:14px 20px;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;
+                       color:@(ActiveTab=="org" ? "var(--navy-deep)" : "#8A96A8");
+                       border-bottom:@(ActiveTab=="org" ? "2.5px solid var(--navy-deep)" : "2.5px solid transparent");
+                       display:flex;align-items:center;gap:7px;margin-bottom:-1px;font-family:'Sarabun',sans-serif">
+            <i class="bi bi-building" style="font-size:14px"></i>หน่วยงาน
+            <span style="background:#0B1940;color:#fff;border-radius:20px;padding:1px 8px;font-size:10.5px;font-weight:700">@Orgs.Count</span>
+        </button>
+        <button @onclick="@(() => ActiveTab = "pos")"
+                style="padding:14px 20px;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;
+                       color:@(ActiveTab=="pos" ? "var(--navy-deep)" : "#8A96A8");
+                       border-bottom:@(ActiveTab=="pos" ? "2.5px solid var(--navy-deep)" : "2.5px solid transparent");
+                       display:flex;align-items:center;gap:7px;margin-bottom:-1px;font-family:'Sarabun',sans-serif">
+            <i class="bi bi-briefcase-fill" style="font-size:14px"></i>ตำแหน่ง
+            <span style="background:#d97706;color:#fff;border-radius:20px;padding:1px 8px;font-size:10.5px;font-weight:700">@Positions.Count</span>
+        </button>
+        <button @onclick="@(() => ActiveTab = "ref")"
+                style="padding:14px 20px;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;
+                       color:@(ActiveTab=="ref" ? "var(--navy-deep)" : "#8A96A8");
+                       border-bottom:@(ActiveTab=="ref" ? "2.5px solid var(--navy-deep)" : "2.5px solid transparent");
+                       display:flex;align-items:center;gap:7px;margin-bottom:-1px;font-family:'Sarabun',sans-serif">
+            <i class="bi bi-tags-fill" style="font-size:14px"></i>ข้อมูลอ้างอิง
+            <span style="background:#0B1940;color:#fff;border-radius:20px;padding:1px 8px;font-size:10.5px;font-weight:700">@RefData.Count</span>
+        </button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(ActionMessage))
+{
+    <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#15803d"><i class="bi bi-check-circle-fill me-2"></i>@ActionMessage</div>
+}
+@if (!string.IsNullOrEmpty(ActionError))
+{
+    <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#991b1b"><i class="bi bi-exclamation-triangle-fill me-2"></i>@ActionError</div>
+}
+
+@if (ActiveTab == "org")
+{
+    <div class="ecmis-card fade-in">
+        <div class="ecmis-card-header">
+            <div class="ecmis-card-title"><span class="badge-dot"></span>หน่วยงาน</div>
+            <button @onclick="OpenCreateOrg" class="btn btn-sm" style="background:var(--navy-deep);color:#fff;border:none;font-size:12px;border-radius:8px;padding:6px 14px;font-weight:700"><i class="bi bi-plus-lg me-1"></i>เพิ่มหน่วยงาน</button>
+        </div>
+        @if (Orgs.Count == 0)
+        {
+            <div style="padding:40px;text-align:center;color:var(--text-muted)"><i class="bi bi-inbox" style="font-size:32px"></i><div style="margin-top:8px">ยังไม่มีข้อมูล</div></div>
+        }
+        else
+        {
+            <div style="overflow-x:auto"><table class="ecmis-table">
+                <thead><tr><th>ชื่อหน่วยงาน</th><th>รายละเอียด</th><th>สถานะ</th><th style="text-align:center">จัดการ</th></tr></thead>
+                <tbody>
+                    @foreach (var o in Orgs)
+                    {
+                        <tr>
+                            <td style="font-size:13px;font-weight:700">@o.NameTh</td>
+                            <td style="font-size:11.5px;color:var(--text-muted)">@(string.IsNullOrEmpty(o.Detail) ? "—" : o.Detail)</td>
+                            <td>@(o.IsActive ? @<span class="status-badge status-active">เปิด</span> : @<span class="status-badge status-inactive">ปิด</span>)</td>
+                            <td style="text-align:center">
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <button @onclick="@(() => OpenEditOrg(o))" class="btn btn-sm btn-outline-secondary" style="font-size:11px;border-radius:6px;padding:3px 8px"><i class="bi bi-pencil"></i></button>
+                                    <button type="button" @onclick="@(() => RequestDeleteOrg(o))" disabled="@Busy" class="btn btn-sm" style="background:#fff;border:1px solid #fca5a5;color:#dc2626;font-size:11px;border-radius:6px;padding:3px 8px" title="ลบ"><i class="bi bi-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table></div>
+        }
+    </div>
+}
+
+@if (ActiveTab == "pos")
+{
+    <div class="ecmis-card fade-in">
+        <div class="ecmis-card-header">
+            <div class="ecmis-card-title"><span class="badge-dot"></span>ตำแหน่ง</div>
+            <button @onclick="OpenCreatePos" class="btn btn-sm" style="background:var(--navy-deep);color:#fff;border:none;font-size:12px;border-radius:8px;padding:6px 14px;font-weight:700"><i class="bi bi-plus-lg me-1"></i>เพิ่มตำแหน่ง</button>
+        </div>
+        @if (Positions.Count == 0)
+        {
+            <div style="padding:40px;text-align:center;color:var(--text-muted)"><i class="bi bi-inbox" style="font-size:32px"></i><div style="margin-top:8px">ยังไม่มีข้อมูล</div></div>
+        }
+        else
+        {
+            <div style="overflow-x:auto"><table class="ecmis-table" style="table-layout:fixed;width:100%">
+                <colgroup>
+                    <col style="width:20%" />
+                    <col style="width:24%" />
+                    <col style="width:12%" />
+                    <col style="width:12%" />
+                    <col style="width:10%" />
+                    <col style="width:22%" />
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>ชื่อตำแหน่ง</th>
+                        <th>รายละเอียด</th>
+                        <th style="text-align:center">คน</th>
+                        <th style="text-align:center">สิทธิ์</th>
+                        <th style="text-align:center">สถานะ</th>
+                        <th style="text-align:center">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Positions)
+                    {
+                        <tr>
+                            <td style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@p.NameTh</td>
+                            <td style="font-size:12px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@(string.IsNullOrEmpty(p.Detail) ? "—" : p.Detail)</td>
+                            <td style="text-align:center;font-size:13px">
+                                <button type="button" @onclick="@(() => OpenPositionHolders(p))" title="ดูผู้ถือตำแหน่ง" style="background:none;border:none;padding:0;font-size:13px;font-weight:600;color:var(--navy);cursor:pointer">@p.HolderCount</button>
+                            </td>
+                            <td style="text-align:center;font-size:13px;font-weight:600;color:var(--text-muted)">@p.RoleCount</td>
+                            <td style="text-align:center">@(p.IsActive ? @<span class="status-badge status-active">เปิด</span> : @<span class="status-badge status-inactive">ปิด</span>)</td>
+                            <td style="text-align:center">
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <a href="/super-admin/systems?tab=roles&amp;positionId=@p.Id" class="btn btn-sm btn-outline-primary" style="font-size:11px;border-radius:6px;padding:3px 8px;text-decoration:none" title="จัดการสิทธิ์"><i class="bi bi-person-badge"></i></a>
+                                    <button @onclick="@(() => OpenEditPos(p))" class="btn btn-sm btn-outline-secondary" style="font-size:11px;border-radius:6px;padding:3px 8px"><i class="bi bi-pencil"></i></button>
+                                    <button type="button" @onclick="@(() => RequestDeletePos(p))" disabled="@Busy" class="btn btn-sm" style="background:#fff;border:1px solid #fca5a5;color:#dc2626;font-size:11px;border-radius:6px;padding:3px 8px" title="ลบ"><i class="bi bi-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table></div>
+        }
+    </div>
+}
+
+@if (ActiveTab == "ref")
+{
+    <div class="ecmis-card fade-in">
+        <div class="ecmis-card-header">
+            <div class="ecmis-card-title"><span class="badge-dot"></span>ข้อมูลอ้างอิง</div>
+            <div class="d-flex gap-2 align-items-center">
+                <select @bind="RefFilterCategory" @bind:after="FilterRefDataAsync" class="form-select form-select-sm" style="font-size:12px;border-radius:8px;min-width:160px">
+                    <option value="">— ทุกหมวดหมู่ —</option>
+                    @foreach (var cat in RefData.Select(r => r.Category).Distinct().Order())
+                    {
+                        <option value="@cat">@cat</option>
+                    }
+                </select>
+                <button @onclick="OpenCreateRef" class="btn btn-sm" style="background:var(--navy-deep);color:#fff;border:none;font-size:12px;border-radius:8px;padding:6px 14px;font-weight:700"><i class="bi bi-plus-lg me-1"></i>เพิ่มรายการ</button>
+            </div>
+        </div>
+        @{
+            var visibleRef = string.IsNullOrEmpty(RefFilterCategory)
+                ? RefData
+                : RefData.Where(r => r.Category == RefFilterCategory).ToList();
+        }
+        @if (visibleRef.Count == 0)
+        {
+            <div style="padding:40px;text-align:center;color:var(--text-muted)"><i class="bi bi-inbox" style="font-size:32px"></i><div style="margin-top:8px">ยังไม่มีข้อมูล</div></div>
+        }
+        else
+        {
+            <div style="overflow-x:auto"><table class="ecmis-table">
+                <thead><tr><th>หมวดหมู่</th><th>รายการ</th><th>รายละเอียด</th><th>สถานะ</th><th style="text-align:center">จัดการ</th></tr></thead>
+                <tbody>
+                    @foreach (var r in visibleRef.OrderBy(x => x.Category).ThenBy(x => x.NameTh))
+                    {
+                        <tr>
+                            <td style="font-size:13px;color:var(--text-muted)">@RefCategoryLabel(r.Category)</td>
+                            <td style="font-size:13px;font-weight:700">@r.NameTh</td>
+                            <td style="font-size:11.5px;color:var(--text-muted)">@(string.IsNullOrWhiteSpace(r.Detail) ? "—" : r.Detail)</td>
+                            <td>@(r.IsActive ? @<span class="status-badge status-active">เปิด</span> : @<span class="status-badge status-inactive">ปิด</span>)</td>
+                            <td style="text-align:center">
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <button @onclick="@(() => OpenEditRef(r))" class="btn btn-sm btn-outline-secondary" style="font-size:11px;border-radius:6px;padding:3px 8px"><i class="bi bi-pencil"></i></button>
+                                    <button type="button" @onclick="@(() => RequestDeleteRef(r))" disabled="@Busy" class="btn btn-sm" style="background:#fff;border:1px solid #fca5a5;color:#dc2626;font-size:11px;border-radius:6px;padding:3px 8px" title="ลบ"><i class="bi bi-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table></div>
+        }
+    </div>
+}
+
+@* ── ORG MODAL ── *@
+@if (OrgModalOpen)
+{
+    <div style="position:fixed;inset:0;background:rgba(11,25,64,.5);z-index:1050;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)" class="fade-in" @onclick="CloseOrgModal">
+        <div role="dialog" aria-modal="true" @onclick:stopPropagation="true" style="background:#fff;border-radius:16px;width:100%;max-width:560px;max-height:min(90vh,720px);display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(13,27,62,.2)">
+            <div style="flex-shrink:0;background:linear-gradient(135deg,var(--navy-deep),var(--navy));padding:16px 22px;color:#fff;font-weight:800"><i class="bi bi-building me-2"></i>@(EditingOrgId.HasValue ? "แก้ไขหน่วยงาน" : "เพิ่มหน่วยงาน")</div>
+            <div style="flex:1;overflow-y:auto;padding:18px 22px">
+                <div class="row g-2">
+                    <div class="col-12"><label class="form-label" style="font-size:11.5px;font-weight:700;color:var(--text-muted)">ชื่อหน่วยงาน *</label><input @bind="OrgForm.NameTh" class="form-control form-control-sm" /></div>
+                    <div class="col-12"><label class="form-label" style="font-size:11.5px;font-weight:700;color:var(--text-muted)">รายละเอียด</label><input @bind="OrgForm.Detail" class="form-control form-control-sm" placeholder="ถ้ามี" /></div>
+                    <div class="col-12"><label style="font-size:12.5px"><input type="checkbox" @bind="OrgForm.IsActive" /> เปิดใช้งาน</label></div>
+                </div>
+                @if (string.IsNullOrWhiteSpace(OrgForm.NameTh))
+                {
+                    <p style="margin:12px 0 0;font-size:12px;color:#b45309"><i class="bi bi-info-circle me-1"></i>กรุณากรอกชื่อหน่วยงานก่อนบันทึก</p>
+                }
+            </div>
+            <div style="flex-shrink:0;padding:14px 22px;border-top:1px solid #eaecf2;background:#fafbff;display:flex;justify-content:flex-end;align-items:center;gap:10px">
+                <button type="button" @onclick="CloseOrgModal" disabled="@Busy" class="btn btn-outline-secondary" style="min-width:96px;font-weight:700">ยกเลิก</button>
+                <button type="button" @onclick="SaveOrgAsync" disabled="@(Busy || !CanSaveOrg)" class="btn" style="min-width:120px;background:var(--navy-deep);color:#fff;font-weight:700;border:none">
+                    @if (Busy) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    <i class="bi bi-check-lg me-1"></i>ยืนยันบันทึก
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── POS MODAL ── *@
+@if (PosModalOpen)
+{
+    <div style="position:fixed;inset:0;background:rgba(11,25,64,.5);z-index:1050;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)" class="fade-in" @onclick="ClosePosModal">
+        <div role="dialog" aria-modal="true" @onclick:stopPropagation="true" style="background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:min(90vh,640px);display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(13,27,62,.2)">
+            <div style="flex-shrink:0;background:linear-gradient(135deg,var(--navy-deep),var(--navy));padding:16px 22px;color:#fff;font-weight:800"><i class="bi bi-briefcase-fill me-2"></i>@(EditingPosId.HasValue ? "แก้ไขตำแหน่ง" : "เพิ่มตำแหน่ง")</div>
+            <div style="flex:1;overflow-y:auto;padding:18px 22px">
+                <div class="row g-2">
+                    <div class="col-12"><label class="form-label" style="font-size:11.5px;font-weight:700;color:var(--text-muted)">ชื่อตำแหน่ง *</label><input @bind="PosForm.NameTh" class="form-control form-control-sm" placeholder="เช่น เจ้าหน้าที่รับเรื่อง" /></div>
+                    <div class="col-12"><label class="form-label" style="font-size:11.5px;font-weight:700;color:var(--text-muted)">รายละเอียด</label><input @bind="PosForm.Detail" class="form-control form-control-sm" placeholder="ถ้ามี" /></div>
+                    <div class="col-12"><label style="font-size:12.5px"><input type="checkbox" @bind="PosForm.IsActive" /> เปิดใช้งาน</label></div>
+                </div>
+                @if (string.IsNullOrWhiteSpace(PosForm.NameTh))
+                {
+                    <p style="margin:12px 0 0;font-size:12px;color:#b45309"><i class="bi bi-info-circle me-1"></i>กรุณากรอกชื่อตำแหน่งก่อนบันทึก</p>
+                }
+            </div>
+            <div style="flex-shrink:0;padding:14px 22px;border-top:1px solid #eaecf2;background:#fafbff;display:flex;justify-content:flex-end;align-items:center;gap:10px">
+                <button type="button" @onclick="ClosePosModal" disabled="@Busy" class="btn btn-outline-secondary" style="min-width:96px;font-weight:700">ยกเลิก</button>
+                <button type="button" @onclick="SavePosAsync" disabled="@(Busy || !CanSavePos)" class="btn" style="min-width:120px;background:var(--navy-deep);color:#fff;font-weight:700;border:none">
+                    @if (Busy) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    <i class="bi bi-check-lg me-1"></i>ยืนยันบันทึก
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── REF DATA MODAL ── *@
+@if (RefModalOpen)
+{
+    <div style="position:fixed;inset:0;background:rgba(11,25,64,.5);z-index:1050;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)" class="fade-in" @onclick="CloseRefModal">
+        <div role="dialog" aria-modal="true" @onclick:stopPropagation="true" style="background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:min(90vh,640px);display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(13,27,62,.2)">
+            <div style="flex-shrink:0;background:linear-gradient(135deg,var(--navy-deep),var(--navy));padding:16px 22px;color:#fff;font-weight:800"><i class="bi bi-tags-fill me-2"></i>@(EditingRefId.HasValue ? "แก้ไขข้อมูลอ้างอิง" : "เพิ่มข้อมูลอ้างอิง")</div>
+            <div style="flex:1;overflow-y:auto;padding:18px 22px">
+                <div class="row g-2">
+                    @if (EditingRefId.HasValue)
+                    {
+                        <div class="col-12">
+                            <label class="form-label" style="font-size:11.5px;font-weight:700;color:var(--text-muted)">หมวดหมู่</label>
+                            <input value="@RefCategoryLabel(RefForm.Category)" class="form-control form-control-sm" style="background:#f0f4ff;color:var(--navy-deep);font-weight:700" disabled />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="col-12">
+                            <label class="form-label" style="font-size:11.5px;font-weight:700;color:var(--text-muted)">หมวดหมู่ *</label>
+                            <input @bind="RefForm.Category" class="form-control form-control-sm" list="ref-category-suggestions" placeholder="เช่น COMPLAINT_CATEGORY" />
+                            <datalist id="ref-category-suggestions">
+                                @foreach (var cat in RefData.Select(r => r.Category).Distinct().Order())
+                                {
+                                    <option value="@cat">@RefCategoryLabel(cat)</option>
+                                }
+                            </datalist>
+                        </div>
+                    }
+                    <div class="col-12"><label class="form-label" style="font-size:11.5px;font-weight:700;color:var(--text-muted)">รายการ *</label><input @bind="RefForm.NameTh" class="form-control form-control-sm" placeholder="เช่น การทุจริต" /></div>
+                    <div class="col-12"><label class="form-label" style="font-size:11.5px;font-weight:700;color:var(--text-muted)">รายละเอียด</label><input @bind="RefForm.Detail" class="form-control form-control-sm" placeholder="ถ้ามี" /></div>
+                    <div class="col-12"><label style="font-size:12.5px"><input type="checkbox" @bind="RefForm.IsActive" /> เปิดใช้งาน</label></div>
+                </div>
+                @if (!CanSaveRef)
+                {
+                    <p style="margin:12px 0 0;font-size:12px;color:#b45309"><i class="bi bi-info-circle me-1"></i>กรุณากรอกหมวดหมู่และชื่อรายการก่อนบันทึก</p>
+                }
+            </div>
+            <div style="flex-shrink:0;padding:14px 22px;border-top:1px solid #eaecf2;background:#fafbff;display:flex;justify-content:flex-end;align-items:center;gap:10px">
+                <button type="button" @onclick="CloseRefModal" disabled="@Busy" class="btn btn-outline-secondary" style="min-width:96px;font-weight:700">ยกเลิก</button>
+                <button type="button" @onclick="SaveRefAsync" disabled="@(Busy || !CanSaveRef)" class="btn" style="min-width:120px;background:var(--navy-deep);color:#fff;font-weight:700;border:none">
+                    @if (Busy) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    <i class="bi bi-check-lg me-1"></i>ยืนยันบันทึก
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── POSITION HOLDERS DRAWER ── *@
+@if (HoldersDrawerOpen && HoldersPosition is not null)
+{
+    <div style="position:fixed;inset:0;background:rgba(11,25,64,.45);z-index:1040" @onclick="ClosePositionHolders"></div>
+    <div style="position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:#fff;z-index:1045;box-shadow:-8px 0 32px rgba(13,27,62,.15);display:flex;flex-direction:column" class="fade-in">
+        <div style="flex-shrink:0;background:linear-gradient(135deg,var(--navy-deep),var(--navy));padding:18px 20px;color:#fff">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div style="font-size:11px;opacity:.75;margin-bottom:4px">ผู้ถือตำแหน่ง</div>
+                    <div style="font-size:17px;font-weight:800">@HoldersPosition.NameTh</div>
+                </div>
+                <button type="button" @onclick="ClosePositionHolders" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;width:32px;height:32px"><i class="bi bi-x-lg"></i></button>
+            </div>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:16px 18px">
+            @if (HoldersLoading)
+            {
+                <div style="text-align:center;padding:32px;color:var(--text-muted)"><i class="bi bi-arrow-clockwise" style="animation:spin 1s linear infinite"></i></div>
+            }
+            else if (PositionHolders.Count == 0)
+            {
+                <div style="text-align:center;padding:32px;color:var(--text-muted);font-size:13px">ยังไม่มีผู้ถือตำแหน่งนี้</div>
+            }
+            else
+            {
+                @foreach (var h in PositionHolders)
+                {
+                    <div style="padding:12px;background:#f8fafc;border-radius:10px;margin-bottom:8px;border:1px solid #eaecf2">
+                        <a href="/admin/users/@h.UserId" style="font-size:13px;font-weight:700;color:var(--navy-deep);text-decoration:none">@(string.IsNullOrWhiteSpace(h.FullName) ? h.Username : h.FullName)</a>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">@h.Username · @h.Email</div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">
+                            @(string.IsNullOrWhiteSpace(h.OrgName) ? "—" : h.OrgName)
+                            · @(h.AccountStatus == "active" ? "ใช้งาน" : h.AccountStatus)
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+}
+
+@* ── DELETE CONFIRM ── *@
+@if (PendingDelete is not null)
+{
+    <div style="position:fixed;inset:0;background:rgba(11,25,64,.55);z-index:1100;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)" class="fade-in" @onclick="CancelPendingDelete">
+        <div role="alertdialog" aria-modal="true" @onclick:stopPropagation="true" style="background:#fff;border-radius:16px;width:100%;max-width:420px;padding:28px;box-shadow:0 20px 60px rgba(13,27,62,.25)">
+            <h3 style="margin:0 0 10px;font-size:17px;font-weight:800;color:var(--navy-deep)">
+                <i class="bi bi-exclamation-triangle-fill" style="color:#dc2626"></i> ยืนยันการลบ
+            </h3>
+            <p style="color:#475569;font-size:14px;line-height:1.6;margin-bottom:6px">ต้องการลบรายการนี้ใช่หรือไม่?</p>
+            <p style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:13px;font-weight:700;color:var(--navy-deep);margin-bottom:20px">@PendingDelete.Label</p>
+            <p style="font-size:12px;color:#94a3b8;margin:-12px 0 18px">การลบจะนำรายการออกจากระบบ (soft delete) และไม่สามารถกู้คืนได้จากหน้านี้</p>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button type="button" @onclick="CancelPendingDelete" disabled="@Busy" class="btn btn-outline-secondary" style="min-width:96px;font-weight:700">ยกเลิก</button>
+                <button type="button" @onclick="ExecutePendingDeleteAsync" disabled="@Busy" class="btn" style="min-width:120px;background:#dc2626;color:#fff;font-weight:700;border:none">
+                    @if (Busy) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    <i class="bi bi-trash3 me-1"></i>ยืนยันลบ
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string ActiveTab = "org";
+    private bool Busy;
+    private string? ActionMessage;
+    private string? ActionError;
+
+    private List<OrganizationDto> Orgs = new();
+    private List<PositionDto> Positions = new();
+    private List<RefDataDto> RefData = new();
+    private string RefFilterCategory = "";
+
+    private bool OrgModalOpen;
+    private int? EditingOrgId;
+    private OrganizationUpsertRequest OrgForm = new() { IsActive = true };
+
+    private bool PosModalOpen;
+    private int? EditingPosId;
+    private PositionUpsertRequest PosForm = new() { IsActive = true };
+
+    private bool RefModalOpen;
+    private int? EditingRefId;
+    private RefDataUpsertRequest RefForm = new() { IsActive = true };
+
+    private sealed record PendingDeleteItem(string Kind, int Id, string Label);
+    private PendingDeleteItem? PendingDelete;
+
+    private bool HoldersDrawerOpen;
+    private PositionDto? HoldersPosition;
+    private List<PositionHolderDto> PositionHolders = new();
+    private bool HoldersLoading;
+
+    private bool CanSaveOrg => !string.IsNullOrWhiteSpace(OrgForm.NameTh);
+    private bool CanSavePos => !string.IsNullOrWhiteSpace(PosForm.NameTh);
+    private bool CanSaveRef =>
+        !string.IsNullOrWhiteSpace(RefForm.NameTh) &&
+        (EditingRefId.HasValue || !string.IsNullOrWhiteSpace(RefForm.Category));
+
+    private static string RefCategoryLabel(string category) => category switch
+    {
+        "COMPLAINT_CATEGORY" => "หมวดเรื่องร้องเรียน",
+        _ => category.Replace('_', ' ')
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var path = new Uri(Nav.Uri).AbsolutePath;
+        if (path.Contains("/positions")) ActiveTab = "pos";
+        else if (path.Contains("/ref-data")) ActiveTab = "ref";
+        await LoadAllAsync();
+    }
+
+    private async Task LoadAllAsync()
+    {
+        try
+        {
+            var t1 = SystemApi.ListOrganizationsAsync();
+            var t2 = SystemApi.ListPositionsAsync();
+            var t3 = SystemApi.ListRefDataAsync();
+            await Task.WhenAll(t1, t2, t3);
+            Orgs = await t1;
+            Positions = await t2;
+            RefData = await t3;
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { await InvokeAsync(StateHasChanged); }
+    }
+
+    // ── Org
+    private void OpenCreateOrg() { EditingOrgId = null; OrgForm = new() { IsActive = true }; OrgModalOpen = true; }
+    private void OpenEditOrg(OrganizationDto o)
+    {
+        EditingOrgId = o.Id;
+        OrgForm = new OrganizationUpsertRequest
+        {
+            Code = o.Code, NameTh = o.NameTh, Detail = o.Detail, IsActive = o.IsActive
+        };
+        OrgModalOpen = true;
+    }
+    private void CloseOrgModal() { OrgModalOpen = false; }
+
+    private async Task SaveOrgAsync()
+    {
+        if (!CanSaveOrg) return;
+        Busy = true; ActionError = null; ActionMessage = null;
+        try
+        {
+            if (EditingOrgId.HasValue) { await SystemApi.UpdateOrganizationAsync(EditingOrgId.Value, OrgForm); ActionMessage = "อัปเดตหน่วยงานแล้ว"; }
+            else { await SystemApi.CreateOrganizationAsync(OrgForm); ActionMessage = "เพิ่มหน่วยงานแล้ว"; }
+            CloseOrgModal();
+            await LoadAllAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private void RequestDeleteOrg(OrganizationDto o) =>
+        PendingDelete = new PendingDeleteItem("org", o.Id, o.NameTh);
+
+    private async Task DeleteOrgAsync(int id)
+    {
+        Busy = true; ActionError = null; ActionMessage = null;
+        try
+        {
+            await SystemApi.DeleteOrganizationAsync(id);
+            ActionMessage = "ลบหน่วยงานแล้ว";
+            await LoadAllAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    // ── Pos
+    private void OpenCreatePos() { EditingPosId = null; PosForm = new() { IsActive = true, Code = "" }; PosModalOpen = true; }
+    private void OpenEditPos(PositionDto p)
+    {
+        EditingPosId = p.Id;
+        PosForm = new PositionUpsertRequest
+        {
+            Code = p.Code,
+            NameTh = p.NameTh,
+            Detail = p.Detail,
+            IsActive = p.IsActive
+        };
+        PosModalOpen = true;
+    }
+    private void ClosePosModal() { PosModalOpen = false; }
+
+    private async Task SavePosAsync()
+    {
+        if (!CanSavePos) return;
+        Busy = true; ActionError = null; ActionMessage = null;
+        try
+        {
+            if (EditingPosId.HasValue) { await SystemApi.UpdatePositionAsync(EditingPosId.Value, PosForm); ActionMessage = "อัปเดตตำแหน่งแล้ว"; }
+            else { await SystemApi.CreatePositionAsync(PosForm); ActionMessage = "เพิ่มตำแหน่งแล้ว"; }
+            ClosePosModal();
+            await LoadAllAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private void RequestDeletePos(PositionDto p) =>
+        PendingDelete = new PendingDeleteItem("pos", p.Id, p.NameTh);
+
+    private async Task DeletePosAsync(int id)
+    {
+        Busy = true; ActionError = null; ActionMessage = null;
+        try
+        {
+            await SystemApi.DeletePositionAsync(id);
+            ActionMessage = "ลบตำแหน่งแล้ว";
+            await LoadAllAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    // ── Ref Data
+    private async Task FilterRefDataAsync() { await InvokeAsync(StateHasChanged); }
+    private void OpenCreateRef() { EditingRefId = null; RefForm = new() { IsActive = true }; RefModalOpen = true; }
+    private void OpenEditRef(RefDataDto r)
+    {
+        EditingRefId = r.Id;
+        RefForm = new RefDataUpsertRequest
+        {
+            Category = r.Category,
+            Code = r.Code,
+            NameTh = r.NameTh,
+            Detail = r.Detail,
+            IsActive = r.IsActive
+        };
+        RefModalOpen = true;
+    }
+    private void CloseRefModal() { RefModalOpen = false; }
+
+    private async Task SaveRefAsync()
+    {
+        if (!CanSaveRef) return;
+        Busy = true; ActionError = null; ActionMessage = null;
+        try
+        {
+            if (EditingRefId.HasValue) { await SystemApi.UpdateRefDataAsync(EditingRefId.Value, RefForm); ActionMessage = "อัปเดตข้อมูลอ้างอิงแล้ว"; }
+            else { await SystemApi.CreateRefDataAsync(RefForm); ActionMessage = "เพิ่มข้อมูลอ้างอิงแล้ว"; }
+            CloseRefModal();
+            await LoadAllAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private void RequestDeleteRef(RefDataDto r) =>
+        PendingDelete = new PendingDeleteItem("ref", r.Id, $"{RefCategoryLabel(r.Category)} — {r.NameTh}");
+
+    private async Task DeleteRefAsync(int id)
+    {
+        Busy = true; ActionError = null; ActionMessage = null;
+        try
+        {
+            await SystemApi.DeleteRefDataAsync(id);
+            ActionMessage = "ลบข้อมูลอ้างอิงแล้ว";
+            await LoadAllAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private void CancelPendingDelete() => PendingDelete = null;
+
+    private async Task ExecutePendingDeleteAsync()
+    {
+        if (PendingDelete is null) return;
+        var item = PendingDelete;
+        PendingDelete = null;
+        Busy = true;
+        ActionError = null;
+        ActionMessage = null;
+        try
+        {
+            switch (item.Kind)
+            {
+                case "org": await DeleteOrgAsync(item.Id); break;
+                case "pos": await DeletePosAsync(item.Id); break;
+                case "ref": await DeleteRefAsync(item.Id); break;
+            }
+        }
+        catch (Exception ex)
+        {
+            ActionError = ex.Message;
+            Busy = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task OpenPositionHolders(PositionDto p)
+    {
+        HoldersPosition = p;
+        HoldersDrawerOpen = true;
+        HoldersLoading = true;
+        PositionHolders = new();
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            PositionHolders = await SystemApi.GetPositionHoldersAsync(p.Id);
+        }
+        catch (Exception ex)
+        {
+            ActionError = ex.Message;
+        }
+        finally
+        {
+            HoldersLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void ClosePositionHolders()
+    {
+        HoldersDrawerOpen = false;
+        HoldersPosition = null;
+        PositionHolders = new();
+    }
+}

@@ -1,0 +1,419 @@
+@page "/complaints/routing"
+@using EcmisWeb.Data
+@using EcmisWeb.Services
+@inject NavigationManager Nav
+@inject ComplaintApiService ComplaintApi
+
+<div class="cr-shell">
+
+    @* ══ HEADER ══ *@
+    <div class="cr-header">
+        <div class="cr-header-inner">
+            <div class="cr-bc">
+                <i class="bi bi-house-fill"></i>
+                <i class="bi bi-chevron-right"></i>
+                <a href="/complaints">เรื่องร้องทุกข์</a>
+                <i class="bi bi-chevron-right"></i>
+                <span>คัดกรองและส่งต่อ</span>
+            </div>
+            <div class="cr-title-row">
+                <div>
+                    <div class="cr-title">
+                        <i class="bi bi-signpost-split-fill cr-title-ico"></i>
+                        คัดกรองและส่งต่อเรื่อง
+                    </div>
+                    <div class="cr-title-sub">กลั่นกรองเรื่องร้องเรียนตามอำนาจหน้าที่ พ.ร.บ. มาตรการฯ ฉบับที่ 4 พ.ศ. 2568</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ══ BODY ══ *@
+    <div class="cr-body">
+
+        @if (isLoading)
+        {
+            <div class="cr-alert-load">
+                <i class="bi bi-arrow-repeat"></i>
+                <span>กำลังโหลดเรื่องรอคัดกรองจาก API...</span>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(loadError))
+        {
+            <div class="cr-alert-err">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>@loadError</span>
+            </div>
+        }
+
+        @* ══ STAT ROW ══ *@
+        <div class="cr-stat-row">
+            <div class="cr-sc">
+                <div class="cr-sc-head cr-sc-head-orange"></div>
+                <div class="cr-sc-body">
+                    <div class="cr-sc-label"><i class="bi bi-hourglass-split"></i> รอคัดกรอง</div>
+                    <div class="cr-sc-count cr-sc-count-orange">@pendingRouting.Count()</div>
+                    <div class="cr-sc-desc">เรื่องที่ยังไม่ได้จำแนกประเภท</div>
+                </div>
+            </div>
+            <div class="cr-sc">
+                <div class="cr-sc-head cr-sc-head-blue"></div>
+                <div class="cr-sc-body">
+                    <div class="cr-sc-label"><i class="bi bi-check2-circle"></i> ม.18/4</div>
+                    <div class="cr-sc-count cr-sc-count-blue">@catMisconduct.Count()</div>
+                    <div class="cr-sc-desc">ประพฤติมิชอบ — ในอำนาจ ป.ป.ท.</div>
+                </div>
+            </div>
+            <div class="cr-sc">
+                <div class="cr-sc-head cr-sc-head-teal"></div>
+                <div class="cr-sc-body">
+                    <div class="cr-sc-label"><i class="bi bi-people"></i> ม.58/2</div>
+                    <div class="cr-sc-count cr-sc-count-teal">@catDistress.Count()</div>
+                    <div class="cr-sc-desc">ความเดือดร้อน — ในอำนาจ ป.ป.ท.</div>
+                </div>
+            </div>
+            <div class="cr-sc">
+                <div class="cr-sc-head cr-sc-head-red"></div>
+                <div class="cr-sc-body">
+                    <div class="cr-sc-label"><i class="bi bi-arrow-return-left"></i> ส่งคืน/วินัย</div>
+                    <div class="cr-sc-count cr-sc-count-red">@catReturnOrDiscipline.Count()</div>
+                    <div class="cr-sc-desc">ส่งคืน ป.ป.ช. หรือ ส่ง สพท.</div>
+                </div>
+            </div>
+        </div>
+
+        @* ══ DEADLINE CARD ══ *@
+        <div class="cr-card">
+            <div class="cr-card-head">
+                <div class="cr-ico cr-ico-red"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                เรื่องเร่งด่วน — เตือนกำหนดเวลา
+            </div>
+
+            @{
+                var urgents = rows
+                    .Where(r => r.DaysRemaining < 180 || r.Category == "ส่งคืน ป.ป.ช.")
+                    .OrderBy(r => r.DaysRemaining)
+                    .ToList();
+            }
+
+            @if (urgents.Any())
+            {
+                @foreach (var item in urgents)
+                {
+                    <div class="cr-deadline-item">
+                        <div class="cr-deadline-left">
+                            <span class="cr-priority-dot @item.Priority"></span>
+                            <div>
+                                <div class="cr-deadline-name">เรื่องที่ @item.CaseNo — @item.Accused</div>
+                                <div class="cr-deadline-sub">@item.AccusedAgency | @item.Channel</div>
+                            </div>
+                        </div>
+                        <div class="cr-deadline-right">
+                            @if (item.Category == "ส่งคืน ป.ป.ช.")
+                            {
+                                <span class="cr-badge-urgent">ส่งคืน ป.ป.ช. ≤15 วัน</span>
+                            }
+                            else if (item.DaysRemaining < 0)
+                            {
+                                <span class="cr-badge-urgent">อายุความหมดแล้ว!</span>
+                            }
+                            else if (item.DaysRemaining < 90)
+                            {
+                                <span class="cr-badge-urgent">เหลือ ~@item.DaysRemaining วัน</span>
+                            }
+                            else
+                            {
+                                <span class="cr-badge-warning">เหลือ ~@item.DaysRemaining วัน</span>
+                            }
+                            <button class="cr-view-btn" @onclick='() => Nav.NavigateTo($"/complaints/{item.Id}")'>
+                                <i class="bi bi-eye"></i> ดูเรื่อง
+                            </button>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="cr-empty-mini">ไม่มีเรื่องเร่งด่วน</div>
+            }
+        </div>
+
+        @* ══ EXPORT CARD ══ *@
+        <div class="cr-card">
+            <div class="cr-card-head">
+                <div class="cr-ico cr-ico-indigo"><i class="bi bi-file-earmark-arrow-down-fill"></i></div>
+                One-Click Export — สร้างเอกสารทันที
+            </div>
+            <div class="cr-exp-btns">
+                <button class="cr-exp-btn cr-exp-navy" @onclick='() => ExportDoc("แบบ 103")'>
+                    <i class="bi bi-file-earmark-pdf-fill"></i>
+                    <span>แบบ 103</span>
+                    <small>PDF</small>
+                </button>
+                <button class="cr-exp-btn cr-exp-orange" @onclick='() => ExportDoc("ปกสำนวน")'>
+                    <i class="bi bi-file-earmark-text-fill"></i>
+                    <span>ปกสำนวน</span>
+                    <small>Word</small>
+                </button>
+                <button class="cr-exp-btn cr-exp-teal" @onclick='() => ExportDoc("หนังสือแจ้งผล")'>
+                    <i class="bi bi-envelope-paper-fill"></i>
+                    <span>หนังสือแจ้งผล</span>
+                    <small>PDF/Word</small>
+                </button>
+            </div>
+            @if (!string.IsNullOrEmpty(exportMessage))
+            {
+                <div class="cr-exp-result">
+                    <i class="bi bi-check-circle-fill"></i> @exportMessage
+                </div>
+            }
+        </div>
+
+        @* ══ TABLE CARD ══ *@
+        <div class="cr-card">
+            <div class="cr-table-head">
+                <div>
+                    <div class="cr-table-title">
+                        <div class="cr-ico cr-ico-blue"><i class="bi bi-list-ul"></i></div>
+                        เรื่องรอคัดกรอง
+                    </div>
+                    <div class="cr-table-sub">เรื่องที่ยังไม่ได้จำแนกประเภทหรือมอบหมายดำเนินการ</div>
+                </div>
+            </div>
+
+            <div style="overflow-x:auto">
+                <table class="cr-tbl">
+                    <thead>
+                        <tr>
+                            <th>เลขที่เรื่อง</th>
+                            <th>วันที่รับ</th>
+                            <th>ช่องทาง</th>
+                            <th>ผู้ถูกร้อง</th>
+                            <th>หน่วยงาน</th>
+                            <th>ประเภท</th>
+                            <th>สถานะ</th>
+                            <th>ดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in pendingRouting)
+                        {
+                            <tr>
+                                <td><span class="cr-case-no">@row.CaseNo</span></td>
+                                <td class="muted">@ComplaintData.ToThaiShortDate(row.ReceivedAt)</td>
+                                <td><span class="cr-chip-channel">@row.Channel</span></td>
+                                <td>@row.Accused</td>
+                                <td class="muted">@row.AccusedAgency</td>
+                                <td>
+                                    <span class="cr-cat-chip @ComplaintData.CategoryClass(row.Category)">
+                                        @row.Category
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="cr-status-chip @ComplaintData.StatusClass(row.Status)">
+                                        <i class="bi @ComplaintData.StatusIcon(row.Status)"></i>
+                                        @ComplaintData.StatusLabel(row.Status)
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style="display:flex;gap:4px;flex-wrap:wrap">
+                                        <button class="cr-act-btn cr-act-proceed"
+                                            @onclick='() => RoutingAction(row, "proceed")'>
+                                            <i class="bi bi-check-circle-fill"></i> รับดำเนินการ
+                                        </button>
+                                        <button class="cr-act-btn cr-act-return"
+                                            @onclick='() => RoutingAction(row, "return")'>
+                                            <i class="bi bi-arrow-return-left"></i> ส่งคืน ป.ป.ช.
+                                        </button>
+                                        <button class="cr-act-btn cr-act-discipline"
+                                            @onclick='() => RoutingAction(row, "discipline")'>
+                                            <i class="bi bi-shield-exclamation"></i> ส่งวินัย
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        @if (!pendingRouting.Any())
+                        {
+                            <tr class="cr-empty-row">
+                                <td colspan="8">ไม่มีเรื่องรอคัดกรอง</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>@* /cr-body *@
+</div>@* /cr-shell *@
+
+@if (routingModalOpen && selectedRow is not null)
+{
+    <div class="modal-backdrop-custom open" @onclick="() => routingModalOpen = false">
+        <div class="modal-box" @onclick:stopPropagation="true">
+            <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:6px">
+                <i class="bi @modalIcon me-2" style="color:@modalIconColor"></i>@modalTitle
+            </div>
+            <div style="font-size:12.5px;color:rgba(255,255,255,.5)" class="mb-3">เรื่องที่ @selectedRow.CaseNo — @selectedRow.Accused</div>
+            @if (routingAction == "return")
+            {
+                <div class="alert-banner alert-warning-custom mb-3">
+                    <i class="bi bi-clock-fill"></i>
+                    <span>ต้องส่งคืน ป.ป.ช. ภายใน <strong>15 วัน</strong> นับจากวันรับเรื่อง</span>
+                </div>
+            }
+            <div class="text-end mt-3">
+                <button class="btn-outline-navy me-2" @onclick="() => routingModalOpen = false">ยกเลิก</button>
+                <button class="btn-navy" disabled="@actionInProgress" @onclick="ConfirmRouting">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (routingSuccessMessage is not null)
+{
+    <div class="modal-backdrop-custom open" @onclick="() => routingSuccessMessage = null">
+        <div class="modal-box" @onclick:stopPropagation="true">
+            <div style="font-size:17px;font-weight:800;color:#06d6a0;margin-bottom:8px">
+                <i class="bi bi-check-circle-fill me-1"></i>ดำเนินการสำเร็จ
+            </div>
+            <div style="font-size:13px;color:rgba(255,255,255,.82)">@routingSuccessMessage</div>
+            <div class="text-end mt-3">
+                <button class="btn-navy" @onclick="() => routingSuccessMessage = null">ปิด</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<ComplaintRow> rows = [];
+    private bool isLoading = true;
+    private bool actionInProgress;
+    private string loadError = string.Empty;
+
+    private IEnumerable<ComplaintRow> pendingRouting =>
+        rows.Where(r => r.RoutingStatus == "pending");
+
+    private IEnumerable<ComplaintRow> catMisconduct =>
+        rows.Where(r => r.Category == "ม.18/4");
+
+    private IEnumerable<ComplaintRow> catDistress =>
+        rows.Where(r => r.Category == "ม.58/2");
+
+    private IEnumerable<ComplaintRow> catReturnOrDiscipline =>
+        rows.Where(r => r.Category is "ส่งคืน ป.ป.ช." or "วินัยภายใน");
+
+    private bool routingModalOpen;
+    private string routingAction = string.Empty;
+    private ComplaintRow? selectedRow;
+    private string? routingSuccessMessage;
+    private string exportMessage = string.Empty;
+
+    private string modalTitle => routingAction switch
+    {
+        "proceed" => "ยืนยันรับดำเนินการ",
+        "return" => "ยืนยันส่งคืน ป.ป.ช.",
+        "discipline" => "ยืนยันส่งฝ่ายวินัย (สพท.)",
+        _ => "ยืนยัน"
+    };
+
+    private string modalIcon => routingAction switch
+    {
+        "proceed" => "bi-check-circle-fill",
+        "return" => "bi-arrow-return-left",
+        "discipline" => "bi-shield-exclamation",
+        _ => "bi-info-circle"
+    };
+
+    private string modalIconColor => routingAction switch
+    {
+        "proceed" => "var(--green)",
+        "return" => "var(--red)",
+        "discipline" => "var(--orange)",
+        _ => "var(--navy)"
+    };
+
+    private void RoutingAction(ComplaintRow row, string action)
+    {
+        selectedRow = row;
+        routingAction = action;
+        routingModalOpen = true;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRows();
+    }
+
+    private async Task LoadRows()
+    {
+        isLoading = true;
+        loadError = string.Empty;
+
+        try
+        {
+            rows = await ComplaintApi.GetComplaintsAsync();
+        }
+        catch (Exception ex)
+        {
+            rows = [];
+            loadError = $"โหลดข้อมูลจริงจาก API ไม่สำเร็จ: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ConfirmRouting()
+    {
+        if (selectedRow is null)
+        {
+            return;
+        }
+
+        actionInProgress = true;
+        loadError = string.Empty;
+
+        try
+        {
+            await ComplaintApi.RouteAsync(selectedRow.Id, new RoutingRequest
+            {
+                Decision = routingAction switch
+                {
+                    "return" => "ReturnToOmbudsman",
+                    "discipline" => "SendToDiscipline",
+                    _ => "Accept"
+                },
+                AssignedToUnit = routingAction == "proceed" ? "สำนักไต่สวน" : null,
+                AssignedToOfficer = routingAction == "proceed" ? "เจ้าหน้าที่รับผิดชอบ" : null,
+                ReturnReason = routingAction == "return" ? "ส่งคืน ป.ป.ช. เนื่องจากอยู่นอกอำนาจ ป.ป.ท." : null,
+                DisciplineUnit = routingAction == "discipline" ? "สพท. กลุ่มงานวินัย" : null
+            });
+
+            routingModalOpen = false;
+            routingSuccessMessage = routingAction switch
+            {
+                "proceed" => $"เรื่องที่ {selectedRow.CaseNo} ได้รับดำเนินการเรียบร้อยแล้ว ระบบส่งข้อมูลไปยังชั้นไต่สวนแล้ว",
+                "return" => $"เรื่องที่ {selectedRow.CaseNo} ส่งคืน ป.ป.ช. เรียบร้อยแล้ว (ภายใน 15 วัน)",
+                "discipline" => $"เรื่องที่ {selectedRow.CaseNo} ส่งฝ่ายวินัย (สพท.) เรียบร้อยแล้ว",
+                _ => "ดำเนินการเรียบร้อย"
+            };
+            await LoadRows();
+        }
+        catch (Exception ex)
+        {
+            routingModalOpen = false;
+            loadError = $"คัดกรองเรื่องไม่สำเร็จ: {ex.Message}";
+        }
+        finally
+        {
+            actionInProgress = false;
+        }
+    }
+
+    private void ExportDoc(string docType)
+    {
+        exportMessage = $"สร้างเอกสาร '{docType}' สำเร็จแล้ว (Mockup) — พร้อมดาวน์โหลด";
+    }
+}

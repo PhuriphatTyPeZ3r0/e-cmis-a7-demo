@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-CMIS — บริการข้อมูลข่าวสาร (LAW002)</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://ecmis-web-ta31.vercel.app/css/ecmis.css?v=20260603-dd-global" rel="stylesheet">
+<style>
+.stat-row-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+@media (max-width:1000px){.stat-row-4{grid-template-columns:repeat(2,1fr)}}
+/* Tabs — Pill (per Figma addon/Tabs & Breadcrumbs, node 428:119: container #eef1f5 radius10 pad4, active pill navy radius8 height40 text white bold14, inactive text #5f6f86 bold14) */
+.lr-tabs{display:inline-flex;background:#eef1f5;border-radius:10px;padding:4px;gap:4px;margin-bottom:18px;}
+.lr-tab{padding:0 22px;height:40px;line-height:40px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;color:#5f6f86;text-align:center;white-space:nowrap;transition:background .15s,color .15s;}
+.lr-tab.active{background:var(--navy-deep);color:#fff;}
+.lr-panel{display:none;}
+.lr-panel.active{display:block;}
+.gap-tag{display:inline-block;background:#fde8e8;color:#a0281e;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:8px;margin-left:8px}
+</style>
+</head>
+<body>
+<div class="layout-container app-light">
+<aside class="sidebar open" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-logo-mark">ป.ป.ท.</div>
+    <div class="brand-text"><div class="brand-title">E-CMIS</div><div class="brand-sub">COMPLAINT MANAGEMENT</div></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-file-earmark-person"></i><span>การดำเนินการตามหมายจับ</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/arrest-warrant"><i class="bi bi-file-earmark-person"></i> แดชบอร์ดหมายจับ</a></div></div>
+    <div class="nav-group"><div class="nav-group-toggle open"><div class="nav-group-label"><i class="bi bi-bank2"></i><span>งานกฎหมายและคดีศาล</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items open">
+        <a class="nav-sublink" href="/legal"><i class="bi bi-bank2"></i> แดชบอร์ดคดีศาล</a>
+        <a class="nav-sublink" href="/legal/court"><i class="bi bi-bank2"></i> ติดตามการพิจารณา</a>
+        <a class="nav-sublink" href="/legal/admin-case"><i class="bi bi-bank2"></i> ทะเบียนคดีปกครอง</a>
+        <a class="nav-sublink active" href="/legal/info-request"><i class="bi bi-bank2"></i> บริการข้อมูลข่าวสาร</a>
+      </div></div>
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-bar-chart-line-fill"></i><span>วิเคราะห์/รายงาน</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/analytics/legal-stats"><i class="bi bi-bank2"></i> สถิติกระบวนการกฎหมายคดี</a></div></div>
+  </nav>
+  <div class="sidebar-footer"><div class="user-card"><div class="user-avatar">P</div><div><div class="user-name">phuriphathem</div><div class="user-role">Super Admin</div></div></div></div>
+</aside>
+
+<header class="topbar">
+  <button class="hamburger-btn" title="เมนู"><i class="bi bi-list"></i></button>
+  <div class="topbar-search"><i class="bi bi-search"></i><input type="text" placeholder="ค้นหาเลขที่คำร้อง ชื่อผู้ร้อง..."></div>
+  <div class="topbar-actions">
+    <div class="icon-btn" title="แจ้งเตือน"><i class="bi bi-bell-fill"></i><span class="notif-dot"></span></div>
+    <div class="topbar-divider"></div>
+    <div class="user-menu-wrap"><button type="button" class="user-pill"><div class="user-pill-avatar">P</div><div class="user-pill-text"><div class="user-pill-name">phuriphathem</div><div class="user-pill-role">Super Admin</div></div><i class="bi bi-chevron-down user-pill-chevron"></i></button></div>
+  </div>
+</header>
+
+<main class="main-content">
+<div class="page-body">
+
+  <div class="breadcrumb-custom" style="margin-bottom:8px;">งานกฎหมายและคดีศาล <i class="bi bi-chevron-right" style="font-size:9px"></i> <span>บริการข้อมูลข่าวสาร</span></div>
+  <div class="page-header">
+    <div><div class="page-title">งานพิจารณาคำร้องขอเปิดเผยข้อมูลข่าวสาร</div>
+      <div class="page-subtitle">LAW002 — คำร้องขอข้อมูล (กองกฎหมาย) และคำอุทธรณ์ไม่เปิดเผย (กองบริหารคดี) ตาม TOR ๑๐.๒</div></div>
+    <button class="btn-gold" id="btnNewLR"><i class="bi bi-plus-lg"></i> รับเรื่องใหม่</button>
+  </div>
+
+  <div class="lr-tabs">
+    <div class="lr-tab active" onclick="showTab('req')">คำร้องขอข้อมูล (86)</div>
+    <div class="lr-tab" onclick="showTab('app')">คำอุทธรณ์คำสั่งไม่เปิดเผย (14)</div>
+  </div>
+
+  <!-- ===== TAB 1: คำร้องขอข้อมูล ===== -->
+  <div class="lr-panel active" id="panel-req">
+    <div class="stat-row-4">
+      <div class="stat-card stat-card-navy"><div class="stat-label">คำร้องทั้งหมด</div><div class="stat-value">86</div><div class="stat-change">ปีงบประมาณ 2569</div></div>
+      <div class="stat-card stat-card-blue"><div class="stat-label">อยู่ระหว่างพิจารณา</div><div class="stat-value">23</div><div class="stat-change">รอคณะอนุฯ 9 เรื่อง</div></div>
+      <div class="stat-card stat-card-orange"><div class="stat-label">ตีกลับ-รอแก้ไข</div><div class="stat-value">4</div><div class="stat-change">ไม่นับรวมใน SLA</div></div>
+      <div class="stat-card stat-card-teal"><div class="stat-label">แจ้งผลแล้ว</div><div class="stat-value">59</div><div class="stat-change">เฉลี่ย 21 วัน/เรื่อง</div></div>
+    </div>
+    <div class="ecmis-card">
+      <div class="filter-bar">
+        <span class="filter-chip active">ทั้งหมด</span>
+        <span class="filter-chip">อยู่ระหว่างพิจารณา</span>
+        <span class="filter-chip" style="border-color:#b85000;color:#b85000;">ตีกลับ-รอแก้ไข</span>
+        <span class="filter-chip">แจ้งผลแล้ว</span>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <select class="form-control-custom" style="width:auto;"><option>หน่วยงานที่เสนอ: ทั้งหมด</option></select>
+          <button class="btn-outline-navy">ล้างเงื่อนไข</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+      <table class="ecmis-table">
+        <thead><tr><th>เลขที่คำร้อง</th><th>ชื่อผู้ร้อง</th><th>หน่วยงานที่เสนอ</th><th>หน่วยงานเจ้าของกระบวนงาน</th><th>วันที่รับ</th><th>กำหนดแล้วเสร็จ</th><th>ผลคณะอนุกรรมการ</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+        <tbody>
+          <tr><td><strong>สขร. 042/2569</strong></td><td>นายพงศกร มีทรัพย์</td><td>กองปราบปรามฯ เขต 2</td><td><span class="mini-badge" style="background:#e8f0ff;color:#1a3575;">กองกฎหมาย</span></td><td>18 มิ.ย. 69</td><td>เหลือ 5 วัน</td><td>—</td><td><span class="status-badge status-active">อยู่ระหว่างพิจารณา</span></td><td><button class="btn-outline-navy" style="padding:5px 12px;font-size:12px;">ดู</button></td></tr>
+          <tr><td><strong>สขร. 041/2569</strong></td><td>สมาคมผู้สื่อข่าวฯ</td><td>สำนักเลขาธิการ</td><td><span class="mini-badge" style="background:#e8f0ff;color:#1a3575;">กองกฎหมาย</span></td><td>15 มิ.ย. 69</td><td>เหลือ 2 วัน</td><td>รอเข้าวาระ</td><td><span class="status-badge status-urgent">ใกล้ครบกำหนด</span></td><td><button class="btn-outline-navy" style="padding:5px 12px;font-size:12px;">ดู</button></td></tr>
+          <tr><td><strong>สขร. 039/2569</strong></td><td>นางสาวกมลชนก ฯ</td><td>กองไต่สวน 3</td><td><span class="mini-badge" style="background:#e8f0ff;color:#1a3575;">กองกฎหมาย</span></td><td>10 มิ.ย. 69</td><td>—</td><td>ไม่ครบถ้วน</td><td><span class="status-badge status-pending">ตีกลับ-รอแก้ไข <span class="gap-tag">Gap G6</span></span></td><td><button class="btn-outline-navy" style="padding:5px 12px;font-size:12px;">ดู</button></td></tr>
+          <tr><td><strong>สขร. 035/2569</strong></td><td>นายอนุชา ฯ</td><td>ปปท. เขต 4</td><td><span class="mini-badge" style="background:#e8f0ff;color:#1a3575;">กองกฎหมาย</span></td><td>2 มิ.ย. 69</td><td>ครบแล้ว</td><td>เปิดเผยบางส่วน</td><td><span class="status-badge status-closed">แจ้งผลแล้ว</span></td><td><button class="btn-outline-navy" style="padding:5px 12px;font-size:12px;">ดู</button></td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB 2: คำอุทธรณ์ ===== -->
+  <div class="lr-panel" id="panel-app">
+    <div class="stat-row-4">
+      <div class="stat-card stat-card-navy"><div class="stat-label">คำอุทธรณ์ทั้งหมด</div><div class="stat-value">14</div><div class="stat-change">ปีงบประมาณ 2569</div></div>
+      <div class="stat-card stat-card-blue"><div class="stat-label">รอเลขาธิการพิจารณา</div><div class="stat-value">5</div><div class="stat-change">เฉลี่ยรอ 8 วัน</div></div>
+      <div class="stat-card stat-card-gold"><div class="stat-label">รอบอร์ด ป.ป.ท.</div><div class="stat-value">3</div><div class="stat-change">เข้าวาระ 7 ก.ค. 69</div></div>
+      <div class="stat-card stat-card-red"><div class="stat-label">ครบกำหนด ≤ 7 วัน</div><div class="stat-value">2</div><div class="stat-change">คลิกเพื่อกรองรายการ</div></div>
+    </div>
+    <div class="ecmis-card">
+      <div class="filter-bar">
+        <span class="filter-chip active">ทั้งหมด</span>
+        <span class="filter-chip">รอเลขาธิการ</span>
+        <span class="filter-chip">รอบอร์ด ป.ป.ท.</span>
+        <span class="filter-chip" style="border-color:#b85000;color:#b85000;">ตีกลับ-รอแก้ไข</span>
+        <span class="filter-chip">ปิดเรื่อง</span>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <input class="form-control-custom" style="width:220px;" placeholder="ค้นหาในเอกสารแนบ (Full-text)…">
+          <button class="btn-outline-navy">ล้างเงื่อนไข</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+      <table class="ecmis-table">
+        <thead><tr><th>เลขที่อุทธรณ์</th><th>ชื่อผู้อุทธรณ์</th><th>อ้างอิงคำร้อง</th><th>หน่วยงานเจ้าของกระบวนงาน</th><th>รับ / ครบกำหนด</th><th>ผลเลขาธิการ</th><th>ผลบอร์ด ป.ป.ท.</th><th>สถานะ</th><th>เผยแพร่สาธารณะ</th><th>จัดการ</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>อธ. 014/2569</strong></td><td>นายพงศกร มีทรัพย์</td><td>สขร. 029/69</td>
+            <td><span class="mini-badge" style="background:#e8f7f0;color:#136036;">กองบริหารคดี</span></td>
+            <td>22 มิ.ย. 69 · ครบ 21 ก.ค. 69</td><td><span class="status-badge status-pending">รอเสนอเลขาธิการ</span></td><td>—</td>
+            <td><span class="status-badge status-closed">ปิด</span></td>
+            <td><label style="display:inline-flex;align-items:center;gap:6px;font-size:11px;"><input type="checkbox"> เผยแพร่</label></td>
+            <td><button class="btn-outline-navy" style="padding:5px 12px;font-size:12px;">ดู</button></td>
+          </tr>
+          <tr>
+            <td><strong>อธ. 013/2569</strong></td><td>สมาคมผู้สื่อข่าวฯ</td><td>สขร. 020/69</td>
+            <td><span class="mini-badge" style="background:#e8f7f0;color:#136036;">กองบริหารคดี</span></td>
+            <td>10 มิ.ย. 69 · ครบ 9 ก.ค. 69</td><td><span class="status-badge status-review">เห็นควรยืนตามเดิม</span></td><td><span class="status-badge status-review">ยืนตามคำสั่งเดิม</span></td>
+            <td><span class="status-badge status-closed">ปิด</span></td>
+            <td><label style="display:inline-flex;align-items:center;gap:6px;font-size:11px;"><input type="checkbox" checked> เผยแพร่</label></td>
+            <td><button class="btn-outline-navy" style="padding:5px 12px;font-size:12px;">ดู</button></td>
+          </tr>
+          <tr>
+            <td><strong>อธ. 011/2569</strong></td><td>นายชัยวัฒน์ ฯ</td><td>สขร. 015/69</td>
+            <td><span class="mini-badge" style="background:#e8f7f0;color:#136036;">กองบริหารคดี</span></td>
+            <td>2 มิ.ย. 69 · ครบ 2 ก.ค. 69</td><td>—</td><td>—</td>
+            <td><span class="status-badge status-pending">ตีกลับ-รอแก้ไข <span class="gap-tag">Gap G6</span></span></td>
+            <td>—</td>
+            <td><button class="btn-outline-navy" style="padding:5px 12px;font-size:12px;">ดู</button></td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+</main>
+</div>
+<script>
+function showTab(name){
+  document.querySelectorAll('.lr-tab').forEach(function(t,i){ t.classList.toggle('active', (name==='req'&&i===0)||(name==='app'&&i===1)); });
+  document.getElementById('panel-req').classList.toggle('active', name==='req');
+  document.getElementById('panel-app').classList.toggle('active', name==='app');
+}
+</script>
+</body>
+</html>

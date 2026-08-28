@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คำร้องขอบรรจุวาระด่วน | E-CMIS</title>
+  <link rel="icon" type="image/png" href="../assets/pacc_logo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="../assets/ecmis-app.css" rel="stylesheet">
+  <link href="../assets/a4-ecmis-workspace.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <main class="app-main">
+    <div class="page-head">
+      <div>
+        <h1><i class="fa-solid fa-bolt me-2"></i>คำร้องขอบรรจุวาระด่วน</h1>
+      </div>
+      <div class="ms-auto text-end">
+        <span class="flow-ref">รับรองเหตุผลเร่งด่วนและเสนอประธานฯ บรรจุวาระด่วน</span>
+        <div class="mt-1" id="stBadge"></div>
+      </div>
+    </div>
+
+    <div class="ws-card mb-3">
+      <div class="card-body pb-1" id="stepper"></div>
+    </div>
+
+    <div class="document-workspace" id="docWorkspace">
+      <div>
+        <div class="ws-card mb-3">
+          <div class="card-header" id="stepCardHeader"><i class="fa-solid fa-bolt"></i> <span id="stepCardTitle"></span></div>
+          <div class="card-body" id="stepCardBody"></div>
+        </div>
+      </div>
+
+      <aside class="ws-doc-pane" style="top:calc(var(--topbar-h) + 14px)">
+        <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
+        <div class="ws-doc-toolbar">
+          <div class="d-flex flex-column w-100 gap-1">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="name"><i class="fa-solid fa-bolt text-warning me-1"></i> หนังสือขอบรรจุวาระการประชุมด่วน</span>
+              <div class="d-flex gap-1 align-items-center">
+                <button type="button" class="btn-doc-edit" id="btnDocEdit" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
+                  <i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btnDocx" title="ส่งออกเป็นเอกสาร Microsoft Word (.docx)"><i class="fa-solid fa-file-word me-1"></i>ส่งออก DOCX</button>
+                <button class="btn btn-sm btn-light border" onclick="window.print()" title="พิมพ์เอกสาร"><i class="fa-solid fa-print"></i></button>
+                <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
+              </div>
+            </div>
+
+            <!-- Symmetrical Pagination & Zoom Navigator Bar -->
+            <div class="pagination-toolbar-symmetric" id="docPaginationBar">
+              <!-- Left Group: View Mode & Page Jump Controls -->
+              <div class="toolbar-group">
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" id="btnModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น)">
+                    <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
+                  </button>
+                  <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnModeContinuous" title="โหมดดูทุกหน้าเรียงกัน">
+                    <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
+                  </button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnFirstPage" title="หน้าแรกสุด (หน้า 1)"><i class="fa-solid fa-backward-step"></i></button>
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnPrevPage" title="หน้าก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
+                </div>
+                
+                <div class="d-flex align-items-center gap-1">
+                  <span class="small opacity-75">หน้า</span>
+                  <input type="number" class="page-input-num" id="pageNumberInput" min="1" value="1">
+                  <span class="small opacity-75" id="totalPagesText">/ 1 หน้า</span>
+                </div>
+
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnNextPage" title="หน้าถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnLastPage" title="หน้าสุดท้าย"><i class="fa-solid fa-forward-step"></i></button>
+                </div>
+              </div>
+
+              <!-- Right Group: Zoom Stepper Controls -->
+              <div class="toolbar-group ms-auto">
+                <div class="d-flex align-items-center bg-dark rounded px-1" style="background:#06182c !important; border:1px solid #1a3d66; height:26px;">
+                  <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                  <span style="font-size:0.75rem; width:34px; text-align:center; font-weight:600;" id="zoomLevelText">75%</span>
+                  <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ws-paper-stage" id="docPaperStage">
+          <div id="docPaper"></div>
+        </div>
+      </aside>
+    </div>
+
+    <div id="actionBarSlot"></div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pizzip@3/dist/pizzip.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/build/docxtemplater.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="../assets/ecmis-app.js"></script>
+  <script src="../assets/ecmis-model.js"></script>
+  <script>
+    ECMIS.renderShell('urgent-agenda.html');
+
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = (window.ECMIS && window.ECMIS.getSupabaseClient) ? window.ECMIS.getSupabaseClient(SUPABASE_URL, SUPABASE_KEY) : (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }) : null);
+
+    async function loadCaseFromSupabase(caseId) {
+      const { data, error } = await sb
+        .from('tbl_res_request')
+        .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+        .eq('tbl_cmp_case.tcc_no', caseId)
+        .eq('is_deleted', false)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? ECMIS.supabaseRowToCase(data) : null;
+    }
+
+    /* urgentReason/urgentCertifiedDate72/agendaUrgentSignedDate72 ไม่มีคอลัมน์ใน Supabase จึงคง
+       set บน kase ในหน่วยความจำไว้เหมือนเดิม เพียงแต่ไม่ถูกบันทึกข้ามหน้า/ข้ามอุปกรณ์ — ตามรูปแบบ
+       เดียวกับ persistCase ใน support-subcommittee.html / resolution.html */
+    async function persistCase(kase, patch) {
+      const dbPatch = {};
+      if ('status' in patch) {
+        const code = ECMIS.STATUS_CODE[patch.status];
+        if (code) dbPatch.trr_status = code;
+      }
+      if (kase.trr_id && Object.keys(dbPatch).length) {
+        try {
+          const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
+          if (error) console.warn('Supabase update warning:', error);
+        } catch (e) {
+          console.warn('Supabase update failed:', e);
+        }
+      }
+      Object.assign(kase, patch);
+      const memCase = ECMIS.CASES.find(x => x.id === kase.id);
+      if (memCase) Object.assign(memCase, patch);
+      ECMIS.saveCases();
+    }
+
+    const params = new URLSearchParams(location.search);
+    const role = ECMIS.currentRole();
+    let kase = null, dirCase, chairman, isCertifyStep, isSignStep;
+
+    (async function main() {
+      const caseParam = params.get('case') || '2015/2569';
+      try {
+        kase = await loadCaseFromSupabase(caseParam);
+      } catch (err) {
+        console.warn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+      }
+      if (!kase) {
+        kase = ECMIS.requireCase(caseParam);
+      }
+      if (!kase) return;
+
+      renderPage();
+    })();
+
+    function renderPage() {
+    document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
+    document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72);
+
+    dirCase = ECMIS.getRole('dir_case');
+    chairman = ECMIS.getRole('chairman');
+    isCertifyStep = kase.status === 'PENDING_URGENT_72';
+    isSignStep = kase.status === 'PENDING_CHAIRMAN_URGENT_72';
+
+    function renderStepCard() {
+      if (isCertifyStep) {
+        document.getElementById('stepCardTitle').textContent = 'รับรองเหตุผลเร่งด่วน (ผอ.กบค.)';
+        document.getElementById('stepCardBody').innerHTML = `
+      <label class="form-label field-req">เหตุผลความเร่งด่วน</label>
+      <textarea class="form-control" id="urgentReason" rows="5"
+        placeholder="ระบุเหตุผลความจำเป็นเร่งด่วน เช่น ใกล้ครบกำหนดอายุความ / มีความเสี่ยงต่อพยานหลักฐาน...">${kase.urgentReason ? kase.urgentReason : ''}</textarea>
+      <div class="val-msg val-err" data-for="urgentReason">กรุณาระบุเหตุผลความเร่งด่วนก่อนรับรอง</div>`;
+      } else if (isSignStep) {
+        document.getElementById('stepCardTitle').textContent = 'ลงนามมอบหมาย/บรรจุวาระด่วน (ประธานฯ)';
+        document.getElementById('stepCardBody').innerHTML = `
+      <label class="form-label">เหตุผลความเร่งด่วนที่ ${dirCase.title} รับรองไว้</label>
+      <textarea class="form-control" rows="5" readonly>${kase.urgentReason || ''}</textarea>`;
+      } else {
+        document.getElementById('stepCardTitle').textContent = 'ไม่อยู่ในขั้นตอนคำร้องขอบรรจุวาระด่วน';
+        document.getElementById('stepCardBody').innerHTML = `
+      <div class="no-permission">
+        <i class="fa-solid fa-circle-info me-1"></i>
+        สำนวน <strong>${kase.id}</strong> อยู่ในสถานะ <strong>${ECMIS.STATUS[kase.status] ? ECMIS.STATUS[kase.status].label : kase.status}</strong>
+        ซึ่งไม่ใช่ขั้นตอนคำร้องขอบรรจุวาระด่วน — เปิดหน้านี้ได้เฉพาะสถานะรอ ผอ.กบค. รับรอง
+        หรือรอประธานฯ ลงนามมอบหมาย/บรรจุวาระด่วนเท่านั้น
+      </div>`;
+      }
+    }
+
+    function renderDoc() {
+      const M = ECMIS.mergeField;
+      const reasonNow = isCertifyStep
+        ? (document.getElementById('urgentReason') ? document.getElementById('urgentReason').value.trim() : '')
+        : (kase.urgentReason || '');
+      const certifierShown = kase.urgentCertifiedDate72 ? `${dirCase.name} — ${dirCase.title}` : '';
+      const signerShown = kase.agendaUrgentSignedDate72 ? `${chairman.name} — ${chairman.title}` : '';
+      const docPaperEl = document.getElementById('docPaper');
+      if (!docPaperEl) return;
+
+      docPaperEl.innerHTML = `
+    <div class="doc-paper doc-resolution a4-paper active-page" id="docPaperPage">
+      <div class="doc-secret">ลับ</div>
+      <div class="doc-title">
+        <div class="doc-title-l1">หนังสือขอบรรจุวาระการประชุมด่วน</div>
+        <div class="doc-title-l2">คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
+      </div>
+      <div class="doc-sub">เรื่องที่ ${M(kase.id)}</div>
+
+      <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+      <div class="doc-row"><span class="k">ผู้รับผิดชอบสำนวน</span> ${M(kase.owner)}</div>
+      <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
+
+      <div class="doc-body-indent">
+        <div class="doc-h">เหตุผลความเร่งด่วน</div>
+        <div class="doc-indent">${M(reasonNow, '……………………………………………………………………………………')}</div>
+
+        <div class="doc-h">ผู้รับรองเหตุผลเร่งด่วน</div>
+        <div class="doc-indent">${M(certifierShown)}</div>
+
+        <div class="doc-h">ผู้ลงนามมอบหมาย/บรรจุวาระด่วน</div>
+        <div class="doc-indent">${M(signerShown)}</div>
+      </div>
+
+      <div class="doc-secret-foot">ลับ</div>
+    </div>`;
+      updatePaginationUI();
+      applyZoom();
+    }
+
+    /* ---------- Document workspace: collapsible pane ---------- */
+    const docWorkspace = document.getElementById('docWorkspace');
+    const PANE_KEY = 'ecmis-urgent-agenda-docpane-collapsed';
+    function setPaneCollapsed(collapsed) {
+      if (docWorkspace) docWorkspace.classList.toggle('pane-collapsed', collapsed);
+      localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
+    }
+    if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
+    const btnCollapse = document.getElementById('btnPaneCollapse');
+    const btnExpand = document.getElementById('btnPaneExpand');
+    if (btnCollapse) btnCollapse.addEventListener('click', () => setPaneCollapsed(true));
+    if (btnExpand) btnExpand.addEventListener('click', () => setPaneCollapsed(false));
+
+    renderStepCard();
+    renderDoc();
+    ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: true });
+    if (isCertifyStep) {
+      document.getElementById('urgentReason').addEventListener('input', renderDoc);
+    }
+
+    function buildButtons() {
+      if (isCertifyStep) {
+        return [{ act: 'certify', label: 'รับรองและส่งประธานฯ', icon: 'fa-check', cls: 'btn-navy' }];
+      }
+      if (isSignStep) {
+        return [{ act: 'sign', label: 'ลงนามมอบหมาย/บรรจุวาระด่วน', icon: 'fa-signature', cls: 'btn-gold' }];
+      }
+      return [];
+    }
+    document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons());
+    document.querySelectorAll('.action-bar [data-act]').forEach(b =>
+      b.addEventListener('click', () => handle(b.dataset.act)));
+
+    async function handle(act) {
+      if (act === 'certify') {
+        const ta = document.getElementById('urgentReason');
+        if (!ta.value.trim()) {
+          ta.classList.add('is-invalid-ecmis');
+          document.querySelector('.val-msg[data-for="urgentReason"]').classList.add('show');
+          ECMIS.toastWarn('กรุณาระบุเหตุผลความเร่งด่วนก่อนรับรอง');
+          return;
+        }
+        ta.classList.remove('is-invalid-ecmis');
+        document.querySelector('.val-msg[data-for="urgentReason"]').classList.remove('show');
+
+        ECMIS.confirmAction({
+          title: 'รับรองเหตุผลเร่งด่วน',
+          html: `<p>สำนวน <strong>${kase.id}</strong> — รับรองโดย ${dirCase.title}</p>`,
+          confirmText: 'ยืนยันรับรอง'
+        }).then(async res => {
+          if (!res.isConfirmed) return;
+          try {
+            await persistCase(kase, {
+              urgentReason: ta.value.trim(),
+              urgentCertifiedDate72: new Date().toISOString().slice(0, 10),
+              status: 'PENDING_CHAIRMAN_URGENT_72'
+            });
+          } catch (err) {
+            console.error('รับรองเหตุผลเร่งด่วนไม่สำเร็จ:', err);
+            ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+            return;
+          }
+          ECMIS.toastOk('รับรองเหตุผลเร่งด่วนเรียบร้อย ส่งต่อประธานฯ แล้ว');
+          setTimeout(() => location.reload(), 1400);
+        });
+        return;
+      }
+
+      if (act === 'sign') {
+        ECMIS.signDialog(`หนังสือขอบรรจุวาระการประชุมด่วน — เรื่องที่ ${kase.id}`, `${chairman.name} — ${chairman.title}`)
+          .then(async res => {
+            if (!res.isConfirmed) return;
+            if (res.value && res.value.sig) {
+              const sigEl = document.querySelector('#docPaper .doc-secret-foot');
+              if (sigEl) sigEl.insertAdjacentHTML('beforebegin', `<div class="doc-sign"><img class="doc-sig-img" src="${res.value.sig}" alt="ลายมือชื่อ"><br>(${chairman.name})<br>${chairman.title}</div>`);
+            }
+            ECMIS.Model.SignatureStore.create({
+              caseId: kase.id, docType: `หนังสือขอบรรจุวาระการประชุมด่วน`,
+              signerRole: 'chairman', signerName: `${chairman.name} — ${chairman.title}`,
+              method: res.value.mode, signedAt: new Date().toISOString()
+            });
+            try {
+              await persistCase(kase, {
+                agendaUrgentSignedDate72: new Date().toISOString().slice(0, 10),
+                status: 'PENDING_INVITE_72'
+              });
+            } catch (err) {
+              console.error('ลงนามมอบหมาย/บรรจุวาระด่วนไม่สำเร็จ:', err);
+              ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+              return;
+            }
+            ECMIS.toastOk('ลงนามมอบหมาย/บรรจุวาระด่วนเรียบร้อย');
+            setTimeout(() => location.href = 'agenda.html?case=' + encodeURIComponent(kase.id), 1400);
+          });
+      }
+    }
+    }
+
+    /* ---------- Master Toolbar & Pagination Controls ---------- */
+    let docViewMode = 'SINGLE';
+    let docCurrentPage = 1;
+    let docTotalPages = 1;
+    let docZoomLevel = 0.75;
+
+    function updatePaginationUI() {
+      const docPaperEl = document.getElementById('docPaper');
+      if (!docPaperEl) return;
+      const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
+      docTotalPages = Math.max(1, pages.length);
+
+      if (docCurrentPage > docTotalPages) docCurrentPage = docTotalPages;
+      if (docCurrentPage < 1) docCurrentPage = 1;
+
+      $('#totalPagesText').text(`/ ${docTotalPages} หน้า`);
+      $('#pageNumberInput').attr('max', docTotalPages).val(docCurrentPage);
+
+      if (docViewMode === 'SINGLE') {
+        docPaperEl.classList.remove('mode-continuous');
+        docPaperEl.classList.add('mode-single');
+        pages.forEach((p, idx) => {
+          if (idx + 1 === docCurrentPage) {
+            p.classList.add('active-page');
+            p.style.display = 'block';
+          } else {
+            p.classList.remove('active-page');
+            p.style.display = 'none';
+          }
+        });
+        $('#btnModeSingle').removeClass('btn-outline-light').addClass('btn-primary');
+        $('#btnModeContinuous').removeClass('btn-primary').addClass('btn-outline-light');
+        $('#btnFirstPage, #btnPrevPage').prop('disabled', docCurrentPage === 1);
+        $('#btnNextPage, #btnLastPage').prop('disabled', docCurrentPage === docTotalPages);
+        $('#pageNumberInput').prop('disabled', false);
+        const stage = document.getElementById('docPaperStage');
+        if (stage) stage.scrollTop = 0;
+      } else {
+        docPaperEl.classList.remove('mode-single');
+        docPaperEl.classList.add('mode-continuous');
+        pages.forEach(p => {
+          p.classList.add('active-page');
+          p.style.display = 'block';
+        });
+        $('#btnModeContinuous').removeClass('btn-outline-light').addClass('btn-primary');
+        $('#btnModeSingle').removeClass('btn-primary').addClass('btn-outline-light');
+        $('#btnFirstPage, #btnPrevPage, #btnNextPage, #btnLastPage, #pageNumberInput').prop('disabled', true);
+      }
+      applyZoom();
+    }
+
+    function applyZoom() {
+      const docPaperEl = document.getElementById('docPaper');
+      if (!docPaperEl) return;
+      docPaperEl.style.transform = `scale(${docZoomLevel})`;
+      docPaperEl.style.transformOrigin = 'top center';
+      $('#zoomLevelText').text(`${Math.round(docZoomLevel * 100)}%`);
+
+      const stage = document.getElementById('docPaperStage');
+      if (stage) {
+        const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
+        if (pages.length > 0) {
+          if (docViewMode === 'SINGLE') {
+            const activeP = docPaperEl.querySelector('.doc-paper.active-page, .a4-paper.active-page') || pages[0];
+            const h = activeP ? (activeP.offsetHeight || 1123) : 1123;
+            docPaperEl.style.height = `${Math.round(h * docZoomLevel)}px`;
+          } else {
+            let totalH = 0;
+            pages.forEach(p => { totalH += (p.offsetHeight || 1123) + 18; });
+            docPaperEl.style.height = `${Math.round(totalH * docZoomLevel)}px`;
+          }
+        }
+      }
+    }
+
+    $('#btnModeSingle').on('click', function () {
+      docViewMode = 'SINGLE';
+      updatePaginationUI();
+    });
+
+    $('#btnModeContinuous').on('click', function () {
+      docViewMode = 'CONTINUOUS';
+      updatePaginationUI();
+    });
+
+    $('#btnFirstPage').on('click', function () {
+      if (docCurrentPage > 1) {
+        docCurrentPage = 1;
+        updatePaginationUI();
+      }
+    });
+
+    $('#btnPrevPage').on('click', function () {
+      if (docCurrentPage > 1) {
+        docCurrentPage--;
+        updatePaginationUI();
+      }
+    });
+
+    $('#btnNextPage').on('click', function () {
+      if (docCurrentPage < docTotalPages) {
+        docCurrentPage++;
+        updatePaginationUI();
+      }
+    });
+
+    $('#btnLastPage').on('click', function () {
+      if (docCurrentPage < docTotalPages) {
+        docCurrentPage = docTotalPages;
+        updatePaginationUI();
+      }
+    });
+
+    $('#pageNumberInput').on('change', function () {
+      let val = parseInt($(this).val(), 10);
+      if (isNaN(val) || val < 1) val = 1;
+      if (val > docTotalPages) val = docTotalPages;
+      docCurrentPage = val;
+      updatePaginationUI();
+    });
+
+    $('#btnZoomIn').on('click', function () {
+      if (docZoomLevel < 1.5) {
+        docZoomLevel = Math.min(1.5, Math.round((docZoomLevel + 0.1) * 10) / 10);
+        applyZoom();
+      }
+    });
+
+    $('#btnZoomOut').on('click', function () {
+      if (docZoomLevel > 0.4) {
+        docZoomLevel = Math.max(0.4, Math.round((docZoomLevel - 0.1) * 10) / 10);
+        applyZoom();
+      }
+    });
+
+    $('#btnDocx').on('click', function () {
+      if (typeof ECMIS !== 'undefined' && typeof ECMIS.exportDocToDocx === 'function') {
+        const caseIdClean = (kase && kase.id ? kase.id : 'case').replace(/[\/\s]/g, '-');
+        ECMIS.exportDocToDocx('docPaper', `หนังสือขอบรรจุวาระด่วน_${caseIdClean}.docx`);
+      } else {
+        window.print();
+      }
+    });
+  </script>
+</body>
+
+</html>

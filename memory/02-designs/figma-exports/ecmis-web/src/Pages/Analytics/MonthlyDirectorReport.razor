@@ -1,0 +1,143 @@
+@page "/analytics/director-report"
+@layout MainLayout
+@using EcmisWeb.Models
+@inject IDirectorReportService Report
+@inject IJSRuntime JS
+
+<div class="mdr-bar">
+  <span>รายงานรายเดือนเสนอ ผอ. · กลุ่มภารกิจด้านการปราบปรามการทุจริต · <b>E-CMIS สร้างอัตโนมัติ</b></span>
+  <button @onclick="PrintAsync">⬇ Export / บันทึกเป็น PDF</button>
+</div>
+
+@if (_s is null)
+{
+  <div style="padding:40px;text-align:center;color:#ccc">กำลังโหลด...</div>
+}
+else
+{
+  @* SLIDE 1 — cover *@
+  <section class="mdr-slide mdr-cover">
+    <div class="mdr-em">ป.ป.ท.</div>
+    <h1>กลุ่มภารกิจ<br>ด้านการปราบปรามการทุจริต</h1>
+    <div class="mdr-month">ประจำเดือน@_s.ReportMonth</div>
+    <div class="mdr-dept">กองบริหารคดี</div>
+  </section>
+
+  @* SLIDE 2 — receiving compare (FR-013, live-capable) *@
+  <section class="mdr-slide">
+    <div class="mdr-head"><div><div class="mdr-kick">การรับเรื่องร้องเรียน · TOR 12.2</div>
+      <div class="mdr-title">เปรียบเทียบการรับเรื่องร้องเรียน ปีงบประมาณ 2568 และ 2569</div></div></div>
+    <div class="mdr-cmp">
+      <div class="mdr-card prev"><div class="ch"><span>ปีงบประมาณ 2568</span><span class="badge">12 เดือน</span></div>
+        <table><tr><td>ม.62</td><td>@_s.Prev.M62</td></tr><tr><td>ม.18/4</td><td>@_s.Prev.M184</td></tr><tr class="t"><td>รวมรับเข้า</td><td>@_s.Prev.Total.ToString("N0")</td></tr></table></div>
+      <div class="mdr-card cur"><div class="ch"><span>ปีงบประมาณ 2569</span><span class="badge">ถึง 17 เม.ย.</span></div>
+        <table><tr><td>ม.62</td><td>@_s.Cur.M62</td></tr><tr><td>ม.18/4</td><td>@_s.Cur.M184.ToString("N0")</td></tr><tr class="t"><td>รวมรับเข้า</td><td>@_s.Cur.Total.ToString("N0")</td></tr></table></div>
+    </div>
+    <div class="mdr-yoy"><b>@_s.YoYPercent%</b> ของยอดทั้งปี 2568 (เพียง 6 เดือน 17 วัน)</div>
+    <div class="mdr-asof">@_s.AsOf</div>
+  </section>
+
+  @* SLIDE 3 — inquiry overview *@
+  <section class="mdr-slide">
+    <div class="mdr-head"><div><div class="mdr-kick">ผลการดำเนินงานด้านคดี · TOR 12.4</div>
+      <div class="mdr-title">การไต่สวนเบื้องต้น ปีงบประมาณ 2569</div></div></div>
+    @KpiGrid(_s.InquiryTotal)
+  </section>
+
+  @* SLIDE 4 — inquiry by zone *@
+  <section class="mdr-slide">
+    <div class="mdr-head"><div><div class="mdr-kick">TOR 12.4</div><div class="mdr-title">ไต่สวนเบื้องต้น แยกตามหน่วยงาน</div></div></div>
+    @ZoneTable(_s.Inquiry, _s.InquiryTotal)
+  </section>
+
+  @* SLIDE 5 — merit overview *@
+  <section class="mdr-slide">
+    <div class="mdr-head"><div><div class="mdr-kick">TOR 12.4</div><div class="mdr-title">การไต่สวนชี้มูล ปีงบประมาณ 2569</div></div></div>
+    @KpiGrid(_s.MeritTotal)
+  </section>
+
+  @* SLIDE 6 — merit by zone *@
+  <section class="mdr-slide">
+    <div class="mdr-head"><div><div class="mdr-kick">TOR 12.4</div><div class="mdr-title">ไต่สวนชี้มูล แยกตามหน่วยงาน</div></div></div>
+    @ZoneTable(_s.Merit, _s.MeritTotal)
+  </section>
+
+  @* SLIDE 7 — post-resolution flow *@
+  <section class="mdr-slide">
+    <div class="mdr-head"><div><div class="mdr-kick">TOR 12.8</div><div class="mdr-title">การดำเนินงานภายหลังคณะกรรมการ ป.ป.ท. มีมติ</div></div></div>
+    <div class="mdr-flow">
+      @foreach (var p in _s.PostResolution)
+      { <div class="mdr-fbox"><span>@p.Label</span><span class="v">@p.Value.ToString("N0")</span></div> }
+    </div>
+    <div class="mdr-side">
+      @foreach (var c in _s.CourtProgress)
+      { <div class="mdr-sbox"><span>@c.Label</span><span class="v">@c.Value.ToString("N0")</span></div> }
+    </div>
+  </section>
+
+  @* SLIDE 8 — budget *@
+  <section class="mdr-slide">
+    <div class="mdr-head"><div><div class="mdr-kick">การบริหารงบประมาณ</div><div class="mdr-title">การใช้จ่ายงบประมาณในการประชุมคณะอนุกรรมการ</div></div></div>
+    <div class="mdr-budtop">ได้รับงบประมาณ <b>@_s.BudgetTotal.ToString("N0") บาท</b></div>
+    <div class="mdr-budrow"><span class="sw used"></span>ใช้ไป @_s.BudgetUsed.ToString("N0") บาท (47.76%)</div>
+    <div class="mdr-budrow"><span class="sw rem"></span>คงเหลือ @_s.BudgetRemain.ToString("N0") บาท (52.24%)</div>
+    <div class="mdr-chart"><canvas id="mdrBud"></canvas></div>
+  </section>
+
+  @* SLIDE 9 — scope note *@
+  <section class="mdr-slide">
+    <div class="mdr-head"><div><div class="mdr-kick">สรุป · ที่มาของข้อมูล</div><div class="mdr-title">รายงานนี้รวมข้อมูลจากหลายระบบย่อยของกิจกรรมที่ 12</div></div></div>
+    <table class="mdr-scope">
+      <thead><tr><th>ส่วนของรายงาน</th><th>TOR</th><th>แหล่ง</th><th>สถานะ</th></tr></thead>
+      <tbody>
+        <tr><td>การรับเรื่อง (สไลด์ 2)</td><td>12.2</td><td>ecmis-complaint</td><td class="ok">เชื่อมแล้ว (seed)</td></tr>
+        <tr><td>ไต่สวน/ชี้มูล (3–6)</td><td>12.4</td><td>ecmis-investigation</td><td class="wait">รอเชื่อมต่อ</td></tr>
+        <tr><td>หลังมีมติ (7)</td><td>12.8</td><td>ecmis-committee</td><td class="wait">รอเชื่อมต่อ</td></tr>
+        <tr><td>งบประมาณ (8)</td><td>12.x</td><td>ฐานข้อมูลงบ</td><td class="wait">รอยืนยันแหล่ง</td></tr>
+      </tbody>
+    </table>
+  </section>
+}
+
+@code {
+    private DirectorReportSnapshot? _s;
+
+    protected override async Task OnInitializedAsync() => _s = await Report.GetSnapshotAsync();
+
+    protected override async Task OnAfterRenderAsync(bool first)
+    {
+        if (_s is not null && first)
+            await JS.InvokeVoidAsync("initAnalyticsChart", "mdrBud", "doughnut",
+                new[] { "ใช้ไป", "คงเหลือ" },
+                new object[] { _s.BudgetUsed, _s.BudgetRemain },
+                new[] { "#2f8fd6", "#e08a2b" }, false);
+    }
+
+    private RenderFragment KpiGrid(int[] t) => builder =>
+    {
+        // t = [m62done,m62remain,m184done,m184remain,totalDone,totalRemain]
+        builder.AddMarkupContent(0, $@"
+          <div class='mdr-kgrid'>
+            <div class='kh lbl'>ประเภทตามมาตรา</div><div class='kh done'>แล้วเสร็จ</div><div class='kh remain'>คงเหลือ</div>
+            <div class='kc cat'>ตาม ม.62 / พรบ.</div><div class='kc num'>{t[0]}</div><div class='kc num'>{t[1]}</div>
+            <div class='kc cat'>ตาม ม.18/4</div><div class='kc num'>{t[2]}</div><div class='kc num'>{t[3]}</div>
+            <div class='kc cat tot'>รวมทั้งหมด</div><div class='kc num tot'>{t[4]}</div><div class='kc num tot'>{t[5]}</div>
+          </div>");
+    };
+
+    private RenderFragment ZoneTable(IReadOnlyList<ZoneCaseRow> rows, int[] total) => builder =>
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append(@"<table class='mdr-utbl'><thead><tr><th>หน่วยงาน</th>
+          <th class='g1'>ม.62<br>เสร็จ</th><th class='g2'>คงเหลือ</th>
+          <th class='g1'>ม.18/4<br>เสร็จ</th><th class='g2'>คงเหลือ</th>
+          <th class='g1'>รวมเสร็จ</th><th class='g2'>รวมคงเหลือ</th></tr></thead><tbody>");
+        foreach (var r in rows)
+            sb.Append($"<tr><td>{r.Zone}</td><td>{r.Values[0]}</td><td>{r.Values[1]}</td><td>{r.Values[2]}</td><td>{r.Values[3]}</td><td>{r.Values[4]}</td><td>{r.Values[5]}</td></tr>");
+        sb.Append($"<tr class='t'><td>รวม</td><td>{total[0]}</td><td>{total[1]}</td><td>{total[2]}</td><td>{total[3]}</td><td>{total[4]}</td><td>{total[5]}</td></tr>");
+        sb.Append("</tbody></table>");
+        builder.AddMarkupContent(0, sb.ToString());
+    };
+
+    private async Task PrintAsync() => await JS.InvokeVoidAsync("window.print");
+}

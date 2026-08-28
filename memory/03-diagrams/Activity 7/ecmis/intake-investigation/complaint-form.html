@@ -1,0 +1,2257 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ยื่นเรื่องร้องเรียน | E-CMIS</title>
+
+<!-- Google Font: Thai (body + serif display for headings) -->
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+
+<!-- Bootstrap 5 -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+<!-- SweetAlert2 -->
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<link href="assets/ecmis-rich.css?v=20260808r" rel="stylesheet">
+<link href="assets/ecmis-workspace.css?v=20260814a" rel="stylesheet">
+<link href="assets/human-verification.css?v=20260808r" rel="stylesheet">
+<link href="assets/public-form-consistency.css?v=20260808r" rel="stylesheet">
+<script src="assets/ecmis.js?v=20260808r" defer></script>
+<script src="assets/human-verification.js?v=20260808r" defer></script>
+<script src="assets/qrcode-generator.js?v=20260808r" defer></script>
+<script src="assets/activity4-document-rules.js?v=20260820b" defer></script>
+<script src="assets/activity4-outgoing-registers.js?v=20260814a" defer></script>
+<script src="assets/activity4-workspace.js?v=20260820i" defer></script>
+
+<style>
+:root{
+  --ecmis-navy:#0a2647;
+  --ecmis-navy-2:#123b63;
+  --ecmis-navy-dark:#051425;
+  --ecmis-gold:#c9a227;
+  --ecmis-gold-light:#e6c765;
+  --ecmis-red:#a5322a;
+  --ecmis-bg:#f7f6f2;
+  --ecmis-ink:#20262e;
+  --serif:'Noto Serif Thai','Prompt',serif;
+}
+body{
+  font-family:'Prompt',sans-serif;
+  background:var(--ecmis-bg);
+  color:var(--ecmis-ink);
+  letter-spacing:.1px;
+}
+h1,h2,h3,h4,h5,h6{ font-family:var(--serif); }
+
+/* ---------- High contrast (same pattern as landing page) ---------- */
+body.high-contrast{ background:#000 !important; color:#fff !important; }
+body.high-contrast .navbar,
+body.high-contrast .site-footer,
+body.high-contrast .card,
+body.high-contrast .form-section-card,
+body.high-contrast .review-card,
+body.high-contrast .form-page-header,
+body.high-contrast .form-hint-card,
+body.high-contrast .privacy-request,
+body.high-contrast .accused-card,
+body.high-contrast .new-feature-banner,
+body.high-contrast .captcha-box,
+body.high-contrast .stepper-card{
+  background:#000 !important; color:#fff !important; border-color:#fff !important;
+}
+body.high-contrast section{ background:#000 !important; color:#fff !important; }
+body.high-contrast a{ color:#ffd400 !important; }
+
+/* text/labels that carry their own explicit color and would otherwise blend into the black background */
+body.high-contrast .form-section-title,
+body.high-contrast .form-label,
+body.high-contrast .char-counter,
+body.high-contrast .privacy-request small,
+body.high-contrast .review-row .label,
+body.high-contrast .review-row .value,
+body.high-contrast .step-label,
+body.high-contrast .stepper-step.active .step-label,
+body.high-contrast .stepper-step.done .step-label,
+body.high-contrast #stepperCaption,
+body.high-contrast .captcha-label,
+body.high-contrast .captcha-brand,
+body.high-contrast .geo-result,
+body.high-contrast .voice-indicator,
+body.high-contrast .file-list-item,
+body.high-contrast .text-muted,
+body.high-contrast .text-body-secondary,
+body.high-contrast .form-hint-card ul li,
+body.high-contrast #trackingNoDisplay,
+body.high-contrast .step-panel h5,
+body.high-contrast .step-panel p,
+body.high-contrast .accused-card .fw-semibold{
+  color:#fff !important;
+}
+body.high-contrast .badge-new{ color:#1a1a1a !important; }
+body.high-contrast .form-control,
+body.high-contrast .form-select{
+  background:#111 !important; color:#fff !important; border-color:#fff !important;
+}
+body.high-contrast .form-control::placeholder{ color:#9aa4b5 !important; }
+body.high-contrast .btn-form-secondary{ color:#fff !important; border-color:#fff !important; }
+body.high-contrast .btn-geo,
+body.high-contrast .voice-btn{ background:#000 !important; color:#fff !important; border-color:#fff !important; }
+body.high-contrast .file-dropzone{ background:#000 !important; color:#fff !important; border-color:#fff !important; }
+body.high-contrast #trackingNoBox{ background:#000 !important; border-color:#fff !important; }
+
+/* ---------- Accessibility toolbar (reused from landing page) ---------- */
+.a11y-bar{
+  background:var(--ecmis-navy-dark);
+  color:#cfd8e6;
+  font-size:.78rem;
+  border-bottom:1px solid rgba(201,162,39,.25);
+}
+.a11y-bar a, .a11y-bar button{ color:#e8edf5; text-decoration:none; font-size:.78rem; }
+.a11y-bar button{
+  background:transparent; border:1px solid rgba(255,255,255,.25);
+  border-radius:20px; padding:2px 10px; margin-left:4px; transition:.2s;
+}
+.a11y-bar button:hover{ background:var(--ecmis-gold); color:#1a1a1a; border-color:var(--ecmis-gold); }
+.util-divider{ width:1px; height:14px; background:rgba(255,255,255,.2); display:inline-block; margin:0 12px; }
+.util-link{ background:transparent; border:none; color:#b9c4d6; font-size:.78rem; padding:0; transition:.2s; }
+.util-link:hover{ color:var(--ecmis-gold-light); }
+
+/* ---------- Navbar (reused from landing page) ---------- */
+.navbar-ecmis{
+  background:linear-gradient(180deg, var(--ecmis-navy) 0%, #0d2e54 100%);
+  padding-top:1rem; padding-bottom:1rem;
+  border-bottom:2px solid var(--ecmis-gold);
+  box-shadow:0 4px 18px rgba(0,0,0,.18);
+}
+.navbar-ecmis .navbar-nav{ align-items:center; }
+.brand-badge{
+  width:50px;height:50px; border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  margin-right:12px; flex:0 0 auto;
+}
+.brand-badge img{ width:100%;height:100%; object-fit:contain; filter:drop-shadow(0 2px 6px rgba(0,0,0,.45)); }
+.navbar-ecmis .navbar-brand{ color:#fff; font-weight:600; line-height:1.2; font-family:var(--serif); letter-spacing:.5px; }
+.navbar-ecmis .navbar-brand > span:last-child{ min-width:0; }
+.navbar-ecmis .navbar-brand small{ display:block; font-size:.95rem; font-weight:400; opacity:.9; font-family:'Prompt',sans-serif; letter-spacing:.2px; line-height:1.3; }
+@media (max-width:1599.98px) and (min-width:1400px){
+  .navbar-expand-xxl{ flex-wrap:wrap; }
+  .navbar-expand-xxl .navbar-toggler{ display:block; }
+  .navbar-expand-xxl .navbar-collapse{ display:none !important; flex-basis:100%; }
+  .navbar-expand-xxl .navbar-collapse.show{ display:block !important; }
+  .navbar-expand-xxl .navbar-nav{ flex-direction:column; }
+}
+@media (max-width:991.98px){
+  .navbar-ecmis .navbar-brand{ min-width:0; max-width:calc(100% - 70px); margin-right:0; }
+  .navbar-ecmis .navbar-brand small{ font-size:.8rem; white-space:normal; overflow-wrap:anywhere; }
+}
+@media (max-width:419.98px){
+  .brand-badge{ width:42px; height:42px; margin-right:8px; }
+  .navbar-ecmis .navbar-brand small{ font-size:.7rem; line-height:1.2; }
+}
+.navbar-ecmis .nav-link{
+  color:#dbe3ef !important; font-weight:400; position:relative;
+  display:inline-flex; align-items:center;
+  margin:0 6px; padding-left:.85rem !important; padding-right:.85rem !important;
+  white-space:nowrap; font-size:.92rem; letter-spacing:.15px;
+}
+.navbar-ecmis .nav-link:hover{ color:var(--ecmis-gold-light) !important; }
+
+/* ---------- Page header band ---------- */
+.form-page-header{
+  background:
+    radial-gradient(circle at 88% 0%, rgba(201,162,39,.16), transparent 42%),
+    linear-gradient(140deg, var(--ecmis-navy-dark) 0%, var(--ecmis-navy) 45%, var(--ecmis-navy-2) 100%);
+  color:#fff;
+  padding:36px 0 44px;
+}
+.breadcrumb-form{ display:flex; align-items:center; gap:.5rem; list-style:none; padding:0; margin:0 0 1rem; font-size:.8rem; }
+.breadcrumb-form a{ color:rgba(255,255,255,.7); text-decoration:none; }
+.breadcrumb-form a:hover{ color:var(--ecmis-gold-light); }
+.breadcrumb-form li.active{ color:var(--ecmis-gold-light); }
+.breadcrumb-form i{ font-size:.6rem; color:rgba(255,255,255,.4); }
+.eyebrow{
+  display:inline-flex; align-items:center; gap:.5rem;
+  font-size:.72rem; font-weight:600; letter-spacing:1.6px; text-transform:uppercase;
+  color:var(--ecmis-gold-light);
+}
+.eyebrow::before{ content:""; width:22px; height:2px; background:var(--ecmis-gold-light); display:inline-block; }
+.form-page-header h1{ font-size:1.7rem; font-weight:700; margin:.6rem 0 .75rem; }
+.form-page-header .subtitle{ font-size:.92rem; opacity:.82; max-width:640px; margin-bottom:0; line-height:1.7; }
+
+/* ---------- Stepper ---------- */
+.form-stepper{ position:relative; margin-top:-28px; margin-bottom:1.75rem; }
+.stepper-card{ background:#fff; border-radius:18px; box-shadow:0 14px 34px -14px rgba(15,35,65,.18); padding:1.75rem 1.5rem 1.25rem; }
+.stepper-track{ position:relative; height:3px; background:#e5e8ee; border-radius:3px; margin:0 8%; top:19px; }
+.stepper-fill{ height:100%; background:linear-gradient(90deg,var(--ecmis-navy),var(--ecmis-gold)); border-radius:3px; transition:width .4s ease; width:16.67%; }
+.stepper-steps{ display:flex; justify-content:space-between; position:relative; }
+.stepper-step{ display:flex; flex-direction:column; align-items:center; gap:.5rem; flex:1; }
+.step-circle{
+  width:40px;height:40px;border-radius:50%; background:#fff; border:2px solid #e5e8ee; color:#9aa4b5;
+  display:flex;align-items:center;justify-content:center; font-weight:700; font-family:var(--serif); transition:.3s;
+}
+.stepper-step.active .step-circle{ border-color:var(--ecmis-gold); background:var(--ecmis-gold); color:#1a1a1a; box-shadow:0 4px 14px -4px rgba(201,162,39,.5); }
+.stepper-step.done .step-circle{ border-color:var(--ecmis-navy); background:var(--ecmis-navy); color:#fff; }
+.step-label{ font-size:.78rem; color:#9aa4b5; text-align:center; max-width:130px; }
+.stepper-step.active .step-label{ color:var(--ecmis-navy); font-weight:600; }
+.stepper-step.done .step-label{ color:var(--ecmis-navy); }
+#stepperCaption{ font-size:.85rem; }
+
+/* ---------- Form sections ---------- */
+.form-hint-card{
+  background:rgba(201,162,39,.08); border:1px solid rgba(201,162,39,.28); border-radius:12px;
+  padding:1.1rem 1.4rem; margin-bottom:1.75rem; font-size:.86rem; line-height:1.8;
+}
+.form-hint-card ul{ margin-bottom:0; padding-left:1.2rem; }
+.form-section-card{
+  background:#fff; border:1px solid #eef0f4; border-radius:16px;
+  box-shadow:0 4px 16px rgba(15,35,65,.05); padding:1.75rem; margin-bottom:1.75rem;
+}
+.form-section-title{
+  display:flex; align-items:center; gap:.7rem; font-family:var(--serif); font-weight:700;
+  color:var(--ecmis-navy); font-size:1.08rem; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:2px solid #f0f2f6;
+}
+.form-section-title .step-badge{
+  width:32px;height:32px;border-radius:50%; background:linear-gradient(150deg,var(--ecmis-gold-light),var(--ecmis-gold));
+  color:#1a1a1a; display:flex;align-items:center;justify-content:center; font-size:.85rem; flex:0 0 auto;
+}
+.form-label{ font-weight:500; color:var(--ecmis-ink); font-size:.88rem; margin-bottom:.4rem; }
+.form-label .req{ color:var(--ecmis-red); margin-left:2px; }
+.form-control, .form-select{ font-size:.9rem; border-radius:8px; border-color:#dfe3ea; }
+.form-control:focus, .form-select:focus{ box-shadow:0 0 0 .2rem rgba(201,162,39,.15); border-color:var(--ecmis-gold); }
+.form-control[readonly].postcode-field{ background:#e3e8ee; color:#25384b; border-color:#c5ced8; opacity:1; font-weight:600; }
+body.high-contrast .form-control[readonly].postcode-field{ background:#252525 !important; color:#fff !important; }
+.char-counter{ font-size:.74rem; color:#9aa4b5; text-align:right; margin-top:.3rem; }
+.privacy-request{margin-bottom:1.5rem;padding:1rem 1.15rem;border:1px solid #e1e6ed;border-radius:14px;background:#f7f9fb}
+.privacy-choice{display:flex;align-items:flex-start;gap:.7rem;cursor:pointer}
+.privacy-choice input{flex:0 0 auto;margin-top:.25rem}
+.privacy-choice span{display:grid;gap:.12rem}.privacy-choice strong{color:var(--ecmis-navy);font-size:.88rem}.privacy-choice small{color:#6b7280;font-size:.76rem}
+
+/* ---------- Incident date/time (custom Thai Buddhist-Era calendar + inline 24-hour time boxes) ---------- */
+.incident-datetime{ display:flex; flex-wrap:wrap; align-items:stretch; gap:.6rem .75rem; }
+
+.thai-date-field{ position:relative; }
+.thai-date-display{
+  display:flex; align-items:center; gap:.55rem; height:100%; min-height:2.55rem;
+  border:1px solid #dfe3ea; border-radius:8px; padding:.5rem .85rem; font-size:.9rem; font-family:inherit;
+  background:#fff; color:var(--ecmis-ink); white-space:nowrap; cursor:pointer;
+}
+.thai-date-display i{ color:var(--ecmis-gold); }
+.thai-date-display:hover{ border-color:var(--ecmis-gold); }
+.thai-date-display:focus{ outline:none; box-shadow:0 0 0 .2rem rgba(201,162,39,.15); border-color:var(--ecmis-gold); }
+
+.thai-calendar-popover{
+  position:absolute; top:calc(100% + 8px); left:0; z-index:1050; width:280px; background:#fff; border-radius:16px;
+  box-shadow:0 18px 40px -12px rgba(15,35,65,.35); padding:1rem 1.1rem 1.1rem;
+}
+.tc-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:.75rem; }
+.tc-nav{ width:2rem; height:2rem; border:none; border-radius:8px; background:#f0f2f6; color:var(--ecmis-navy); display:flex; align-items:center; justify-content:center; }
+.tc-nav:hover{ background:#e2e6ed; }
+.tc-title-selects{ display:flex; gap:.35rem; }
+.tc-select{
+  border:1px solid #dfe3ea; border-radius:8px; padding:.3rem 1.65rem .3rem .55rem; font-size:.84rem; font-weight:700;
+  color:var(--ecmis-navy); background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right .6rem center/10px 6px;
+  font-family:inherit; appearance:none; -webkit-appearance:none; -moz-appearance:none;
+}
+.tc-select:focus{ outline:none; border-color:var(--ecmis-gold); }
+.tc-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:.74rem; color:#9aa4b5; margin-bottom:.35rem; }
+.tc-days{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.tc-day{
+  aspect-ratio:1; border:none; background:none; border-radius:8px; font-size:.85rem; color:var(--ecmis-ink);
+  display:flex; align-items:center; justify-content:center; font-variant-numeric:tabular-nums;
+}
+.tc-day:hover:not(.tc-day-empty){ background:#f0f2f6; }
+.tc-day.tc-day-today{ box-shadow:inset 0 0 0 1.5px var(--ecmis-gold); font-weight:700; }
+.tc-day.tc-day-selected{ background:var(--ecmis-navy); color:#fff; font-weight:700; }
+.tc-day-empty{ visibility:hidden; }
+.tc-footer{ display:flex; justify-content:center; margin-top:.65rem; padding-top:.65rem; border-top:1px solid #f0f2f6; }
+.tc-today-btn{ border:none; background:none; color:var(--ecmis-navy); font-size:.8rem; font-weight:600; text-decoration:underline; }
+
+.thai-time-field{ position:relative; }
+.thai-time-trigger{
+  display:flex; align-items:center; gap:.55rem; height:100%; min-height:2.55rem;
+  border:1px solid #dfe3ea; border-radius:8px; padding:.5rem .85rem; font-size:.9rem; font-family:inherit;
+  background:#fff; color:var(--ecmis-ink); white-space:nowrap; cursor:pointer; font-variant-numeric:tabular-nums;
+}
+.thai-time-trigger i{ color:var(--ecmis-gold); }
+.thai-time-trigger:hover{ border-color:var(--ecmis-gold); }
+.thai-time-trigger:focus{ outline:none; box-shadow:0 0 0 .2rem rgba(201,162,39,.15); border-color:var(--ecmis-gold); }
+.thai-time-trigger .thai-time-badge{ font-size:.72rem; color:#6b7280; background:#f0f2f6; border-radius:6px; padding:.1rem .4rem; margin-left:.1rem; }
+
+.time-picker-popover{
+  position:absolute; top:calc(100% + 8px); left:0; z-index:1050; width:290px; background:#fff; border-radius:18px;
+  box-shadow:0 18px 40px -12px rgba(15,35,65,.35); padding:1.35rem 1.35rem 1.1rem; text-align:center;
+}
+.tp-title{ display:flex; align-items:center; justify-content:center; gap:.5rem; font-size:.86rem; font-weight:600; color:var(--ecmis-navy); margin-bottom:1rem; }
+.tp-24-badge{ font-size:.7rem; font-weight:500; color:#6b7280; background:#f0f2f6; border-radius:6px; padding:.15rem .4rem; }
+.tp-manual-entry{ display:flex; align-items:center; justify-content:center; gap:.4rem; margin-bottom:1.1rem; }
+.tp-manual-input{
+  width:3.4rem; text-align:center; border:1.5px solid #dfe3ea; border-radius:10px; padding:.45rem 0;
+  font-size:1.3rem; font-weight:700; color:var(--ecmis-navy); font-variant-numeric:tabular-nums; background:#f7f9fb;
+}
+.tp-manual-input:focus{ outline:none; border-color:var(--ecmis-gold); background:#fff; box-shadow:0 0 0 .2rem rgba(201,162,39,.15); }
+.tp-manual-colon{ font-size:1.3rem; font-weight:700; color:var(--ecmis-navy); }
+.tp-manual-unit{ font-size:.85rem; color:#6b7280; }
+.tp-wheels{ position:relative; display:flex; align-items:center; justify-content:center; gap:.3rem; margin-bottom:1.25rem; }
+.tp-wheel-wrap{ position:relative; width:64px; height:190px; }
+.tp-wheel-col{
+  position:absolute; inset:0; overflow-y:scroll; scroll-snap-type:y mandatory; -webkit-overflow-scrolling:touch;
+  cursor:grab; scrollbar-width:none; touch-action:pan-y; overscroll-behavior:contain;
+}
+.tp-wheel-col::-webkit-scrollbar{ display:none; }
+.tp-wheel-col.dragging{ cursor:grabbing; scroll-snap-type:none; }
+.tp-wheel-track{ padding:76px 0; }
+.tp-wheel-item{
+  height:38px; display:flex; align-items:center; justify-content:center; font-size:1.05rem; color:#c3c9d4;
+  scroll-snap-align:center; font-variant-numeric:tabular-nums; user-select:none; transition:color .12s,font-size .12s,font-weight .12s;
+}
+.tp-wheel-item.active{ color:var(--ecmis-navy); font-size:1.55rem; font-weight:700; }
+.tp-wheel-fade{ position:absolute; left:0; right:0; height:52px; pointer-events:none; z-index:3; }
+.tp-wheel-fade-top{ top:0; background:linear-gradient(to bottom,#fff,rgba(255,255,255,0)); }
+.tp-wheel-fade-bottom{ bottom:0; background:linear-gradient(to top,#fff,rgba(255,255,255,0)); }
+.tp-wheel-highlight{
+  position:absolute; left:0; right:0; top:50%; height:38px; margin-top:-19px;
+  border-top:1.5px solid #e5ddc2; border-bottom:1.5px solid #e5ddc2; background:rgba(201,162,39,.08);
+  border-radius:8px; pointer-events:none; z-index:1;
+}
+.tp-wheel-colon{ font-size:1.5rem; font-weight:700; color:var(--ecmis-navy); z-index:2; }
+.tp-wheel-unit{ font-size:.85rem; color:#6b7280; margin-left:.25rem; z-index:2; }
+.tp-actions{ display:flex; justify-content:center; gap:.6rem; }
+.tp-btn{ border:none; border-radius:999px; padding:.55rem 1.15rem; font-size:.85rem; font-weight:600; transition:.2s; }
+.tp-btn-ghost{ background:#eef1f5; color:var(--ecmis-navy); }
+.tp-btn-ghost:hover{ background:#e2e6ed; }
+.tp-btn-primary{ background:linear-gradient(135deg,var(--ecmis-gold-light),var(--ecmis-gold)); color:#1a1a1a; }
+.tp-btn-primary:hover{ filter:brightness(1.05); }
+
+/* ---------- File dropzone ---------- */
+.file-dropzone{
+  border:2px dashed #cdd3de; border-radius:12px; padding:2rem 1rem; text-align:center;
+  color:#6b7280; cursor:pointer; transition:.2s; background:#fafbfc;
+}
+.file-dropzone:hover, .file-dropzone.dragover{ border-color:var(--ecmis-gold); background:rgba(201,162,39,.05); color:var(--ecmis-navy); }
+.file-dropzone i{ font-size:1.8rem; color:var(--ecmis-gold); margin-bottom:.5rem; display:block; }
+.file-dropzone .fd-hint{ font-size:.76rem; color:#9aa4b5; margin-top:.3rem; }
+.file-list-item{
+  display:flex; align-items:center; gap:.75rem; background:#f7f8fb; border:1px solid #e5e8ee;
+  border-radius:8px; padding:.5rem .75rem; margin-bottom:.5rem; font-size:.83rem;
+}
+.file-list-item i.fa-paperclip{ color:var(--ecmis-gold); }
+.btn-remove-file{ background:none; border:none; color:var(--ecmis-red); font-size:1rem; margin-left:auto; }
+
+/* ---------- Accused party (repeatable) ---------- */
+.accused-card{ border:1px solid #e5e8ee; border-radius:12px; padding:1.25rem 1.5rem; margin-bottom:1rem; position:relative; background:#fafbfc; }
+.accused-card .remove-accused{ position:absolute; top:.75rem; right:.75rem; background:none; border:none; color:var(--ecmis-red); font-size:1.15rem; }
+.accused-empty{ text-align:center; color:#9aa4b5; font-size:.86rem; padding:1.25rem; border:1px dashed #dfe3ea; border-radius:12px; }
+
+/* ---------- Buttons ---------- */
+.btn-form-primary{
+  background:linear-gradient(135deg,#c1443a, var(--ecmis-red)); border:none; color:#fff;
+  font-weight:600; padding:.75rem 2rem; border-radius:10px; box-shadow:0 10px 24px -8px rgba(165,50,42,.55); transition:.25s;
+}
+.btn-form-primary:hover{ background:linear-gradient(135deg,#b5453c,#8f2a23); color:#fff; transform:translateY(-2px); }
+.btn-form-secondary{
+  background:#fff; border:1.5px solid var(--ecmis-navy); color:var(--ecmis-navy);
+  font-weight:600; padding:.75rem 1.75rem; border-radius:10px; transition:.25s;
+}
+.btn-form-secondary:hover{ background:var(--ecmis-navy); color:#fff; }
+.btn-form-gold{
+  background:linear-gradient(135deg,var(--ecmis-gold-light),var(--ecmis-gold)); border:none; color:#1a1a1a;
+  font-weight:600; padding:.75rem 2rem; border-radius:10px; transition:.25s;
+}
+.btn-form-gold:hover{ filter:brightness(1.05); color:#1a1a1a; transform:translateY(-2px); }
+.btn-add-accused{
+  background:rgba(10,38,71,.05); border:1.5px dashed var(--ecmis-navy); color:var(--ecmis-navy);
+  font-weight:500; padding:.6rem 1.4rem; border-radius:10px; font-size:.88rem; transition:.2s;
+}
+.btn-add-accused:hover{ background:var(--ecmis-navy); color:#fff; }
+
+/* ---------- Review (step 2) ---------- */
+.review-card{ background:#fff; border:1px solid #eef0f4; border-radius:16px; box-shadow:0 4px 16px rgba(15,35,65,.05); padding:2rem; }
+.review-section{ margin-bottom:1.75rem; }
+.review-section:last-child{ margin-bottom:0; }
+.review-empty{ color:#9aa4b5; font-size:.86rem; padding:.5rem 0; }
+.review-subcard{ border:1px solid #eef0f4; border-radius:10px; padding:1rem 1.25rem; margin-bottom:.75rem; background:#fafbfc; }
+.review-subcard:last-child{ margin-bottom:0; }
+.review-subcard-title{ font-weight:600; color:var(--ecmis-navy); margin-bottom:.4rem; font-size:.88rem; }
+.review-row{ display:flex; justify-content:space-between; gap:1rem; padding:.7rem 0; border-bottom:1px solid #f0f2f6; font-size:.88rem; }
+.review-row:last-child{ border-bottom:none; }
+.review-row .label{ color:#6b7280; flex:0 0 42%; }
+.review-row .value{ color:var(--ecmis-ink); font-weight:500; flex:1; text-align:right; word-break:break-word; }
+.review-warning{
+  background:rgba(165,50,42,.06); border:1px solid rgba(165,50,42,.25); border-radius:12px;
+  padding:1rem 1.25rem; font-size:.85rem; color:var(--ecmis-red); margin-top:1.75rem; display:flex; gap:.6rem; align-items:flex-start;
+}
+
+/* ---------- human/bot verification (mock CAPTCHA) ---------- */
+.captcha-box{
+  display:flex; align-items:center; gap:1rem; max-width:340px; margin:1.75rem auto 0;
+  background:#f9f9f9; border:1px solid #d3d3d3; border-radius:8px; padding:.9rem 1.15rem;
+  box-shadow:0 1px 1px rgba(0,0,0,.06); cursor:pointer; user-select:none; transition:.2s;
+}
+.captcha-box:hover{ box-shadow:0 2px 6px rgba(0,0,0,.1); }
+.captcha-box.verified{ border-color:rgba(46,164,79,.4); background:rgba(46,164,79,.05); cursor:default; }
+.captcha-check{
+  width:28px; height:28px; flex:0 0 auto; border:2px solid #c1c1c1; border-radius:4px;
+  background:#fff; display:flex; align-items:center; justify-content:center; position:relative; transition:.2s;
+}
+.captcha-check.loading{ border-color:var(--ecmis-navy); }
+.captcha-check.verified{ border-color:#2ea44f; background:#2ea44f; }
+.captcha-checkmark{ display:none; color:#fff; font-size:.8rem; }
+.captcha-check.verified .captcha-checkmark{ display:block; }
+.captcha-spinner{ display:none; width:15px; height:15px; border:2px solid #d3d3d3; border-top-color:var(--ecmis-navy); border-radius:50%; }
+.captcha-check.loading .captcha-spinner{ display:block; animation:captchaSpin .6s linear infinite; }
+@keyframes captchaSpin{ to{ transform:rotate(360deg); } }
+.captcha-label{ font-size:.82rem; color:#3c4043; flex:1; }
+.captcha-brand{ display:flex; flex-direction:column; align-items:center; font-size:.6rem; color:#9aa0a6; flex:0 0 auto; line-height:1.3; }
+.captcha-brand i{ font-size:1.1rem; color:var(--ecmis-navy); margin-bottom:2px; }
+
+#trackingNoBox{
+  background:rgba(201,162,39,.08); border:1px solid rgba(201,162,39,.3); border-radius:12px;
+  padding:1rem 1.25rem; text-align:center; margin-bottom:1.75rem;
+}
+
+/* ---------- Footer (reused from landing page) ---------- */
+.site-footer{ background:var(--ecmis-navy-dark); color:#aebada; padding-top:3.5rem; border-top:3px solid var(--ecmis-gold); }
+.site-footer h6{ color:#fff; font-weight:600; margin-bottom:1.1rem; font-family:var(--serif); letter-spacing:.4px; font-size:.95rem; text-transform:uppercase; }
+.site-footer a{ color:#aebada; text-decoration:none; font-size:.88rem; transition:.2s; }
+.site-footer a:hover{ color:var(--ecmis-gold-light); padding-left:2px; }
+.footer-bottom{ background:#03101f; font-size:.78rem; color:#7b879e; }
+.social-icon{
+  width:36px;height:36px;border-radius:50%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+  display:inline-flex;align-items:center;justify-content:center; margin-right:8px; color:#fff !important; transition:.2s;
+}
+.social-icon:hover{ background:var(--ecmis-gold); color:#1a1a1a !important; }
+.is-invalid{ border-color:var(--ecmis-red) !important; }
+.is-valid{ border-color:#2ea44f !important; }
+
+/* ---------- Cookie consent banner (same pattern as landing page) ---------- */
+.cookie-banner{
+  position:fixed; left:0; right:0; bottom:0;
+  z-index:1050;
+  background:var(--ecmis-navy-dark);
+  border-top:3px solid var(--ecmis-gold);
+  color:#dbe3ef;
+  padding:1rem 1.25rem;
+  transform:translateY(120%);
+  transition:transform .5s ease;
+  box-shadow:0 -10px 30px rgba(0,0,0,.35);
+}
+.cookie-banner.show{ transform:translateY(0); }
+.cookie-banner a{ color:var(--ecmis-gold-light); }
+.cookie-banner .btn-cookie-accept{
+  background:linear-gradient(135deg, var(--ecmis-gold-light), var(--ecmis-gold));
+  color:#1a1a1a; font-weight:600; border:none;
+}
+.cookie-banner .btn-cookie-accept:hover{ color:#1a1a1a; filter:brightness(1.05); }
+.cookie-banner .btn-cookie-settings{
+  background:transparent;
+  border:1px solid rgba(255,255,255,.4);
+  color:#fff;
+}
+.cookie-banner .btn-cookie-settings:hover{ background:rgba(255,255,255,.1); color:#fff; }
+.id-check-feedback{ font-size:.76rem; margin-top:.35rem; display:none; align-items:center; gap:.35rem; }
+.id-check-feedback.show{ display:flex; }
+.id-check-feedback.valid{ color:#2ea44f; }
+.id-check-feedback.invalid{ color:var(--ecmis-red); }
+body.high-contrast .id-check-feedback.valid{ color:#4ade80 !important; }
+body.high-contrast .id-check-feedback.invalid{ color:#ff8a80 !important; }
+
+/* ---------- "New capabilities" banner ---------- */
+.new-feature-banner{
+  display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;
+  background:linear-gradient(135deg, rgba(10,38,71,.04), rgba(201,162,39,.1));
+  border:1px solid rgba(201,162,39,.35); border-radius:12px;
+  padding:.85rem 1.25rem; margin-bottom:1.5rem; font-size:.84rem; color:var(--ecmis-navy);
+}
+.new-feature-banner .badge-new{
+  background:linear-gradient(135deg,var(--ecmis-gold-light),var(--ecmis-gold));
+  color:#1a1a1a; font-weight:700; font-size:.68rem; letter-spacing:.4px;
+  padding:.25rem .6rem; border-radius:20px; flex:0 0 auto;
+}
+.new-feature-banner i{ color:var(--ecmis-gold); }
+
+/* ---------- voice-to-text ---------- */
+.field-label-row{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; flex-wrap:wrap; }
+.field-label-main{display:inline-flex;align-items:center;gap:.35rem;min-width:0}
+.voice-btn{
+  width:34px;height:34px;border-radius:50%;border:1.5px solid var(--ecmis-gold);
+  background:#fff;color:var(--ecmis-gold);display:flex;align-items:center;justify-content:center;
+  transition:.2s; flex:0 0 auto; font-size:.85rem;
+}
+.voice-btn:hover{ background:var(--ecmis-gold); color:#1a1a1a; }
+.voice-btn.listening{ background:var(--ecmis-red); border-color:var(--ecmis-red); color:#fff; animation:voicePulse 1.4s ease-in-out infinite; }
+.voice-btn:disabled{ opacity:.35; cursor:not-allowed; background:#fff; color:var(--ecmis-gold); animation:none; }
+@keyframes voicePulse{
+  0%,100%{ box-shadow:0 0 0 0 rgba(165,50,42,.5); }
+  50%{ box-shadow:0 0 0 8px rgba(165,50,42,0); }
+}
+.voice-indicator{ display:none; align-items:center; gap:.5rem; font-size:.78rem; color:var(--ecmis-red); margin-top:.4rem; }
+.voice-indicator.active{ display:flex; }
+.voice-dot{ width:8px;height:8px;border-radius:50%; background:var(--ecmis-red); animation:voicePulse 1.4s ease-in-out infinite; flex:0 0 auto; }
+
+/* ---------- geolocation ---------- */
+.btn-geo{
+  background:rgba(10,38,71,.05); border:1px solid var(--ecmis-navy); color:var(--ecmis-navy);
+  font-size:.76rem; padding:.3rem .75rem; border-radius:20px; transition:.2s; flex:0 0 auto; white-space:nowrap;
+}
+.btn-geo:hover{ background:var(--ecmis-navy); color:#fff; }
+.geo-result{ display:none; font-size:.78rem; margin-top:.4rem; color:#6b7280; }
+.geo-result.show{ display:block; }
+
+/* ---------- file thumbnails ---------- */
+.file-thumb{
+  width:32px;height:32px;border-radius:6px;overflow:hidden;flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #e5e8ee;color:var(--ecmis-gold);
+}
+.file-thumb img{ width:100%;height:100%;object-fit:cover; }
+
+/* ---------- QR tracking receipt ---------- */
+.tracking-qr{ width:120px;height:120px;margin:.75rem auto 0; display:block; border:6px solid #fff; box-shadow:0 4px 14px rgba(15,35,65,.15); border-radius:8px; }
+.tracking-save-actions{ display:flex; justify-content:center; gap:.6rem; margin-top:.9rem; flex-wrap:wrap; }
+.btn-tracking-save{
+  background:#fff; border:1.5px solid var(--ecmis-navy); color:var(--ecmis-navy);
+  font-size:.78rem; padding:.4rem .9rem; border-radius:20px; transition:.2s;
+}
+.btn-tracking-save:hover{ background:var(--ecmis-navy); color:#fff; }
+body.high-contrast .btn-tracking-save{ background:#000 !important; color:#fff !important; border-color:#fff !important; }
+.complaint-hint{position:relative;display:inline-flex;align-items:center}.complaint-hint button{width:24px;height:24px;display:grid;place-items:center;border:1px solid #c9a227;border-radius:50%;background:#fff;color:#8a6812;cursor:help}.complaint-hint-box{position:absolute;z-index:20;left:0;top:calc(100% + .5rem);width:min(430px,80vw);padding:.85rem 1rem;border:1px solid #d9c06b;border-radius:10px;background:#fffdf5;color:#394150;box-shadow:0 12px 28px rgba(15,35,65,.16);font-size:.8rem;line-height:1.65;opacity:0;visibility:hidden;transform:translateY(-4px);transition:.15s}.complaint-hint:hover .complaint-hint-box,.complaint-hint:focus-within .complaint-hint-box{opacity:1;visibility:visible;transform:translateY(0)}.complaint-hint-box strong{display:block;color:var(--ecmis-navy);margin-bottom:.25rem}.complaint-hint-box span{display:block;margin-top:.45rem;padding-top:.45rem;border-top:1px solid #eadfae;color:#5d4a18}
+@media(max-width:600px){.complaint-hint-box{position:fixed;left:1rem;right:1rem;top:auto;bottom:1rem;width:auto}.complaint-hint:hover .complaint-hint-box,.complaint-hint:focus-within .complaint-hint-box{transform:none}}
+</style>
+</head>
+<body>
+
+<!-- ============ Accessibility bar ============ -->
+<div class="a11y-bar py-1">
+  <div class="container d-flex justify-content-between align-items-center flex-wrap">
+    <div>
+      <i class="fa-solid fa-phone-volume me-1"></i> สายด่วน ป.ป.ท. 1206 &nbsp;|&nbsp;
+      <i class="fa-solid fa-envelope me-1"></i> pacc@pacc.go.th
+    </div>
+    <div class="d-flex align-items-center">
+      <span class="me-2">ขนาดตัวอักษร:</span>
+      <button type="button" onclick="changeFontSize(-1)">A-</button>
+      <button type="button" onclick="changeFontSize(0)">A</button>
+      <button type="button" onclick="changeFontSize(1)">A+</button>
+      <button type="button" class="ms-2" onclick="toggleContrast()"><i class="fa-solid fa-circle-half-stroke"></i> ปรับสี</button>
+      <span class="util-divider"></span>
+      <a href="index.html" class="util-link"><i class="fa-solid fa-house me-1"></i>กลับหน้าหลัก</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Navbar ============ -->
+<nav class="navbar navbar-expand-xxl navbar-ecmis sticky-top">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center" href="index.html">
+      <span class="brand-badge"><img src="https://www.pacc.go.th/images/pacc_logo.png" alt="ตราสำนักงาน ป.ป.ท."></span>
+      <span>
+        E-CMIS
+        <small>สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ (ป.ป.ท.)</small>
+      </span>
+    </a>
+    <button class="navbar-toggler bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="เปิดหรือปิดเมนูหลัก">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMain">
+      <ul class="navbar-nav mx-auto mt-3 mt-xl-0">
+        <li class="nav-item"><a class="nav-link" href="index.html#home">หน้าแรก</a></li>
+        <li class="nav-item"><a class="nav-link" href="index.html#channels">ช่องทางร้องเรียน</a></li>
+        <li class="nav-item"><a class="nav-link" href="tracking.html">ติดตามเรื่องร้องเรียน</a></li>
+        <li class="nav-item"><a class="nav-link" href="index.html#stats">สถิติภาพรวม</a></li>
+        <li class="nav-item"><a class="nav-link" href="index.html#riskmap">แผนที่ความเสี่ยง</a></li>
+        <li class="nav-item"><a class="nav-link" href="index.html#news">ข่าวสาร/ประกาศ</a></li>
+        <li class="nav-item"><a class="nav-link" href="index.html#faq">คู่มือ/FAQ</a></li>
+        <li class="nav-item"><a class="nav-link" href="index.html#footer">ติดต่อเรา</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ Page header ============ -->
+<section class="form-page-header">
+  <div class="container">
+    <ul class="breadcrumb-form">
+      <li><a href="index.html">หน้าแรก</a></li>
+      <li><i class="fa-solid fa-chevron-right"></i></li>
+      <li class="active">ยื่นเรื่องร้องเรียน</li>
+      <li><i class="fa-solid fa-chevron-right"></i></li>
+      <li><a href="additional-documents.html">ส่งเอกสารเพิ่มเติม</a></li>
+    </ul>
+    <span class="eyebrow">แจ้งเบาะแส / ร้องเรียนการทุจริต</span>
+    <h1>ยื่นเรื่องร้องเรียน</h1>
+    <p class="subtitle">กรอกแบบฟอร์มด้านล่างเพื่อแจ้งเบาะแสหรือยื่นเรื่องร้องเรียนการทุจริตและประพฤติมิชอบในภาครัฐ ข้อมูลของท่านจะถูกเก็บเป็นความลับตามนโยบายคุ้มครองข้อมูลส่วนบุคคล</p>
+  </div>
+</section>
+
+<!-- ============ Form ============ -->
+<div class="container" id="formTop">
+  <div class="row justify-content-center">
+    <div class="col-xl-9 col-lg-10">
+
+      <!-- Stepper -->
+      <div class="form-stepper">
+        <div class="stepper-card">
+          <div class="stepper-track"><div class="stepper-fill" id="stepperFill"></div></div>
+          <div class="stepper-steps">
+            <div class="stepper-step active" data-step="1">
+              <div class="step-circle">1</div>
+              <div class="step-label">กรอกข้อมูลคำร้อง</div>
+            </div>
+            <div class="stepper-step" data-step="2">
+              <div class="step-circle">2</div>
+              <div class="step-label">ตรวจสอบคำร้อง</div>
+            </div>
+            <div class="stepper-step" data-step="3">
+              <div class="step-circle">3</div>
+              <div class="step-label">เสร็จสิ้น</div>
+            </div>
+          </div>
+          <div class="text-center text-muted mt-3" id="stepperCaption">ขั้นตอนที่ <b>1</b> / 3 — กรอกข้อมูลคำร้อง (33%)</div>
+        </div>
+      </div>
+
+      <!-- ===== STEP 1 ===== -->
+      <div class="step-panel" id="stepPanel1">
+
+        <div class="new-feature-banner">
+          <span class="badge-new">รองรับ</span>
+          <span><i class="fa-solid fa-microphone-lines me-1"></i>พิมพ์ด้วยเสียง</span>
+          <span class="text-body-secondary">•</span>
+          <span><i class="fa-solid fa-location-crosshairs me-1"></i>ระบุตำแหน่งอัตโนมัติ</span>
+        </div>
+
+        <div class="form-hint-card">
+          <div class="fw-semibold mb-2"><i class="fa-solid fa-circle-info me-1" style="color:var(--ecmis-gold)"></i>คำแนะนำการกรอกแบบฟอร์ม</div>
+          <ul>
+            <li>กรอกข้อมูลในช่องที่มีเครื่องหมาย <span class="req">*</span> ให้ครบทุกช่อง (จำเป็น)</li>
+            <li>ช่องที่ไม่มี * เป็นข้อมูลเพิ่มเติม ไม่บังคับกรอก</li>
+            <li>เลขประจำตัวประชาชนและโทรศัพท์ กรอกเป็นตัวเลขอารบิกต่อเนื่อง ไม่มีขีดหรือช่องว่าง</li>
+            <li>เอกสารแนบรวมทั้งหมดไม่เกิน 50 MB สูงสุด 10 ไฟล์</li>
+          </ul>
+        </div>
+
+        <!-- ส่วนที่ 1 -->
+        <div class="form-section-card">
+          <div class="form-section-title"><span class="step-badge">1</span>ข้อมูลผู้ร้อง</div>
+
+          <div class="privacy-request">
+            <label class="privacy-choice" for="confidentialityToggle">
+              <input class="form-check-input" type="checkbox" id="confidentialityToggle">
+              <span><strong>ขอปกปิดข้อมูลผู้ร้อง</strong><small>ใช้เมื่อให้ข้อมูลตัวตนแก่สำนักงาน แต่ไม่ประสงค์ให้เปิดเผยชื่อ ที่อยู่ โทรศัพท์ อีเมล และข้อมูลระบุตัวตน</small></span>
+            </label>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">เลขประจำตัวประชาชน</label>
+              <input type="text" class="form-control" id="nationalId" inputmode="numeric" maxlength="17" placeholder="x-xxxx-xxxxx-xx-x" oninput="formatNationalId(this)">
+              <div class="id-check-feedback" id="nationalIdFeedback"></div>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">คำนำหน้า</label>
+              <select class="form-select" id="titlePrefix">
+                <option value="">เลือก</option>
+                <option>นาย</option>
+                <option>นาง</option>
+                <option>นางสาว</option>
+                <option>อื่นๆ</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">ชื่อ</label>
+              <input type="text" class="form-control" id="firstName">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">นามสกุล</label>
+              <input type="text" class="form-control" id="lastName">
+            </div>
+            <div class="col-12">
+              <div class="field-label-row">
+                <label class="form-label mb-0">ที่อยู่ปัจจุบัน</label>
+                <button type="button" class="voice-btn" id="voiceBtn-address" data-target="address" onclick="toggleVoice('address')" title="พิมพ์ด้วยเสียง" aria-label="พิมพ์ที่อยู่ด้วยเสียง">
+                  <i class="fa-solid fa-microphone"></i>
+                </button>
+              </div>
+              <textarea class="form-control" id="address" rows="2" maxlength="250"></textarea>
+              <div class="char-counter" id="addressCounter">0/250</div>
+              <div class="voice-indicator" id="voiceIndicator-address"><span class="voice-dot"></span>กำลังฟัง... พูดได้เลยครับ</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">หมายเลขโทรศัพท์ที่ติดต่อได้</label>
+              <input type="tel" class="form-control" id="phone" maxlength="10" placeholder="0812345678">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">อีเมล</label>
+              <input type="email" class="form-control" id="email" placeholder="name@email.com">
+            </div>
+            <div class="col-12">
+              <label class="form-label">สถานะเครือข่าย ป.ป.ท.</label>
+              <select class="form-select" id="networkStatus" onchange="toggleNetworkVerifyCode()">
+                <option value="" selected>เลือกสถานะเครือข่าย ป.ป.ท.</option>
+                <option value="เครือข่ายภาคเอกชน">เครือข่ายภาคเอกชน</option>
+                <option value="เครือข่ายประชาชน/ประชาสังคม">เครือข่ายประชาชน/ประชาสังคม</option>
+                <option value="เครือข่ายขบวน/สภาองค์กรชุมชน">เครือข่ายขบวน/สภาองค์กรชุมชน</option>
+              </select>
+              <div class="small text-muted" style="margin-top:.25rem">หากท่านเป็นประชาชนทั่วไปไม่จำเป็นต้องเลือก ปล่อยว่างไว้ได้เลย</div>
+            </div>
+            <div class="col-12 d-none" id="networkVerifyCodeWrap">
+              <label class="form-label" for="networkVerifyCode">รหัสยืนยันการเป็นเครือข่าย ป.ป.ท.<span class="req">*</span></label>
+              <input type="text" class="form-control" id="networkVerifyCode" maxlength="15" placeholder="กรอกรหัสยืนยันการเป็นเครือข่าย ป.ป.ท." disabled>
+              <div class="small text-muted" style="margin-top:.25rem">ใช้สำหรับยืนยันว่าท่านเป็นเครือข่าย ป.ป.ท. จริง กรุณากรอกรหัสที่ได้รับจากสำนักงาน (ความยาวไม่เกิน 15 ตัวอักษร)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ส่วนที่ 2 -->
+        <div class="form-section-card">
+          <div class="form-section-title"><span class="step-badge">2</span>ข้อมูลผู้ถูกร้องเรียน</div>
+          <div id="accusedList"></div>
+          <div class="accused-empty" id="accusedEmpty"><i class="fa-solid fa-user-slash me-2"></i>ยังไม่มีข้อมูลผู้ถูกร้องเรียน (ไม่บังคับ)</div>
+          <button type="button" class="btn btn-add-accused mt-3" onclick="addAccused()"><i class="fa-solid fa-plus me-2"></i>เพิ่มผู้ถูกร้องเรียน</button>
+        </div>
+
+        <!-- ส่วนที่ 3 -->
+        <div class="form-section-card">
+          <div class="form-section-title"><span class="step-badge">3</span>รายละเอียดการร้องเรียน</div>
+
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="complaintSubjectTemplate">รูปแบบหัวข้อ (เลือกได้หากไม่ทราบจะเขียนหัวข้ออย่างไร)</label>
+              <select class="form-select" id="complaintSubjectTemplate" onchange="applyComplaintSubjectTemplate()">
+                <option value="">-- เลือกรูปแบบหัวข้อ --</option>
+                <option value="official">ร้องเรียนเจ้าหน้าที่ของรัฐ</option>
+              </select>
+              <div class="small text-muted" style="margin-top:.25rem">เลือกแล้วระบบจะสร้างหัวข้อให้อัตโนมัติจากข้อมูลผู้ถูกร้องเรียนที่ 1 (สังกัดหน่วยงาน + พฤติการณ์) ท่านสามารถแก้ไขข้อความด้านล่างเพิ่มเติมได้</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="complaintSubject">หัวข้อเรื่องร้องเรียน</label>
+              <input type="text" class="form-control" id="complaintSubject" maxlength="200" placeholder="สรุปเรื่องที่ต้องการร้องเรียน">
+            </div>
+            <div class="col-12">
+              <div class="field-label-row">
+                <span class="field-label-main">
+                  <label class="form-label mb-0" for="complaintDetail">รายละเอียดการร้องเรียน / เบาะแส <span class="req">*</span></label>
+                  <span class="complaint-hint">
+                    <button type="button" aria-label="คำแนะนำการเขียนรายละเอียด" aria-describedby="complaintDetailHint"><i class="fa-solid fa-question"></i></button>
+                    <span class="complaint-hint-box" id="complaintDetailHint" role="tooltip"><strong>ควรระบุว่าเกิดพฤติการณ์อย่างไร ผู้เกี่ยวข้องคือใคร และเกิดเหตุที่ไหน</strong>เขียนลำดับเหตุการณ์ วันหรือช่วงเวลาที่เกิดเหตุ บุคคลหรือหน่วยงานที่เกี่ยวข้อง และสถานที่ให้ชัดเจน<span>ตัวอย่าง: เมื่อวันที่ 15 กรกฎาคม 2569 นาย ก. ซึ่งเป็นเจ้าหน้าที่ของหน่วยงานตัวอย่าง เรียกรับเงินจากผู้ร้อง ณ สำนักงานตัวอย่าง เพื่อแลกกับการอนุมัติเอกสาร</span></span>
+                  </span>
+                </span>
+                <button type="button" class="voice-btn" id="voiceBtn-complaintDetail" data-target="complaintDetail" onclick="toggleVoice('complaintDetail')" title="พิมพ์ด้วยเสียง" aria-label="พิมพ์รายละเอียดการร้องเรียนด้วยเสียง">
+                  <i class="fa-solid fa-microphone"></i>
+                </button>
+              </div>
+              <textarea class="form-control" id="complaintDetail" rows="4" maxlength="3000" required></textarea>
+              <div class="char-counter" id="complaintDetailCounter">0/3000</div>
+              <div class="voice-indicator" id="voiceIndicator-complaintDetail"><span class="voice-dot"></span>กำลังฟัง... พูดได้เลยครับ</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="agencyName">หน่วยงานที่ต้องการร้องเรียน</label>
+              <select class="form-select" id="agencyName"></select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">วัน–เวลาเกิดเหตุ</label>
+              <div class="incident-datetime">
+                <div class="thai-date-field">
+                  <button type="button" class="thai-date-display" id="incidentDateTrigger" onclick="toggleDatePicker()">
+                    <i class="fa-regular fa-calendar"></i><span id="incidentDateDisplayText">เลือกวันที่เกิดเหตุ</span>
+                  </button>
+                  <input type="hidden" id="incidentDate">
+                  <div class="thai-calendar-popover d-none" id="thaiCalendarPopover" role="dialog" aria-label="เลือกวันที่เกิดเหตุ (ปฏิทินไทย)">
+                    <div class="tc-header">
+                      <button type="button" class="tc-nav" id="tcPrevMonth" aria-label="เดือนก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
+                      <div class="tc-title-selects">
+                        <select class="tc-select" id="tcMonthSelect" aria-label="เลือกเดือน"></select>
+                        <select class="tc-select" id="tcYearSelect" aria-label="เลือกปี พ.ศ."></select>
+                      </div>
+                      <button type="button" class="tc-nav" id="tcNextMonth" aria-label="เดือนถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                    <div class="tc-weekdays"><span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span></div>
+                    <div class="tc-days" id="tcDays"></div>
+                    <div class="tc-footer"><button type="button" class="tc-today-btn" id="tcToday">วันนี้</button></div>
+                  </div>
+                </div>
+                <div class="thai-time-field">
+                  <button type="button" class="thai-time-trigger" id="incidentTimeTrigger" onclick="toggleTimePicker()">
+                    <i class="fa-regular fa-clock"></i>
+                    <span id="incidentTimeDisplayText">เลือกเวลา</span>
+                    <span class="thai-time-badge">24 ชม.</span>
+                  </button>
+                  <div class="time-picker-popover d-none" id="timePickerPopover" role="dialog" aria-label="เลือกเวลา (24 ชั่วโมง)">
+                    <div class="tp-title">เลือกเวลาที่เกิดเหตุ <span class="tp-24-badge">24 ชม.</span></div>
+                    <div class="tp-manual-entry">
+                      <input type="text" inputmode="numeric" maxlength="2" class="tp-manual-input" id="tpHourInput" aria-label="พิมพ์ชั่วโมง">
+                      <span class="tp-manual-colon">:</span>
+                      <input type="text" inputmode="numeric" maxlength="2" class="tp-manual-input" id="tpMinuteInput" aria-label="พิมพ์นาที">
+                      <span class="tp-manual-unit">น.</span>
+                    </div>
+                    <div class="tp-wheels">
+                      <div class="tp-wheel-highlight"></div>
+                      <div class="tp-wheel-wrap">
+                        <div class="tp-wheel-col" id="tpHourWheel"><div class="tp-wheel-track" id="tpHourTrack"></div></div>
+                        <div class="tp-wheel-fade tp-wheel-fade-top"></div>
+                        <div class="tp-wheel-fade tp-wheel-fade-bottom"></div>
+                      </div>
+                      <div class="tp-wheel-colon">:</div>
+                      <div class="tp-wheel-wrap">
+                        <div class="tp-wheel-col" id="tpMinuteWheel"><div class="tp-wheel-track" id="tpMinuteTrack"></div></div>
+                        <div class="tp-wheel-fade tp-wheel-fade-top"></div>
+                        <div class="tp-wheel-fade tp-wheel-fade-bottom"></div>
+                      </div>
+                      <div class="tp-wheel-unit">น.</div>
+                    </div>
+                    <div class="tp-actions">
+                      <button type="button" class="tp-btn tp-btn-ghost" id="tpDismiss" onclick="dismissTimePicker()">ปิดตัวเลือก</button>
+                      <button type="button" class="tp-btn tp-btn-ghost" id="tpClear" onclick="clearTimePicker()">ล้างค่า</button>
+                      <button type="button" class="tp-btn tp-btn-primary" id="tpConfirm" onclick="confirmTimePicker()">ยืนยันการเลือก</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-sm btn-link px-0 mt-1" style="font-size:.78rem;color:#9aa4b5" onclick="clearIncidentDateTime()"><i class="fa-solid fa-rotate-left me-1"></i>ล้างค่า</button>
+            </div>
+            <div class="col-12">
+              <div class="field-label-row">
+                <label class="form-label mb-0">สถานที่เกิดเหตุ<span class="req">*</span></label>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn-geo" onclick="detectLocation()" title="ใช้ตำแหน่งปัจจุบัน"><i class="fa-solid fa-location-crosshairs me-1"></i>ใช้ตำแหน่งปัจจุบัน</button>
+                  <button type="button" class="voice-btn" id="voiceBtn-incidentPlace" data-target="incidentPlace" onclick="toggleVoice('incidentPlace')" title="พิมพ์ด้วยเสียง" aria-label="พิมพ์สถานที่เกิดเหตุด้วยเสียง">
+                    <i class="fa-solid fa-microphone"></i>
+                  </button>
+                </div>
+              </div>
+              <textarea class="form-control" id="incidentPlace" rows="2" maxlength="300" required></textarea>
+              <div class="char-counter" id="incidentPlaceCounter">0/300</div>
+              <div class="voice-indicator" id="voiceIndicator-incidentPlace"><span class="voice-dot"></span>กำลังฟัง... พูดได้เลยครับ</div>
+              <input type="hidden" id="geoLat"><input type="hidden" id="geoLng">
+              <div class="geo-result" id="geoResult"><i class="fa-solid fa-check-circle me-1" style="color:var(--ecmis-gold)"></i><span id="geoResultText"></span></div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">จังหวัด<span class="req">*</span></label>
+              <input class="form-control" id="province" list="provinceOptions" autocomplete="off" placeholder="ค้นหาหรือระบุจังหวัด" required>
+              <datalist id="provinceOptions"></datalist>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">อำเภอ/เขต</label>
+              <input class="form-control" id="district" list="districtOptions" autocomplete="off" placeholder="ค้นหาหรือระบุอำเภอ/เขต">
+              <datalist id="districtOptions"></datalist>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">ตำบล/แขวง</label>
+              <input class="form-control" id="subdistrict" list="subdistrictOptions" autocomplete="off" placeholder="ค้นหาหรือระบุตำบล/แขวง">
+              <datalist id="subdistrictOptions"></datalist>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">รหัสไปรษณีย์</label>
+              <input type="text" class="form-control postcode-field" id="postcode" maxlength="5" placeholder="รหัสไปรษณีย์" readonly>
+            </div>
+            <div class="col-md-8">
+              <div class="field-label-row">
+                <label class="form-label mb-0">คำอธิบายสถานที่เกิดเหตุเพิ่มเติม</label>
+                <button type="button" class="voice-btn" id="voiceBtn-placeDescription" data-target="placeDescription" onclick="toggleVoice('placeDescription')" title="พิมพ์ด้วยเสียง" aria-label="พิมพ์คำอธิบายสถานที่ด้วยเสียง">
+                  <i class="fa-solid fa-microphone"></i>
+                </button>
+              </div>
+              <input type="text" class="form-control" id="placeDescription" maxlength="300">
+              <div class="voice-indicator" id="voiceIndicator-placeDescription"><span class="voice-dot"></span>กำลังฟัง... พูดได้เลยครับ</div>
+            </div>
+            <div class="col-12">
+              <div class="field-label-row">
+                <label class="form-label mb-0">ความประสงค์ให้สำนักงาน ป.ป.ท. ดำเนินการ<span class="req">*</span></label>
+                <button type="button" class="voice-btn" id="voiceBtn-desiredAction" data-target="desiredAction" onclick="toggleVoice('desiredAction')" title="พิมพ์ด้วยเสียง" aria-label="พิมพ์ความประสงค์ด้วยเสียง">
+                  <i class="fa-solid fa-microphone"></i>
+                </button>
+              </div>
+              <textarea class="form-control" id="desiredAction" rows="3" maxlength="1500" required></textarea>
+              <div class="char-counter" id="desiredActionCounter">0/1500</div>
+              <div class="voice-indicator" id="voiceIndicator-desiredAction"><span class="voice-dot"></span>กำลังฟัง... พูดได้เลยครับ</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">เอกสารแนบ (ไม่เกิน 10 ไฟล์ รวมไม่เกิน 50 MB)</label>
+              <div class="file-dropzone" id="fileDropzone">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                คลิกเพื่อเลือกไฟล์ หรือลากวางที่นี่
+                <div class="fd-hint">รองรับไฟล์ png, jpg, jpeg, pdf, docx, xlsx</div>
+              </div>
+              <input type="file" id="fileInput" class="d-none" multiple accept=".png,.jpg,.jpeg,.pdf,.docx,.xlsx">
+              <div class="file-list" id="fileList"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center mb-5">
+          <button type="button" class="btn btn-form-primary btn-lg" onclick="goReview()">
+            <i class="fa-solid fa-magnifying-glass me-2"></i>บันทึกคำร้อง — ตรวจสอบก่อนส่ง
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== STEP 2 ===== -->
+      <div class="step-panel d-none" id="stepPanel2">
+        <div class="review-card mb-4">
+          <div class="form-section-title" style="border-bottom:none;margin-bottom:1rem;">
+            <i class="fa-solid fa-magnifying-glass" style="color:var(--ecmis-gold)"></i>สรุปคำร้อง — กรุณาตรวจสอบก่อนส่ง
+          </div>
+          <div id="reviewBody"></div>
+          <div class="review-warning">
+            <i class="fa-solid fa-triangle-exclamation mt-1"></i>
+            <div><b>หมายเหตุ:</b> เมื่อส่งคำร้องแล้วจะไม่สามารถแก้ไขได้ หากต้องการแก้ไขให้กดปุ่ม <b>ย้อนกลับแก้ไข</b></div>
+          </div>
+
+          <div data-human-verification="complaint-submit"></div>
+        </div>
+        <div class="text-center d-flex flex-wrap justify-content-center gap-3 mb-5 public-action-pair">
+          <button type="button" class="btn btn-form-secondary" onclick="goToStep(1)"><i class="fa-solid fa-arrow-left me-2"></i>ย้อนกลับแก้ไข</button>
+          <button type="button" class="btn btn-form-primary" onclick="submitComplaint()"><i class="fa-solid fa-paper-plane me-2"></i>ส่งคำร้อง</button>
+        </div>
+      </div>
+
+      <!-- ===== STEP 3 ===== -->
+      <div class="step-panel d-none" id="stepPanel3">
+        <div class="review-card mb-5">
+          <div id="trackingNoBox">
+            <i class="fa-solid fa-circle-check mb-2" style="font-size:1.6rem;color:var(--ecmis-gold)"></i>
+            <div class="small text-muted">หมายเลขติดตามคำร้องของท่านคือ</div>
+            <div style="display:flex;gap:.6rem;justify-content:center;margin:.45rem 0 .2rem" id="trackingNoDisplay">
+              <div style="flex:1;max-width:11rem;border:1px solid #c9d4e4;border-radius:.6rem;padding:.55rem .6rem;background:#f4f7fb"><div style="font-size:1.35rem;font-weight:800;color:var(--ecmis-navy);letter-spacing:.06em;font-variant-numeric:tabular-nums" id="trackingServiceNo">—</div><div class="small text-muted" style="margin-top:.15rem">เลขรับบริการ</div></div>
+              <div style="flex:1;max-width:11rem;border:1px solid #c9d4e4;border-radius:.6rem;padding:.55rem .6rem;background:#f4f7fb"><div style="font-size:1.35rem;font-weight:800;color:var(--ecmis-navy);letter-spacing:.06em;font-variant-numeric:tabular-nums" id="trackingGenNo">—</div><div class="small text-muted" style="margin-top:.15rem">รหัสติดตาม</div></div>
+            </div>
+            <img id="trackingQr" class="tracking-qr d-none" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="QR code สำหรับติดตามคำร้อง">
+            <div class="small mt-2 fw-semibold" style="color:var(--ecmis-red)">กรุณาบันทึกเลขรับบริการและรหัสติดตามไว้ทันที เพื่อใช้ติดตามสถานะภายหลัง ทั้งนี้ โปรดเก็บรักษาเลขรับบริการและรหัสติดตามเป็นความลับ และห้ามเปิดเผยแก่ผู้อื่น</div>
+            <div class="tracking-save-actions d-none" id="trackingSaveActions">
+              <button type="button" class="btn-tracking-save" onclick="copyTrackingNo()"><i class="fa-solid fa-copy me-1"></i>คัดลอกหมายเลข</button>
+              <button type="button" class="btn-tracking-save" onclick="saveTrackingQr()"><i class="fa-solid fa-download me-1"></i>บันทึก QR</button>
+              <a class="btn-tracking-save text-decoration-none" id="trackingLink" href="tracking.html"><i class="fa-solid fa-list-check me-1"></i>ติดตามสถานะ</a>
+            </div>
+          </div>
+          <h5 class="text-center fw-bold mb-2 mt-4" style="color:var(--ecmis-navy)">ส่งคำร้องเรียบร้อยแล้ว</h5>
+          <p class="text-center text-muted small mb-4">ขอบคุณที่แจ้งเบาะแสกับสำนักงาน ป.ป.ท. กรุณาบันทึกหมายเลขติดตามคำร้องไว้เพื่อใช้ตรวจสอบสถานะภายหลัง</p>
+          <div class="text-center">
+            <a href="index.html" class="btn btn-form-gold btn-lg">
+              <i class="fa-solid fa-house me-2"></i>กลับสู่หน้าหลัก
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============ Footer ============ -->
+<footer class="site-footer pb-4" id="footer">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <h6><i class="fa-solid fa-shield-halved me-2" style="color:var(--ecmis-gold)"></i>E-CMIS</h6>
+        <p class="small">สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ (ป.ป.ท.)<br>
+        99 หมู่ 4 อาคารซอฟต์แวร์พาร์ค ถ.แจ้งวัฒนะ ต.คลองเกลือ อ.ปากเกร็ด จ.นนทบุรี 11120</p>
+        <div class="mt-3">
+          <a href="#" class="social-icon" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+          <a href="#" class="social-icon" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+          <a href="#" class="social-icon" aria-label="LINE"><i class="fa-brands fa-line"></i></a>
+          <a href="#" class="social-icon" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <h6>สำนักงาน ป.ป.ท. เขตพื้นที่</h6>
+        <div class="row row-cols-2 small">
+          <div class="col"><a href="#">เขต 1 (กรุงเทพฯ)</a></div>
+          <div class="col"><a href="#">เขต 2 (ชลบุรี)</a></div>
+          <div class="col"><a href="#">เขต 3 (นครราชสีมา)</a></div>
+          <div class="col"><a href="#">เขต 4 (ขอนแก่น)</a></div>
+          <div class="col"><a href="#">เขต 5 (เชียงใหม่)</a></div>
+          <div class="col"><a href="#">เขต 6 (พิษณุโลก)</a></div>
+          <div class="col"><a href="#">เขต 7 (ราชบุรี)</a></div>
+          <div class="col"><a href="#">เขต 8 (สุราษฎร์ธานี)</a></div>
+          <div class="col"><a href="#">เขต 9 (สงขลา)</a></div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <h6>ลิงก์ที่เกี่ยวข้อง</h6>
+        <ul class="list-unstyled small">
+          <li class="mb-2"><a href="index.html"><i class="fa-solid fa-angle-right me-1"></i>กลับหน้าหลัก E-CMIS</a></li>
+          <li class="mb-2"><a href="#"><i class="fa-solid fa-angle-right me-1"></i>สำนักงาน ป.ป.ช.</a></li>
+          <li class="mb-2"><a href="#"><i class="fa-solid fa-angle-right me-1"></i>นโยบายความเป็นส่วนตัว (PDPA)</a></li>
+          <li class="mb-2"><a href="index.html#faq"><i class="fa-solid fa-angle-right me-1"></i>คำถามที่พบบ่อย</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom text-center py-3 mt-4">
+    &copy; 2569 สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ (ป.ป.ท.) — E-CMIS
+  </div>
+</footer>
+
+<!-- ============ Cookie consent banner ============ -->
+<div class="cookie-banner" id="cookieBanner">
+  <div class="container d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div class="d-flex align-items-start gap-3">
+      <i class="fa-solid fa-cookie-bite fa-2x flex-shrink-0" style="color:var(--ecmis-gold-light)"></i>
+      <div class="small">
+        เว็บไซต์นี้ใช้คุกกี้เพื่อให้ท่านได้รับประสบการณ์ที่ดีในการใช้งานเว็บไซต์ และเพื่อวิเคราะห์การใช้งานของผู้ใช้
+        ท่านสามารถจัดการการตั้งค่าคุกกี้ได้ตามต้องการ
+        <br>
+        <a href="https://www.pacc.go.th/home/view_content/54/8127" target="_blank" rel="noopener">อ่านนโยบายคุกกี้</a>
+      </div>
+    </div>
+    <div class="d-flex gap-2 flex-shrink-0">
+      <button type="button" class="btn btn-cookie-settings btn-sm px-3" onclick="openCookieSettings()">ตั้งค่าคุกกี้</button>
+      <button type="button" class="btn btn-cookie-accept btn-sm px-3" onclick="acceptCookies()">ยอมรับทั้งหมด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Scripts ============ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+// --- Cookie consent banner (same behaviour as landing page) ---
+function acceptCookies(){
+  const banner = document.getElementById('cookieBanner');
+  if(banner) banner.classList.remove('show');
+}
+function openCookieSettings(){
+  Swal.fire({
+    title: 'ตั้งค่าคุกกี้',
+    html: `
+      <div class="text-start small">
+        <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+          <div><b>คุกกี้ที่จำเป็น</b><br><span class="text-muted">จำเป็นต่อการทำงานของเว็บไซต์ ไม่สามารถปิดได้</span></div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" checked disabled>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+          <div><b>คุกกี้เพื่อการวิเคราะห์</b><br><span class="text-muted">ช่วยให้เราเข้าใจการใช้งานเว็บไซต์</span></div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" id="ckAnalytics" checked>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center py-2">
+          <div><b>คุกกี้เพื่อการโฆษณา</b><br><span class="text-muted">ปรับเนื้อหาให้ตรงความสนใจของท่าน</span></div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" id="ckMarketing">
+          </div>
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: 'บันทึกการตั้งค่า',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#0b2e59'
+  }).then((result) => {
+    if(result.isConfirmed){ acceptCookies(); }
+  });
+}
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const banner = document.getElementById('cookieBanner');
+    if(banner) banner.classList.add('show');
+  }, 700);
+});
+
+// --- accessibility bar helpers (same behaviour as landing page) ---
+let fontStep = 0;
+function changeFontSize(dir){
+  if(dir === 0){ fontStep = 0; }
+  else { fontStep = Math.max(-2, Math.min(3, fontStep + dir)); }
+  document.documentElement.style.fontSize = (16 + fontStep*2) + 'px';
+}
+function toggleContrast(){ document.body.classList.toggle('high-contrast'); }
+
+// --- char counters ---
+function wireCounter(inputId, counterId, max){
+  const input = document.getElementById(inputId);
+  const counter = document.getElementById(counterId);
+  if(!input || !counter) return;
+  const update = () => { counter.textContent = input.value.length + '/' + max; };
+  input.addEventListener('input', update);
+  update();
+}
+wireCounter('address', 'addressCounter', 250);
+wireCounter('complaintDetail', 'complaintDetailCounter', 3000);
+wireCounter('incidentPlace', 'incidentPlaceCounter', 300);
+wireCounter('desiredAction', 'desiredActionCounter', 1500);
+
+// --- mock: government agencies (for dev/demo — final list to be provided by ป.ป.ท.) ---
+const GOV_AGENCIES = [
+  'กระทรวงมหาดไทย','กระทรวงศึกษาธิการ','กระทรวงสาธารณสุข','กระทรวงการคลัง','กระทรวงคมนาคม',
+  'กระทรวงเกษตรและสหกรณ์','กระทรวงยุติธรรม','กระทรวงแรงงาน','กระทรวงทรัพยากรธรรมชาติและสิ่งแวดล้อม',
+  'กระทรวงพาณิชย์','กระทรวงอุตสาหกรรม','กระทรวงการพัฒนาสังคมและความมั่นคงของมนุษย์',
+  'กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม','กระทรวงพลังงาน','กระทรวงการต่างประเทศ',
+  'กระทรวงการท่องเที่ยวและกีฬา','กระทรวงวัฒนธรรม','กระทรวงกลาโหม','กระทรวงการอุดมศึกษา วิทยาศาสตร์ วิจัยและนวัตกรรม',
+  'สำนักนายกรัฐมนตรี','สำนักงานตำรวจแห่งชาติ','กรมการปกครอง','กรมที่ดิน','กรมโยธาธิการและผังเมือง',
+  'กรมส่งเสริมการปกครองท้องถิ่น','กรมสรรพากร','กรมศุลกากร','กรมบัญชีกลาง','สำนักงานอัยการสูงสุด',
+  'สำนักงานคณะกรรมการการเลือกตั้ง (กกต.)','กรุงเทพมหานคร (กทม.)','องค์การบริหารส่วนจังหวัด (อบจ.)',
+  'องค์การบริหารส่วนตำบล (อบต.)','เทศบาลนคร/เทศบาลเมือง/เทศบาลตำบล','หน่วยงานรัฐวิสาหกิจ',
+  'สถานศึกษา/มหาวิทยาลัยของรัฐ','โรงพยาบาลของรัฐ','อื่นๆ (โปรดระบุในรายละเอียดการร้องเรียน)'
+];
+function buildAgencyOptions(placeholder){
+  const items = placeholder ? [{value:'',label:placeholder}] : [];
+  return items.concat(GOV_AGENCIES.map(name=>({value:name,label:name})))
+    .map(item=>`<option value="${item.value}">${item.label}</option>`).join('');
+}
+document.getElementById('agencyName').innerHTML = buildAgencyOptions('เลือกหน่วยงาน');
+
+// default "หน่วยงานที่ต้องการร้องเรียน" (section 3) from the first accused party's agency (section 2), if chosen
+document.getElementById('accusedList').addEventListener('change', evt => {
+  if(evt.target.dataset.field !== 'agency') return;
+  if(evt.target.closest('.accused-card') !== document.querySelector('.accused-card')) return;
+  if(!evt.target.value) return;
+  document.getElementById('agencyName').value = evt.target.value;
+});
+
+function toggleNetworkVerifyCode(){
+  const isNetworkMember = document.getElementById('networkStatus').value !== '';
+  const wrap = document.getElementById('networkVerifyCodeWrap');
+  const codeInput = document.getElementById('networkVerifyCode');
+  wrap.classList.toggle('d-none', !isNetworkMember);
+  codeInput.disabled = !isNetworkMember;
+  codeInput.required = isNetworkMember;
+  if(!isNetworkMember){
+    codeInput.value = '';
+    codeInput.classList.remove('is-invalid');
+  }
+}
+toggleNetworkVerifyCode();
+
+const complainantIdentityFields=['nationalId','firstName','lastName','address','phone','email'];
+function getComplainantIdentityState(){
+  const providedFields=complainantIdentityFields.filter(id=>{
+    const element=document.getElementById(id);
+    return element&&element.value.trim();
+  });
+  const isAnonymous=providedFields.length===0;
+  return {
+    isAnonymous,
+    providedFields,
+    confidentialityRequested:document.getElementById('confidentialityToggle').checked
+  };
+}
+function getTrackingIdentityLast4(){
+  const nationalIdDigits=document.getElementById('nationalId').value.replace(/\D/g,'');
+  if(isValidThaiNationalId(nationalIdDigits)) return nationalIdDigits.slice(-4);
+  const phoneDigits=document.getElementById('phone').value.replace(/\D/g,'');
+  return phoneDigits.length>=4?phoneDigits.slice(-4):'';
+}
+
+// --- national ID: digits only, auto-format with dashes (x-xxxx-xxxxx-xx-x), verify checksum ---
+function formatNationalId(el){
+  const digits = el.value.replace(/\D/g, '').slice(0, 13);
+  const groups = [1, 4, 5, 2, 1];
+  let idx = 0;
+  const parts = [];
+  for(const len of groups){
+    if(idx >= digits.length) break;
+    parts.push(digits.slice(idx, idx + len));
+    idx += len;
+  }
+  el.value = parts.join('-');
+  validateNationalId(digits, el);
+}
+function isValidThaiNationalId(digits){
+  if(digits.length !== 13 || !/^\d{13}$/.test(digits)) return false;
+  let sum = 0;
+  for(let i = 0; i < 12; i++){
+    sum += parseInt(digits[i], 10) * (13 - i);
+  }
+  const checkDigit = (11 - (sum % 11)) % 10;
+  return checkDigit === parseInt(digits[12], 10);
+}
+function validateNationalId(digits, el){
+  const feedback = document.getElementById('nationalIdFeedback');
+  el.classList.remove('is-valid', 'is-invalid');
+  feedback.classList.remove('show', 'valid', 'invalid');
+  if(digits.length === 0){
+    feedback.innerHTML = '';
+    return;
+  }
+  if(digits.length < 13){
+    feedback.classList.add('show');
+    feedback.innerHTML = `<i class="fa-solid fa-circle-info"></i> กรอกให้ครบ 13 หลัก (ขณะนี้ ${digits.length}/13)`;
+    return;
+  }
+  if(isValidThaiNationalId(digits)){
+    el.classList.add('is-valid');
+    feedback.classList.add('show', 'valid');
+    feedback.innerHTML = '<i class="fa-solid fa-circle-check"></i> เลขประจำตัวประชาชนถูกต้อง';
+  } else {
+    el.classList.add('is-invalid');
+    feedback.classList.add('show', 'invalid');
+    feedback.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> เลขประจำตัวประชาชนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง';
+  }
+}
+
+// --- incident date: custom Thai Buddhist-Era (พ.ศ.) calendar popover, no external dependencies ---
+const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+function formatThaiBEDate(isoDate){
+  if(!isoDate) return '';
+  const [y, m, d] = isoDate.split('-').map(Number);
+  return `${d} ${THAI_MONTHS[m - 1]} พ.ศ. ${y + 543}`;
+}
+function pad2v(n){ return String(n).padStart(2, '0'); }
+function isoOf(y, m, d){ return `${y}-${pad2v(m + 1)}-${pad2v(d)}`; }
+function todayISO(){ const t = new Date(); return isoOf(t.getFullYear(), t.getMonth(), t.getDate()); }
+function updateIncidentDateDisplay(){
+  const formatted = formatThaiBEDate(document.getElementById('incidentDate').value);
+  document.getElementById('incidentDateDisplayText').textContent = formatted || 'เลือกวันที่เกิดเหตุ';
+}
+const calView = { year: new Date().getFullYear(), month: new Date().getMonth() };
+function initCalendarSelects(){
+  const monthSel = document.getElementById('tcMonthSelect');
+  monthSel.replaceChildren(...THAI_MONTHS.map((name, i) => {
+    const opt = document.createElement('option');
+    opt.value = String(i);
+    opt.textContent = name;
+    return opt;
+  }));
+  const yearSel = document.getElementById('tcYearSelect');
+  const currentBEYear = new Date().getFullYear() + 543;
+  const yearOptions = [];
+  for(let beYear = currentBEYear; beYear >= currentBEYear - 100; beYear--) yearOptions.push(beYear);
+  yearSel.replaceChildren(...yearOptions.map(beYear => {
+    const opt = document.createElement('option');
+    opt.value = String(beYear - 543);
+    opt.textContent = String(beYear);
+    return opt;
+  }));
+  monthSel.addEventListener('change', () => { calView.month = Number(monthSel.value); renderCalendar(); });
+  yearSel.addEventListener('change', () => { calView.year = Number(yearSel.value); renderCalendar(); });
+}
+initCalendarSelects();
+function renderCalendar(){
+  document.getElementById('tcMonthSelect').value = String(calView.month);
+  document.getElementById('tcYearSelect').value = String(calView.year);
+  const daysWrap = document.getElementById('tcDays');
+  daysWrap.replaceChildren();
+  const firstWeekday = new Date(calView.year, calView.month, 1).getDay();
+  const daysInMonth = new Date(calView.year, calView.month + 1, 0).getDate();
+  const selectedISO = document.getElementById('incidentDate').value;
+  const nowISO = todayISO();
+  for(let i = 0; i < firstWeekday; i++){
+    const empty = document.createElement('div');
+    empty.className = 'tc-day tc-day-empty';
+    daysWrap.appendChild(empty);
+  }
+  for(let d = 1; d <= daysInMonth; d++){
+    const iso = isoOf(calView.year, calView.month, d);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tc-day';
+    btn.textContent = String(d);
+    if(iso === nowISO) btn.classList.add('tc-day-today');
+    if(iso === selectedISO) btn.classList.add('tc-day-selected');
+    btn.addEventListener('click', () => selectDate(iso));
+    daysWrap.appendChild(btn);
+  }
+}
+function selectDate(iso){
+  document.getElementById('incidentDate').value = iso;
+  updateIncidentDateDisplay();
+  closeDatePicker();
+}
+function changeCalMonth(delta){
+  calView.month += delta;
+  if(calView.month < 0){ calView.month = 11; calView.year--; }
+  if(calView.month > 11){ calView.month = 0; calView.year++; }
+  renderCalendar();
+}
+document.getElementById('tcPrevMonth').addEventListener('click', () => changeCalMonth(-1));
+document.getElementById('tcNextMonth').addEventListener('click', () => changeCalMonth(1));
+document.getElementById('tcToday').addEventListener('click', () => {
+  const t = new Date();
+  calView.year = t.getFullYear();
+  calView.month = t.getMonth();
+  selectDate(todayISO());
+});
+function onDocClickCloseCalendar(evt){
+  if(!evt.target.closest('.thai-date-field')) closeDatePicker();
+}
+function openDatePicker(){
+  const existing = document.getElementById('incidentDate').value;
+  const base = existing ? new Date(existing) : new Date();
+  calView.year = base.getFullYear();
+  calView.month = base.getMonth();
+  renderCalendar();
+  document.getElementById('thaiCalendarPopover').classList.remove('d-none');
+  document.addEventListener('click', onDocClickCloseCalendar);
+}
+function closeDatePicker(){
+  document.getElementById('thaiCalendarPopover').classList.add('d-none');
+  document.removeEventListener('click', onDocClickCloseCalendar);
+}
+function toggleDatePicker(){
+  document.getElementById('thaiCalendarPopover').classList.contains('d-none') ? openDatePicker() : closeDatePicker();
+}
+updateIncidentDateDisplay();
+
+// --- incident time: 24-hour drag-to-scroll wheel picker (every minute, no AM/PM) ---
+const WHEEL_ITEM_HEIGHT = 38;
+const timePickerState = { hour:null, minute:null, confirmedHour:null, confirmedMinute:null };
+function updateIncidentTimeDisplay(){
+  const { confirmedHour:h, confirmedMinute:m } = timePickerState;
+  document.getElementById('incidentTimeDisplayText').textContent = (h !== null && m !== null) ? `${pad2v(h)} : ${pad2v(m)} น.` : 'เลือกเวลา';
+}
+function initWheel(colEl, trackEl, count, formatter, onChange){
+  trackEl.replaceChildren();
+  for(let i = 0; i < count; i++){
+    const item = document.createElement('div');
+    item.className = 'tp-wheel-item';
+    item.textContent = formatter(i);
+    item.dataset.value = String(i);
+    trackEl.appendChild(item);
+  }
+  const items = trackEl.children;
+  let dragging = false, moved = false, startY = 0, startScroll = 0, scrollEndTimer = null;
+  function nearestIndex(){ return Math.max(0, Math.min(count - 1, Math.round(colEl.scrollTop / WHEEL_ITEM_HEIGHT))); }
+  function highlightActive(){
+    const idx = nearestIndex();
+    for(let i = 0; i < items.length; i++) items[i].classList.toggle('active', i === idx);
+    return idx;
+  }
+  function snapTo(index, smooth){
+    colEl.scrollTo({ top: Math.max(0, Math.min(count - 1, index)) * WHEEL_ITEM_HEIGHT, behavior: smooth ? 'smooth' : 'auto' });
+  }
+  colEl.addEventListener('scroll', () => {
+    onChange(highlightActive(), false);
+    if(dragging) return;
+    clearTimeout(scrollEndTimer);
+    scrollEndTimer = setTimeout(() => {
+      const idx = nearestIndex();
+      snapTo(idx, true);
+      onChange(idx, true);
+    }, 120);
+  });
+  colEl.addEventListener('pointerdown', evt => {
+    dragging = true; moved = false; startY = evt.clientY; startScroll = colEl.scrollTop;
+    colEl.classList.add('dragging');
+    colEl.setPointerCapture(evt.pointerId);
+  });
+  colEl.addEventListener('pointermove', evt => {
+    if(!dragging) return;
+    const dy = evt.clientY - startY;
+    if(Math.abs(dy) > 2) moved = true;
+    colEl.scrollTop = startScroll - dy;
+  });
+  function endDrag(){
+    if(!dragging) return;
+    dragging = false;
+    colEl.classList.remove('dragging');
+    const idx = nearestIndex();
+    snapTo(idx, true);
+    onChange(idx, true);
+  }
+  colEl.addEventListener('pointerup', endDrag);
+  colEl.addEventListener('pointercancel', endDrag);
+  colEl.addEventListener('click', evt => {
+    if(moved) return;
+    const item = evt.target.closest('.tp-wheel-item');
+    if(!item) return;
+    const idx = Number(item.dataset.value);
+    snapTo(idx, true);
+    onChange(idx, true);
+  });
+  return { setValue(idx, smooth){ snapTo(idx, !!smooth); highlightActive(); } };
+}
+const tpHourInput = document.getElementById('tpHourInput');
+const tpMinuteInput = document.getElementById('tpMinuteInput');
+const hourWheelApi = initWheel(document.getElementById('tpHourWheel'), document.getElementById('tpHourTrack'), 24, pad2v, idx => {
+  timePickerState.hour = idx;
+  tpHourInput.value = pad2v(idx);
+});
+const minuteWheelApi = initWheel(document.getElementById('tpMinuteWheel'), document.getElementById('tpMinuteTrack'), 60, pad2v, idx => {
+  timePickerState.minute = idx;
+  tpMinuteInput.value = pad2v(idx);
+});
+function wireManualTimeInput(inputEl, max, wheelApi, setter){
+  inputEl.addEventListener('input', () => {
+    inputEl.value = inputEl.value.replace(/\D/g, '').slice(0, 2);
+  });
+  inputEl.addEventListener('change', () => {
+    const n = parseInt(inputEl.value, 10);
+    if(isNaN(n)){ inputEl.value = pad2v(setter(null) ?? 0); return; }
+    const clamped = Math.max(0, Math.min(max, n));
+    setter(clamped);
+    inputEl.value = pad2v(clamped);
+    wheelApi.setValue(clamped, true);
+  });
+  inputEl.addEventListener('keydown', evt => { if(evt.key === 'Enter') inputEl.blur(); });
+}
+wireManualTimeInput(tpHourInput, 23, hourWheelApi, v => { if(v !== null) timePickerState.hour = v; return timePickerState.hour; });
+wireManualTimeInput(tpMinuteInput, 59, minuteWheelApi, v => { if(v !== null) timePickerState.minute = v; return timePickerState.minute; });
+function onDocClickCloseTimePicker(evt){
+  if(!evt.target.closest('.thai-time-field')) closeTimePickerPopover();
+}
+function toggleTimePicker(){
+  document.getElementById('timePickerPopover').classList.contains('d-none') ? openTimePicker() : closeTimePickerPopover();
+}
+function openTimePicker(){
+  const now = new Date();
+  const h = timePickerState.confirmedHour !== null ? timePickerState.confirmedHour : now.getHours();
+  const m = timePickerState.confirmedMinute !== null ? timePickerState.confirmedMinute : now.getMinutes();
+  timePickerState.hour = h;
+  timePickerState.minute = m;
+  tpHourInput.value = pad2v(h);
+  tpMinuteInput.value = pad2v(m);
+  document.getElementById('timePickerPopover').classList.remove('d-none');
+  document.addEventListener('click', onDocClickCloseTimePicker);
+  requestAnimationFrame(() => {
+    hourWheelApi.setValue(h);
+    minuteWheelApi.setValue(m);
+  });
+}
+function closeTimePickerPopover(){
+  document.getElementById('timePickerPopover').classList.add('d-none');
+  document.removeEventListener('click', onDocClickCloseTimePicker);
+}
+function dismissTimePicker(){ closeTimePickerPopover(); }
+function confirmTimePicker(){
+  timePickerState.confirmedHour = timePickerState.hour;
+  timePickerState.confirmedMinute = timePickerState.minute;
+  updateIncidentTimeDisplay();
+  closeTimePickerPopover();
+}
+function clearTimePicker(){
+  timePickerState.hour = null;
+  timePickerState.minute = null;
+  timePickerState.confirmedHour = null;
+  timePickerState.confirmedMinute = null;
+  updateIncidentTimeDisplay();
+  closeTimePickerPopover();
+}
+updateIncidentTimeDisplay();
+
+function clearIncidentDateTime(){
+  document.getElementById('incidentDate').value = '';
+  updateIncidentDateDisplay();
+  timePickerState.hour = null;
+  timePickerState.minute = null;
+  timePickerState.confirmedHour = null;
+  timePickerState.confirmedMinute = null;
+  updateIncidentTimeDisplay();
+  closeDatePicker();
+  closeTimePickerPopover();
+}
+function getIncidentDateTimeText(){
+  const dateText = formatThaiBEDate(document.getElementById('incidentDate').value);
+  const { confirmedHour:h, confirmedMinute:m } = timePickerState;
+  const timeText = (h !== null && m !== null) ? `${pad2v(h)}:${pad2v(m)} น.` : '';
+  if(!dateText && !timeText) return '-';
+  return [dateText, timeText].filter(Boolean).join(' เวลา ');
+}
+
+// --- file upload (mock, no real transfer) ---
+let uploadedFiles = [];
+const dropzone = document.getElementById('fileDropzone');
+const fileInput = document.getElementById('fileInput');
+dropzone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => {
+  handleFiles(e.target.files);
+  e.target.value = '';
+});
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+let fileThumbs = [];
+const MAX_FILE_COUNT = 10;
+const MAX_TOTAL_FILE_BYTES = 50 * 1024 * 1024;
+const ALLOWED_FILE_TYPES = new Map([
+  ['png', ['image/png']],
+  ['jpg', ['image/jpeg']],
+  ['jpeg', ['image/jpeg']],
+  ['pdf', ['application/pdf']],
+  ['docx', ['application/vnd.openxmlformats-officedocument.wordprocessingml.document']],
+  ['xlsx', ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']]
+]);
+function validateAttachment(file, nextCount, nextTotalBytes){
+  const extension = (file.name || '').split('.').pop().toLowerCase();
+  const allowedMimeTypes = ALLOWED_FILE_TYPES.get(extension);
+  if(!allowedMimeTypes || (file.type && !allowedMimeTypes.includes(file.type))){
+    return 'รองรับเฉพาะไฟล์ png, jpg, jpeg, pdf, docx และ xlsx';
+  }
+  if(nextCount > MAX_FILE_COUNT) return 'แนบไฟล์ได้สูงสุด 10 ไฟล์';
+  if(nextTotalBytes > MAX_TOTAL_FILE_BYTES) return 'ขนาดไฟล์รวมต้องไม่เกิน 50 MB';
+  return '';
+}
+function handleFiles(files){
+  let totalBytes = uploadedFiles.reduce((sum, file) => sum + file.size, 0);
+  const rejected = [];
+  Array.from(files).forEach(f => {
+    const rejectionReason = validateAttachment(f, uploadedFiles.length + 1, totalBytes + f.size);
+    if(rejectionReason){
+      rejected.push(`${f.name || 'ไฟล์ไม่มีชื่อ'}: ${rejectionReason}`);
+      return;
+    }
+    uploadedFiles.push(f);
+    fileThumbs.push(null);
+    totalBytes += f.size;
+    if(f.type && f.type.startsWith('image/')){
+      const reader = new FileReader();
+      reader.onload = e => {
+        const currentIndex = uploadedFiles.indexOf(f);
+        if(currentIndex !== -1){
+          fileThumbs[currentIndex] = e.target.result;
+          renderFileList();
+        }
+      };
+      reader.readAsDataURL(f);
+    }
+  });
+  renderFileList();
+  if(rejected.length){
+    Swal.fire({
+      icon:'warning',
+      title:'มีไฟล์ที่แนบไม่ได้',
+      text:rejected.join('\n'),
+      confirmButtonColor:'#0b2e59'
+    });
+  }
+}
+function removeFile(idx){ uploadedFiles.splice(idx,1); fileThumbs.splice(idx,1); renderFileList(); }
+function fileTypeIcon(f){
+  const name = (f.name || '').toLowerCase();
+  if(f.type === 'application/pdf' || name.endsWith('.pdf')) return 'fa-file-pdf';
+  if(name.endsWith('.doc') || name.endsWith('.docx')) return 'fa-file-word';
+  if(name.endsWith('.xls') || name.endsWith('.xlsx')) return 'fa-file-excel';
+  if(f.type && f.type.startsWith('image/')) return 'fa-file-image';
+  return 'fa-paperclip';
+}
+function renderFileList(){
+  const list = document.getElementById('fileList');
+  const fragment = document.createDocumentFragment();
+  uploadedFiles.forEach((file, index) => {
+    const item = document.createElement('div');
+    item.className = 'file-list-item';
+
+    const thumbnail = document.createElement('span');
+    thumbnail.className = 'file-thumb';
+    if(fileThumbs[index]){
+      const image = document.createElement('img');
+      image.src = fileThumbs[index];
+      image.alt = '';
+      thumbnail.appendChild(image);
+    } else {
+      const icon = document.createElement('i');
+      icon.classList.add('fa-solid', fileTypeIcon(file));
+      thumbnail.appendChild(icon);
+    }
+
+    const name = document.createElement('span');
+    name.className = 'flex-grow-1 text-truncate';
+    name.textContent = file.name;
+
+    const size = document.createElement('span');
+    size.className = 'text-muted small';
+    size.textContent = `${(file.size / 1024).toFixed(0)} KB`;
+
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'btn-remove-file';
+    removeButton.setAttribute('aria-label', `นำไฟล์ ${file.name} ออก`);
+    removeButton.addEventListener('click', () => removeFile(index));
+    const removeIcon = document.createElement('i');
+    removeIcon.className = 'fa-solid fa-xmark';
+    removeButton.appendChild(removeIcon);
+
+    item.append(thumbnail, name, size, removeButton);
+    fragment.appendChild(item);
+  });
+  list.replaceChildren(fragment);
+}
+
+// --- accused party (repeatable blocks) ---
+let accusedSeq = 0;
+function addAccused(){
+  accusedSeq++;
+  const wrap = document.getElementById('accusedList');
+  const card = document.createElement('div');
+  card.className = 'accused-card';
+  card.innerHTML = `
+    <button type="button" class="remove-accused" onclick="removeAccused(this)"><i class="fa-solid fa-circle-xmark"></i></button>
+    <div class="fw-semibold mb-3" style="color:var(--ecmis-navy)"><i class="fa-solid fa-user-tag me-2"></i>ผู้ถูกร้องเรียนที่ ${accusedSeq}</div>
+    <div class="row g-3">
+      <div class="col-md-6"><label class="form-label">ชื่อ-นามสกุล / หน่วยงาน</label><input type="text" class="form-control" data-field="name"></div>
+      <div class="col-md-6"><label class="form-label">ตำแหน่ง</label><input type="text" class="form-control" data-field="position"></div>
+      <div class="col-md-6"><label class="form-label">สังกัดหน่วยงาน</label><select class="form-select" data-field="agency">${buildAgencyOptions('เลือกหน่วยงาน')}</select></div>
+      <div class="col-md-6"><label class="form-label">ความเกี่ยวข้อง / พฤติการณ์โดยย่อ</label><input type="text" class="form-control" data-field="relation"></div>
+    </div>`;
+  wrap.appendChild(card);
+  document.getElementById('accusedEmpty').classList.add('d-none');
+}
+function removeAccused(btn){
+  btn.closest('.accused-card').remove();
+  if(document.querySelectorAll('.accused-card').length === 0){
+    document.getElementById('accusedEmpty').classList.remove('d-none');
+  }
+}
+
+// --- complaint subject: auto-suggested live from the first accused party, plus a manual re-trigger dropdown ---
+function buildSuggestedSubject(firstAccused){
+  const name = accusedFieldValue(firstAccused, 'name');
+  const agency = accusedFieldValue(firstAccused, 'agency');
+  const conduct = accusedFieldValue(firstAccused, 'relation');
+  // if the accused's name is known, lead with it; otherwise fall back to the generic "เจ้าหน้าที่ของรัฐ" phrasing built from agency + พฤติการณ์
+  let subject = name !== '-' ? `ร้องเรียน${name}` : 'ร้องเรียนเจ้าหน้าที่ของรัฐ';
+  if(agency !== '-') subject += ` สังกัด${agency}`;
+  if(conduct !== '-') subject += ` กรณี${conduct}`;
+  return subject;
+}
+// fallback for when no accused party has been added yet: summarize straight from รายละเอียดการร้องเรียน / เบาะแส
+function buildSubjectFromComplaintDetail(){
+  const detail = document.getElementById('complaintDetail').value.trim();
+  if(!detail) return '';
+  const maxLen = 120;
+  const summary = detail.length > maxLen ? detail.slice(0, maxLen).trim() + '…' : detail;
+  return `ร้องเรียนกรณี${summary}`;
+}
+let complaintSubjectAutoFilled = false;
+document.getElementById('complaintSubject').addEventListener('input', () => { complaintSubjectAutoFilled = false; });
+function autoSuggestComplaintSubject(){
+  const subjectInput = document.getElementById('complaintSubject');
+  if(subjectInput.value !== '' && !complaintSubjectAutoFilled) return; // user already typed their own subject, don't override it
+  const firstAccused = document.querySelector('.accused-card');
+  let suggested = '';
+  if(firstAccused){
+    const built = buildSuggestedSubject(firstAccused);
+    if(built !== 'ร้องเรียนเจ้าหน้าที่ของรัฐ') suggested = built; // has at least name/agency/พฤติการณ์ to go on
+  }
+  if(!suggested) suggested = buildSubjectFromComplaintDetail();
+  if(!suggested) return;
+  subjectInput.value = suggested;
+  complaintSubjectAutoFilled = true;
+}
+function isSubjectRelevantAccusedField(evt){
+  const field = evt.target.dataset.field;
+  return (field === 'name' || field === 'agency' || field === 'relation')
+    && evt.target.closest('.accused-card') === document.querySelector('.accused-card');
+}
+document.getElementById('accusedList').addEventListener('input', evt => { if(isSubjectRelevantAccusedField(evt)) autoSuggestComplaintSubject(); });
+document.getElementById('accusedList').addEventListener('change', evt => { if(isSubjectRelevantAccusedField(evt)) autoSuggestComplaintSubject(); });
+document.getElementById('complaintDetail').addEventListener('input', autoSuggestComplaintSubject);
+function applyComplaintSubjectTemplate(){
+  const templateSelect = document.getElementById('complaintSubjectTemplate');
+  const template = templateSelect.value;
+  if(!template) return;
+  if(template === 'official'){
+    const firstAccused = document.querySelector('.accused-card');
+    if(!firstAccused){
+      Swal.fire({icon:'info', title:'ยังไม่มีข้อมูลผู้ถูกร้องเรียน', text:'กรุณาเพิ่มข้อมูลผู้ถูกร้องเรียนในส่วนที่ 2 ก่อน เพื่อให้ระบบสร้างหัวข้อให้อัตโนมัติ', confirmButtonColor:'#0b2e59'});
+      templateSelect.value = '';
+      return;
+    }
+    document.getElementById('complaintSubject').value = buildSuggestedSubject(firstAccused);
+    complaintSubjectAutoFilled = true;
+  }
+  templateSelect.value = '';
+}
+
+// --- voice-to-text (Web Speech API) ---
+const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+let activeRecognition = null;
+let activeRecognitionTarget = null;
+
+document.querySelectorAll('.voice-btn').forEach(btn => {
+  if(!SpeechRecognitionAPI){
+    btn.disabled = true;
+    btn.title = 'เบราว์เซอร์นี้ไม่รองรับการพิมพ์ด้วยเสียง';
+  }
+});
+
+function toggleVoice(targetId){
+  if(!SpeechRecognitionAPI){
+    Swal.fire({icon:'info', title:'ไม่รองรับการพิมพ์ด้วยเสียง', text:'เบราว์เซอร์ของท่านไม่รองรับฟีเจอร์นี้ กรุณาใช้ Chrome หรือ Edge เวอร์ชันล่าสุด', confirmButtonColor:'#0b2e59'});
+    return;
+  }
+  if(activeRecognition && activeRecognitionTarget === targetId){
+    activeRecognition.stop();
+    return;
+  }
+  if(activeRecognition){
+    activeRecognition.stop();
+  }
+  const textarea = document.getElementById(targetId);
+  const btn = document.getElementById('voiceBtn-' + targetId);
+  const indicator = document.getElementById('voiceIndicator-' + targetId);
+
+  const recognition = new SpeechRecognitionAPI();
+  recognition.lang = 'th-TH';
+  recognition.continuous = true;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    activeRecognition = recognition;
+    activeRecognitionTarget = targetId;
+    btn.classList.add('listening');
+    if(indicator) indicator.classList.add('active');
+  };
+  recognition.onresult = (event) => {
+    let transcript = '';
+    for(let i = event.resultIndex; i < event.results.length; i++){
+      transcript += event.results[i][0].transcript;
+    }
+    const sep = textarea.value && !/\s$/.test(textarea.value) ? ' ' : '';
+    textarea.value = (textarea.value + sep + transcript).slice(0, textarea.maxLength || undefined);
+    textarea.dispatchEvent(new Event('input'));
+  };
+  recognition.onerror = () => { stopVoice(targetId); };
+  recognition.onend = () => { stopVoice(targetId); };
+
+  recognition.start();
+}
+function stopVoice(targetId){
+  const btn = document.getElementById('voiceBtn-' + targetId);
+  const indicator = document.getElementById('voiceIndicator-' + targetId);
+  if(btn) btn.classList.remove('listening');
+  if(indicator) indicator.classList.remove('active');
+  if(activeRecognitionTarget === targetId){
+    activeRecognition = null;
+    activeRecognitionTarget = null;
+  }
+}
+
+// --- geolocation ---
+function detectLocation(){
+  if(!navigator.geolocation){
+    Swal.fire({icon:'info', title:'ไม่รองรับการระบุตำแหน่ง', text:'เบราว์เซอร์ของท่านไม่รองรับฟีเจอร์นี้', confirmButtonColor:'#0b2e59'});
+    return;
+  }
+  const resultBox = document.getElementById('geoResult');
+  const resultText = document.getElementById('geoResultText');
+  resultBox.classList.add('show');
+  resultText.textContent = 'กำลังค้นหาตำแหน่งปัจจุบัน...';
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude.toFixed(5);
+      const lng = pos.coords.longitude.toFixed(5);
+      document.getElementById('geoLat').value = lat;
+      document.getElementById('geoLng').value = lng;
+      resultText.textContent = `บันทึกพิกัดตำแหน่งแล้ว (${lat}, ${lng}) — พิกัดนี้จะถูกแนบไปกับคำร้องเพื่อช่วยระบุสถานที่เกิดเหตุ`;
+      const place = document.getElementById('incidentPlace');
+      if(!place.value.trim()){
+        place.value = `พิกัด: ${lat}, ${lng}`;
+        place.dispatchEvent(new Event('input'));
+      }
+    },
+    () => {
+      resultText.textContent = 'ไม่สามารถเข้าถึงตำแหน่งได้ กรุณาอนุญาตการเข้าถึงตำแหน่งในเบราว์เซอร์ หรือกรอกสถานที่ด้วยตนเอง';
+    }
+  );
+}
+
+// --- stepper ---
+function updateStepper(step){
+  document.querySelectorAll('.stepper-step').forEach(el => {
+    const s = parseInt(el.dataset.step, 10);
+    el.classList.toggle('active', s === step);
+    el.classList.toggle('done', s < step);
+  });
+  const pct = step === 1 ? 33 : step === 2 ? 67 : 100;
+  document.getElementById('stepperFill').style.width = pct + '%';
+  const labels = {1:'กรอกข้อมูลคำร้อง', 2:'ตรวจสอบคำร้อง', 3:'เสร็จสิ้น'};
+  document.getElementById('stepperCaption').innerHTML = `ขั้นตอนที่ <b>${step}</b> / 3 — ${labels[step]} (${pct}%)`;
+}
+function goToStep(step){
+  document.querySelectorAll('.step-panel').forEach(el => el.classList.add('d-none'));
+  document.getElementById('stepPanel' + step).classList.remove('d-none');
+  updateStepper(step);
+  const top = document.getElementById('formTop');
+  window.scrollTo({top: top.offsetTop - 90, behavior:'smooth'});
+}
+
+// --- step 1 -> validation -> review ---
+function validateStep1(){
+  const required = document.querySelectorAll('#stepPanel1 [required]:not(:disabled)');
+  let ok = true, firstInvalid = null;
+  required.forEach(el => {
+    if(!el.value || !el.value.trim()){
+      ok = false;
+      el.classList.add('is-invalid');
+      if(!firstInvalid) firstInvalid = el;
+    } else {
+      el.classList.remove('is-invalid');
+    }
+  });
+  if(!ok){
+    Swal.fire({icon:'warning', title:'กรอกข้อมูลไม่ครบถ้วน', text:'กรุณากรอกข้อมูลในช่องที่มีเครื่องหมาย * ให้ครบทุกช่อง', confirmButtonColor:'#0b2e59'});
+    if(firstInvalid) firstInvalid.focus();
+    return false;
+  }
+  return true;
+}
+function goReview(){
+  if(!validateStep1()) return;
+  buildReviewSummary();
+  window.PACCHumanVerification.reset('complaint-submit');
+  goToStep(2);
+}
+
+function val(id){ const el = document.getElementById(id); return el && el.value.trim() ? el.value.trim() : '-'; }
+function appendReviewRow(container, labelText, valueText){
+  const row = document.createElement('div');
+  row.className = 'review-row';
+  const label = document.createElement('span');
+  label.className = 'label';
+  label.textContent = labelText;
+  const value = document.createElement('span');
+  value.className = 'value';
+  value.textContent = valueText;
+  row.append(label, value);
+  container.appendChild(row);
+}
+function appendReviewSection(container, badgeNum, title){
+  const section = document.createElement('div');
+  section.className = 'review-section';
+  const heading = document.createElement('div');
+  heading.className = 'form-section-title';
+  heading.innerHTML = `<span class="step-badge">${badgeNum}</span>${title}`;
+  section.appendChild(heading);
+  container.appendChild(section);
+  return section;
+}
+function accusedFieldValue(card, fieldName){
+  const el = card.querySelector(`[data-field="${fieldName}"]`);
+  return el && el.value.trim() ? el.value.trim() : '-';
+}
+function buildReviewSummary(){
+  const identity = getComplainantIdentityState();
+  const accusedCards = document.querySelectorAll('.accused-card');
+  const provinceText = val('province');
+  const networkText = document.getElementById('networkStatus').value || 'ไม่ใช่เจ้าหน้าที่รัฐ / ไม่ใช่เครือข่าย ป.ป.ท.';
+  const reviewBody = document.getElementById('reviewBody');
+  reviewBody.replaceChildren();
+
+  // ส่วนที่ 1: ข้อมูลผู้ร้อง
+  const s1 = appendReviewSection(reviewBody, 1, 'ข้อมูลผู้ร้อง');
+  if(identity.isAnonymous){
+    appendReviewRow(s1, 'ข้อมูลผู้ร้อง', 'ไม่ได้ระบุ');
+  } else {
+    appendReviewRow(s1, 'การปกปิดข้อมูลผู้ร้อง', identity.confidentialityRequested?'ขอปกปิดข้อมูลผู้ร้อง':'ไม่ได้ขอปกปิดข้อมูลผู้ร้อง');
+    appendReviewRow(s1, 'ชื่อ-นามสกุล', `${val('titlePrefix')} ${val('firstName')} ${val('lastName')}`);
+    appendReviewRow(s1, 'ที่อยู่ปัจจุบัน', val('address'));
+    appendReviewRow(s1, 'โทรศัพท์ / อีเมล', `${val('phone')} / ${val('email')}`);
+  }
+  appendReviewRow(s1, 'สถานะเครือข่าย ป.ป.ท.', networkText);
+  if(document.getElementById('networkStatus').value !== ''){
+    appendReviewRow(s1, 'รหัสยืนยันการเป็นเครือข่าย ป.ป.ท.', val('networkVerifyCode'));
+  }
+
+  // ส่วนที่ 2: ข้อมูลผู้ถูกร้องเรียน
+  const s2 = appendReviewSection(reviewBody, 2, 'ข้อมูลผู้ถูกร้องเรียน');
+  if(accusedCards.length === 0){
+    const empty = document.createElement('div');
+    empty.className = 'review-empty';
+    empty.textContent = 'ยังไม่มีข้อมูลผู้ถูกร้องเรียน (ไม่บังคับ)';
+    s2.appendChild(empty);
+  } else {
+    accusedCards.forEach((card, idx) => {
+      const sub = document.createElement('div');
+      sub.className = 'review-subcard';
+      const subTitle = document.createElement('div');
+      subTitle.className = 'review-subcard-title';
+      subTitle.textContent = `ผู้ถูกร้องเรียนที่ ${idx + 1}`;
+      sub.appendChild(subTitle);
+      appendReviewRow(sub, 'ชื่อ-นามสกุล / หน่วยงาน', accusedFieldValue(card, 'name'));
+      appendReviewRow(sub, 'ตำแหน่ง', accusedFieldValue(card, 'position'));
+      appendReviewRow(sub, 'สังกัดหน่วยงาน', accusedFieldValue(card, 'agency'));
+      appendReviewRow(sub, 'ความเกี่ยวข้อง / พฤติการณ์โดยย่อ', accusedFieldValue(card, 'relation'));
+      s2.appendChild(sub);
+    });
+  }
+
+  // ส่วนที่ 3: รายละเอียดการร้องเรียน
+  const s3 = appendReviewSection(reviewBody, 3, 'รายละเอียดการร้องเรียน');
+  appendReviewRow(s3, 'หัวข้อเรื่องร้องเรียน', val('complaintSubject'));
+  appendReviewRow(s3, 'รายละเอียดการร้องเรียน', val('complaintDetail'));
+  appendReviewRow(s3, 'หน่วยงานที่ต้องการร้องเรียน', val('agencyName'));
+  appendReviewRow(s3, 'วัน–เวลาเกิดเหตุ', getIncidentDateTimeText());
+  appendReviewRow(s3, 'สถานที่เกิดเหตุ', val('incidentPlace'));
+  appendReviewRow(s3, 'จังหวัด / อำเภอ / ตำบล / รหัสไปรษณีย์', `${provinceText} / ${val('district')} / ${val('subdistrict')} / ${val('postcode')}`);
+  appendReviewRow(s3, 'คำอธิบายสถานที่เกิดเหตุเพิ่มเติม', val('placeDescription'));
+  appendReviewRow(s3, 'ความประสงค์ให้ดำเนินการ', val('desiredAction'));
+  appendReviewRow(s3, 'เอกสารแนบ', `${uploadedFiles.length} ไฟล์`);
+}
+
+// --- tracking QR: PACC-themed receipt card (navy/gold, no external images to avoid canvas-export tainting) ---
+function roundRectPath(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+function drawPaccQrReceipt(qr, serviceNo, pin){
+  const cellSize = 5, qrQuiet = 14;
+  const qrModules = qr.getModuleCount();
+  const qrPx = qrModules * cellSize + qrQuiet * 2;
+  const cardW = qrPx + 40;
+  const headerH = 50;
+  const qrTop = headerH + 20;
+  const numY = qrTop + qrPx + 20;
+  const numH = 36;
+  const cardH = numY + numH + 26;
+  const scale = 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = cardW * scale;
+  canvas.height = cardH * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(scale, scale);
+  const fontFace = '"Sarabun",-apple-system,"Segoe UI",sans-serif';
+
+  // card background with soft shadow
+  ctx.save();
+  ctx.shadowColor = 'rgba(10,38,71,.22)';
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 6;
+  ctx.fillStyle = '#ffffff';
+  roundRectPath(ctx, 0, 0, cardW, cardH, 18);
+  ctx.fill();
+  ctx.restore();
+
+  // navy header with gold accent line, clipped to the card's rounded shape
+  ctx.save();
+  roundRectPath(ctx, 0, 0, cardW, cardH, 18);
+  ctx.clip();
+  const headerGrad = ctx.createLinearGradient(0, 0, cardW, 0);
+  headerGrad.addColorStop(0, '#0a2647');
+  headerGrad.addColorStop(1, '#123b63');
+  ctx.fillStyle = headerGrad;
+  ctx.fillRect(0, 0, cardW, headerH);
+  ctx.fillStyle = '#c9a227';
+  ctx.fillRect(0, headerH - 3, cardW, 3);
+  ctx.restore();
+
+  // header text
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#e6c765';
+  ctx.font = `700 11px ${fontFace}`;
+  ctx.fillText('สำนักงาน ป.ป.ท.', cardW / 2, headerH / 2 - 9);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `700 15px ${fontFace}`;
+  ctx.fillText('ใบรับเรื่องร้องเรียน · E-CMIS', cardW / 2, headerH / 2 + 9);
+
+  // QR code framed with a rounded gold border
+  const qrX = (cardW - qrPx) / 2, qrY = qrTop;
+  ctx.strokeStyle = '#c9a227';
+  ctx.lineWidth = 1.5;
+  roundRectPath(ctx, qrX - 6, qrY - 6, qrPx + 12, qrPx + 12, 10);
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(qrX, qrY, qrPx, qrPx);
+  ctx.fillStyle = '#0a2647';
+  for(let r = 0; r < qrModules; r++){
+    for(let c = 0; c < qrModules; c++){
+      if(qr.isDark(r, c)) ctx.fillRect(qrX + qrQuiet + c * cellSize, qrY + qrQuiet + r * cellSize, cellSize, cellSize);
+    }
+  }
+
+  // service number / tracking pin, in a soft gold pill
+  const numText = `${serviceNo}   ${pin}`;
+  ctx.font = `800 21px ${fontFace}`;
+  const numTextW = ctx.measureText(numText).width;
+  const pillW = numTextW + 44, pillX = (cardW - pillW) / 2;
+  ctx.fillStyle = 'rgba(201,162,39,.12)';
+  roundRectPath(ctx, pillX, numY, pillW, numH, numH / 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(201,162,39,.45)';
+  ctx.lineWidth = 1;
+  roundRectPath(ctx, pillX, numY, pillW, numH, numH / 2);
+  ctx.stroke();
+  ctx.fillStyle = '#0a2647';
+  ctx.fillText(numText, cardW / 2, numY + numH / 2 + 1);
+
+  // caption
+  ctx.fillStyle = '#6b7280';
+  ctx.font = `600 10.5px ${fontFace}`;
+  ctx.fillText('เลขรับบริการ · รหัสติดตาม', cardW / 2, numY + numH + 15);
+
+  return canvas.toDataURL('image/png');
+}
+
+// --- step 2 -> submit ---
+function submitComplaint(){
+  const identity = getComplainantIdentityState();
+  const identityLast4 = getTrackingIdentityLast4();
+  if(!identity.isAnonymous&&!identityLast4){
+    Swal.fire({icon:'warning',title:'ข้อมูลยืนยันตัวตนสำหรับติดตามเรื่องไม่ครบ',text:'กรุณากรอกเลขบัตรประชาชนที่ถูกต้อง หรือหมายเลขโทรศัพท์อย่างน้อย 4 หลัก เพื่อใช้ยืนยันตัวตนเมื่อติดตามเรื่อง',confirmButtonColor:'#0b2e59'});
+    return;
+  }
+  if(!window.PACCHumanVerification.require('complaint-submit')){
+    Swal.fire({icon:'warning', title:'กรุณายืนยันตัวตนก่อนส่งคำร้อง', text:'คลิกที่ช่อง "ฉันไม่ใช่โปรแกรมอัตโนมัติ" เพื่อยืนยันก่อนดำเนินการต่อ', confirmButtonColor:'#0b2e59'});
+    return;
+  }
+  const hasContact = val('phone') !== '-' || val('email') !== '-';
+  const trackingWarning = !hasContact
+      ? 'ท่านไม่ได้ระบุข้อมูลติดต่อ กรุณาจดจำเลขติดตามไว้ด้วยตนเอง เนื่องจากสำนักงานไม่สามารถแจ้งผลกลับได้'
+      : 'สำนักงานจะใช้ข้อมูลติดต่อที่ระบุไว้สำหรับแจ้งความคืบหน้าตามความเหมาะสม';
+  Swal.fire({
+    icon:'question',
+    title:'ยืนยันการส่งคำร้อง?',
+    html:'เมื่อส่งคำร้องแล้วจะไม่สามารถแก้ไขได้ หากต้องการแก้ไขให้กดย้อนกลับ<br><strong style="display:block;margin-top:.75rem;color:#8a5a12">หลังส่งสำเร็จ ระบบจะแสดง QR เลขรับบริการ และรหัสติดตาม 4 หลัก กรุณาบันทึกไว้ทันที</strong><span style="display:block;margin-top:.5rem">' + trackingWarning + '</span>',
+    showCancelButton:true,
+    confirmButtonText:'ส่งคำร้อง',
+    cancelButtonText:'ยกเลิก',
+    confirmButtonColor:'#0b2e59',
+    cancelButtonColor:'#6b7280'
+  }).then(res => {
+    if(res.isConfirmed){
+      const trackingPair = window.ECMIS.createTrackingNumber();
+      const pendingAllocation = trackingPair.allocationStatus === 'pending';
+      const rawValue = id => document.getElementById(id)?.value.trim() || '';
+      const citizenIdDigits = rawValue('nationalId').replace(/\D/g,'');
+      const phoneDigits = rawValue('phone').replace(/\D/g,'');
+      const complainantName = [rawValue('titlePrefix'), rawValue('firstName'), rawValue('lastName')].filter(Boolean).join(' ');
+      const accused = [...document.querySelectorAll('.accused-card')].map(card => {
+        const values = [...card.querySelectorAll('input')].map(input => input.value.trim());
+        return { name: values[0] || '', position: values[1] || '', agency: values[2] || '', relation: values[3] || '' };
+      }).filter(item => Object.values(item).some(Boolean));
+      const receivedDate = new Date();
+      const received = `${receivedDate.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'})} ${receivedDate.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false})} น.`;
+      const buddhistYear = receivedDate.getFullYear() + 543;
+      const internalId = pendingAllocation
+        ? `ECMIS-${trackingPair.pendingReference}`
+        : `ECMIS-${buddhistYear}-${trackingPair.yearSequence.slice(-4).padStart(6,'0')}`;
+      const placeParts = [rawValue('incidentPlace'), rawValue('subdistrict'), rawValue('district'), rawValue('province'), rawValue('postcode')].filter(Boolean);
+      const caseData = {
+        id: internalId,
+        trackingYear: trackingPair.yearSequence || '',
+        trackingCode: trackingPair.pin || '',
+        pendingReference: trackingPair.pendingReference || '',
+        allocationStatus: trackingPair.allocationStatus,
+        anonymousDetected: identity.isAnonymous,
+        confidentialityRequested: identity.confidentialityRequested,
+        complainant: identity.isAnonymous ? 'ไม่ระบุข้อมูลผู้ร้อง' : complainantName,
+        citizenId: citizenIdDigits,
+        id4: isValidThaiNationalId(citizenIdDigits) ? citizenIdDigits.slice(-4) : '',
+        phone: phoneDigits,
+        email: rawValue('email'),
+        address: rawValue('address'),
+        subject: rawValue('complaintSubject'),
+        agency: rawValue('agencyName') || accused[0]?.agency || accused[0]?.name || '',
+        channel: 'Website',
+        province: rawValue('province'),
+        district: rawValue('district'),
+        subdistrict: rawValue('subdistrict'),
+        postcode: rawValue('postcode'),
+        region: 'ส่วนกลาง',
+        received,
+        receivedAt: receivedDate.toISOString(),
+        type: 'รอจำแนกประเภท',
+        incidentDate: rawValue('incidentDate'),
+        incidentTime: rawValue('incidentTime'),
+        place: placeParts.join(' '),
+        placeDescription: rawValue('placeDescription'),
+        detail: rawValue('complaintDetail'),
+        damage: '',
+        request: rawValue('desiredAction'),
+        attachments: uploadedFiles.map(file => file.name),
+        accused
+      };
+      currentTrackingNo = pendingAllocation
+        ? trackingPair.pendingReference
+        : `${trackingPair.yearSequence} ${trackingPair.pin}`;
+      window.ECMIS.saveCaseMetadata({
+        ...trackingPair,
+        subject:val('complaintSubject'),
+        attachmentCount:uploadedFiles.length,
+        anonymousDetected:identity.isAnonymous,
+        confidentialityRequested:identity.confidentialityRequested,
+        identityFieldsProvided:identity.providedFields.length,
+        identityLast4:identity.isAnonymous?'':identityLast4,
+        id4:caseData.id4,
+        phone:caseData.phone
+      });
+      window.ECMIS.saveComplaintToWorkspace(caseData);
+      document.getElementById('trackingServiceNo').textContent = trackingPair.yearSequence;
+      document.getElementById('trackingGenNo').textContent = trackingPair.pin;
+      const qrImg = document.getElementById('trackingQr');
+      if(!pendingAllocation){
+        const trackingUrl = new URL(`tracking.html?serviceNumber=${encodeURIComponent(trackingPair.yearSequence)}&pin=${encodeURIComponent(trackingPair.pin)}`, window.location.href).href;
+        const qr = qrcode(0, 'M');
+        qr.addData(trackingUrl);
+        qr.make();
+        qrImg.src = drawPaccQrReceipt(qr, trackingPair.yearSequence, trackingPair.pin);
+        qrImg.classList.remove('d-none');
+        document.getElementById('trackingLink').href = trackingUrl;
+        document.getElementById('trackingSaveActions').classList.remove('d-none');
+      }else{
+        qrImg.classList.add('d-none');
+        document.getElementById('trackingSaveActions').classList.add('d-none');
+      }
+      const capacityNotice = trackingPair.capacityMessage
+        ? `<strong style="display:block;margin-top:.75rem;color:#8a2f27">แจ้งเตือนระดับ ${trackingPair.capacityLevel}: ${trackingPair.capacityMessage}</strong>`
+        : '';
+      Swal.fire({
+        icon:pendingAllocation?'warning':'success',
+        title:pendingAllocation?'ส่งคำร้องสำเร็จและรอจัดสรรเลขรับบริการ':'ส่งคำร้องสำเร็จ!',
+        html:pendingAllocation
+          ? `สำนักงาน ป.ป.ท. ได้รับคำร้องแล้ว<br>เลขอ้างอิงชั่วคราว<br><b style="font-size:1.3rem;color:#0b2e59">${currentTrackingNo}</b>${capacityNotice}`
+          : `สำนักงาน ป.ป.ท. ได้รับคำร้องของท่านเรียบร้อยแล้ว<br>เลขรับบริการและรหัสติดตามคือ<br><b style="font-size:1.3rem;color:#0b2e59">${currentTrackingNo}</b><br><strong style="display:block;margin-top:.75rem;color:#8a2f27">กรุณาบันทึกเลขรับบริการและรหัสติดตามไว้ทันที เพื่อใช้ติดตามสถานะภายหลัง</strong>${capacityNotice}`,
+        confirmButtonColor:'#0b2e59',
+        confirmButtonText:'รับทราบ'
+      }).then(() => { goToStep(3); });
+    }
+  });
+}
+
+// --- save / copy tracking receipt ---
+let currentTrackingNo = '';
+function copyTrackingNo(){
+  if(!currentTrackingNo) return;
+  const done = () => Swal.fire({icon:'success', title:'คัดลอกหมายเลขแล้ว', text:currentTrackingNo, confirmButtonColor:'#0b2e59', timer:1600, showConfirmButton:false});
+  const fail = () => Swal.fire({icon:'error', title:'คัดลอกไม่สำเร็จ', text:'กรุณาคัดลอกหมายเลขด้วยตนเอง: ' + currentTrackingNo, confirmButtonColor:'#0b2e59'});
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(currentTrackingNo).then(done).catch(fail);
+  } else {
+    try{
+      const tmp = document.createElement('textarea');
+      tmp.value = currentTrackingNo;
+      document.body.appendChild(tmp);
+      tmp.select();
+      document.execCommand('copy');
+      document.body.removeChild(tmp);
+      done();
+    } catch(e){ fail(); }
+  }
+}
+function saveTrackingQr(){
+  const qrImg = document.getElementById('trackingQr');
+  if(!qrImg || !qrImg.src) return;
+  fetch(qrImg.src)
+    .then(res => res.blob())
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (currentTrackingNo || 'ecmis-tracking') + '.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    })
+    .catch(() => {
+      window.open(qrImg.src, '_blank');
+      Swal.fire({icon:'info', title:'เปิด QR ในแท็บใหม่', text:'กรุณากดค้าง/คลิกขวาที่รูปเพื่อบันทึกภาพ', confirmButtonColor:'#0b2e59'});
+    });
+}
+
+const thaiLocationUrl = 'https://raw.githubusercontent.com/kongvut/thai-province-data/refs/heads/master/api/latest/province_with_district_and_sub_district.json';
+const locationFallback = [
+  {name_th:'กรุงเทพมหานคร',districts:[{name_th:'เขตพระนคร',sub_districts:[{name_th:'พระบรมมหาราชวัง',zip_code:10200},{name_th:'วังบูรพาภิรมย์',zip_code:10200}]},{name_th:'เขตดุสิต',sub_districts:[{name_th:'ดุสิต',zip_code:10300},{name_th:'วชิรพยาบาล',zip_code:10300}]}]},
+  {name_th:'นนทบุรี',districts:[{name_th:'เมืองนนทบุรี',sub_districts:[{name_th:'สวนใหญ่',zip_code:11000},{name_th:'ตลาดขวัญ',zip_code:11000},{name_th:'ท่าทราย',zip_code:11000}]},{name_th:'ปากเกร็ด',sub_districts:[{name_th:'ปากเกร็ด',zip_code:11120},{name_th:'บางตลาด',zip_code:11120}]}]},
+  {name_th:'ชลบุรี',districts:[{name_th:'เมืองชลบุรี',sub_districts:[{name_th:'บางปลาสร้อย',zip_code:20000},{name_th:'มะขามหย่ง',zip_code:20000}]},{name_th:'ศรีราชา',sub_districts:[{name_th:'ศรีราชา',zip_code:20110},{name_th:'สุรศักดิ์',zip_code:20110}]}]}
+];
+let thaiLocations = [];
+const provinceField = document.getElementById('province');
+const districtField = document.getElementById('district');
+const subdistrictField = document.getElementById('subdistrict');
+const postcodeField = document.getElementById('postcode');
+const provinceOptions = document.getElementById('provinceOptions');
+const districtOptions = document.getElementById('districtOptions');
+const subdistrictOptions = document.getElementById('subdistrictOptions');
+let locationRows = [];
+
+function buildLocationRows(provinces){
+  return provinces.flatMap(province => (province.districts || []).flatMap(district =>
+    (district.sub_districts || []).map(subdistrict => ({
+      province:province.name_th,
+      district:district.name_th,
+      subdistrict:subdistrict.name_th,
+      postcode:String(subdistrict.zip_code || '')
+    }))
+  ));
+}
+
+function renderLocationOptions(province='',district=''){
+  const provinces=[...new Set(locationRows.map(item=>item.province))].sort((a,b)=>a.localeCompare(b,'th'));
+  provinceOptions.replaceChildren(...[...provinces,'ไม่ระบุ'].map(name=>{
+    const option=document.createElement('option');
+    option.value=name;
+    return option;
+  }));
+  const unique=new Map();
+  locationRows
+    .filter(item=>!province||item.province===province)
+    .forEach(item=>unique.set(`${item.province}|${item.district}`,item));
+  districtOptions.replaceChildren(...[...unique.values()].sort((a,b)=>a.district.localeCompare(b.district,'th')).map(item=>{
+    const option=document.createElement('option');
+    option.value=province?item.district:`${item.district} — ${item.province}`;
+    return option;
+  }));
+  const items=locationRows.filter(item=>(!province||item.province===province)&&(!district||item.district===district));
+  subdistrictOptions.replaceChildren(...items.sort((a,b)=>a.subdistrict.localeCompare(b.subdistrict,'th')).map(item=>{
+    const option=document.createElement('option');
+    option.value=province&&district?item.subdistrict:`${item.subdistrict} — ${item.district} — ${item.province}`;
+    return option;
+  }));
+}
+
+function initializeLocationFields(){
+  locationRows=buildLocationRows(thaiLocations);
+  renderLocationOptions(provinceField.value,districtField.value);
+}
+
+function findLocation(type,entered){
+  const province=provinceField.value.trim();
+  const district=districtField.value.trim();
+  if(type==='district'){
+    const decorated=locationRows.find(item=>`${item.district} — ${item.province}`===entered);
+    if(decorated)return decorated;
+    const matches=locationRows.filter(item=>item.district===entered&&(!province||item.province===province));
+    return matches.length===1?matches[0]:null;
+  }
+  const decorated=locationRows.find(item=>`${item.subdistrict} — ${item.district} — ${item.province}`===entered);
+  if(decorated)return decorated;
+  const matches=locationRows.filter(item=>item.subdistrict===entered&&(!province||item.province===province)&&(!district||item.district===district));
+  return matches.length===1?matches[0]:null;
+}
+
+provinceField.addEventListener('change',()=>{
+  const province=provinceField.value.trim();
+  const current=locationRows.find(item=>item.province===province&&item.district===districtField.value&&item.subdistrict===subdistrictField.value);
+  if(!current){districtField.value='';subdistrictField.value='';postcodeField.value=''}
+  renderLocationOptions(province,districtField.value);
+});
+districtField.addEventListener('change',()=>{
+  const match=findLocation('district',districtField.value.trim());
+  postcodeField.value='';
+  subdistrictField.value='';
+  if(!match){renderLocationOptions(provinceField.value.trim());return}
+  provinceField.value=match.province;
+  districtField.value=match.district;
+  renderLocationOptions(match.province,match.district);
+});
+subdistrictField.addEventListener('change',()=>{
+  const match=findLocation('subdistrict',subdistrictField.value.trim());
+  if(!match){postcodeField.value='';return}
+  provinceField.value=match.province;
+  districtField.value=match.district;
+  subdistrictField.value=match.subdistrict;
+  postcodeField.value=match.postcode;
+  renderLocationOptions(match.province,match.district);
+});
+
+fetch(thaiLocationUrl)
+  .then(response => {
+    if(!response.ok) throw new Error('location data unavailable');
+    return response.json();
+  })
+  .then(data => {
+    thaiLocations = data;
+    initializeLocationFields();
+  })
+  .catch(() => {
+    thaiLocations = locationFallback;
+    initializeLocationFields();
+  });
+</script>
+</body>
+</html>

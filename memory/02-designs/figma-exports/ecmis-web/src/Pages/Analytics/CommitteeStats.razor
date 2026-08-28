@@ -1,0 +1,961 @@
+@page "/analytics/committee-stats"
+@layout MainLayout
+@implements IDisposable
+@using EcmisWeb.Data
+@inject IJSRuntime JS
+
+<div class="cs-shell">
+
+    <div class="cs-header">
+        <div class="cs-header-inner">
+            <div class="cs-bc">
+                <i class="bi bi-house-fill"></i>
+                <a href="/">หน้าหลัก</a>
+                <i class="bi bi-chevron-right"></i>
+                <span>วิเคราะห์และรายงานผล</span>
+                <i class="bi bi-chevron-right"></i>
+                <span>สถิติมติคณะกรรมการ ป.ป.ท.</span>
+            </div>
+            <div class="cs-ph-row">
+                <div>
+                    <div class="cs-title">สถิติมติคณะกรรมการ ป.ป.ท. | TOR 12.8</div>
+                    <div class="cs-sub">วิเคราะห์สถิติการประชุม มติ และผลดำเนินการภายหลังมีมติ รวมถึงการติดตามสำนวนคดีใกล้ขาดอายุความ</div>
+                </div>
+                <div class="cs-actions">
+                    <button type="button" class="btn-ghost-d" @onclick="PrintReportAsync">
+                        <i class="bi bi-printer"></i> พิมพ์ PDF
+                    </button>
+                    <button type="button" class="btn-accent" @onclick="ExportCsvAsync">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cs-body">
+
+        @* ── KPI Row (5 cards) ── *@
+        <div class="cs-stats-row" style="grid-template-columns:repeat(5,1fr)">
+            <div class="sc sc-blue">
+                <div class="sc-head">ประชุม @_filterYear (ครั้ง)</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@MeetingsThisYear</div>
+                    <div class="sc-bottom">
+                        <span class="sc-hint">วาระรวม @AgendaThisYear วาระ</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-purple">
+                <div class="sc-head">มติทั้งหมด (ปี @_filterYear)</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@TotalForYear.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-hint">ไต่สวนเบื้องต้น + วินิจฉัย</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-red">
+                <div class="sc-head">ชี้มูลความผิด</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@FoundGuiltyForYear.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-up">@FoundGuiltyPct%</span>
+                        <span class="sc-hint">อาญาและวินัย</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-green">
+                <div class="sc-head">ยุติ/ไม่รับ</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@DismissedForYear.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-flat">@DismissedPct%</span>
+                        <span class="sc-hint">ของมติทั้งหมด</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-orange">
+                <div class="sc-head">รอดำเนินการ</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@PendingCount</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-down">ยังไม่มีมติ</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="table-card">
+
+            @* ── Charts FR-057/058/059/060/062 ── *@
+            <div class="tc-head">
+                <div class="tc-row1">
+                    <div>
+                        <div class="tc-title"><i class="bi bi-bar-chart-fill"></i> วิเคราะห์สถิติมติคณะกรรมการ ป.ป.ท.</div>
+                        <div class="tc-sub">FR-057 ถึง FR-060 · FR-062 เปรียบเทียบรายปีงบประมาณ</div>
+                    </div>
+                    <div class="tc-meta">
+                        <div class="fgrp" style="margin:0">
+                            <label class="flbl" style="font-size:10px">แสดงข้อมูลปีงบ</label>
+                            <select class="fsel" style="font-size:11px;padding:4px 8px" @bind="_filterYear" @bind:after="OnYearChanged">
+                                <option value="2565">2565</option>
+                                <option value="2566">2566</option>
+                                <option value="2567">2567</option>
+                                <option value="2568">2568</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cs-charts-wrap layout-fill">
+                <div class="cs-charts-top">
+                    <div class="cs-chart-card">
+                        <div class="cs-chart-title"><i class="bi bi-pie-chart-fill"></i> ประเภทมติ (เบื้องต้น)</div>
+                        <div class="cs-chart-canvas"><canvas id="cmChartResType"></canvas></div>
+                    </div>
+                    <div class="cs-chart-card">
+                        <div class="cs-chart-title"><i class="bi bi-bar-chart-steps"></i> มติแยกขั้นตอน</div>
+                        <div class="cs-chart-canvas"><canvas id="cmChartStage"></canvas></div>
+                    </div>
+                    <div class="cs-chart-card">
+                        <div class="cs-chart-title"><i class="bi bi-calendar3"></i> ความถี่การประชุมรายเดือน</div>
+                        <div class="cs-chart-canvas"><canvas id="cmChartMeeting"></canvas></div>
+                    </div>
+                </div>
+                <div class="cs-charts-bot">
+                    <div class="cs-chart-card" style="grid-column:span 2">
+                        <div class="cs-chart-title"><i class="bi bi-graph-up-arrow"></i> เปรียบเทียบมติคณะกรรมการรายปีงบประมาณ (2565–2568)</div>
+                        <div class="cs-chart-canvas"><canvas id="cmChartTrend"></canvas></div>
+                    </div>
+                    <div class="cs-chart-card">
+                        <div class="cs-chart-title"><i class="bi bi-arrow-right-circle-fill"></i> ผลดำเนินการภายหลังชี้มูล (สะสม)</div>
+                        <div class="cs-chart-canvas"><canvas id="cmChartPost"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            @* ── ชาร์ตเสริมจาก PDF ก.ย. 2568 ── *@
+            <div class="cs-charts-bot" style="margin-top:12px">
+                <div class="cs-chart-card" style="grid-column:span 2">
+                    <div class="cs-chart-title">
+                        <i class="bi bi-calendar-month"></i>
+                        เรื่องร้องเรียนรับเข้า ปีงบประมาณ 2568 รายเดือน (รวม 1,511 เรื่อง)
+                    </div>
+                    <div class="cs-chart-canvas" style="height:200px"><canvas id="cmChartMonthly"></canvas></div>
+                </div>
+                <div class="cs-chart-card">
+                    <div class="cs-chart-title">
+                        <i class="bi bi-building"></i>
+                        เรื่องกล่าวหาส่งรายหน่วยงาน ปีงบ 2568 (1,511 เรื่อง)
+                    </div>
+                    <div class="cs-chart-canvas" style="height:200px"><canvas id="cmChartUnit"></canvas></div>
+                </div>
+            </div>
+
+            <div class="cs-charts-bot" style="margin-top:12px">
+                <div class="cs-chart-card" style="grid-column:span 3">
+                    <div class="cs-chart-title">
+                        <i class="bi bi-graph-up"></i>
+                        จำนวนเรื่องร้องเรียนรับเข้า ปีงบประมาณ 2551–2568 (รวม 41,950 เรื่อง)
+                    </div>
+                    <div class="cs-chart-canvas" style="height:220px"><canvas id="cmChartHistIntake"></canvas></div>
+                </div>
+            </div>
+
+            @* ── FR-061: ตารางมติที่รอดำเนินการ ── *@
+            <div class="tc-head" style="margin-top:1.5rem">
+                <div class="tc-row1">
+                    <div>
+                        <div class="tc-title">
+                            <i class="bi bi-clock-fill" style="color:#f59e0b"></i> มติที่รอดำเนินการ
+                        </div>
+                        <div class="tc-sub">สำนวนที่ยังไม่มีมติ — ต้องนำเสนอในการประชุมครั้งถัดไป</div>
+                    </div>
+                    <div class="tc-meta"><span class="bdg-nv">@PendingCount รายการ</span></div>
+                </div>
+            </div>
+            @if (!PendingCases.Any())
+            {
+                <div class="empty-state" style="margin-bottom:1.5rem">
+                    <i class="bi bi-check-circle-fill" style="color:#06d6a0"></i>
+                    <span>ไม่มีมติที่รอดำเนินการในขณะนี้</span>
+                </div>
+            }
+            else
+            {
+                <table class="cs-status-table" style="margin-bottom:1.5rem">
+                    <thead>
+                        <tr>
+                            <th>เลขสำนวน</th>
+                            <th>ผู้ถูกกล่าวหา</th>
+                            <th>หน่วยงาน</th>
+                            <th>ผู้รับผิดชอบ</th>
+                            <th>สำนัก/เขต</th>
+                            <th>สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in PendingCases)
+                        {
+                            <tr>
+                                <td style="font-weight:700">@c.CaseNo</td>
+                                <td>@c.Accused</td>
+                                <td style="font-size:11px">@c.AccusedAgency</td>
+                                <td>@c.Investigator</td>
+                                <td>@c.Division</td>
+                                <td><span class="badge-status status-review">รอดำเนินการ</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+            @* ── FR-063: Filter + Main Table ── *@
+            <div class="tc-head">
+                <div class="tc-row1">
+                    <div>
+                        <div class="tc-title"><i class="bi bi-table"></i> รายการมติคณะกรรมการ ป.ป.ท.</div>
+                        <div class="tc-sub">คัดกรองตามประเภทมติ ครั้งที่ประชุม และช่วงปีงบประมาณ</div>
+                    </div>
+                    <div class="tc-meta"><span class="bdg-nv">@FilteredCases.Count รายการ</span></div>
+                </div>
+            </div>
+
+            <div class="filter-row">
+                <div class="fgrp">
+                    <label class="flbl" for="cmRes">ประเภทมติ</label>
+                    <select id="cmRes" class="fsel" @bind="_fResType">
+                        <option value="">ทั้งหมด</option>
+                        <option value="guilty_criminal">ชี้มูลความผิดทางอาญา</option>
+                        <option value="guilty_discipline">ชี้มูลความผิดทางวินัย</option>
+                        <option value="dismissed">ยุติ/ไม่รับไว้</option>
+                        <option value="reinvestigate">ไต่สวนเพิ่มเติม</option>
+                        <option value="none">รอดำเนินการ</option>
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="cmMeet">ครั้งที่ประชุม</label>
+                    <select id="cmMeet" class="fsel" @bind="_fMeetingId">
+                        <option value="0">ทั้งหมด</option>
+                        @foreach (var m in CommitteeData.Meetings.OrderByDescending(m => m.Id))
+                        {
+                            <option value="@m.Id">@m.MeetingNo (@m.Date)</option>
+                        }
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="cmFY">ปีงบประมาณ</label>
+                    <select id="cmFY" class="fsel" @bind="_fFiscalYear">
+                        <option value="0">ทั้งหมด</option>
+                        <option value="2566">2566</option>
+                        <option value="2567">2567</option>
+                        <option value="2568">2568</option>
+                    </select>
+                </div>
+                <button type="button" class="fbtn" @onclick="OnResetFilter">
+                    <i class="bi bi-x-lg"></i> ล้างค่า
+                </button>
+            </div>
+
+            @if (!FilteredCases.Any())
+            {
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <span>ไม่พบข้อมูลตามเงื่อนไขที่เลือก</span>
+                </div>
+                <table class="cs-status-table" id="exportTable" style="display:none"><thead><tr><th></th></tr></thead><tbody></tbody></table>
+            }
+            else
+            {
+                <table class="cs-status-table" id="exportTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>เลขสำนวน</th>
+                            <th>ผู้ถูกกล่าวหา</th>
+                            <th>หน่วยงาน</th>
+                            <th>ผู้รับผิดชอบ</th>
+                            <th>สำนัก/เขต</th>
+                            <th>ครั้งที่ประชุม</th>
+                            <th>ผลการพิจารณา</th>
+                            <th>สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{ int seq = 0; }
+                        @foreach (var c in FilteredCases)
+                        {
+                            seq++;
+                            var meeting = CommitteeData.Meetings.FirstOrDefault(m => m.Id == c.MeetingId);
+                            <tr>
+                                <td style="color:#94a3b8">@seq</td>
+                                <td style="font-weight:700;white-space:nowrap">@c.CaseNo</td>
+                                <td>@c.Accused</td>
+                                <td style="font-size:11px">@c.AccusedAgency</td>
+                                <td>@c.Investigator</td>
+                                <td>@c.Division</td>
+                                <td style="white-space:nowrap">@(meeting?.MeetingNo ?? "-") · @(meeting?.Date ?? "")</td>
+                                <td><span class="badge-status status-@CommitteeData.ResolutionCategoryClass(c.ResolutionType)">@CommitteeData.ResolutionCategoryLabel(c.ResolutionType)</span></td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(c.ResolutionDetails))
+                                    {
+                                        <span style="font-size:10px;color:#64748b">@TruncateDetail(c.ResolutionDetails)</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+            @* ── Footer FR-064 ── *@
+            <div class="cs-footer">
+                <span class="cs-footer-info">
+                    แสดงผล <strong>@FilteredCases.Count รายการ</strong> ·
+                    ชี้มูล @FilteredCases.Count(c => c.ResolutionType is "guilty_criminal" or "guilty_discipline") ·
+                    ยุติ @FilteredCases.Count(c => c.ResolutionType == "dismissed") ·
+                    รอ @FilteredCases.Count(c => c.ResolutionType == "none")
+                </span>
+                <div class="cs-footer-btns">
+                    <button type="button" class="btn-ghost-d" @onclick="PrintReportAsync">
+                        <i class="bi bi-printer"></i> พิมพ์ PDF
+                    </button>
+                    <button type="button" class="btn-accent" @onclick="ExportCsvAsync">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        @* ══════════════════════════════════════════════════════════════════════ *@
+        @* ── SPECIAL SECTION: วิเคราะห์สำนวนคดีใกล้ขาดอายุความ (Customer Request) ── *@
+        @* ══════════════════════════════════════════════════════════════════════ *@
+
+        <section class="table-card" style="margin-top:1.5rem">
+            <div class="tc-head">
+                <div class="tc-row1">
+                    <div>
+                        <div class="tc-title">
+                            <i class="bi bi-hourglass-split" style="color:#f59e0b"></i>
+                            วิเคราะห์สำนวนคดีใกล้ขาดอายุความและการขยายระยะเวลา
+                        </div>
+                        <div class="tc-sub">
+                            กฎหมาย: ไต่สวนเสร็จภายใน 2 ปี นับแต่วันรับเรื่อง · ขยายได้ไม่เกิน 4 ครั้ง ครั้งละ 1 ปี (สูงสุด 6 ปี)
+                        </div>
+                    </div>
+                    <div class="tc-meta">
+                        <span class="bdg-nv">@PrescriptionData.Cases.Count สำนวน</span>
+                    </div>
+                </div>
+            </div>
+
+            @* Sub-view selector *@
+            <div class="filter-row" style="flex-wrap:wrap;gap:8px;margin-bottom:12px">
+                <div style="display:flex;gap:4px;align-items:center">
+                    <span style="font-size:11px;color:#64748b;font-weight:600">มุมมอง:</span>
+                    @foreach (var (key, label) in new[] { ("overview","ภาพรวม"), ("byunit","รายหน่วยงาน ปปท."), ("byofficer","รายบุคคล") })
+                    {
+                        <button type="button"
+                                class="@(_presView == key ? "btn-accent" : "btn-ghost-d")"
+                                style="font-size:11px;padding:4px 12px"
+                                @onclick="() => OnPresViewChange(key)">
+                            @label
+                        </button>
+                    }
+                </div>
+            </div>
+
+            @* KPI mini row 1 — ระยะเวลาเหลือก่อนขาดอายุความ *@
+            <div style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:.5px;margin-bottom:4px">
+                ⏱ สถานะอายุความ (นับจากวันครบกำหนด)
+            </div>
+            <div class="cs-stats-row" style="grid-template-columns:repeat(5,1fr);margin-bottom:8px">
+                <div class="sc sc-red" style="padding:10px 14px">
+                    <div class="sc-head" style="font-size:10px">วิกฤต (≤90 วัน)</div>
+                    <div class="sc-body-area">
+                        <div class="sc-num" style="font-size:1.8rem">@PresCount("critical")</div>
+                    </div>
+                </div>
+                <div class="sc sc-orange" style="padding:10px 14px">
+                    <div class="sc-head" style="font-size:10px">ใกล้กำหนด (91-180 วัน)</div>
+                    <div class="sc-body-area">
+                        <div class="sc-num" style="font-size:1.8rem">@PresCount("near")</div>
+                    </div>
+                </div>
+                <div class="sc sc-blue" style="padding:10px 14px">
+                    <div class="sc-head" style="font-size:10px">ติดตาม (181-365 วัน)</div>
+                    <div class="sc-body-area">
+                        <div class="sc-num" style="font-size:1.8rem">@PresCount("watch")</div>
+                    </div>
+                </div>
+                <div class="sc sc-purple" style="padding:10px 14px">
+                    <div class="sc-head" style="font-size:10px">เกินกำหนดแล้ว</div>
+                    <div class="sc-body-area">
+                        <div class="sc-num" style="font-size:1.8rem">@PresCount("overdue")</div>
+                    </div>
+                </div>
+                <div class="sc sc-orange" style="padding:10px 14px">
+                    <div class="sc-head" style="font-size:10px">ขยายสูงสุด 4 ครั้ง</div>
+                    <div class="sc-body-area">
+                        <div class="sc-num" style="font-size:1.8rem">@PrescriptionData.Cases.Count(c => c.ExtensionCount == 4)</div>
+                    </div>
+                </div>
+            </div>
+
+            @* KPI mini row 2 — อายุสำนวน นับจากวันรับเรื่อง *@
+            <div style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:.5px;margin-bottom:4px">
+                📅 อายุสำนวน (นับจากวันรับเรื่อง)
+            </div>
+            <div class="cs-stats-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+                <div class="sc sc-blue" style="padding:10px 14px">
+                    <div class="sc-head" style="font-size:10px">ใกล้ครบ 2 ปี (1.5–2 ปี)</div>
+                    <div class="sc-body-area">
+                        <div class="sc-num" style="font-size:1.8rem">@PresAgeCount("near2yr")</div>
+                        <div class="sc-bottom">
+                            <span class="sc-hint">ยังไม่ขยาย ต้องเร่งสรุป</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="sc sc-orange" style="padding:10px 14px">
+                    <div class="sc-head" style="font-size:10px">ดำเนินการเกิน 2 ปี</div>
+                    <div class="sc-body-area">
+                        <div class="sc-num" style="font-size:1.8rem">@PresAgeCount("over2yr")</div>
+                        <div class="sc-bottom">
+                            <span class="sc-hint">730–1,095 วัน</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="sc sc-red" style="padding:10px 14px">
+                    <div class="sc-head" style="font-size:10px">ดำเนินการเกิน 3 ปี</div>
+                    <div class="sc-body-area">
+                        <div class="sc-num" style="font-size:1.8rem">@PresAgeCount("over3yr")</div>
+                        <div class="sc-bottom">
+                            <span class="sc-hint">1,095–1,460 วัน</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="sc sc-purple" style="padding:10px 14px">
+                    <div class="sc-head" style="font-size:10px">ดำเนินการเกิน 4 ปี</div>
+                    <div class="sc-body-area">
+                        <div class="sc-num" style="font-size:1.8rem">@PresAgeCount("over4yr")</div>
+                        <div class="sc-bottom">
+                            <span class="sc-hint">&gt;1,460 วัน (ต้องขยายสูงสุด)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* Chart + filter *@
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+                <div class="cs-chart-card" style="grid-column:span 2">
+                    <div class="cs-chart-title"><i class="bi bi-bar-chart-fill"></i> สถานะสำนวนคดี @(_presView == "overview" ? "แยกตามจำนวนครั้งขยาย" : _presView == "byunit" ? "แยกรายหน่วยงาน ปปท." : "แยกรายเจ้าหน้าที่")</div>
+                    <div class="cs-chart-canvas" style="height:200px"><canvas id="cmChartPres"></canvas></div>
+                </div>
+            </div>
+
+            @* Filters for prescription table *@
+            <div class="filter-row" style="flex-wrap:wrap">
+                <div class="fgrp">
+                    <label class="flbl" for="presUnit">หน่วยงาน ปปท.</label>
+                    <select id="presUnit" class="fsel" @bind="_fPresUnit">
+                        <option value="">ทั้งหมด</option>
+                        @foreach (var u in PrescriptionData.AllUnits)
+                        {
+                            <option value="@u">@u</option>
+                        }
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="presAge">ดำเนินการมาแล้ว (นับแต่รับเรื่อง)</label>
+                    <select id="presAge" class="fsel" @bind="_fPresAge">
+                        <option value="">ทั้งหมด</option>
+                        <option value="normal">น้อยกว่า 1.5 ปี</option>
+                        <option value="near2yr">ใกล้ครบ 2 ปี (1.5–2 ปี)</option>
+                        <option value="over2yr">เกิน 2 ปี (2–3 ปี)</option>
+                        <option value="over3yr">เกิน 3 ปี (3–4 ปี)</option>
+                        <option value="over4yr">เกิน 4 ปี</option>
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="presExt">จำนวนครั้งขยายเวลา</label>
+                    <select id="presExt" class="fsel" @bind="_fPresExt">
+                        <option value="">ทั้งหมด</option>
+                        <option value="0">ยังไม่ขยาย (ครบ 2 ปี ต้องเสร็จ)</option>
+                        <option value="1">ขยาย 1 ครั้ง (กำหนด 3 ปี)</option>
+                        <option value="2">ขยาย 2 ครั้ง (กำหนด 4 ปี)</option>
+                        <option value="3">ขยาย 3 ครั้ง (กำหนด 5 ปี)</option>
+                        <option value="4">ขยาย 4 ครั้ง MAX (กำหนด 6 ปี)</option>
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="presUrg">สถานะเร่งด่วน</label>
+                    <select id="presUrg" class="fsel" @bind="_fPresUrgency">
+                        <option value="">ทั้งหมด</option>
+                        <option value="overdue">เกินกำหนดแล้ว</option>
+                        <option value="critical">วิกฤต ≤90 วัน</option>
+                        <option value="near">ใกล้กำหนด 91-180 วัน</option>
+                        <option value="watch">ติดตาม 181-365 วัน</option>
+                        <option value="ok">ปกติ >365 วัน</option>
+                    </select>
+                </div>
+                <button type="button" class="fbtn" @onclick="OnPresResetFilter">
+                    <i class="bi bi-x-lg"></i> ล้างค่า
+                </button>
+            </div>
+
+            @* Prescription table *@
+            <table class="cs-status-table" id="presTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>เลขสำนวน</th>
+                        <th>ประเภทคดี</th>
+                        <th>หน่วยงานผู้ถูกกล่าวหา</th>
+                        <th>หน่วยงาน ปปท.</th>
+                        @if (_presView == "byofficer")
+                        {
+                            <th>เจ้าหน้าที่รับผิดชอบ</th>
+                        }
+                        <th>วันที่รับเรื่อง</th>
+                        <th>ขั้นตอน</th>
+                        <th>ขยาย (ครั้ง)</th>
+                        <th>วันครบกำหนด</th>
+                        <th>เหลือ (วัน)</th>
+                        <th>สถานะ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int presSeq = 0; }
+                    @foreach (var c in FilteredPresCases.OrderBy(c => PrescriptionData.DaysUntilDue(c.IntakeDate, c.ExtensionCount)))
+                    {
+                        presSeq++;
+                        var days  = PrescriptionData.DaysUntilDue(c.IntakeDate, c.ExtensionCount);
+                        var urg   = PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount);
+                        var due   = PrescriptionData.DueDateStr(c.IntakeDate, c.ExtensionCount);
+                        var style = urg == "overdue"  ? "color:#ef4444;font-weight:700" :
+                                    urg == "critical" ? "color:#f59e0b;font-weight:700" : "";
+                        <tr>
+                            <td style="color:#94a3b8">@presSeq</td>
+                            <td style="font-weight:700;white-space:nowrap">@c.CaseNo</td>
+                            <td style="font-size:11px;max-width:160px">@TruncateDetail(c.Subject)</td>
+                            <td style="font-size:11px">@c.AccusedAgency</td>
+                            <td><span style="font-size:11px;font-weight:600">@c.AssignedUnit</span></td>
+                            @if (_presView == "byofficer")
+                            {
+                                <td>@c.AssignedOfficer</td>
+                            }
+                            <td style="white-space:nowrap">@c.IntakeDate</td>
+                            <td style="font-size:10px">@c.Stage</td>
+                            <td style="text-align:center">
+                                <span class="ww-chip @ExtChipClass(c.ExtensionCount)">@c.ExtensionCount ครั้ง@(c.ExtensionCount == 4 ? " ⚠️MAX" : "")</span>
+                            </td>
+                            <td style="white-space:nowrap;@style">@due</td>
+                            <td style="text-align:right;@style">@(days < 0 ? $"+{-days}" : days.ToString())</td>
+                            <td>
+                                <span class="ww-chip @PrescriptionData.UrgencyClass(urg)">
+                                    @(urg == "overdue" ? "เกินกำหนด" : urg == "critical" ? "วิกฤต" : urg == "near" ? "ใกล้กำหนด" : urg == "watch" ? "ติดตาม" : "ปกติ")
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                    @if (!FilteredPresCases.Any())
+                    {
+                        <tr><td colspan="12" class="empty-state"><i class="bi bi-inbox"></i> ไม่พบข้อมูล</td></tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="cs-footer" style="margin-top:0.75rem">
+                <span class="cs-footer-info">
+                    แสดง <strong>@FilteredPresCases.Count</strong> สำนวน ·
+                    วิกฤต <strong style="color:#ef4444">@FilteredPresCases.Count(c => PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount) == "critical")</strong> ·
+                    เกินกำหนด <strong style="color:#ef4444">@FilteredPresCases.Count(c => PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount) == "overdue")</strong>
+                </span>
+                <div class="cs-footer-btns">
+                    <button type="button" class="btn-ghost-d" @onclick="PrintPresAsync">
+                        <i class="bi bi-printer"></i> พิมพ์
+                    </button>
+                    <button type="button" class="btn-accent" @onclick="ExportPresAsync">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+@code {
+    private DotNetObjectReference<CommitteeStats>? _dotNetRef;
+    private bool _chartsReady = false;
+    private bool _isDark = true;
+
+    // ── Main section filter state ───────────────────────────────────────────
+    private string _filterYear = "2568";
+    private string _fResType   = "";
+    private int    _fMeetingId = 0;
+    private int    _fFiscalYear = 0;
+
+    // ── Prescription section state ─────────────────────────────────────────
+    private string _presView      = "overview";
+    private string _fPresUnit     = "";
+    private string _fPresAge      = "";
+    private string _fPresExt      = "";
+    private string _fPresUrgency  = "";
+
+    // ── Fiscal year helpers ─────────────────────────────────────────────────
+    private static int GetFiscalYear(string dateStr) // DD/MM/YYYY (BE year)
+    {
+        var p = dateStr.Split('/');
+        if (p.Length == 3 && int.TryParse(p[1], out var month) && int.TryParse(p[2], out var beYear))
+        {
+            var ceYear = beYear - 543;
+            return (month >= 10 ? ceYear + 1 : ceYear) + 543;
+        }
+        return 0;
+    }
+
+    private List<CommitteeMeeting> MeetingsForYear(string fiscalYear) =>
+        CommitteeData.Meetings.Where(m => GetFiscalYear(m.Date).ToString() == fiscalYear).ToList();
+
+    // ── KPI ────────────────────────────────────────────────────────────────
+    private int    MeetingsThisYear => MeetingsForYear(_filterYear).Count;
+    private int    AgendaThisYear   => MeetingsForYear(_filterYear).Sum(m => m.TotalCases);
+
+    private ResolutionYearStat? YearStat =>
+        CommitteeData.YearlySummary.FirstOrDefault(y => y.FiscalYear.ToString() == _filterYear);
+
+    private VerdictYearStat? VerdictStat =>
+        CommitteeData.VerdictSummary.FirstOrDefault(y => y.FiscalYear.ToString() == _filterYear);
+
+    private int TotalForYear      => (YearStat?.Total ?? 0) + (VerdictStat?.Total ?? 0);
+    private int FoundGuiltyForYear => (VerdictStat?.GuiltyBoth ?? 0) + (VerdictStat?.GuiltyDisciplineOnly ?? 0);
+    private int DismissedForYear   => (YearStat?.NotAccepted ?? 0) + (VerdictStat?.Dismissed ?? 0);
+    private string FoundGuiltyPct  => TotalForYear == 0 ? "0" : $"{(int)Math.Round(FoundGuiltyForYear * 100.0 / TotalForYear)}";
+    private string DismissedPct    => TotalForYear == 0 ? "0" : $"{(int)Math.Round(DismissedForYear * 100.0 / TotalForYear)}";
+
+    private int PendingCount => CommitteeData.Cases.Count(c => c.ResolutionType == "none");
+    private IEnumerable<CommitteeCase> PendingCases => CommitteeData.Cases.Where(c => c.ResolutionType == "none");
+
+    // ── Main table filtered ─────────────────────────────────────────────────
+    private List<CommitteeCase> FilteredCases
+    {
+        get
+        {
+            var q = CommitteeData.Cases.AsEnumerable();
+            if (!string.IsNullOrEmpty(_fResType))   q = q.Where(c => c.ResolutionType == _fResType);
+            if (_fMeetingId > 0)                    q = q.Where(c => c.MeetingId == _fMeetingId);
+            if (_fFiscalYear > 0)
+            {
+                var meetingIds = CommitteeData.Meetings
+                    .Where(m => GetFiscalYear(m.Date) == _fFiscalYear)
+                    .Select(m => m.Id).ToHashSet();
+                q = q.Where(c => meetingIds.Contains(c.MeetingId));
+            }
+            return q.OrderByDescending(c => c.MeetingId).ToList();
+        }
+    }
+
+    // ── Prescription filtered ───────────────────────────────────────────────
+    private List<CaseProgress> FilteredPresCases =>
+        PrescriptionData.Cases
+            .Where(c => string.IsNullOrEmpty(_fPresUnit)    || c.AssignedUnit == _fPresUnit)
+            .Where(c => string.IsNullOrEmpty(_fPresAge)     || PrescriptionData.AgeCategory(c.IntakeDate) == _fPresAge)
+            .Where(c => string.IsNullOrEmpty(_fPresExt)     || c.ExtensionCount.ToString() == _fPresExt)
+            .Where(c => string.IsNullOrEmpty(_fPresUrgency) || PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount) == _fPresUrgency)
+            .ToList();
+
+    private int PresCount(string level) =>
+        PrescriptionData.Cases.Count(c => PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount) == level);
+
+    private int PresAgeCount(string cat) =>
+        PrescriptionData.Cases.Count(c => PrescriptionData.AgeCategory(c.IntakeDate) == cat);
+
+    // ── Utility ────────────────────────────────────────────────────────────
+    private static string TruncateDetail(string s) => s.Length <= 30 ? s : s[..30] + "…";
+
+    private static string ExtChipClass(int ext) => ext switch
+    {
+        0 => "sec-normal",
+        1 => "ww-prot-1",
+        2 => "sec-secret",
+        3 => "ww-prot-2",
+        4 => "sec-topsecret",
+        _ => ""
+    };
+
+    // ── Event handlers ──────────────────────────────────────────────────────
+    private async Task OnYearChanged()
+    {
+        _chartsReady = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnResetFilter()
+    {
+        _fResType    = "";
+        _fMeetingId  = 0;
+        _fFiscalYear = 0;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnPresViewChange(string view)
+    {
+        _presView = view;
+        _chartsReady = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnPresResetFilter()
+    {
+        _fPresUnit    = "";
+        _fPresAge     = "";
+        _fPresExt     = "";
+        _fPresUrgency = "";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // ── Chart data builders ─────────────────────────────────────────────────
+
+    // FR-058: ประเภทมติ (ไต่สวนเบื้องต้น)
+    private (string[] Labels, int[] Data, string[] Colors) ResTypeChartData()
+    {
+        var s = YearStat;
+        if (s == null) return (Array.Empty<string>(), Array.Empty<int>(), Array.Empty<string>());
+        return (
+            new[] { "รับไว้ตสวน", "ไม่รับไว้", "ส่ง ป.ป.ช.", "ส่งสอบสวน", "ตรวจสอบ", "อื่นๆ" },
+            new[] { s.Accepted, s.NotAccepted, s.FwdPPC, s.FwdPolice, s.ReCheck, s.Other },
+            new[] { "#6366f1", "#f87171", "#fbbf24", "#06d6a0", "#a78bfa", "#94a3b8" }
+        );
+    }
+
+    // FR-057: มติแยกขั้นตอน (เบื้องต้น vs วินิจฉัย)
+    private (string[] Labels, object[][] Datasets) StageChartData()
+    {
+        var years = CommitteeData.YearlySummary.Select(y => y.FiscalYear.ToString()).ToArray();
+        return (years, new object[][]
+        {
+            CommitteeData.YearlySummary.Select(y => (object)y.Total).ToArray(),
+            CommitteeData.VerdictSummary.Select(y => (object)y.Total).ToArray(),
+        });
+    }
+
+    // FR-059: ความถี่การประชุมรายเดือน
+    private static readonly string[] ThaiMonths = { "ต.ค.", "พ.ย.", "ธ.ค.", "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย." };
+    private static readonly int[] FiscalMonthOrder = { 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+    private int[] MeetingsByMonth()
+    {
+        var meetings = MeetingsForYear(_filterYear);
+        return FiscalMonthOrder.Select(m =>
+        {
+            return meetings.Count(mt =>
+            {
+                var p = mt.Date.Split('/');
+                return p.Length >= 2 && int.TryParse(p[1], out var mo) && mo == m;
+            });
+        }).ToArray();
+    }
+
+    // FR-062: แนวโน้มรายปีงบ multi-series
+    private object[] TrendDatasets()
+    {
+        var years = CommitteeData.YearlySummary.Select(y => y.FiscalYear).ToList();
+        return new object[]
+        {
+            new { label="รับไว้ตสวนวินิจฉัย", color="#6366f1",
+                  data=years.Select(y => (object)(CommitteeData.YearlySummary.FirstOrDefault(s => s.FiscalYear == y)?.Accepted ?? 0)).ToArray() },
+            new { label="ชี้มูลความผิด", color="#f87171",
+                  data=years.Select(y => (object)(CommitteeData.VerdictSummary.FirstOrDefault(s => s.FiscalYear == y)?.GuiltyBoth ?? 0)).ToArray() },
+            new { label="ยุติเรื่อง", color="#fbbf24",
+                  data=years.Select(y => (object)((CommitteeData.YearlySummary.FirstOrDefault(s => s.FiscalYear == y)?.NotAccepted ?? 0)
+                                                 + (CommitteeData.VerdictSummary.FirstOrDefault(s => s.FiscalYear == y)?.Dismissed ?? 0))).ToArray() },
+            new { label="ส่ง ป.ป.ช.", color="#06d6a0",
+                  data=years.Select(y => (object)(CommitteeData.YearlySummary.FirstOrDefault(s => s.FiscalYear == y)?.FwdPPC ?? 0)).ToArray() },
+        };
+    }
+
+    // FR-060: ผลหลังชี้มูล
+    private (string[] Labels, int[] Data, string[] Colors) PostChartData() => (
+        CommitteeData.PostActionData.Select(p => p.Label).ToArray(),
+        CommitteeData.PostActionData.Select(p => p.Count).ToArray(),
+        CommitteeData.PostActionData.Select(p => p.Color).ToArray()
+    );
+
+    // Prescription section chart
+    private (string[] Labels, int[] Critical, int[] Near, int[] Watch, int[] Overdue) PresChartData()
+    {
+        if (_presView == "byunit")
+        {
+            var units = PrescriptionData.AllUnits.ToArray();
+            return (units,
+                units.Select(u => PrescriptionData.Cases.Count(c => c.AssignedUnit == u && PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount) == "critical")).ToArray(),
+                units.Select(u => PrescriptionData.Cases.Count(c => c.AssignedUnit == u && PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount) == "near")).ToArray(),
+                units.Select(u => PrescriptionData.Cases.Count(c => c.AssignedUnit == u && PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount) == "watch")).ToArray(),
+                units.Select(u => PrescriptionData.Cases.Count(c => c.AssignedUnit == u && PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount) == "overdue")).ToArray()
+            );
+        }
+        else if (_presView == "byofficer")
+        {
+            var officers = PrescriptionData.AllOfficers.ToArray();
+            return (officers,
+                officers.Select(o => PrescriptionData.Cases.Count(c => c.AssignedOfficer == o && PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount) == "critical")).ToArray(),
+                officers.Select(o => PrescriptionData.Cases.Count(c => c.AssignedOfficer == o && PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount) == "near")).ToArray(),
+                officers.Select(o => PrescriptionData.Cases.Count(c => c.AssignedOfficer == o && PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount) == "watch")).ToArray(),
+                officers.Select(o => PrescriptionData.Cases.Count(c => c.AssignedOfficer == o && PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount) == "overdue")).ToArray()
+            );
+        }
+        else // overview by extension count
+        {
+            var labels = new[] { "ขยาย 0 ครั้ง", "ขยาย 1 ครั้ง", "ขยาย 2 ครั้ง", "ขยาย 3 ครั้ง", "ขยาย 4 ครั้ง" };
+            return (labels,
+                Enumerable.Range(0, 5).Select(e => PrescriptionData.Cases.Count(c => c.ExtensionCount == e && PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount) == "critical")).ToArray(),
+                Enumerable.Range(0, 5).Select(e => PrescriptionData.Cases.Count(c => c.ExtensionCount == e && PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount) == "near")).ToArray(),
+                Enumerable.Range(0, 5).Select(e => PrescriptionData.Cases.Count(c => c.ExtensionCount == e && PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount) == "watch")).ToArray(),
+                Enumerable.Range(0, 5).Select(e => PrescriptionData.Cases.Count(c => c.ExtensionCount == e && PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount) == "overdue")).ToArray()
+            );
+        }
+    }
+
+    // ── Lifecycle ───────────────────────────────────────────────────────────
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var theme = await JS.InvokeAsync<string?>("localStorage.getItem", "dashTheme");
+            _isDark = theme == "dark";
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("registerAnalyticsComponent", _dotNetRef);
+        }
+        if (!_chartsReady)
+        {
+            _chartsReady = true;
+            await RenderChartsAsync();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnThemeChangedAsync(bool isDark)
+    {
+        _isDark = isDark;
+        await RenderChartsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RenderChartsAsync()
+    {
+        await Task.Yield();
+
+        // FR-058: ประเภทมติ doughnut
+        var (resLabels, resData, resColors) = ResTypeChartData();
+        if (resLabels.Length > 0)
+            await JS.InvokeVoidAsync("initAnalyticsChart", "cmChartResType", "doughnut",
+                resLabels, resData.Cast<object>().ToArray(), resColors, _isDark);
+
+        // FR-057: มติแยกขั้นตอน grouped bar
+        var yearLabels = CommitteeData.YearlySummary.Select(y => y.FiscalYear.ToString()).ToArray();
+        await JS.InvokeVoidAsync("initMultiSeriesChart", "cmChartStage", "bar", yearLabels,
+            new object[]
+            {
+                new { label = "ไต่สวนเบื้องต้น",   color = "#6366f1",
+                      data  = CommitteeData.YearlySummary.Select(y => (object)y.Total).ToArray() },
+                new { label = "ไต่สวนวินิจฉัยชี้มูล", color = "#f87171",
+                      data  = CommitteeData.VerdictSummary.Select(y => (object)y.Total).ToArray() },
+            }, _isDark);
+
+        // FR-059: ความถี่ประชุมรายเดือน bar
+        await JS.InvokeVoidAsync("initAnalyticsChart", "cmChartMeeting", "bar",
+            ThaiMonths, MeetingsByMonth().Cast<object>().ToArray(), new[] { "#06d6a0" }, _isDark);
+
+        // FR-062: แนวโน้มรายปีงบ line
+        await JS.InvokeVoidAsync("initMultiSeriesChart", "cmChartTrend", "line",
+            yearLabels, TrendDatasets(), _isDark);
+
+        // FR-060: ผลหลังชี้มูล doughnut
+        var (postLabels, postData, postColors) = PostChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "cmChartPost", "doughnut",
+            postLabels, postData.Cast<object>().ToArray(), postColors, _isDark);
+
+        // ชาร์ตรับเรื่องรายเดือน FY2568 bar (ข้อมูลจาก PDF ข้อ 2)
+        var monthlyLabels = CommitteeData.MonthlyIntake2568.Select(m => m.Month).ToArray();
+        var monthlyData   = CommitteeData.MonthlyIntake2568.Select(m => (object)m.Count).ToArray();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "cmChartMonthly", "bar",
+            monthlyLabels, monthlyData, new[] { "#6366f1" }, _isDark);
+
+        // ชาร์ตรายหน่วยงาน bar-h (ข้อมูลจาก PDF ข้อ 2)
+        var unitLabels = CommitteeData.UnitDistribution2568.Select(u => u.Unit).ToArray();
+        var unitData   = CommitteeData.UnitDistribution2568.Select(u => (object)u.Count).ToArray();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "cmChartUnit", "bar",
+            unitLabels, unitData, new[] { "#0ea5e9" }, _isDark);
+
+        // ชาร์ตประวัติรับเรื่องทุกปีงบ 2551-2568 bar (ข้อมูลจาก PDF ข้อ 1)
+        var histLabels = CommitteeData.YearlyIntake.Select(y => y.Year.ToString()).ToArray();
+        var histData   = CommitteeData.YearlyIntake.Select(y => (object)y.Count).ToArray();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "cmChartHistIntake", "bar",
+            histLabels, histData, new[] { "#f59e0b" }, _isDark);
+
+        // Prescription chart grouped bar
+        var (pLabels, pCrit, pNear, pWatch, pOver) = PresChartData();
+        await JS.InvokeVoidAsync("initMultiSeriesChart", "cmChartPres", "bar", pLabels,
+            new object[]
+            {
+                new { label = "วิกฤต ≤90 วัน",  color = "#ef4444", data = pCrit.Cast<object>().ToArray() },
+                new { label = "ใกล้กำหนด",       color = "#f59e0b", data = pNear.Cast<object>().ToArray() },
+                new { label = "ติดตาม",           color = "#6366f1", data = pWatch.Cast<object>().ToArray() },
+                new { label = "เกินกำหนด",        color = "#94a3b8", data = pOver.Cast<object>().ToArray() },
+            }, _isDark);
+    }
+
+    // ── Export / Print (FR-064) ─────────────────────────────────────────────
+    private async Task ExportCsvAsync()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("เลขสำนวน,ผู้ถูกกล่าวหา,หน่วยงาน,ผู้รับผิดชอบ,สำนัก/เขต,ครั้งที่ประชุม,ผลการพิจารณา,รายละเอียด");
+        foreach (var c in FilteredCases)
+        {
+            var meeting = CommitteeData.Meetings.FirstOrDefault(m => m.Id == c.MeetingId);
+            sb.AppendLine(string.Join(",",
+                c.CaseNo, c.Accused, c.AccusedAgency, c.Investigator, c.Division,
+                meeting?.MeetingNo ?? "",
+                CommitteeData.ResolutionCategoryLabel(c.ResolutionType),
+                $"\"{c.ResolutionDetails.Replace("\"", "")}\""));
+        }
+        await JS.InvokeVoidAsync("ecmis.downloadTextFile",
+            $"committee_stats_{DateTime.Now:yyyyMMdd}.csv", "text/csv;charset=utf-8;", sb.ToString(), true);
+    }
+
+    private async Task PrintReportAsync()
+    {
+        var title = $"<h2>รายงานสถิติมติคณะกรรมการ ป.ป.ท. TOR 12.8 | {DateTime.Now:dd/MM/yyyy}</h2>";
+        var table = await JS.InvokeAsync<string>("eval", "document.getElementById('exportTable').outerHTML");
+        await JS.InvokeVoidAsync("ecmis.printReport", "สถิติมติคณะกรรมการ ป.ป.ท.", title + table);
+    }
+
+    private async Task ExportPresAsync()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("เลขสำนวน,ประเภทคดี,หน่วยงานผู้ถูกกล่าวหา,หน่วยงาน ปปท.,เจ้าหน้าที่,วันรับเรื่อง,ขั้นตอน,ขยาย(ครั้ง),วันครบกำหนด,เหลือ(วัน),สถานะ");
+        foreach (var c in FilteredPresCases.OrderBy(c => PrescriptionData.DaysUntilDue(c.IntakeDate, c.ExtensionCount)))
+        {
+            var days = PrescriptionData.DaysUntilDue(c.IntakeDate, c.ExtensionCount);
+            var urg  = PrescriptionData.UrgencyLevel(c.IntakeDate, c.ExtensionCount);
+            sb.AppendLine(string.Join(",",
+                c.CaseNo, $"\"{c.Subject}\"", c.AccusedAgency, c.AssignedUnit, c.AssignedOfficer,
+                c.IntakeDate, c.Stage, c.ExtensionCount,
+                PrescriptionData.DueDateStr(c.IntakeDate, c.ExtensionCount),
+                days, PrescriptionData.UrgencyLabel(urg)));
+        }
+        await JS.InvokeVoidAsync("ecmis.downloadTextFile",
+            $"prescription_tracking_{DateTime.Now:yyyyMMdd}.csv", "text/csv;charset=utf-8;", sb.ToString(), true);
+    }
+
+    private async Task PrintPresAsync()
+    {
+        var title = $"<h2>รายงานสำนวนคดีใกล้ขาดอายุความ | {DateTime.Now:dd/MM/yyyy}</h2>";
+        var table = await JS.InvokeAsync<string>("eval", "document.getElementById('presTable').outerHTML");
+        await JS.InvokeVoidAsync("ecmis.printReport", "สำนวนคดีใกล้ขาดอายุความ", title + table);
+    }
+
+    public void Dispose() => _dotNetRef?.Dispose();
+}

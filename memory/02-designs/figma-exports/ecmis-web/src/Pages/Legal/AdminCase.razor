@@ -1,0 +1,105 @@
+@page "/legal/admin-case"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+<div class="routing-page-wrap">
+    <div class="complaints-page-header">
+        <div>
+            <div class="complaints-title">
+                <i class="bi bi-building" style="color:var(--orange)"></i>
+                <span>งานคดีปกครอง (Administrative Cases)</span>
+            </div>
+            <div class="complaints-subtitle">
+                บันทึกหมายเรียกจากศาลปกครอง และเชื่อมโยงรหัสสำนวน ป.ป.ท. เพื่อนำพยานหลักฐานไปจัดทำคำให้การแก้ฟ้อง
+            </div>
+        </div>
+        <div class="complaints-actions">
+            <button class="btn-outline-navy" @onclick='() => Nav.NavigateTo("/legal")'>
+                <i class="bi bi-arrow-left"></i> กลับไป Dashboard
+            </button>
+        </div>
+    </div>
+
+    @* — Case Linking / Smart Search Form — *@
+    <div class="detail-card mb-4" style="background:#f8fafc;border:2px dashed #cbd5e1">
+        <div style="font-weight:700;color:var(--navy-deep);margin-bottom:12px;font-size:16px">
+            <i class="bi bi-link-45deg"></i> สร้างคดีปกครองใหม่ (Smart Case Linking)
+        </div>
+        <div class="row">
+            <div class="col-md-5 mb-3">
+                <label class="form-label-custom">ค้นหาจากเลขสำนวน ป.ป.ท.</label>
+                <div style="display:flex;gap:10px">
+                    <input class="form-control-custom" placeholder="พิมพ์เลขสำนวน เช่น สน.001/2565..." />
+                    <button class="btn-navy"><i class="bi bi-search"></i> ค้นหา</button>
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:6px">ระบบจะดึงข้อมูลผู้ถูกกล่าวหา พยานหลักฐาน และมติคณะกรรมการมาให้โดยอัตโนมัติ</div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label-custom">เลขคดีดำ (ศาลปกครอง)</label>
+                <input class="form-control-custom" placeholder="เช่น อ.123/2566" />
+            </div>
+            <div class="col-md-3 mb-3" style="display:flex;align-items:flex-end">
+                <button class="btn-navy" style="width:100%;height:38px"><i class="bi bi-plus-circle"></i> เปิดหน้าต่างสร้างคดี</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="complaints-table-card">
+        <div class="complaints-table-head">
+            <div>
+                <div class="complaints-table-title">สารบบคดีปกครอง (ทั้งหมด)</div>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto">
+            <table class="complaints-table">
+                <thead>
+                    <tr>
+                        <th>เลขคดีปกครอง</th>
+                        <th>ผู้ฟ้องคดี</th>
+                        <th>คดี ป.ป.ท. หลัก (เชื่อมโยง)</th>
+                        <th>กำหนดทำคำให้การแก้ฟ้อง</th>
+                        <th style="min-width:140px">สถานะการทำงาน</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in LegalData.AdminCases)
+                    {
+                        var isWarning = !string.IsNullOrEmpty(c.Deadline) && LegalData.DaysUntil(c.Deadline) <= 15;
+                        <tr style="@(isWarning ? "background:#fff5f5" : "")">
+                            <td><span style="font-weight:700;font-size:14px;color:var(--orange)">@c.AdminCourtNo</span></td>
+                            <td><div style="font-size:13px;font-weight:600">@c.PlaintiffName</div></td>
+                            <td>
+                                <a href="#" style="font-size:12px;font-weight:700;color:var(--navy);text-decoration:underline">
+                                    <i class="bi bi-link"></i> @c.LinkedCaseNo
+                                </a>
+                            </td>
+                            <td>
+                                <span style="font-size:12px">@(string.IsNullOrEmpty(c.Deadline) ? "-" : c.Deadline)</span>
+                                @if (isWarning)
+                                {
+                                    <div style="font-size:11px;font-weight:700;color:var(--red)">
+                                        วิกฤต! เหลือ @LegalData.DaysUntil(c.Deadline) วัน
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                @if (c.Status == "drafting_defense") {
+                                    <span class="complaints-status-chip urgent">ยกร่างคำให้การแก้ฟ้อง</span>
+                                } else if (c.Status == "investigating") {
+                                    <span class="complaints-status-chip review">ไต่สวนมูลฟ้อง</span>
+                                } else {
+                                    <span class="complaints-status-chip closed">คดีถึงที่สุด</span>
+                                }
+                            </td>
+                            <td>
+                                <button class="btn btn-outline-navy" style="padding:4px 10px;font-size:12px">รายละเอียด</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

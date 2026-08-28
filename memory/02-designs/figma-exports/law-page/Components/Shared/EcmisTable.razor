@@ -1,0 +1,116 @@
+@typeparam TItem
+
+<div class="table-container pb-3 @Class" style="@Style">
+    @if (TitleContent != null || !string.IsNullOrEmpty(Title))
+    {
+        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+            <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle" style="width: 8px; height: 8px; background: var(--gold);"></div>
+                <span class="fw-bold" style="font-size: 14px; color: var(--primary-dark);">@Title</span>
+            </div>
+            @if (TitleContent != null)
+            {
+                <div>@TitleContent</div>
+            }
+        </div>
+    }
+
+    <div class="table-responsive">
+        <table class="table custom-table mb-0">
+            <thead>
+                <tr>
+                    @HeaderTemplate
+                </tr>
+            </thead>
+            <tbody>
+                @if (PaginatedItems != null && PaginatedItems.Any())
+                {
+                    @foreach (var item in PaginatedItems)
+                    {
+                        <tr>
+                            @RowTemplate(item)
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="20" class="text-center text-muted py-4">ไม่พบข้อมูลในตาราง</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (TotalPages > 1)
+    {
+        <div class="d-flex justify-content-between align-items-center px-3 pt-3 border-top">
+            <div style="font-size: 12.5px;" class="text-muted">
+                แสดงหน้า @CurrentPage จากทั้งหมด @TotalPages หน้า (จำนวนทั้งหมด @Items.Count รายการ)
+            </div>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+                        <button class="page-link" @onclick="() => SetPage(CurrentPage - 1)" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </button>
+                    </li>
+                    @for (int p = 1; p <= TotalPages; p++)
+                    {
+                        var pageNumber = p;
+                        <li class="page-item @(CurrentPage == pageNumber ? "active" : "")">
+                            <button class="page-link" @onclick="() => SetPage(pageNumber)">@pageNumber</button>
+                        </li>
+                    }
+                    <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
+                        <button class="page-link" @onclick="() => SetPage(CurrentPage + 1)" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public RenderFragment? TitleContent { get; set; }
+    [Parameter] public List<TItem> Items { get; set; } = new();
+    [Parameter] public RenderFragment? HeaderTemplate { get; set; }
+    [Parameter] public RenderFragment<TItem> RowTemplate { get; set; } = default!;
+    [Parameter] public int ItemsPerPage { get; set; } = 5;
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public string Style { get; set; } = "";
+
+    private int CurrentPage { get; set; } = 1;
+
+    private int TotalPages => (int)Math.Ceiling((double)Items.Count / (ItemsPerPage > 0 ? ItemsPerPage : 5));
+
+    private IEnumerable<TItem> PaginatedItems
+    {
+        get
+        {
+            if (Items == null) return Enumerable.Empty<TItem>();
+            return Items.Skip((CurrentPage - 1) * ItemsPerPage).Take(ItemsPerPage);
+        }
+    }
+
+    private void SetPage(int page)
+    {
+        if (page >= 1 && page <= TotalPages)
+        {
+            CurrentPage = page;
+            StateHasChanged();
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Reset to page 1 if items size changes
+        if (CurrentPage > TotalPages && TotalPages > 0)
+        {
+            CurrentPage = TotalPages;
+        }
+    }
+}

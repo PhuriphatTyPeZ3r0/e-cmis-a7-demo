@@ -1,0 +1,95 @@
+﻿@page "/cases"
+
+<div style="padding:4px 6px">
+    <div class="row g-3 mb-2">
+        <div class="col-lg-8">
+            <label class="form-label-custom">ค้นหา</label>
+            <input class="form-control-custom" placeholder="ค้นหาจาก เลขที่รับเรื่อง เลขที่ติดตาม รายละเอียดเรื่องร้องเรียน ฯลฯ" />
+        </div>
+        <div class="col-lg-4">
+            <label class="form-label-custom">ช่องทางร้องเรียน</label>
+            <select class="form-control-custom"><option>กรุณาเลือก</option></select>
+        </div>
+        <div class="col-lg-5"><label class="form-label-custom">ช่วงเวลาที่รับเรื่อง</label><input class="form-control-custom" /></div>
+        <div class="col-lg-3"><label class="form-label-custom">ถึง</label><input class="form-control-custom" /></div>
+        <div class="col-lg-4"><label class="form-label-custom">สถานะการดำเนินการ</label><select class="form-control-custom"><option>กรุณาเลือก</option></select></div>
+    </div>
+
+    <div class="text-end mb-3">
+        <button class="btn-navy" style="padding:7px 20px">ค้นหา</button>
+        <button class="btn-outline-navy" style="padding:7px 14px">ยกเลิก</button>
+    </div>
+
+    <div style="overflow-x:auto">
+        <table class="ecmis-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>จัดการ</th>
+                    <th>เลขที่เรื่อง</th>
+                    <th>เลขที่ติดตาม</th>
+                    <th>วันทีรับเรื่อง</th>
+                    <th>สถานะเรื่องร้องเรียน</th>
+                    <th>หน่วยงานที่รับผิดชอบ</th>
+                    <th>ช่องทางการรับเรื่อง</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < 2; i++)
+                {
+                    <tr>
+                        <td>@(i+1)</td>
+                        <td>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <span class="mini-badge" style="background:#a7a228!important">PDF</span>
+                                <button class="btn-outline-navy" style="padding:2px 8px;font-size:11px" @onclick="() => showModal = true">สถานะ</button>
+                                @if (i == 0)
+                                {
+                                    <span class="mini-badge" style="background:#de9b18!important">พิจารณา</span>
+                                }
+                                else
+                                {
+                                    <span class="mini-badge" style="background:#5b27ad!important">ติดตาม</span>
+                                }
+                            </div>
+                        </td>
+                        <td>@(i==0?"14/2566":"7/2566")</td>
+                        <td>@(i==0?"1212|1776":"4444|2956")</td>
+                        <td>@(i==0?"14/8/2566":"06/07/2566")</td>
+                        <td>@(i==0?"รับทราบดำเนินการ":"สรุปผลเรื่องร้องเรียนแล้ว")</td>
+                        <td>ปปท.เขต9</td>
+                        <td>@(i==0?"จดหมาย":"เว็บไซต์")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-2">
+        <span class="pcms-table-note">จำนวนทั้งหมด 2 รายการ</span>
+        <div class="d-flex gap-1">
+            <button class="btn-outline-navy" style="padding:3px 8px;font-size:11px">ก่อนหน้า</button>
+            <button class="btn-navy" style="padding:3px 10px;font-size:11px">1</button>
+            <button class="btn-outline-navy" style="padding:3px 8px;font-size:11px">ถัดไป</button>
+        </div>
+    </div>
+</div>
+
+@if (showModal)
+{
+    <div class="modal-backdrop-custom open" @onclick="() => showModal = false">
+        <div class="modal-box" @onclick:stopPropagation="true">
+            <div style="font-size:22px;font-weight:800;text-align:center;margin-bottom:12px">พิจารณา</div>
+            <div class="mb-2"><label><input type="radio" checked style="accent-color:#0d6efd" /> รับทราบดำเนินการ</label></div>
+            <div class="mb-2"><label class="form-label-custom" style="color:#8e3e3e">* หมายเหตุ</label><input class="form-control-custom" /></div>
+            <div class="text-center mt-3">
+                <button class="btn-navy" style="margin-right:6px">ยืนยัน</button>
+                <button class="btn-outline-navy" @onclick="() => showModal = false">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool showModal;
+}

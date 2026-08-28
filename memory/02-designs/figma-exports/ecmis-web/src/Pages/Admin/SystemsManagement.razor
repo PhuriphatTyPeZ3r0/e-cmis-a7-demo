@@ -1,0 +1,1165 @@
+@page "/super-admin/systems"
+@inject EcmisWeb.Services.SystemAccessApiService SystemApi
+@inject EcmisWeb.Services.AdminApiService AdminApi
+@inject EcmisWeb.Services.CurrentUserService CurrentUserSvc
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@using EcmisWeb.Services
+
+@* ── HERO ── *@
+<div style="background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 55%,#1e3575 100%);border-radius:18px;padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden" class="fade-in">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold-light),var(--gold),transparent)"></div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div style="display:flex;align-items:center;gap:14px">
+            <a href="/admin/dashboard" style="color:rgba(255,255,255,.55);font-size:18px;text-decoration:none"><i class="bi bi-arrow-left"></i></a>
+            <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center">
+                <i class="bi bi-grid-3x3-gap-fill" style="font-size:20px;color:var(--navy-deep)"></i>
+            </div>
+            <div>
+                <div style="font-size:19px;font-weight:800;color:#fff">ตั้งค่าเมนูและสิทธิ์</div>
+                <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px">@PageSubtitle</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── TAB BAR ── *@
+<div style="background:#fff;border-radius:16px;border:1px solid #eaecf2;margin-bottom:20px;overflow:hidden;box-shadow:0 2px 12px rgba(13,27,62,.05)" class="fade-in">
+    <div style="display:flex;border-bottom:1px solid #eaecf2;background:linear-gradient(180deg,#fafbff,#fff);padding:0 8px">
+        @if (CanEditStructure)
+        {
+        <button @onclick="@(() => SetTab("modules"))"
+                style="padding:14px 20px;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;
+                       color:@(ActiveTab=="modules" ? "var(--navy-deep)" : "#8A96A8");
+                       border-bottom:@(ActiveTab=="modules" ? "2.5px solid var(--navy-deep)" : "2.5px solid transparent");
+                       display:flex;align-items:center;gap:7px;margin-bottom:-1px;font-family:'Sarabun',sans-serif">
+            <i class="bi bi-grid-3x3-gap-fill" style="font-size:14px"></i>โมดูล / เมนู
+            <span style="background:#0B1940;color:#fff;border-radius:20px;padding:1px 8px;font-size:10.5px;font-weight:700">@ModuleRootCount</span>
+        </button>
+        <button @onclick="@(() => SetTab("roles"))"
+                style="padding:14px 20px;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;
+                       color:@(ActiveTab=="roles" ? "var(--navy-deep)" : "#8A96A8");
+                       border-bottom:@(ActiveTab=="roles" ? "2.5px solid var(--navy-deep)" : "2.5px solid transparent");
+                       display:flex;align-items:center;gap:7px;margin-bottom:-1px;font-family:'Sarabun',sans-serif">
+            <i class="bi bi-person-badge-fill" style="font-size:14px"></i>สิทธิ์ตามตำแหน่ง
+            <span style="background:#d97706;color:#fff;border-radius:20px;padding:1px 8px;font-size:10.5px;font-weight:700">@PositionRoles.Count</span>
+        </button>
+        <button @onclick="@(() => SetTab("special"))"
+                style="padding:14px 20px;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;
+                       color:@(ActiveTab=="special" ? "var(--navy-deep)" : "#8A96A8");
+                       border-bottom:@(ActiveTab=="special" ? "2.5px solid var(--navy-deep)" : "2.5px solid transparent");
+                       display:flex;align-items:center;gap:7px;margin-bottom:-1px;font-family:'Sarabun',sans-serif">
+            <i class="bi bi-stars" style="font-size:14px"></i>สิทธิ์การเข้าถึงพิเศษ
+            <span style="background:#6366f1;color:#fff;border-radius:20px;padding:1px 8px;font-size:10.5px;font-weight:700">@SpecialGroups.Count</span>
+        </button>
+        }
+        @if (CanManageOrgGroups)
+        {
+        <button @onclick="@(() => SetTab("org-groups"))"
+                style="padding:14px 20px;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;
+                       color:@(ActiveTab=="org-groups" ? "var(--navy-deep)" : "#8A96A8");
+                       border-bottom:@(ActiveTab=="org-groups" ? "2.5px solid var(--navy-deep)" : "2.5px solid transparent");
+                       display:flex;align-items:center;gap:7px;margin-bottom:-1px;font-family:'Sarabun',sans-serif">
+            <i class="bi bi-building-gear" style="font-size:14px"></i>สิทธิ์ตามหน่วยงาน
+            <span style="background:#0B1940;color:#fff;border-radius:20px;padding:1px 8px;font-size:10.5px;font-weight:700">@OrgGroups.Count</span>
+        </button>
+        }
+        <button @onclick="@(() => SetTab("assign-users"))"
+                style="padding:14px 20px;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;
+                       color:@(ActiveTab=="assign-users" ? "var(--navy-deep)" : "#8A96A8");
+                       border-bottom:@(ActiveTab=="assign-users" ? "2.5px solid var(--navy-deep)" : "2.5px solid transparent");
+                       display:flex;align-items:center;gap:7px;margin-bottom:-1px;font-family:'Sarabun',sans-serif">
+            <i class="bi bi-person-check-fill" style="font-size:14px"></i>มอบสิทธิ์การเข้าถึง
+        </button>
+        @if (!CanEditStructure && !CanManageOrgGroups)
+        {
+            <button @onclick='async () => { SetTab("request-access"); await LoadAvailableGroupsAsync(); }'
+                    class="systems-tab @(ActiveTab == "request-access" ? "active" : "")"
+                    style="padding:14px 20px;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;
+                           color:@(ActiveTab=="request-access" ? "var(--navy-deep)" : "#8A96A8");
+                           border-bottom:@(ActiveTab=="request-access" ? "2.5px solid var(--navy-deep)" : "2.5px solid transparent");
+                           display:flex;align-items:center;gap:7px;margin-bottom:-1px;font-family:'Sarabun',sans-serif">
+                <i class="bi bi-send-plus" style="font-size:14px"></i>ขอสิทธิ์เพิ่มเติม
+                @if (MyPendingRequests > 0)
+                {
+                    <span style="background:#f59e0b;color:#fff;border-radius:20px;padding:1px 8px;font-size:10.5px;font-weight:700">@MyPendingRequests</span>
+                }
+            </button>
+        }
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(ActionMessage))
+{
+    <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#15803d">
+        <i class="bi bi-check-circle-fill me-2"></i>@ActionMessage
+    </div>
+}
+@if (!string.IsNullOrEmpty(ActionError))
+{
+    <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#991b1b">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@ActionError
+    </div>
+}
+
+@* ═══════════════════════════════
+   TAB: Systems
+═══════════════════════════════ *@
+@if (ActiveTab == "modules" || ActiveTab == "systems")
+{
+    <div class="ecmis-card fade-in">
+        <div class="ecmis-card-header flex-wrap gap-2">
+            <div>
+                <div class="ecmis-card-title"><span class="badge-dot"></span>รายการฟังก์ชัน / เมนู</div>
+                <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px">โมดูลหลัก ~@ModuleRootCount รายการ (ตรง sidebar) · เมนูย่อยตาม parent อัตโนมัติ</div>
+            </div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;margin:0">
+                    <input type="checkbox" @bind="ShowAdvancedFunctions" style="accent-color:var(--navy-deep)" />
+                    แสดงเมนูย่อย/สิทธิ์ภายใน (@Systems.Count)
+                </label>
+                <button @onclick="OpenCreateSystemModal" class="btn btn-sm" style="background:var(--navy-deep);color:#fff;border:none;font-size:12px;border-radius:8px;padding:6px 14px;font-weight:700">
+                    <i class="bi bi-plus-lg me-1"></i>เพิ่มโมดูล
+                </button>
+            </div>
+        </div>
+        @if (!VisibleFunctions.Any())
+        {
+            <div style="padding:40px;text-align:center;color:var(--text-muted)">
+                <i class="bi bi-inbox" style="font-size:32px"></i>
+                <div style="margin-top:8px">ยังไม่มีฟังก์ชัน/เมนู</div>
+            </div>
+        }
+        else
+        {
+            <div style="overflow-x:auto">
+                <table class="ecmis-table">
+                    <thead><tr>
+                        <th>ชื่อฟังก์ชัน</th>
+                        <th>สถานะ</th>
+                        <th style="text-align:center">จัดการ</th>
+                    </tr></thead>
+                    <tbody>
+                        @foreach (var s in VisibleFunctions)
+                        {
+                            <tr>
+                                <td>
+                                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                                        @if (s.IsMainModule)
+                                        {
+                                            <span style="font-size:10px;font-weight:700;background:#e0e7ff;color:#3730a3;border-radius:4px;padding:2px 6px">โมดูล</span>
+                                        }
+                                        else if (ShowAdvancedFunctions)
+                                        {
+                                            <span style="font-size:10px;color:var(--text-muted)">ย่อย</span>
+                                        }
+                                        <div style="font-weight:700;font-size:13px">@s.NameTh</div>
+                                        @if (ShowAdvancedFunctions)
+                                        {
+                                            <span style="font-family:monospace;font-size:10.5px;color:var(--text-muted)">@s.Code</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (s.IsActive)
+                                    { <span class="status-badge status-active">เปิดใช้</span> }
+                                    else
+                                    { <span class="status-badge status-inactive">ปิด</span> }
+                                </td>
+                                <td style="text-align:center">
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        <button @onclick="@(() => Nav.NavigateTo($"/super-admin/systems/{s.Id}/menus"))" class="btn btn-sm btn-outline-primary" style="font-size:11px;border-radius:6px;padding:3px 8px" title="จัดการเมนู"><i class="bi bi-list-nested"></i></button>
+                                        <button @onclick="@(() => OpenEditSystemModal(s))" class="btn btn-sm btn-outline-secondary" style="font-size:11px;border-radius:6px;padding:3px 8px"><i class="bi bi-pencil"></i></button>
+                                        <button @onclick="@(() => DeleteSystemAsync(s.Id))" disabled="@Busy" class="btn btn-sm" style="background:#fff;border:1px solid #fca5a5;color:#dc2626;font-size:11px;border-radius:6px;padding:3px 8px"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+
+@if (ActiveTab == "assign-users")
+{
+    <div class="ecmis-card fade-in">
+        <div class="ecmis-card-header">
+            <div>
+                <div class="ecmis-card-title"><span class="badge-dot"></span>มอบสิทธิ์ให้ผู้ใช้งาน</div>
+                <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px">เลือกผู้ใช้ + หน่วยงาน + สิทธิ์ (ตามตำแหน่ง) หรือสิทธิ์พิเศษ</div>
+            </div>
+        </div>
+        <div style="padding:16px 22px">
+            <UserGroupAssignment />
+        </div>
+    </div>
+}
+
+@if (ActiveTab == "roles")
+{
+    <div class="ecmis-card fade-in">
+        <div class="ecmis-card-header flex-wrap gap-2">
+            <div>
+                <div class="ecmis-card-title"><span class="badge-dot"></span>สิทธิ์ตามตำแหน่ง + เมนู</div>
+                <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px">① เลือกตำแหน่ง → ② เลือกสิทธิ์ → ③ ติ๊กเมนู → บันทึก</div>
+            </div>
+            <button @onclick="OpenCreatePositionRole" disabled="@(!SelectedPositionId.HasValue)" class="btn btn-sm" style="background:var(--navy-deep);color:#fff;border:none;font-size:12px;border-radius:8px;padding:6px 14px;font-weight:700"><i class="bi bi-plus-lg me-1"></i>เพิ่มสิทธิ์</button>
+        </div>
+        <div class="row g-0" style="min-height:420px">
+            <div class="col-lg-3" style="border-right:1px solid #eaecf2;padding:12px 14px;max-height:56vh;overflow-y:auto">
+                <div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:8px">ตำแหน่ง</div>
+                @foreach (var p in Positions.OrderBy(x => x.NameTh))
+                {
+                    var sel = SelectedPositionId == p.Id;
+                    <button type="button" @onclick="() => SelectPositionAsync(p.Id)"
+                            style="display:block;width:100%;text-align:left;border:1px solid @(sel ? "#c7d2fe" : "#eaecf2");background:@(sel ? "#eef2ff" : "#fff");border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:pointer">
+                        <div style="font-size:13px;font-weight:700;color:var(--navy-deep)">@p.NameTh</div>
+                        <div style="font-size:10.5px;color:var(--text-muted)">@p.RoleCount สิทธิ์</div>
+                    </button>
+                }
+            </div>
+            <div class="col-lg-4" style="border-right:1px solid #eaecf2">
+                @if (!SelectedPositionId.HasValue)
+                {
+                    <div style="padding:40px;text-align:center;color:var(--text-muted)">เลือกตำแหน่งทางซ้าย</div>
+                }
+                else if (PositionRoles.Count == 0)
+                {
+                    <div style="padding:40px;text-align:center;color:var(--text-muted)"><i class="bi bi-person-badge" style="font-size:32px"></i><div style="margin-top:8px">ยังไม่มีสิทธิ์ — กดเพิ่มสิทธิ์</div></div>
+                }
+                else
+                {
+                    <div style="overflow-x:auto;max-height:56vh;overflow-y:auto">
+                        <table class="ecmis-table" style="margin:0">
+                            <thead><tr><th>สิทธิ์</th><th>เมนู</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var r in PositionRoles)
+                                {
+                                    var selected = SelectedGroupId == r.Id;
+                                    <tr style="cursor:pointer;background:@(selected ? "#eef2ff" : "transparent")" @onclick="() => SelectGroup(r.Id)">
+                                        <td>
+                                            <div style="font-size:13px;font-weight:700;color:var(--navy-deep)">@r.NameTh</div>
+                                            @if (r.IsDefault) { <span style="font-size:10px;font-weight:700;color:#b45309">★ ค่าเริ่มต้น</span> }
+                                        </td>
+                                        <td style="font-size:11.5px">@r.MenuCount</td>
+                                        <td style="text-align:right" @onclick:stopPropagation="true">
+                                            @if (!r.IsDefault)
+                                            {
+                                                <button title="ตั้งเป็นค่าเริ่มต้น" @onclick="@(() => SetDefaultRoleAsync(r.Id))" class="btn btn-sm btn-outline-warning" style="font-size:10px;padding:2px 6px"><i class="bi bi-star"></i></button>
+                                            }
+                                            <button @onclick="@(() => OpenEditPositionRole(r))" class="btn btn-sm btn-outline-secondary" style="font-size:10px;padding:2px 6px"><i class="bi bi-pencil"></i></button>
+                                            <button @onclick="@(() => DeletePositionRoleAsync(r.Id))" disabled="@Busy" class="btn btn-sm" style="font-size:10px;padding:2px 6px;background:#fff;border:1px solid #fca5a5;color:#dc2626"><i class="bi bi-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+            <div class="col-lg-5" style="padding:16px 18px">
+                <GroupDetailPanel @ref="_groupDetailRoles" SelectedGroupId="SelectedGroupId" CanRevokeMembers="@CanRevokeMembers" OnMatrixSaved="OnMatrixSavedAsync" />
+            </div>
+        </div>
+    </div>
+}
+
+@if (ActiveTab == "org-groups")
+{
+    <div class="ecmis-card fade-in">
+        <div class="ecmis-card-header flex-wrap gap-2">
+            <div>
+                <div class="ecmis-card-title"><span class="badge-dot"></span>สิทธิ์ตามหน่วยงาน + เมนู</div>
+                <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px">สร้างชุดสิทธิ์เฉพาะสำนัก · คลิกชุดสิทธิ์ → ติ๊กเมนู → บันทึก · มอบที่แท็บมอบสิทธิ์</div>
+            </div>
+            @if (CanEditStructure || ScopedDepartments.Count == 1)
+            {
+                <button @onclick="OpenCreateOrgGroup" disabled="@(ScopedDepartments.Count == 0)" class="btn btn-sm" style="background:var(--navy-deep);color:#fff;border:none;font-size:12px;border-radius:8px;padding:6px 14px;font-weight:700"><i class="bi bi-plus-lg me-1"></i>เพิ่มสิทธิ์ตามหน่วยงาน</button>
+            }
+        </div>
+        @if (CanEditStructure && ScopedDepartments.Count > 1)
+        {
+            <div style="padding:12px 22px 0;border-bottom:1px solid #eaecf2">
+                <label style="font-size:11px;font-weight:700;color:var(--text-muted)">กรองตามหน่วยงาน</label>
+                <select class="form-select form-select-sm" style="max-width:320px;margin-top:4px" @bind="OrgGroupFilterDeptText" @bind:after="OnOrgGroupDeptFilterChangedAsync">
+                    <option value="">ทุกหน่วยงาน</option>
+                    @foreach (var d in ScopedDepartments.OrderBy(x => x.NameTh))
+                    {
+                        <option value="@d.Id">@d.NameTh</option>
+                    }
+                </select>
+            </div>
+        }
+        @if (EffectiveOrgGroupDeptId is int deptId)
+        {
+            <div style="margin:12px 22px 0;padding:14px 16px;background:linear-gradient(135deg,#f8fafc,#eef2ff);border:1px solid #c7d2fe;border-radius:12px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                    <i class="bi bi-shield-check" style="color:var(--navy-deep);font-size:16px"></i>
+                    <span style="font-size:13px;font-weight:800;color:var(--navy-deep)">ผู้ดูแลสำนัก (@DeptOrgAdmins.Count)</span>
+                    <span style="font-size:11px;color:var(--text-muted)">— มอบ/ถอนที่แท็บ มอบสิทธิ์การเข้าถึง (กลุ่ม org_admin)</span>
+                </div>
+                @if (DeptOrgAdminsLoading)
+                {
+                    <div style="font-size:12px;color:var(--text-muted)"><i class="bi bi-arrow-clockwise" style="animation:spin 1s linear infinite"></i> กำลังโหลด...</div>
+                }
+                else if (DeptOrgAdmins.Count == 0)
+                {
+                    <div style="font-size:12.5px;color:var(--text-muted)">ยังไม่มีผู้ดูแลสำนักในหน่วยงานนี้</div>
+                }
+                else
+                {
+                    <div class="d-flex flex-wrap gap-8px" style="gap:8px">
+                        @foreach (var a in DeptOrgAdmins)
+                        {
+                            <a href="/admin/users/@a.UserId" style="display:inline-flex;align-items:center;gap:8px;padding:8px 12px;background:#fff;border:1px solid #eaecf2;border-radius:10px;text-decoration:none;min-width:200px">
+                                @{
+                                    var adminLabel = string.IsNullOrWhiteSpace(a.FullName) ? a.Username : a.FullName.Trim();
+                                    var adminInitial = adminLabel.Length > 0 ? adminLabel[..1] : "?";
+                                }
+                                <span style="width:32px;height:32px;border-radius:8px;background:var(--navy-deep);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800">@adminInitial</span>
+                                <span>
+                                    <span style="display:block;font-size:12.5px;font-weight:700;color:var(--navy-deep)">@(string.IsNullOrWhiteSpace(a.FullName) ? a.Username : a.FullName)</span>
+                                    <span style="display:block;font-size:10.5px;color:var(--text-muted)">@a.Username</span>
+                                </span>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else if (CanEditStructure && ScopedDepartments.Count > 1)
+        {
+            <div style="margin:12px 22px 0;padding:12px 16px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;font-size:12.5px;color:#92400e">
+                <i class="bi bi-info-circle me-1"></i>เลือกหน่วยงานด้านบนเพื่อดูผู้ดูแลสำนัก
+            </div>
+        }
+        <div class="row g-0" style="min-height:420px">
+            <div class="col-lg-5" style="border-right:1px solid #eaecf2">
+                @if (OrgGroups.Count == 0)
+                {
+                    <div style="padding:40px;text-align:center;color:var(--text-muted)"><i class="bi bi-building-gear" style="font-size:32px"></i><div style="margin-top:8px">ยังไม่มีสิทธิ์ตามหน่วยงาน</div></div>
+                }
+                else
+                {
+                    <div style="overflow-x:auto;max-height:56vh;overflow-y:auto">
+                        <table class="ecmis-table" style="margin:0">
+                            <thead><tr><th>กลุ่ม</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var g in OrgGroups.OrderBy(x => x.DepartmentName).ThenBy(x => x.NameTh))
+                                {
+                                    var selected = SelectedGroupId == g.Id;
+                                    <tr style="cursor:pointer;background:@(selected ? "#ecfdf5" : "transparent")"
+                                        @onclick="() => SelectGroup(g.Id)">
+                                        <td>
+                                            <div style="font-size:13px;font-weight:700;color:var(--navy-deep)">@g.NameTh</div>
+                                            <div style="font-size:10.5px;color:var(--text-muted)">@g.DepartmentName · @g.Code · เมนู @g.MenuCount</div>
+                                        </td>
+                                        <td style="text-align:right" @onclick:stopPropagation="true">
+                                            <button @onclick="@(() => OpenEditOrgGroup(g))" class="btn btn-sm btn-outline-secondary" style="font-size:10px;padding:2px 6px"><i class="bi bi-pencil"></i></button>
+                                            <button @onclick="@(() => DeleteOrgGroupAsync(g.Id))" disabled="@Busy" class="btn btn-sm" style="font-size:10px;padding:2px 6px;background:#fff;border:1px solid #fca5a5;color:#dc2626"><i class="bi bi-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+            <div class="col-lg-7" style="padding:16px 18px">
+                <GroupDetailPanel @ref="_groupDetailOrg" SelectedGroupId="SelectedGroupId" CanRevokeMembers="@CanRevokeMembers" OnMatrixSaved="OnMatrixSavedAsync" />
+            </div>
+        </div>
+    </div>
+}
+
+@if (ActiveTab == "special" || ActiveTab == "groups")
+{
+    <div class="ecmis-card fade-in">
+        <div class="ecmis-card-header flex-wrap gap-2">
+            <div>
+                <div class="ecmis-card-title"><span class="badge-dot"></span>สิทธิ์การเข้าถึงพิเศษ + เมนู</div>
+                <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px">ไม่ผูกตำแหน่ง (เช่น ศูนย์สนับสนุน) · คลิกกลุ่ม → ติ๊กเมนู → บันทึก</div>
+            </div>
+            <button @onclick="OpenCreateGroup" class="btn btn-sm" style="background:var(--navy-deep);color:#fff;border:none;font-size:12px;border-radius:8px;padding:6px 14px;font-weight:700"><i class="bi bi-plus-lg me-1"></i>เพิ่มสิทธิ์พิเศษ</button>
+        </div>
+        <div class="row g-0" style="min-height:420px">
+            <div class="col-lg-5" style="border-right:1px solid #eaecf2">
+                @if (SpecialGroups.Count == 0)
+                {
+                    <div style="padding:40px;text-align:center;color:var(--text-muted)"><i class="bi bi-stars" style="font-size:32px"></i><div style="margin-top:8px">ยังไม่มีสิทธิ์พิเศษ</div></div>
+                }
+                else
+                {
+                    <div style="overflow-x:auto;max-height:56vh;overflow-y:auto">
+                        <table class="ecmis-table" style="margin:0">
+                            <thead><tr><th>กลุ่ม</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var g in SpecialGroups.OrderBy(x => x.NameTh).ThenBy(x => x.Code))
+                                {
+                                    var selected = SelectedGroupId == g.Id;
+                                    <tr style="cursor:pointer;background:@(selected ? "#eef2ff" : "transparent")"
+                                        @onclick="() => SelectGroup(g.Id)">
+                                        <td>
+                                            <div style="font-size:13px;font-weight:700;color:var(--navy-deep)">@g.NameTh</div>
+                                            <div style="font-size:10.5px;color:var(--text-muted)">@g.Code</div>
+                                        </td>
+                                        <td style="text-align:right" @onclick:stopPropagation="true">
+                                            <button @onclick="@(() => OpenEditGroup(g))" class="btn btn-sm btn-outline-secondary" style="font-size:10px;padding:2px 6px"><i class="bi bi-pencil"></i></button>
+                                            <button @onclick="@(() => DeleteGroupAsync(g.Id))" disabled="@Busy" class="btn btn-sm" style="font-size:10px;padding:2px 6px;background:#fff;border:1px solid #fca5a5;color:#dc2626"><i class="bi bi-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+            <div class="col-lg-7" style="padding:16px 18px">
+                <GroupDetailPanel @ref="_groupDetailSpecial" SelectedGroupId="SelectedGroupId" CanRevokeMembers="@CanRevokeMembers" OnMatrixSaved="OnMatrixSavedAsync" />
+            </div>
+        </div>
+    </div>
+}
+
+@if (ActiveTab == "request-access")
+{
+    <div class="ecmis-card fade-in">
+        <div class="ecmis-card-header">
+            <div>
+                <div class="ecmis-card-title"><span class="badge-dot"></span>ขอสิทธิ์การเข้าถึงเพิ่มเติม</div>
+                <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px">สิทธิ์ที่ขอจะรอการพิจารณาจาก Admin ก่อนมีผล</div>
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(RequestActionMessage))
+        {
+            <div style="margin:12px 20px;padding:10px 14px;border-radius:8px;background:#f0fdf4;color:#15803d;font-size:13px;border:1px solid #bbf7d0">
+                <i class="bi bi-check-circle-fill me-2"></i>@RequestActionMessage
+            </div>
+        }
+        <div style="padding:16px 20px">
+            @if (AvailableGroupsToRequest.Count == 0)
+            {
+                <div style="text-align:center;padding:40px;color:var(--text-muted)">
+                    <i class="bi bi-shield-check" style="font-size:32px;display:block;margin-bottom:8px"></i>
+                    ไม่มีสิทธิ์ที่สามารถขอเพิ่มได้ในขณะนี้
+                </div>
+            }
+            else
+            {
+                @foreach (var g in AvailableGroupsToRequest.OrderBy(x => x.NameTh))
+                {
+                    <div style="border:1px solid #eaecf2;border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+                        <div>
+                            <div style="font-weight:700;font-size:13px">@g.NameTh</div>
+                            <div style="font-size:11px;color:var(--text-muted);font-family:monospace">@g.Code</div>
+                        </div>
+                        <button @onclick="() => OpenRequestModal(g)"
+                                class="btn btn-sm" style="background:var(--navy-deep,#0b1940);color:#fff;border:none;border-radius:8px;font-size:12px;padding:6px 14px;white-space:nowrap;font-weight:600">
+                            ขอสิทธิ์
+                        </button>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+}
+
+@* ── ORG GROUP MODAL ── *@
+@if (OrgGroupModalOpen)
+{
+    <div style="position:fixed;inset:0;background:rgba(11,25,64,.5);z-index:1050;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)" class="fade-in">
+        <div style="background:#fff;border-radius:16px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 12px 40px rgba(13,27,62,.15)">
+            <div style="background:linear-gradient(135deg,var(--navy-deep),var(--navy));padding:16px 22px;color:#fff;font-weight:800"><i class="bi bi-building-gear me-2"></i>@(EditingOrgGroupId.HasValue ? "แก้ไขสิทธิ์ตามหน่วยงาน" : "เพิ่มสิทธิ์ตามหน่วยงาน")</div>
+            <div style="padding:18px 22px">
+                <div class="row g-2">
+                    @if (!EditingOrgGroupId.HasValue)
+                    {
+                        <div class="col-12">
+                            <label class="form-label" style="font-size:11.5px;font-weight:700;color:var(--text-muted)">หน่วยงาน *</label>
+                            <select class="form-select" @bind="OrgGroupFormDeptText" disabled="@(ScopedDepartments.Count <= 1)">
+                                @foreach (var d in ScopedDepartments.OrderBy(x => x.NameTh))
+                                {
+                                    <option value="@d.Id">@d.NameTh</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    <div class="col-12">
+                        <label class="form-label" style="font-size:11.5px;font-weight:700;color:var(--text-muted)">ชื่อกลุ่มฟังก์ชัน *</label>
+                        <input @bind="OrgGroupForm.NameTh" class="form-control" style="font-size:14px;border-radius:8px" placeholder="เช่น ทีมรับเรื่องเขต 1" />
+                    </div>
+                    <div class="col-12">
+                        <label style="font-size:12.5px"><input type="checkbox" @bind="OrgGroupForm.IsActive" /> เปิดใช้งาน</label>
+                    </div>
+                </div>
+            </div>
+            <div style="padding:14px 22px;border-top:1px solid #eaecf2;background:#fafbff;display:flex;justify-content:flex-end;gap:8px">
+                <button @onclick="CloseOrgGroupModal" class="btn btn-outline-secondary btn-sm">ยกเลิก</button>
+                <button @onclick="SaveOrgGroupAsync" disabled="@(Busy || string.IsNullOrWhiteSpace(OrgGroupForm.NameTh))" class="btn btn-sm" style="background:var(--navy-deep);color:#fff">บันทึก</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── GROUP MODAL ── *@
+@if (GroupModalOpen)
+{
+    <div style="position:fixed;inset:0;background:rgba(11,25,64,.5);z-index:1050;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)" class="fade-in">
+        <div style="background:#fff;border-radius:16px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 12px 40px rgba(13,27,62,.15)">
+            <div style="background:linear-gradient(135deg,var(--navy-deep),var(--navy));padding:16px 22px;color:#fff;font-weight:800"><i class="bi bi-collection-fill me-2"></i>@(EditingGroupId.HasValue ? "แก้ไขสิทธิ์พิเศษ" : "เพิ่มสิทธิ์การเข้าถึงพิเศษ")</div>
+            <div style="padding:18px 22px">
+                <div class="row g-2">
+                    <div class="col-12">
+                        <label class="form-label" style="font-size:11.5px;font-weight:700;color:var(--text-muted)">ชื่อกลุ่มฟังก์ชัน *</label>
+                        <input @bind="GroupForm.NameTh" class="form-control" style="font-size:14px;border-radius:8px" placeholder="เช่น ศูนย์สนับสนุนร้องเรียน" />
+                    </div>
+                    <div class="col-12">
+                        <label style="font-size:12.5px"><input type="checkbox" @bind="GroupForm.IsActive" /> เปิดใช้งาน</label>
+                    </div>
+                </div>
+            </div>
+            <div style="padding:14px 22px;border-top:1px solid #eaecf2;background:#fafbff;display:flex;justify-content:flex-end;gap:8px">
+                <button @onclick="CloseGroupModal" class="btn btn-outline-secondary btn-sm">ยกเลิก</button>
+                <button @onclick="SaveGroupAsync" disabled="@(Busy || string.IsNullOrWhiteSpace(GroupForm.NameTh))" class="btn btn-sm" style="background:var(--navy-deep);color:#fff">บันทึก</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── POSITION ROLE MODAL ── *@
+@if (PositionRoleModalOpen)
+{
+    <div style="position:fixed;inset:0;background:rgba(11,25,64,.5);z-index:1050;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)" class="fade-in">
+        <div style="background:#fff;border-radius:16px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 12px 40px rgba(13,27,62,.15)">
+            <div style="background:linear-gradient(135deg,var(--navy-deep),var(--navy));padding:16px 22px;color:#fff;font-weight:800"><i class="bi bi-person-badge-fill me-2"></i>@(EditingPositionRoleId.HasValue ? "แก้ไขสิทธิ์" : "เพิ่มสิทธิ์")</div>
+            <div style="padding:18px 22px">
+                <div class="row g-2">
+                    <div class="col-12">
+                        <label class="form-label" style="font-size:11.5px;font-weight:700;color:var(--text-muted)">ชื่อสิทธิ์ *</label>
+                        <input @bind="PositionRoleForm.NameTh" class="form-control" style="font-size:14px;border-radius:8px" placeholder="เช่น รับเรื่อง, ค้นหาอย่างเดียว" />
+                    </div>
+                    <div class="col-12">
+                        <label style="font-size:12.5px"><input type="checkbox" @bind="PositionRoleForm.IsActive" /> เปิดใช้งาน</label>
+                    </div>
+                    <div class="col-12">
+                        <label style="font-size:12.5px"><input type="checkbox" @bind="PositionRoleForm.IsDefault" /> ตั้งเป็นสิทธิ์ค่าเริ่มต้น (มอบอัตโนมัติเมื่ออนุมัติสมัคร)</label>
+                    </div>
+                </div>
+            </div>
+            <div style="padding:14px 22px;border-top:1px solid #eaecf2;background:#fafbff;display:flex;justify-content:flex-end;gap:8px">
+                <button @onclick="ClosePositionRoleModal" class="btn btn-outline-secondary btn-sm">ยกเลิก</button>
+                <button @onclick="SavePositionRoleAsync" disabled="@(Busy || string.IsNullOrWhiteSpace(PositionRoleForm.NameTh))" class="btn btn-sm" style="background:var(--navy-deep);color:#fff">บันทึก</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── SYSTEM EDIT MODAL ── *@
+@if (SystemModalOpen)
+{
+    <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(11,25,64,.5);z-index:1050;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)" class="fade-in">
+        <div style="background:#fff;border-radius:16px;width:100%;max-width:560px;overflow:hidden;box-shadow:0 12px 40px rgba(13,27,62,.15)">
+            <div style="background:linear-gradient(135deg,var(--navy-deep),var(--navy));padding:18px 22px;display:flex;align-items:center;justify-content:space-between">
+                <div style="font-size:15px;font-weight:800;color:#fff">
+                    <i class="bi bi-grid-3x3-gap-fill me-2"></i>@(EditingId.HasValue ? "แก้ไขระบบงาน" : "เพิ่มระบบงานใหม่")
+                </div>
+                <button @onclick="CloseSystemModal" style="background:none;border:none;color:rgba(255,255,255,.85);font-size:18px;cursor:pointer"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div style="padding:18px 22px;max-height:60vh;overflow-y:auto">
+                <div class="row g-2">
+                    <div class="col-12">
+                        <label class="form-label" style="font-size:11.5px;color:var(--text-muted);font-weight:700">ชื่อฟังก์ชัน <span style="color:#dc2626">*</span></label>
+                        <input @bind="Form.NameTh" class="form-control" style="font-size:13px;border-radius:8px" placeholder="เช่น รับเรื่องร้องเรียน" />
+                    </div>
+                    @if (Form.ParentId.HasValue)
+                    {
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size:11.5px;color:var(--text-muted);font-weight:700">Path (เมนูย่อย)</label>
+                            <input @bind="Form.Path" class="form-control" style="font-size:13px;border-radius:8px" placeholder="/complaints" />
+                        </div>
+                    }
+                    <div class="col-12">
+                        <label class="form-label" style="font-size:11.5px;color:var(--text-muted);font-weight:700">หมายเหตุ</label>
+                        <textarea @bind="Form.Remark" rows="2" class="form-control" style="font-size:13px;border-radius:8px"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label style="font-size:12.5px"><input type="checkbox" @bind="Form.IsActive" /> เปิดใช้งาน</label>
+                    </div>
+                </div>
+            </div>
+            <div style="padding:14px 22px;border-top:1px solid #eaecf2;background:#fafbff;display:flex;justify-content:flex-end;gap:8px">
+                <button @onclick="CloseSystemModal" class="btn btn-outline-secondary" style="font-size:12px;font-weight:700;border-radius:8px;padding:7px 18px">ยกเลิก</button>
+                <button @onclick="SaveSystemAsync" disabled="@(Busy || string.IsNullOrWhiteSpace(Form.NameTh))" class="btn" style="background:var(--navy-deep);color:#fff;border:none;font-size:12px;font-weight:700;border-radius:8px;padding:7px 18px">บันทึก</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── REQUEST ACCESS MODAL ── *@
+@if (ShowRequestModal && RequestingGroup is not null)
+{
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1100;display:flex;align-items:center;justify-content:center;padding:16px" @onclick="CloseRequestModal">
+        <div style="background:#fff;border-radius:16px;width:100%;max-width:420px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.3)" @onclick:stopPropagation="true">
+            <div style="font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:4px">ขอสิทธิ์: @RequestingGroup.NameTh</div>
+            <div style="font-size:12px;color:#888;font-family:monospace;margin-bottom:16px">@RequestingGroup.Code</div>
+            <label style="font-size:13px;font-weight:600;margin-bottom:6px;display:block">เหตุผลที่ขอสิทธิ์ <span style="color:#dc2626">*</span></label>
+            <textarea @bind="RequestReason" rows="3" class="form-control"
+                      style="border-radius:8px;font-size:13px;resize:none"
+                      placeholder="ระบุเหตุผลการขอสิทธิ์..."></textarea>
+            @if (!string.IsNullOrEmpty(RequestActionMessage))
+            {
+                <div style="margin-top:8px;font-size:12px;color:#dc2626">@RequestActionMessage</div>
+            }
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+                <button @onclick="CloseRequestModal" class="btn btn-outline-secondary btn-sm" style="border-radius:8px">ยกเลิก</button>
+                <button @onclick="SubmitAccessRequestAsync"
+                        disabled="@(string.IsNullOrWhiteSpace(RequestReason) || RequestSubmitting)"
+                        class="btn btn-sm" style="background:#0b1940;color:#fff;border:none;border-radius:8px;font-weight:600">
+                    @if (RequestSubmitting) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    ส่งคำขอ
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string ActiveTab = "assign-users";
+    private CurrentUserDto? _currentUser;
+    private bool CanEditStructure;
+    private bool CanManageOrgGroups;
+    private AdminContextDto? _adminContext;
+    private List<LookupOrgDto> AllDepartments = new();
+    private bool Busy;
+    private string? ActionMessage;
+    private string? ActionError;
+
+    private List<SystemDto> Systems = new();
+    private bool ShowAdvancedFunctions;
+
+    private int ModuleRootCount => Systems
+        .Count(s => s.IsMainModule || (s.ParentId is null && s.Code.StartsWith("mod.", StringComparison.OrdinalIgnoreCase)));
+
+    private List<SystemDto> ModuleRootsList => Systems
+        .Where(s => s.IsMainModule || (s.ParentId is null && s.Code.StartsWith("mod.", StringComparison.OrdinalIgnoreCase)))
+        .OrderBy(s => s.DisplayOrder)
+        .ThenBy(s => s.Code)
+        .ToList();
+
+    private List<SystemDto> VisibleFunctions => ShowAdvancedFunctions
+        ? Systems.OrderBy(s => s.DisplayOrder).ThenBy(s => s.Code).ToList()
+        : ModuleRootsList;
+    private List<SystemGroupDto> Groups = new();
+    private List<SystemGroupDto> SpecialGroups = new();
+    private List<PositionDto> Positions = new();
+    private List<PositionRoleDto> PositionRoles = new();
+    private int? SelectedPositionId;
+    private bool PositionRoleModalOpen;
+    private int? EditingPositionRoleId;
+    private PositionRoleUpsertRequest PositionRoleForm = new() { IsActive = true };
+    private List<OrgAdminDto> DeptOrgAdmins = new();
+    private List<OrgGroupDto> OrgGroups = new();
+    private string OrgGroupFilterDeptText = "";
+    private bool OrgGroupModalOpen;
+    private int? EditingOrgGroupId;
+    private OrgGroupUpsertRequest OrgGroupForm = new() { IsActive = true };
+    private string OrgGroupFormDeptText = "";
+
+    private bool DeptOrgAdminsLoading;
+    private bool CanRevokeMembers;
+
+    private bool SystemModalOpen;
+    private int? EditingId;
+    private SystemUpsertRequest Form = new() { IsActive = true };
+
+    private bool GroupModalOpen;
+    private int? EditingGroupId;
+    private SystemGroupUpsertRequest GroupForm = new() { IsActive = true };
+    private int? SelectedGroupId;
+    private GroupDetailPanel? _groupDetailRoles;
+    private GroupDetailPanel? _groupDetailSpecial;
+    private GroupDetailPanel? _groupDetailOrg;
+
+    private int? EffectiveOrgGroupDeptId =>
+        int.TryParse(OrgGroupFilterDeptText, out var did) ? did
+        : ScopedDepartments.Count == 1 ? ScopedDepartments[0].Id : null;
+
+    // Individual access request
+    private List<SystemGroupDto> AvailableGroupsToRequest = new();
+    private bool ShowRequestModal;
+    private SystemGroupDto? RequestingGroup;
+    private string RequestReason = "";
+    private int MyPendingRequests;
+    private bool RequestSubmitting;
+    private string RequestActionMessage = "";
+
+    private string PageSubtitle => CanEditStructure
+        ? "เมนู · สิทธิ์ตามตำแหน่ง · สิทธิ์พิเศษ · สิทธิ์ตามหน่วยงาน · มอบให้ผู้ใช้"
+        : CanManageOrgGroups
+            ? "สิทธิ์ตามหน่วยงาน · มอบสิทธิ์การเข้าถึงในสังกัด"
+            : "มอบสิทธิ์การเข้าถึง";
+
+    private List<LookupOrgDto> ScopedDepartments
+    {
+        get
+        {
+            if (_adminContext is { IsSuperAdmin: true } || _adminContext?.OrgScopeIds.Count == 0)
+                return AllDepartments;
+            var ids = _adminContext?.OrgScopeIds ?? new List<int>();
+            return AllDepartments.Where(d => ids.Contains(d.Id)).ToList();
+        }
+    }
+
+    [SupplyParameterFromQuery(Name = "tab")]
+    public string? TabQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "positionId")]
+    public int? PositionIdQuery { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _currentUser = await CurrentUserSvc.GetCurrentUserAsync();
+        CanEditStructure = HasGroup("super_admin");
+
+        try
+        {
+            _adminContext = await SystemApi.GetAdminContextAsync();
+            CanManageOrgGroups = _adminContext?.CanManageOrgGroups == true;
+        }
+        catch
+        {
+            CanManageOrgGroups = _currentUser?.Roles.Any(r =>
+                string.Equals(r, "org_admin", StringComparison.OrdinalIgnoreCase)) == true
+                && !CanEditStructure;
+        }
+
+        ApplyTabFromQuery();
+        await LoadAllAsync();
+        CanRevokeMembers = HasGroup("super_admin");
+        if (ActiveTab == "org-groups")
+            await LoadDeptOrgAdminsAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        ApplyTabFromQuery();
+    }
+
+    private bool HasGroup(string groupCode) =>
+        _currentUser?.Roles?.Any(r => string.Equals(r, groupCode, StringComparison.OrdinalIgnoreCase)) == true;
+
+    private void ApplyTabFromQuery()
+    {
+        var t = string.IsNullOrWhiteSpace(TabQuery) ? null : TabQuery.Trim().ToLowerInvariant();
+        var requested = t switch
+        {
+            "systems" or "modules" => "modules",
+            "roles" or "position-roles" => "roles",
+            "groups" or "special" or "permissions" => "special",
+            "org-groups" or "org" => "org-groups",
+            "assign-users" or "assign" or "users" => "assign-users",
+            "org-admins" => "org-groups",
+            _ => CanEditStructure ? "modules" : CanManageOrgGroups ? "org-groups" : "assign-users"
+        };
+
+        if (!CanManageOrgGroups && requested == "org-groups")
+            ActiveTab = CanEditStructure ? "modules" : "assign-users";
+        else if (!CanEditStructure && requested is "modules" or "roles" or "special" or "groups")
+            ActiveTab = CanManageOrgGroups ? "org-groups" : "assign-users";
+        else
+            ActiveTab = requested;
+
+        if (PositionIdQuery is > 0)
+            SelectedPositionId = PositionIdQuery;
+    }
+
+    private void SetTab(string tab)
+    {
+        ActiveTab = tab;
+        Nav.NavigateTo($"/super-admin/systems?tab={Uri.EscapeDataString(tab)}", replace: true);
+        if (tab == "org-groups")
+            _ = LoadDeptOrgAdminsAsync();
+    }
+
+    private void SelectGroup(int id) => SelectedGroupId = id;
+
+    private Task OnMatrixSavedAsync() => Task.CompletedTask;
+
+    private async Task LoadAllAsync()
+    {
+        try
+        {
+            if (CanEditStructure)
+            {
+                var t1 = SystemApi.ListSystemsAsync(includeInactive: true);
+                var t4 = SystemApi.ListSystemGroupsAsync("special");
+                var t5 = SystemApi.ListPositionsAsync();
+                await Task.WhenAll(t1, t4, t5);
+                Systems = await t1;
+                SpecialGroups = Groups = await t4;
+                Positions = await t5;
+                if (SelectedPositionId is null && Positions.Count > 0)
+                    SelectedPositionId = Positions[0].Id;
+                if (SelectedPositionId is > 0)
+                    await LoadPositionRolesAsync(SelectedPositionId.Value);
+            }
+
+            if (CanManageOrgGroups)
+            {
+                try { AllDepartments = await SystemApi.LookupOrganizationsAsync(); }
+                catch { AllDepartments = new(); }
+                await LoadOrgGroupsAsync();
+                await LoadDeptOrgAdminsAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            ActionError = ex.Message;
+        }
+        finally { await InvokeAsync(StateHasChanged); }
+    }
+
+    private async Task LoadOrgGroupsAsync()
+    {
+        try
+        {
+            int? deptFilter = int.TryParse(OrgGroupFilterDeptText, out var did) ? did : null;
+            OrgGroups = await SystemApi.ListOrgGroupsAsync(deptFilter);
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SelectPositionAsync(int positionId)
+    {
+        SelectedPositionId = positionId;
+        SelectedGroupId = null;
+        Nav.NavigateTo($"/super-admin/systems?tab=roles&positionId={positionId}", replace: true);
+        await LoadPositionRolesAsync(positionId);
+    }
+
+    private async Task LoadPositionRolesAsync(int positionId)
+    {
+        try
+        {
+            PositionRoles = await SystemApi.ListPositionRolesAsync(positionId);
+            var pos = Positions.FirstOrDefault(p => p.Id == positionId);
+            if (pos is not null)
+                pos.RoleCount = PositionRoles.Count;
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnOrgGroupDeptFilterChangedAsync()
+    {
+        await LoadOrgGroupsAsync();
+        await LoadDeptOrgAdminsAsync();
+    }
+
+    private async Task LoadDeptOrgAdminsAsync()
+    {
+        if (EffectiveOrgGroupDeptId is not int deptId)
+        {
+            DeptOrgAdmins = new();
+            return;
+        }
+        DeptOrgAdminsLoading = true;
+        try { DeptOrgAdmins = await AdminApi.GetOrgAdminsAsync(deptId); }
+        catch (Exception ex) { ActionError = ex.Message; DeptOrgAdmins = new(); }
+        finally { DeptOrgAdminsLoading = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    // ── System CRUD
+    private void OpenCreateSystemModal()
+    {
+        EditingId = null;
+        Form = new SystemUpsertRequest { IsActive = true, IsMenu = true };
+        SystemModalOpen = true;
+    }
+    private void OpenEditSystemModal(SystemDto s)
+    {
+        EditingId = s.Id;
+        Form = new SystemUpsertRequest
+        {
+            Code = s.Code,
+            NameTh = s.NameTh,
+            Path = string.IsNullOrWhiteSpace(s.Path) ? null : s.Path,
+            ParentId = s.ParentId,
+            Remark = string.IsNullOrWhiteSpace(s.Remark) ? s.Description : s.Remark,
+            DisplayOrder = s.DisplayOrder,
+            IsActive = s.IsActive,
+            IsMenu = true
+        };
+        SystemModalOpen = true;
+    }
+    private void CloseSystemModal() { SystemModalOpen = false; }
+
+    private async Task SaveSystemAsync()
+    {
+        Busy = true; ActionError = null; ActionMessage = null;
+        try
+        {
+            if (EditingId.HasValue)
+            {
+                await SystemApi.UpdateSystemAsync(EditingId.Value, Form);
+                ActionMessage = "อัปเดตระบบงานแล้ว";
+            }
+            else
+            {
+                await SystemApi.CreateSystemAsync(Form);
+                ActionMessage = "เพิ่มระบบงานใหม่แล้ว";
+            }
+            CloseSystemModal();
+            await LoadAllAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private async Task DeleteSystemAsync(int id)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "ยืนยันการลบระบบงานนี้?")) return;
+        var backup = Systems.FirstOrDefault(x => x.Id == id);
+        if (backup is null) return;
+        Systems.Remove(backup);
+        Busy = true; ActionError = null; ActionMessage = null;
+        try { await SystemApi.DeleteSystemAsync(id); ActionMessage = "ลบระบบงานแล้ว"; }
+        catch (Exception ex) { Systems.Add(backup); ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    // ── System Groups
+    private void OpenCreateGroup() { EditingGroupId = null; GroupForm = new() { IsActive = true }; GroupModalOpen = true; }
+    private void OpenEditGroup(SystemGroupDto g)
+    {
+        EditingGroupId = g.Id;
+        GroupForm = new SystemGroupUpsertRequest { Code = g.Code, NameTh = g.NameTh, IsActive = g.IsActive };
+        GroupModalOpen = true;
+    }
+    private void CloseGroupModal() { GroupModalOpen = false; }
+
+    private async Task SaveGroupAsync()
+    {
+        Busy = true; ActionError = null; ActionMessage = null;
+        try
+        {
+            if (EditingGroupId.HasValue)
+            {
+                await SystemApi.UpdateSystemGroupAsync(EditingGroupId.Value, GroupForm);
+                ActionMessage = "อัปเดตกลุ่มแล้ว";
+                SelectedGroupId = EditingGroupId.Value;
+            }
+            else
+            {
+                var newId = await SystemApi.CreateSystemGroupAsync(GroupForm);
+                ActionMessage = "เพิ่มกลุ่มใหม่แล้ว";
+                SelectedGroupId = newId;
+            }
+            CloseGroupModal();
+            await LoadAllAsync();
+            if (_groupDetailSpecial is not null) await _groupDetailSpecial.ReloadMatrixAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+    private async Task DeleteGroupAsync(int id)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "ยืนยันการลบกลุ่มสิทธิ์นี้?")) return;
+        Busy = true; ActionError = null; ActionMessage = null;
+        try
+        {
+            await SystemApi.DeleteSystemGroupAsync(id);
+            if (SelectedGroupId == id) SelectedGroupId = null;
+            ActionMessage = "ลบกลุ่มแล้ว";
+            await LoadAllAsync();
+            if (_groupDetailSpecial is not null) await _groupDetailSpecial.ReloadMatrixAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private void OpenCreatePositionRole()
+    {
+        EditingPositionRoleId = null;
+        PositionRoleForm = new() { IsActive = true, IsDefault = PositionRoles.Count == 0 };
+        PositionRoleModalOpen = true;
+    }
+
+    private void OpenEditPositionRole(PositionRoleDto r)
+    {
+        EditingPositionRoleId = r.Id;
+        PositionRoleForm = new PositionRoleUpsertRequest { NameTh = r.NameTh, IsActive = r.IsActive, IsDefault = r.IsDefault };
+        PositionRoleModalOpen = true;
+    }
+
+    private void ClosePositionRoleModal() => PositionRoleModalOpen = false;
+
+    private async Task SavePositionRoleAsync()
+    {
+        if (!SelectedPositionId.HasValue) return;
+        Busy = true; ActionError = null; ActionMessage = null;
+        try
+        {
+            if (EditingPositionRoleId.HasValue)
+            {
+                await SystemApi.UpdatePositionRoleAsync(SelectedPositionId.Value, EditingPositionRoleId.Value, PositionRoleForm);
+                ActionMessage = "อัปเดตสิทธิ์แล้ว";
+                SelectedGroupId = EditingPositionRoleId.Value;
+            }
+            else
+            {
+                var newId = await SystemApi.CreatePositionRoleAsync(SelectedPositionId.Value, PositionRoleForm);
+                ActionMessage = "เพิ่มสิทธิ์แล้ว — ติ๊กเมนูทางขวาได้เลย";
+                SelectedGroupId = newId;
+            }
+            ClosePositionRoleModal();
+            await LoadPositionRolesAsync(SelectedPositionId.Value);
+            if (_groupDetailRoles is not null) await _groupDetailRoles.ReloadMatrixAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private async Task DeletePositionRoleAsync(int roleId)
+    {
+        if (!SelectedPositionId.HasValue) return;
+        if (!await JS.InvokeAsync<bool>("confirm", "ยืนยันการลบสิทธิ์ตามตำแหน่งนี้?")) return;
+        Busy = true; ActionError = null; ActionMessage = null;
+        try
+        {
+            await SystemApi.DeletePositionRoleAsync(SelectedPositionId.Value, roleId);
+            if (SelectedGroupId == roleId) SelectedGroupId = null;
+            ActionMessage = "ลบสิทธิ์แล้ว";
+            await LoadPositionRolesAsync(SelectedPositionId.Value);
+            if (_groupDetailRoles is not null) await _groupDetailRoles.ReloadMatrixAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private async Task SetDefaultRoleAsync(int roleId)
+    {
+        if (!SelectedPositionId.HasValue) return;
+        Busy = true; ActionError = null; ActionMessage = null;
+        try
+        {
+            await SystemApi.SetDefaultPositionRoleAsync(SelectedPositionId.Value, roleId);
+            ActionMessage = "ตั้งเป็นสิทธิ์ค่าเริ่มต้นแล้ว";
+            await LoadPositionRolesAsync(SelectedPositionId.Value);
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private void OpenCreateOrgGroup()
+    {
+        EditingOrgGroupId = null;
+        OrgGroupForm = new() { IsActive = true };
+        var first = ScopedDepartments.OrderBy(d => d.NameTh).FirstOrDefault();
+        OrgGroupFormDeptText = first?.Id.ToString() ?? "";
+        OrgGroupModalOpen = true;
+    }
+
+    private void OpenEditOrgGroup(OrgGroupDto g)
+    {
+        EditingOrgGroupId = g.Id;
+        OrgGroupForm = new OrgGroupUpsertRequest { NameTh = g.NameTh, IsActive = g.IsActive, DepartmentId = g.DepartmentId };
+        OrgGroupFormDeptText = g.DepartmentId.ToString();
+        OrgGroupModalOpen = true;
+    }
+
+    private void CloseOrgGroupModal() => OrgGroupModalOpen = false;
+
+    private async Task SaveOrgGroupAsync()
+    {
+        Busy = true; ActionError = null; ActionMessage = null;
+        try
+        {
+            if (EditingOrgGroupId.HasValue)
+            {
+                await SystemApi.UpdateOrgGroupAsync(EditingOrgGroupId.Value, OrgGroupForm);
+                ActionMessage = "อัปเดตสิทธิ์ตามหน่วยงานแล้ว";
+                SelectedGroupId = EditingOrgGroupId.Value;
+            }
+            else
+            {
+                if (!int.TryParse(OrgGroupFormDeptText, out var deptId))
+                {
+                    ActionError = "กรุณาเลือกหน่วยงาน";
+                    return;
+                }
+                OrgGroupForm.DepartmentId = deptId;
+                var newId = await SystemApi.CreateOrgGroupAsync(OrgGroupForm);
+                ActionMessage = "เพิ่มสิทธิ์ตามหน่วยงานแล้ว — ติ๊กเมนูทางขวาได้เลย";
+                SelectedGroupId = newId;
+            }
+            CloseOrgGroupModal();
+            await LoadOrgGroupsAsync();
+            if (_groupDetailOrg is not null) await _groupDetailOrg.ReloadMatrixAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private async Task DeleteOrgGroupAsync(int id)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "ยืนยันการลบสิทธิ์ตามหน่วยงานนี้?")) return;
+        Busy = true; ActionError = null; ActionMessage = null;
+        try
+        {
+            await SystemApi.DeleteOrgGroupAsync(id);
+            if (SelectedGroupId == id) SelectedGroupId = null;
+            ActionMessage = "ลบสิทธิ์ตามหน่วยงานแล้ว";
+            await LoadOrgGroupsAsync();
+            if (_groupDetailOrg is not null) await _groupDetailOrg.ReloadMatrixAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private async Task LoadAvailableGroupsAsync()
+    {
+        try
+        {
+            // Load all special groups — user can request any type='3' group they don't have yet
+            var all = await SystemApi.ListSystemGroupsAsync("special");
+            AvailableGroupsToRequest = all;
+        }
+        catch { AvailableGroupsToRequest = new(); }
+    }
+
+    private void OpenRequestModal(SystemGroupDto g)
+    {
+        RequestingGroup = g;
+        RequestReason = "";
+        RequestActionMessage = "";
+        ShowRequestModal = true;
+    }
+
+    private void CloseRequestModal()
+    {
+        ShowRequestModal = false;
+        RequestingGroup = null;
+    }
+
+    private async Task SubmitAccessRequestAsync()
+    {
+        if (RequestingGroup is null || string.IsNullOrWhiteSpace(RequestReason)) return;
+        RequestSubmitting = true;
+        try
+        {
+            await SystemApi.RequestIndividualAccessAsync(RequestingGroup.Id, RequestReason);
+            CloseRequestModal();
+            RequestActionMessage = $"ส่งคำขอสิทธิ์ '{RequestingGroup.NameTh}' เรียบร้อย รอ Admin พิจารณา";
+            MyPendingRequests++;
+        }
+        catch (Exception ex)
+        {
+            RequestActionMessage = $"เกิดข้อผิดพลาด: {ex.Message}";
+        }
+        finally { RequestSubmitting = false; }
+    }
+}

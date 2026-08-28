@@ -1,0 +1,299 @@
+@page "/citizen"
+@layout BlankLayout
+@using EcmisWeb.Data
+@using EcmisWeb.Services
+@inject ComplaintApiService ComplaintApi
+
+<div class="pub-root @(isDark ? "" : "pub-light")">
+    <div class="pub-bg-glow"></div>
+
+    <div class="pub-split">
+
+        @* ── LEFT PANEL ── *@
+        <div class="pub-left">
+            <div class="pub-left-grid"></div>
+
+            <div class="pub-em-wrap">
+                <div class="pub-em-halo"></div>
+                <div class="pub-em-ring pub-em-r1"></div>
+                <div class="pub-em-ring pub-em-r2"></div>
+                <div class="pub-em-ring pub-em-r3"></div>
+                <div class="pub-em-disk">
+                    <div class="pub-em-name">ป.ป.ท.</div>
+                    <div class="pub-em-sub">PACC</div>
+                </div>
+            </div>
+
+            <div class="pub-left-hero">
+                <div class="pub-hero-name">E‑<span>CMIS</span></div>
+                <div class="pub-hero-bar">
+                    <div class="pub-bar-line"></div>
+                    <div class="pub-bar-gem"></div>
+                    <div class="pub-bar-line"></div>
+                </div>
+                <div class="pub-hero-sub">
+                    ระบบบริหารจัดการเรื่องร้องเรียนอิเล็กทรอนิกส์<br />
+                    สำนักงาน ป.ป.ท.
+                </div>
+
+                <div class="pub-stats">
+                    <div class="pub-stat">
+                        <div class="pub-stat-n">@statsRows.Count</div>
+                        <div class="pub-stat-l">เรื่องทั้งหมด</div>
+                    </div>
+                    <div class="pub-sep"></div>
+                    <div class="pub-stat">
+                        <div class="pub-stat-n">@statsRows.Count(r => r.Status == "closed")</div>
+                        <div class="pub-stat-l">เสร็จสิ้นแล้ว</div>
+                    </div>
+                    <div class="pub-sep"></div>
+                    <div class="pub-stat">
+                        <div class="pub-stat-n">@statsRows.Count(r => r.Status == "active")</div>
+                        <div class="pub-stat-l">กำลังดำเนินการ</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pub-certs">
+                <span class="pub-cert"><i class="bi bi-shield-lock-fill"></i> ข้อมูลปลอดภัย</span>
+                <span class="pub-cert"><i class="bi bi-eye-fill"></i> ติดตามได้จริง</span>
+            </div>
+        </div>
+
+        @* ── RIGHT PANEL ── *@
+        <div class="pub-right">
+            <div class="pub-right-inner">
+
+                @* Brand + toggle *@
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:36px">
+                    <div class="pub-brand">
+                        <div class="pub-emblem">ป.ป.ท.</div>
+                        <div>
+                            <div class="pub-brand-name">E‑CMIS</div>
+                            <div class="pub-brand-sub">สำนักงาน ป.ป.ท.</div>
+                        </div>
+                    </div>
+                    <button type="button" class="pub-theme-btn" @onclick="ToggleTheme"
+                            title="@(isDark ? "เปลี่ยนเป็นธีมสว่าง" : "เปลี่ยนเป็นธีมมืด")">
+                        <i class="bi @(isDark ? "bi-sun-fill" : "bi-moon-stars-fill")"></i>
+                    </button>
+                </div>
+
+                @* Heading *@
+                <div style="margin-bottom:26px">
+                    <div class="pub-card-title" style="font-size:24px">ติดตามเรื่องร้องเรียน</div>
+                    <div class="pub-card-sub" style="margin-top:5px">กรอกเลขติดตามหรือเลขที่เรื่องเพื่อตรวจสอบสถานะ</div>
+                </div>
+
+                @* Search *@
+                <div style="display:flex;gap:10px;margin-bottom:20px">
+                    <div class="pub-iw" style="flex:1">
+                        <i class="bi bi-search pub-ico"></i>
+                        <input class="pub-inp" type="text"
+                               placeholder="เช่น 4444|2956"
+                               @bind="searchQuery" @bind:event="oninput"
+                               @onkeydown="OnSearchKeyDown" />
+                    </div>
+                    <button class="pub-btn pub-btn-gold" @onclick="Search" disabled="@isSearching">
+                        <i class="bi @(isSearching ? "bi-arrow-repeat" : "bi-search")"></i> @(isSearching ? "กำลังค้นหา" : "ค้นหา")
+                    </button>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(searchError))
+                {
+                    <div class="pub-alert pub-a-warn">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        @searchError
+                    </div>
+                }
+                else if (searched && result is null)
+                {
+                    <div class="pub-alert pub-a-warn">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        ไม่พบข้อมูล กรุณาตรวจสอบเลขติดตามอีกครั้ง
+                    </div>
+                }
+
+                @* Result *@
+                @if (result is not null)
+                {
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:18px">
+                        <div>
+                            <div class="pub-card-title">เลขติดตาม @result.TrackNo</div>
+                            <div class="pub-card-sub" style="margin-top:3px">เลขติดตาม: @result.TrackNo</div>
+                        </div>
+                        <span class="pub-alert @(StatusKey == "closed" ? "pub-a-ok" : "pub-a-info")"
+                              style="margin:0;padding:7px 14px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700">
+                            <i class="bi @(StatusKey == "closed" ? "bi-check-circle-fill" : "bi-clock-history")"></i>
+                            @result.StatusLabel
+                        </span>
+                    </div>
+
+                    <div class="pub-sum" style="margin-bottom:20px">
+                        <div class="pub-sum-row">
+                            <span class="pub-sum-k">วันที่รับเรื่อง</span>
+                            <span class="pub-sum-v">@ToThaiShortDate(result.FirstReceivedDate)</span>
+                        </div>
+                        <div class="pub-sum-row">
+                            <span class="pub-sum-k">หน่วยงานรับผิดชอบ</span>
+                            <span class="pub-sum-v">@(result.RoutedToUnit ?? "อยู่ระหว่างคัดกรอง")</span>
+                        </div>
+                        <div class="pub-sum-row">
+                            <span class="pub-sum-k">อัปเดตล่าสุด</span>
+                            <span class="pub-sum-v">@(result.LastUpdatedAt.HasValue ? ToThaiShortDate(result.LastUpdatedAt.Value) : "-")</span>
+                        </div>
+                    </div>
+
+                    <div style="font-size:13px;font-weight:700;margin-bottom:14px" class="pub-card-title">
+                        <i class="bi bi-clock-history" style="color:var(--pub-gold);margin-right:7px;font-size:14px"></i>สถานะการดำเนินการ
+                    </div>
+
+                    <div class="pub-timeline">
+                        @foreach (var tlStep in GetCitizenSteps())
+                        {
+                            <div class="pub-tl-item">
+                                <div class="pub-tl-side">
+                                    <div class="pub-tl-dot @tlStep.DotClass"></div>
+                                    <div class="pub-tl-line"></div>
+                                </div>
+                                <div class="pub-tl-content">
+                                    <div class="pub-tl-title">@tlStep.Title</div>
+                                    <div class="pub-tl-desc">@tlStep.Description</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="pub-alert pub-a-info" style="margin-top:16px;margin-bottom:0">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <span>หากมีข้อสงสัยเพิ่มเติม กรุณาติดต่อ สายด่วน <strong>1206</strong>
+                            หรืออีเมล <strong>itsupport@pacc.go.th</strong></span>
+                    </div>
+                }
+
+                <div class="pub-foot" style="position:relative;margin-top:44px;bottom:auto">
+                    © 2568 สำนักงาน ป.ป.ท.
+                    <span class="pub-dot-sep">·</span>
+                    <a href="/login">เข้าสู่ระบบ</a>
+                    <span class="pub-dot-sep">·</span>
+                    <a href="/register">ลงทะเบียน</a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@code {
+    private bool isDark = false;
+    private void ToggleTheme() => isDark = !isDark;
+
+    private string searchQuery = string.Empty;
+    private bool searched;
+    private bool isSearching;
+    private string searchError = string.Empty;
+    private PublicTrackingResponse? result;
+    private IReadOnlyList<ComplaintRow> statsRows = [];
+
+    private string StatusKey => ToStatusKey(result?.Status);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            statsRows = await ComplaintApi.GetComplaintsAsync();
+        }
+        catch
+        {
+            statsRows = [];
+        }
+    }
+
+    private async Task OnSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await Search();
+        }
+    }
+
+    private async Task Search()
+    {
+        searched = true;
+        result = null;
+        searchError = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(searchQuery))
+        {
+            searchError = "กรุณากรอกเลขติดตามเรื่อง";
+            return;
+        }
+
+        isSearching = true;
+        try
+        {
+            result = await ComplaintApi.GetPublicTrackingAsync(searchQuery);
+        }
+        catch (Exception ex)
+        {
+            searchError = ex.Message;
+        }
+        finally
+        {
+            isSearching = false;
+        }
+    }
+
+    private record TimelineStep(string Title, string Description, string DotClass);
+
+    private List<TimelineStep> GetCitizenSteps()
+    {
+        if (result is null) return new();
+
+        var steps = new List<TimelineStep>
+        {
+            new("รับเรื่องเข้าระบบ", "เรื่องถูกบันทึกในระบบเรียบร้อยแล้ว", "done"),
+            new("ตรวจสอบและคัดกรอง", "เจ้าหน้าที่กำลังพิจารณาความครบถ้วนของข้อมูล",
+                StatusKey != "pending" ? "done" : "active"),
+        };
+
+        if (StatusKey is "transfer" or "discipline")
+        {
+            steps.Add(new("ส่งต่อหน่วยงานที่เกี่ยวข้อง", "เรื่องถูกส่งต่อไปยังหน่วยงานที่มีอำนาจดำเนินการ", "done"));
+        }
+        else if (StatusKey is "active" or "closed" or "review")
+        {
+            steps.Add(new("มอบหมายเจ้าหน้าที่", "มอบหมายเจ้าหน้าที่แสวงหาข้อเท็จจริงแล้ว",
+                StatusKey is "active" or "closed" ? "done" : "active"));
+            steps.Add(new("ดำเนินการแสวงหาข้อเท็จจริง", "อยู่ระหว่างการสอบสวนและรวบรวมพยานหลักฐาน",
+                StatusKey == "closed" ? "done" : StatusKey == "active" ? "active" : ""));
+            steps.Add(new("สรุปผลและแจ้งผู้ร้อง", "เสนอสรุปผลต่อคณะกรรมการ ป.ป.ท. และแจ้งผลให้ผู้ร้องทราบ",
+                StatusKey == "closed" ? "done" : ""));
+        }
+        else
+        {
+            steps.Add(new("มอบหมายเจ้าหน้าที่", "รอมอบหมายเจ้าหน้าที่ดำเนินการ", ""));
+            steps.Add(new("ดำเนินการแสวงหาข้อเท็จจริง", "รอดำเนินการ", ""));
+            steps.Add(new("สรุปผลและแจ้งผู้ร้อง", "รอดำเนินการ", ""));
+        }
+
+        return steps;
+    }
+
+    private static string ToStatusKey(string? status) => status switch
+    {
+        "Active" => "active",
+        "Review" => "review",
+        "Transfer" => "transfer",
+        "Discipline" => "discipline",
+        "Closed" => "closed",
+        _ => "pending"
+    };
+
+    private static string ToThaiShortDate(DateTime value)
+    {
+        var local = value.Kind == DateTimeKind.Utc ? value.ToLocalTime() : value;
+        return $"{local:dd/MM}/{local.Year + 543:0000}";
+    }
+}

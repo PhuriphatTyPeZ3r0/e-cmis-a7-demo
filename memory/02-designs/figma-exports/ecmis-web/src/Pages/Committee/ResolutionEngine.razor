@@ -1,0 +1,198 @@
+@page "/committee/case/{Id:int}"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+@if (c is null || meeting is null)
+{
+    <div class="detail-page-wrap" style="text-align:center;padding:60px">
+        <i class="bi bi-exclamation-triangle" style="font-size:48px;color:var(--orange)"></i>
+        <div style="font-size:18px;font-weight:700;margin-top:12px">ไม่พบข้อมูลคดี</div>
+        <button class="btn-navy" style="margin-top:16px" @onclick='() => Nav.NavigateTo("/committee")'>กลับ</button>
+    </div>
+}
+else
+{
+    <div class="detail-page-wrap">
+        @* — Header — *@
+        <div class="detail-header">
+            <div>
+                <div class="detail-caseno">
+                    <i class="bi bi-gavel" style="color:var(--navy-mid)"></i>
+                    บันทึกมติคณะกรรมการ: เรื่องที่ @c.CaseNo
+                </div>
+                <div class="detail-meta-row mt-2">
+                    <span class="category-chip @CommitteeData.ResolutionCategoryClass(c.ResolutionType)">
+                        สถานะมติ: @CommitteeData.ResolutionCategoryLabel(c.ResolutionType)
+                    </span>
+                    <span style="font-size:12px;color:var(--text-muted)">
+                        <i class="bi bi-journal-album"></i> วาระการประชุม: สน. @meeting.MeetingNo (วันที่ @meeting.Date)
+                    </span>
+                    <span style="font-size:12px;color:var(--text-muted)">
+                        <i class="bi bi-person-badge"></i> นักสืบ: @c.Investigator (@c.Division)
+                    </span>
+                </div>
+            </div>
+            <div class="detail-actions">
+                <button class="btn-outline-navy" @onclick='() => Nav.NavigateTo($"/committee/meeting/{meeting.Id}")'>
+                    <i class="bi bi-arrow-left"></i> กลับ
+                </button>
+            </div>
+        </div>
+
+        <div class="detail-grid">
+            @* — Resolution Form — *@
+            <div class="detail-card">
+                <div class="detail-card-title">
+                    <div class="icon-box navy"><i class="bi bi-pencil-square"></i></div>
+                    แบบฟอร์มบันทึกมติ (Resolution Engine)
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-custom">ประเภทของมติ (Categorization) <span style="color:var(--red)">*</span></label>
+                    <select class="form-control-custom" @bind="selectedCategory">
+                        <option value="none">-- เลือกมติ --</option>
+                        <option value="reinvestigate">ให้แสวงหา/ไต่สวนเพิ่มเติม</option>
+                        <option value="guilty_criminal">ชี้มูลความผิดทางอาญา</option>
+                        <option value="guilty_discipline">ชี้มูลความผิดทางวินัย</option>
+                        <option value="dismissed">มติยุติเรื่อง/ไม่รับไต่สวน</option>
+                    </select>
+                </div>
+
+                @if (selectedCategory == "reinvestigate")
+                {
+                    <div style="padding:14px;border-radius:8px;background:rgba(26,47,107,.05);margin-bottom:14px">
+                        <div style="font-size:13px;font-weight:700;color:var(--navy-deep);margin-bottom:8px">
+                            <i class="bi bi-arrow-return-left"></i> Re-assign งานกลับไปให้นักสืบ
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label-custom">เวลาที่กำหนดให้เสร็จสิ้น (SLA) / วัน</label>
+                            <input type="number" class="form-control-custom" value="30" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label-custom">ประเด็นที่ให้ไต่สวนเพิ่ม</label>
+                            <textarea class="form-control-custom" rows="3" placeholder="ระบุประเด็น..."></textarea>
+                        </div>
+                    </div>
+                }
+                else if (selectedCategory == "guilty_criminal" || selectedCategory == "guilty_discipline")
+                {
+                    <div style="padding:14px;border-radius:8px;background:#fef3e4;margin-bottom:14px;border-left:4px solid var(--orange)">
+                        <div style="font-size:13px;font-weight:700;color:#bc6d00;margin-bottom:8px">
+                            <i class="bi bi-box-arrow-right"></i> ส่งต่อเข้ากระบวนการ (ติดตามภายหลังมติ)
+                        </div>
+                        <p style="font-size:12px;color:var(--text-muted);margin-bottom:0">
+                            ระบบจะส่งสำนวนนี้เข้าสู่ Workflow ถัดไปเพื่อติดตามการส่งสำนวนไปให้ ป.ป.ช., อัยการสูงสุด หรือหน่วยงานต้นสังกัดภายใน 60 วันโดยอัตโนมัติ
+                        </p>
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label-custom">รายละเอียดมติ</label>
+                    <textarea class="form-control-custom" rows="4" placeholder="กรอกรายละเอียดมติฉบับเต็ม..."></textarea>
+                </div>
+            </div>
+
+            @* — Verification & Export — *@
+            <div class="detail-card">
+                <div class="detail-card-title">
+                    <div class="icon-box green"><i class="bi bi-file-earmark-check-fill"></i></div>
+                    การตรวจสอบและสร้างเอกสาร (Verification & Export)
+                </div>
+                
+                <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">
+                    กรุณาทำ Check-list ยืนยันความถูกต้องก่อนทำการออกหนังสือและแจ้งมติ
+                </p>
+
+                <div class="d-flex flex-column gap-2 mb-4" style="font-size:13px">
+                    <label class="d-flex align-items-center gap-2">
+                        <input type="checkbox" style="width:16px;height:16px" @bind="check1" /> ตรวจสอบความถูกต้องของชื่อ-สกุล ผู้ถูกร้อง
+                    </label>
+                    <label class="d-flex align-items-center gap-2">
+                        <input type="checkbox" style="width:16px;height:16px" @bind="check2" /> ตรวจสอบความถูกต้องของฐานความผิดหรือข้อกฎหมาย
+                    </label>
+                    <label class="d-flex align-items-center gap-2">
+                        <input type="checkbox" style="width:16px;height:16px" @bind="check3" /> ตรวจสอบความครบถ้วนของเอกสารแนบท้ายวาระ
+                    </label>
+                </div>
+
+                <div style="margin-top:auto">
+                    <button class="btn-navy" style="width:100%;margin-bottom:8px" disabled="@(!IsChecklistComplete)" @onclick="GenerateDocument">
+                        <i class="bi bi-file-earmark-pdf"></i> One-Click Generation (สร้างหน้งสือมติ)
+                    </button>
+                    @if(docGenerated)
+                    {
+                         <div style="padding:10px 14px;border-radius:8px;background:#e6f4ed;color:#1b7a4a;font-size:12px;font-weight:700">
+                            <i class="bi bi-check-circle-fill"></i> สร้างหนังสือวาระและหนังสือแจ้งมติสำเร็จ (Mockup PDF Template)
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* — Audit Log — *@
+        <div class="detail-card mt-3">
+            <div class="detail-card-title">
+                <div class="icon-box red"><i class="bi bi-journal-text"></i></div>
+                ประวัติการดำเนินการ (Audit Log)
+            </div>
+            <div style="overflow-x:auto">
+                <table class="complaints-table" style="font-size:12px">
+                    <thead>
+                        <tr>
+                            <th>วันเวลา</th>
+                            <th>ผู้ดำเนินการ</th>
+                            <th>การกระทำ</th>
+                            <th>รายละเอียด</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in CommitteeData.GetAuditLog(c.Id))
+                        {
+                            <tr>
+                                <td style="white-space:nowrap;color:var(--text-muted)">@entry.Timestamp</td>
+                                <td style="font-weight:600">@entry.User</td>
+                                <td>
+                                    <span class="category-chip cat-misconduct">@entry.Action</span>
+                                </td>
+                                <td>@entry.Detail</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    
+    private CommitteeCase? c;
+    private CommitteeMeeting? meeting;
+
+    private string selectedCategory = "none";
+    
+    private bool check1 = false;
+    private bool check2 = false;
+    private bool check3 = false;
+
+    private bool docGenerated = false;
+
+    protected override void OnParametersSet()
+    {
+        c = CommitteeData.GetCaseById(Id);
+        if (c != null)
+        {
+            meeting = CommitteeData.GetMeetingById(c.MeetingId);
+            selectedCategory = c.ResolutionType;
+        }
+    }
+
+    private bool IsChecklistComplete => check1 && check2 && check3;
+
+    private void GenerateDocument()
+    {
+        docGenerated = true;
+    }
+}

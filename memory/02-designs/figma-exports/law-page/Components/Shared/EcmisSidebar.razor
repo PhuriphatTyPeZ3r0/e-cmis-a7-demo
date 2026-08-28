@@ -1,0 +1,269 @@
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<aside class="sidebar offcanvas-xl offcanvas-start d-flex flex-column @Class" tabindex="-1" id="sidebarOffcanvas" data-bs-backdrop="false" style="@Style">
+    <div class="p-4 d-flex align-items-center justify-content-between gap-3 sidebar-brand-header">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 38px; height: 38px; background: var(--gold); color: var(--primary-dark); font-size: 11px; flex-shrink: 0;">
+                ปปท
+            </div>
+            <div class="lh-1 sidebar-brand-text">
+                <div class="fw-bold text-white" style="font-size: 18px; letter-spacing: 0.5px;">E-CMIS</div>
+                <div style="font-size: 10px; color: var(--gold); font-weight: 700; margin-top: 4px;">สำนักงาน ป.ป.ท.</div>
+            </div>
+        </div>
+        <!-- Close Button for Mobile Offcanvas -->
+        <button type="button" class="btn-close btn-close-white d-xl-none" data-bs-dismiss="offcanvas" data-bs-target="#sidebarOffcanvas" aria-label="Close"></button>
+    </div>
+
+    <div class="flex-grow-1 sidebar-scroll-area" style="overflow-y: auto;">
+        <ul class="nav flex-column mb-auto">
+            <!-- Static items for other modules -->
+            <li class="nav-item">
+                <a class="nav-link" href="#" @onclick:preventDefault @onclick='() => TriggerViewChange("1")'>
+                    <i class="bi bi-inbox-fill" style="font-size: 16px;"></i>
+                    <span>รับเรื่องร้องเรียน</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" @onclick:preventDefault @onclick='() => TriggerViewChange("2")'>
+                    <i class="bi bi-search" style="font-size: 16px;"></i>
+                    <span>แสวงหาข้อเท็จจริง</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" @onclick:preventDefault @onclick='() => TriggerViewChange("3")'>
+                    <i class="bi bi-file-earmark-check-fill" style="font-size: 16px;"></i>
+                    <span>วินิจฉัย/สรุปผล</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" @onclick:preventDefault @onclick='() => TriggerViewChange("4")'>
+                    <i class="bi bi-people-fill" style="font-size: 16px;"></i>
+                    <span>มติคณะกรรมการ ป.ป.ท.</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" @onclick:preventDefault @onclick='() => TriggerViewChange("5")'>
+                    <i class="bi bi-clock-history" style="font-size: 16px;"></i>
+                    <span>ติดตามภายหลังมติ</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" @onclick:preventDefault @onclick='() => TriggerViewChange("6")'>
+                    <i class="bi bi-file-earmark-person" style="font-size: 16px;"></i>
+                    <span>การดำเนินการตามหมายจับ</span>
+                </a>
+            </li>
+            
+            <!-- Group 7: กฎหมายและศาล -->
+            <li class="nav-item">
+                <a class="nav-link d-flex align-items-center justify-content-between @(IsActiveGroup("court") ? "active-group" : "collapsed")" 
+                   data-bs-toggle="collapse" href="#collapse-court-cases" role="button" aria-expanded="@(IsActiveGroup("court") ? "true" : "false")" aria-controls="collapse-court-cases">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-bank2" style="font-size: 16px;"></i>
+                        <span>งานกฎหมายและคดีในชั้นศาล</span>
+                    </div>
+                    <i class="bi bi-chevron-down submenu-chevron ms-auto" style="font-size: 10px;"></i>
+                </a>
+                <div class="collapse @(IsActiveGroup("court") ? "show" : "")" id="collapse-court-cases">
+                    <ul class="nav flex-column submenu-list">
+                        <li>
+                            <a class="submenu-link @(ActiveView == "dashboard" ? "active" : "")" href="#" @onclick:preventDefault @onclick='() => TriggerViewChange("dashboard")'>แดชบอร์ดสถิติคดี</a>
+                        </li>
+                        <li>
+                            <a class="submenu-link @(ActiveView == "10.1" ? "active" : "")" href="#" @onclick:preventDefault @onclick='() => TriggerViewChange("10.1")'>สำนวนคดีชั้นอัยการ/ศาล</a>
+                        </li>
+                        <li>
+                            <a class="submenu-link @(ActiveView == "10.2" ? "active" : "")" href="#" @onclick:preventDefault @onclick='() => TriggerViewChange("10.2")'>คำร้องขอเปิดเผยข้อมูล</a>
+                        </li>
+                        <li>
+                            <a class="submenu-link @(ActiveView == "10.3" ? "active" : "")" href="#" @onclick:preventDefault @onclick='() => TriggerViewChange("10.3")'>คดีปกครอง</a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+            
+            <!-- Group 8: วิเคราะห์/รายงาน -->
+            <li class="nav-item">
+                <a class="nav-link d-flex align-items-center justify-content-between @(IsActiveGroup("reports") ? "active-group" : "collapsed")" 
+                   data-bs-toggle="collapse" href="#collapse-reports" role="button" aria-expanded="@(IsActiveGroup("reports") ? "true" : "false")" aria-controls="collapse-reports">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-bar-chart-line-fill" style="font-size: 16px;"></i>
+                        <span>วิเคราะห์/รายงาน</span>
+                    </div>
+                    <i class="bi bi-chevron-down submenu-chevron ms-auto" style="font-size: 10px;"></i>
+                </a>
+                <div class="collapse @(IsActiveGroup("reports") ? "show" : "")" id="collapse-reports">
+                    <ul class="nav flex-column submenu-list">
+                        <li>
+                            <a class="submenu-link @(ActiveView == "poc" ? "active" : "")" href="#" @onclick:preventDefault @onclick='() => TriggerViewChange("poc")'>🧪 Proof of Concept (POC)</a>
+                        </li>
+                        <li>
+                            <a class="submenu-link @(ActiveView == "components-demo" ? "active" : "")" href="#" @onclick:preventDefault @onclick='() => TriggerViewChange("components-demo")'>🧩 Custom Components Demo</a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
+            <!-- Group 9: จัดการระบบ -->
+            <li class="nav-item">
+                <a class="nav-link d-flex align-items-center justify-content-between" href="#" @onclick:preventDefault>
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-gear-fill" style="font-size: 16px;"></i>
+                        <span>จัดการระบบ</span>
+                    </div>
+                    <i class="bi bi-chevron-down submenu-chevron ms-auto" style="font-size: 10px;"></i>
+                </a>
+            </li>
+
+            <!-- Group 10: บทบาทของฉัน -->
+            <li class="nav-item">
+                <a class="nav-link d-flex align-items-center justify-content-between" href="#" @onclick:preventDefault>
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-person-badge-fill" style="font-size: 16px;"></i>
+                        <span>บทบาทของฉัน</span>
+                    </div>
+                    <i class="bi bi-chevron-down submenu-chevron ms-auto" style="font-size: 10px;"></i>
+                </a>
+            </li>
+
+            <!-- Group 11: บริหารกลางและสนับสนุน -->
+            <li class="nav-item">
+                <a class="nav-link d-flex align-items-center justify-content-between @(IsActiveGroup("central") ? "active-group" : "collapsed")"
+                   data-bs-toggle="collapse" href="#collapse-central" role="button" aria-expanded="@(IsActiveGroup("central") ? "true" : "false")" aria-controls="collapse-central">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-life-preserver" style="font-size: 16px;"></i>
+                        <span>บริหารกลางและสนับสนุน</span>
+                    </div>
+                    <i class="bi bi-chevron-down submenu-chevron ms-auto" style="font-size: 10px;"></i>
+                </a>
+                <div class="collapse @(IsActiveGroup("central") ? "show" : "")" id="collapse-central">
+                    <ul class="nav flex-column submenu-list">
+                        <li>
+                            <a class="submenu-link @(ActiveView == "announcements" ? "active" : "")" href="#" @onclick:preventDefault @onclick='() => TriggerViewChange("announcements")'>ประกาศ/FAQ/แจ้งปัญหา</a>
+                        </li>
+                        <li>
+                            <a class="submenu-link @(ActiveView == "web-pr" ? "active" : "")" href="#" @onclick:preventDefault @onclick='() => TriggerViewChange("web-pr")'>ประชาสัมพันธ์ Web</a>
+                        </li>
+                        <li>
+                            <a class="submenu-link @(ActiveView == "digital-signature" ? "active" : "")" href="#" @onclick:preventDefault @onclick='() => TriggerViewChange("digital-signature")'>Digital Signature</a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Bottom User Pill -->
+    <div class="sidebar-user-bottom d-flex align-items-center gap-3 p-3 m-3 mt-auto" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
+        <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold logo-image" style="width: 36px; height: 36px; background: var(--primary-light); color: #fff; font-size: 14px; flex-shrink: 0;">
+            O
+        </div>
+        <div class="lh-1">
+            <div class="fw-bold text-white" style="font-size: 13px;">officer</div>
+            <div style="font-size: 11px; color: #A1B0CC; margin-top: 3px;">Super Admin</div>
+        </div>
+    </div>
+</aside>
+
+@code {
+    [Parameter] public string ActiveView { get; set; } = "dashboard";
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public string Style { get; set; } = "";
+    [Parameter] public EventCallback<string> OnViewChanged { get; set; }
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            var uri = NavigationManager.Uri;
+            if (!string.IsNullOrEmpty(uri))
+            {
+                var relativePath = NavigationManager.ToBaseRelativePath(uri).ToLower();
+                
+                if (string.IsNullOrEmpty(relativePath) || relativePath == "court-cases" || relativePath == "court-cases/dashboard")
+                {
+                    ActiveView = "dashboard";
+                }
+                else if (relativePath.Contains("court-cases/prosecution-court/detail"))
+                {
+                    ActiveView = "10.1-detail";
+                }
+                else if (relativePath.Contains("court-cases/prosecution-court"))
+                {
+                    ActiveView = "10.1";
+                }
+                else if (relativePath.Contains("court-cases/disclosure/detail"))
+                {
+                    ActiveView = "10.2-detail";
+                }
+                else if (relativePath.Contains("court-cases/disclosure"))
+                {
+                    ActiveView = "10.2";
+                }
+                else if (relativePath.Contains("court-cases/administrative/detail"))
+                {
+                    ActiveView = "10.3-detail";
+                }
+                else if (relativePath.Contains("court-cases/administrative"))
+                {
+                    ActiveView = "10.3";
+                }
+                else if (relativePath.Contains("analysis/poc"))
+                {
+                    ActiveView = "poc";
+                }
+                else if (relativePath.Contains("analysis/components-demo"))
+                {
+                    ActiveView = "components-demo";
+                }
+                else
+                {
+                    ActiveView = "dashboard";
+                }
+            }
+            else
+            {
+                ActiveView = "dashboard";
+            }
+        }
+        catch (Exception)
+        {
+            ActiveView = "dashboard";
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("switchView", ActiveView);
+        }
+    }
+
+    private async Task TriggerViewChange(string view)
+    {
+        ActiveView = view;
+        StateHasChanged();
+        await JSRuntime.InvokeVoidAsync("switchView", view);
+        await OnViewChanged.InvokeAsync(view);
+    }
+
+    private bool IsActiveGroup(string groupName)
+    {
+        if (groupName == "court")
+        {
+            return ActiveView == "10.1" || ActiveView == "10.2" || ActiveView == "10.3" || ActiveView == "10.1-detail" || ActiveView == "10.2-detail" || ActiveView == "10.3-detail" || ActiveView == "dashboard";
+        }
+        if (groupName == "reports")
+        {
+            return ActiveView == "poc" || ActiveView == "components-demo";
+        }
+        if (groupName == "central")
+        {
+            return ActiveView == "announcements" || ActiveView == "web-pr" || ActiveView == "digital-signature";
+        }
+        return false;
+    }
+}

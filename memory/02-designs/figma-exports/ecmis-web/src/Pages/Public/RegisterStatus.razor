@@ -1,0 +1,212 @@
+@page "/register/status"
+@layout Components.Layout.BlankLayout
+@inject EcmisWeb.Services.AdminApiService AdminApi
+@inject NavigationManager Nav
+@using EcmisWeb.Services
+@using Microsoft.AspNetCore.Components.Web
+
+<PageTitle>ติดตามสถานะคำขอ — E-CMIS</PageTitle>
+
+<div class="tracker-shell">
+    <div class="tracker-card">
+
+        @* Header  *@
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <div style="width:44px;height:44px;border-radius:50%;border:2px solid #c9a84c;background:#fef9ec;display:flex;align-items:center;justify-content:center;color:#92620a;font-weight:800;font-size:11px;flex-shrink:0;letter-spacing:.03em">
+                ป.ป.ท.
+            </div>
+            <div>
+                <div style="font-size:18px;font-weight:800;color:#0d1b3e">ติดตามสถานะคำขอลงทะเบียน</div>
+                <div style="font-size:12px;color:#6b7a99">E-CMIS — สำนักงาน ป.ป.ท.</div>
+            </div>
+        </div>
+
+        @* Search  *@
+        <div class="tracker-search-row">
+            <input class="tracker-input" @bind="trackingInput" @bind:event="oninput"
+                   @onkeyup="OnKeyUp"
+                   placeholder="กรอกรหัสติดตาม เช่น REG-A1B2C3D4" />
+            <button class="btn-tracker" @onclick="Search">
+                <i class="bi bi-search"></i>ค้นหา
+            </button>
+        </div>
+
+        @if (searched && found is null)
+        {
+            <div class="reg-alert reg-alert-error">
+                <i class="bi bi-exclamation-circle-fill" style="font-size:16px;flex-shrink:0;margin-top:1px"></i>
+                ไม่พบรหัสติดตาม "<strong>@trackingInput</strong>" กรุณาตรวจสอบอีกครั้ง
+            </div>
+        }
+
+        @if (found is not null)
+        {
+            @* ID block  *@
+            <div class="tracker-id-block">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <div>
+                        <div style="font-size:10px;font-weight:700;color:#6b7a99;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">รหัสติดตาม</div>
+                        <div style="font-size:22px;font-weight:900;color:#0d1b3e;letter-spacing:2px">@found.TrackingId</div>
+                    </div>
+                    <span class="tracker-status-badge @StatusBadgeCss(found.Status)">
+                        <i class="bi @StatusIcon(found.Status)"></i>
+                        @StatusLabel(found.Status)
+                    </span>
+                </div>
+                <div style="font-size:13px;color:#6b7a99">
+                    ชื่อ: <strong style="color:#0d1b3e">@found.FirstName @found.LastName</strong> ·
+                    ยื่นเมื่อ: <strong style="color:#0d1b3e">@found.SubmittedAt.ToString("dd MMM yyyy HH:mm")</strong>
+                </div>
+            </div>
+
+            @* Timeline  *@
+            <div class="tracker-timeline">
+                <TimelineStep
+                    Label="ยื่นคำขอลงทะเบียน"
+                    Sub="@($"ส่งคำขอเมื่อ {found.SubmittedAt:dd MMM yyyy}")"
+                    State="done" />
+
+                <TimelineStep
+                    Label="ผู้ดูแลหน่วยงาน / ผู้ดูแลระบบพิจารณา"
+                    Sub="@(found.Status == RegistrationStatus.Pending ? "อยู่ระหว่างรอการอนุมัติ" : found.ReviewedAt.HasValue ? $"พิจารณาเมื่อ {found.ReviewedAt:dd MMM yyyy}" : "ดำเนินการแล้ว")"
+                    State="@(found.Status == RegistrationStatus.Pending ? "current" : found.Status is RegistrationStatus.Approved or RegistrationStatus.Rejected ? "done" : "pending")" />
+
+                <TimelineStep
+                    Label="@(found.Status == RegistrationStatus.Rejected ? "คำขอถูกปฏิเสธ" : "บัญชีพร้อมใช้งาน")"
+                    Sub="@(found.Status == RegistrationStatus.Approved ? $"เข้าสู่ระบบด้วย Username: {found.AssignedUsername}" : found.Status == RegistrationStatus.Rejected ? $"เหตุผล: {found.RejectReason}" : "รอผลการอนุมัติ")"
+                    State="@(found.Status == RegistrationStatus.Approved ? "done" : found.Status == RegistrationStatus.Rejected ? "rejected" : "pending")" />
+            </div>
+
+            @if (found.Status == RegistrationStatus.Approved)
+            {
+                <div class="reg-alert reg-alert-success mt-3">
+                    <i class="bi bi-check-circle-fill" style="font-size:18px;flex-shrink:0;margin-top:1px"></i>
+                    <div>
+                        <div style="font-weight:700;margin-bottom:2px">บัญชีของท่านพร้อมใช้งานแล้ว!</div>
+                        <div>เข้าสู่ระบบด้วย Username: <strong>@found.AssignedUsername</strong> และรหัสผ่านชั่วคราวที่ส่งทางอีเมล</div>
+                    </div>
+                </div>
+                <a href="/login" class="btn-tracker mt-3" style="text-decoration:none">
+                    <i class="bi bi-box-arrow-in-right"></i>เข้าสู่ระบบ
+                </a>
+            }
+
+            @if (found.Status == RegistrationStatus.Rejected)
+            {
+                <div class="reg-alert reg-alert-error mt-3">
+                    <i class="bi bi-x-circle-fill" style="font-size:18px;flex-shrink:0;margin-top:1px"></i>
+                    <div>
+                        <div style="font-weight:700;margin-bottom:2px">คำขอถูกปฏิเสธ</div>
+                        <div>เหตุผล: @found.RejectReason</div>
+                    </div>
+                </div>
+                <a href="/register" class="btn-tracker mt-3"
+                   style="text-decoration:none;background:#fef2f2;color:#991b1b;box-shadow:none;border:1px solid #fca5a5">
+                    <i class="bi bi-arrow-repeat"></i>ยื่นคำขอใหม่
+                </a>
+            }
+        }
+
+        @* Footer  *@
+        <div style="margin-top:28px;padding-top:20px;border-top:1px solid #e8ecf4;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <a href="/login" style="font-size:13px;color:#1a2f6b;text-decoration:none;display:flex;align-items:center;gap:6px;font-weight:600">
+                <i class="bi bi-arrow-left"></i> กลับสู่หน้าเข้าสู่ระบบ
+            </a>
+            <a href="mailto:itsupport@pacc.go.th" style="font-size:12px;color:#6b7a99;text-decoration:none">
+                <i class="bi bi-envelope me-1"></i>itsupport@pacc.go.th
+            </a>
+        </div>
+
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "id")]
+    public string? QueryId { get; set; }
+
+    private string trackingInput = "";
+    private RegistrationRequest? found;
+    private bool searched;
+
+    protected override void OnParametersSet()
+    {
+        if (!string.IsNullOrEmpty(QueryId))
+        {
+            trackingInput = QueryId;
+            Search();
+        }
+    }
+
+    private void Search()
+    {
+        searched = true;
+        var q = trackingInput.Trim().ToUpper();
+        _ = SearchApiAsync(q);
+    }
+
+    private async Task SearchApiAsync(string trackingId)
+    {
+        try
+        {
+            var result = await AdminApi.GetRegistrationStatusAsync(trackingId);
+            found = new RegistrationRequest
+            {
+                Id = result.TrackingId.Replace("REG-", ""),
+                Status = MapStatus(result.Status),
+                SubmittedAt = result.SubmittedAt?.LocalDateTime ?? DateTime.Now,
+                FirstName = result.FirstName,
+                LastName = result.LastName,
+                Email = result.Email,
+                ProvisionedAt = result.ProvisionedAt?.LocalDateTime,
+                ProvisionedBy = result.ProvisionedBy,
+                ReviewedAt = result.ReviewedAt?.LocalDateTime,
+                ReviewedBy = result.ReviewedBy,
+                RejectReason = result.RejectReason,
+                AssignedUsername = result.Username
+            };
+            StateHasChanged();
+        }
+        catch
+        {
+            found = null;
+            StateHasChanged();
+        }
+    }
+
+    private static RegistrationStatus MapStatus(string status) => status switch
+    {
+        "pending" or "pending_it_review" or "pending_admin_approval" or "requires_more_info" => RegistrationStatus.Pending,
+        "approved" => RegistrationStatus.Approved,
+        "rejected" => RegistrationStatus.Rejected,
+        _ => RegistrationStatus.Pending
+    };
+
+    private void OnKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") Search();
+    }
+
+    private static string StatusBadgeCss(RegistrationStatus s) => s switch
+    {
+        RegistrationStatus.Pending  => "tracker-badge-pending",
+        RegistrationStatus.Approved => "tracker-badge-approved",
+        RegistrationStatus.Rejected => "tracker-badge-rejected",
+        _ => "tracker-badge-pending"
+    };
+
+    private static string StatusLabel(RegistrationStatus s) => s switch
+    {
+        RegistrationStatus.Pending  => "รออนุมัติ",
+        RegistrationStatus.Approved => "อนุมัติแล้ว",
+        RegistrationStatus.Rejected => "ปฏิเสธ",
+        _ => "ไม่ทราบสถานะ"
+    };
+
+    private static string StatusIcon(RegistrationStatus s) => s switch
+    {
+        RegistrationStatus.Pending  => "bi-clock",
+        RegistrationStatus.Approved => "bi-check-circle-fill",
+        RegistrationStatus.Rejected => "bi-x-circle-fill",
+        _ => "bi-circle"
+    };
+}

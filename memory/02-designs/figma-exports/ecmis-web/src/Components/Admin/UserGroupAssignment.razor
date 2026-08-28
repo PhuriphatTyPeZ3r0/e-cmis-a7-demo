@@ -1,0 +1,249 @@
+@inject AdminApiService AdminApi
+@inject SystemAccessApiService SystemApi
+
+<div>
+    @if (initialLoading)
+    {
+        <div style="padding:32px;text-align:center;color:var(--text-muted)">
+            <i class="bi bi-arrow-clockwise" style="animation:spin 1s linear infinite;font-size:22px"></i>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3 align-items-end mb-3">
+            <div class="col-sm-4">
+                <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">ผู้ใช้งาน</label>
+                <select class="form-select form-select-sm" @bind="assignGroupUserIdText" @bind:after="OnUserChangedAsync">
+                    <option value="">— เลือกผู้ใช้งาน —</option>
+                    @foreach (var u in users.Where(u => !IsSuperAdminUser(u)))
+                    {
+                        <option value="@u.Id">@DisplayUser(u)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-sm-3">
+                <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">หน่วยงาน</label>
+                <select class="form-select form-select-sm" @bind="assignGroupOrgIdText" @bind:after="LoadAssignableRolesAsync">
+                    <option value="">— เลือกหน่วยงาน —</option>
+                    @foreach (var org in orgs)
+                    {
+                        <option value="@org.Id">@org.NameTh</option>
+                    }
+                </select>
+            </div>
+            <div class="col-sm-3">
+                <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">สิทธิ์ / กลุ่มพิเศษ</label>
+                <select class="form-select form-select-sm" @bind="assignGroupIdText" disabled="@(!assignableOptions.Any())">
+                    <option value="">— เลือกสิทธิ์ —</option>
+                    @if (positionRoleOptions.Any())
+                    {
+                        <optgroup label="สิทธิ์ในตำแหน่ง">
+                            @foreach (var r in positionRoleOptions)
+                            {
+                                <option value="@r.Id">@r.NameTh@(r.IsDefault ? " ★" : "")</option>
+                            }
+                        </optgroup>
+                    }
+                    @if (specialGroupOptions.Any())
+                    {
+                        <optgroup label="กลุ่มระบบพิเศษ">
+                            @foreach (var r in specialGroupOptions)
+                            {
+                                <option value="@r.Id">@r.NameTh</option>
+                            }
+                        </optgroup>
+                    }
+                    @if (orgGroupOptions.Any())
+                    {
+                        <optgroup label="สิทธิ์ตามหน่วยงาน">
+                            @foreach (var r in orgGroupOptions)
+                            {
+                                <option value="@r.Id">@r.NameTh</option>
+                            }
+                        </optgroup>
+                    }
+                </select>
+            </div>
+            <div class="col-sm-2">
+                <button class="btn btn-sm w-100" style="background:var(--navy-deep);color:#fff;font-weight:700;border-radius:8px"
+                        @onclick="AssignGroupAsync"
+                        disabled="@(assignGroupSaving || string.IsNullOrEmpty(assignGroupUserIdText) || string.IsNullOrEmpty(assignGroupIdText) || string.IsNullOrEmpty(assignGroupOrgIdText))">
+                    @if (assignGroupSaving) { <span class="spinner-border spinner-border-sm" style="width:11px;height:11px;border-width:2px"></span> }
+                    else { <span><i class="bi bi-plus-lg me-1"></i>มอบสิทธิ์</span> }
+                </button>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(userPositionHint))
+        {
+            <div style="font-size:12px;color:var(--text-muted);margin:-4px 0 12px 0">
+                <i class="bi bi-briefcase me-1"></i>@userPositionHint
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(assignGroupError))
+        {
+            <div style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12.5px">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>@assignGroupError
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(assignGroupSuccess))
+        {
+            <div style="background:#ecfdf5;color:#065f46;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12.5px">
+                <i class="bi bi-check-circle-fill me-1"></i>@assignGroupSuccess
+            </div>
+        }
+
+        @if (userGroups.Count > 0)
+        {
+            <div style="overflow-x:auto;border:1px solid #e8ecf4;border-radius:10px">
+                <table class="ecmis-table" style="margin:0">
+                    <thead><tr><th>สิทธิ์ / กลุ่ม</th><th>หน่วยงาน</th><th style="text-align:center">ถอน</th></tr></thead>
+                    <tbody>
+                        @foreach (var g in userGroups)
+                        {
+                            <tr>
+                                <td style="font-weight:700;font-size:13px">@g.GroupName</td>
+                                <td style="font-size:12.5px">@(string.IsNullOrEmpty(g.OrgName) ? "—" : g.OrgName)</td>
+                                <td style="text-align:center">
+                                    <button class="btn btn-sm" style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;font-size:11px"
+                                            @onclick="() => RemoveGroupAsync(g)"><i class="bi bi-trash3"></i></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(assignGroupUserIdText))
+        {
+            <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px">ผู้ใช้นี้ยังไม่มีสิทธิ์ในหน่วยงานที่เลือก</div>
+        }
+
+    }
+</div>
+
+@code {
+    private List<UserDto> users = new();
+    private List<LookupOrgDto> orgs = new();
+    private List<UserGroupDto> userGroups = new();
+    private List<AssignableRoleItemDto> positionRoleOptions = new();
+    private List<AssignableRoleItemDto> specialGroupOptions = new();
+    private List<AssignableRoleItemDto> orgGroupOptions = new();
+    private IEnumerable<AssignableRoleItemDto> assignableOptions =>
+        positionRoleOptions.Concat(specialGroupOptions).Concat(orgGroupOptions);
+    private bool initialLoading = true;
+    private string assignGroupUserIdText = "";
+    private string assignGroupIdText = "";
+    private string assignGroupOrgIdText = "";
+    private bool assignGroupSaving;
+    private string? assignGroupError;
+    private string? assignGroupSuccess;
+    private string? userPositionHint;
+
+    protected override async Task OnInitializedAsync() => await LoadInitialAsync();
+
+    public async Task ReloadAsync() => await LoadInitialAsync();
+
+    private async Task LoadInitialAsync()
+    {
+        initialLoading = true;
+        try
+        {
+            users = await AdminApi.GetUsersAsync();
+            try { orgs = await SystemApi.LookupOrganizationsAsync(); }
+            catch { orgs = new(); }
+        }
+        catch (Exception ex) { assignGroupError = ex.Message; }
+        finally { initialLoading = false; }
+    }
+
+    private static bool IsSuperAdminUser(UserDto u) =>
+        u.Username.Equals("devadmin", StringComparison.OrdinalIgnoreCase)
+        || (u.Roles?.Any(r => r.Equals("super_admin", StringComparison.OrdinalIgnoreCase)) ?? false);
+
+    private static string DisplayUser(UserDto u)
+    {
+        var full = $"{u.FirstName} {u.LastName}".Trim();
+        return string.IsNullOrEmpty(full) ? u.Username : $"{full} ({u.Username})";
+    }
+
+    private async Task OnUserChangedAsync()
+    {
+        await LoadUserGroupsAsync();
+        await LoadAssignableRolesAsync();
+    }
+
+    private async Task LoadUserGroupsAsync()
+    {
+        userGroups = new();
+        assignGroupError = null;
+        assignGroupSuccess = null;
+        if (!int.TryParse(assignGroupUserIdText, out var uid)) return;
+        try { userGroups = await AdminApi.GetUserGroupsAsync(uid); }
+        catch (Exception ex) { assignGroupError = ex.Message; }
+    }
+
+    private async Task LoadAssignableRolesAsync()
+    {
+        positionRoleOptions = new();
+        specialGroupOptions = new();
+        orgGroupOptions = new();
+        assignGroupIdText = "";
+        userPositionHint = null;
+        if (!int.TryParse(assignGroupUserIdText, out var uid)) return;
+
+        int? orgId = int.TryParse(assignGroupOrgIdText, out var oid) ? oid : null;
+        try
+        {
+            var data = await SystemApi.GetAssignableRolesForUserAsync(uid, orgId);
+            if (data is null) return;
+            positionRoleOptions = data.PositionRoles ?? new();
+            specialGroupOptions = data.SpecialGroups ?? new();
+            orgGroupOptions = data.OrgGroups ?? new();
+            if (orgId is null or <= 0)
+                userPositionHint = "เลือกหน่วยงานเพื่อดูสิทธิ์ที่ตรงตำแหน่งของผู้ใช้";
+            else if (positionRoleOptions.Count == 0 && data.PositionId is null)
+                userPositionHint = $"ผู้ใช้ยังไม่มีตำแหน่งในหน่วยงานนี้ — มอบได้สิทธิ์พิเศษ ({specialGroupOptions.Count}) หรือสิทธิ์ตามหน่วยงาน ({orgGroupOptions.Count})";
+            else if (positionRoleOptions.Count > 0)
+                userPositionHint = $"สิทธิ์ตำแหน่ง {positionRoleOptions.Count} · พิเศษ {specialGroupOptions.Count} · หน่วยงาน {orgGroupOptions.Count}";
+            else
+                userPositionHint = $"สิทธิ์พิเศษ {specialGroupOptions.Count} · สิทธิ์ตามหน่วยงาน {orgGroupOptions.Count}";
+        }
+        catch (Exception ex) { assignGroupError = ex.Message; }
+    }
+
+    private async Task AssignGroupAsync()
+    {
+        if (!int.TryParse(assignGroupUserIdText, out var uid)) { assignGroupError = "กรุณาเลือกผู้ใช้งาน"; return; }
+        if (!int.TryParse(assignGroupIdText, out var gid)) { assignGroupError = "กรุณาเลือกสิทธิ์"; return; }
+        if (!int.TryParse(assignGroupOrgIdText, out var oid)) { assignGroupError = "กรุณาเลือกหน่วยงาน"; return; }
+
+        assignGroupSaving = true;
+        assignGroupError = null;
+        assignGroupSuccess = null;
+        try
+        {
+            await AdminApi.AssignGroupAsync(uid, gid, oid);
+            assignGroupSuccess = "มอบสิทธิ์ให้ผู้ใช้แล้ว — ให้ผู้ใช้นั้นออกจากระบบแล้วเข้าใหม่เพื่ออัปเดตเมนู";
+            assignGroupIdText = "";
+            await LoadUserGroupsAsync();
+        }
+        catch (Exception ex) { assignGroupError = ex.Message; }
+        finally { assignGroupSaving = false; }
+    }
+
+    private async Task RemoveGroupAsync(UserGroupDto g)
+    {
+        if (!int.TryParse(assignGroupUserIdText, out var uid)) return;
+        assignGroupError = null;
+        assignGroupSuccess = null;
+        try
+        {
+            await AdminApi.RemoveUserGroupAsync(uid, g.AuthId);
+            assignGroupSuccess = $"ถอนสิทธิ์ '{g.GroupName}' แล้ว — ให้ผู้ใช้นั้นออกจากระบบแล้วเข้าใหม่เพื่ออัปเดตเมนู";
+            await LoadUserGroupsAsync();
+        }
+        catch (Exception ex) { assignGroupError = ex.Message; }
+    }
+}

@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="ลงทะเบียนเจ้าหน้าที่เพื่อขอใช้งานระบบ E-CMIS">
+  <title>ลงทะเบียนเจ้าหน้าที่ | E-CMIS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="./shared-assets/register.css" rel="stylesheet">
+</head>
+<body>
+<main id="registrationApp" class="pub-root pub-col pub-light">
+  <div class="pub-bg-glow" aria-hidden="true"></div>
+  <div class="pub-grid" aria-hidden="true"></div>
+
+  <header class="pub-top">
+    <a class="pub-brand" href="./index.html" aria-label="กลับหน้าหลัก E-CMIS" style="text-decoration:none">
+      <span class="pub-emblem">ป.ป.ท.</span>
+      <span>
+        <span class="pub-brand-name">E‑CMIS</span>
+        <span class="pub-brand-sub">สำนักงาน ป.ป.ท.</span>
+      </span>
+    </a>
+    <div class="pub-top-right">
+      <button type="button" class="pub-theme-btn" id="themeToggle" title="เปลี่ยนเป็นธีมมืด" aria-label="เปลี่ยนเป็นธีมมืด">
+        <i class="fa-solid fa-moon" aria-hidden="true"></i>
+      </button>
+      <a href="./login.html" class="pub-back-btn">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span>เข้าสู่ระบบ</span>
+      </a>
+    </div>
+  </header>
+
+  <nav class="pub-stepper" id="registrationStepper" aria-label="ขั้นตอนการลงทะเบียน">
+    <div class="pub-step-item">
+      <div class="pub-dot active" data-step-dot="1" aria-current="step"><span>1</span></div>
+      <div class="pub-step-lbl active" data-step-label="1">ThaiD และข้อมูลผู้ใช้</div>
+    </div>
+    <div class="pub-step-line" data-step-line="1"></div>
+    <div class="pub-step-item">
+      <div class="pub-dot" data-step-dot="2"><span>2</span></div>
+      <div class="pub-step-lbl" data-step-label="2">สังกัดที่ปฏิบัติงาน</div>
+    </div>
+    <div class="pub-step-line" data-step-line="2"></div>
+    <div class="pub-step-item">
+      <div class="pub-dot" data-step-dot="3"><span>3</span></div>
+      <div class="pub-step-lbl" data-step-label="3">ยืนยันข้อมูล</div>
+    </div>
+  </nav>
+
+  <section class="pub-col-card pub-card" aria-live="polite">
+    <form id="registrationForm" novalidate>
+      <section class="pub-panel" data-step-panel="1" aria-labelledby="step1Title">
+        <div class="pub-card-head">
+          <div class="pub-card-title" id="step1Title">ยืนยันตัวตนและข้อมูลผู้ใช้</div>
+          <div class="pub-card-sub">เจ้าหน้าที่ทุกท่านต้องยืนยันตัวตนด้วย ThaiD ก่อนกรอกข้อมูลลงทะเบียน</div>
+        </div>
+        <div class="pub-card-body">
+          <div class="pub-sec">ยืนยันตัวตน ThaiD</div>
+          <div class="pub-thaid pub-thaid-required" id="thaidPanel">
+            <div class="pub-thaid-logo"><i class="fa-solid fa-id-card" id="thaidIcon" aria-hidden="true"></i></div>
+            <div class="pub-thaid-info">
+              <div class="pub-thaid-name" id="thaidName">ยืนยันตัวตนด้วยบัตรประชาชนดิจิทัล</div>
+              <div class="pub-thaid-sub" id="thaidDescription">ต้องยืนยัน ThaiD ให้สำเร็จก่อน ระบบจึงจะเปิดแบบฟอร์มลงทะเบียนขั้นถัดไป</div>
+              <div class="pub-thaid-state" id="thaidState"><i class="fa-solid fa-lock" aria-hidden="true"></i>จำเป็นสำหรับเจ้าหน้าที่ทุกท่าน</div>
+            </div>
+            <button class="pub-btn pub-btn-blue" id="openTermsButton" type="button">
+              <i class="fa-solid fa-credit-card" aria-hidden="true"></i>ยืนยัน ThaiD เพื่อดำเนินการต่อ
+            </button>
+          </div>
+          <div class="pub-thaid-guidance" id="thaidGateGuidance">
+            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+            <div><strong>แบบฟอร์มยังถูกล็อก</strong><span>ระบบจะใช้ข้อมูลที่ยืนยันจาก ThaiD เพื่อระบุตัวบุคคลและป้องกันการสมัครแทนกัน หากไม่สามารถยืนยันได้ กรุณาลองใหม่หรือติดต่อ Admin หน่วยงานของท่าน</span></div>
+          </div>
+          <div class="pub-err-msg pub-thaid-required-error hidden" id="thaidRequiredError" role="alert"><i class="fa-solid fa-circle-exclamation"></i><span>กรุณายืนยันตัวตนด้วย ThaiD ก่อนดำเนินการต่อ</span></div>
+
+          <div class="pub-registration-details hidden" id="registrationDetails" aria-hidden="true">
+          <div class="hidden" id="nationalIdSection">
+            <div class="pub-sec" style="margin-top:22px">เลขบัตรประชาชน</div>
+            <div class="pub-field">
+              <label class="pub-lbl-f" for="nationalId">เลขบัตรประชาชน 13 หลัก <span class="pub-req">*</span></label>
+              <div class="pub-iw">
+                <i class="fa-solid fa-id-card pub-ico" aria-hidden="true"></i>
+                <input class="pub-inp" id="nationalId" name="nationalId" type="text" inputmode="numeric" maxlength="13" autocomplete="off" readonly aria-describedby="nationalIdError">
+              </div>
+              <span class="pub-err-msg hidden" id="nationalIdError"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+            </div>
+          </div>
+
+          <div class="pub-sec" style="margin-top:22px">บัญชีผู้ใช้งาน</div>
+          <div class="pub-username-grid">
+            <div class="pub-field">
+              <label class="pub-lbl-f" for="firstNameEn">ชื่อ (สำหรับ Username) <span class="pub-req">*</span></label>
+              <div class="pub-iw">
+                <i class="fa-solid fa-user pub-ico" aria-hidden="true"></i>
+                <input class="pub-inp" id="firstNameEn" name="firstNameEn" autocomplete="given-name" placeholder="เช่น Somchai" aria-describedby="firstNameEnError">
+              </div>
+              <span class="pub-err-msg hidden" id="firstNameEnError"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+            </div>
+            <div class="pub-field">
+              <label class="pub-lbl-f" for="lastNameEn">นามสกุล (สำหรับ Username) <span class="pub-req">*</span></label>
+              <div class="pub-iw">
+                <i class="fa-solid fa-user pub-ico" aria-hidden="true"></i>
+                <input class="pub-inp" id="lastNameEn" name="lastNameEn" autocomplete="family-name" placeholder="เช่น Jaidee" aria-describedby="lastNameEnError">
+              </div>
+              <span class="pub-err-msg hidden" id="lastNameEnError"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+            </div>
+            <div class="pub-field">
+              <label class="pub-lbl-f" for="username">ชื่อผู้ใช้งาน (ระบบสร้าง)</label>
+              <div class="pub-iw">
+                <i class="fa-solid fa-at pub-ico" aria-hidden="true"></i>
+                <input class="pub-inp" id="username" name="username" readonly placeholder="auto-generate">
+              </div>
+            </div>
+          </div>
+          <div class="pub-username-status" id="usernameStatus">
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            <span>กรอกชื่อและนามสกุล (Latin) เพื่อสร้าง Username</span>
+          </div>
+          <span class="pub-err-msg hidden" id="usernameError" style="margin-top:8px"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+
+          <div class="pub-sec" style="margin-top:22px">ข้อมูลส่วนบุคคล</div>
+          <div class="pub-g3">
+            <div class="pub-field">
+              <label class="pub-lbl-f" for="titleTh">คำนำหน้า <span class="pub-req">*</span></label>
+              <div class="pub-iw">
+                <i class="fa-solid fa-id-badge pub-ico" aria-hidden="true"></i>
+                <select class="pub-sel" id="titleTh" name="titleTh" aria-describedby="titleThError">
+                  <option value="">— เลือก —</option>
+                  <option>นาย</option><option>นาง</option><option>นางสาว</option>
+                  <option>ว่าที่ร้อยตรี</option><option>ว่าที่ร้อยโท</option><option>ว่าที่ร้อยเอก</option>
+                </select>
+              </div>
+              <span class="pub-err-msg hidden" id="titleThError"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+            </div>
+            <div class="pub-field">
+              <label class="pub-lbl-f" for="firstName">ชื่อ <span class="pub-req">*</span></label>
+              <div class="pub-iw"><i class="fa-solid fa-user pub-ico" aria-hidden="true"></i><input class="pub-inp" id="firstName" name="firstName" autocomplete="given-name" placeholder="ชื่อ" aria-describedby="firstNameError"></div>
+              <span class="pub-err-msg hidden" id="firstNameError"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+            </div>
+            <div class="pub-field">
+              <label class="pub-lbl-f" for="lastName">นามสกุล <span class="pub-req">*</span></label>
+              <div class="pub-iw"><i class="fa-solid fa-user pub-ico" aria-hidden="true"></i><input class="pub-inp" id="lastName" name="lastName" autocomplete="family-name" placeholder="นามสกุล" aria-describedby="lastNameError"></div>
+              <span class="pub-err-msg hidden" id="lastNameError"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+            </div>
+          </div>
+          <div class="pub-g3" style="margin-top:14px">
+            <div class="pub-field">
+              <label class="pub-lbl-f" for="nickname">ชื่อเล่น</label>
+              <div class="pub-iw"><i class="fa-solid fa-comment pub-ico" aria-hidden="true"></i><input class="pub-inp" id="nickname" name="nickname" placeholder="ชื่อเล่น"></div>
+            </div>
+          </div>
+          <div class="pub-field" style="margin-top:14px">
+            <span class="pub-lbl-f">วันเดือนปีเกิด</span>
+            <div class="pub-birth-grid">
+              <div class="pub-field">
+                <label class="pub-lbl-f" for="birthDay">วัน</label>
+                <div class="pub-iw"><input class="pub-inp no-ico" id="birthDay" name="birthDay" type="text" inputmode="numeric" maxlength="2" autocomplete="bday-day" placeholder="วว"></div>
+              </div>
+              <div class="pub-field">
+                <label class="pub-lbl-f" for="birthMonth">เดือน</label>
+                <div class="pub-iw">
+                  <select class="pub-sel no-ico" id="birthMonth" name="birthMonth" autocomplete="bday-month">
+                    <option value="">เลือกเดือน</option>
+                    <option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option><option value="3">มีนาคม</option><option value="4">เมษายน</option><option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option><option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option><option value="9">กันยายน</option><option value="10">ตุลาคม</option><option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
+                  </select>
+                </div>
+              </div>
+              <div class="pub-field">
+                <label class="pub-lbl-f" for="birthYear">ปี พ.ศ.</label>
+                <div class="pub-iw"><input class="pub-inp no-ico" id="birthYear" name="birthYear" type="text" inputmode="numeric" maxlength="4" autocomplete="bday-year" placeholder="ปปปป"></div>
+              </div>
+            </div>
+            <span class="pub-err-msg hidden" id="birthDateError"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+          </div>
+
+          <div class="pub-sec" style="margin-top:22px">ช่องทางติดต่อ</div>
+          <div class="pub-g3">
+            <div class="pub-field" style="grid-column:span 2">
+              <label class="pub-lbl-f" for="phoneInternal">โทรศัพท์ภายใน</label>
+              <div class="pub-iw"><i class="fa-solid fa-phone pub-ico" aria-hidden="true"></i><input class="pub-inp" id="phoneInternal" name="phoneInternal" type="tel" placeholder="02-xxx-xxxx"></div>
+            </div>
+            <div class="pub-field">
+              <label class="pub-lbl-f" for="phoneExtension">หมายเลขต่อ</label>
+              <div class="pub-iw"><i class="fa-solid fa-hashtag pub-ico" aria-hidden="true"></i><input class="pub-inp" id="phoneExtension" name="phoneExtension" inputmode="numeric" maxlength="6" placeholder="xxxx"></div>
+            </div>
+          </div>
+          <div class="pub-g3" style="margin-top:14px">
+            <div class="pub-field" style="grid-column:span 2">
+              <label class="pub-lbl-f" for="mobile">โทรศัพท์มือถือ <span class="pub-req">*</span></label>
+              <div class="pub-iw"><i class="fa-solid fa-phone pub-ico" aria-hidden="true"></i><input class="pub-inp" id="mobile" name="mobile" type="tel" maxlength="12" autocomplete="tel" placeholder="08x-xxx-xxxx" aria-describedby="mobileError"></div>
+              <span class="pub-err-msg hidden" id="mobileError"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+            </div>
+            <div class="pub-field">
+              <label class="pub-lbl-f" for="mobileBackup">มือถือสำรอง</label>
+              <div class="pub-iw"><i class="fa-solid fa-phone pub-ico" aria-hidden="true"></i><input class="pub-inp" id="mobileBackup" name="mobileBackup" type="tel" maxlength="12" placeholder="08x-xxx-xxxx"></div>
+            </div>
+          </div>
+          <div class="pub-field" style="margin-top:14px">
+            <label class="pub-lbl-f" for="email">Gmail <span class="pub-req">*</span></label>
+            <div class="pub-iw"><i class="fa-brands fa-google pub-ico" aria-hidden="true"></i><input class="pub-inp" id="email" name="gmail" type="email" autocomplete="email" placeholder="name@gmail.com" aria-describedby="emailError"></div>
+            <span class="pub-err-msg hidden" id="emailError"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+          </div>
+          <div class="pub-field" style="margin-top:10px">
+            <label class="pub-lbl-f" for="emailBackup">อีเมลราชการ</label>
+            <div class="pub-iw"><i class="fa-solid fa-envelope pub-ico" aria-hidden="true"></i><input class="pub-inp" id="emailBackup" name="officialEmail" type="email" readonly placeholder="ระบบจะแสดงอีเมลราชการให้"></div>
+            <span class="pub-help">สร้างจากชื่อผู้ใช้งานโดยอัตโนมัติ</span>
+          </div>
+
+          <div class="pub-actions">
+            <button class="pub-btn pub-btn-flex pub-btn-gold" id="step1Next" type="button" disabled>ถัดไป — สังกัดที่ปฏิบัติงาน <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+          </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="pub-panel hidden" data-step-panel="2" aria-labelledby="step2Title">
+        <div class="pub-card-head">
+          <div class="pub-card-title" id="step2Title">สังกัดที่ปฏิบัติงาน</div>
+          <div class="pub-card-sub">ตำแหน่ง สายงาน และหน่วยงานที่สังกัด</div>
+        </div>
+        <div class="pub-card-body">
+          <div class="pub-sec" style="margin-top:14px">ข้อมูลตำแหน่ง</div>
+          <div class="pub-g2">
+            <div class="pub-field">
+              <label class="pub-lbl-f" for="officerType">ประเภทเจ้าหน้าที่ <span class="pub-req">*</span></label>
+              <div class="pub-iw">
+                <select class="pub-sel no-ico" id="officerType" name="officerType" aria-describedby="officerTypeError">
+                  <option value="">— เลือกประเภทเจ้าหน้าที่ —</option>
+                </select>
+              </div>
+              <span class="pub-err-msg hidden" id="officerTypeError"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+            </div>
+            <div class="pub-field">
+              <label class="pub-lbl-f" for="positionType">ประเภทสายงาน <span class="pub-req hidden" id="positionTypeRequired">*</span></label>
+              <div class="pub-iw">
+                <select class="pub-sel no-ico" id="positionType" name="positionType" aria-describedby="positionTypeError">
+                  <option value="">— เลือกประเภทสายงาน —</option>
+                </select>
+              </div>
+              <span class="pub-err-msg hidden" id="positionTypeError"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+            </div>
+          </div>
+          <div class="pub-g2" style="margin-top:14px">
+            <div class="pub-field">
+              <label class="pub-lbl-f" for="jobTitle">สายงาน / ตำแหน่ง <span class="pub-req hidden" id="jobTitleRequired">*</span></label>
+              <div class="pub-iw">
+                <select class="pub-sel no-ico" id="jobTitle" name="jobTitle" aria-describedby="jobTitleError" disabled>
+                  <option value="">— เลือกประเภทสายงานก่อน —</option>
+                </select>
+              </div>
+              <span class="pub-err-msg hidden" id="jobTitleError"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+            </div>
+            <div class="pub-field">
+              <label class="pub-lbl-f" for="positionLevel">ระดับตำแหน่ง <span class="pub-req hidden" id="positionLevelRequired">*</span></label>
+              <div class="pub-iw">
+                <select class="pub-sel no-ico" id="positionLevel" name="positionLevel" aria-describedby="positionLevelError" disabled>
+                  <option value="">— เลือกสายงาน/ตำแหน่งก่อน —</option>
+                </select>
+              </div>
+              <span class="pub-err-msg hidden" id="positionLevelError"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+            </div>
+          </div>
+          <div class="pub-help" id="positionHelp" style="margin-top:9px"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> ข้าราชการต้องระบุประเภทสายงาน ตำแหน่ง และระดับตำแหน่งให้ครบ ส่วนเจ้าหน้าที่ประเภทอื่นเลือกเมื่อมีข้อมูลตำแหน่งราชการ</div>
+
+          <div class="pub-sec" style="margin-top:22px">หน่วยงานที่สังกัด</div>
+          <div class="pub-g2">
+            <div class="pub-field">
+              <label class="pub-lbl-f" for="bureau">หน่วยงานหลัก <span class="pub-req">*</span></label>
+              <div class="pub-iw">
+                <select class="pub-sel no-ico" id="bureau" name="bureau" aria-describedby="bureauError">
+                  <option value="">— เลือกหน่วยงานหลัก —</option>
+                </select>
+              </div>
+              <span class="pub-err-msg hidden" id="bureauError"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+            </div>
+            <div class="pub-field">
+              <label class="pub-lbl-f" for="division">ส่วน / กลุ่ม / ฝ่าย <span class="pub-req hidden" id="divisionRequired">*</span></label>
+              <div class="pub-iw">
+                <select class="pub-sel no-ico" id="division" name="division" aria-describedby="divisionError" disabled>
+                  <option value="">— เลือกหน่วยงานหลักก่อน —</option>
+                </select>
+              </div>
+              <span class="pub-err-msg hidden" id="divisionError"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+            </div>
+          </div>
+          <div class="pub-g2" style="margin-top:14px">
+            <div class="pub-field" style="grid-column:1 / -1">
+              <label class="pub-lbl-f" for="subDivision">หน่วยงานย่อย <span class="pub-req hidden" id="subDivisionRequired">*</span></label>
+              <div class="pub-iw">
+                <select class="pub-sel no-ico" id="subDivision" name="subDivision" aria-describedby="subDivisionError" disabled>
+                  <option value="">— เลือกส่วน/กลุ่ม/ฝ่ายก่อน —</option>
+                </select>
+              </div>
+              <span class="pub-err-msg hidden" id="subDivisionError"><i class="fa-solid fa-circle-exclamation"></i><span></span></span>
+            </div>
+          </div>
+
+          <div class="pub-actions">
+            <button class="pub-btn pub-btn-secondary" id="step2Back" type="button"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i>กลับ</button>
+            <button class="pub-btn pub-btn-flex pub-btn-gold" id="step2Next" type="button">ถัดไป — ยืนยันข้อมูล <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+          </div>
+        </div>
+      </section>
+
+      <section class="pub-panel hidden" data-step-panel="3" aria-labelledby="step3Title">
+        <div class="pub-card-head">
+          <div class="pub-card-title" id="step3Title">ตรวจสอบและยืนยันข้อมูล</div>
+          <div class="pub-card-sub">กรุณาตรวจสอบข้อมูลก่อนส่งคำขอลงทะเบียน</div>
+        </div>
+        <div class="pub-card-body">
+          <div class="pub-sum" id="registrationSummary"></div>
+          <div class="pub-sum" style="margin-top:12px">
+            <div class="pub-sum-row">
+              <span class="pub-sum-k">ปกปิดข้อมูลส่วนตัว</span>
+              <span class="pub-sum-v">
+                <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">
+                  <input type="checkbox" id="privacyConsent" name="privacyConsent">
+                  <span id="privacyConsentLabel">ไม่เปิดใช้งาน</span>
+                </label>
+              </span>
+            </div>
+          </div>
+          <div class="pub-help"><i class="fa-solid fa-shield-halved" style="color:rgba(200,169,110,.8);margin-right:5px" aria-hidden="true"></i>หากเปิดใช้งาน ระบบจะบันทึกข้อมูลชื่อ-นามสกุลแบบปกปิดตามนโยบายข้อมูลส่วนบุคคล</div>
+          <div class="pub-warn-box" style="margin-top:18px">
+            <i class="fa-solid fa-envelope-circle-check" aria-hidden="true"></i>
+            <div>เมื่อกดส่ง ระบบจะส่งคำขอลงทะเบียนให้เจ้าหน้าที่พิจารณา และจะแจ้งผลการอนุมัติหรือไม่อนุมัติทาง Email</div>
+          </div>
+          <div class="pub-username-status warn hidden" id="submitError" role="alert"><i class="fa-solid fa-triangle-exclamation"></i><span></span></div>
+          <div class="pub-actions">
+            <button class="pub-btn pub-btn-secondary" id="step3Back" type="button"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i>กลับ</button>
+            <button class="pub-btn pub-btn-flex pub-btn-gold" id="submitRegistration" type="submit"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i><span>ส่งคำขอลงทะเบียน</span></button>
+          </div>
+        </div>
+      </section>
+
+      <section class="pub-panel hidden" data-step-panel="4" aria-labelledby="step4Title">
+        <div class="pub-card-body">
+          <div class="pub-success">
+            <div class="pub-success-ring"><div class="pub-success-ico"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></div></div>
+            <div class="pub-s4-title" id="step4Title">คำขอลงทะเบียนถูกส่งแล้ว</div>
+            <div class="pub-s4-sub">รอเจ้าหน้าที่พิจารณา<br>หากท่านต้องการติดตามสถานะการเข้าใช้งาน ไปที่หน้า login ด้วย ThaiD</div>
+            <div class="pub-track-box" style="width:100%;max-width:480px;text-align:left">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;margin-bottom:18px;border-radius:16px;background:rgba(200,169,110,.08);border:1px solid rgba(200,169,110,.18)">
+                <div><div class="pub-username-caption">Username</div><div class="pub-username-value" id="successUsername">-</div></div>
+                <div class="pub-username-badge"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>รอพิจารณา</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:4px">
+              <a class="pub-btn pub-btn-secondary" href="./login.html"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>ไปหน้าเข้าสู่ระบบ</a>
+              <button class="pub-btn pub-btn-gold" id="checkStatusButton" type="button"><i class="fa-solid fa-id-card" aria-hidden="true"></i>ติดตามสถานะด้วยการเข้าสู่ระบบด้วย ThaiD</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </form>
+  </section>
+
+  <p class="pub-help" style="position:relative;z-index:2;margin:24px 16px 0;text-align:center">ต้นแบบระบบลงทะเบียนเจ้าหน้าที่ · ข้อมูลสาธิตถูกจัดเก็บภายในเบราว์เซอร์นี้เท่านั้น</p>
+</main>
+
+<div class="tos-overlay hidden" id="termsModal" role="dialog" aria-modal="true" aria-labelledby="termsTitle">
+  <div class="tos-dialog">
+    <div class="tos-header">
+      <div><div class="tos-title" id="termsTitle">นโยบายความเป็นส่วนตัวและเงื่อนไขการใช้งาน</div><div class="tos-sub">ระบบ E-CMIS · สำนักงาน ป.ป.ท. · v1.0</div></div>
+      <button class="tos-x" id="termsCloseX" type="button" aria-label="ปิด"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="tos-body" id="termsBody" tabindex="0">
+      <h4>1. วัตถุประสงค์การเก็บและใช้ข้อมูลส่วนบุคคล</h4>
+      <p>สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ (สำนักงาน ป.ป.ท.) เก็บรวบรวมข้อมูลส่วนบุคคลเพื่อยืนยันตัวตน สร้างบัญชี กำหนดสิทธิ์ บันทึก Audit Trail และแจ้งสถานะบัญชี</p>
+      <h4>2. ข้อมูลที่เก็บรวบรวมเมื่อลงทะเบียน</h4>
+      <ul>
+        <li><strong>ข้อมูลส่วนตัว:</strong> ชื่อ-นามสกุล คำนำหน้าชื่อ และวันเดือนปีเกิด</li>
+        <li><strong>ข้อมูลติดต่อ:</strong> Gmail อีเมลราชการ และหมายเลขโทรศัพท์</li>
+        <li><strong>ข้อมูลยืนยันตัวตน:</strong> เลขบัตรประจำตัวประชาชน 13 หลัก</li>
+        <li><strong>ข้อมูลการปฏิบัติงาน:</strong> ตำแหน่ง ประเภทเจ้าหน้าที่ และหน่วยงานที่สังกัด</li>
+      </ul>
+      <h4>3. การยืนยันตัวตนผ่าน ThaiD</h4>
+      <p>เจ้าหน้าที่ทุกท่านต้องยืนยันตัวตนผ่าน ThaiD ก่อนส่งคำขอลงทะเบียน ระบบไม่เก็บรหัสผ่านหรือข้อมูลรับรองของ ThaiD และกระบวนการจริงต้องดำเนินการผ่านบริการของกรมการปกครองโดยตรง</p>
+      <h4>4. ความมั่นคงปลอดภัยของข้อมูล</h4>
+      <p>ระบบจริงต้องเข้ารหัสเลขบัตรประจำตัวประชาชนก่อนบันทึก และบันทึก Audit Log เพื่อการตรวจสอบย้อนหลัง</p>
+      <h4>5. สิทธิ์ของเจ้าของข้อมูล</h4>
+      <p>ท่านมีสิทธิ์เข้าถึง แก้ไข ขอสำเนา และขอลบข้อมูลส่วนบุคคลภายใต้ขอบเขตที่กฎหมายกำหนด</p>
+      <h4>6. เงื่อนไขการใช้งานระบบ E-CMIS</h4>
+      <ul>
+        <li>บัญชีนี้สำหรับเจ้าหน้าที่สำนักงาน ป.ป.ท. และหน่วยงานที่ได้รับมอบหมายเท่านั้น</li>
+        <li>ห้ามเปิดเผยข้อมูลรับรองหรืออนุญาตให้บุคคลอื่นใช้บัญชี</li>
+        <li>การกระทำในระบบสามารถถูกบันทึกและตรวจสอบย้อนหลังได้</li>
+      </ul>
+    </div>
+    <div class="tos-footer">
+      <button class="tos-cancel-btn" id="termsCancel" type="button"><i class="fa-solid fa-xmark"></i>ยกเลิก</button>
+      <button class="pub-btn pub-btn-blue" id="termsAccept" type="button"><i class="fa-solid fa-check"></i>ยอมรับและดำเนินการต่อ</button>
+    </div>
+  </div>
+</div>
+
+<div class="tos-overlay hidden" id="thaidQrModal" role="dialog" aria-modal="true" aria-labelledby="thaidQrTitle">
+  <div class="tos-dialog thaid-qr-dialog">
+    <div class="tos-header">
+      <div><div class="tos-title" id="thaidQrTitle">ยืนยันตัวตนด้วย ThaiD</div><div class="tos-sub">สแกน QR Code ด้วยแอปพลิเคชัน ThaiD บนโทรศัพท์มือถือ</div></div>
+      <button class="tos-x" id="thaidQrCloseX" type="button" aria-label="ปิด"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="tos-body thaid-qr-body">
+      <div class="thaid-qr-badge"><i class="fa-solid fa-id-card" aria-hidden="true"></i>ThaiD Digital ID</div>
+      <p class="thaid-qr-instructions">เปิดแอปพลิเคชัน <strong>ThaiD</strong> แล้วเลือกเมนูสแกน QR Code เพื่อยืนยันตัวตนสำหรับการลงทะเบียน E-CMIS</p>
+      <div class="thaid-qr-frame">
+        <img id="thaidQrImage" alt="QR Code สำหรับยืนยันตัวตนด้วย ThaiD">
+        <div class="thaid-qr-expired hidden" id="thaidQrExpired"><i class="fa-solid fa-rotate-right"></i><strong>QR หมดอายุแล้ว</strong><button type="button" id="refreshThaiDQr">ขอ QR ใหม่</button></div>
+      </div>
+      <div class="thaid-qr-countdown">QR จะหมดอายุใน <strong id="thaidQrCountdown">120</strong> วินาที</div>
+      <div class="thaid-qr-wait" id="thaidQrWait"><i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i><span>กำลังรอผลการยืนยันตัวตน...</span></div>
+      <p class="thaid-qr-notice" id="thaidQrNotice">เมื่อยืนยันสำเร็จ ระบบจะแสดงข้อมูลที่ได้รับจาก ThaiD ในแบบฟอร์มนี้โดยอัตโนมัติ</p>
+    </div>
+    <div class="tos-footer thaid-qr-footer">
+      <button class="thaid-not-officer-hit" id="thaidNotOfficerHit" type="button" aria-label="ตรวจสอบสถานะเจ้าหน้าที่"></button>
+      <div class="thaid-cancel-wrap">
+        <button class="thaid-demo-hit" id="thaidDemoFill" type="button" aria-label="เติมข้อมูล ThaiD จำลอง"></button>
+        <button class="tos-cancel-btn" id="thaidQrCancel" type="button"><i class="fa-solid fa-xmark"></i>ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tos-overlay hidden" id="statusModal" role="dialog" aria-modal="true" aria-labelledby="statusTitle">
+  <div class="tos-dialog" style="max-width:500px">
+    <div class="tos-header">
+      <div><div class="tos-title" id="statusTitle">สถานะคำขอลงทะเบียน</div><div class="tos-sub">ตรวจสอบจากข้อมูลสาธิตในเบราว์เซอร์นี้</div></div>
+      <button class="tos-x" id="statusCloseX" type="button" aria-label="ปิด"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="tos-body">
+      <div style="text-align:center;padding:12px 0 8px">
+        <div class="pub-username-badge" style="font-size:14px"><i class="fa-solid fa-hourglass-half"></i>รอพิจารณา</div>
+        <div id="statusSubmittedAt" style="font-size:13px;color:#666;margin-top:10px"></div>
+      </div>
+    </div>
+    <div class="tos-footer"><button class="pub-btn pub-btn-blue" id="statusClose" type="button">ปิด</button></div>
+  </div>
+</div>
+
+<div class="hidden" id="liveRegion" aria-live="assertive" aria-atomic="true"></div>
+<script src="./intake-investigation/assets/qrcode-generator.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="./shared-assets/register-master-data.js"></script>
+<script src="./shared-assets/register.js"></script>
+</body>
+</html>

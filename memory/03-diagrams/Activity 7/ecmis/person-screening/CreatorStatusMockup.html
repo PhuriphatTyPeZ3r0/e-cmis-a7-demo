@@ -1,0 +1,501 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ติดตามสถานะการขออนุมัติ — ก8</title>
+<link rel="stylesheet" href="./assets/fontawesome/css/all.min.css"><link rel="stylesheet" href="./assets/sweetalert2/sweetalert2.min.css"><link rel="stylesheet" href="./assets/mockup.css">
+<style>.creator-container {
+    padding: 30px;
+    font-family: 'Sarabun', sans-serif;
+    color: #1e293b;
+    background: #f8fafc;
+    min-height: 100vh;
+}
+
+.creator-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 20px;
+}
+
+.creator-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a2744;
+    margin: 0;
+}
+
+.subtitle {
+    font-size: 14px;
+    color: #64748b;
+    margin: 6px 0 0 0;
+}
+
+/* Scenario Toggle Box */
+.scenario-toggle-box {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 10px 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.toggle-label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #64748b;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.toggle-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.toggle-btn {
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.toggle-btn.active {
+    background: #1e3a8a;
+    color: white;
+    border-color: #1e3a8a;
+}
+
+/* Alert Banner */
+.alert-banner {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 4px 6px -1px rgba(220,38,38,0.05);
+    animation: alertSlideDown 0.3s ease-out;
+}
+
+@keyframes alertSlideDown {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.alert-icon-block {
+    font-size: 28px;
+    color: #dc2626;
+    display: flex;
+    align-items: center;
+}
+
+.alert-text-block {
+    flex-grow: 1;
+}
+
+.alert-text-block h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #991b1b;
+    margin: 0 0 4px 0;
+}
+
+.alert-text-block p {
+    font-size: 13.5px;
+    color: #7f1d1d;
+    margin: 0 0 4px 0;
+}
+
+.reject-meta {
+    font-size: 11.5px;
+    color: #b91c1c;
+    font-weight: 500;
+}
+
+.resubmit-btn {
+    height: 38px;
+    padding: 0 16px;
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 6px -1px rgba(220,38,38,0.2);
+    transition: background 0.2s;
+}
+
+.resubmit-btn:hover {
+    background: #b91c1c;
+}
+
+/* Card styles */
+.card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.doc-info-card {
+    border-left: 4px solid #1a2744;
+}
+
+.doc-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.report-badge {
+    font-size: 11px;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.doc-info-card h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a2744;
+    margin: 4px 0 0 0;
+}
+
+.case-title {
+    font-size: 14.5px;
+    color: #334155;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.doc-status-badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: bold;
+}
+
+.doc-status-badge.pending {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fde047;
+}
+
+.doc-status-badge.rejected {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+/* Stepper Card */
+.stepper-card h3 {
+    font-size: 15px;
+    font-weight: bold;
+    color: #1e293b;
+    margin: 0 0 25px 0;
+    border-bottom: 1px dashed #e2e8f0;
+    padding-bottom: 10px;
+}
+
+.stepper-wrapper {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 10px 40px;
+}
+
+.step-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 150px;
+}
+
+.step-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    border: 2px solid #cbd5e1;
+    margin-bottom: 12px;
+    transition: all 0.3s;
+}
+
+.step-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.step-number {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.step-name {
+    font-size: 13.5px;
+    color: #1e293b;
+}
+
+.step-status {
+    font-size: 12px;
+    font-weight: bold;
+    color: #16a34a;
+}
+
+.step-status.pending {
+    color: #d97706;
+}
+
+.step-status.rejected {
+    color: #dc2626;
+}
+
+.step-date {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+/* Connectors */
+.step-line {
+    flex-grow: 1;
+    height: 2px;
+    background: #e2e8f0;
+    margin-top: 18px;
+}
+
+/* Stepper states */
+.step-node.completed .step-icon {
+    background: #f0fdf4;
+    color: #16a34a;
+    border-color: #16a34a;
+    box-shadow: 0 0 0 4px rgba(22,163,74,0.1);
+}
+
+.step-node.active .step-icon {
+    background: #fffbeb;
+    color: #d97706;
+    border-color: #d97706;
+    box-shadow: 0 0 0 4px rgba(217,119,6,0.1);
+}
+
+.step-node.rejected .step-icon {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #dc2626;
+    box-shadow: 0 0 0 4px rgba(220,38,38,0.1);
+}
+
+.step-line.completed {
+    background: #16a34a;
+}
+
+.step-line.active {
+    background: #d97706;
+}
+
+.step-line.rejected {
+    background: #dc2626;
+}
+
+/* Toast success */
+.toast-success {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: #16a34a;
+    color: white;
+    padding: 14px 24px;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13.5px;
+    font-weight: bold;
+    z-index: 2000;
+    animation: toastSlideUp 0.3s ease-out;
+}
+
+@keyframes toastSlideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+</style><style>body{background:#eaf2fb;margin:0;font-family:"Sarabun",sans-serif}.topbar{height:56px;background:#fff;border-bottom:1px solid #d7e2f1;display:flex;align-items:center;justify-content:space-between;padding:0 16px}.badge-mock{background:#e8f1fa;color:#16558f;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700}</style>
+</head><body>
+<div class="topbar"><span class="badge-mock">MOCK</span><strong>ติดตามสถานะการขออนุมัติ</strong><a href="./index.html" style="padding:8px 14px;background:#10284b;color:#fff;border-radius:8px;text-decoration:none;font-size:13px">← Hub</a></div>
+<div class="creator-container">
+    
+    <!-- Top Header Area -->
+    <div class="creator-header">
+        <div>
+            <h1>ติดตามสถานะการขออนุมัติเอกสาร</h1>
+            <p class="subtitle">มุมมองสำหรับผู้จัดทำ (นางสาว จิ๊บ รักดี) เพื่อตรวจสอบลำดับขั้นการพิจารณาลงลายมือชื่อ</p>
+        </div>
+
+        <!-- Scenario Toggle -->
+        <div class="scenario-toggle-box">
+            <span class="toggle-label">เลือกสถานการณ์จำลอง (Demo Scenario):</span>
+            <div class="toggle-buttons">
+                <button type="button" class="toggle-btn MOCK" onclick='() => ChangeScenario("A")'>
+                    Scenario A: รอหัวหน้ากองตรวจ
+                </button>
+                <button type="button" class="toggle-btn MOCK" onclick='() => ChangeScenario("B")'>
+                    Scenario B: ถูก ผอ.กอง ตีกลับ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scenario B Alert Banner -->
+    MOCK (CurrentScenario == "B")
+    {
+        <div class="alert-banner">
+            <div class="alert-icon-block">
+                <i class="bi bi-exclamation-octagon-fill"></i>
+            </div>
+            <div class="alert-text-block">
+                <h2>เอกสารถูกตีกลับเพื่อแก้ไข (Rejected)</h2>
+                <p><strong>เหตุผลการตีกลับ:</strong> "กรุณาแก้ไขข้อมูลหมายเลขบัตรประชาชนของ นายอนุชา เมืองทอง ในตารางข้อ 3 ให้ถูกต้องตามบัตรจริง"</p>
+                <span class="reject-meta">โดย นาย สมชาย จิตมั่น (ผอ.กอง) — เมื่อ 16/07/2569 11:20 น.</span>
+            </div>
+            <button class="resubmit-btn" onclick="TriggerResubmit">
+                <i class="bi bi-pencil-square"></i> แก้ไขและส่งใหม่
+            </button>
+        </div>
+    }
+
+    <!-- Document Info Card -->
+    <div class="card doc-info-card">
+        <div class="doc-header-row">
+            <div>
+                <span class="report-badge">รายงานคดีพิเศษ</span>
+                <h2>รายงานเลขที่: ปป 0004/ตว 123</h2>
+            </div>
+            <div class="doc-status-badge MOCK">
+                MOCK
+            </div>
+        </div>
+        <p class="case-title">เรื่อง: ตรวจสอบประวัติคุณสมบัติบุคคลเพื่อเสนอขอพระราชทานเครื่องราชอิสริยาภรณ์ ประจำปี 2569</p>
+    </div>
+
+    <!-- Horizontal Progress Stepper -->
+    <div class="card stepper-card">
+        <h3>ขั้นตอนการพิจารณาเอกสาร (Approval Flow Status)</h3>
+        
+        <div class="stepper-wrapper">
+            
+            <!-- Step 1: Creator -->
+            <div class="step-node completed">
+                <div class="step-icon">
+                    <i class="bi bi-check"></i>
+                </div>
+                <div class="step-info">
+                    <span class="step-number">ขั้นที่ 1</span>
+                    <strong class="step-name">ผู้จัดทำ (พี่จิ๊บ)</strong>
+                    <span class="step-status">✅ จัดทำสำเร็จ</span>
+                    <span class="step-date">16/07/2569 08:30 น.</span>
+                </div>
+            </div>
+
+            <!-- Connector -->
+            <div class="step-line MOCK"></div>
+
+            <!-- Step 2: Division Head -->
+            <div class="step-node MOCK">
+                <div class="step-icon">
+                    MOCK (CurrentScenario == "B")
+                    {
+                        <i class="bi bi-check"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-hourglass-split"></i>
+                    }
+                </div>
+                <div class="step-info">
+                    <span class="step-number">ขั้นที่ 2</span>
+                    <strong class="step-name">หัวหน้ากอง (พิจารณา)</strong>
+                    MOCK (CurrentScenario == "B")
+                    {
+                        <span class="step-status">✅ เห็นควรอนุมัติ</span>
+                        <span class="step-date">16/07/2569 09:30 น.</span>
+                    }
+                    else
+                    {
+                        <span class="step-status pending">⏳ รอดำเนินการ</span>
+                        <span class="step-date">-</span>
+                    }
+                </div>
+            </div>
+
+            <!-- Connector -->
+            <div class="step-line MOCK"></div>
+
+            <!-- Step 3: Director -->
+            <div class="step-node MOCK">
+                <div class="step-icon">
+                    MOCK (CurrentScenario == "B")
+                    {
+                        <i class="bi bi-x"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-circle"></i>
+                    }
+                </div>
+                <div class="step-info">
+                    <span class="step-number">ขั้นที่ 3</span>
+                    <strong class="step-name">ผอ.กอง ป.ป.ท. (อนุมัติ)</strong>
+                    MOCK (CurrentScenario == "B")
+                    {
+                        <span class="step-status rejected">❌ ถูกตีกลับ</span>
+                        <span class="step-date">16/07/2569 11:20 น.</span>
+                    }
+                    else
+                    {
+                        <span class="step-status pending">⏳ รอดำเนินการ</span>
+                        <span class="step-date">-</span>
+                    }
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Toast for resubmit demo -->
+MOCK (ShowToast)
+{
+    <div class="toast-success">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>ระบบจำลองการส่งข้อมูลที่แก้ไขแล้วไปยังหัวหน้ากองเรียบร้อย!</span>
+    </div>
+}
+<script src="./assets/sweetalert2/sweetalert2.all.min.js"></script>
+<script>function toast(m){if(window.Swal) Swal.fire('Mock',m,'info'); else alert(m);} document.querySelectorAll('button').forEach(b=>{ if(!b.getAttribute('onclick')) b.addEventListener('click',()=>toast('Mock: '+(b.textContent.trim().slice(0,30)||'action'))); }); console.log('CreatorStatusMockup mock loaded');</script>
+</body></html>

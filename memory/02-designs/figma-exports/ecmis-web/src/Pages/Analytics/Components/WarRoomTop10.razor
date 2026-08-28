@@ -1,0 +1,58 @@
+<div class="table-card an-flex-card panel-glow">
+    <div class="tc-head">
+        <div class="tc-row1">
+            <div class="tc-title"><i class="bi @IconClass" style="color:@IconColor"></i> TOP 10 โครงการเสี่ยงสูงสุด [@ActiveTab]</div>
+            <div class="tc-meta"><span class="bdg-nv">RISK SCORE</span></div>
+        </div>
+    </div>
+    <div class="an-scroll">
+        <table class="an-tbl">
+            <thead>
+                <tr>
+                    <th>ลำดับ</th>
+                    <th>ชื่อโครงการ</th>
+                    <th>หน่วยงาน</th>
+                    <th>มูลค่าโครงการ</th>
+                    <th>RISK SCORE</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Rows.Count == 0)
+                {
+                    <tr>
+                        <td colspan="5" class="text-center an-muted py-4">ไม่พบโครงการเสี่ยงในหมวดหมู่นี้</td>
+                    </tr>
+                }
+                else
+                {
+                    var index = 1;
+                    @foreach (var item in Rows)
+                    {
+                        <tr>
+                            <td><span class="an-rank @(index <= 3 ? "top3" : "")">@index</span></td>
+                            <td><div class="an-strong">@item.Title</div></td>
+                            <td class="an-muted">@item.Owner</td>
+                            <td class="an-muted wr-budget-cell">@item.Budget</td>
+                            <td><span class="wr-risk-score @ScoreClass(item.Score)">@item.Score%</span></td>
+                        </tr>
+                        index++;
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="panel-foot-action">
+        <button type="button" class="btn-panel-action" @onclick="OnViewAll">ดูทั้งหมด <i class="bi bi-arrow-right-short"></i></button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<WarRoomRiskRow> Rows { get; set; } = [];
+    [Parameter] public string ActiveTab { get; set; } = "ภาพรวม";
+    [Parameter] public string IconClass { get; set; } = "bi-exclamation-octagon-fill";
+    [Parameter] public string IconColor { get; set; } = "#ef4444";
+    [Parameter] public EventCallback OnViewAll { get; set; }
+
+    private static string ScoreClass(int score) =>
+        score >= 85 ? "risk-red" : score >= 75 ? "risk-orange" : "risk-yellow";
+}

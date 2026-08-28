@@ -1,0 +1,497 @@
+@page "/admin/users/{Id:int}"
+@inject EcmisWeb.Services.AdminApiService AdminApi
+@inject NavigationManager Nav
+@using EcmisWeb.Services
+@using EcmisWeb.Models
+
+@if (Loading)
+{
+    <div style="padding:60px;text-align:center;color:var(--text-muted)">
+        <i class="bi bi-arrow-clockwise" style="font-size:32px;animation:spin 1s linear infinite"></i>
+        <div style="margin-top:10px;font-size:14px">กำลังโหลดข้อมูลผู้ใช้...</div>
+    </div>
+}
+else if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px">
+        <i class="bi bi-exclamation-triangle-fill" style="color:#dc2626;font-size:20px"></i>
+        <div style="flex:1"><strong>เกิดข้อผิดพลาด</strong>: @ErrorMessage</div>
+        <a href="/admin/users" class="btn btn-sm btn-outline-secondary">กลับ</a>
+    </div>
+}
+else if (Detail?.User != null)
+{
+    var u = Detail.User;
+
+    @* ── HERO ── *@
+    <div style="background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 55%,#1e3575 100%);border-radius:18px;padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden" class="fade-in">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold-light),var(--gold),transparent)"></div>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3" style="position:relative">
+            <div class="d-flex align-items-center gap-3">
+                <a href="/admin/users" style="color:rgba(255,255,255,.55);font-size:18px;text-decoration:none"><i class="bi bi-arrow-left"></i></a>
+                <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--navy-deep);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900">
+                    @GetInitials(u)
+                </div>
+                <div>
+                    <div style="font-size:20px;font-weight:800;color:#fff">@DisplayName(u)</div>
+                    <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px">
+                        <i class="bi bi-at me-1"></i>@u.Username · @u.Email
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px">
+                <span class="status-badge @StatusClass(u.AccountStatus)">@StatusLabel(u.AccountStatus)</span>
+            </div>
+        </div>
+    </div>
+
+    @* ── 2-column layout ── *@
+    <div class="row g-3">
+
+        @* ── Left: Info + Roles + Actions ── *@
+        <div class="col-md-6">
+
+            @* Info card *@
+            <div class="ecmis-card mb-3">
+                <div class="ecmis-card-header">
+                    <div class="ecmis-card-title"><span class="badge-dot"></span>ข้อมูลผู้ใช้งาน</div>
+                    @if (!EditMode)
+                    {
+                        <button class="btn btn-sm" style="background:var(--navy-deep);color:#fff;font-size:11.5px;border-radius:7px;padding:4px 12px;font-weight:700"
+                                @onclick="StartEdit">
+                            <i class="bi bi-pencil me-1"></i>แก้ไข
+                        </button>
+                    }
+                </div>
+
+                @if (EditMode)
+                {
+                    <div style="padding:16px 20px">
+                        @if (!string.IsNullOrEmpty(EditError))
+                        {
+                            <div style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px">
+                                <i class="bi bi-exclamation-circle me-1"></i>@EditError
+                            </div>
+                        }
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase">ชื่อ</label>
+                                <input @bind="EditFirstName" class="form-control form-control-sm" placeholder="ชื่อ" />
+                            </div>
+                            <div class="col-6">
+                                <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase">นามสกุล</label>
+                                <input @bind="EditLastName" class="form-control form-control-sm" placeholder="นามสกุล" />
+                            </div>
+                            <div class="col-12">
+                                <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase">อีเมลราชการ</label>
+                                <input @bind="EditEmailMain" type="email" class="form-control form-control-sm" placeholder="name@pacc.go.th" />
+                            </div>
+                            <div class="col-12">
+                                <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase">อีเมลสำรอง</label>
+                                <input @bind="EditEmailBackup" type="email" class="form-control form-control-sm" placeholder="personal@example.com (ถ้ามี)" />
+                            </div>
+                            <div class="col-12">
+                                <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase">เบอร์โทร</label>
+                                <input @bind="EditPhone" class="form-control form-control-sm" placeholder="02-xxx-xxxx" />
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:12px">
+                            <button class="btn btn-sm" style="background:var(--navy-deep);color:#fff;font-size:12px;border-radius:7px;padding:5px 14px;font-weight:700"
+                                    @onclick="SaveEditAsync" disabled="@Busy">
+                                <i class="bi bi-check-lg me-1"></i>บันทึก
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" style="font-size:12px;border-radius:7px;padding:5px 12px"
+                                    @onclick="CancelEdit" disabled="@Busy">ยกเลิก</button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div style="padding:16px 20px">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase">ชื่อ - นามสกุล</div>
+                                <div style="font-size:13.5px;font-weight:700;color:var(--navy-deep)">@(string.IsNullOrEmpty(u.FirstName) ? "—" : $"{u.FirstName} {u.LastName}")</div>
+                            </div>
+                            <div class="col-6">
+                                <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase">อีเมลราชการ</div>
+                                <div style="font-size:13.5px;font-weight:700;color:var(--navy-deep)">@(string.IsNullOrEmpty(u.EmailMain) ? "—" : u.EmailMain)</div>
+                            </div>
+                            <div class="col-6">
+                                <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase">อีเมลสำรอง</div>
+                                <div style="font-size:13.5px;font-weight:700;color:var(--navy-deep)">@(string.IsNullOrEmpty(u.EmailBackup) ? "—" : u.EmailBackup)</div>
+                            </div>
+                            <div class="col-6">
+                                <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase">เบอร์โทร</div>
+                                <div style="font-size:13.5px;font-weight:700;color:var(--navy-deep)">@(string.IsNullOrEmpty(u.PhoneNumber) ? "—" : u.PhoneNumber)</div>
+                            </div>
+                            <div class="col-6">
+                                <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase">หน่วยงาน</div>
+                                <div style="font-size:13.5px;font-weight:700;color:var(--navy-deep)">@(string.IsNullOrEmpty(u.OrgName) ? "—" : u.OrgName)</div>
+                            </div>
+                            <div class="col-6">
+                                <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase">ตำแหน่ง</div>
+                                <div style="font-size:13.5px;font-weight:700;color:var(--navy-deep)">@(string.IsNullOrEmpty(u.PositionName) ? "—" : u.PositionName)</div>
+                            </div>
+                            <div class="col-6">
+                                <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase">ประเภทผู้ใช้</div>
+                                <div style="font-size:13px;font-weight:700;color:var(--navy-deep)">@u.UserType</div>
+                            </div>
+                            <div class="col-6">
+                                <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase">สร้างเมื่อ</div>
+                                <div style="font-size:13px;font-weight:700;color:var(--navy-deep)">@(u.CreatedAt?.ToLocalTime().ToString("dd/MM/yyyy") ?? "—")</div>
+                            </div>
+                            <div class="col-6">
+                                <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase">เข้าสู่ระบบล่าสุด</div>
+                                <div style="font-size:13px;font-weight:700;color:var(--navy-deep)">@(u.LastLoginAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "ไม่เคยเข้า")</div>
+                            </div>
+                            <div class="col-6">
+                                <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase">บังคับเปลี่ยนรหัสผ่าน</div>
+                                <div style="font-size:13px;font-weight:700;color:@(u.ForcePasswordChange ? "#d97706" : "#16a34a")">
+                                    @(u.ForcePasswordChange ? "ใช่" : "ไม่")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @* Function groups (tbl_sys_authorization → tbl_sys_function_group) *@
+            <div class="ecmis-card mb-3">
+                <div class="ecmis-card-header">
+                    <div class="ecmis-card-title"><span class="badge-dot"></span>สิทธิ์การเข้าถึง</div>
+                    <div style="font-size:12px;color:var(--text-muted)">@Detail.Roles.Count รายการ</div>
+                </div>
+                <div style="padding:14px 20px">
+                    @if (!Detail.Roles.Any())
+                    {
+                        <div style="color:var(--text-muted);font-size:12.5px;line-height:1.5">
+                            ยังไม่มีสิทธิ์การเข้าถึง — มอบได้ที่
+                            <a href="/super-admin/systems" style="font-weight:700">ตั้งค่าเมนู → มอบสิทธิ์ให้ผู้ใช้</a>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var r in Detail.Roles)
+                        {
+                            <div style="padding:10px 12px;background:#f8fafc;border-radius:9px;margin-bottom:6px;border:1px solid #eaecf2">
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+                                    <span style="background:@GroupTypeBadgeBg(r);color:@GroupTypeBadgeColor(r);font-size:10px;font-weight:700;border-radius:4px;padding:2px 7px;white-space:nowrap">@GroupTypeBadgeLabel(r)</span>
+                                    <span style="font-size:13px;font-weight:700;color:var(--navy-deep)">@r.NameTh</span>
+                                </div>
+                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+                                    โมดูลที่เปิดดู: <strong>@r.MenuPermCount</strong>
+                                    · @GroupTypeLabel(r)
+                                    @if (!string.IsNullOrWhiteSpace(r.OrgName)) { <span>· @r.OrgName</span> }
+                                </div>
+                                <div style="font-size:10px;color:#94a3b8;margin-top:2px;font-family:monospace">@r.Code</div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            @* Account actions *@
+            <div class="ecmis-card mb-3">
+                <div class="ecmis-card-header">
+                    <div class="ecmis-card-title"><span class="badge-dot"></span>เครื่องมือบัญชี</div>
+                </div>
+                <div style="padding:16px 20px">
+
+                    @* รีเซ็ตรหัสผ่าน *@
+                    <div style="background:#f0f5ff;border:1.5px solid #c7d7ff;border-radius:12px;padding:14px;margin-bottom:12px">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                            <div style="font-size:13px;font-weight:800;color:var(--navy-deep)">
+                                <i class="bi bi-key-fill me-2"></i>รีเซ็ตรหัสผ่าน
+                            </div>
+                            @if (string.IsNullOrEmpty(GeneratedPassword))
+                            {
+                                <button @onclick="ResetPasswordAsync" class="btn btn-sm" disabled="@Busy" style="background:var(--navy-deep);color:#fff;font-size:11.5px;border-radius:8px;padding:5px 12px;font-weight:700">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>สร้างใหม่
+                                </button>
+                            }
+                        </div>
+                        @if (!string.IsNullOrEmpty(GeneratedPassword))
+                        {
+                            <div style="background:#fff;border:1px solid #c7d7ff;border-radius:8px;padding:10px;display:flex;align-items:center;justify-content:space-between">
+                                <div style="font-size:14px;font-weight:800;color:#16a34a;letter-spacing:1px">@GeneratedPassword</div>
+                                <button class="btn btn-sm" onclick="navigator.clipboard.writeText('@GeneratedPassword'); this.innerText='คัดลอกแล้ว';" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;font-size:11px;border-radius:6px;padding:4px 10px;font-weight:700">คัดลอก</button>
+                            </div>
+                            <div style="font-size:10.5px;color:var(--text-muted);margin-top:6px">
+                                <i class="bi bi-info-circle me-1"></i>ส่งให้ผู้ใช้ — ระบบบังคับเปลี่ยนรหัสเมื่อเข้าระบบ
+                            </div>
+                        }
+                    </div>
+
+                    @* Activate / Deactivate *@
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        @if (u.AccountStatus == "active")
+                        {
+                            <button @onclick="DeactivateAsync" disabled="@Busy" class="btn btn-sm" style="background:#fff;border:1.5px solid #fca5a5;color:#dc2626;font-size:12px;border-radius:8px;padding:6px 14px;font-weight:700">
+                                <i class="bi bi-pause-circle me-1"></i>ระงับบัญชี
+                            </button>
+                        }
+                        else if (u.AccountStatus == "inactive")
+                        {
+                            <button @onclick="ActivateAsync" disabled="@Busy" class="btn btn-sm" style="background:#16a34a;color:#fff;border:none;font-size:12px;border-radius:8px;padding:6px 14px;font-weight:700">
+                                <i class="bi bi-play-circle me-1"></i>เปิดบัญชี
+                            </button>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(ActionMessage))
+                    {
+                        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;margin-top:10px;font-size:12px;color:#15803d">
+                            <i class="bi bi-check-circle me-1"></i>@ActionMessage
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(ActionError))
+                    {
+                        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 12px;margin-top:10px;font-size:12px;color:#991b1b">
+                            <i class="bi bi-exclamation-circle me-1"></i>@ActionError
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* ── Right: Position / Dept (tbl_sys_user_pos_dept) + Audit ── *@
+        <div class="col-md-6">
+
+            @* Position & department per schema *@
+            <div class="ecmis-card mb-3">
+                <div class="ecmis-card-header">
+                    <div class="ecmis-card-title"><span class="badge-dot"></span>ตำแหน่งและหน่วยงาน</div>
+                    <div style="font-size:12px;color:var(--text-muted)">@Detail.Assignments.Count รายการ</div>
+                </div>
+                <div style="padding:14px 20px">
+                    @if (!Detail.Assignments.Any())
+                    {
+                        <div style="color:var(--text-muted);font-size:12.5px">— ยังไม่ผูกตำแหน่ง/หน่วยงาน —</div>
+                    }
+                    else
+                    {
+                        @foreach (var a in Detail.Assignments)
+                        {
+                            <div style="padding:10px 12px;border:1px solid #eaecf2;border-radius:10px;margin-bottom:8px">
+                                <div style="font-size:13px;font-weight:700;color:var(--navy-deep)">
+                                    <i class="bi bi-person-badge me-1"></i>@(string.IsNullOrWhiteSpace(a.PositionName) ? "—" : a.PositionName)
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(a.PositionCode))
+                                {
+                                    <div style="font-size:10.5px;color:#94a3b8;font-family:monospace;margin-top:2px">@a.PositionCode</div>
+                                }
+                                <div style="font-size:12px;color:var(--text-muted);margin-top:6px">
+                                    <i class="bi bi-building me-1"></i>@(string.IsNullOrWhiteSpace(a.DeptName) ? "—" : a.DeptName)
+                                    @if (!string.IsNullOrWhiteSpace(a.DeptCode)) { <span style="font-family:monospace"> (@a.DeptCode)</span> }
+                                </div>
+                            </div>
+                        }
+                    }
+                    <a href="/super-admin/systems" class="btn btn-sm w-100 mt-2"
+                       style="background:var(--navy-deep);color:#fff;font-size:12px;border-radius:8px;font-weight:700;text-decoration:none">
+                        <i class="bi bi-shield-check me-1"></i>จัดการสิทธิ์การเข้าถึง
+                    </a>
+                </div>
+            </div>
+
+            @* Audit trail *@
+            <div class="ecmis-card">
+                <div class="ecmis-card-header">
+                    <div class="ecmis-card-title"><span class="badge-dot"></span>ประวัติการดำเนินการ (20 ล่าสุด)</div>
+                </div>
+                <div style="padding:14px 20px;max-height:420px;overflow-y:auto">
+                    @if (!Detail.RecentAudits.Any())
+                    {
+                        <div style="color:var(--text-muted);font-size:12.5px">— ยังไม่มีรายการ —</div>
+                    }
+                    else
+                    {
+                        @foreach (var a in Detail.RecentAudits)
+                        {
+                            <div style="padding:8px 0;border-bottom:1px dashed #eaecf2">
+                                <div style="display:flex;justify-content:space-between;align-items:baseline">
+                                    <div style="font-size:12.5px;font-weight:700;color:var(--navy-deep)">@a.Action</div>
+                                    <div style="font-size:10.5px;color:var(--text-muted)">@a.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")</div>
+                                </div>
+                                <div style="font-size:11px;color:var(--text-muted);margin-top:2px">
+                                    @if (!string.IsNullOrEmpty(a.ActorUsername)) { <span><i class="bi bi-person me-1"></i>@a.ActorUsername · </span> }
+                                    <span style="font-family:monospace">@a.TargetTable</span>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    @@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private UserDetailDto? Detail;
+    private bool Loading = true;
+    private bool Busy;
+    private string? ErrorMessage;
+    private string? ActionMessage;
+    private string? ActionError;
+    private string? GeneratedPassword;
+
+    private bool EditMode;
+    private string EditFirstName = "";
+    private string EditLastName = "";
+    private string EditEmailMain = "";
+    private string EditEmailBackup = "";
+    private string EditPhone = "";
+    private string? EditError;
+    private int _lastId;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id == _lastId) return;
+        _lastId = Id;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        Loading = true;
+        ErrorMessage = null;
+        try { Detail = await AdminApi.GetUserDetailAsync(Id); }
+        catch (Exception ex) { ErrorMessage = ex.Message; Detail = null; }
+        finally { Loading = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private async Task ResetPasswordAsync()
+    {
+        Busy = true; ActionError = null; GeneratedPassword = null;
+        try
+        {
+            var res = await AdminApi.ResetPasswordAsync(Id);
+            GeneratedPassword = res.TemporaryPassword;
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private async Task DeactivateAsync()
+    {
+        Busy = true; ActionMessage = null; ActionError = null;
+        try
+        {
+            await AdminApi.DeactivateUserAsync(Id);
+            ActionMessage = "ระงับบัญชีเรียบร้อย";
+            await LoadAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private async Task ActivateAsync()
+    {
+        Busy = true; ActionMessage = null; ActionError = null;
+        try
+        {
+            await AdminApi.ActivateUserAsync(Id);
+            ActionMessage = "เปิดบัญชีเรียบร้อย";
+            await LoadAsync();
+        }
+        catch (Exception ex) { ActionError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private void StartEdit()
+    {
+        if (Detail?.User is null) return;
+        EditFirstName = Detail.User.FirstName;
+        EditLastName = Detail.User.LastName;
+        EditEmailMain = string.IsNullOrWhiteSpace(Detail.User.EmailMain) ? Detail.User.Email : Detail.User.EmailMain;
+        EditEmailBackup = Detail.User.EmailBackup;
+        EditPhone = Detail.User.PhoneNumber;
+        EditError = null;
+        EditMode = true;
+    }
+
+    private void CancelEdit() => EditMode = false;
+
+    private async Task SaveEditAsync()
+    {
+        EditError = null;
+        Busy = true;
+        try
+        {
+            await AdminApi.UpdateUserAsync(Id, EditFirstName, EditLastName, EditEmailMain, EditEmailBackup, EditPhone);
+            EditMode = false;
+            ActionMessage = "บันทึกข้อมูลผู้ใช้แล้ว";
+            await LoadAsync();
+        }
+        catch (Exception ex) { EditError = ex.Message; }
+        finally { Busy = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private string DisplayName(UserDetailInfo u)
+    {
+        var full = $"{u.FirstName} {u.LastName}".Trim();
+        return string.IsNullOrEmpty(full) ? u.Username : full;
+    }
+
+    private string GetInitials(UserDetailInfo u)
+    {
+        if (!string.IsNullOrWhiteSpace(u.FirstName) && !string.IsNullOrWhiteSpace(u.LastName))
+            return $"{u.FirstName[0]}{u.LastName[0]}".ToUpper();
+        var s = u.Username;
+        return s.Length >= 2 ? s[..2].ToUpper() : s.ToUpper();
+    }
+
+    private string StatusClass(string s) => s switch {
+        "active" => "status-active", "inactive" => "status-inactive",
+        "pending" => "status-pending", "terminated" => "status-inactive", _ => ""
+    };
+    private string StatusLabel(string s) => s switch {
+        "active" => "ใช้งาน", "inactive" => "ไม่ได้ใช้งาน",
+        "pending" => "รออนุมัติ", "terminated" => "พ้นสภาพ", _ => s
+    };
+
+    private static bool IsOrgGroupRole(UserDetailRoleDto r) =>
+        r.GroupType == "3" && r.GroupDeptId is > 0;
+
+    private static bool IsSpecialGroupRole(UserDetailRoleDto r) =>
+        r.GroupType == "3" && r.GroupDeptId is null or <= 0;
+
+    private static string GroupTypeLabel(UserDetailRoleDto r) => r.GroupType switch {
+        "1" => "สิทธิ์ตามตำแหน่ง (อัตโนมัติ)",
+        "2" => "สิทธิ์รายบุคคล (ขอเพิ่ม)",
+        _ when IsOrgGroupRole(r) => "สิทธิ์ตามหน่วยงาน",
+        _ when IsSpecialGroupRole(r) => "สิทธิ์ทั้งระบบ (พิเศษ)",
+        _ => "สิทธิ์การเข้าถึง"
+    };
+
+    private static string GroupTypeBadgeBg(UserDetailRoleDto r) => r.GroupType switch {
+        "1" => "#dbeafe",
+        "2" => "#dcfce7",
+        _ when IsOrgGroupRole(r) => "#e0e7ff",
+        _ when IsSpecialGroupRole(r) => "#f3e8ff",
+        _ => "#f3f4f6"
+    };
+
+    private static string GroupTypeBadgeColor(UserDetailRoleDto r) => r.GroupType switch {
+        "1" => "#1d4ed8",
+        "2" => "#15803d",
+        _ when IsOrgGroupRole(r) => "#1e3a8a",
+        _ when IsSpecialGroupRole(r) => "#7c3aed",
+        _ => "#374151"
+    };
+
+    private static string GroupTypeBadgeLabel(UserDetailRoleDto r) => r.GroupType switch {
+        "1" => "ตามตำแหน่ง",
+        "2" => "รายบุคคล",
+        _ when IsOrgGroupRole(r) => "ตามหน่วยงาน",
+        _ when IsSpecialGroupRole(r) => "พิเศษ",
+        _ => "สิทธิ์"
+    };
+}

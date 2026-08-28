@@ -1,0 +1,33 @@
+<span class="status-badge @GetStatusClass() @Class" style="@Style">
+    @Text
+</span>
+
+@code {
+    [Parameter] public string Text { get; set; } = "";
+    [Parameter] public string Variant { get; set; } = ""; // teal, orange, red, green, navy, yellow
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public string Style { get; set; } = "";
+
+    private string GetStatusClass()
+    {
+        if (!string.IsNullOrEmpty(Variant))
+        {
+            return $"status-{Variant}";
+        }
+
+        // Auto mapping by status text if no variant is specified
+        var t = Text.Trim();
+        if (t.Contains("วิกฤต") || t.Contains("ช้า") || t.Contains("เกินกำหนด") || t.Contains("แดง") || t.Contains("แพ้"))
+            return "status-red";
+        if (t.Contains("ด่วนมาก") || t.Contains("ส้ม") || t.Contains("ระหว่าง") || t.Contains("รอบอร์ด") || t.Contains("กลุ่มงาน"))
+            return "status-orange";
+        if (t.Contains("ด่วน") || t.Contains("เหลือง") || t.Contains("รอเสนอ"))
+            return "status-yellow";
+        if (t.Contains("ปกติ") || t.Contains("สำเร็จ") || t.Contains("ชนะ") || t.Contains("เขียว") || t.Contains("ถึงที่สุด"))
+            return "status-green";
+        if (t.Contains("คำร้อง") || t.Contains("อุทธรณ์") || t.Contains("น้ำเงิน") || t.Contains("บอร์ดพิจารณา"))
+            return "status-teal";
+        
+        return "status-navy";
+    }
+}

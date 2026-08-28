@@ -1,0 +1,58 @@
+@inject IJSRuntime JSRuntime
+
+<div class="modal fade @Class" id="@Id" tabindex="-1" aria-hidden="true" style="@Style">
+    <div class="modal-dialog @GetDialogClass() modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-navy text-white" style="background: var(--primary-dark);">
+                <h6 class="modal-title fw-bold text-white">
+                    @if (!string.IsNullOrEmpty(Icon))
+                    {
+                        <i class="bi @Icon me-2"></i>
+                    }
+                    @Title
+                </h6>
+                <button type="button" class="btn-close btn-close-white" @onclick="HideAsync" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @ChildContent
+            </div>
+            @if (FooterContent != null)
+            {
+                <div class="modal-footer">
+                    @FooterContent
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Id { get; set; } = "ecmisModal";
+    [Parameter] public string Title { get; set; } = "รายละเอียด";
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public string Size { get; set; } = "lg"; // sm, md, lg, xl
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public string Style { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? FooterContent { get; set; }
+    [Parameter] public EventCallback OnClosed { get; set; }
+
+    public async Task ShowAsync()
+    {
+        await JSRuntime.InvokeVoidAsync("ecmisModalShow", Id);
+    }
+
+    public async Task HideAsync()
+    {
+        await JSRuntime.InvokeVoidAsync("ecmisModalHide", Id);
+        await OnClosed.InvokeAsync();
+    }
+
+    private string GetDialogClass()
+    {
+        if (Size == "lg") return "modal-lg";
+        if (Size == "xl") return "modal-xl";
+        if (Size == "sm") return "modal-sm";
+        return "";
+    }
+}

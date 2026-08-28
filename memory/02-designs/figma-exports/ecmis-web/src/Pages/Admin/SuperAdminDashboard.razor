@@ -1,0 +1,370 @@
+@page "/admin/dashboard"
+@page "/super-admin/dashboard"
+@inject EcmisWeb.Services.AdminApiService AdminApi
+@inject EcmisWeb.Services.SystemAccessApiService SystemApi
+@inject EcmisWeb.Services.CurrentUserService CurrentUser
+@inject NavigationManager Nav
+@using EcmisWeb.Services
+@using EcmisWeb.Models
+
+@* ═══════════════════════════════════════════════════════════
+   Super Admin / Admin Dashboard — TOBE 14.1.3 + 14.1.4
+   - KPI ผู้ใช้งาน (รวม / Active / Inactive / Roles)
+   - งานรอดำเนินการ × 4 (Registration / System Access / Org Change / Role Change)
+   - Quick actions
+═══════════════════════════════════════════════════════════ *@
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:12px;padding:16px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
+        <i class="bi bi-exclamation-triangle-fill" style="color:#dc2626;font-size:20px"></i>
+        <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:#991b1b">เกิดข้อผิดพลาด</div>
+            <div style="font-size:12px;color:#7f1d1d">@ErrorMessage</div>
+        </div>
+        <button @onclick="LoadAllAsync" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">
+            <i class="bi bi-arrow-clockwise me-1"></i>ลองใหม่
+        </button>
+    </div>
+}
+
+@* ── HERO ── *@
+<div style="background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 55%,#1e3575 100%);border-radius:18px;padding:28px 32px;margin-bottom:20px;position:relative;overflow:hidden" class="fade-in">
+    <div style="position:absolute;top:-50px;right:-50px;width:240px;height:240px;border-radius:50%;background:rgba(201,168,76,.07);pointer-events:none"></div>
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold-light),var(--gold),transparent)"></div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3" style="position:relative">
+        <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 16px rgba(201,168,76,.4)">
+                <i class="bi bi-speedometer2" style="font-size:22px;color:var(--navy-deep)"></i>
+            </div>
+            <div>
+                <div style="font-size:21px;font-weight:800;color:#fff;line-height:1.2">ภาพรวมระบบ</div>
+                <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:3px">
+                    @if (IsSuperAdmin) { <span>ผู้ดูแลระบบสูงสุด</span> } else { <span>ผู้ดูแลระบบ</span> }
+                    · @WelcomeName
+                </div>
+            </div>
+        </div>
+        <div style="display:flex;gap:8px">
+            <button @onclick="LoadAllAsync" class="btn btn-sm" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);font-size:12px;border-radius:8px;padding:8px 14px;font-weight:700">
+                <i class="bi bi-arrow-clockwise me-1"></i>@(Loading ? "กำลังโหลด..." : "รีเฟรช")
+            </button>
+        </div>
+    </div>
+</div>
+
+@* ── KPI: ผู้ใช้งาน ── *@
+<div style="font-size:12px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;padding-left:4px">ผู้ใช้งาน</div>
+<div class="row g-3 mb-4 fade-in">
+    <div class="col-md-3 col-6">
+        @KpiCard("ผู้ใช้ทั้งหมด", TotalUsers.ToString(), "bi-people-fill", "linear-gradient(135deg,var(--navy),var(--navy-mid))", "var(--navy-deep)")
+    </div>
+    <div class="col-md-3 col-6">
+        @KpiCard("ใช้งานอยู่", ActiveUsers.ToString(), "bi-check-circle-fill", "linear-gradient(135deg,#16a34a,#22c55e)", "#16a34a")
+    </div>
+    <div class="col-md-3 col-6">
+        @KpiCard("ไม่ได้ใช้งาน", InactiveUsers.ToString(), "bi-pause-circle-fill", "linear-gradient(135deg,#64748b,#94a3b8)", "#475569")
+    </div>
+    <div class="col-md-3 col-6">
+        @KpiCard("สิทธิ์การเข้าถึงที่ใช้งาน", DistinctRoles.ToString(), "bi-shield-fill-check", "linear-gradient(135deg,#7c3aed,#a855f7)", "#7c3aed")
+    </div>
+</div>
+
+@* ── งานรอดำเนินการ ── *@
+<div style="font-size:12px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;padding-left:4px">งานรอดำเนินการ</div>
+<div class="row g-3 mb-4 fade-in">
+    <div class="col-md-3 col-6">
+        @PendingCard("อนุมัติลงทะเบียน", PendingRegistrations, "bi-person-plus-fill", "#d97706", "/admin/registrations")
+    </div>
+    <div class="col-md-3 col-6">
+        @PendingCard("คำขอเข้าระบบงาน", PendingSystemAccess, "bi-box-arrow-in-right", "#2563eb", "/admin/approvals?tab=system-access")
+    </div>
+    <div class="col-md-3 col-6">
+        @PendingCard("คำขอแก้ไขหน่วยงาน", PendingOrgChange, "bi-building", "#0e7c7b", "/admin/approvals?tab=org-change")
+    </div>
+    <div class="col-md-3 col-6">
+        @PendingCard("คำขอเปลี่ยนสิทธิ์การเข้าถึง", PendingRoleChange, "bi-shield-shaded", "#9333ea", "/admin/approvals?tab=role-change")
+    </div>
+</div>
+
+@* ── Quick Actions ── *@
+<div style="font-size:12px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;padding-left:4px">การจัดการด่วน</div>
+<div class="row g-3 mb-4 fade-in">
+    <div class="col-md-4">
+        @QuickLink("/admin", "bi-people-fill", "จัดการข้อมูลผู้ใช้งาน", "เพิ่ม / แก้ไข / ปิดบัญชี", "var(--navy-deep)")
+    </div>
+    <div class="col-md-4">
+        @QuickLink("/admin/approvals", "bi-clipboard-check-fill", "อนุมัติคำขอ", "ลงทะเบียน · ระบบงาน · หน่วยงาน · สิทธิ์", "#d97706")
+    </div>
+    <div class="col-md-4">
+        @QuickLink(SystemsHubHref, "bi-grid-3x3-gap-fill", "ตั้งค่าเมนูและสิทธิ์",
+            IsSuperAdmin ? "เมนู · สิทธิ์การเข้าถึง · มอบให้ผู้ใช้" : "มอบสิทธิ์ให้ผู้ใช้ในหน่วยงาน", "#7c3aed")
+    </div>
+</div>
+
+@* ── Security Alerts ── *@
+@if (SecurityAlerts.Any())
+{
+    <div style="font-size:12px;font-weight:800;color:#991b1b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;padding-left:4px">
+        <i class="bi bi-shield-exclamation me-1"></i>การแจ้งเตือนความปลอดภัย (@SecurityAlerts.Count(a => a.Status=="open") รายการที่ยังเปิดอยู่)
+    </div>
+    <div class="ecmis-card mb-4 fade-in" style="border:1.5px solid #fecaca">
+        <div style="padding:0 16px">
+            @foreach (var alert in SecurityAlerts.Take(10))
+            {
+                <div style="padding:12px 0;border-bottom:1px dashed #f1f5f9;display:flex;align-items:flex-start;gap:10px">
+                    <span style="width:70px;text-align:center;flex-shrink:0;padding:3px 6px;border-radius:6px;font-size:10px;font-weight:800;@SeverityStyle(alert.Severity)">
+                        @alert.Severity.ToUpper()
+                    </span>
+                    <div style="flex:1">
+                        <div style="font-weight:700;color:var(--navy-deep);font-size:13px">@alert.Title</div>
+                        @if (!string.IsNullOrEmpty(alert.Message))
+                        {
+                            <div style="font-size:11.5px;color:#64748b;margin-top:2px">@alert.Message</div>
+                        }
+                        <div style="font-size:11px;color:#94a3b8;margin-top:2px">@alert.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")</div>
+                    </div>
+                    @if (alert.Status == "open")
+                    {
+                        <div style="display:flex;gap:4px;flex-shrink:0">
+                            <button style="background:#dcfce7;color:#15803d;border:none;border-radius:6px;font-size:11px;padding:4px 10px;font-weight:700;cursor:pointer"
+                                    @onclick="() => ResolveAlertAsync(alert.Id, false)" disabled="@AlertBusy">
+                                แก้ไขแล้ว
+                            </button>
+                            <button style="background:#f1f5f9;color:#475569;border:none;border-radius:6px;font-size:11px;padding:4px 8px;font-weight:700;cursor:pointer"
+                                    @onclick="() => ResolveAlertAsync(alert.Id, true)" disabled="@AlertBusy">
+                                ปิด
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary" style="font-size:10px;flex-shrink:0">@alert.Status</span>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@* ── My Systems Quick view (sidebar preview) ── *@
+@if (MySystems.Any())
+{
+    <div style="font-size:12px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;padding-left:4px">ระบบงานที่เข้าถึงได้</div>
+    <div class="row g-2 mb-4 fade-in">
+        @foreach (var s in MySystems)
+        {
+            <div class="col-md-3 col-6">
+                <div style="background:#fff;border-radius:12px;border:1px solid #eaecf2;padding:14px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(13,27,62,.04)">
+                    <div style="width:32px;height:32px;border-radius:9px;background:@(string.IsNullOrEmpty(s.Color)?"#0B1940":s.Color);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                        <i class="@IconClass(s.Icon)" style="color:#fff;font-size:14px"></i>
+                    </div>
+                    <div style="min-width:0">
+                        <div style="font-size:12.5px;font-weight:700;color:var(--navy-deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@s.NameTh</div>
+                        <div style="font-size:10.5px;color:var(--text-muted);font-family:monospace">@s.Code</div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private bool IsSuperAdmin;
+    private bool CanManageOrgGroups;
+    private string SystemsHubHref => IsSuperAdmin
+        ? "/super-admin/systems"
+        : CanManageOrgGroups
+            ? "/super-admin/systems?tab=org-groups"
+            : "/super-admin/systems?tab=assign-users";
+    private string WelcomeName = "";
+    private bool Loading;
+    private string? ErrorMessage;
+
+    private int TotalUsers, ActiveUsers, InactiveUsers, DistinctRoles;
+    private int PendingRegistrations, PendingSystemAccess, PendingOrgChange, PendingRoleChange;
+    private List<MenuSystemDto> MySystems = new();
+    private List<SecurityAlertDto> SecurityAlerts = new();
+    private bool AlertBusy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Loading = true;
+        // GetCurrentUser + all data API calls start simultaneously
+        var meTask   = CurrentUser.GetCurrentUserAsync();
+        var dataTask = LoadAllAsync();
+        var me = await meTask;
+        if (me != null)
+        {
+            IsSuperAdmin = me.Roles.Contains("super_admin");
+            WelcomeName  = !string.IsNullOrWhiteSpace(me.FirstName)
+                ? $"{me.FirstName} {me.LastName}".Trim()
+                : me.Username;
+        }
+        try
+        {
+            var ctx = await SystemApi.GetAdminContextAsync();
+            CanManageOrgGroups = ctx?.CanManageOrgGroups == true;
+        }
+        catch
+        {
+            CanManageOrgGroups = me?.Roles.Any(r =>
+                string.Equals(r, "org_admin", StringComparison.OrdinalIgnoreCase)) == true && !IsSuperAdmin;
+        }
+        await dataTask;
+    }
+
+    private async Task LoadAllAsync()
+    {
+        Loading = true;
+        ErrorMessage = null;
+        try
+        {
+            var usersTask  = SafeAsync(() => AdminApi.GetUsersAsync());
+            var regsTask   = SafeAsync(() => AdminApi.GetRegistrationsAsync("pending"));
+            var sysAccTask = SafeAsync(() => SystemApi.PendingSystemAccessAsync());
+            var orgChTask  = SafeAsync(() => SystemApi.PendingChangeRequestsAsync("org"));
+            var roleChTask = SafeAsync(() => SystemApi.PendingChangeRequestsAsync("role"));
+            var menuTask   = SafeNullable(() => SystemApi.MyMenuAsync());
+            var alertsTask = SafeAsync(() => AdminApi.GetSecurityAlertsAsync(status: "open"));
+
+            await Task.WhenAll(usersTask, regsTask, sysAccTask, orgChTask, roleChTask, menuTask, alertsTask);
+
+            var users = usersTask.Result ?? new();
+            TotalUsers    = users.Count;
+            ActiveUsers   = users.Count(u => string.Equals(u.AccountStatus, "active", StringComparison.OrdinalIgnoreCase));
+            InactiveUsers = users.Count(u => !string.Equals(u.AccountStatus, "active", StringComparison.OrdinalIgnoreCase));
+            DistinctRoles = users.SelectMany(u => u.Roles ?? Array.Empty<string>()).Distinct().Count();
+
+            PendingRegistrations = regsTask.Result?.Count ?? 0;
+            PendingSystemAccess  = sysAccTask.Result?.Count ?? 0;
+            PendingOrgChange     = orgChTask.Result?.Count ?? 0;
+            PendingRoleChange    = roleChTask.Result?.Count ?? 0;
+
+            MySystems = (menuTask.Result?.Systems ?? new())
+                .Where(ShouldShowOnDashboard)
+                .ToList();
+            SecurityAlerts = alertsTask.Result ?? new();
+        }
+        catch (Exception ex) { ErrorMessage = ex.Message; }
+        finally { Loading = false; StateHasChanged(); }
+    }
+
+    private async Task ResolveAlertAsync(int id, bool dismiss)
+    {
+        AlertBusy = true;
+        try
+        {
+            await AdminApi.ResolveSecurityAlertAsync(id, dismiss ? "dismiss" : "resolve");
+            SecurityAlerts = await AdminApi.GetSecurityAlertsAsync(status: "open") ?? new();
+        }
+        catch { }
+        finally { AlertBusy = false; StateHasChanged(); }
+    }
+
+    private static string SeverityStyle(string severity) => severity switch
+    {
+        "critical" => "background:#fee2e2;color:#991b1b",
+        "high" => "background:#fef3c7;color:#92400e",
+        "medium" => "background:#dbeafe;color:#1e40af",
+        "low" => "background:#dcfce7;color:#15803d",
+        _ => "background:#f1f5f9;color:#475569"
+    };
+
+    private static async Task<List<T>?> SafeAsync<T>(Func<Task<List<T>>> fn)
+    {
+        try { return await fn(); }
+        catch { return null; }
+    }
+
+    private static async Task<T?> SafeNullable<T>(Func<Task<T?>> fn) where T : class
+    {
+        try { return await fn(); }
+        catch { return null; }
+    }
+
+    private static bool ShouldShowOnDashboard(MenuSystemDto s) =>
+        !string.IsNullOrWhiteSpace(s.Icon)
+        && !string.Equals(s.Code, "mod.profile", StringComparison.OrdinalIgnoreCase);
+
+    private static string IconClass(string? icon)
+    {
+        if (string.IsNullOrWhiteSpace(icon)) return "bi bi-circle";
+        var i = icon.Trim();
+        if (i.StartsWith("bi ", StringComparison.Ordinal)) return i;
+        if (i.StartsWith("bi-", StringComparison.Ordinal)) return "bi " + i;
+        return "bi bi-" + i;
+    }
+
+    // ── render helpers (use as @KpiCard(...)) ─────────────────────────────────
+    private RenderFragment KpiCard(string label, string value, string icon, string iconBg, string valueColor) => @<text>
+        <div style="background:#fff;border-radius:16px;border:1px solid #eaecf2;padding:20px;box-shadow:0 2px 12px rgba(13,27,62,.05);position:relative;overflow:hidden">
+            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:@iconBg"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em">@label</div>
+                <div style="width:34px;height:34px;border-radius:10px;background:@iconBg;display:flex;align-items:center;justify-content:center">
+                    <i class="bi @icon" style="color:#fff;font-size:14px"></i>
+                </div>
+            </div>
+            @if (Loading)
+            {
+                <div style="height:34px;border-radius:8px;background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);background-size:400px 100%;animation:shimmer 1.4s infinite linear;width:70%"></div>
+            }
+            else
+            {
+                <div style="font-size:34px;font-weight:900;line-height:1;color:@valueColor">@value</div>
+            }
+        </div>
+    </text>;
+
+    private RenderFragment PendingCard(string label, int count, string icon, string accentColor, string href) => @<text>
+        <a href="@href" style="text-decoration:none;display:block">
+            <div style="background:#fff;border-radius:16px;border:1px solid #eaecf2;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.05);position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s;cursor:pointer"
+                 onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(13,27,62,.10)'"
+                 onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 12px rgba(13,27,62,.05)'">
+                <div style="position:absolute;top:0;left:0;right:0;height:3px;background:@accentColor"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                    <div style="font-size:11.5px;color:var(--text-muted);font-weight:700">@label</div>
+                    <i class="bi @icon" style="color:@accentColor;font-size:18px"></i>
+                </div>
+                @if (Loading)
+                {
+                    <div style="height:30px;border-radius:8px;background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);background-size:400px 100%;animation:shimmer 1.4s infinite linear;width:50%"></div>
+                    <div style="height:12px;border-radius:4px;background:#f1f5f9;width:80%;margin-top:10px"></div>
+                }
+                else
+                {
+                    <div style="font-size:30px;font-weight:900;color:@accentColor;line-height:1">@count</div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:8px">
+                        @if (count > 0) { <span><i class="bi bi-arrow-right me-1"></i>เปิดดูรายการ</span> }
+                        else { <span style="color:#16a34a"><i class="bi bi-check2-circle me-1"></i>ไม่มีรอดำเนินการ</span> }
+                    </div>
+                }
+            </div>
+        </a>
+    </text>;
+
+    private RenderFragment QuickLink(string href, string icon, string title, string subtitle, string accent) => @<text>
+        <a href="@href" style="text-decoration:none;display:block">
+            <div style="background:#fff;border-radius:14px;border:1px solid #eaecf2;padding:16px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 6px rgba(13,27,62,.04);transition:all .15s;cursor:pointer"
+                 onmouseover="this.style.borderColor='@accent';this.style.boxShadow='0 4px 16px rgba(13,27,62,.08)'"
+                 onmouseout="this.style.borderColor='#eaecf2';this.style.boxShadow='0 1px 6px rgba(13,27,62,.04)'">
+                <div style="width:42px;height:42px;border-radius:11px;background:@accent;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <i class="bi @icon" style="color:#fff;font-size:18px"></i>
+                </div>
+                <div style="flex:1;min-width:0">
+                    <div style="font-size:13.5px;font-weight:800;color:var(--navy-deep)">@title</div>
+                    <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">@subtitle</div>
+                </div>
+                <i class="bi bi-chevron-right" style="color:var(--text-muted);font-size:14px"></i>
+            </div>
+        </a>
+    </text>;
+}
+
+<style>
+    @@keyframes shimmer {
+        0%   { background-position: -400px 0; }
+        100% { background-position:  400px 0; }
+    }
+</style>

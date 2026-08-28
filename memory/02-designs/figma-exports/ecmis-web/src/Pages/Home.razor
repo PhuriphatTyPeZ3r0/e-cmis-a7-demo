@@ -1,0 +1,688 @@
+@page "/"
+@layout Components.Layout.BlankLayout
+@using System.Globalization
+@using EcmisWeb.Services
+@inject NavigationManager Nav
+@inject CentralSupportApiService CentralSupportApi
+@implements IDisposable
+
+<PageTitle>สำนักงาน ป.ป.ท. - ศูนย์ประชาสัมพันธ์ E-CMIS</PageTitle>
+
+<style>
+    /* Override ecmis.css global dark theme for this page */
+    html, body {
+        background: #f0f4fa !important;
+        color: #0d1b3e !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        height: auto !important;
+    }
+</style>
+
+<div class="pr-root">
+    <header class="pr-topbar">
+        <a class="pr-brand" href="/" aria-label="E-CMIS หน้าหลัก">
+            <span class="pr-brand-mark">ป.ป.ท.</span>
+            <span>
+                <span class="pr-brand-name">สำนักงาน ป.ป.ท.</span>
+                <span class="pr-brand-sub">สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</span>
+            </span>
+        </a>
+
+        <nav class="pr-nav" aria-label="เมนูหลัก">
+            <a href="#services">บริการ</a>
+            <a href="#announcements">ข่าวสาร</a>
+            <a href="#pacc-video">PACC Video</a>
+            <a href="#manuals">คู่มือ</a>
+            <a href="#contact">ติดต่อ</a>
+        </nav>
+
+        <div class="pr-actions">
+            @*
+            <a class="pr-link-btn" href="/citizen/login">
+                <i class="bi bi-megaphone"></i>
+                แจ้งเบาะแส 1206
+            </a>
+            *@
+        </div>
+    </header>
+
+    <main>
+        <section class="pr-hero" aria-labelledby="hero-title">
+
+            @foreach (var (slide, idx) in HeroSlides.Select((s, i) => (s, i)))
+            {
+                <div class="pr-hero-slide @(idx == activeSlide ? "is-active" : "") @(slide.GradientClass ?? "")"
+                     style="@(slide.ImageUrl != null ? $"background-image:url('{slide.ImageUrl}')" : "")">
+                </div>
+            }
+
+            <div class="pr-hero-main">
+                <div class="pr-kicker">เว็บไซต์ประชาสัมพันธ์และบริการข้อมูลข่าวสารสำนักงาน ป.ป.ท.</div>
+                <h1 id="hero-title">พลังศรัทธา พลังล่าทุจริต</h1>
+                <p>
+                    ศูนย์รวมข่าวสาร ประกาศ เอกสารเผยแพร่ วิดีโอองค์ความรู้ ช่องทางร้องเรียน
+                    และบริการสนับสนุนการใช้งาน E-CMIS ในรูปแบบใหม่ที่เป็นทางการ อ่านง่าย และพร้อมต่อยอดสู่ระบบจริง
+                </p>
+                <div class="pr-hero-actions">
+                    <a class="pr-primary-btn pr-hero-btn" href="#announcements">
+                        <i class="bi bi-megaphone-fill"></i>
+                        ดูข่าวสารล่าสุด
+                    </a>
+                    @*
+                    <a class="pr-secondary-btn pr-hero-btn" href="/citizen/login">
+                        <i class="bi bi-shield-check"></i>
+                        แจ้งเบาะแส/ร้องเรียน
+                    </a>
+                    *@
+                </div>
+                <div class="pr-hotline-strip" aria-label="สายด่วน ป.ป.ท.">
+                    <div>
+                        <strong>1206</strong>
+                        <span>สายด่วน ป.ป.ท.</span>
+                    </div>
+                    <div>
+                        <strong>02 502 6670-80</strong>
+                        <span>ติดต่อสำนักงาน</span>
+                    </div>
+                    <div>
+                        <strong>Saraban@pacc.go.th</strong>
+                        <span>สารบรรณกลาง</span>
+                    </div>
+                </div>
+
+                <div class="pr-hero-tabs" role="tablist" aria-label="เลือกภาพ">
+                    @for (int i = 0; i < HeroSlides.Count; i++)
+                    {
+                        var tabIdx = i;
+                        <button class="pr-hero-tab @(tabIdx == activeSlide ? "is-active" : "")"
+                                type="button"
+                                @onclick="() => SetSlide(tabIdx)"
+                                aria-label="@HeroSlides[tabIdx].Caption">
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <div class="pr-keymessage" aria-label="สารหลัก ป.ป.ท.">
+                <div class="pr-keymessage-inner">
+                    <div class="pr-keymessage-text">
+                        <p class="pr-keymessage-main">พบเห็นเจ้าหน้าที่ของรัฐทุจริตหรือประพฤติมิชอบ</p>
+                        <p class="pr-keymessage-call">แจ้ง ป.ป.ท. ได้ทันที</p>
+                    </div>
+                    <div class="pr-keymessage-contact">
+                        <a href="tel:1206" class="pr-keymessage-hotline">
+                            <i class="bi bi-telephone-fill"></i>
+                            <span>สายด่วน <strong>1206</strong></span>
+                        </a>
+                        <a href="mailto:Saraban@pacc.go.th" class="pr-keymessage-email">
+                            <i class="bi bi-envelope-fill"></i>
+                            <span>Saraban@pacc.go.th</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="pr-service-band" id="services" aria-labelledby="services-title">
+            <div class="pr-section-head compact">
+                <div>
+                    <div class="pr-section-kicker">บริการออนไลน์</div>
+                    <h2 id="services-title">ทางลัดบริการประชาชนและบุคลากร</h2>
+                </div>
+            </div>
+            <div class="pr-service-grid">
+                @foreach (var service in Services)
+                {
+                    <a class="pr-service-card" href="@service.Url">
+                        <span class="pr-service-icon"><i class="bi @service.Icon"></i></span>
+                        <span>
+                            <strong>@service.Title</strong>
+                            <small>@service.Description</small>
+                        </span>
+                    </a>
+                }
+            </div>
+        </section>
+
+        @* ── ข่าวสารผู้บริหาร ── *@
+        <section class="pr-shell" id="announcements">
+            <div class="pr-section-head">
+                <div>
+                    <div class="pr-section-kicker">ข่าวสารประชาสัมพันธ์</div>
+                    <h2>ข่าวสารผู้บริหาร</h2>
+                </div>
+            </div>
+            <div class="pr-news-cards-grid">
+                @foreach (var item in NewsBy("ข่าวผู้บริหาร").Take(4))
+                {
+                    <button type="button" class="pr-news-card" @onclick="() => OpenNews(item)" aria-label="อ่านข่าว: @item.Title">
+                        <div class="pr-news-card-img @item.VisualClass @(HasNewsImage(item) ? "has-image" : "")" style="@NewsImageStyle(item)">
+                            @if (!HasNewsImage(item))
+                            {
+                                <span class="pr-news-card-img-label">@item.VisualLabel</span>
+                            }
+                        </div>
+                        <div class="pr-news-card-body">
+                            <span class="pr-type-badge muted">@item.Type</span>
+                            <h3 class="pr-news-card-title">@item.Title</h3>
+                            <p class="pr-news-card-excerpt">@item.Summary</p>
+                            <div class="pr-news-card-footer">
+                                <span><i class="bi bi-calendar2"></i> @item.DateText</span>
+                                <span class="pr-news-card-read" aria-hidden="true"><i class="bi bi-arrow-right"></i></span>
+                            </div>
+                        </div>
+                    </button>
+                }
+            </div>
+        </section>
+
+        @* ── ข่าวสารคณะกรรมการ ป.ป.ท. ── *@
+        <section class="pr-shell" id="news-board">
+            <div class="pr-section-head">
+                <div>
+                    <div class="pr-section-kicker">คณะกรรมการ ป.ป.ท.</div>
+                    <h2>ข่าวสารคณะกรรมการ ป.ป.ท.</h2>
+                </div>
+            </div>
+            <div class="pr-news-cards-grid">
+                @foreach (var item in NewsBy("ข่าวคณะกรรมการ").Take(4))
+                {
+                    <button type="button" class="pr-news-card" @onclick="() => OpenNews(item)" aria-label="อ่านข่าว: @item.Title">
+                        <div class="pr-news-card-img @item.VisualClass @(HasNewsImage(item) ? "has-image" : "")" style="@NewsImageStyle(item)">
+                            @if (!HasNewsImage(item))
+                            {
+                                <span class="pr-news-card-img-label">@item.VisualLabel</span>
+                            }
+                        </div>
+                        <div class="pr-news-card-body">
+                            <span class="pr-type-badge muted">@item.Type</span>
+                            <h3 class="pr-news-card-title">@item.Title</h3>
+                            <p class="pr-news-card-excerpt">@item.Summary</p>
+                            <div class="pr-news-card-footer">
+                                <span><i class="bi bi-calendar2"></i> @item.DateText</span>
+                                <span class="pr-news-card-read" aria-hidden="true"><i class="bi bi-arrow-right"></i></span>
+                            </div>
+                        </div>
+                    </button>
+                }
+            </div>
+        </section>
+
+        @* ── ข่าวสารอื่น ๆ ── *@
+        <section class="pr-shell" id="news-other">
+            <div class="pr-section-head">
+                <div>
+                    <div class="pr-section-kicker">ประชาสัมพันธ์</div>
+                    <h2>ข่าวสารอื่น ๆ</h2>
+                </div>
+            </div>
+            <div class="pr-news-cards-grid">
+                @foreach (var item in NewsOther.Take(4))
+                {
+                    <button type="button" class="pr-news-card" @onclick="() => OpenNews(item)" aria-label="อ่านข่าว: @item.Title">
+                        <div class="pr-news-card-img @item.VisualClass @(HasNewsImage(item) ? "has-image" : "")" style="@NewsImageStyle(item)">
+                            @if (!HasNewsImage(item))
+                            {
+                                <span class="pr-news-card-img-label">@item.VisualLabel</span>
+                            }
+                        </div>
+                        <div class="pr-news-card-body">
+                            <span class="pr-type-badge muted">@item.Type</span>
+                            <h3 class="pr-news-card-title">@item.Title</h3>
+                            <p class="pr-news-card-excerpt">@item.Summary</p>
+                            <div class="pr-news-card-footer">
+                                <span><i class="bi bi-calendar2"></i> @item.DateText</span>
+                                <span class="pr-news-card-read" aria-hidden="true"><i class="bi bi-arrow-right"></i></span>
+                            </div>
+                        </div>
+                    </button>
+                }
+            </div>
+        </section>
+
+        @* ── PACC Video ── *@
+        <section class="pr-pacc-video-section" id="pacc-video">
+            <h2 class="pr-pacc-video-heading">PACC Videos</h2>
+
+            <div class="pr-pacc-video-nav">
+                <button type="button" class="pr-pacc-nav-btn" @onclick="PrevVideoPage" disabled="@(videoPage == 0)">
+                    <i class="bi bi-chevron-left"></i> ก่อนหน้า
+                </button>
+                <button type="button" class="pr-pacc-nav-btn" @onclick="NextVideoPage" disabled="@(videoPage >= VideoPageMax)">
+                    ถัดไป <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+
+            <div class="pr-yt-grid">
+                @foreach (var item in CurrentVideoPage)
+                {
+                    <button type="button" class="pr-yt-card" @onclick="() => OpenNews(item)" aria-label="ดูวิดีโอ: @item.Title">
+                        <div class="pr-yt-thumb @item.VisualClass" style="@NewsImageStyle(item)">
+                            @* Channel header *@
+                            <div class="pr-yt-channel-bar">
+                                <div class="pr-yt-channel-logo">ป</div>
+                                <span class="pr-yt-channel-name">PaccThailand</span>
+                            </div>
+                            @* Red YouTube play button *@
+                            <div class="pr-yt-play-btn" aria-hidden="true">
+                                <svg viewBox="0 0 68 48" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55C3.97 2.33 2.27 4.81 1.48 7.74 0 13.05 0 24 0 24s0 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C68 34.95 68 24 68 24s0-10.95-1.48-16.26z" fill="#f00"/>
+                                    <path d="M45 24 27 14v20z" fill="#fff"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="pr-yt-title">
+                            <span class="pr-yt-diamond">◆</span>
+                            <span>@item.Title</span>
+                        </div>
+                    </button>
+                }
+            </div>
+        </section>
+
+        <section class="pr-shell" id="manuals">
+            <div class="pr-section-head compact">
+                <div>
+                    <div class="pr-section-kicker">เอกสารเผยแพร่และวิดีโอ</div>
+                    <h2>คลังความรู้และสื่อประชาสัมพันธ์</h2>
+                </div>
+            </div>
+
+            <div class="pr-resource-grid">
+                @foreach (var resource in Resources)
+                {
+                    <article class="pr-resource-card">
+                        <div class="pr-resource-icon">
+                            <i class="bi @resource.Icon"></i>
+                        </div>
+                        <div>
+                            <span>@resource.Type</span>
+                            <h3>@resource.Title</h3>
+                            <p>@resource.Description</p>
+                        </div>
+                        <button type="button" class="pr-icon-action" title="เปิดรายการ">
+                            <i class="bi bi-arrow-up-right"></i>
+                        </button>
+                    </article>
+                }
+            </div>
+        </section>
+
+        <section class="pr-shell" id="contact">
+            <div class="pr-section-head">
+                <div>
+                    <div class="pr-section-kicker">Directory</div>
+                    <h2>ติดต่อสำนักงานและสมุดโทรศัพท์</h2>
+                </div>
+                <label class="pr-search pr-directory-search">
+                    <i class="bi bi-search"></i>
+                    <input @bind="directorySearch"
+                           @bind:event="oninput"
+                           placeholder="ค้นหาชื่อ ตำแหน่ง หรือหน่วยงาน" />
+                </label>
+            </div>
+
+            <div class="pr-directory-grid">
+                @if (!FilteredDirectory.Any())
+                {
+                    <div class="pr-empty-state wide">
+                        <i class="bi bi-search"></i>
+                        ไม่พบข้อมูลผู้ติดต่อที่ค้นหา
+                    </div>
+                }
+                else
+                {
+                    @foreach (var person in FilteredDirectory)
+                    {
+                        <article class="pr-person-card">
+                            <div class="pr-person-avatar">@person.Initials</div>
+                            <div>
+                                <h3>@person.Name</h3>
+                                <p>@person.Role</p>
+                                <div class="pr-person-meta">
+                                    <span><i class="bi bi-building"></i>@person.Unit</span>
+                                    <span><i class="bi bi-telephone"></i>@person.Phone</span>
+                                    <span><i class="bi bi-envelope"></i>@person.Email</span>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                }
+            </div>
+        </section>
+    </main>
+
+    @if (selectedNews != null)
+    {
+        <div class="pr-news-modal-backdrop" @onclick="CloseNews" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <div class="pr-news-modal-box" @onclick:stopPropagation="true">
+                <div class="pr-news-modal-img @selectedNews.VisualClass @(HasNewsImage(selectedNews) ? "has-image" : "")" style="@NewsImageStyle(selectedNews)">
+                    @if (!HasNewsImage(selectedNews))
+                    {
+                        <span class="pr-news-modal-img-label">@selectedNews.VisualLabel</span>
+                    }
+                    <button type="button" class="pr-news-modal-close-btn" @onclick="CloseNews" aria-label="ปิด">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="pr-news-modal-content">
+                    <div class="pr-news-modal-meta">
+                        <span class="pr-type-badge">@selectedNews.Type</span>
+                        <span><i class="bi bi-calendar2-week"></i> @selectedNews.DateText</span>
+                        <span><i class="bi bi-person-badge"></i> @selectedNews.Owner</span>
+                    </div>
+                    <h2 id="modal-title" class="pr-news-modal-title">@selectedNews.Title</h2>
+                    <div class="pr-news-modal-divider"></div>
+                    <p class="pr-news-modal-body">@selectedNews.Summary</p>
+                    <p class="pr-news-modal-body" style="margin-top:14px;color:#63718d;font-size:13.5px">@selectedNews.Body</p>
+                </div>
+            </div>
+        </div>
+    }
+
+    <footer class="pr-footer-new" aria-label="ข้อมูลสำนักงาน">
+        <div class="pr-footer-new-inner">
+
+            @* ── คอลัมน์ที่อยู่และติดต่อ ── *@
+            <div class="pr-fnew-col-addr">
+                <p class="pr-fnew-org">
+                    สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ<br>
+                    (สำนักงาน ป.ป.ท.)
+                </p>
+                <p class="pr-fnew-addr">
+                    99 หมู่ 4 อาคารซอฟต์แวร์ ปาร์ค ถนนแจ้งวัฒนะ ตำบลคลองเกลือ<br>
+                    อำเภอปากเกร็ด จังหวัดนนทบุรี 11120
+                </p>
+
+                <div class="pr-fnew-contact-block">
+                    <span class="pr-fnew-contact-lbl">เรื่องทั่วไป</span>
+                    <p class="pr-fnew-contact-val">02 502 6670-80 ต่อ 1120 หรือ 1122</p>
+                    <p class="pr-fnew-contact-val">Saraban@pacc.go.th</p>
+                </div>
+
+                <div class="pr-fnew-contact-block">
+                    <span class="pr-fnew-contact-lbl">ร้องเรียน/แจ้งเบาะแส 1206</span>
+                    <p class="pr-fnew-contact-val">mail@pacc.go.th</p>
+                </div>
+            </div>
+
+            @* ── คอลัมน์ลิงก์นโยบาย ── *@
+            <div class="pr-fnew-col-links">
+                <a href="#">นโยบายเว็บไซต์</a>
+                <a href="#">นโยบายคุกกี้</a>
+            </div>
+
+            @* ── คอลัมน์ Social + เจ้าหน้าที่ ── *@
+            <div class="pr-fnew-col-social">
+                <p class="pr-fnew-section-lbl">ช่องทางอื่นๆ</p>
+                <div class="pr-fnew-social-row">
+                    <a href="#" class="pr-fnew-social-btn" aria-label="Instagram">
+                        <i class="bi bi-instagram"></i>
+                    </a>
+                    <a href="#" class="pr-fnew-social-btn" aria-label="Twitter/X">
+                        <i class="bi bi-twitter-x"></i>
+                    </a>
+                    <a href="#" class="pr-fnew-social-btn" aria-label="Facebook">
+                        <i class="bi bi-facebook"></i>
+                    </a>
+                    <a href="#" class="pr-fnew-social-btn" aria-label="YouTube – PACC Video">
+                        <i class="bi bi-youtube"></i>
+                    </a>
+                    <a href="#" class="pr-fnew-social-btn" aria-label="TikTok">
+                        <i class="bi bi-tiktok"></i>
+                    </a>
+                </div>
+
+                <p class="pr-fnew-section-lbl" style="margin-top:22px">สำหรับเจ้าหน้าที่</p>
+                <a href="/login" class="pr-fnew-workcenter">
+                    <div class="pr-fnew-workcenter-logo">
+                        <i class="bi bi-shield-fill"></i>
+                    </div>
+                    <div>
+                        <div class="pr-fnew-workcenter-title">WORKCENTER</div>
+                        <div class="pr-fnew-workcenter-sub">สำนักงาน ป.ป.ท.</div>
+                    </div>
+                </a>
+            </div>
+
+        </div>
+        <div class="pr-fnew-bottom">
+            สงวนลิขสิทธิ์ ©2026. All Rights Reserved. — สำนักงาน ป.ป.ท.&nbsp;&nbsp;Distributed By <span class="pr-fnew-ict">PACC ICT</span>
+        </div>
+    </footer>
+</div>
+
+@* ── Mascot floating widget ── *@
+@if (ShowCitizenEntryPoints)
+{
+    <div class="pr-mascot-wrap">
+        <div class="pr-mascot-bubble">
+            <i class="bi bi-megaphone-fill"></i>&nbsp;แจ้งเบาะแส / ร้องเรียน
+            <div class="pr-mascot-bubble-arrow"></div>
+        </div>
+        <a href="/citizen/login" class="pr-mascot-link" aria-label="แจ้งเบาะแส/ร้องเรียน – สำนักงาน ป.ป.ท.">
+            <svg viewBox="0 0 130 180" xmlns="http://www.w3.org/2000/svg" class="pr-mascot-svg" aria-hidden="true">
+                @* Shadow *@
+                <ellipse cx="65" cy="176" rx="28" ry="5" fill="#00000018"/>
+
+                @* Right arm – hangs naturally *@
+                <rect x="106" y="110" width="18" height="42" rx="9" fill="#0d1b3e"/>
+                <circle cx="115" cy="154" r="9" fill="#f5c5a0"/>
+
+                @* Left arm – raised / waving *@
+                <g transform="rotate(158, 24, 110)">
+                    <rect x="14" y="110" width="18" height="40" rx="9" fill="#0d1b3e"/>
+                    <circle cx="23" cy="152" r="9" fill="#f5c5a0"/>
+                </g>
+
+                @* Body / uniform *@
+                <rect x="24" y="108" width="82" height="57" rx="12" fill="#0d1b3e"/>
+                @* Collar *@
+                <path d="M50 108 L65 124 L80 108Z" fill="white" opacity=".88"/>
+                @* Gold chest badge *@
+                <circle cx="84" cy="128" r="9" fill="#e8c96a" stroke="#c9a84c" stroke-width="1.5"/>
+                <text x="84" y="132.5" text-anchor="middle" fill="#0d1b3e" font-size="10.5" font-weight="700" font-family="sans-serif">ป</text>
+                @* Bottom stripe *@
+                <rect x="24" y="158" width="82" height="7" rx="3.5" fill="#1a2f6b"/>
+
+                @* Neck *@
+                <rect x="57" y="91" width="16" height="21" rx="7" fill="#f5c5a0"/>
+
+                @* Head – face *@
+                <ellipse cx="65" cy="65" rx="32" ry="34" fill="#f5c5a0"/>
+
+                @* Hat crown *@
+                <rect x="33" y="20" width="64" height="28" rx="6" fill="#0d1b3e"/>
+                @* Hat brim *@
+                <rect x="23" y="44" width="84" height="10" rx="5" fill="#1a2f6b"/>
+                @* Hat gold badge *@
+                <circle cx="65" cy="33" r="11" fill="#e8c96a" stroke="#c9a84c" stroke-width="2"/>
+                <text x="65" y="37.5" text-anchor="middle" fill="#0d1b3e" font-size="12" font-weight="700" font-family="sans-serif">ป</text>
+
+                @* Hair strands below hat *@
+                <rect x="32" y="48" width="8" height="20" rx="4" fill="#1a0a00"/>
+                <rect x="90" y="48" width="8" height="20" rx="4" fill="#1a0a00"/>
+
+                @* Eyes *@
+                <ellipse cx="53" cy="67" rx="5" ry="6" fill="#1a0a00"/>
+                <ellipse cx="77" cy="67" rx="5" ry="6" fill="#1a0a00"/>
+                @* Eye highlights *@
+                <circle cx="55" cy="65" r="2" fill="white"/>
+                <circle cx="79" cy="65" r="2" fill="white"/>
+
+                @* Blush *@
+                <ellipse cx="40" cy="75" rx="8" ry="4" fill="#f09090" opacity=".42"/>
+                <ellipse cx="90" cy="75" rx="8" ry="4" fill="#f09090" opacity=".42"/>
+
+                @* Smile *@
+                <path d="M54 81 Q65 91 76 81" stroke="#c07050" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            </svg>
+        </a>
+    </div>
+}
+
+@code {
+    // ── Hero carousel ──────────────────────────────────────
+    private int activeSlide;
+    private System.Threading.Timer? _slideTimer;
+
+    private static readonly IReadOnlyList<HeroSlide> HeroSlides = [
+        new("/img/hero-bg.jpg",  null,             "ภาพเมืองและสังคม"),
+        new(null, "slide-office",   "สำนักงาน ป.ป.ท."),
+        new(null, "slide-activity", "ภาพกิจกรรม"),
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _slideTimer = new System.Threading.Timer(
+            _ => InvokeAsync(() => { activeSlide = (activeSlide + 1) % HeroSlides.Count; StateHasChanged(); }),
+            null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+        await LoadLandingSupportDataAsync();
+        await LoadLandingNewsAsync();
+    }
+
+    private void SetSlide(int idx)
+    {
+        activeSlide = idx;
+        _slideTimer?.Change(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+    }
+
+    public void Dispose() => _slideTimer?.Dispose();
+
+    private sealed record HeroSlide(string? ImageUrl, string? GradientClass, string Caption);
+
+    // ── Other state ────────────────────────────────────────
+    private string directorySearch = "";
+    private List<DirectoryItem> landingDirectory = [];
+    private List<PublicNewsItem> landingNews = [];
+    private PublicNewsItem? selectedNews;
+    private bool ShowCitizenEntryPoints => false;
+
+    private IEnumerable<PublicNewsItem> NewsBy(string type) =>
+        landingNews.Where(n => string.Equals(n.Type, type, StringComparison.OrdinalIgnoreCase));
+
+    // ── PACC Video pagination ──
+    private int videoPage = 0;
+    private const int VideosPerPage = 4;
+    private IReadOnlyList<PublicNewsItem> AllVideos =>
+        landingNews.Where(n => n.Type.Contains("วิดีโอ", StringComparison.OrdinalIgnoreCase)).ToList();
+    private IEnumerable<PublicNewsItem> CurrentVideoPage =>
+        AllVideos.Skip(videoPage * VideosPerPage).Take(VideosPerPage);
+    private int VideoPageMax => Math.Max(0, (AllVideos.Count - 1) / VideosPerPage);
+    private void PrevVideoPage() { if (videoPage > 0) videoPage--; }
+    private void NextVideoPage() { if (videoPage < VideoPageMax) videoPage++; }
+
+    private static readonly string[] OtherNewsTypes = ["ข่าวประชาสัมพันธ์", "ข่าวป้องกัน", "ข่าวปราบปราม"];
+
+    private IEnumerable<PublicNewsItem> NewsOther =>
+        landingNews.Where(n => OtherNewsTypes.Contains(n.Type, StringComparer.OrdinalIgnoreCase));
+
+    private void OpenNews(PublicNewsItem item) => selectedNews = item;
+    private void CloseNews() => selectedNews = null;
+    private static bool HasNewsImage(PublicNewsItem item) => !string.IsNullOrWhiteSpace(item.ImageDataUrl);
+    private string NewsImageStyle(PublicNewsItem item) =>
+        !HasNewsImage(item)
+            ? ""
+            : $"background-image:url('{item.ImageDataUrl}');background-size:contain;background-repeat:no-repeat;background-position:center;background-color:#f3f0e8";
+
+    private static readonly IReadOnlyList<ServiceItem> Services = [
+        // new("แจ้งเบาะแส/ร้องเรียน", "ช่องทางรับเรื่องร้องเรียนและแจ้งเบาะแสทุจริต", "bi-shield-exclamation", "/citizen/login"),
+        new("ศูนย์ข้อมูลข่าวสาร", "ประกาศ เอกสารเผยแพร่ และข่าวประชาสัมพันธ์", "bi-newspaper", "#announcements"),
+        new("PACC Videos", "วิดีโอองค์ความรู้และผลการดำเนินงาน", "bi-play-btn", "#manuals")
+    ];
+
+    private static readonly IReadOnlyList<ResourceItem> Resources = [
+        new("เอกสารเผยแพร่", "PACC Keymessage", "สารหลักและสื่อประชาสัมพันธ์สำหรับรณรงค์ต่อต้านการทุจริต", "bi-chat-square-quote"),
+        new("คู่มือ PDF", "คู่มือการใช้งาน E-CMIS", "ขั้นตอนเข้าสู่ระบบ ค้นหาข่าวสาร ถาม-ตอบ และแจ้งปัญหาการใช้งาน", "bi-file-earmark-pdf"),
+        new("นโยบาย", "No Gift Policy", "เอกสารและสื่อรณรงค์แนวทางขับเคลื่อนนโยบาย No Gift Policy", "bi-gift"),
+        new("วิดีโอ", "PACC Videos", "วีดิทัศน์ผลการดำเนินงาน บทบาทภารกิจ และสื่อความรู้ด้านการป้องกันการทุจริต", "bi-play-circle")
+    ];
+
+    private IEnumerable<DirectoryItem> FilteredDirectory =>
+        landingDirectory.Where(d => string.IsNullOrWhiteSpace(directorySearch)
+            || d.Name.Contains(directorySearch, StringComparison.OrdinalIgnoreCase)
+            || d.Role.Contains(directorySearch, StringComparison.OrdinalIgnoreCase)
+            || d.Unit.Contains(directorySearch, StringComparison.OrdinalIgnoreCase)
+            || d.Phone.Contains(directorySearch, StringComparison.OrdinalIgnoreCase)
+            || d.Email.Contains(directorySearch, StringComparison.OrdinalIgnoreCase));
+
+    private async Task LoadLandingNewsAsync()
+    {
+        try
+        {
+            var items = await CentralSupportApi.GetPublicNewsAsync();
+            landingNews = items
+                .Where(n => string.Equals(n.Status, "published", StringComparison.OrdinalIgnoreCase))
+                .Select(MapToNewsItem)
+                .OrderByDescending(n => n.PublishedAt ?? n.UpdatedAt)
+                .ToList();
+        }
+        catch
+        {
+            landingNews = [];
+        }
+    }
+
+    private static PublicNewsItem MapToNewsItem(PublicNewsDto dto)
+    {
+        var when = dto.PublishedAt ?? dto.CreatedAt;
+        var th = CultureInfo.GetCultureInfo("th-TH");
+        var dateText = when.ToLocalTime().ToString("dd MMM yyyy", th);
+        var visual = PickVisual(dto.Category);
+        return new PublicNewsItem(
+            dto.Id,
+            dto.Category,
+            dto.Title,
+            dto.Summary,
+            dto.Body,
+            dateText,
+            "สำนักงาน ป.ป.ท.",
+            false,
+            visual.Class,
+            visual.Label,
+            dto.Status,
+            "",
+            dto.CoverImageUrl ?? "",
+            when,
+            dto.PublishedAt);
+    }
+
+    private static (string Class, string Label) PickVisual(string category)
+    {
+        var classes = new[] { "photo-teal", "photo-gold", "photo-navy", "photo-rose" };
+        var idx = Math.Abs(category.GetHashCode(StringComparison.Ordinal)) % classes.Length;
+        var label = string.IsNullOrWhiteSpace(category) ? "PR" : category[..Math.Min(2, category.Length)];
+        return (classes[idx], label);
+    }
+
+    private async Task LoadLandingSupportDataAsync()
+    {
+        try
+        {
+            var people = await CentralSupportApi.SearchPhonebookAsync("");
+            landingDirectory = people
+                .Select(p => new DirectoryItem(
+                    p.DisplayName,
+                    p.JobTitle,
+                    p.OrgName,
+                    p.Phone,
+                    p.Email,
+                    BuildInitials(p.DisplayName)))
+                .ToList();
+        }
+        catch { /* ไม่แสดง error บน landing page */ }
+    }
+
+    private static string BuildInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length >= 2)
+            return $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant();
+        return parts.Length == 1 && parts[0].Length > 0 ? parts[0][0].ToString().ToUpperInvariant() : "?";
+    }
+
+    private sealed record ServiceItem(string Title, string Description, string Icon, string Url);
+    private sealed record ResourceItem(string Type, string Title, string Description, string Icon);
+    private sealed record DirectoryItem(string Name, string Role, string Unit, string Phone, string Email, string Initials);
+}

@@ -1,0 +1,155 @@
+@page "/legal/court/{Id:int}"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+@if (c is null)
+{
+    <div style="padding:40px;text-align:center">ไม่พบข้อมูลคดีศาล</div>
+}
+else
+{
+    <div class="detail-page-wrap">
+        @* — Header — *@
+        <div class="detail-header">
+            <div>
+                <div class="detail-caseno">
+                    <i class="bi bi-hammer" style="color:var(--navy-mid)"></i>
+                    ทะเบียนคุมคดีในชั้นศาล: @c.CaseNo
+                </div>
+                <div class="detail-meta-row mt-2">
+                    <span style="font-size:13px;color:var(--navy-deep);font-weight:600">
+                        <i class="bi bi-person-fill"></i> ผู้ถูกกล่าวหา: @c.AccusedName
+                    </span>
+                    @if(c.IsFinal)
+                    {
+                        <span class="category-chip cat-general" style="background:var(--green);color:#fff">คดีถึงที่สุดแล้ว</span>
+                    }
+                </div>
+            </div>
+            <div class="detail-actions">
+                <button class="btn-outline-navy" @onclick='() => Nav.NavigateTo("/legal/court")'>
+                    <i class="bi bi-arrow-left"></i> กลับตาราง
+                </button>
+            </div>
+        </div>
+
+        @if(!string.IsNullOrEmpty(c.AppealDeadline) && LegalData.DaysUntil(c.AppealDeadline) <= 30)
+        {
+            <div style="background:#fff5f5;border:1px solid var(--red);padding:14px;border-radius:10px;margin-bottom:20px;display:flex;align-items:center;gap:14px">
+                <i class="bi bi-exclamation-triangle-fill" style="font-size:24px;color:var(--red)"></i>
+                <div>
+                    <div style="font-weight:700;color:var(--red)">แจ้งเตือน: ช่วงเวลายื่นอุทธรณ์/ความเห็นแย้ง</div>
+                    <div style="font-size:12px;color:var(--red)">ต้องดำเนินการภายใน @c.AppealDeadline (เหลือเวลา @LegalData.DaysUntil(c.AppealDeadline) วัน)</div>
+                </div>
+            </div>
+        }
+
+        @* — Process Tracker 4 Stages — *@
+        <div class="detail-grid" style="grid-template-columns:1fr;gap:20px">
+            
+            @* 1. Prosecutor *@
+            <div class="detail-card mb-0">
+                <div class="detail-card-title">
+                    <div class="icon-box @(string.IsNullOrEmpty(c.ProsecutorOrder) || c.ProsecutorOrder == "pending" ? "orange" : "navy")">1</div>
+                    ความเห็นและคำสั่งพนักงานอัยการ
+                </div>
+                <div style="display:flex;gap:14px;align-items:center;margin-bottom:14px">
+                    <div style="flex:1">สถานะปัจจุบัน: <strong style="color:var(--navy)">@LegalData.CourtStageText(c.ProsecutorOrder)</strong></div>
+                    <select class="form-select-custom" style="width:250px" @bind="mockProsecutorStatus">
+                        <option value="pending">อยู่ระหว่างการพิจารณา</option>
+                        <option value="indicted">สั่งฟ้อง</option>
+                        <option value="non-indicted">สั่งไม่ฟ้อง (รอมติ ป.ป.ท. เห็นแย้ง)</option>
+                        <option value="appealing_non_indict">ส่งเรื่องให้อัยการสูงสุดชี้ขาด</option>
+                    </select>
+                </div>
+                @if(mockProsecutorStatus == "non-indicted")
+                {
+                    <div style="background:#fff9e6;padding:12px;border:1px dashed #ffc107;border-radius:8px;font-size:12px;color:#856404;margin-bottom:10px">
+                         อัยการสั่งไม่ฟ้อง: ระบบจะส่ง Alert ให้นำเรื่องเข้าที่ประชุมคณะกรรมการ ป.ป.ท. เพื่อพิจารณาว่า "เห็นชอบ" หรือ "เห็นแย้ง" ภายใน 30 วัน
+                    </div>
+                }
+            </div>
+
+            @* 2. Court 1st *@
+            <div class="detail-card mb-0">
+                <div class="detail-card-title">
+                    <div class="icon-box @(string.IsNullOrEmpty(c.Court1stStatus) || c.Court1stStatus == "pending" ? "orange" : "green")">2</div>
+                    ผลคำพิพากษาศาลชั้นต้น (ศาลอาญาคดีทุจริตฯ)
+                </div>
+                <div style="display:flex;gap:14px;align-items:center">
+                     <select class="form-select-custom" style="width:250px" @bind="mockCourt1st">
+                        <option value="pending">อยู่ระหว่างพิจารณาคดี</option>
+                        <option value="decided_guilty">ศาลชั้นต้นพิพากษาลงโทษ</option>
+                        <option value="decided_dismissed">ศาลชั้นต้นพิพากษายกฟ้อง</option>
+                    </select>
+                    <button class="btn-outline-navy">แนบไฟล์คำพิพากษา</button>
+                </div>
+            </div>
+
+            @* 3. Appeal Court *@
+            <div class="detail-card mb-0">
+                <div class="detail-card-title">
+                    <div class="icon-box @(string.IsNullOrEmpty(c.CourtAppStatus) ? "gray" : "navy")">3</div>
+                    ผลคำพิพากษาศาลอุทธรณ์
+                </div>
+                 <div style="display:flex;gap:14px;align-items:center">
+                     <select class="form-select-custom" style="width:250px" @bind="mockCourtApp">
+                        <option value="">(ยังไม่ถึงขั้นตอน)</option>
+                        <option value="pending">อยู่ระหว่างอุทธรณ์</option>
+                        <option value="decided_guilty">ศาลอุทธรณ์พิพากษาลงโทษยืน</option>
+                        <option value="decided_dismissed">ศาลอุทธรณ์พิพากษายกฟ้อง</option>
+                    </select>
+                </div>
+            </div>
+
+            @* 4. Supreme Court *@
+             <div class="detail-card mb-0">
+                <div class="detail-card-title">
+                    <div class="icon-box @(string.IsNullOrEmpty(c.CourtSupStatus) ? "gray" : "green")">4</div>
+                    ผลคำพิพากษาศาลฎีกา
+                </div>
+                 <div style="display:flex;gap:14px;align-items:center">
+                     <select class="form-select-custom" style="width:250px" @bind="mockCourtSup">
+                         <option value="">(ยังไม่ถึงขั้นตอน)</option>
+                        <option value="pending">อยู่ระหว่างฎีกา</option>
+                        <option value="decided_guilty">ศาลฎีกาพิพากษาลงโทษ</option>
+                        <option value="decided_dismissed">ศาลฎีกาพิพากษายกฟ้อง</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button class="btn-navy" style="width:100%;margin-top:10px" @onclick="SaveUpdates">
+                <i class="bi bi-save-fill"></i> อัปเดตข้อมูลพิจารณาคดีในฐานข้อมูล
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    
+    private CourtCase? c;
+
+    private string mockProsecutorStatus = "";
+    private string mockCourt1st = "";
+    private string mockCourtApp = "";
+    private string mockCourtSup = "";
+
+    protected override void OnParametersSet()
+    {
+        c = LegalData.CourtCases.FirstOrDefault(x => x.Id == Id);
+        if(c != null)
+        {
+            mockProsecutorStatus = c.ProsecutorOrder;
+            mockCourt1st = c.Court1stStatus;
+            mockCourtApp = c.CourtAppStatus;
+            mockCourtSup = c.CourtSupStatus;
+        }
+    }
+
+    private void SaveUpdates()
+    {
+        // Mock save -> redirect to list
+        Nav.NavigateTo("/legal/court");
+    }
+}

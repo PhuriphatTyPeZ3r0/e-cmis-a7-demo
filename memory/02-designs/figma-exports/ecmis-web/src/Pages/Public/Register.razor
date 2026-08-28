@@ -1,0 +1,1252 @@
+@page "/register"
+@layout Components.Layout.BlankLayout
+@inject NavigationManager Nav
+@inject EcmisWeb.Services.UserApiService UserApi
+@inject EcmisWeb.Services.ThaiDService ThaiDSvc
+@inject EcmisWeb.Services.SessionService SessionSvc
+@inject EcmisWeb.Services.SystemAccessApiService SystemApi
+@using EcmisWeb.Models
+@using EcmisWeb.Services
+@using System.Globalization
+@using Microsoft.AspNetCore.Components.Forms
+
+<div class="pub-root pub-col @(isDark ? "" : "pub-light")">
+    <div class="pub-bg-glow"></div>
+    <div class="pub-grid"></div>
+
+    @* ── TOP ── *@
+    <div class="pub-top">
+        <div class="pub-brand">
+            <div class="pub-emblem">ป.ป.ท.</div>
+            <div>
+                <div class="pub-brand-name">E‑CMIS</div>
+                <div class="pub-brand-sub">สำนักงาน ป.ป.ท.</div>
+            </div>
+        </div>
+        <div class="pub-top-right">
+            <button type="button" class="pub-theme-btn" @onclick="ToggleTheme"
+                    title="@(isDark ? "เปลี่ยนเป็นธีมสว่าง" : "เปลี่ยนเป็นธีมมืด")">
+                <i class="bi @(isDark ? "bi-sun-fill" : "bi-moon-stars-fill")"></i>
+            </button>
+            <a href="/login" class="pub-back-btn">
+                <i class="bi bi-arrow-left"></i> เข้าสู่ระบบ
+            </a>
+        </div>
+    </div>
+
+    @* ── STEPPER ── *@
+    @if (step < 4)
+    {
+        <div class="pub-stepper">
+            <div class="pub-step-item">
+                <div class="pub-dot @(step > 1 ? "done" : step == 1 ? "active" : "")">
+                    @if (step > 1) { <i class="bi bi-check-lg"></i> } else { <span>1</span> }
+                </div>
+                <div class="pub-step-lbl @(step == 1 ? "active" : step > 1 ? "done" : "")">ข้อมูลผู้ใช้</div>
+            </div>
+            <div class="pub-step-line @(step > 1 ? "done" : "")"></div>
+            <div class="pub-step-item">
+                <div class="pub-dot @(step > 2 ? "done" : step == 2 ? "active" : "")">
+                    @if (step > 2) { <i class="bi bi-check-lg"></i> } else { <span>2</span> }
+                </div>
+                <div class="pub-step-lbl @(step == 2 ? "active" : step > 2 ? "done" : "")">สังกัดที่ปฏิบัติงาน</div>
+            </div>
+            <div class="pub-step-line @(step > 2 ? "done" : "")"></div>
+            <div class="pub-step-item">
+                <div class="pub-dot @(step == 3 ? "active" : "")"><span>3</span></div>
+                <div class="pub-step-lbl @(step == 3 ? "active" : "")">ยืนยันข้อมูล</div>
+            </div>
+        </div>
+    }
+
+    <div class="pub-col-card pub-card">
+
+        @* ══ STEP 1 — ข้อมูลผู้ใช้ ══ *@
+        @if (step == 1)
+        {
+            <div class="pub-card-head">
+                <div class="pub-card-title">ข้อมูลผู้ใช้</div>
+                <div class="pub-card-sub">ข้อมูลส่วนบุคคลและช่องทางติดต่อ</div>
+            </div>
+            <div class="pub-card-body">
+
+                @* ThaiD *@
+                <div class="pub-sec">ยืนยันตัวตน ThaiD</div>
+                <div class="pub-thaid @(req.ThaiDVerified ? "verified" : "")">
+                    <div class="pub-thaid-logo">
+                        <i class="bi @(req.ThaiDVerified ? "bi-check-lg" : "bi-credit-card-2-front-fill")"></i>
+                    </div>
+                    @if (req.ThaiDVerified)
+                    {
+                        <div class="pub-thaid-info">
+                            <div class="pub-thaid-ok-name">@req.FirstName @req.LastName</div>
+                            <div class="pub-thaid-ok-id">
+                                <i class="bi bi-check-circle-fill me-1" style="color:#4ade80"></i>
+                                ยืนยันแล้ว · เลขบัตร @MaskId(req.NationalId)
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="pub-thaid-info">
+                            <div class="pub-thaid-name">ยืนยันตัวตนด้วยบัตรประชาชนดิจิทัล</div>
+                            <div class="pub-thaid-sub">ตัวเลือกเสริม: ใช้ ThaiD เพื่อช่วยเติมชื่อ-นามสกุลอัตโนมัติ หรือกรอกข้อมูลเองด้านล่างได้</div>
+                        </div>
+                        <button class="pub-btn pub-btn-blue" @onclick="() => OpenTerms()">
+                            <i class="bi bi-credit-card-fill"></i> ยืนยัน ThaiD
+                        </button>
+                    }
+                </div>
+                @if (!req.ThaiDVerified)
+                {
+                    @* ช่องกรอกเลขบัตรประชาชน (แสดงเฉพาะเมื่อไม่ได้ยืนยัน ThaiD) *@
+                    <div class="pub-sec" style="margin-top:22px">เลขบัตรประชาชน</div>
+                    <div class="pub-field">
+                        <label class="pub-lbl-f">เลขบัตรประชาชน 13 หลัก <span class="pub-req">*</span></label>
+                        <div class="pub-iw">
+                            <i class="bi bi-credit-card-2-front pub-ico"></i>
+                            <input class="pub-inp @(pidError != null ? "pub-inp-err" : "")"
+                                   type="text"
+                                   inputmode="numeric"
+                                   maxlength="13"
+                                   placeholder="กรอกเลข 13 หลัก"
+                                   value="@req.NationalId"
+                                   @oninput="OnNationalIdInput" />
+                        </div>
+                        @if (pidError != null)
+                        {
+                            <div class="pub-err"><i class="bi bi-exclamation-circle me-1"></i>@pidError</div>
+                        }
+                    </div>
+                }
+
+                @* บัญชีผู้ใช้งาน *@
+                <div class="pub-sec" style="margin-top:22px">บัญชีผู้ใช้งาน</div>
+                <div class="pub-username-grid">
+                    <div class="pub-field">
+                        <label class="pub-lbl-f">ชื่อ (สำหรับ Username) <span class="pub-req">*</span></label>
+                        <div class="pub-iw">
+                            <i class="bi bi-person pub-ico"></i>
+                            <input class="pub-inp"
+                                   value="@req.FirstNameEn"
+                                   @oninput="OnFirstNameEnInput"
+                                   @onblur="CheckUsernameFromApiAsync"
+                                   readonly="@IsThaiDLocked"
+                                   placeholder="เช่น Somchai" />
+                        </div>
+                    </div>
+                    <div class="pub-field">
+                        <label class="pub-lbl-f">นามสกุล (สำหรับ Username) <span class="pub-req">*</span></label>
+                        <div class="pub-iw">
+                            <i class="bi bi-person pub-ico"></i>
+                            <input class="pub-inp"
+                                   value="@req.LastNameEn"
+                                   @oninput="OnLastNameEnInput"
+                                   @onblur="CheckUsernameFromApiAsync"
+                                   readonly="@IsThaiDLocked"
+                                   placeholder="เช่น Jaidee" />
+                        </div>
+                    </div>
+                    <div class="pub-field">
+                        <label class="pub-lbl-f">ชื่อผู้ใช้งาน (ระบบสร้าง)</label>
+                        <div class="pub-iw">
+                            <i class="bi bi-at pub-ico"></i>
+                            <input class="pub-inp" value="@(isCheckingUsername ? "กำลังตรวจสอบ..." : req.Username)" readonly placeholder="auto-generate" />
+                        </div>
+                    </div>
+                </div>
+                <div class="pub-username-status @(usernameWasAdjusted ? "warn" : !string.IsNullOrEmpty(req.Username) ? "ok" : "")">
+                    <i class="bi @(isCheckingUsername ? "bi-arrow-repeat" : usernameWasAdjusted ? "bi-exclamation-triangle-fill" : !string.IsNullOrEmpty(req.Username) ? "bi-check-circle-fill" : "bi-info-circle")"></i>
+                    @(string.IsNullOrWhiteSpace(usernameCheckMessage)
+                        ? "กรอกชื่อและนามสกุล (ด้านล่าง) เพื่อสร้าง Username"
+                        : usernameCheckMessage)
+                </div>
+                @if (HasErr("uname")) { <span class="pub-err-msg" style="margin-top:8px"><i class="bi bi-exclamation-circle-fill"></i>@E("uname")</span> }
+                @if (HasErr("fnen"))  { <span class="pub-err-msg" style="margin-top:4px"><i class="bi bi-exclamation-circle-fill"></i>@E("fnen")</span> }
+                @if (HasErr("lnen"))  { <span class="pub-err-msg" style="margin-top:4px"><i class="bi bi-exclamation-circle-fill"></i>@E("lnen")</span> }
+
+                @* ข้อมูลส่วนบุคคล *@
+                <div class="pub-sec" style="margin-top:22px">ข้อมูลส่วนบุคคล</div>
+                <div class="pub-g3">
+                    <div class="pub-field">
+                        <label class="pub-lbl-f">คำนำหน้า <span class="pub-req">*</span></label>
+                        <div class="pub-iw">
+                            <i class="bi bi-person-badge pub-ico"></i>
+                            <select class="pub-sel @(HasErr("title") ? "err" : "")" @bind="req.TitleTh" disabled="@IsThaiDLocked">
+                                <option value="">— เลือก —</option>
+                                <option>นาย</option>
+                                <option>นาง</option>
+                                <option>นางสาว</option>
+                                <option>ว่าที่ร้อยตรี</option>
+                                <option>ว่าที่ร้อยโท</option>
+                                <option>ว่าที่ร้อยเอก</option>
+                            </select>
+                        </div>
+                        @if (HasErr("title")) { <span class="pub-err-msg"><i class="bi bi-exclamation-circle-fill"></i>@E("title")</span> }
+                    </div>
+                    <div class="pub-field">
+                        <label class="pub-lbl-f">ชื่อ <span class="pub-req">*</span></label>
+                        <div class="pub-iw">
+                            <i class="bi bi-person-fill pub-ico"></i>
+                            <input class="pub-inp @(HasErr("fn") ? "err" : "")"
+                                   @bind="req.FirstName" readonly="@IsThaiDLocked" placeholder="ชื่อ" />
+                        </div>
+                        @if (HasErr("fn")) { <span class="pub-err-msg"><i class="bi bi-exclamation-circle-fill"></i>@E("fn")</span> }
+                    </div>
+                    <div class="pub-field">
+                        <label class="pub-lbl-f">นามสกุล <span class="pub-req">*</span></label>
+                        <div class="pub-iw">
+                            <i class="bi bi-person-fill pub-ico"></i>
+                            <input class="pub-inp @(HasErr("ln") ? "err" : "")"
+                                   @bind="req.LastName" readonly="@IsThaiDLocked" placeholder="นามสกุล" />
+                        </div>
+                        @if (HasErr("ln")) { <span class="pub-err-msg"><i class="bi bi-exclamation-circle-fill"></i>@E("ln")</span> }
+                    </div>
+                </div>
+                <div class="pub-g3" style="margin-top:14px">
+                    <div class="pub-field">
+                        <label class="pub-lbl-f">ชื่อเล่น</label>
+                        <div class="pub-iw">
+                            <i class="bi bi-chat-heart pub-ico"></i>
+                            <input class="pub-inp" @bind="req.Nickname" placeholder="ชื่อเล่น" />
+                        </div>
+                    </div>
+                </div>
+                <div class="pub-field" style="margin-top:14px">
+                    <label class="pub-lbl-f">วันเดือนปีเกิด</label>
+                    <div class="pub-birth-grid">
+                        <div class="pub-field">
+                            <label class="pub-lbl-f">วัน</label>
+                            <div class="pub-iw">
+                                <input class="pub-inp" type="text" inputmode="numeric" maxlength="2"
+                                    value="@birthDayText" placeholder="วว"
+                                    disabled="@IsThaiDLocked"
+                                    @oninput="OnBirthDateInput"
+                                    autocomplete="bday-day" />
+                            </div>
+                        </div>
+
+                        <div class="pub-field">
+                            <label class="pub-lbl-f">เดือน</label>
+                            <div class="pub-iw">
+                                <select class="pub-inp"
+                                        value="@birthMonthText"
+                                        disabled="@IsThaiDLocked"
+                                        @onchange="OnBirthMonthChanged"
+                                        autocomplete="bday-month">
+                                    <option value="">เลือกเดือน</option>
+                                    @foreach (var month in ThaiMonths)
+                                    {
+                                        <option value="@month.Value">@month.Label</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="pub-field">
+                            <label class="pub-lbl-f">ปี พ.ศ.</label>
+                            <div class="pub-iw">
+                                <input class="pub-inp" type="text" inputmode="numeric" maxlength="4"
+                                    value="@birthYearText" placeholder="ปปปป"
+                                    disabled="@IsThaiDLocked"
+                                    @oninput="OnBirthYearInput"
+                                    autocomplete="bday-year" />
+                            </div>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(birthDateError))
+                    {
+                        <div class="pub-username-status warn" style="margin-top:8px">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            @birthDateError
+                        </div>
+                    }
+                </div>
+
+                @* ช่องทางติดต่อ *@
+                <div class="pub-sec" style="margin-top:22px">ช่องทางติดต่อ</div>
+                <div class="pub-g3">
+                    <div class="pub-field" style="grid-column:1/3">
+                        <label class="pub-lbl-f">โทรศัพท์ภายใน</label>
+                        <div class="pub-iw">
+                            <i class="bi bi-telephone pub-ico"></i>
+                            <input class="pub-inp" @bind="req.PhoneInternal" placeholder="02-xxx-xxxx" />
+                        </div>
+                    </div>
+                    <div class="pub-field">
+                        <label class="pub-lbl-f">หมายเลขต่อ</label>
+                        <div class="pub-iw">
+                            <i class="bi bi-hash pub-ico"></i>
+                            <input class="pub-inp" @bind="req.PhoneExtension" placeholder="xxxx" />
+                        </div>
+                    </div>
+                </div>
+                <div class="pub-g3" style="margin-top:14px">
+                    <div class="pub-field" style="grid-column:1/3">
+                        <label class="pub-lbl-f">โทรศัพท์มือถือ <span class="pub-req">*</span></label>
+                        <div class="pub-iw">
+                            <i class="bi bi-phone-fill pub-ico"></i>
+                            <input class="pub-inp @(HasErr("mob") ? "err" : "")"
+                                   @bind="req.Mobile" placeholder="08x-xxx-xxxx" maxlength="12" />
+                        </div>
+                        @if (HasErr("mob")) { <span class="pub-err-msg"><i class="bi bi-exclamation-circle-fill"></i>@E("mob")</span> }
+                    </div>
+                    <div class="pub-field">
+                        <label class="pub-lbl-f">มือถือสำรอง</label>
+                        <div class="pub-iw">
+                            <i class="bi bi-phone pub-ico"></i>
+                            <input class="pub-inp" @bind="req.MobileBackup" placeholder="08x-xxx-xxxx" maxlength="12" />
+                        </div>
+                    </div>
+                </div>
+                <div class="pub-field" style="margin-top:14px">
+                    <label class="pub-lbl-f">อีเมลราชการ <span class="pub-req">*</span></label>
+                    <div class="pub-iw">
+                        <i class="bi bi-envelope-fill pub-ico"></i>
+                        <input class="pub-inp @(HasErr("em") ? "err" : "")"
+                               type="email" @bind="req.Email" placeholder="name@pacc.go.th" />
+                    </div>
+                    @if (HasErr("em")) { <span class="pub-err-msg"><i class="bi bi-exclamation-circle-fill"></i>@E("em")</span> }
+                </div>
+                <div class="pub-field" style="margin-top:10px">
+                    <label class="pub-lbl-f">อีเมลสำรอง</label>
+                    <div class="pub-iw">
+                        <i class="bi bi-envelope pub-ico"></i>
+                        <input class="pub-inp" type="email" @bind="req.EmailBackup" placeholder="personal@example.com (ถ้ามี)" />
+                    </div>
+                </div>
+
+                @*
+                รหัสผ่าน
+                <div class="pub-sec" style="margin-top:22px">รหัสผ่าน</div>
+                <div class="pub-g2">
+                    <div class="pub-field">
+                        <label class="pub-lbl-f">รหัสผ่าน <span class="pub-req">*</span></label>
+                        <div class="pub-iw">
+                            <i class="bi bi-lock-fill pub-ico"></i>
+                            <input class="pub-inp pub-inp-pr @(HasErr("pw") ? "err" : "")"
+                                   type="@(showPw ? "text" : "password")"
+                                   value="@req.Password"
+                                   @oninput="OnPasswordInput"
+                                   placeholder="อย่างน้อย 8 ตัวอักษร" />
+                            <button type="button" class="pub-eye" @onclick="() => showPw = !showPw">
+                                <i class="bi @(showPw ? "bi-eye-slash" : "bi-eye")"></i>
+                            </button>
+                        </div>
+                        <div class="pub-str"><div class="pub-str-fill" style="width:@(PwdPct())%;background:@PwdColor()"></div></div>
+                        @if (!string.IsNullOrEmpty(PwdLabel()))
+                        {
+                            <div class="pub-str-lbl" style="color:@PwdColor()">@PwdLabel()</div>
+                        }
+                        @if (HasErr("pw")) { <span class="pub-err-msg"><i class="bi bi-exclamation-circle-fill"></i>@E("pw")</span> }
+                    </div>
+                    <div class="pub-field">
+                        <label class="pub-lbl-f">ยืนยันรหัสผ่าน <span class="pub-req">*</span></label>
+                        <div class="pub-iw">
+                            <i class="bi bi-lock-fill pub-ico"></i>
+                            <input class="pub-inp pub-inp-pr @(HasErr("cpw") ? "err" : "")"
+                                   type="@(showPw ? "text" : "password")"
+                                   value="@confirmPw"
+                                   @oninput="OnConfirmPwInput"
+                                   placeholder="กรอกรหัสผ่านอีกครั้ง" />
+                        </div>
+                        @if (HasErr("cpw")) { <span class="pub-err-msg"><i class="bi bi-exclamation-circle-fill"></i>@E("cpw")</span> }
+                    </div>
+                </div>
+                <div style="font-size:12px;color:var(--pub-muted);margin-top:8px;line-height:1.6">
+                    <i class="bi bi-shield-check me-1" style="color:rgba(200,169,110,.6)"></i>
+                    ต้องมี: ตัวพิมพ์ใหญ่ · ตัวพิมพ์เล็ก · ตัวเลข · อักขระพิเศษ · ห้ามมีตัวเลขเรียงต่อกัน (เช่น 123, 789)
+                </div>
+                *@
+
+                <div class="pub-actions">
+                    <button class="pub-btn pub-btn-flex pub-btn-gold" @onclick="Step1Next">
+                        ถัดไป — สังกัดที่ปฏิบัติงาน <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        }
+
+        @* ══ STEP 2 — สังกัดที่ปฏิบัติงาน ══ *@
+        else if (step == 2)
+        {
+            <div class="pub-card-head">
+                <div class="pub-card-title">สังกัดที่ปฏิบัติงาน</div>
+                <div class="pub-card-sub">ตำแหน่ง สายงาน และหน่วยงานที่สังกัด</div>
+            </div>
+            <div class="pub-card-body">
+
+                <div class="pub-field" style="margin-top:14px">
+                    <label class="pub-lbl-f">ตำแหน่งงาน</label>
+                    <div class="pub-iw">
+                        <i class="bi bi-briefcase-fill pub-ico"></i>
+                        <input class="pub-inp" @bind="req.JobTitle" placeholder="ตำแหน่งงานในสังกัด" />
+                    </div>
+                </div>
+
+                @* หน่วยงานที่สังกัด *@
+                <div class="pub-sec" style="margin-top:22px">หน่วยงานที่สังกัด</div>
+                <div class="pub-g2">
+                    <div class="pub-field">
+                        <label class="pub-lbl-f">สำนัก / กอง / ศูนย์ <span class="pub-req">*</span></label>
+                        <div class="pub-iw">
+                            <select class="pub-sel no-ico @(HasErr("bureau") ? "err" : "")"
+                                    value="@req.TargetOrgId?.ToString()"
+                                    @onchange="OnOrganizationChanged">
+                                <option value="">— เลือกสำนัก/กอง/ศูนย์ —</option>
+                                @foreach (var org in organizations)
+                                {
+                                    <option value="@org.Id">@OrgLabel(org)</option>
+                                }
+                            </select>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(organizationLoadError))
+                        {
+                            <span class="pub-err-msg"><i class="bi bi-exclamation-circle-fill"></i>@organizationLoadError</span>
+                        }
+                        @if (HasErr("bureau")) { <span class="pub-err-msg"><i class="bi bi-exclamation-circle-fill"></i>@E("bureau")</span> }
+                    </div>
+                    <div class="pub-field">
+                        <label class="pub-lbl-f">ประเภทเจ้าหน้าที่ <span class="pub-req">*</span></label>
+                        <div class="pub-iw">
+                            <select class="pub-sel no-ico @(HasErr("offtype") ? "err" : "")" @bind="req.OfficerType">
+                                <option value="">— เลือกประเภท —</option>
+                                <option>ข้าราชการ</option>
+                                <option>พนักงานราชการ</option>
+                                <option>ลูกจ้างประจำ</option>
+                                <option>ลูกจ้างชั่วคราว</option>
+                                <option>เจ้าหน้าที่โครงการ</option>
+                            </select>
+                        </div>
+                        @if (HasErr("offtype")) { <span class="pub-err-msg"><i class="bi bi-exclamation-circle-fill"></i>@E("offtype")</span> }
+                    </div>
+                </div>
+                <div class="pub-g2" style="margin-top:14px">
+                    <div class="pub-field">
+                        <label class="pub-lbl-f">ส่วน / กลุ่ม / ฝ่าย</label>
+                        <div class="pub-iw">
+                            <select class="pub-sel no-ico" @bind="req.Division">
+                                <option value="">— ไม่ระบุ —</option>
+                                <option>กลุ่มงานคอมพิวเตอร์และการสื่อสาร</option>
+                                <option>กลุ่มงานบริหารเทคโนโลยีและพัฒนาระบบ</option>
+                                <option>ฝ่ายบริหารทั่วไป</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pub-field">
+                        <label class="pub-lbl-f">ส่วน / กลุ่ม / ย่อย</label>
+                        <div class="pub-iw">
+                            <i class="bi bi-diagram-3 pub-ico"></i>
+                            <input class="pub-inp" @bind="req.SubDivision" placeholder="ระบุกลุ่มย่อย (ถ้ามี)" />
+                        </div>
+                    </div>
+                </div>
+
+<div class="pub-actions">
+                    <button class="pub-btn pub-btn-secondary" @onclick='() => { step = 1; errs.Clear(); }'>
+                        <i class="bi bi-arrow-left"></i> กลับ
+                    </button>
+                    <button class="pub-btn pub-btn-flex pub-btn-gold" @onclick="Step2Next">
+                        ถัดไป — ยืนยันข้อมูล <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        }
+
+        @* ══ STEP 3 — ยืนยัน ══ *@
+        else if (step == 3)
+        {
+            <div class="pub-card-head">
+                <div class="pub-card-title">ตรวจสอบและยืนยันข้อมูล</div>
+                <div class="pub-card-sub">กรุณาตรวจสอบข้อมูลก่อนสร้างบัญชี</div>
+            </div>
+            <div class="pub-card-body">
+                <div class="pub-sum">
+                    <div class="pub-sum-row"><span class="pub-sum-k">ชื่อผู้ใช้งาน</span><span class="pub-sum-v pub-c-gold">@req.Username</span></div>
+                    <div class="pub-sum-row"><span class="pub-sum-k">ชื่อ-นามสกุล</span><span class="pub-sum-v">@req.TitleTh @req.FirstName @req.LastName</span></div>
+                    @if (!string.IsNullOrEmpty(req.FirstNameEn))
+                    {
+                        <div class="pub-sum-row"><span class="pub-sum-k">ชื่อ-นามสกุล (สำหรับ Username)</span><span class="pub-sum-v">@req.FirstNameEn @req.LastNameEn</span></div>
+                    }
+                    @if (!string.IsNullOrEmpty(req.Nickname))
+                    {
+                        <div class="pub-sum-row"><span class="pub-sum-k">ชื่อเล่น</span><span class="pub-sum-v">@req.Nickname</span></div>
+                    }
+                    <div class="pub-sum-row"><span class="pub-sum-k">เลขบัตรประชาชน</span><span class="pub-sum-v">@MaskId(req.NationalId)</span></div>
+                    <div class="pub-sum-row"><span class="pub-sum-k">โทรศัพท์มือถือ</span><span class="pub-sum-v">@req.Mobile</span></div>
+                    @if (!string.IsNullOrEmpty(req.PhoneInternal))
+                    {
+                        <div class="pub-sum-row"><span class="pub-sum-k">โทรศัพท์ภายใน</span><span class="pub-sum-v">@req.PhoneInternal @(string.IsNullOrEmpty(req.PhoneExtension) ? "" : $"ต่อ {req.PhoneExtension}")</span></div>
+                    }
+                    <div class="pub-sum-row"><span class="pub-sum-k">อีเมลราชการ</span><span class="pub-sum-v">@req.Email</span></div>
+                    @if (!string.IsNullOrWhiteSpace(req.EmailBackup))
+                    {
+                        <div class="pub-sum-row"><span class="pub-sum-k">อีเมลสำรอง</span><span class="pub-sum-v">@req.EmailBackup</span></div>
+                    }
+                    @if (!string.IsNullOrEmpty(req.JobTitle))
+                    {
+                        <div class="pub-sum-row"><span class="pub-sum-k">ตำแหน่งงาน</span><span class="pub-sum-v">@req.JobTitle</span></div>
+                    }
+                    <div class="pub-sum-row"><span class="pub-sum-k">สำนัก/กอง/ศูนย์</span><span class="pub-sum-v">@req.Bureau</span></div>
+                    @if (!string.IsNullOrWhiteSpace(req.Division))
+                    {
+                        <div class="pub-sum-row"><span class="pub-sum-k">ส่วน/กลุ่ม/ฝ่าย</span><span class="pub-sum-v">@req.Division</span></div>
+                    }
+                    @if (!string.IsNullOrEmpty(req.SubDivision))
+                    {
+                        <div class="pub-sum-row"><span class="pub-sum-k">ส่วน/กลุ่ม/ย่อย</span><span class="pub-sum-v">@req.SubDivision</span></div>
+                    }
+                    <div class="pub-sum-row"><span class="pub-sum-k">ประเภทเจ้าหน้าที่</span><span class="pub-sum-v">@req.OfficerType</span></div>
+                    <div class="pub-sum-row">
+                        <span class="pub-sum-k">ยืนยัน ThaiD</span>
+                        <span class="pub-sum-v @(req.ThaiDVerified ? "pub-c-ok" : "pub-c-warn")">
+                            <i class="bi @(req.ThaiDVerified ? "bi-check-circle-fill" : "bi-exclamation-circle-fill") me-1"></i>
+                            @(req.ThaiDVerified ? "ยืนยันแล้ว" : "ยังไม่ยืนยัน")
+                        </span>
+                    </div>
+                    <div class="pub-sum-row">
+                        <span class="pub-sum-k">ปกปิดข้อมูลส่วนตัว</span>
+                        <span class="pub-sum-v">
+                            <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">
+                                <input type="checkbox" @bind="req.PrivacyConsent" />
+                                <span>@(req.PrivacyConsent ? "เปิดใช้งาน" : "ไม่เปิดใช้งาน")</span>
+                            </label>
+                        </span>
+                    </div>
+                </div>
+                <div style="font-size:12px;color:var(--pub-muted);margin-top:10px;line-height:1.6">
+                    <i class="bi bi-shield-lock me-1" style="color:rgba(200,169,110,.6)"></i>
+                    หากเปิดใช้งาน ระบบจะบันทึกข้อมูลชื่อ-นามสกุลแบบปกปิดตามนโยบายข้อมูลส่วนบุคคล
+                </div>
+                <div class="pub-warn-box">
+                    <i class="bi bi-envelope-check-fill"></i>
+                    <div>
+                        เมื่อกดส่ง ระบบจะส่งคำขอลงทะเบียนให้เจ้าหน้าที่พิจารณา
+                        และจะแจ้งผลการอนุมัติหรือไม่อนุมัติทาง Email
+                    </div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(submitError))
+                {
+                    <div class="pub-username-status warn" style="margin-top:14px">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        @submitError
+                    </div>
+                }
+                <div class="pub-actions">
+                    <button class="pub-btn pub-btn-secondary" @onclick='() => { step = 2; errs.Clear(); }'>
+                        <i class="bi bi-arrow-left"></i> กลับ
+                    </button>
+                    <button class="pub-btn pub-btn-flex pub-btn-gold" @onclick="Submit" disabled="@isSubmitting">
+                        <i class="bi @(isSubmitting ? "bi-arrow-repeat" : "bi-send-fill")"></i>
+                        @(isSubmitting ? "กำลังส่งคำขอ..." : "ส่งคำขอลงทะเบียน")
+                    </button>
+                </div>
+            </div>
+        }
+
+        @* STEP 4 — ส่งคำขอแล้ว *@
+        else if (step == 4)
+        {
+            <div class="pub-card-body">
+                <div class="pub-success">
+                    <div class="pub-success-ring">
+                        <div class="pub-success-ico"><i class="bi bi-check2-circle"></i></div>
+                    </div>
+                    <div class="pub-s4-title">คำขอลงทะเบียนถูกส่งแล้ว</div>
+                    <div class="pub-s4-sub">
+                        รอเจ้าหน้าที่พิจารณา<br />
+                        จะได้รับการแจ้งผลการลงทะเบียนทาง Email
+                    </div>
+
+                    <div class="pub-track-box" style="width:100%;max-width:480px;text-align:left">
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;margin-bottom:18px;border-radius:16px;background:rgba(200,169,110,.08);border:1px solid rgba(200,169,110,.18)">
+                            <div>
+                                <div class="pub-username-caption" style="margin-bottom:3px">Username</div>
+                                <div class="pub-username-value" style="font-size:20px">@req.Username</div>
+                            </div>
+                            <div class="pub-username-badge"><i class="bi bi-hourglass-split"></i> รอพิจารณา</div>
+                        </div>
+
+                        <div class="pub-s4-help">
+                            <div class="pub-s4-help-lbl">เลขติดตามคำขอ</div>
+                            <div class="pub-s4-help-txt">@trackId</div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:28px">
+                        <button class="pub-btn pub-btn-secondary" @onclick='() => Nav.NavigateTo("/")'>
+                            <i class="bi bi-box-arrow-in-right"></i>
+                            ไปหน้าเข้าสู่ระบบ
+                        </button>
+                        <button class="pub-btn pub-btn-gold" @onclick='() => Nav.NavigateTo($"/register/status?id={Uri.EscapeDataString(trackId)}")'>
+                            <i class="bi bi-search"></i>
+                            ตรวจสอบสถานะ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+
+    </div>
+</div>
+
+@* ══ TERMS OF SERVICE MODAL ══ *@
+@if (showTermsModal)
+{
+    <div class="tos-overlay" @onclick="CloseTerms">
+        <div class="tos-dialog" @onclick:stopPropagation="true">
+            <div class="tos-header">
+                <div>
+                    <div class="tos-title">@(tosData?.Title ?? "นโยบายความเป็นส่วนตัวและเงื่อนไขการใช้งาน")</div>
+                    <div class="tos-sub">ระบบ E-CMIS · สำนักงาน ป.ป.ท.@(tosData is not null ? $" · v{tosData.Version}" : "")</div>
+                </div>
+            </div>
+            <div class="tos-body">
+                @if (tosLoading)
+                {
+                    <div style="text-align:center;padding:32px;color:var(--pub-muted)">
+                        <i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite;font-size:22px"></i>
+                        <div style="margin-top:10px;font-size:13px">กำลังโหลด...</div>
+                    </div>
+                }
+                else if (tosData is not null)
+                {
+                    @((MarkupString)tosData.Content)
+                }
+                else
+                {
+                    <div style="text-align:center;padding:32px;color:var(--pub-muted);font-size:13px">
+                        <i class="bi bi-exclamation-circle me-1"></i>ไม่สามารถโหลดเนื้อหาได้ในขณะนี้
+                    </div>
+                }
+            </div>
+            <div class="tos-footer">
+                <button class="tos-cancel-btn" @onclick="CloseTerms">
+                    <i class="bi bi-x-lg"></i> ยกเลิก
+                </button>
+                <button class="pub-btn pub-btn-blue" @onclick="AcceptTermsAndDoThaiD">
+                    <i class="bi bi-check-lg"></i> ยอมรับและดำเนินการต่อ
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .tos-overlay {
+        position: fixed; inset: 0; z-index: 1000;
+        background: rgba(0,0,0,.45);
+        backdrop-filter: blur(6px);
+        display: flex; align-items: center; justify-content: center;
+        padding: 16px;
+        animation: tos-fade-in .18s ease both;
+    }
+    @@keyframes tos-fade-in  { from { opacity:0; } to { opacity:1; } }
+    @@keyframes tos-slide-up { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    @@keyframes spin { to { transform:rotate(360deg); } }
+
+    .tos-dialog {
+        background: #fff;
+        border-radius: 20px;
+        width: 100%; max-width: 580px;
+        max-height: 88vh;
+        display: flex; flex-direction: column;
+        box-shadow: 0 24px 60px rgba(0,0,0,.3);
+        animation: tos-slide-up .28s cubic-bezier(.16,1,.3,1) both;
+        overflow: hidden;
+    }
+
+    .tos-header {
+        display: flex; align-items: center; gap: 14px;
+        padding: 22px 24px 18px;
+        border-bottom: 1px solid #f0f0f0;
+        flex-shrink: 0;
+    }
+    .tos-title { font-size: 15px; font-weight: 700; color: #1a1a2e; letter-spacing: -.1px; }
+    .tos-sub   { font-size: 12px; color: #888; margin-top: 2px; }
+
+    .tos-body {
+        padding: 20px 24px 16px;
+        overflow-y: auto; flex: 1;
+        font-size: 13.5px; line-height: 1.8;
+        color: #444;
+        scrollbar-width: thin;
+        scrollbar-color: #ddd transparent;
+    }
+    .tos-body::-webkit-scrollbar       { width: 4px; }
+    .tos-body::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+
+    .tos-body h4 {
+        font-size: 12px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .4px; color: #b8891e;
+        margin: 18px 0 6px;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .tos-body h4::before {
+        content: ''; width: 3px; height: 12px; border-radius: 2px;
+        background: #c8a96e; flex-shrink: 0;
+    }
+    .tos-body h4:first-child { margin-top: 0; }
+    .tos-body p  { margin: 0 0 10px; }
+    .tos-body ul { margin: 0 0 12px; padding-left: 0; list-style: none; }
+    .tos-body li { margin-bottom: 5px; padding-left: 16px; position: relative; }
+    .tos-body li::before {
+        content: ''; position: absolute; left: 4px; top: 8px;
+        width: 4px; height: 4px; border-radius: 50%; background: #c8a96e;
+    }
+    .tos-body strong { color: #1a1a2e; font-weight: 600; }
+
+    .tos-footer {
+        display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+        padding: 14px 24px 18px;
+        border-top: 1px solid #ebebeb;
+        background: #f7f7f7;
+        flex-shrink: 0;
+    }
+    .tos-cancel-btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 10px 20px; border-radius: 10px; cursor: pointer;
+        font-size: 14px; font-weight: 600; font-family: var(--pub-font, sans-serif);
+        background: #fff; color: #444;
+        border: 1.5px solid #d0d0d0;
+        transition: all .2s ease;
+    }
+    .tos-cancel-btn:hover { background: #f0f0f0; border-color: #aaa; color: #222; }
+    @@media (max-width: 480px) {
+        .tos-footer { flex-direction: column-reverse; }
+        .tos-footer .pub-btn, .tos-cancel-btn { width: 100%; justify-content: center; }
+    }
+
+    .pub-birth-grid {
+        display: grid;
+        grid-template-columns: minmax(84px, .8fr) minmax(160px, 1.4fr) minmax(120px, 1fr);
+        gap: 12px;
+        align-items: start;
+    }
+
+    @@media (max-width: 640px) {
+        .pub-birth-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+@code {
+    private int step = 1;
+    private RegistrationRequest req = new();
+    private string confirmPw = "";
+    // private bool showPw;
+    private bool isDark = false;
+    private bool showTermsModal = false;
+    private bool tosLoading = false;
+    private TosDto? tosData;
+    private bool isCheckingUsername;
+    private bool usernameWasAdjusted;
+    private string usernameCheckMessage = "";
+    private string trackId = "";
+    private bool isSubmitting;
+    private string submitError = "";
+    private Dictionary<string, string> errs = new();
+    private bool IsThaiDLocked => req.ThaiDVerified;
+    private string? pidError;
+
+    private void OnNationalIdInput(ChangeEventArgs e)
+    {
+        var raw = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).ToArray());
+        if (raw.Length > 13) raw = raw[..13];
+        req.NationalId = raw;
+        pidError = raw.Length == 13 ? null : "เลขบัตรประชาชนต้องมี 13 หลัก";
+    }
+    private string birthDateError = "";
+    private string birthDayText = "";
+    private string birthMonthText = "";
+    private string birthYearText = "";
+    private List<OrgItem> organizations = [];
+    private string organizationLoadError = "";
+
+    private List<SystemDto>? availableSystems;
+    private HashSet<int> selectedSystemIds = new();
+
+    private void ToggleSystem(int id, bool isChecked)
+    {
+        if (isChecked) selectedSystemIds.Add(id);
+        else selectedSystemIds.Remove(id);
+        req.RequestedSystemIds = selectedSystemIds.ToArray();
+    }
+
+    private async Task LoadAvailableSystemsAsync()
+    {
+        try { availableSystems = await SystemApi.ListPublicSystemsAsync(); }
+        catch { availableSystems = new(); }
+    }
+
+    private static readonly (string Value, string Label)[] ThaiMonths =
+    [
+        ("1", "มกราคม"),
+        ("2", "กุมภาพันธ์"),
+        ("3", "มีนาคม"),
+        ("4", "เมษายน"),
+        ("5", "พฤษภาคม"),
+        ("6", "มิถุนายน"),
+        ("7", "กรกฎาคม"),
+        ("8", "สิงหาคม"),
+        ("9", "กันยายน"),
+        ("10", "ตุลาคม"),
+        ("11", "พฤศจิกายน"),
+        ("12", "ธันวาคม")
+    ];
+
+    private void ToggleTheme() => isDark = !isDark;
+
+    private void OnBirthDateInput(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? "";
+        // Keep only digits
+        birthDayText = new string(value.Where(char.IsDigit).ToArray());
+        if (birthDayText.Length > 2)
+            birthDayText = birthDayText.Substring(0, 2);
+        birthDateError = "";
+        UpdateBirthDateFromParts(showError: false);
+    }
+
+    private void OnBirthMonthChanged(ChangeEventArgs e)
+    {
+        birthMonthText = e.Value?.ToString() ?? "";
+        birthDateError = "";
+        UpdateBirthDateFromParts(showError: false);
+    }
+
+    private void OnBirthYearInput(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? "";
+        // Keep only digits
+        birthYearText = new string(value.Where(char.IsDigit).ToArray());
+        if (birthYearText.Length > 4)
+            birthYearText = birthYearText.Substring(0, 4);
+        birthDateError = "";
+        UpdateBirthDateFromParts(showError: false);
+    }
+
+    private bool UpdateBirthDateFromParts(bool showError = false)
+    {
+        birthDateError = "";
+
+        var hasAny = !string.IsNullOrWhiteSpace(birthDayText)
+            || !string.IsNullOrWhiteSpace(birthMonthText)
+            || !string.IsNullOrWhiteSpace(birthYearText);
+
+        if (!hasAny)
+        {
+            req.BirthDate = null;
+            return true;
+        }
+
+        if (!int.TryParse(birthDayText, out var day) ||
+            !int.TryParse(birthMonthText, out var month) ||
+            !int.TryParse(birthYearText, out var buddhistYear))
+        {
+            if (showError) birthDateError = "กรุณากรอกวัน เดือนและปี พ.ศ. ให้ครบ";
+            req.BirthDate = null;
+            return false;
+        }
+
+        var gregorianYear = buddhistYear - 543;
+
+        if (!DateOnly.TryParseExact(
+            $"{gregorianYear:D4}-{month:D2}-{day:D2}",
+            "yyyy-MM-dd",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.None,
+            out var date))
+        {
+            if (showError) birthDateError = "วันเดือนปีเกิดไม่ถูกต้อง";
+            req.BirthDate = null;
+            return false;
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        if (date > today)
+        {
+            if (showError) birthDateError = "วันเดือนปีเกิดต้องไม่เป็นวันที่ในอนาคต";
+            req.BirthDate = null;
+            return false;
+        }
+
+        var maxBirthDate = today.AddYears(-120);
+        if (date < maxBirthDate)
+        {
+            if (showError) birthDateError = "อายุต้องไม่เกิน 120 ปี";
+            req.BirthDate = null;
+            return false;
+        }
+
+        req.BirthDate = date;
+        return true;
+    }
+
+    private void SetBirthDateParts(DateOnly? date)
+    {
+        if (!date.HasValue)
+        {
+            birthDayText = "";
+            birthMonthText = "";
+            birthYearText = "";
+            return;
+        }
+
+        birthDayText = date.Value.Day.ToString("00", CultureInfo.InvariantCulture);
+        birthMonthText = date.Value.Month.ToString(CultureInfo.InvariantCulture);
+        birthYearText = (date.Value.Year + 543).ToString(CultureInfo.InvariantCulture);
+    }
+
+    private bool HasErr(string k) => errs.ContainsKey(k);
+    private string E(string k)    => errs.TryGetValue(k, out var v) ? v : "";
+
+    private string MaskId(string id) =>
+        string.IsNullOrEmpty(id) || id.Length < 4
+            ? id : id[..1] + new string('*', id.Length - 4) + id[^3..];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrganizationsAsync();
+        await LoadAvailableSystemsAsync();
+
+        // รับ identity ที่ ThaiDCallback.razor เก็บไว้ใน sessionStorage
+        var identity = await ThaiDSvc.ReadIdentityAsync();
+        if (identity is null) return;
+
+        req.TitleTh        = identity.TitleTh;
+        req.FirstName      = identity.FirstNameTh;
+        req.LastName       = identity.LastNameTh;
+        req.FirstNameEn    = identity.FirstNameEn;
+        req.LastNameEn     = identity.LastNameEn;
+        req.NationalId     = identity.Pid;
+        req.ThaiDVerified  = true;
+        req.ThaiDCitizenId = identity.Pid;
+        req.ThaiDReference = identity.Reference;
+        req.BirthDate      = ParseThaiDBirthdate(identity.Birthdate);
+        SetBirthDateParts(req.BirthDate);
+
+        await ThaiDSvc.ClearIdentityAsync();
+        await CheckUsernameFromApiAsync();
+    }
+
+    private async Task LoadOrganizationsAsync()
+    {
+        organizationLoadError = "";
+        try
+        {
+            organizations = await UserApi.GetOrganizationsAsync();
+        }
+        catch (Exception ex)
+        {
+            organizationLoadError = $"โหลดหน่วยงานไม่สำเร็จ: {ex.Message}";
+            organizations = [];
+        }
+    }
+
+    private void OnOrganizationChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        if (!int.TryParse(value, out var orgId))
+        {
+            req.TargetOrgId = null;
+            req.Bureau = "";
+            return;
+        }
+
+        var org = organizations.FirstOrDefault(x => x.Id == orgId);
+        req.TargetOrgId = orgId;
+        req.Bureau = org?.NameTh ?? "";
+        errs.Remove("bureau");
+    }
+
+    private static string OrgLabel(OrgItem org) =>
+        org.NameTh;
+
+    private static readonly TosDto TosFallback = new()
+    {
+        Version = "1.0",
+        Title = "นโยบายความเป็นส่วนตัวและเงื่อนไขการใช้งาน",
+        Content =
+            "<h4>1. วัตถุประสงค์การเก็บและใช้ข้อมูลส่วนบุคคล</h4>" +
+            "<p>สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ (สำนักงาน ป.ป.ท.) เก็บรวบรวมข้อมูลส่วนบุคคลเพื่อวัตถุประสงค์ดังต่อไปนี้</p>" +
+            "<ul>" +
+            "<li>ยืนยันตัวตนและสร้างบัญชีผู้ใช้งานในระบบ E-CMIS สำหรับเจ้าหน้าที่ที่มีอำนาจหน้าที่</li>" +
+            "<li>กำหนดสิทธิ์การเข้าถึงระบบตามตำแหน่ง สังกัด และบทบาทหน้าที่ราชการ</li>" +
+            "<li>บันทึก Audit Trail ทุกการกระทำในระบบ เพื่อความโปร่งใสและการตรวจสอบย้อนหลัง</li>" +
+            "<li>ประสานงานและแจ้งเตือนเกี่ยวกับคดี งาน และสถานะบัญชีผ่านช่องทางที่ลงทะเบียนไว้</li>" +
+            "</ul>" +
+            "<h4>2. ข้อมูลที่เก็บรวบรวมเมื่อลงทะเบียน</h4>" +
+            "<ul>" +
+            "<li><strong>ข้อมูลส่วนตัว:</strong> ชื่อ-นามสกุล (ภาษาไทยและภาษาอังกฤษ) คำนำหน้าชื่อ วันเดือนปีเกิด</li>" +
+            "<li><strong>ข้อมูลติดต่อ:</strong> อีเมลราชการ อีเมลสำรอง หมายเลขโทรศัพท์</li>" +
+            "<li><strong>ข้อมูลยืนยันตัวตน:</strong> เลขบัตรประจำตัวประชาชน 13 หลัก (เข้ารหัสก่อนบันทึก)</li>" +
+            "<li><strong>ข้อมูลการปฏิบัติงาน:</strong> ตำแหน่ง ประเภทเจ้าหน้าที่ สำนัก/กอง/ศูนย์ที่สังกัด</li>" +
+            "</ul>" +
+            "<h4>3. การยืนยันตัวตนผ่าน ThaiD</h4>" +
+            "<p>ระบบรองรับการยืนยันตัวตนผ่าน ThaiD (แอปบัตรประชาชนดิจิทัล กรมการปกครอง) สำนักงาน ป.ป.ท. ไม่เก็บรหัสผ่านหรือข้อมูลรับรองของ ThaiD กระบวนการทั้งหมดดำเนินการผ่านระบบของกรมการปกครองโดยตรง</p>" +
+            "<h4>4. ความมั่นคงปลอดภัยของข้อมูล</h4>" +
+            "<p>ข้อมูลจัดเก็บในระบบที่ผ่านมาตรฐานความมั่นคงปลอดภัยของภาครัฐ เลขบัตรประจำตัวประชาชนถูกเข้ารหัสก่อนบันทึก และทุกการกระทำถูกบันทึก Audit Log ตลอดเวลา</p>" +
+            "<h4>5. สิทธิ์ของเจ้าของข้อมูล (พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562)</h4>" +
+            "<p>ท่านมีสิทธิ์เข้าถึง แก้ไข ขอสำเนา และขอลบข้อมูลส่วนบุคคลภายใต้ขอบเขตที่กฎหมายกำหนด โดยติดต่อฝ่ายเทคโนโลยีสารสนเทศ สำนักงาน ป.ป.ท.</p>" +
+            "<h4>6. เงื่อนไขการใช้งานระบบ E-CMIS</h4>" +
+            "<ul>" +
+            "<li>บัญชีนี้สำหรับเจ้าหน้าที่สำนักงาน ป.ป.ท. และหน่วยงานที่ได้รับมอบหมายเท่านั้น</li>" +
+            "<li>ห้ามเปิดเผยรหัสผ่านหรืออนุญาตให้บุคคลอื่นใช้บัญชีของท่าน</li>" +
+            "<li>การกระทำทุกอย่างในระบบถูกบันทึกและสามารถตรวจสอบย้อนหลังได้</li>" +
+            "<li>สำนักงาน ป.ป.ท. ขอสงวนสิทธิ์ระงับบัญชีที่ละเมิดนโยบายความมั่นคงปลอดภัยสารสนเทศ</li>" +
+            "</ul>"
+    };
+
+    private async Task OpenTerms()
+    {
+        showTermsModal = true;
+        if (tosData is null)
+        {
+            tosLoading = true;
+            var apiData = await UserApi.GetActiveTosAsync();
+            tosData = apiData ?? TosFallback;
+            tosLoading = false;
+        }
+    }
+    private void CloseTerms() => showTermsModal = false;
+
+    private async Task AcceptTermsAndDoThaiD()
+    {
+        showTermsModal = false;
+        req.PrivacyConsent = true;
+        await DoThaiD();
+    }
+
+    private async Task DoThaiD()
+    {
+        try
+        {
+            await ThaiDSvc.RedirectToThaiDAsync("register");
+            // browser จะออกไปหน้า ThaiD — code ที่เหลือไม่ถูก execute
+        }
+        catch (Exception ex)
+        {
+            errs["thaid"] = $"ไม่สามารถเชื่อมต่อ ThaiD ได้: {ex.Message}";
+        }
+    }
+
+    private async Task Step1Next()
+    {
+        errs.Clear();
+        await CheckUsernameFromApiAsync();
+
+        if (string.IsNullOrWhiteSpace(req.Username))   errs["uname"] = "กรุณากรอกชื่อ-นามสกุล (Latin) เพื่อสร้างชื่อผู้ใช้งาน";
+        if (string.IsNullOrWhiteSpace(req.FirstNameEn)) errs["fnen"]  = "กรุณากรอกชื่อ (สำหรับ Username)";
+        if (string.IsNullOrWhiteSpace(req.LastNameEn))  errs["lnen"]  = "กรุณากรอกนามสกุล (สำหรับ Username)";
+        if (string.IsNullOrWhiteSpace(req.TitleTh))    errs["title"] = "กรุณาเลือกคำนำหน้า";
+        if (string.IsNullOrWhiteSpace(req.FirstName))  errs["fn"]    = "กรุณากรอกชื่อ";
+        if (string.IsNullOrWhiteSpace(req.LastName))   errs["ln"]    = "กรุณากรอกนามสกุล";
+        if (string.IsNullOrWhiteSpace(req.Mobile))     errs["mob"]   = "กรุณากรอกเบอร์มือถือ";
+        if (string.IsNullOrWhiteSpace(req.Email) || !req.Email.Contains('@'))
+                                                       errs["em"]    = "กรุณากรอกอีเมลให้ถูกต้อง";
+
+        /*
+        if (string.IsNullOrWhiteSpace(req.Password))
+            errs["pw"] = "กรุณากรอกรหัสผ่าน";
+        else if (req.Password.Length < 8)
+            errs["pw"] = "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร";
+        else if (!req.Password.Any(char.IsUpper))
+            errs["pw"] = "รหัสผ่านต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว";
+        else if (!req.Password.Any(char.IsLower))
+            errs["pw"] = "รหัสผ่านต้องมีตัวพิมพ์เล็กอย่างน้อย 1 ตัว";
+        else if (!req.Password.Any(char.IsDigit))
+            errs["pw"] = "รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว";
+        else if (!req.Password.Any(c => !char.IsLetterOrDigit(c)))
+            errs["pw"] = "รหัสผ่านต้องมีอักขระพิเศษอย่างน้อย 1 ตัว";
+        else if (HasSequentialNums(req.Password))
+            errs["pw"] = "รหัสผ่านห้ามมีตัวเลขเรียงต่อกัน (เช่น 123, 789)";
+
+        if (!errs.ContainsKey("pw"))
+        {
+            if (string.IsNullOrWhiteSpace(confirmPw))
+                errs["cpw"] = "กรุณายืนยันรหัสผ่าน";
+            else if (confirmPw != req.Password)
+                errs["cpw"] = "รหัสผ่านไม่ตรงกัน";
+        }
+        */
+
+        // Validate birth date
+        if (!UpdateBirthDateFromParts(showError: true))
+        {
+            errs["bd"] = birthDateError;
+        }
+
+        if (errs.Count == 0) step = 2;
+    }
+
+    private void Step2Next()
+    {
+        errs.Clear();
+        if (req.TargetOrgId is null || req.TargetOrgId == 0) errs["bureau"] = "กรุณาเลือกสำนัก/กอง/ศูนย์";
+        if (string.IsNullOrWhiteSpace(req.OfficerType))errs["offtype"] = "กรุณาเลือกประเภทเจ้าหน้าที่";
+        if (errs.Count == 0) step = 3;
+    }
+
+    private async Task Submit()
+    {
+        submitError = "";
+        isSubmitting = true;
+
+        try
+        {
+            if (!UpdateBirthDateFromParts(showError: true))
+            {
+                submitError = birthDateError;
+                return;
+            }
+
+            var saved = await UserApi.RegisterAsync(req);
+            trackId = saved.TrackingId;
+            req.Username = saved.Username;
+            req.Email = saved.Email;
+            step = 4;
+        }
+        catch (Exception ex)
+        {
+            submitError = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private int PwdPct()
+    {
+        if (string.IsNullOrEmpty(req.Password)) return 0;
+        int s = 0;
+        if (req.Password.Length >= 8)  s += 25;
+        if (req.Password.Length >= 12) s += 15;
+        if (req.Password.Any(char.IsUpper)) s += 20;
+        if (req.Password.Any(char.IsDigit)) s += 20;
+        if (req.Password.Any(c => !char.IsLetterOrDigit(c))) s += 20;
+        return Math.Min(s, 100);
+    }
+    private string PwdColor() { var p = PwdPct(); return p < 40 ? "#ef4444" : p < 70 ? "#f59e0b" : "#22c55e"; }
+    private string PwdLabel() { var p = PwdPct(); return p == 0 ? "" : p < 40 ? "รหัสผ่านอ่อนแอ" : p < 70 ? "รหัสผ่านปานกลาง" : "รหัสผ่านแข็งแกร่ง"; }
+
+    private void OnPasswordInput(ChangeEventArgs e) => req.Password = e.Value?.ToString() ?? "";
+    private void OnConfirmPwInput(ChangeEventArgs e) => confirmPw = e.Value?.ToString() ?? "";
+
+    private void OnFirstNameEnInput(ChangeEventArgs e)
+    {
+        if (IsThaiDLocked) return;
+        req.FirstNameEn = e.Value?.ToString() ?? "";
+        _ = CheckUsernameFromApiAsync();
+    }
+    private void OnLastNameEnInput(ChangeEventArgs e)
+    {
+        if (IsThaiDLocked) return;
+        req.LastNameEn = e.Value?.ToString() ?? "";
+        _ = CheckUsernameFromApiAsync();
+    }
+
+    private async Task CheckUsernameFromApiAsync()
+    {
+        errs.Remove("uname");
+        var fn = NormalizeEnglishName(req.FirstNameEn);
+        var ln = NormalizeEnglishName(req.LastNameEn);
+
+        if (fn.Length == 0 || ln.Length == 0)
+        {
+            req.Username = "";
+            usernameWasAdjusted = false;
+            usernameCheckMessage = "กรอกชื่อและนามสกุล (ด้านล่าง) เพื่อสร้าง Username";
+            return;
+        }
+
+        isCheckingUsername = true;
+        usernameCheckMessage = "กำลังตรวจสอบ Username...";
+        StateHasChanged();
+
+        UsernameCheckResult result;
+        try
+        {
+            result = await UserApi.CheckUsernameAsync(req.FirstNameEn, req.LastNameEn);
+        }
+        catch (Exception ex)
+        {
+            usernameCheckMessage = $"ไม่สามารถตรวจสอบ Username ได้: {ex.Message}";
+            isCheckingUsername = false;
+            return;
+        }
+
+        req.Username = result.Username;
+        usernameWasAdjusted = result.WasAdjusted;
+        usernameCheckMessage = result.WasAdjusted
+            ? $"Username {result.OriginalUsername} ถูกใช้งานแล้ว ระบบปรับเป็น {result.Username}"
+            : $"Username {result.Username} สามารถใช้งานได้";
+        isCheckingUsername = false;
+    }
+
+    private void UpdateUsername()
+    {
+        var fn = NormalizeEnglishName(req.FirstNameEn);
+        var ln = NormalizeEnglishName(req.LastNameEn);
+        if (fn.Length == 0 || ln.Length == 0) { req.Username = ""; return; }
+
+        var candidate = "";
+        for (var len = 1; len <= ln.Length; len++)
+        {
+            candidate = $"{fn}.{ln[..len]}";
+            if (!UsernameConflict(candidate))
+                break;
+        }
+
+        var suffix = 2;
+        while (UsernameConflict(candidate))
+        {
+            candidate = $"{fn}.{ln}{suffix}";
+            suffix++;
+        }
+
+        req.Username = candidate;
+    }
+
+    private static string NormalizeEnglishName(string value) =>
+        new((value ?? "")
+            .Trim()
+            .ToLowerInvariant()
+            .Where(c => c is >= 'a' and <= 'z')
+            .ToArray());
+
+    private static DateOnly? ParseThaiDBirthdate(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        if (DateOnly.TryParse(value, out var parsed)) return parsed;
+
+        var digits = new string(value.Where(char.IsDigit).ToArray());
+        if (digits.Length == 8 &&
+            int.TryParse(digits[..4], out var year) &&
+            int.TryParse(digits[4..6], out var month) &&
+            int.TryParse(digits[6..], out var day))
+        {
+            if (year > 2400) year -= 543;
+            if (DateOnly.TryParse($"{year:D4}-{month:D2}-{day:D2}", out parsed))
+                return parsed;
+        }
+
+        return null;
+    }
+
+    private bool UsernameConflict(string name) =>
+        // Backend จะ validate ให้เอง ไม่ต้อง check duplicate username ที่ frontend
+        false;
+
+    private static bool HasSequentialNums(string pw)
+    {
+        for (int i = 0; i < pw.Length - 2; i++) {
+            if (!char.IsDigit(pw[i]) || !char.IsDigit(pw[i+1]) || !char.IsDigit(pw[i+2])) continue;
+            int a = pw[i]-'0', b = pw[i+1]-'0', c = pw[i+2]-'0';
+            if ((b==a+1&&c==b+1)||(b==a-1&&c==b-1)) return true;
+        }
+        return false;
+    }
+}

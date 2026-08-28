@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-CMIS — ติดตามการพิจารณา (LAW001)</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://ecmis-web-ta31.vercel.app/css/ecmis.css?v=20260603-dd-global" rel="stylesheet">
+<style>
+.step-wizard-10 .step-label{font-size:10px}
+.step-wizard-10 .step-circle{width:36px;height:36px;font-size:12px}
+.detail-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:0 0 24px;}
+@media (max-width:1100px){.detail-grid-2{grid-template-columns:1fr}}
+.gap-tag{display:inline-block;background:#fde8e8;color:#a0281e;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:8px;margin-left:8px}
+.court-table-row.selected{background:#eef2ff}
+/* Modal/Dialog + Toast — per Figma addon/Modal (428:106) & addon/Alert-Toast (428:69) */
+.ecmis-modal-overlay{display:none;position:fixed;inset:0;background:rgba(12,18,48,.18);z-index:1000;align-items:center;justify-content:center;}
+.ecmis-modal-overlay.open{display:flex;}
+.ecmis-modal-box{background:#fff;border:1px solid #e6edf6;border-radius:14px;box-shadow:0 12px 14px rgba(0,0,0,.18);width:400px;max-width:92vw;padding:23px;}
+.ecmis-modal-icon{width:44px;height:44px;border-radius:50%;background:#e8f0ff;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--navy-deep);margin-bottom:10px;}
+.ecmis-modal-title{font-weight:700;font-size:17px;color:var(--navy-deep);margin-bottom:10px;}
+.ecmis-modal-body{font-size:14px;color:#5f6f86;line-height:1.5;margin-bottom:18px;}
+.ecmis-modal-actions{display:flex;gap:12px;justify-content:flex-end;}
+.ecmis-modal-btn{height:42px;min-width:110px;padding:0 18px;border-radius:8px;font-size:14px;font-weight:700;border:none;cursor:pointer;}
+.ecmis-modal-btn.cancel{background:#e6edf6;color:var(--navy-deep);}
+.ecmis-modal-btn.confirm{background:var(--navy-deep);color:#fff;}
+.ecmis-toast{position:fixed;left:24px;bottom:24px;background:#0c1230;border-radius:10px;height:48px;padding:0 18px;display:none;align-items:center;gap:10px;z-index:1100;box-shadow:0 8px 20px rgba(0,0,0,.25);}
+.ecmis-toast.show{display:flex;}
+.ecmis-toast .tick{color:#24b25a;font-weight:700;}
+.ecmis-toast .msg{color:#fff;font-size:15px;font-weight:700;}
+.ecmis-toast .close-toast{color:#18b9e7;font-size:14px;font-weight:700;margin-left:14px;cursor:pointer;background:none;border:none;}
+</style>
+</head>
+<body>
+<div class="layout-container app-light">
+<aside class="sidebar open" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-logo-mark">ป.ป.ท.</div>
+    <div class="brand-text"><div class="brand-title">E-CMIS</div><div class="brand-sub">COMPLAINT MANAGEMENT</div></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-inbox-fill"></i><span>รับเรื่องร้องเรียน</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/complaints"><i class="bi bi-inbox-fill"></i> รายการทั้งหมด</a></div></div>
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-file-earmark-person"></i><span>การดำเนินการตามหมายจับ</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/arrest-warrant"><i class="bi bi-file-earmark-person"></i> แดชบอร์ดหมายจับ</a></div></div>
+    <div class="nav-group"><div class="nav-group-toggle open"><div class="nav-group-label"><i class="bi bi-bank2"></i><span>งานกฎหมายและคดีศาล</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items open">
+        <a class="nav-sublink" href="/legal"><i class="bi bi-bank2"></i> แดชบอร์ดคดีศาล</a>
+        <a class="nav-sublink active" href="/legal/court"><i class="bi bi-bank2"></i> ติดตามการพิจารณา</a>
+        <a class="nav-sublink" href="/legal/admin-case"><i class="bi bi-bank2"></i> ทะเบียนคดีปกครอง</a>
+        <a class="nav-sublink" href="/legal/info-request"><i class="bi bi-bank2"></i> บริการข้อมูลข่าวสาร</a>
+      </div></div>
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-bar-chart-line-fill"></i><span>วิเคราะห์/รายงาน</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/analytics/legal-stats"><i class="bi bi-bank2"></i> สถิติกระบวนการกฎหมายคดี</a></div></div>
+  </nav>
+  <div class="sidebar-footer"><div class="user-card"><div class="user-avatar">P</div><div><div class="user-name">phuriphathem</div><div class="user-role">Super Admin</div></div></div></div>
+</aside>
+
+<header class="topbar">
+  <button class="hamburger-btn" title="เมนู"><i class="bi bi-list"></i></button>
+  <div class="topbar-search"><i class="bi bi-search"></i><input type="text" placeholder="ค้นหาเลขสำนวน คดีดำ-แดง ชื่อบุคคล..."></div>
+  <div class="topbar-actions">
+    <div class="icon-btn" title="แจ้งเตือน"><i class="bi bi-bell-fill"></i><span class="notif-dot"></span></div>
+    <div class="topbar-divider"></div>
+    <div class="user-menu-wrap"><button type="button" class="user-pill"><div class="user-pill-avatar">P</div><div class="user-pill-text"><div class="user-pill-name">phuriphathem</div><div class="user-pill-role">Super Admin</div></div><i class="bi bi-chevron-down user-pill-chevron"></i></button></div>
+  </div>
+</header>
+
+<main class="main-content">
+<div class="page-body">
+
+  <div class="breadcrumb-custom" style="margin-bottom:8px;">งานกฎหมายและคดีศาล <i class="bi bi-chevron-right" style="font-size:9px"></i> <span>ติดตามการพิจารณา</span></div>
+  <div class="page-header">
+    <div><div class="page-title">ติดตามการพิจารณาสำนวนคดีชั้นอัยการและชั้นศาล</div>
+      <div class="page-subtitle">LAW001 — บันทึกสถานะ คำสั่งอัยการ คำพิพากษา 3 ชั้นศาล และกระบวนการหมายจับ (TOR ๑๐.๑)</div></div>
+    <button class="btn-gold"><i class="bi bi-plus-lg"></i> รับสำนวนใหม่</button>
+  </div>
+
+  <div class="stat-row-legal" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;">
+    <div class="stat-card stat-card-navy"><div class="stat-label">สำนวนทั้งหมด</div><div class="stat-value">248</div><div class="stat-change">ปีงบประมาณ 2569</div></div>
+    <div class="stat-card stat-card-blue"><div class="stat-label">อยู่ระหว่างชั้นอัยการ</div><div class="stat-value">96</div><div class="stat-change">คำวินิจฉัย 41 เรื่อง</div></div>
+    <div class="stat-card stat-card-orange"><div class="stat-label">อยู่ระหว่างชั้นศาล</div><div class="stat-value">117</div><div class="stat-change">ชั้นต้น 74 · อุทธรณ์ 43</div></div>
+    <div class="stat-card stat-card-red"><div class="stat-label">ใกล้ครบกำหนด ≤ 30 วัน</div><div class="stat-value">12</div><div class="stat-change">คลิกเพื่อกรองรายการ</div></div>
+  </div>
+
+  <div class="ecmis-card" style="margin-bottom:20px;">
+    <div class="filter-bar">
+      <span class="filter-chip active">ทั้งหมด (248)</span>
+      <span class="filter-chip">ชั้นอัยการ (96)</span>
+      <span class="filter-chip">ศาลชั้นต้น (74)</span>
+      <span class="filter-chip">อุทธรณ์ (43)</span>
+      <span class="filter-chip">ฎีกา (21)</span>
+      <span class="filter-chip" style="border-color:var(--red);color:var(--red)">ใกล้ครบกำหนด (12)</span>
+      <div style="margin-left:auto;display:flex;gap:8px;">
+        <select class="form-control-custom" style="width:auto;"><option>ประเภทสำนวน: ทั้งหมด</option><option>ไม่ฟ้อง</option><option>ถอนฟ้อง</option><option>ไม่อุทธรณ์</option><option>ถอนอุทธรณ์</option><option>ไม่ฎีกา</option><option>ถอนฎีกา</option><option>สั่งฟ้อง (TOR ๑๐.๑.๔)</option></select>
+        <button class="btn-outline-navy">ล้างเงื่อนไข</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+    <table class="ecmis-table">
+      <thead><tr><th>เลขสำนวน ป.ป.ท.</th><th>ประเภทสำนวน</th><th>ผู้กล่าวหา / ผู้ถูกกล่าวหา</th><th>คดีดำ / แดง</th><th>อัยการ / ศาล</th><th>ผู้รับผิดชอบ</th><th>สถานะ</th><th>ครบกำหนด</th><th>จัดการ</th></tr></thead>
+      <tbody>
+        <tr class="court-table-row selected">
+          <td><strong>ปปท. 121/2569</strong></td>
+          <td>สั่งฟ้อง <span class="mini-badge" style="background:#e8f0ff;color:#1a3575;">TOR ๑๐.๑.๔</span></td>
+          <td>ป.ป.ท. → นายวรพล เจริญสุข</td>
+          <td>อท 133/68 · อ 88/69</td>
+          <td>ศาลอาญาคดีทุจริตฯ ภาค 2</td>
+          <td>กัญญา ศ.</td>
+          <td><span class="status-badge status-pending">ชั้นอุทธรณ์</span></td>
+          <td style="color:var(--orange);font-weight:700;">18 วัน</td>
+          <td><button class="btn-outline-navy" style="padding:5px 12px;font-size:12px;">กำลังดู ▾</button></td>
+        </tr>
+        <tr><td><strong>ปปท. 115/2569</strong></td><td>ไม่ฟ้อง</td><td>ป.ป.ท. → นายสมชาย วงศ์ดี</td><td>อท 112/68</td><td>สนง.อัยการปราบฯ ภาค 1</td><td>ศิริพร</td><td><span class="status-badge status-active">รอคำวินิจฉัยอัยการ</span></td><td>15 ก.ค. 69</td><td><button class="btn-outline-navy" style="padding:5px 12px;font-size:12px;">ดู</button></td></tr>
+        <tr><td><strong>ปปท. 108/2569</strong></td><td>ถอนฟ้อง</td><td>ป.ป.ท. → นางวิภา ชัยชนะ</td><td>อท 98/68 · อ 45/69</td><td>ศาลอาญาคดีทุจริตฯ กลาง</td><td>ธนกร</td><td><span class="status-badge status-urgent">รออสส.ชี้ขาด</span></td><td>30 ก.ย. 69</td><td><button class="btn-outline-navy" style="padding:5px 12px;font-size:12px;">ดู</button></td></tr>
+        <tr><td><strong>ปปท. 093/2568</strong></td><td>ไม่อุทธรณ์</td><td>ป.ป.ท. → นายอานนท์ ทวีสุข</td><td>อท 77/68 · อ 31/68</td><td>ศาลอาญาคดีทุจริตฯ ภาค 3</td><td>อรทัย</td><td><span class="status-badge status-closed">คดีอาญายุติ</span></td><td>ปิดสำนวน</td><td><button class="btn-outline-navy" style="padding:5px 12px;font-size:12px;">ดู</button></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- ============ CASE DETAIL (เลือกแถว ปปท. 121/2569 — เส้นทาง "สั่งฟ้อง") ============ -->
+  <div class="detail-page-wrap">
+    <div class="detail-header">
+      <div>
+        <div class="detail-caseno"><i class="bi bi-folder2-open"></i> ปปท. 121/2569
+          <span class="status-badge status-pending">สั่งฟ้อง</span>
+          <span class="status-badge status-active">ชั้นอุทธรณ์</span>
+          <span class="status-badge status-urgent"><i class="bi bi-exclamation-triangle-fill"></i> เคยออกหมายจับ — จับกุมแล้ว</span>
+        </div>
+        <div class="detail-meta-row" style="color:var(--text-muted);font-size:12.5px;">
+          ผู้กล่าวหา: สำนักงาน ป.ป.ท. &nbsp;·&nbsp; ผู้ถูกกล่าวหา: นายวรพล เจริญสุข &nbsp;·&nbsp; คดีดำ อท 133/68 · คดีแดง อ 88/69 &nbsp;·&nbsp; ศาลอาญาคดีทุจริตฯ ภาค 2
+        </div>
+      </div>
+      <div class="detail-actions">
+        <button class="btn-outline-navy"><i class="bi bi-download"></i> Export</button>
+        <button class="btn-outline-navy">มอบหมายใหม่</button>
+        <button class="btn-navy" onclick="openStatusModal()">บันทึกสถานะ</button>
+      </div>
+    </div>
+
+    <div style="padding:24px 32px 0;">
+      <div class="step-wizard step-wizard-10">
+        <div class="step-item done"><div class="step-circle"><span>1</span></div><div class="step-label">รับสำนวน</div><div class="step-line"></div></div>
+        <div class="step-item done"><div class="step-circle"><span>2</span></div><div class="step-label">อัยการสั่งฟ้อง</div><div class="step-line"></div></div>
+        <div class="step-item done"><div class="step-circle"><span>3</span></div><div class="step-label">นัดหมายส่งตัว</div><div class="step-line"></div></div>
+        <div class="step-item done"><div class="step-circle" style="background:linear-gradient(135deg,var(--red),#a02020);border-color:var(--red)"><span>!</span></div><div class="step-label" style="color:var(--red)">หมายจับ (ไม่มาตามนัด)</div><div class="step-line" style="background:var(--red)"></div></div>
+        <div class="step-item done"><div class="step-circle"><span>5</span></div><div class="step-label">จับกุม/ส่งฟ้องศาล</div><div class="step-line"></div></div>
+        <div class="step-item done"><div class="step-circle"><span>6</span></div><div class="step-label">พิพากษาชั้นต้น</div><div class="step-line"></div></div>
+        <div class="step-item active"><div class="step-circle"><span>7</span></div><div class="step-label">อุทธรณ์/ฎีกา</div><div class="step-line"></div></div>
+        <div class="step-item"><div class="step-circle"><span>8</span></div><div class="step-label">พิพากษาสูงสุด</div><div class="step-line"></div></div>
+        <div class="step-item"><div class="step-circle"><span>9</span></div><div class="step-label">เชื่อมโยง กจ.8</div><div class="step-line"></div></div>
+        <div class="step-item"><div class="step-circle"><span>10</span></div><div class="step-label">ปิดสำนวน</div></div>
+      </div>
+    </div>
+
+    <div class="detail-grid-2" style="padding:0 32px;">
+      <div>
+        <div class="detail-card" style="margin-bottom:20px;">
+          <div class="detail-card-title"><div class="icon-box navy"><i class="bi bi-file-earmark-text"></i></div> ข้อมูลสำนวนคดี (LAW001.01)</div>
+          <div class="detail-grid" style="grid-template-columns:1fr 1fr;padding:0;gap:14px;">
+            <div class="detail-field"><div class="detail-label">ประเภทสำนวน</div><div class="detail-value">สั่งฟ้อง</div></div>
+            <div class="detail-field"><div class="detail-label">เลขสำนวน ป.ป.ท.</div><div class="detail-value">ปปท. 121/2569</div></div>
+            <div class="detail-field"><div class="detail-label">คดีดำ / คดีแดง</div><div class="detail-value">อท 133/68 · อ 88/69</div></div>
+            <div class="detail-field"><div class="detail-label">วันที่รับสำนวน</div><div class="detail-value">12 ก.พ. 2569</div></div>
+            <div class="detail-field"><div class="detail-label">สำนักงานอัยการ</div><div class="detail-value">สนง.อัยการปราบฯ ภาค 2</div></div>
+            <div class="detail-field"><div class="detail-label">ศาล</div><div class="detail-value">ศาลอาญาคดีทุจริตฯ ภาค 2</div></div>
+            <div class="detail-field"><div class="detail-label">หน่วยงานรับผิดชอบ</div><div class="detail-value">กองกฎหมาย กลุ่มงานคดี</div></div>
+            <div class="detail-field"><div class="detail-label">กำหนดยื่นอุทธรณ์</div><div class="detail-value" style="color:var(--red)">7 พ.ย. 2569 (18 วัน)</div></div>
+          </div>
+        </div>
+
+        <div class="detail-card" style="margin-bottom:20px;">
+          <div class="detail-card-title"><div class="icon-box red"><i class="bi bi-file-earmark-person"></i></div> กระบวนการหมายจับ <span class="gap-tag">Gap G2 — ใหม่</span></div>
+          <div class="detail-grid" style="grid-template-columns:1fr 1fr;padding:0;gap:14px;">
+            <div class="detail-field"><div class="detail-label">วันที่แจ้งนัดหมายส่งตัว</div><div class="detail-value">3 มี.ค. 2569</div></div>
+            <div class="detail-field"><div class="detail-label">ผลการนัดหมาย</div><div class="detail-value"><span class="status-badge status-urgent">ไม่มาตามนัด</span></div></div>
+            <div class="detail-field"><div class="detail-label">วันที่ยื่น / อนุมัติหมายจับ</div><div class="detail-value">10 มี.ค. 69 → 14 มี.ค. 69</div></div>
+            <div class="detail-field"><div class="detail-label">ศาลที่อนุมัติหมายจับ</div><div class="detail-value">ศาลอาญาคดีทุจริตฯ ภาค 2</div></div>
+            <div class="detail-field"><div class="detail-label">หน่วยงานประสานติดตามจับกุม</div><div class="detail-value">กก.ปราบปราม + เจ้าของสำนวน</div></div>
+            <div class="detail-field"><div class="detail-label">วันที่จับกุมได้ / ยุติหมายจับ</div><div class="detail-value"><span class="status-badge status-review">2 เม.ย. 69 → ยุติแล้ว 4 เม.ย. 69</span></div></div>
+          </div>
+          <a href="/arrest-warrant" style="font-size:11.5px;color:var(--navy);font-weight:600;display:inline-block;margin-top:10px;">ดูรายละเอียดที่แดชบอร์ดหมายจับ <i class="bi bi-box-arrow-up-right"></i></a>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-card-title"><div class="icon-box blue"><i class="bi bi-bank"></i></div> คำพิพากษา 3 ชั้นศาล (TOR ๑๐.๑.๔)</div>
+          <div style="overflow-x:auto;">
+          <table class="ecmis-table">
+            <thead><tr><th>ชั้นศาล</th><th>วันที่พิพากษา</th><th>ผลคำพิพากษา</th><th>ดำเนินการต่อ</th><th>ไฟล์</th></tr></thead>
+            <tbody>
+              <tr><td><strong>ชั้นต้น</strong></td><td>20 ต.ค. 2569</td><td>ยกฟ้อง (ขาดหลักฐานบางข้อหา)</td><td><span class="status-badge status-pending">สู้คดีต่อ (อุทธรณ์)</span></td><td><a href="#" style="color:var(--blue-light)">คำพิพากษาชั้นต้น.pdf</a></td></tr>
+              <tr><td><strong>อุทธรณ์</strong></td><td><span class="status-badge status-active">อยู่ระหว่างพิจารณา</span></td><td>—</td><td>—</td><td><a href="#" style="color:var(--blue-light)">คำฟ้องอุทธรณ์.pdf</a></td></tr>
+              <tr><td style="color:var(--text-muted)"><strong>ฎีกา</strong></td><td style="color:var(--text-muted)">ยังไม่ถึงชั้นนี้</td><td style="color:var(--text-muted)">—</td><td style="color:var(--text-muted)">—</td><td style="color:var(--text-muted)">—</td></tr>
+            </tbody>
+          </table>
+          </div>
+          <button class="btn-gold" style="margin-top:14px;">+ บันทึกผลชั้นถัดไป</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="detail-card" style="margin-bottom:20px;">
+          <div class="detail-card-title"><div class="icon-box orange"><i class="bi bi-alarm"></i></div> กำหนดเวลา &amp; แจ้งเตือน (LAW001.05)</div>
+          <div style="font-size:38px;font-weight:800;color:var(--orange);">18 <span style="font-size:13px;font-weight:500;color:var(--text-muted)">วัน ก่อนครบกำหนดยื่นอุทธรณ์</span></div>
+          <div class="progress-custom" style="margin:10px 0;"><div class="progress-fill orange" style="width:37%"></div></div>
+          <div style="font-size:11px;color:var(--text-muted)">แจ้งเตือนอัตโนมัติ: 30 / 15 / 7 / 1 วัน · Email + Push</div>
+        </div>
+
+        <div class="detail-card" style="margin-bottom:20px;">
+          <div class="detail-card-title"><div class="icon-box navy"><i class="bi bi-clock-history"></i></div> ประวัติการดำเนินการ (Audit Trail)</div>
+          <div class="timeline">
+            <div class="timeline-item"><div class="timeline-dot active"></div><div class="timeline-date">20 ต.ค. 69</div><div class="timeline-title">ศาลชั้นต้นยกฟ้องบางข้อหา</div><div class="timeline-desc">เตรียมยื่นอุทธรณ์</div></div>
+            <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-date">4 เม.ย. 69</div><div class="timeline-title">รายงานเลขาธิการฯ/ศาล ขอยุติหมายจับ</div></div>
+            <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-date">2 เม.ย. 69</div><div class="timeline-title">ประสานตำรวจจับกุมได้</div><div class="timeline-desc">ส่งพนักงานอัยการ</div></div>
+            <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-date">14 มี.ค. 69</div><div class="timeline-title">ศาลอนุมัติหมายจับ</div></div>
+            <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-date">3 มี.ค. 69</div><div class="timeline-title">ผู้ถูกกล่าวหาไม่มาตามนัด</div><div class="timeline-desc">อัยการแจ้งขอหมายจับ</div></div>
+            <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-date">12 ก.พ. 69</div><div class="timeline-title">รับสำนวนจากมติชี้มูลบอร์ด ป.ป.ท.</div><div class="timeline-desc">ออกเลขอัตโนมัติ</div></div>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-card-title"><div class="icon-box red"><i class="bi bi-diagram-3-fill"></i></div> เชื่อมโยงกิจกรรมที่ 8 <span class="gap-tag">Gap G4</span></div>
+          <p style="font-size:12px;color:var(--text-dark);line-height:1.6;">Flow AS-IS ระบุจุดเชื่อมกับ "กิจกรรมที่ 8" หลังคดีถึงที่สุด แต่ NFR ของ TOR ระบุเชื่อมกับกิจกรรมที่ 5 และ 7 เท่านั้น</p>
+          <p style="font-size:11px;color:var(--text-muted)">→ ต้องยืนยัน Integration Spec กับทีม BA ก่อนพัฒนาจริง</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:0 32px 28px;">
+      <div class="detail-card">
+        <div class="detail-card-title"><div class="icon-box green"><i class="bi bi-send-check-fill"></i></div> แจ้งผลการดำเนินคดีของอัยการ/ศาล ให้หน่วยงานภายในทราบ (TOR ๑๐.๑.๙ · LAW001.08)</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <span class="status-badge status-review">✓ กองบริหารคดี</span>
+          <span class="status-badge status-review">✓ กองไต่สวน 3 (เจ้าของสำนวน)</span>
+          <span class="filter-chip">สำนักเลขาธิการ</span>
+          <select class="form-control-custom" style="width:auto;flex:1;min-width:220px;"><option>Template: หนังสือแจ้งผลคดี (แบบสำนักงาน ป.ป.ท.)</option></select>
+          <button class="btn-gold">ส่งแจ้งผล + บันทึกหลักฐาน</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<!-- Modal/Dialog — addon/Modal spec: overlay rgba(12,18,48,.18), box radius14, soft shadow, cancel(gray)+confirm(navy) -->
+<div class="ecmis-modal-overlay" id="statusModalOverlay">
+  <div class="ecmis-modal-box">
+    <div class="ecmis-modal-icon"><i class="bi bi-pencil-square"></i></div>
+    <div class="ecmis-modal-title">ยืนยันการบันทึกสถานะ</div>
+    <div class="ecmis-modal-body">ต้องการบันทึกสถานะคดี ปปท. 121/2569 เป็น "สั่งฟ้อง — ชั้นอุทธรณ์" ใช่หรือไม่?</div>
+    <div class="ecmis-modal-actions">
+      <button class="ecmis-modal-btn cancel" onclick="closeStatusModal()">ยกเลิก</button>
+      <button class="ecmis-modal-btn confirm" onclick="confirmStatusSave()">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast/Snackbar — addon/Alert-Toast spec: dark bg #0c1230, auto-dismiss 3-4s -->
+<div class="ecmis-toast" id="statusToast">
+  <span class="tick">✓</span><span class="msg">บันทึกสถานะสำเร็จ</span>
+  <button class="close-toast" onclick="hideToast()">ปิด</button>
+</div>
+
+<script>
+function openStatusModal(){ document.getElementById('statusModalOverlay').classList.add('open'); }
+function closeStatusModal(){ document.getElementById('statusModalOverlay').classList.remove('open'); }
+function confirmStatusSave(){
+  closeStatusModal();
+  var t = document.getElementById('statusToast');
+  t.classList.add('show');
+  setTimeout(function(){ hideToast(); }, 3500);
+}
+function hideToast(){ document.getElementById('statusToast').classList.remove('show'); }
+</script>
+</div>
+</body>
+</html>

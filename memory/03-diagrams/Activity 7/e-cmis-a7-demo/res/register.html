@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ทะเบียนสำนวน | E-CMIS</title>
+  <link rel="icon" type="image/png" href="../assets/pacc_logo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="../assets/ecmis-app.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <main class="app-main">
+    <div class="page-head">
+      <div>
+        <h1><i class="fa-solid fa-folder-open me-2"></i>ทะเบียนสำนวน</h1>
+      </div>
+      <span class="flow-ref ms-auto">สืบค้นและติดตามสถานะสำนวน</span>
+    </div>
+
+    <div class="card card-ecmis mb-3 border-0 shadow-sm" style="background:#fff; border-radius:12px">
+      <div class="card-body p-3">
+        <!-- Main Search Bar Row (Strict Single Line / Flex No-wrap) -->
+        <div class="d-flex align-items-center gap-2 flex-nowrap">
+          <div class="input-group flex-grow-1">
+            <span class="input-group-text bg-light border-end-0 text-muted px-3" style="border-radius:8px 0 0 8px">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+            <input type="text" class="form-control bg-light border-start-0 border-end-0 ps-0" id="q"
+                   placeholder="ค้นหาด่วน: เลขสำนวน, เรื่องกล่าวหา, ชื่อผู้ถูกกล่าวหา, เลขบัตร ปชช., หรือผู้รับผิดชอบ..."
+                   style="font-size:0.92rem; height:42px">
+            <button class="btn btn-navy px-4 flex-shrink-0" id="btnSearch" style="border-radius:0 8px 8px 0; height:42px; font-weight:500; white-space:nowrap">
+              <i class="fa-solid fa-magnifying-glass me-1"></i>ค้นหา
+            </button>
+          </div>
+
+          <button class="btn btn-outline-secondary d-flex align-items-center gap-2 px-3 flex-shrink-0" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#advancedFilterPanel" aria-expanded="false" aria-controls="advancedFilterPanel"
+                  id="btnToggleAdvanced" style="height:42px; border-radius:8px; font-size:0.88rem; white-space:nowrap">
+            <i class="fa-solid fa-sliders text-primary"></i>
+            <span>ตัวกรองขั้นสูง</span>
+            <span class="badge bg-primary text-white rounded-pill d-none" id="activeFilterBadge" style="font-size:0.7rem">0</span>
+            <i class="fa-solid fa-chevron-down text-muted ms-1" id="advChevron" style="font-size:0.75rem; transition: transform .2s"></i>
+          </button>
+
+          <button class="btn btn-outline-danger px-3 flex-shrink-0" id="btnReset" title="ล้างเงื่อนไขทั้งหมด" style="height:42px; border-radius:8px; white-space:nowrap">
+            <i class="fa-solid fa-rotate-left me-1"></i>ล้างค่า
+          </button>
+        </div>
+
+        <!-- Quick Filter Chips (Clean & Accessible) -->
+        <div class="d-flex gap-1 flex-wrap align-items-center mt-2 pt-1 border-top" style="border-color:#F1F5F9 !important">
+          <span class="text-muted small me-2" style="font-size:0.8rem"><i class="fa-solid fa-filter me-1 text-secondary"></i>มุมมองด่วน:</span>
+          <button class="btn btn-sm btn-outline-secondary filter-chip active rounded-pill px-3 py-1" data-f="all">ทั้งหมด</button>
+          <button class="btn btn-sm btn-outline-primary filter-chip rounded-pill px-3 py-1" data-f="71"><i class="fa-solid fa-clipboard-question me-1"></i>ไต่สวนเบื้องต้น</button>
+          <button class="btn btn-sm btn-outline-purple filter-chip rounded-pill px-3 py-1" data-f="72"><i class="fa-solid fa-gavel me-1"></i>วินิจฉัยชี้มูล</button>
+          <button class="btn btn-sm btn-outline-info filter-chip rounded-pill px-3 py-1" data-f="73"><i class="fa-solid fa-scale-balanced me-1"></i>เรื่องทั่วไป / ทบทวนอัยการ</button>
+          <button class="btn btn-sm btn-outline-danger filter-chip rounded-pill px-3 py-1" data-f="late"><i class="fa-solid fa-triangle-exclamation me-1"></i>เกินกำหนด</button>
+          <button class="btn btn-sm btn-outline-warning filter-chip rounded-pill px-3 py-1" data-f="urgent"><i class="fa-solid fa-bolt me-1"></i>เร่งด่วน</button>
+          <button class="btn btn-sm btn-outline-success filter-chip rounded-pill px-3 py-1" data-f="mine"><i class="fa-solid fa-user me-1"></i>คิวของฉัน</button>
+          <button class="btn btn-sm btn-outline-dark filter-chip rounded-pill px-3 py-1" data-f="dup"><i class="fa-solid fa-clone me-1"></i>เตือนสำนวนซ้ำ</button>
+        </div>
+
+        <!-- Collapsible Advanced Filter Drawer -->
+        <div class="collapse mt-3" id="advancedFilterPanel">
+          <div class="p-3" style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px">
+            <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+              <div class="fw-semibold text-dark small">
+                <i class="fa-solid fa-filter text-primary me-1"></i> ตัวกรองระบุเงื่อนไขการสืบค้นเพิ่มเติม
+              </div>
+              <span class="text-muted" style="font-size:0.75rem">เลือกเงื่อนไขที่ต้องการกรองเพิ่มเติม</span>
+            </div>
+
+            <!-- Row 1: บุคคลและสำนวน -->
+            <div class="row g-2">
+              <div class="col-lg-3 col-md-6">
+                <label class="form-label small text-muted mb-1">ชื่อผู้ถูกกล่าวหา</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white"><i class="fa-solid fa-user text-muted"></i></span>
+                  <input class="form-control form-control-sm" id="qAccused" placeholder="ระบุชื่อ-นามสกุล">
+                </div>
+              </div>
+              <div class="col-lg-3 col-md-6">
+                <label class="form-label small text-muted mb-1">เลขประจำตัวประชาชน (ผู้ถูกกล่าวหา)</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white"><i class="fa-solid fa-id-card text-muted"></i></span>
+                  <input class="form-control form-control-sm" id="qIdCard" placeholder="เช่น 3-1009-xxxx">
+                </div>
+              </div>
+              <div class="col-lg-3 col-md-6">
+                <label class="form-label small text-muted mb-1">ชื่อผู้กล่าวหา / หน่วยงานผู้ร้อง</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white"><i class="fa-solid fa-bullhorn text-muted"></i></span>
+                  <input class="form-control form-control-sm" id="qComplainant" placeholder="ระบุชื่อผู้กล่าวหา">
+                </div>
+              </div>
+              <div class="col-lg-3 col-md-6">
+                <label class="form-label small text-muted mb-1">เลขที่คำสั่งแต่งตั้ง</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white"><i class="fa-solid fa-file-contract text-muted"></i></span>
+                  <input class="form-control form-control-sm" id="qOrderNo" placeholder="เช่น ปป 24/2569">
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 2: หน่วยงาน & ผู้รับผิดชอบ & คณะไต่สวน -->
+            <div class="row g-2 mt-1">
+              <div class="col-lg-3 col-md-6">
+                <label class="form-label small text-muted mb-1">สำนัก/กอง/เขต ที่รับผิดชอบ</label>
+                <select class="form-select form-select-sm" id="qOwnerOrg">
+                  <option value="">— ทุกสำนัก/กอง/เขต —</option>
+                  <option value="สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1">ป.ป.ท. เขต 1</option>
+                  <option value="สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2">ป.ป.ท. เขต 2</option>
+                  <option value="สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 3">ป.ป.ท. เขต 3</option>
+                  <option value="สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 4">ป.ป.ท. เขต 4</option>
+                  <option value="สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 5">ป.ป.ท. เขต 5</option>
+                  <option value="สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 6">ป.ป.ท. เขต 6</option>
+                  <option value="สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 7">ป.ป.ท. เขต 7</option>
+                  <option value="สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 8">ป.ป.ท. เขต 8</option>
+                  <option value="สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 9">ป.ป.ท. เขต 9</option>
+                  <option value="กองปราบปรามการทุจริตในภาครัฐ 1">กองปราบปรามฯ 1</option>
+                  <option value="กองปราบปรามการทุจริตในภาครัฐ 2">กองปราบปรามฯ 2</option>
+                  <option value="กองปราบปรามการทุจริตในภาครัฐ 3">กองปราบปรามฯ 3</option>
+                  <option value="กองปราบปรามการทุจริตในภาครัฐ 4">กองปราบปรามฯ 4</option>
+                  <option value="กองปราบปรามการทุจริตในภาครัฐ 5">กองปราบปรามฯ 5</option>
+                  <option value="กองอำนวยการต่อต้านการทุจริต">กองอำนวยการต่อต้านการทุจริต</option>
+                  <option value="กองบริหารคดี">กองบริหารคดี (กบค.)</option>
+                  <option value="กองบริหารติดตามคดี">กองบริหารติดตามคดี (กบต.)</option>
+                </select>
+              </div>
+              <div class="col-lg-3 col-md-6">
+                <label class="form-label small text-muted mb-1">ชื่อผู้รับผิดชอบสำนวน</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white"><i class="fa-solid fa-user-tie text-muted"></i></span>
+                  <input class="form-control form-control-sm" id="qOwner" placeholder="เช่น ศิริพร">
+                </div>
+              </div>
+              <div class="col-lg-3 col-md-6">
+                <label class="form-label small text-muted mb-1">คณะอนุกรรมการไต่สวน/กลั่นกรอง</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white"><i class="fa-solid fa-users text-muted"></i></span>
+                  <input class="form-control form-control-sm" id="qSubComm" placeholder="เช่น คณะที่ 3 หรือ อนุสนับสนุน">
+                </div>
+              </div>
+              <div class="col-lg-3 col-md-6">
+                <label class="form-label small text-muted mb-1">คณะพนักงานไต่สวน/องค์คณะ</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white"><i class="fa-solid fa-user-group text-muted"></i></span>
+                  <input class="form-control form-control-sm" id="qInvestTeam" placeholder="เช่น องค์คณะ ม.24">
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 3: สารบบ วันที่ และการประชุม -->
+            <div class="row g-2 mt-1 align-items-end">
+              <div class="col-lg-2 col-md-4">
+                <label class="form-label small text-muted mb-1">ประเภทสารบบคดี</label>
+                <select class="form-select form-select-sm" id="qProcType">
+                  <option value="">— ทุกประเภทสารบบ —</option>
+                  <option value="7.1">สำนวนไต่สวนเบื้องต้น (ม.๒๔)</option>
+                  <option value="7.2">สำนวนไต่สวนข้อเท็จจริงเพื่อวินิจฉัยชี้มูล</option>
+                  <option value="7.3">เรื่องทั่วไป / ทบทวนมติพนักงานอัยการ (ม.๓๓)</option>
+                </select>
+              </div>
+              <div class="col-lg-2 col-md-4">
+                <label class="form-label small text-muted mb-1">ฐานการรับเรื่อง</label>
+                <select class="form-select form-select-sm" id="qBase">
+                  <option value="">— ทั้งหมด —</option>
+                  <option value="ม.18/4">ม.18/4 พรบ.มาตรการฯ</option>
+                  <option value="ม.62">ม.62 พรป.ปปช.</option>
+                  <option value="ม.33">ม.33 ขอทบทวนมติอัยการ</option>
+                  <option value="ระเบียบ">ระเบียบฯ / นโยบาย</option>
+                </select>
+              </div>
+              <div class="col-lg-2 col-md-4">
+                <label class="form-label small text-muted mb-1">สถานะสำนวน</label>
+                <select class="form-select form-select-sm" id="qStatus">
+                  <option value="">— ทุกสถานะ —</option>
+                </select>
+              </div>
+              <div class="col-lg-3 col-md-6">
+                <label class="form-label small text-muted mb-1">วันที่รับเรื่อง (จาก - ถึง)</label>
+                <div class="input-group input-group-sm">
+                  <input type="text" class="form-control form-control-sm" id="qDateFrom" placeholder="2569-01-01">
+                  <span class="input-group-text bg-white">-</span>
+                  <input type="text" class="form-control form-control-sm" id="qDateTo" placeholder="2569-12-31">
+                </div>
+              </div>
+              <div class="col-lg-1 col-md-3">
+                <label class="form-label small text-muted mb-1">ครั้งที่ประชุม</label>
+                <input class="form-control form-control-sm" id="qMeetingNo" placeholder="38/2569">
+              </div>
+              <div class="col-lg-1 col-md-3">
+                <label class="form-label small text-muted mb-1">วาระที่</label>
+                <input class="form-control form-control-sm" id="qAgendaNo" placeholder="5.12">
+              </div>
+              <div class="col-lg-1 col-md-12">
+                <div class="form-check pt-1">
+                  <input class="form-check-input" type="checkbox" id="qPastAgenda">
+                  <label class="form-check-label small" for="qPastAgenda" style="font-size:0.75rem">เคยบรรจุวาระ</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-ecmis">
+      <div class="card-header">
+        <i class="fa-solid fa-table-list"></i> ผลการสืบค้น
+        <span class="badge bg-secondary rounded-pill ms-2" id="cnt">0</span>
+        <div class="btn-group ms-auto">
+          <button class="btn btn-sm btn-outline-secondary" id="btnExportCsv"><i
+              class="fa-solid fa-file-excel me-1"></i>Excel/CSV</button>
+          <button class="btn btn-sm btn-outline-secondary" id="btnExportWord"><i
+              class="fa-solid fa-file-word me-1"></i>Word</button>
+          <button class="btn btn-sm btn-outline-secondary" id="btnExportPdf"><i
+              class="fa-solid fa-file-pdf me-1"></i>PDF</button>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover tbl-ecmis mb-0">
+            <thead>
+              <tr>
+                <th class="sortable-header" data-sort="id" style="cursor:pointer">เลขสำนวน <i
+                    class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
+                <th>เรื่องกล่าวหา (ดับเบิ้ลคลิกเพื่อแก้ไขด่วน)</th>
+                <th>ผู้ถูกกล่าวหา</th>
+                <th>ฐานรับเรื่อง</th>
+                <th>สถานะ</th>
+                <th>ค้างที่</th>
+                <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i
+                    class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
+                <th>อายุความ (ม.23) / รอบไต่สวน</th>
+                <th class="text-end"></th>
+              </tr>
+            </thead>
+            <tbody id="tb"></tbody>
+          </table>
+        </div>
+
+        <div class="p-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2"
+          id="registerFooter">
+          <div>
+            <span class="small text-muted" id="pageIndicator">กำลังแสดงหน้า 1 จาก 1</span>
+          </div>
+          <nav aria-label="Page navigation">
+            <ul class="pagination pagination-sm m-0" id="registerPagination"
+              style="display:flex; list-style:none; gap:4px"></ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="../assets/ecmis-app.js"></script>
+  <script>
+    ECMIS.renderShell('register.html');
+    const role = ECMIS.currentRole();
+
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = (window.ECMIS && window.ECMIS.getSupabaseClient) ? window.ECMIS.getSupabaseClient(SUPABASE_URL, SUPABASE_KEY) : (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }) : null);
+
+    /* ทะเบียนสำนวนกลาง — เดิมผูกกับ ECMIS.CASES (mock array คงที่) ไม่ sync กับหน้าที่ migrate ไป
+       Supabase แล้ว และไม่เคยกรองสิทธิ์การมองเห็นเลย (canViewCase ไม่เคยถูกเรียกในไฟล์นี้) ทำให้ทุก role
+       เห็นทุกสำนวนรวมเลขบัตร ปชช./ข้อกล่าวหาของทุกคดี — แก้ทั้งสองจุดพร้อมกันเพราะเป็นไฟล์เดียวกัน */
+    let ALL_CASES = [];
+    async function loadAllCasesFromSupabase() {
+      const { data, error } = await sb
+        .from('tbl_res_request')
+        .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return (data || []).map(ECMIS.supabaseRowToCase).filter(Boolean);
+    }
+
+    document.getElementById('qStatus').insertAdjacentHTML('beforeend',
+      Object.keys(ECMIS.STATUS).map(k => `<option value="${k}">${ECMIS.STATUS[k].label}</option>`).join(''));
+
+    let filter = 'all';
+
+    function matches(c) {
+      const q = document.getElementById('q').value.trim();
+      const qa = document.getElementById('qAccused').value.trim();
+      const qi = document.getElementById('qIdCard').value.trim();
+      const qc = document.getElementById('qComplainant').value.trim();
+      const qo = document.getElementById('qOwner').value.trim();
+      const qoo = document.getElementById('qOwnerOrg').value;
+      const qsub = document.getElementById('qSubComm').value.trim();
+      const qinv = document.getElementById('qInvestTeam').value.trim();
+      const qorder = document.getElementById('qOrderNo').value.trim();
+      const qm = document.getElementById('qMeetingNo').value.trim();
+      const qg = document.getElementById('qAgendaNo').value.trim();
+      const qs = document.getElementById('qStatus').value;
+      const qproc = document.getElementById('qProcType').value;
+      const qb = document.getElementById('qBase').value;
+      const qdf = document.getElementById('qDateFrom').value.trim();
+      const qdt = document.getElementById('qDateTo').value.trim();
+      const qPastAgenda = document.getElementById('qPastAgenda').checked;
+
+      // Smart Search บนช่องค้นหาหลัก (q)
+      if (q) {
+        const matchId = c.id.includes(q);
+        const matchSub = c.subject && c.subject.includes(q);
+        const matchAlleg = c.allegation && c.allegation.includes(q);
+        const matchAcc = c.accused && c.accused.some(a => (a.name && a.name.includes(q)) || String(a.idcard || '').includes(q));
+        const matchComp = String(c.complainant || '').includes(q);
+        const matchOwn = String(c.owner || '').includes(q);
+        const matchOrder = String(c.orderNo || '').includes(q);
+        if (!(matchId || matchSub || matchAlleg || matchAcc || matchComp || matchOwn || matchOrder)) return false;
+      }
+
+      // ตัวกรองขั้นสูงเฉพาะเจาะจง (Advanced Filters)
+      if (qa && !c.accused.some(a => a.name.includes(qa))) return false;
+      if (qi && !c.accused.some(a => String(a.idcard || '').includes(qi))) return false;
+      if (qc && !String(c.complainant || '').includes(qc)) return false;
+      if (qo && !String(c.owner || '').includes(qo)) return false;
+      if (qoo && !String(c.ownerOrg || '').includes(qoo)) return false;
+      if (qsub && !String(c.subCommittee || '').includes(qsub)) return false;
+      if (qinv && !String((c.order24Members || []).map(m => m.name).join(' ') + ' ' + (c.owner || '')).includes(qinv)) return false;
+      if (qorder && !String(c.orderNo || (c.order24Done ? ('ปป. ๒๔/' + c.id) : '')).includes(qorder)) return false;
+      if (qm && !String(c.meetingNo || '').includes(qm)) return false;
+      if (qg && !String(c.agendaNo || '').includes(qg)) return false;
+      if (qs && c.status !== qs) return false;
+      if (qproc) {
+        if (qproc === '7.1' && (ECMIS.isCase72(c) || ECMIS.isCase73(c))) return false;
+        if (qproc === '7.2' && !ECMIS.isCase72(c)) return false;
+        if (qproc === '7.3' && !ECMIS.isCase73(c)) return false;
+      }
+      if (qb && !String(c.legalBase || '').includes(qb)) return false;
+      if (qPastAgenda && !(c.meetingNo && c.agendaNo)) return false;
+      if (qdf && c.receivedDate && c.receivedDate < qdf) return false;
+      if (qdt && c.receivedDate && c.receivedDate > qdt) return false;
+
+      // Filter Chips
+      if (filter === 'late' && !(c.slaDays > ECMIS.effectiveSlaLimit(c))) return false;
+      if (filter === 'urgent' && !(c.urgent || c.urgent72)) return false;
+      if (filter === 'mine' && !ECMIS.canAct(c, role.id)) return false;
+      if (filter === 'dup' && !c.dupWarning) return false;
+      if (filter === '71' && (ECMIS.isCase72(c) || ECMIS.isCase73(c))) return false;
+      if (filter === '72' && !ECMIS.isCase72(c)) return false;
+      if (filter === '73' && !ECMIS.isCase73(c)) return false;
+      return true;
+    }
+
+    let currentPage = 1;
+    const pageSize = 5;
+    let sortField = 'id';
+    let sortOrder = 'asc';
+
+    function render(loading = false) {
+      const tbody = document.getElementById('tb');
+      const cntBadge = document.getElementById('cnt');
+
+      const filtered = ALL_CASES.filter(c => ECMIS.canViewCase(c, role.id)).filter(matches);
+      cntBadge.textContent = filtered.length;
+
+      if (loading) {
+        let skeletons = '';
+        for (let i = 0; i < Math.min(pageSize, filtered.length || 3); i++) {
+          skeletons += `
+        <tr class="skeleton-row">
+          <td><div class="skeleton-box" style="width:80px"></div></td>
+          <td><div class="skeleton-box" style="width:200px"></div></td>
+          <td><div class="skeleton-box" style="width:100px"></div></td>
+          <td><div class="skeleton-box" style="width:60px"></div></td>
+          <td><div class="skeleton-box" style="width:90px"></div></td>
+          <td><div class="skeleton-box" style="width:90px"></div></td>
+          <td><div class="skeleton-box" style="width:70px"></div></td>
+          <td><div class="skeleton-box" style="width:140px"></div></td>
+          <td class="text-end"><div class="skeleton-box ms-auto" style="width:70px"></div></td>
+        </tr>`;
+        }
+        tbody.innerHTML = skeletons;
+
+        setTimeout(() => {
+          render(false);
+        }, 300);
+        return;
+      }
+
+      // Apply Sorting
+      const sorted = [...filtered].sort((a, b) => {
+        let valA = a[sortField];
+        let valB = b[sortField];
+
+        if (sortField === 'slaDays') {
+          valA = a.slaDays;
+          valB = b.slaDays;
+        }
+
+        if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      const totalItems = sorted.length;
+      const totalPages = Math.ceil(totalItems / pageSize) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+      const startIdx = (currentPage - 1) * pageSize;
+      const paginated = sorted.slice(startIdx, startIdx + pageSize);
+
+      tbody.innerHTML = paginated.length ? paginated.map(c => {
+        const holder = ECMIS.STATUS[c.status] ? ECMIS.getRole(ECMIS.STATUS[c.status].owner) : null;
+        const actionable = ECMIS.canAct(c, role.id);
+        const is72 = ECMIS.isCase72(c);
+        const is73 = ECMIS.isCase73(c);
+        const target = ECMIS.pageForCaseByStatus(c);
+        const procBadge = ECMIS.typeBadge(c);
+
+        return `<tr>
+      <td>
+        <span class="case-no">${c.id}</span>
+        ${procBadge}
+        ${(c.urgent || c.urgent72) ? '<span class="st st-urgent ms-1">ด่วน</span>' : ''}
+        ${c.dupWarning ? '<span class="st st-returned ms-1" title="ระบบตรวจพบสำนวนที่อาจซ้ำซ้อน"><i class="fa-solid fa-clone"></i> ซ้ำ?</span>' : ''}
+        ${c.meetingNo ? (ECMIS.canAccessPage('agenda-registry.html', role.id) ? `<a href="agenda-registry.html" class="chip ms-1" title="เคยบรรจุวาระ — ครั้งที่ ${c.meetingNo}${c.agendaNo ? ' วาระที่ ' + c.agendaNo : ''} — ดูทะเบียนวาระ">
+          <i class="fa-solid fa-calendar-check"></i> ${c.meetingNo}
+        </a>` : `<span class="chip ms-1" title="เคยบรรจุวาระ — ครั้งที่ ${c.meetingNo}${c.agendaNo ? ' วาระที่ ' + c.agendaNo : ''}">
+          <i class="fa-solid fa-calendar-check"></i> ${c.meetingNo}
+        </span>`) : ''}
+      </td>
+      <td style="max-width:280px" class="editable-subject clickable-row" data-id="${c.id}" title="ดับเบิ้ลคลิกเพื่อแก้ไขด่วน">
+        <div class="text-truncate fw-semibold text-primary" id="subject-text-${c.id}">${c.subject}</div>
+        <small class="text-muted">ผู้รับผิดชอบ: <span id="owner-text-${c.id}">${c.owner}</span> · <span>${c.ownerOrg || 'ป.ป.ท.'}</span></small>
+      </td>
+      <td style="font-size:.8rem">
+        ${c.accused.map(a => `<div>${a.name}${a.idcard ? ` <small class="text-muted">(${a.idcard})</small>` : ''}</div>`).join('') || '—'}
+      </td>
+      <td><span class="chip">${c.legalBase}</span></td>
+      <td>${ECMIS.statusBadge(c.status)}</td>
+      <td style="font-size:.8rem">${holder ? holder.title : '—'}</td>
+      <td>${ECMIS.slaBadge(c)}</td>
+      <td style="font-size:.78rem">
+        ${is72
+            ? `<div>รอบการไต่สวน: ครั้งที่ ${c.round72 || 1}</div>`
+            : `<div>เริ่มไต่สวน: ${ECMIS.thaiDate(c.deadline60)}</div>
+               <div class="text-muted">ครบ 2 ปี: ${ECMIS.thaiDate(c.deadline2y)}</div>`}
+      </td>
+      <td class="text-end">
+        <a href="${target}?case=${encodeURIComponent(c.id)}"
+           class="btn btn-sm ${actionable ? 'btn-navy' : 'btn-outline-secondary'}">
+          <i class="fa-solid ${actionable ? 'fa-pen-to-square' : 'fa-eye'} me-1"></i>${actionable ? 'ดำเนินการ' : 'ดูรายละเอียด'}
+        </a>
+      </td>
+    </tr>`;
+      }).join('') : `<tr><td colspan="9" class="text-center text-muted py-5">
+      <i class="fa-solid fa-folder-open fa-2x mb-2" style="color:var(--ecmis-muted)"></i><br>
+      <strong>ไม่พบสำนวนที่ตรงกับเงื่อนไข</strong><br>
+      <small>ลองเคลียร์คำค้นหาหรือเปลี่ยนฟิลเตอร์กรองอื่น</small>
+    </td></tr>`;
+
+      // Render Pagination controls
+      const paginUl = document.getElementById('registerPagination');
+      const indicator = document.getElementById('pageIndicator');
+      indicator.textContent = `กำลังแสดงหน้า ${currentPage} จาก ${totalPages} (ทั้งหมด ${totalItems} รายการ)`;
+
+      let paginHtml = `
+    <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+      <a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;">«</a>
+    </li>`;
+      for (let i = 1; i <= totalPages; i++) {
+        paginHtml += `
+      <li class="page-item ${currentPage === i ? 'active' : ''}">
+        <a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>
+      </li>`;
+      }
+      paginHtml += `
+    <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+      <a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">»</a>
+    </li>`;
+      paginUl.innerHTML = paginHtml;
+
+      bindInlineEditing();
+    }
+
+    function changePage(p) {
+      currentPage = p;
+      render(true);
+    }
+
+    document.querySelectorAll('.sortable-header').forEach(header => {
+      header.addEventListener('click', () => {
+        const field = header.dataset.sort;
+        if (sortField === field) {
+          sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortField = field;
+          sortOrder = 'asc';
+        }
+
+        document.querySelectorAll('.sortable-header i').forEach(icon => {
+          icon.className = 'fa-solid fa-sort text-muted';
+        });
+        const activeIcon = header.querySelector('i');
+        activeIcon.className = `fa-solid fa-sort-${sortOrder === 'asc' ? 'up' : 'down'}`;
+
+        render(true);
+      });
+    });
+
+    function bindInlineEditing() {
+      document.querySelectorAll('.editable-subject').forEach(cell => {
+        cell.addEventListener('dblclick', () => {
+          const id = cell.dataset.id;
+          if (cell.classList.contains('editing')) return;
+          cell.classList.add('editing');
+
+          const kase = ALL_CASES.find(c => c.id === id);
+          if (!kase) return;
+
+          const currentSubject = kase.subject;
+          cell.innerHTML = `
+        <div class="mb-1">
+          <label class="form-label" style="font-size:0.7rem">แก้ไขเรื่องกล่าวหา:</label>
+          <input type="text" class="form-control form-control-sm" id="edit-sub-input" value="${currentSubject}">
+        </div>
+        <div>
+          <label class="form-label" style="font-size:0.7rem">แก้ไขเจ้าของสำนวน:</label>
+          <input type="text" class="form-control form-control-sm" id="edit-own-input" value="${kase.owner}">
+        </div>
+        <div class="text-end mt-1">
+          <button class="btn btn-xs btn-navy py-0 px-2" style="font-size:0.75rem" id="btn-save-inline">บันทึก</button>
+          <button class="btn btn-xs btn-light py-0 px-2" style="font-size:0.75rem" id="btn-cancel-inline">ยกเลิก</button>
+        </div>`;
+
+          const subInput = cell.querySelector('#edit-sub-input');
+          subInput.focus();
+
+          cell.querySelector('#btn-save-inline').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const newSub = cell.querySelector('#edit-sub-input').value.trim();
+            const newOwn = cell.querySelector('#edit-own-input').value.trim();
+            if (newSub && newOwn) {
+              try {
+                const { error } = await sb
+                  .from('tbl_cmp_case')
+                  .update({ tcc_subject: newSub, tcc_owner: newOwn })
+                  .eq('tcc_id', kase.tcc_id);
+                if (error) throw error;
+                kase.subject = newSub;
+                kase.owner = newOwn;
+                ECMIS.toastOk('แก้ไขข้อมูลสำนวนเรียบร้อยแล้ว');
+              } catch (err) {
+                console.error('บันทึกแก้ไขไม่สำเร็จ:', err);
+                ECMIS.toastWarn('บันทึกข้อมูลไม่สำเร็จ');
+              }
+            }
+            render(false);
+          });
+
+          cell.querySelector('#btn-cancel-inline').addEventListener('click', (e) => {
+            e.stopPropagation();
+            render(false);
+          });
+
+          cell.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+              render(false);
+            }
+          });
+        });
+      });
+    }
+
+    function collectExportRows() {
+      const filtered = ALL_CASES.filter(c => ECMIS.canViewCase(c, role.id)).filter(matches);
+      if (!filtered.length) return [];
+      return filtered.map(c => {
+        const accusedStr = c.accused.map(a => `${a.name} (${a.pos || '—'}) [${a.idcard || '—'}]`).join('; ');
+        const statusText = ECMIS.STATUS[c.status]?.label || c.status;
+        const procTypeLabel = ECMIS.isCase73(c) ? 'เรื่องทั่วไป / ทบทวนมติพนักงานอัยการ' : (ECMIS.isCase72(c) ? 'สำนวนไต่สวนข้อเท็จจริงเพื่อวินิจฉัยชี้มูล' : 'สำนวนไต่สวนเบื้องต้น');
+        return {
+          id: c.id,
+          subject: c.subject,
+          procType: procTypeLabel,
+          owner: c.owner,
+          ownerOrg: c.ownerOrg || 'ป.ป.ท.',
+          complainant: c.complainant || '—',
+          accused: accusedStr,
+          idCards: c.accused.map(a => a.idcard).filter(Boolean).join('; ') || '—',
+          subComm: c.subCommittee || '—',
+          investTeam: (c.order24Members || []).map(m => m.name).join(', ') || c.owner || '—',
+          orderNo: c.orderNo || (c.order24Done ? ('ปป. ๒๔/' + c.id) : '—'),
+          meetingNo: c.meetingNo || '—',
+          agendaNo: c.agendaNo || '—',
+          base: c.legalBase,
+          status: statusText,
+          receivedDate: c.receivedDate ? ECMIS.thaiDate(c.receivedDate) : '—',
+          sla: `${c.slaDays} วัน`
+        };
+      });
+    }
+
+    function ensureRowsForExport() {
+      const rows = collectExportRows();
+      if (!rows.length) {
+        ECMIS.toastWarn('ไม่มีข้อมูลสืบค้นสำหรับส่งออก');
+        return null;
+      }
+      return rows;
+    }
+
+    function downloadBlob(content, type, fileName) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', fileName);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function escapeHtml(v) {
+      return String(v || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    document.getElementById('btnExportCsv').addEventListener('click', () => {
+      const rows = ensureRowsForExport();
+      if (!rows) return;
+      let csv = '\uFEFF';
+      csv += 'เลขสำนวน,ประเภทสารบบ,เรื่องกล่าวหา,ผู้รับผิดชอบ,สำนัก/กอง/เขต,ผู้กล่าวหา,ผู้ถูกกล่าวหา,เลขบัตร ปชช.,คณะอนุกรรมการ,คณะพนักงานไต่สวน,เลขที่คำสั่ง,ครั้งที่ประชุม,วาระที่,ฐานรับเรื่อง,สถานะ,วันที่รับเรื่อง,กำหนดเวลา\n';
+      rows.forEach(r => {
+        const vals = [r.id, r.procType, r.subject, r.owner, r.ownerOrg, r.complainant, r.accused, r.idCards, r.subComm, r.investTeam, r.orderNo, r.meetingNo, r.agendaNo, r.base, r.status, r.receivedDate, r.sla]
+          .map(v => `"${String(v).replace(/"/g, '""')}"`)
+          .join(',');
+        csv += `${vals}\n`;
+      });
+      downloadBlob(csv, 'text/csv;charset=utf-8;', `ecmis_cases_register_${Date.now()}.csv`);
+      ECMIS.toastOk('ส่งออกไฟล์ข้อมูล CSV เรียบร้อยแล้ว');
+    });
+
+    document.getElementById('btnExportWord').addEventListener('click', () => {
+      const rows = ensureRowsForExport();
+      if (!rows) return;
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ทะเบียนสำนวน</title>
+      <style>
+        body{font-family:'TH Sarabun New',Tahoma,sans-serif;font-size:16px}
+        h1{font-size:24px;margin-bottom:12px}
+        table{border-collapse:collapse;width:100%}
+        th,td{border:1px solid #999;padding:6px;vertical-align:top}
+        th{background:#f3f4f6}
+      </style></head><body>
+      <h1>ทะเบียนสำนวนการไต่สวนและวินิจฉัยชี้มูล (E-CMIS)</h1>
+      <table><thead><tr>
+        <th>เลขสำนวน</th><th>ประเภทสารบบ</th><th>เรื่องกล่าวหา</th><th>ผู้รับผิดชอบ/สังกัด</th><th>ผู้กล่าวหา</th><th>ผู้ถูกกล่าวหา</th><th>เลขคำสั่ง</th><th>ครั้งที่/วาระ</th><th>สถานะ</th>
+      </tr></thead><tbody>
+      ${rows.map(r => `<tr><td>${escapeHtml(r.id)}</td><td>${escapeHtml(r.procType)}</td><td>${escapeHtml(r.subject)}</td><td>${escapeHtml(r.owner)} (${escapeHtml(r.ownerOrg)})</td><td>${escapeHtml(r.complainant)}</td><td>${escapeHtml(r.accused)}</td><td>${escapeHtml(r.orderNo)}</td><td>${escapeHtml(r.meetingNo)} / ${escapeHtml(r.agendaNo)}</td><td>${escapeHtml(r.status)}</td></tr>`).join('')}
+      </tbody></table></body></html>`;
+      downloadBlob(html, 'application/msword', `ecmis_cases_register_${Date.now()}.doc`);
+      ECMIS.toastOk('ส่งออกไฟล์ Word เรียบร้อยแล้ว');
+    });
+
+    document.getElementById('btnExportPdf').addEventListener('click', () => {
+      const rows = ensureRowsForExport();
+      if (!rows) return;
+      const printWin = window.open('', '_blank');
+      if (!printWin) {
+        ECMIS.toastWarn('เบราว์เซอร์บล็อกหน้าต่างสำหรับพิมพ์ PDF');
+        return;
+      }
+      printWin.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ทะเบียนสำนวน PDF</title>
+      <style>
+        body{font-family:'TH Sarabun New',Tahoma,sans-serif;font-size:15px;padding:18px}
+        h1{font-size:22px;margin-bottom:10px}
+        table{border-collapse:collapse;width:100%}
+        th,td{border:1px solid #999;padding:6px;vertical-align:top}
+        th{background:#f3f4f6}
+      </style></head><body>
+      <h1>ทะเบียนสำนวนการไต่สวนและวินิจฉัยชี้มูล (E-CMIS)</h1>
+      <table><thead><tr>
+        <th>เลขสำนวน</th><th>ประเภทสารบบ</th><th>เรื่องกล่าวหา</th><th>ผู้รับผิดชอบ/สังกัด</th><th>ผู้กล่าวหา</th><th>ผู้ถูกกล่าวหา</th><th>เลขคำสั่ง</th><th>ครั้งที่/วาระ</th><th>สถานะ</th>
+      </tr></thead><tbody>
+      ${rows.map(r => `<tr><td>${escapeHtml(r.id)}</td><td>${escapeHtml(r.procType)}</td><td>${escapeHtml(r.subject)}</td><td>${escapeHtml(r.owner)} (${escapeHtml(r.ownerOrg)})</td><td>${escapeHtml(r.complainant)}</td><td>${escapeHtml(r.accused)}</td><td>${escapeHtml(r.orderNo)}</td><td>${escapeHtml(r.meetingNo)} / ${escapeHtml(r.agendaNo)}</td><td>${escapeHtml(r.status)}</td></tr>`).join('')}
+      </tbody></table></body></html>`);
+      printWin.document.close();
+      printWin.focus();
+      printWin.print();
+      ECMIS.toastOk('เปิดหน้าพิมพ์ PDF แล้ว');
+    });
+
+    function updateActiveFilterBadge() {
+      let count = 0;
+      ['qAccused', 'qIdCard', 'qComplainant', 'qOrderNo', 'qOwner', 'qSubComm', 'qInvestTeam', 'qDateFrom', 'qDateTo', 'qMeetingNo', 'qAgendaNo'].forEach(id => {
+        const val = document.getElementById(id)?.value?.trim();
+        if (val) count++;
+      });
+      ['qOwnerOrg', 'qProcType', 'qBase', 'qStatus'].forEach(id => {
+        const val = document.getElementById(id)?.value;
+        if (val) count++;
+      });
+      if (document.getElementById('qPastAgenda')?.checked) count++;
+
+      const badge = document.getElementById('activeFilterBadge');
+      if (badge) {
+        if (count > 0) {
+          badge.textContent = count;
+          badge.classList.remove('d-none');
+        } else {
+          badge.classList.add('d-none');
+        }
+      }
+    }
+
+    // Toggle chevron animation for collapsible advanced search drawer
+    const advPanel = document.getElementById('advancedFilterPanel');
+    if (advPanel) {
+      advPanel.addEventListener('show.bs.collapse', () => {
+        const chev = document.getElementById('advChevron');
+        if (chev) chev.style.transform = 'rotate(180deg)';
+      });
+      advPanel.addEventListener('hide.bs.collapse', () => {
+        const chev = document.getElementById('advChevron');
+        if (chev) chev.style.transform = 'rotate(0deg)';
+      });
+    }
+
+    let searchDebounceTimer = null;
+    function debouncedSearch() {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        updateActiveFilterBadge();
+        currentPage = 1;
+        render(false);
+      }, 250);
+    }
+    document.getElementById('btnSearch').addEventListener('click', () => {
+      updateActiveFilterBadge();
+      currentPage = 1;
+      render(true);
+    });
+
+    document.getElementById('btnReset').addEventListener('click', () => {
+      ['q', 'qAccused', 'qIdCard', 'qComplainant', 'qOwner', 'qOwnerOrg', 'qSubComm', 'qInvestTeam', 'qOrderNo', 'qProcType', 'qBase', 'qStatus', 'qMeetingNo', 'qAgendaNo', 'qDateFrom', 'qDateTo'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      document.getElementById('qPastAgenda').checked = false;
+      filter = 'all';
+      document.querySelectorAll('.filter-chip').forEach(x => x.classList.remove('active'));
+      document.querySelector('.filter-chip[data-f="all"]')?.classList.add('active');
+      updateActiveFilterBadge();
+      currentPage = 1;
+      render(true);
+    });
+
+    ['q', 'qAccused', 'qIdCard', 'qComplainant', 'qOwner', 'qSubComm', 'qInvestTeam', 'qOrderNo', 'qMeetingNo', 'qAgendaNo', 'qDateFrom', 'qDateTo'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('keyup', e => {
+          if (e.key === 'Enter') {
+            updateActiveFilterBadge();
+            currentPage = 1;
+            render(true);
+          }
+        });
+        el.addEventListener('input', debouncedSearch);
+      }
+    });
+
+    ['qOwnerOrg', 'qProcType', 'qStatus', 'qBase', 'qPastAgenda'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', () => {
+        updateActiveFilterBadge();
+        currentPage = 1;
+        render(true);
+      });
+    });
+
+    document.querySelectorAll('.filter-chip').forEach(b => b.addEventListener('click', () => {
+      filter = b.dataset.f;
+      document.querySelectorAll('.filter-chip').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      currentPage = 1;
+      render(true);
+    }));
+
+    (async function main() {
+      render(true);
+      try {
+        const live = await loadAllCasesFromSupabase();
+        ALL_CASES = (live && live.length) ? live : ECMIS.CASES.slice();
+      } catch (err) {
+        console.error('โหลดทะเบียนสำนวนจากฐานข้อมูลไม่สำเร็จ:', err);
+        ALL_CASES = ECMIS.CASES.slice();
+      }
+      render(false);
+    })();
+  </script>
+</body>
+
+</html>

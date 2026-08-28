@@ -1,0 +1,146 @@
+@page "/committee/meeting/{Id:int}"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+@if (meeting is null)
+{
+    <div class="detail-page-wrap" style="text-align:center;padding:60px">
+        <i class="bi bi-exclamation-triangle" style="font-size:48px;color:var(--orange)"></i>
+        <div style="font-size:18px;font-weight:700;margin-top:12px">ไม่พบข้อมูลการประชุม</div>
+        <button class="btn-navy" style="margin-top:16px" @onclick='() => Nav.NavigateTo("/committee")'>กลับ</button>
+    </div>
+}
+else
+{
+    <div class="routing-page-wrap">
+        <div class="complaints-page-header">
+            <div>
+                <div class="detail-caseno">
+                    <i class="bi bi-journal-album" style="color:var(--navy-mid)"></i>
+                    การประชุมคณะกรรมการ ครั้งที่ @meeting.MeetingNo
+                </div>
+                <div class="detail-meta-row mt-2">
+                    <span class="complaints-status-chip @CommitteeData.MeetingStatusClass(meeting.Status)">
+                        @CommitteeData.MeetingStatusLabel(meeting.Status)
+                    </span>
+                    <span style="font-size:12px;color:var(--text-muted)">
+                        <i class="bi bi-calendar3"></i> วันที่: @meeting.Date
+                    </span>
+                    <span style="font-size:12px;color:var(--text-muted)">
+                        <i class="bi bi-clock"></i> เวลา: @meeting.Time น.
+                    </span>
+                    <span style="font-size:12px;color:var(--text-muted)">
+                        <i class="bi bi-files"></i> จำนวน: @cases.Count() วาระ
+                    </span>
+                </div>
+            </div>
+            <div class="detail-actions">
+                <button class="btn-outline-navy" @onclick='() => Nav.NavigateTo("/committee")'>
+                    <i class="bi bi-arrow-left"></i> กลับ
+                </button>
+                @if (meeting.Status == "scheduled")
+                {
+                    <button class="btn-gold" @onclick="SendSmartAlert">
+                        <i class="bi bi-bell-fill"></i> แจ้งเตือนนักสืบล่วงหน้า (Smart Alert)
+                    </button>
+                }
+            </div>
+        </div>
+
+        @if (alertSent)
+        {
+            <div style="margin-bottom:14px;padding:12px 16px;border-radius:10px;background:#e6f4ed;color:#1b7a4a;font-size:13px;font-weight:700">
+                <i class="bi bi-check-circle-fill"></i> ระบบได้ส่งแจ้งเตือน (Smart Alert) ไปยังนักสืบเจ้าของสำนวนเพื่อเตรียมชี้แจงเรียบร้อยแล้ว
+            </div>
+        }
+
+        <div class="complaints-table-card">
+            <div class="complaints-table-head">
+                <div>
+                    <div class="complaints-table-title">รายการคดีในวาระการประชุม (Agenda)</div>
+                    <div class="complaints-table-subtitle">คลิกที่ "บันทึกมติ" เพื่อเข้าสู่ระบบ Resolution Engine</div>
+                </div>
+            </div>
+
+            <div style="overflow-x:auto">
+                <table class="complaints-table">
+                    <thead>
+                        <tr>
+                            <th>ลำดับ</th>
+                            <th>เลขที่เรื่อง</th>
+                            <th>ผู้ถูกร้อง</th>
+                            <th>นักสืบผู้รับผิดชอบ</th>
+                            <th>สถานะในที่ประชุม</th>
+                            <th>มติล่าสุด</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < cases.Count; i++)
+                        {
+                            var c = cases[i];
+                            <tr>
+                                <td>@(i + 1)</td>
+                                <td>
+                                    <span class="complaints-case-no">@c.CaseNo</span>
+                                    <div style="font-size:11px;color:var(--text-muted)">เดิม: @c.OriginalComplaintNo</div>
+                                </td>
+                                <td>
+                                    <div style="font-size:13px;font-weight:600">@c.Accused</div>
+                                    <div style="font-size:11px;color:var(--text-muted)">@c.AccusedAgency</div>
+                                </td>
+                                <td>
+                                    <div style="font-size:13px">@c.Investigator</div>
+                                    <div style="font-size:11px;color:var(--text-muted)">@c.Division</div>
+                                </td>
+                                <td>
+                                    @if(c.MeetingStatus == "pending") {
+                                        <span class="complaints-status-chip pending">รอเข้าพิจารณา</span>
+                                    } else if (c.MeetingStatus == "reviewing") {
+                                        <span class="complaints-status-chip active">กำลังพิจารณา</span>
+                                    } else {
+                                        <span class="complaints-status-chip closed">พิจารณาแล้ว</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="category-chip @CommitteeData.ResolutionCategoryClass(c.ResolutionType)">
+                                        @CommitteeData.ResolutionCategoryLabel(c.ResolutionType)
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="complaints-manage-btn"
+                                        @onclick='() => Nav.NavigateTo($"/committee/case/{c.Id}")'>
+                                        <i class="bi bi-pencil-square"></i> บันทึกมติ
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    
+    private CommitteeMeeting? meeting;
+    private IReadOnlyList<CommitteeCase> cases = Array.Empty<CommitteeCase>();
+    private bool alertSent = false;
+
+    protected override void OnParametersSet()
+    {
+        meeting = CommitteeData.GetMeetingById(Id);
+        if (meeting != null)
+        {
+            cases = CommitteeData.GetCasesByMeeting(Id);
+        }
+        alertSent = false;
+    }
+
+    private void SendSmartAlert()
+    {
+        alertSent = true;
+    }
+}

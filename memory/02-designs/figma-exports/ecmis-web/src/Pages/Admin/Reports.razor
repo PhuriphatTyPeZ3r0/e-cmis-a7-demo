@@ -1,0 +1,307 @@
+@page "/admin/reports"
+@using System.Net
+@using System.Text
+@using EcmisWeb.Services
+@inject AdminApiService AdminApi
+@inject IJSRuntime JS
+
+<PageTitle>รายงานผู้ใช้งานและความปลอดภัย — E-CMIS</PageTitle>
+
+<div style="background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 60%,#1e3575 100%);border-radius:18px;padding:24px 28px;margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+        <div>
+            <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.2">รายงานผู้ใช้งานและความปลอดภัย</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.55)">รายงาน — ผู้ใช้งาน · ประวัติเข้าสู่ระบบ · บันทึกกิจกรรม</div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <a href="/admin/log-categories" class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25)">
+                <i class="bi bi-tags me-1"></i>หมวดหมู่ Log
+            </a>
+            <button class="btn btn-sm btn-light" @onclick='() => ExportAsync("csv")'><i class="bi bi-filetype-csv"></i> CSV</button>
+            <button class="btn btn-sm btn-light" @onclick='() => ExportAsync("excel")'><i class="bi bi-file-earmark-spreadsheet"></i> Excel</button>
+            <button class="btn btn-sm btn-light" @onclick='() => ExportAsync("pdf")'><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+@if (!string.IsNullOrEmpty(infoMessage))
+{
+    <div class="alert alert-success">@infoMessage</div>
+}
+
+<div style="background:#fff;border:1px solid #eaecf2;border-radius:14px;padding:8px;margin-bottom:14px">
+    <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-sm @(activeTab == "users" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => activeTab = "users"'>
+            รายงานผู้ใช้ (@userRows.Count)
+        </button>
+        <button class="btn btn-sm @(activeTab == "logins" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => activeTab = "logins"'>
+            ประวัติการเข้าใช้ (@loginRows.Count)
+        </button>
+        <button class="btn btn-sm @(activeTab == "audit" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => activeTab = "audit"'>
+            บันทึกกิจกรรมระบบ (@auditRows.Count)
+        </button>
+    </div>
+</div>
+
+@if (activeTab == "users")
+{
+    <div class="ecmis-card mb-3">
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <select class="form-select" style="width:180px" @bind="userStatus">
+                <option value="">ทุกสถานะ</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="pending">Pending</option>
+            </select>
+            <input class="form-control" style="width:180px" @bind="userRole" placeholder="สิทธิ์ (เช่น admin)" />
+            <input class="form-control" style="width:220px" @bind="userOrgId" placeholder="Org ID (GUID)" />
+            <button class="btn btn-ecmis-primary" @onclick="LoadUsersAsync">โหลดข้อมูล</button>
+        </div>
+    </div>
+
+    @RenderUserTable()
+}
+else if (activeTab == "logins")
+{
+    <div class="ecmis-card mb-3">
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <input class="form-control" style="width:220px" @bind="loginUserId" placeholder="User ID" />
+            <input class="form-control" style="width:210px" @bind="loginFrom" placeholder="จาก (ISO date/time)" />
+            <input class="form-control" style="width:210px" @bind="loginTo" placeholder="ถึง (ISO date/time)" />
+            <button class="btn btn-ecmis-primary" @onclick="LoadLoginsAsync">โหลดข้อมูล</button>
+        </div>
+    </div>
+
+    @RenderLoginTable()
+}
+else
+{
+    <div class="ecmis-card mb-3">
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <input class="form-control" style="width:180px" @bind="auditUserId" placeholder="User ID" />
+            <select class="form-select" style="width:200px" @bind="auditActionType">
+                <option value="">ทุกการกระทำ</option>
+                <option value="login">เข้าสู่ระบบ</option>
+                <option value="logout">ออกจากระบบ</option>
+                <option value="change_password">เปลี่ยนรหัสผ่าน</option>
+                <option value="change_profile">แก้ไขข้อมูลส่วนตัว</option>
+            </select>
+            <input class="form-control" style="width:210px" @bind="auditFrom" placeholder="จาก (ISO date/time)" />
+            <input class="form-control" style="width:210px" @bind="auditTo" placeholder="ถึง (ISO date/time)" />
+            <button class="btn btn-ecmis-primary" @onclick="LoadAuditAsync">โหลดข้อมูล</button>
+        </div>
+    </div>
+
+    @RenderAuditTable()
+}
+
+@code {
+    private string activeTab = "users";
+    private string? errorMessage;
+    private string? infoMessage;
+
+    private string userStatus = "";
+    private string userRole = "";
+    private string userOrgId = "";
+    private readonly List<UserReportDto> userRows = new();
+
+    private string loginUserId = "";
+    private string loginFrom = "";
+    private string loginTo = "";
+    private readonly List<LoginHistoryReportDto> loginRows = new();
+
+    private string auditUserId = "";
+    private string auditActionType = "";
+    private string auditFrom = "";
+    private string auditTo = "";
+    private readonly List<AuditReportDto> auditRows = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsersAsync();
+        await LoadLoginsAsync();
+        await LoadAuditAsync();
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        try
+        {
+            errorMessage = null;
+            var result = await AdminApi.GetUserReportAsync(userStatus, userOrgId, userRole);
+            userRows.Clear();
+            userRows.AddRange(result);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"โหลดรายงานผู้ใช้ไม่สำเร็จ: {ex.Message}";
+            userRows.Clear();
+        }
+    }
+
+    private async Task LoadLoginsAsync()
+    {
+        try
+        {
+            errorMessage = null;
+            var result = await AdminApi.GetLoginHistoryReportAsync(loginUserId, loginFrom, loginTo);
+            loginRows.Clear();
+            loginRows.AddRange(result);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"โหลดประวัติการเข้าใช้ไม่สำเร็จ: {ex.Message}";
+            loginRows.Clear();
+        }
+    }
+
+    private async Task LoadAuditAsync()
+    {
+        try
+        {
+            errorMessage = null;
+            var result = await AdminApi.GetAuditReportAsync(auditUserId, auditActionType, auditFrom, auditTo);
+            auditRows.Clear();
+            auditRows.AddRange(result);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"โหลด audit logs ไม่สำเร็จ: {ex.Message}";
+            auditRows.Clear();
+        }
+    }
+
+    private async Task ExportAsync(string format)
+    {
+        var (title, headers, rows) = BuildCurrentExportData();
+        if (rows.Count == 0)
+        {
+            infoMessage = "ไม่มีข้อมูลสำหรับ export";
+            return;
+        }
+
+        var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        if (format == "pdf")
+        {
+            var html = BuildHtmlTable(title, headers, rows);
+            await JS.InvokeVoidAsync("ecmis.printReport", title, html);
+            infoMessage = "เปิดหน้าพิมพ์แล้ว (เลือก Save as PDF ได้ทันที)";
+            return;
+        }
+
+        if (format == "excel")
+        {
+            var xlsxBytes = XlsxBuilder.Build(title, headers, rows);
+            await JS.InvokeVoidAsync("ecmis.downloadBase64File",
+                $"{title}_{stamp}.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                Convert.ToBase64String(xlsxBytes));
+            infoMessage = "ส่งออกไฟล์ Excel สำเร็จ";
+            return;
+        }
+
+        var csv = BuildCsv(headers, rows);
+        await JS.InvokeVoidAsync("ecmis.downloadTextFile",
+            $"{title}_{stamp}.csv", "text/csv;charset=utf-8;", csv, true);
+        infoMessage = "ส่งออกไฟล์ CSV สำเร็จ";
+    }
+
+    private (string Title, List<string> Headers, List<string[]> Rows) BuildCurrentExportData()
+    {
+        if (activeTab == "logins")
+        {
+            return (
+                "login_history_report",
+                new List<string> { "UserId", "Username", "LoginAt" },
+                loginRows.Select(x => new[]
+                {
+                    x.UserId?.ToString() ?? "", x.Username,
+                    x.LoginAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss") ?? ""
+                }).ToList()
+            );
+        }
+
+        if (activeTab == "audit")
+        {
+            return (
+                "audit_report",
+                new List<string> { "Id", "UserId", "Username", "Action", "CreatedAt" },
+                auditRows.Select(x => new[]
+                {
+                    x.Id.ToString(), x.UserId?.ToString() ?? "", x.Username, ActionLabel(x.Action),
+                    x.CreatedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss") ?? ""
+                }).ToList()
+            );
+        }
+
+        return (
+            "users_report",
+            new List<string> { "Username", "Email", "Status", "UserType", "FirstName", "LastName", "Phone", "Roles", "Organizations", "CreatedAt", "LastLoginAt" },
+            userRows.Select(x => new[]
+            {
+                x.Username, x.Email, x.AccountStatus, x.UserType, x.FirstName, x.LastName, x.PhoneNumber,
+                x.Roles, x.Orgs, x.CreatedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss") ?? "",
+                x.LastLoginAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss") ?? ""
+            }).ToList()
+        );
+    }
+
+    private static string BuildCsv(List<string> headers, List<string[]> rows)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine(string.Join(",", headers.Select(EscapeCsv)));
+        foreach (var row in rows)
+            sb.AppendLine(string.Join(",", row.Select(EscapeCsv)));
+        return sb.ToString();
+    }
+
+    private static string BuildHtmlTable(string title, List<string> headers, List<string[]> rows)
+    {
+        var sb = new StringBuilder();
+        sb.Append("<h2>").Append(WebUtility.HtmlEncode(title)).Append("</h2>");
+        sb.Append("<table border='1' cellspacing='0' cellpadding='6' style='border-collapse:collapse;font-family:Sarabun,sans-serif;font-size:12px'>");
+        sb.Append("<thead><tr>");
+        foreach (var h in headers)
+            sb.Append("<th style='background:#f3f5fb'>").Append(WebUtility.HtmlEncode(h)).Append("</th>");
+        sb.Append("</tr></thead><tbody>");
+        foreach (var row in rows)
+        {
+            sb.Append("<tr>");
+            foreach (var cell in row)
+                sb.Append("<td>").Append(WebUtility.HtmlEncode(cell)).Append("</td>");
+            sb.Append("</tr>");
+        }
+        sb.Append("</tbody></table>");
+        return sb.ToString();
+    }
+
+    private static string EscapeCsv(string? value)
+    {
+        var raw = value ?? "";
+        if (raw.Contains('"'))
+            raw = raw.Replace("\"", "\"\"");
+        return (raw.Contains(',') || raw.Contains('\n') || raw.Contains('\r'))
+            ? $"\"{raw}\""
+            : raw;
+    }
+
+    private RenderFragment RenderUserTable() => @<div class="ecmis-card"><div style="overflow-x:auto"><table class="ecmis-table"><thead><tr><th>ชื่อผู้ใช้</th><th>อีเมล</th><th>สถานะ</th><th>สิทธิ์</th><th>หน่วยงาน</th><th>เข้าสู่ระบบล่าสุด</th></tr></thead><tbody>@foreach (var row in userRows){<tr><td>@row.Username</td><td>@row.Email</td><td>@row.AccountStatus</td><td>@row.Roles</td><td>@row.Orgs</td><td>@(row.LastLoginAt?.ToLocalTime().ToString("dd/MM/yy HH:mm") ?? "-")</td></tr>}</tbody></table></div></div>;
+
+    private RenderFragment RenderLoginTable() => @<div class="ecmis-card"><div style="overflow-x:auto"><table class="ecmis-table"><thead><tr><th>เวลา</th><th>User ID</th><th>Username</th></tr></thead><tbody>@foreach (var row in loginRows){<tr><td>@(row.LoginAt?.ToLocalTime().ToString("dd/MM/yy HH:mm:ss") ?? "-")</td><td>@(row.UserId?.ToString() ?? "-")</td><td>@row.Username</td></tr>}</tbody></table></div></div>;
+
+    private RenderFragment RenderAuditTable() => @<div class="ecmis-card"><div style="overflow-x:auto"><table class="ecmis-table"><thead><tr><th>เวลา</th><th>การกระทำ</th><th>User ID</th><th>ผู้ใช้</th></tr></thead><tbody>@foreach (var row in auditRows){<tr><td>@(row.CreatedAt?.ToLocalTime().ToString("dd/MM/yy HH:mm:ss") ?? "-")</td><td>@ActionLabel(row.Action)</td><td>@(row.UserId?.ToString() ?? "-")</td><td>@row.Username</td></tr>}</tbody></table></div></div>;
+
+    private static string ActionLabel(string action) => action switch
+    {
+        "login" => "เข้าสู่ระบบ",
+        "logout" => "ออกจากระบบ",
+        "change_password" => "เปลี่ยนรหัสผ่าน",
+        "change_profile" => "แก้ไขข้อมูลส่วนตัว",
+        _ => action
+    };
+}

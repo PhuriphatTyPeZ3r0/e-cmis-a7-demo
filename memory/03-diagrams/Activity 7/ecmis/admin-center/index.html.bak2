@@ -1,0 +1,781 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E-CMIS ก14 · ระบบบริหารกลางและสนับสนุน (SYS01-06 / FR144)</title>
+<link rel="stylesheet" href="./assets/fontawesome/css/all.min.css">
+<link rel="stylesheet" href="./assets/sweetalert2/sweetalert2.min.css">
+<link rel="stylesheet" href="./assets/mockup.css">
+<style>
+@font-face{font-family:"Kanit";font-style:normal;font-weight:400;src:url("./assets/fonts/Kanit-Regular.ttf") format("truetype")}
+:root{--navy:#10284b;--navy2:#1d3975;--gold:#c6a13d;--ink:#172943;--muted:#62738a;--line:#d6e0ea;--ok:#24714a;--warn:#8a6111;--bad:#ad3f3d}
+.badge{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+.badge-ok{background:#d1e7dd;color:#0f5132}.badge-warn{background:#fff3cd;color:#664d03}.badge-bad{background:#f8d7da;color:#842029}.badge-info{background:#cfe2ff;color:#084298}.badge-muted{background:#e2e3e5;color:#41464b}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px}
+.kpi strong{font-size:18px;color:var(--navy)} .kpi small{color:var(--muted)}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;margin:10px 0}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:7px 8px;border-bottom:1px solid #eef2f7;text-align:left;white-space:nowrap}
+th{background:#f8fafc;color:var(--muted);font-weight:600}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.toolbar input,.toolbar select{border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-height:32px;font-size:12px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer}
+.btn-primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn-sm{padding:4px 8px;font-size:11px}
+.nav-link.active{background:rgba(255,255,255,.09)!important;color:#fff!important;border-color:rgba(201,154,46,.35)!important}
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.subtabs button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;cursor:pointer}
+.subtabs button.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.subpanel{display:none}.subpanel.active{display:block}
+.matrix{overflow:auto}
+.matrix table th:first-child{position:sticky;left:0;background:#f8fafc;z-index:1}
+.matrix table td:first-child{position:sticky;left:0;background:#fff;z-index:1;font-weight:500}
+.fr-tag{font-size:10px;color:#7a8aa0;background:#eef2f7;border-radius:4px;padding:1px 5px;font-family:monospace}
+.coverage{font-size:11px;color:#62738a;background:#fff;border:1px dashed #c6d4e6;border-radius:8px;padding:8px 10px;margin:8px 0}
+@media(max-width:900px){.kpi-row{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="app" style="display:grid;grid-template-columns:268px 1fr;min-height:100vh">
+<aside class="side" style="background:#0d1b3e;color:#cbd5e1;display:flex;flex-direction:column">
+  <div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;gap:12px;align-items:center">
+    <img src="./assets/images/pacc-logo.webp" alt="" style="width:44px;height:44px;border-radius:50%;border:2px solid #c99a2e;background:#f4d56d;object-fit:cover">
+    <div><strong style="color:#fff">E-CMIS</strong><small style="display:block;color:#e4be52;font-size:11px">ก14 · บริหารกลางและสนับสนุน</small><small style="display:block;color:#91a2c3;font-size:10px">SYS01-06 · 30 ย่อย · FR144 · 24 razor</small></div>
+  </div>
+  <nav style="padding:10px;flex:1;overflow:auto;display:flex;flex-direction:column;gap:2px">
+    <div style="font-size:10px;letter-spacing:.06em;color:#91a2c3;padding:6px 8px 2px">SYS01 สิทธิ์และผู้ใช้งาน (10 ย่อย)</div>
+    <button class="nav-link" data-h="#/users"><i class="fa-solid fa-users"></i> ผู้ใช้งาน & ลงทะเบียน</button>
+    <button class="nav-link" data-h="#/roles"><i class="fa-solid fa-shield-halved"></i> บทบาท/สิทธิ์ (SYS01.09-10)</button>
+    <div style="font-size:10px;letter-spacing:.06em;color:#91a2c3;padding:8px 8px 2px">SYS02 ขับเคลื่อน + SYS03 ประชาสัมพันธ์</div>
+    <button class="nav-link" data-h="#/drive"><i class="fa-solid fa-bullhorn"></i> ขับเคลื่อน (SYS02 6 ย่อย)</button>
+    <button class="nav-link" data-h="#/news"><i class="fa-solid fa-newspaper"></i> ประชาสัมพันธ์ (SYS03)</button>
+    <div style="font-size:10px;letter-spacing:.06em;color:#91a2c3;padding:8px 8px 2px">SYS04 ฐานกลาง / SYS05 Audit / SYS06 ลายเซ็น</div>
+    <button class="nav-link" data-h="#/master"><i class="fa-solid fa-database"></i> ฐานกลาง & API (SYS04)</button>
+    <button class="nav-link" data-h="#/audit"><i class="fa-solid fa-clipboard-list"></i> บันทึกเหตุการณ์ (SYS05)</button>
+    <button class="nav-link" data-h="#/sign"><i class="fa-solid fa-signature"></i> ลายเซ็นดิจิทัล (SYS06)</button>
+    <div style="margin-top:10px;padding:10px 8px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:#91a2c3;line-height:1.6">
+      เส้นทางเดิม: #/users|roles|news|master|audit|sign<br>
+      เพิ่ม: #/drive (SYS02) + แยก #/news เป็น SYS03 เต็ม<br>
+      sub-tab ครอบ 24 razor / FR144<br>
+      <span style="color:#e4be52">Super Admin · Org Admin · User</span><br>ThaiD + OTP · PDPA · JWT/RBAC
+    </div>
+  </nav>
+  <div style="padding:10px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:10px;align-items:center">
+    <div style="width:32px;height:32px;border-radius:50%;background:#1d3975;display:grid;place-items:center;color:#fff;font-weight:700;font-size:12px">ส</div>
+    <div><strong style="color:#fff;font-size:12px">Super Admin</strong><small style="display:block;color:#bac7dd;font-size:10px">ส่วนกลาง · จัดการได้ทุกหน่วย</small></div>
+  </div>
+</aside>
+<main style="background:#f1f5f9;min-width:0">
+  <div class="top" style="height:52px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 14px;gap:8px;flex-wrap:wrap">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge badge-info">MOCK</span><strong id="ttl">ผู้ใช้งาน</strong><small id="sub" style="color:var(--muted)">SYS01 · FR-SYS-001~042</small><span id="covBadge" class="badge badge-ok" style="margin-left:6px">FR144 ครบ</span></div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <select id="scopePick" style="border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:12px"><option>Super Admin (ทุกหน่วย)</option><option>Org Admin (เขต 1)</option><option>Org Admin (เขต 2)</option></select>
+      <button class="btn" onclick="doExport()"><i class="fa-solid fa-file-excel"></i> Export</button>
+    </div>
+  </div>
+  <div class="content" style="padding:14px">
+
+    <!-- ===================== SYS01 Users (FR 001-042 subset + transfers/phone etc) ===================== -->
+    <section id="v-users">
+      <div class="coverage"><strong>FR ครอบ:</strong> FR-SYS-001~008 ลงทะเบียน / 009~019 เข้าใช้งาน-รหัสผ่าน-โปรไฟล์-ขอแก้ไข / 020~042 Admin/Super Admin — ครบ SYS01.01~01.10 + ตารางรายงาน · <span class="fr-tag">5 razor: Users, Registrations, Transfers, Support, SuperAdminDashboard</span></div>
+      <div class="kpi-row">
+        <div class="kpi"><small>ผู้ใช้งานทั้งหมด</small><br><strong>342</strong> <small>บัญชี</small><br><small style="color:var(--ok)">Active 318 · Inactive 24</small><br><small class="fr-tag">FR-024/035</small></div>
+        <div class="kpi"><small>รอการอนุมัติ</small><br><strong style="color:var(--warn)">7</strong> <small>คำขอลงทะเบียนใหม่</small><br><small>ThaiD ยืนยันแล้ว 5</small><br><small class="fr-tag">FR-003/005/021</small></div>
+        <div class="kpi"><small>คำขอย้ายหน่วยงาน</small><br><strong>4</strong> <small>รอต้นทาง/ปลายทาง</small><br><small class="fr-tag">FR-015/026/027/094-095</small></div>
+        <div class="kpi"><small>คำขอแก้สิทธิ์</small><br><strong>6</strong> <small>รออนุมัติ</small><br><small class="fr-tag">FR-016/028/029</small></div>
+      </div>
+      <div class="subtabs" id="st-users">
+        <button class="active" data-t="u-list">รายการผู้ใช้ <span class="fr-tag">024·035</span></button>
+        <button data-t="u-reg">ลงทะเบียน/อนุมัติ <span class="fr-tag">001~008·020~021</span></button>
+        <button data-t="u-trans">ย้ายหน่วยงาน <span class="fr-tag">094-096</span></button>
+        <button data-t="u-permreq">ขอแก้สิทธิ์ <span class="fr-tag">028·037-039</span></button>
+        <button data-t="u-auth">เข้าใช้งาน/รหัสผ่าน <span class="fr-tag">009~012</span></button>
+        <button data-t="u-report">รายงานผู้ใช้ <span class="fr-tag">051~056</span></button>
+      </div>
+      <!-- sub: list -->
+      <div class="subpanel active" id="p-u-list">
+        <div class="toolbar">
+          <input id="q-users" placeholder="ค้นหา ชื่อ/อีเมล/หน่วยงาน" style="flex:1;min-width:220px">
+          <select id="f-users-status"><option value="">สถานะ ทั้งหมด</option><option>Active</option><option>Inactive</option><option>รออนุมัติ</option><option>ถูกล็อก</option></select>
+          <select id="f-users-dept"><option value="">หน่วยงาน ทั้งหมด</option><option>ส่วนกลาง</option><option>เขต 1</option><option>เขต 2</option><option>กบด.</option></select>
+          <button class="btn btn-primary" onclick="openAddUser()"><i class="fa-solid fa-user-plus"></i> เพิ่มผู้ใช้ (FR-035)</button>
+          <button class="btn" onclick="openImport()"><i class="fa-solid fa-file-import"></i> นำเข้า</button>
+          <button class="btn" onclick="Swal.fire('Mock','ThaiD OAuth2 + JWT · ตรวจซ้ำก่อนบันทึก (FR-003/004/010)','info')">ThaiD</button>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ-สกุล</th><th>หน่วยงาน</th><th>ตำแหน่ง</th><th>บทบาท</th><th>สถานะ</th><th>เข้าใช้ล่าสุด</th><th>Log</th><th></th></tr></thead><tbody id="tb-users"></tbody></table></div>
+        <div id="detail-users" style="margin-top:10px"></div>
+      </div>
+      <div class="subpanel" id="p-u-reg">
+        <div class="card"><div class="card-head"><strong>คำขอลงทะเบียนรออนุมัติ (7)</strong><small style="color:var(--muted)">SYS01.01-02 · FR-001~008 · ตรวจซ้ำ + ThaiD + ส่งให้ Admin หน่วยงาน (FR-005)</small><span class="badge badge-warn">FR-020·021</span></div><div class="table-wrap"><table><thead><tr><th>วันที่ขอ</th><th>ชื่อผู้ขอ</th><th>หน่วยงาน</th><th>ตำแหน่ง</th><th>บทบาทที่ขอ</th><th>ThaiD</th><th></th></tr></thead><tbody id="tb-pending"></tbody></table></div></div>
+        <div class="card"><div class="card-head"><strong>สมัครใหม่ (จำลองฟอร์ม FR-001/002/004)</strong></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <label>ชื่อ-สกุล <input id="reg-name" class="btn" style="width:100%;text-align:left;background:#fff" placeholder="นายทดสอบ ระบบ"></label>
+            <label>หน่วยงาน <select id="reg-dept" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:6px"><option>ส่วนกลาง</option><option>เขต 1</option><option>เขต 2</option></select></label>
+            <label>อีเมล <input id="reg-email" class="btn" style="width:100%;text-align:left;background:#fff" placeholder="name@pacc.go.th"></label>
+            <label>เบอร์โทร <input class="btn" style="width:100%;text-align:left;background:#fff" placeholder="02-xxx-xxxx"></label>
+          </div>
+          <div class="toolbar"><button class="btn btn-primary" onclick="submitReg()">ส่งคำขอลงทะเบียน (FR-005)</button><small style="color:var(--muted)">→ บันทึกผลอนุมัติ/ไม่อนุมัติ (FR-006) + แจ้งผลทางอีเมล (FR-007) + ตั้งรหัสผ่านครั้งแรก (FR-008/011)</small></div>
+        </div>
+      </div>
+      <div class="subpanel" id="p-u-trans">
+        <div class="card"><div class="card-head"><strong>คำขอย้าย/แก้ไขหน่วยงาน (SYS01.07 · FR-015·026·027·094·095)</strong><small style="color:var(--muted)">ผู้ใช้ส่งคำขอ → Admin ต้นทาง + ปลายทางพิจารณา → อัปเดตหน่วยงานให้ระบบที่เกี่ยวข้อง (FR-096) + บันทึกประวัติ (FR-097)</small></div><div class="table-wrap"><table><thead><tr><th>วันที่</th><th>ผู้ขอ</th><th>จาก</th><th>ไป</th><th>เหตุผล</th><th>สถานะ</th><th></th></tr></thead><tbody id="tb-transfers"></tbody></table></div></div>
+      </div>
+      <div class="subpanel" id="p-u-permreq">
+        <div class="card"><div class="card-head"><strong>คำขอแก้ไขสิทธิ์ (SYS01.08 · FR-016·028·029·038)</strong><small>ตรวจหน้าที่งาน + กำหนด/ปรับบทบาท + Super Admin สร้าง Role (FR-039)</small></div><div class="table-wrap"><table><thead><tr><th>วันที่</th><th>ผู้ขอ</th><th>สิทธิ์เดิม</th><th>สิทธิ์ที่ขอ</th><th>เหตุผล</th><th>สถานะ</th><th></th></tr></thead><tbody id="tb-permreq"></tbody></table></div></div>
+      </div>
+      <div class="subpanel" id="p-u-auth">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="card"><div class="card-head"><strong>เข้าใช้งาน (FR-009·010·013·018·019)</strong></div>
+            <div style="font-size:12px;line-height:1.8;color:var(--muted)">
+              • Username/Password (FR-009) + ThaiD OAuth2/JWT (FR-010)<br>• ตรวจสิทธิ์ก่อนแสดงเมนู/ข้อมูล (FR-013·049)<br>• บันทึก + แสดงประวัติเข้าใช้งาน (FR-018) · รายงาน Log (FR-019)
+            </div>
+            <div class="table-wrap" style="margin-top:8px"><table><thead><tr><th>เวลา</th><th>ผู้ใช้</th><th>ช่องทาง</th><th>ผล</th><th>IP</th></tr></thead><tbody id="tb-authlog"></tbody></table></div>
+          </div>
+          <div class="card"><div class="card-head"><strong>จัดการรหัสผ่าน (FR-011·012·023·034)</strong></div>
+            <div class="toolbar"><button class="btn btn-primary" onclick="Swal.fire('Mock','บังคับเปลี่ยนรหัสผ่านครั้งแรก (FR-011)','info')">บังคับเปลี่ยนครั้งแรก</button><button class="btn" onclick="Swal.fire('Mock','ลืมรหัสผ่าน → ขอกำหนดใหม่ + Admin ช่วยรีเซ็ต (FR-012/023/034)','info')">ลืมรหัสผ่าน</button></div>
+            <div style="font-size:12px;color:var(--muted)">นโยบาย: 8 ตัวขึ้นไป · ตัวใหญ่/เล็ก/เลข/อักขระพิเศษ · หมดอายุ 90 วัน · ล็อก 5 ครั้งผิด · ประวัติห้ามซ้ำ 5 ครั้งล่าสุด</div>
+            <div class="table-wrap" style="margin-top:8px"><table><thead><tr><th>ผู้ใช้</th><th>เปลี่ยนล่าสุด</th><th>หมดอายุ</th><th>สถานะ</th><th></th></tr></thead><tbody id="tb-pwd"></tbody></table></div>
+          </div>
+        </div>
+        <div class="card"><div class="card-head"><strong>ข้อมูลส่วนตัวของฉัน (FR-014)</strong><small>ดู/แก้ไขตามสิทธิ์ + ประวัติเข้าใช้งาน</small></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px"><div><strong>นายสมศักดิ์ ใจดี</strong><br>อีเมล: somsak.p@pacc.go.th<br>หน่วย: ส่วนกลาง · บทบาท: OFFICER</div><div><button class="btn" onclick="Swal.fire('Mock','แก้ไขข้อมูลส่วนตัว (FR-014) — ชื่อ/อีเมล/เบอร์โทร','info')">แก้ไขข้อมูลส่วนตัว</button> <button class="btn" onclick="Swal.fire('Mock','ประวัติดำเนินการของฉัน (FR-030/042)','info')">ประวัติของฉัน</button></div></div></div>
+      </div>
+      <div class="subpanel" id="p-u-report">
+        <div class="card"><div class="card-head"><strong>รายงานผู้ใช้งาน (SYS01.10 · FR-051~056)</strong><small>ค้นหา/กรอง (FR-052) · แสดงตามสิทธิ์ (FR-053) · Export Excel/PDF (FR-054/055) · บันทึกประวัติเรียกดู/ส่งออก (FR-056)</small></div>
+          <div class="toolbar"><select><option>ทั้งหมด</option><option>Active</option><option>รออนุมัติ</option></select><select><option>ส่วนกลาง</option><option>เขต 1</option><option>เขต 2</option></select><button class="btn btn-primary" onclick="Swal.fire('Mock','ส่งออกรายงาน Excel/PDF + บันทึกประวัติเรียกดู (FR-054~056)','info')"><i class="fa-solid fa-file-export"></i> Export Excel/PDF</button></div>
+          <div class="table-wrap"><table><thead><tr><th>รายงาน</th><th>คำอธิบาย</th><th>สิทธิ</th><th></th></tr></thead><tbody><tr><td>รายงานผู้ใช้งานตามหน่วยงาน</td><td>สรุป Active/Inactive/รออนุมัติ แยกหน่วย</td><td>Super/Admin</td><td><button class="btn btn-sm" onclick="doExport()">ดู</button></td></tr><tr><td>รายงาน Log เข้าใช้งาน</td><td>ประวัติเข้าใช้งานตามช่วงเวลา (FR-019)</td><td>ผู้ดูแล</td><td><button class="btn btn-sm">ดู</button></td></tr><tr><td>รายงานประวัติ Admin</td><td>การดำเนินการของ Admin/Super Admin (FR-030/042)</td><td>Super</td><td><button class="btn btn-sm">ดู</button></td></tr></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SYS01.09 Roles ===================== -->
+    <section id="v-roles" style="display:none">
+      <div class="coverage"><strong>FR ครอบ:</strong> FR-043~050 Role/Permission · FR-029·038·039 สร้าง/ปรับบทบาท · กลุ่มระบบ/เมนู FR-124~129 เชื่อมโยง — <span class="fr-tag">razor: Roles, SystemsManagement</span></div>
+      <div class="kpi-row">
+        <div class="kpi"><small>บทบาททั้งหมด</small><br><strong>14</strong> <small>กลุ่มสิทธิ์</small><br><small>Super Admin / Org Admin / Officer / …</small></div>
+        <div class="kpi"><small>เมนูที่ต้องกำหนดสิทธิ์</small><br><strong>42</strong> <small>เมนู · ก4-14</small><br><small class="fr-tag">FR-044</small></div>
+        <div class="kpi"><small>หลายบทบาทต่อคน</small><br><strong>รองรับ</strong><br><small class="fr-tag">FR-045</small></div>
+        <div class="kpi"><small>ThaiD FeatureGate</small><br><strong style="color:var(--warn)">ปิด</strong> <small>Enabled=false</small></div>
+      </div>
+      <div class="subtabs" id="st-roles">
+        <button class="active" data-t="r-matrix">Permission Matrix <span class="fr-tag">043~048</span></button>
+        <button data-t="r-roles">รายการบทบาท <span class="fr-tag">039</span></button>
+        <button data-t="r-systems">กลุ่มระบบ/เมนู <span class="fr-tag">124~129</span></button>
+        <button data-t="r-assign">กำหนดสิทธิ์ให้ผู้ใช้ <span class="fr-tag">046</span></button>
+      </div>
+      <div class="subpanel active" id="p-r-matrix">
+        <div class="card"><div class="card-head"><strong>Permission Matrix</strong><small style="color:var(--muted)">SYS01.09 · FR-043 กกำหนด Role/กลุ่มสิทธิ์ · FR-044 สิทธิ์ตามระบบ/เมนู/ระดับข้อมูล · FR-047 ตรวจความถูกต้องก่อนบันทึก · FR-048 ปรับเมนูหลังบันทึก · FR-049 แสดงเมนูตามสิทธิ์ · FR-050 บันทึกประวัติเปลี่ยนสิทธิ์</small></div>
+          <div class="toolbar"><select id="rolePick"><option>OFFICER</option><option>DIV_DIRECTOR</option><option>BUREAU_DIRECTOR</option><option>ORG_ADMIN</option><option>SUPER_ADMIN</option></select><small style="color:var(--muted)">เลือกบทบาทเพื่อดู/แก้ไขสิทธิ์ · 1 คนหลายบทบาท (FR-045)</small><button class="btn" onclick="Swal.fire('Mock','เพิ่มบทบาทใหม่ — ตั้งชื่อ + เลือกสิทธิ์เมนู 42 เมนู (ก4-14) + ขอบเขตหน่วยงาน','info')">+ เพิ่มบทบาท (FR-039)</button></div>
+          <div class="table-wrap matrix"><table><thead><tr><th>เมนู / ระบบ</th><th>ดู</th><th>เพิ่ม</th><th>แก้ไข</th><th>ลบ</th><th>อนุมัติ</th><th>Export</th></tr></thead><tbody id="tb-matrix"></tbody></table></div>
+        </div>
+        <div class="card"><div class="card-head"><strong>ขอบเขตหน่วยงาน (Department Scope)</strong><small style="color:var(--muted)">Super Admin = ทุกหน่วย · Org Admin = descendant ของหน่วยตนเอง (FR-103)</small></div><div style="font-size:12px;color:var(--muted)">ตัวอย่าง: Org Admin เขต 1 เห็นกองคดีป้องกัน 1-2 + ศูนย์ที่สังกัดเขต 1 เท่านั้น — ใช้ <code>DepartmentHierarchyResolver</code> resolve descendant จาก <code>tsfg_type='3'</code> · FR-025/036 บริหารข้อมูลหน่วยงานตามขอบเขต</div></div>
+      </div>
+      <div class="subpanel" id="p-r-roles">
+        <div class="table-wrap"><table><thead><tr><th>Role</th><th>คำอธิบาย</th><th>ผู้ใช้</th><th>สถานะ</th><th>ประวัติ</th><th></th></tr></thead><tbody id="tb-roles"></tbody></table></div>
+      </div>
+      <div class="subpanel" id="p-r-systems">
+        <div class="card"><div class="card-head"><strong>กลุ่มระบบงานและเมนู (SYS04.06 · FR-124~129)</strong><small>กำหนดกลุ่มระบบ/ระบบย่อย · เมนู/โปรแกรม · เจ้าของระบบ · เชื่อมโยงกับ Role/สิทธิ์ · บันทึกประวัติ (FR-129)</small></div>
+          <div class="table-wrap"><table><thead><tr><th>กลุ่มระบบ</th><th>ระบบย่อย</th><th>เมนู</th><th>เจ้าของ</th><th>Role ที่ผูก</th><th>สถานะ</th></tr></thead><tbody id="tb-systems"></tbody></table></div>
+        </div>
+      </div>
+      <div class="subpanel" id="p-r-assign">
+        <div class="card"><div class="card-head"><strong>กำหนดสิทธิ์ให้ผู้ใช้ (FR-046)</strong></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <label>เลือกผู้ใช้ <select style="width:100%;border:1px solid var(--line);border-radius:8px;padding:6px"><option>นายสมศักดิ์ ใจดี (OFFICER)</option><option>นางวิไล ขยัน (DIV_DIRECTOR)</option></select></label>
+            <label>กำหนดบทบาท <select style="width:100%;border:1px solid var(--line);border-radius:8px;padding:6px"><option>OFFICER</option><option>ORG_ADMIN</option><option>SUPER_ADMIN</option></select></label>
+          </div>
+          <div class="toolbar"><button class="btn btn-primary" onclick="Swal.fire('Mock','ตรวจสอบสิทธิ์ (FR-047) → บันทึก → ปรับเมนู (FR-048) → บันทึกประวัติ (FR-050)','success')">บันทึกสิทธิ์</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SYS02 Drive ===================== -->
+    <section id="v-drive" style="display:none">
+      <div class="coverage"><strong>FR ครอบ:</strong> SYS02 — FR-057~063 ข่าวภายใน/คู่มือ/วิดีโอ + FR-064~069 Q&A + FR-070~076 แจ้งปัญหา + FR-077~082 สมุดโทรศัพท์ — <span class="fr-tag">razor: News(Internal), FAQ, Phonebook, SupportTickets</span></div>
+      <div class="kpi-row">
+        <div class="kpi"><small>ข่าวภายใน (SYS02.01)</small><br><strong>24</strong> <small>ประกาศ</small><br><small class="fr-tag">FR-057·059·060</small></div>
+        <div class="kpi"><small>คู่มือ/วิดีโอ (SYS02.02-03)</small><br><strong>18+12</strong> <small>ไฟล์/วิดีโอ</small><br><small class="fr-tag">FR-058·061</small></div>
+        <div class="kpi"><small>Q&A (SYS02.04)</small><br><strong>38</strong> <small>คำถาม</small><br><small class="fr-tag">FR-064~069</small></div>
+        <div class="kpi"><small>แจ้งปัญหา (SYS02.05)</small><br><strong>9</strong> <small>เปิดอยู่</small><br><small class="fr-tag">FR-070~076</small></div>
+      </div>
+      <div class="subtabs" id="st-drive">
+        <button class="active" data-t="d-news">ข่าวภายใน <span class="fr-tag">057·059·060</span></button>
+        <button data-t="d-manual">คู่มือ/วิดีโอ <span class="fr-tag">058·061·062</span></button>
+        <button data-t="d-qa">Q&A/FAQ <span class="fr-tag">064~069</span></button>
+        <button data-t="d-ticket">แจ้งปัญหา <span class="fr-tag">070~076</span></button>
+        <button data-t="d-phone">สมุดโทรศัพท์ <span class="fr-tag">077~082</span></button>
+      </div>
+      <div class="subpanel active" id="p-d-news">
+        <div class="card"><div class="card-head"><strong>ข่าวภายใน (SYS02.01)</strong><small>FR-057 จัดทำประกาศ/ข่าว · FR-059 กำหนดกลุ่มผู้รับ/หน่วยงาน · FR-060 ตรวจสอบ/ยืนยัน/เผยแพร่ · FR-061 เปิดอ่าน · FR-062 ประวัติ · FR-063 สถานะ/วันที่เผยแพร่</small><button class="btn btn-primary" onclick="openNews('ภายใน')"><i class="fa-solid fa-plus"></i> สร้างประกาศ (FR-057)</button></div><div class="table-wrap"><table><thead><tr><th>วันที่</th><th>เรื่อง</th><th>กลุ่มผู้รับ</th><th>ไฟล์/รูป</th><th>สถานะ</th><th></th></tr></thead><tbody id="tb-announce"></tbody></table></div></div>
+      </div>
+      <div class="subpanel" id="p-d-manual">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="card"><div class="card-head"><strong>คู่มือการใช้งาน (SYS02.02 · FR-058)</strong><button class="btn" onclick="Swal.fire('Mock','อัปโหลดคู่มือ PDF/รูป — แนบกับข่าวภายใน (FR-058)','info')">+ อัปโหลดคู่มือ</button></div><div class="table-wrap"><table><thead><tr><th>ชื่อเอกสาร</th><th>ไฟล์</th><th>วันที่เผยแพร่</th><th>สถานะ</th></tr></thead><tbody id="tb-manual"></tbody></table></div></div>
+          <div class="card"><div class="card-head"><strong>วิดีโอสาธิต (SYS02.03 · FR-058)</strong><button class="btn" onclick="Swal.fire('Mock','อัปโหลด/ฝังวิดีโอสาธิตการใช้งาน','info')">+ เพิ่มวิดีโอ</button></div><div class="table-wrap"><table><thead><tr><th>หัวข้อ</th><th>ลิงก์วิดีโอ</th><th>ผู้รับ</th><th>สถานะ</th></tr></thead><tbody id="tb-video"></tbody></table></div></div>
+        </div>
+        <div class="card" style="background:#fff8e8;border-color:#e3c77e"><small>FR-061 บุคลากรเปิดอ่านข่าว/คู่มือ/วิดีโอที่เผยแพร่ · FR-062 ประวัติรายการข่าวสารย้อนหลัง · FR-063 สถานะเผยแพร่/วันที่เผยแพร่</small></div>
+      </div>
+      <div class="subpanel" id="p-d-qa">
+        <div class="toolbar"><input id="q-qa" placeholder="ค้นหา Q&A คำสำคัญ/หมวดหมู่ (FR-067)" style="flex:1"><select><option>ทุกหมวด</option><option>ใช้งานระบบ</option><option>ไต่สวน</option><option>คุ้มครองพยาน</option></select><button class="btn btn-primary" onclick="Swal.fire('Mock','เพิ่ม Q&A — จัดทำคำถามที่พบบ่อย + จัดหมวดหมู่ + ตรวจสอบ/เผยแพร่ (FR-064~066)','info')">+ เพิ่ม Q&A</button></div>
+        <div class="table-wrap"><table><thead><tr><th>หมวด (FR-065)</th><th>คำถาม (FR-064)</th><th>คำตอบ (FR-068)</th><th>สถานะ (FR-066)</th><th>ประวัติ (FR-069)</th><th></th></tr></thead><tbody id="tb-faq"></tbody></table></div>
+      </div>
+      <div class="subpanel" id="p-d-ticket">
+        <div class="card"><div class="card-head"><strong>แจ้งปัญหาการใช้งาน (SupportTickets · FR-070~076)</strong><small>FR-070 หน้ารับแจ้ง · FR-071 กรอกรายละเอียด/แนบหลักฐาน · FR-072 แจ้งเตือนผู้รับผิดชอบ · FR-073 รับเรื่อง/จัดประเภท · FR-074 กำหนดสถานะ/ติดตาม · FR-075 ปิดงาน/แจ้งผล · FR-076 บันทึกประวัติ</small><button class="btn btn-primary" onclick="Swal.fire('แจ้งปัญหา (FR-070/071)','ผู้ใช้กรอกรายละเอียด + แนบไฟล์ภาพ/ล็อก','info')">+ แจ้งปัญหาใหม่</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Ticket</th><th>เรื่อง</th><th>ผู้แจ้ง</th><th>ประเภท (FR-073)</th><th>สถานะ (FR-074)</th><th>ผู้รับผิดชอบ</th><th></th></tr></thead><tbody id="tb-ticket"></tbody></table></div>
+        </div>
+      </div>
+      <div class="subpanel" id="p-d-phone">
+        <div class="card"><div class="card-head"><strong>สมุดโทรศัพท์ (Phonebook · FR-077~082)</strong><small>FR-077 เมนู · FR-078 ค้นหาตามชื่อ/หน่วย/ตำแหน่ง/เบอร์ · FR-079 แสดงตามสิทธิ์ · FR-080 ปรับปรุงโดยผู้มีสิทธิ์ · FR-081 เชื่อมกับข้อมูลบุคลากร/กลาง · FR-082 ประวัติแก้ไข</small></div>
+          <div class="toolbar"><input id="q-phone" placeholder="ค้นหา ชื่อ/หน่วยงาน/ตำแหน่ง/เบอร์ (FR-078)" style="flex:1"><button class="btn" onclick="Swal.fire('Mock','สมุดโทรศัพท์ — ปรับปรุงข้อมูลติดต่อ (FR-080) + บันทึกประวัติ (FR-082)','info')">+ เพิ่มรายชื่อ</button></div>
+          <div class="table-wrap"><table><thead><tr><th>ชื่อ</th><th>หน่วยงาน</th><th>ตำแหน่ง</th><th>เบอร์</th><th>อีเมล</th><th>สิทธิ์เห็น (FR-079)</th></tr></thead><tbody id="tb-phone"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SYS03 PublicRelation ===================== -->
+    <section id="v-news" style="display:none">
+      <div class="coverage"><strong>FR ครอบ:</strong> SYS03 — FR-083 จัดทำข่าวสาธารณะ · 084 จัดหมวดหมู่ · 085 ร่าง/แก้ไข · 086 Preview · 087 ตรวจสอบ/เผยแพร่ · 088 ประชาชนอ่าน/ค้นหา · 089 กำหนดเวลาเผยแพร่/ยกเลิก · 090 ประวัติ — <span class="fr-tag">razor: PublicRelations, News(Public), SuperAdminDashboard</span></div>
+      <div class="kpi-row">
+        <div class="kpi"><small>ข่าวสาธารณะ (FR-083)</small><br><strong>56</strong> <small>ข่าว</small><br><small>ร่าง 8 · เผยแพร่ 42 · หมดอายุ 6</small></div>
+        <div class="kpi"><small>หมวดหมู่ (FR-084)</small><br><strong>6</strong> <small>หมวด</small><br><small>ข่าวประชาสัมพันธ์/ประกาศ/กิจกรรม ฯลฯ</small></div>
+        <div class="kpi"><small>รอตรวจ/Preview (FR-086/087)</small><br><strong>4</strong> <small>ฉบับร่าง</small></div>
+        <div class="kpi"><small>ประวัติเผยแพร่ (FR-090)</small><br><strong>124</strong> <small>เวอร์ชัน</small></div>
+      </div>
+      <div class="subtabs" id="st-news">
+        <button class="active" data-t="n-list">รายการข่าวสาธารณะ <span class="fr-tag">083·085</span></button>
+        <button data-t="n-cats">หมวดหมู่ <span class="fr-tag">084</span></button>
+        <button data-t="n-preview">ตรวจ/Preview <span class="fr-tag">086·087</span></button>
+        <button data-t="n-schedule">กำหนดเวลาเผยแพร่ <span class="fr-tag">089</span></button>
+        <button data-t="n-history">ประวัติ <span class="fr-tag">090</span></button>
+      </div>
+      <div class="subpanel active" id="p-n-list">
+        <div class="toolbar"><input id="q-publicnews" placeholder="ค้นหา ข่าวสาธารณะ/หมวดหมู่ (FR-088)" style="flex:1"><select><option>ทุกหมวดหมู่</option><option>ข่าวประชาสัมพันธ์</option><option>ประกาศ</option><option>กิจกรรม</option></select><button class="btn btn-primary" onclick="openNews('สาธารณะ')"><i class="fa-solid fa-plus"></i> สร้างข่าว (FR-083) + แนบไฟล์/รูป</button></div>
+        <div class="table-wrap"><table><thead><tr><th>วันที่เผยแพร่</th><th>เรื่อง</th><th>หมวดหมู่ (FR-084)</th><th>ไฟล์/รูป</th><th>สถานะ</th><th>เผยแพร่ถึง (FR-089)</th><th></th></tr></thead><tbody id="tb-publicnews"></tbody></table></div>
+      </div>
+      <div class="subpanel" id="p-n-cats">
+        <div class="table-wrap"><table><thead><tr><th>หมวดหมู่ (FR-084)</th><th>จำนวนข่าว</th><th>ไอคอน</th><th>ประชาชนค้นหา (FR-088)</th><th></th></tr></thead><tbody id="tb-newscats"></tbody></table></div>
+      </div>
+      <div class="subpanel" id="p-n-preview">
+        <div class="card"><div class="card-head"><strong>ตรวจสอบ & Preview ก่อนเผยแพร่ (FR-086·087)</strong><small>แสดงตัวอย่าง (Preview) · บันทึกร่าง (FR-085) · ตรวจทานก่อนเผยแพร่</small></div>
+          <div class="table-wrap"><table><thead><tr><th>เรื่อง (ร่าง)</th><th>หมวดหมู่</th><th>ผู้จัดทำ</th><th>Preview</th><th>ตรวจทาน</th><th></th></tr></thead><tbody id="tb-preview"></tbody></table></div>
+        </div>
+      </div>
+      <div class="subpanel" id="p-n-schedule">
+        <div class="card"><div class="card-head"><strong>กำหนดเวลาเผยแพร่/ยกเลิก (FR-089)</strong></div><div class="table-wrap"><table><thead><tr><th>เรื่อง</th><th>เริ่มเผยแพร่</th><th>สิ้นสุด</th><th>สถานะ</th><th></th></tr></thead><tbody id="tb-schedule"></tbody></table></div></div>
+      </div>
+      <div class="subpanel" id="p-n-history">
+        <div class="card"><div class="card-head"><strong>ประวัติการแก้ไข/เผยแพร่ (FR-090)</strong></div><div class="table-wrap"><table><thead><tr><th>เวลา</th><th>เรื่อง</th><th>การกระทำ</th><th>ผู้ทำ</th><th>เวอร์ชัน</th></tr></thead><tbody id="tb-newshist"></tbody></table></div></div>
+      </div>
+    </section>
+
+    <!-- ===================== SYS04 Master & API ===================== -->
+    <section id="v-master" style="display:none">
+      <div class="coverage"><strong>FR ครอบ:</strong> SYS04 — FR-091~097 หน่วยงาน · 098~104 ผู้ใช้งานกลาง · 105~110 ตำแหน่ง · 111~116 ข้อมูลกลางอื่น · 117~123 API/Data Service · 124~129 กลุ่มระบบ/เมนู — <span class="fr-tag">razor: Master, SystemsManagement</span></div>
+      <div class="kpi-row">
+        <div class="kpi"><small>หน่วยงาน (091-097)</small><br><strong>42</strong> <small>หน่วย · ลำดับชั้น</small></div>
+        <div class="kpi"><small>ประเภทตำแหน่ง (105-110)</small><br><strong>18</strong> <small>ประเภท</small></div>
+        <div class="kpi"><small>API Keys (117-123)</small><br><strong>12</strong> <small>Token · มีหมดอายุ</small></div>
+        <div class="kpi"><small>กลุ่มระบบ/เมนู (124-129)</small><br><strong>6</strong> <small>กลุ่ม · 42 เมนู</small></div>
+      </div>
+      <div class="subtabs" id="st-master">
+        <button class="active" data-t="m-dept">หน่วยงาน <span class="fr-tag">091~097</span></button>
+        <button data-t="m-users">ผู้ใช้งานกลาง <span class="fr-tag">098~104</span></button>
+        <button data-t="m-pos">ตำแหน่ง <span class="fr-tag">105~110</span></button>
+        <button data-t="m-other">ข้อมูลกลางอื่น <span class="fr-tag">111~116</span></button>
+        <button data-t="m-api">API / Data Service <span class="fr-tag">117~123</span></button>
+        <button data-t="m-groups">กลุ่มระบบ/เมนู <span class="fr-tag">124~129</span></button>
+      </div>
+      <div class="subpanel active" id="p-m-dept">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="card"><div class="card-head"><strong>โครงสร้างหน่วยงาน (FR-091 ลำดับชั้น)</strong><button class="btn btn-primary" onclick="Swal.fire('Mock','เพิ่มหน่วยงาน — FR-092 ค้นหา/เพิ่ม/แก้ไข/ปรับสถานะ · FR-093 ตรวจซ้ำ/ไม่ครบก่อนบันทึก','info')"><i class="fa-solid fa-plus"></i> เพิ่มหน่วยงาน</button></div><div id="deptTree" style="font-size:12px;line-height:1.8"></div><small style="color:var(--muted)">FR-094 คำขอย้ายหน่วยงาน · FR-095 พิจารณาต้นทาง/ปลายทาง · FR-096 อัปเดตให้ระบบที่เกี่ยวข้อง · FR-097 ประวัติเปลี่ยนแปลง</small></div>
+          <div class="card"><div class="card-head"><strong>คำขอย้ายหน่วยงานที่รออนุมัติ (FR-094/095)</strong></div><div class="table-wrap"><table><thead><tr><th>ผู้ขอ</th><th>จาก</th><th>ไป</th><th>สถานะ 2 ขั้น</th><th></th></tr></thead><tbody id="tb-deptreq"></tbody></table></div></div>
+        </div>
+      </div>
+      <div class="subpanel" id="p-m-users">
+        <div class="card"><div class="card-head"><strong>ข้อมูลผู้ใช้งานกลาง (FR-098~104)</strong><small>FR-098 ค้นหา/แสดงตามสิทธิ์ · FR-099 เพิ่ม/แก้ไข · FR-100 ตรวจครบถ้วน/ถูกต้อง · FR-101 เชื่อมหน่วยงาน/ตำแหน่ง/สิทธิ์ · FR-102 ใช้กำหนดสิทธิ์/รายงาน · FR-103 จำกัดตามบทบาท/ขอบเขต · FR-104 ประวัติ</small></div>
+          <div class="toolbar"><input id="q-master-users" placeholder="ค้นหาตามสิทธิ์ (FR-098)" style="flex:1"><select><option>ส่วนกลาง</option><option>เขต 1</option><option>เขต 2</option></select><button class="btn btn-primary" onclick="Swal.fire('Mock','FR-099 เพิ่ม/แก้ไขข้อมูลผู้ใช้งานกลาง (ผู้มีสิทธิ์เท่านั้น)','info')">+ เพิ่ม/แก้ไข</button></div>
+          <div class="table-wrap"><table><thead><tr><th>ชื่อ</th><th>หน่วยงาน</th><th>ตำแหน่ง (FR-101)</th><th>สิทธิ์ (FR-102)</th><th>ขอบเขต (FR-103)</th><th>ประวัติ (FR-104)</th></tr></thead><tbody id="tb-masterusers"></tbody></table></div>
+        </div>
+      </div>
+      <div class="subpanel" id="p-m-pos">
+        <div class="card"><div class="card-head"><strong>ทะเบียนประเภทตำแหน่งกลาง (FR-105~110)</strong><small>FR-105 ทะเบียนกลาง · FR-106 ค้นหา/เพิ่ม/แก้ไข/ปรับสถานะ · FR-107 ตรวจซ้ำ · FR-108 เชื่อมกับผู้ใช้/หน่วยงาน · FR-109 ใช้กับสิทธิ์/รายงาน · FR-110 ประวัติ</small><button class="btn btn-primary" onclick="Swal.fire('Mock','เพิ่มประเภทตำแหน่ง — ตรวจซ้ำ (FR-107) ก่อนบันทึก','info')">+ เพิ่มตำแหน่ง</button></div>
+          <div class="table-wrap"><table><thead><tr><th>รหัส</th><th>ชื่อตำแหน่ง (FR-105)</th><th>เชื่อมผู้ใช้ (FR-108)</th><th>จำนวนคน</th><th>สถานะ</th><th></th></tr></thead><tbody id="tb-pos"></tbody></table></div>
+        </div>
+      </div>
+      <div class="subpanel" id="p-m-other">
+        <div class="card"><div class="card-head"><strong>ข้อมูลกลางอื่น ๆ (FR-111~116)</strong><small>FR-111 เลือกชุดข้อมูล · FR-112 เพิ่ม/แก้ไข/ลบ/ปรับสถานะ · FR-113 ตรวจซ้ำ/รูปแบบ · FR-114 กำหนดเจ้าของ · FR-115 ใช้ร่วมกับระบบอื่น · FR-116 ประวัติ</small></div><div class="table-wrap"><table><thead><tr><th>ชุดข้อมูล (FR-111)</th><th>จำนวนรายการ</th><th>เจ้าของ (FR-114)</th><th>ใช้ร่วม (FR-115)</th><th>สถานะ</th></tr></thead><tbody id="tb-masterother"></tbody></table></div>
+      </div>
+      <div class="subpanel" id="p-m-api">
+        <div class="card"><div class="card-head"><strong>API / Data Service (FR-117~123)</strong><small>FR-117 กำหนดชุดข้อมูล · FR-118 เงื่อนไขการเข้าถึง · FR-119 ออก Token/Key · FR-120 หมดอายุ/สถานะ · FR-121 อนุมัติ/ระงับ · FR-122 ภายนอกเรียกตามสิทธิ์ · FR-123 ประวัติเรียกใช้</small><button class="btn" onclick="Swal.fire('Mock','ออก API Key — กำหนดชุดข้อมูล+เงื่อนไข+หมดอายุ+อนุมัติ/ระงับ · บันทึกประวัติเรียกใช้ (FR-119~123)','info')"><i class="fa-solid fa-key"></i> ออก Token (FR-119)</button></div><div class="table-wrap"><table><thead><tr><th>ชื่อชุดข้อมูล (FR-117)</th><th>เงื่อนไข (FR-118)</th><th>Token</th><th>หมดอายุ (FR-120)</th><th>สถานะ (FR-121)</th><th>เรียกใช้ (FR-123)</th></tr></thead><tbody id="tb-apikey"></tbody></table></div>
+          <div class="table-wrap" style="margin-top:8px"><table><thead><tr><th>เวลา</th><th>ผู้เรียก (FR-122)</th><th>Endpoint</th><th>ผล (FR-123)</th><th>IP</th></tr></thead><tbody id="tb-apilog"></tbody></table></div>
+        </div>
+      </div>
+      <div class="subpanel" id="p-m-groups">
+        <div class="card"><div class="card-head"><strong>กลุ่มระบบงานและเมนู (FR-124~129)</strong><small>FR-124 กำหนดกลุ่ม/ระบบย่อย · FR-125 เมนู/โปรแกรม · FR-126 เจ้าของระบบ · FR-127 เชื่อมกับ Role/สิทธิ์ · FR-128 ค้นหา/เพิ่ม/แก้ไข · FR-129 ประวัติ</small></div><div class="table-wrap"><table><thead><tr><th>กลุ่มระบบ (FR-124)</th><th>ระบบย่อย</th><th>เมนู/โปรแกรม (FR-125)</th><th>เจ้าของ (FR-126)</th><th>Role (FR-127)</th><th>สถานะ</th></tr></thead><tbody id="tb-mastergroups"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- ===================== SYS05 Audit ===================== -->
+    <section id="v-audit" style="display:none">
+      <div class="coverage"><strong>FR ครอบ:</strong> SYS05 — FR-130 บันทึกอัตโนมัติ · 131 บันทึกเหตุการณ์สำคัญ (เข้าใช้/แก้ไข/อนุมัติ/ส่งออก/ลงนาม) · 132 จัดกลุ่มประเภท · 133 ค้นหา/กรอง · 134 แสดงรายละเอียด · 135 ส่งออกรายงาน · 136 ควบคุมสิทธิ์ Log — <span class="fr-tag">razor: Audit, AuditLog</span></div>
+      <div class="kpi-row">
+        <div class="kpi"><small>เหตุการณ์ทั้งหมด (FR-130/131)</small><br><strong>12,840</strong> <small>รายการ</small><br><small>เข้าใช้/แก้ไข/อนุมัติ/ส่งออก/ลงนาม</small></div>
+        <div class="kpi"><small>วันนี้</small><br><strong>342</strong></div>
+        <div class="kpi"><small>แจ้งเตือน (Security Alert)</small><br><strong style="color:var(--bad)">3</strong><br><small class="fr-tag">FR-132 จัดกลุ่ม</small></div>
+        <div class="kpi"><small>ต้องตรวจสอบ</small><br><strong>11</strong><br><small class="fr-tag">FR-136 สิทธิ์</small></div>
+      </div>
+      <div class="subtabs" id="st-audit">
+        <button class="active" data-t="a-log">Log ทั้งหมด <span class="fr-tag">130·131</span></button>
+        <button data-t="a-groups">จัดกลุ่มประเภท <span class="fr-tag">132</span></button>
+        <button data-t="a-search">ค้นหา/กรอง <span class="fr-tag">133·134</span></button>
+        <button data-t="a-report">รายงาน & Export <span class="fr-tag">135</span></button>
+      </div>
+      <div class="subpanel active" id="p-a-log">
+        <div class="toolbar"><input id="q-audit" placeholder="ค้นหา ผู้ดำเนินการ/เหตุการณ์/เป้าหมาย (FR-133)" style="flex:1;min-width:220px"><select id="f-audit-cat"><option value="">ประเภท ทั้งหมด (FR-132)</option><option>AUTH</option><option>APPROVAL</option><option>EXPORT</option><option>SIGN</option><option>PERMISSION</option></select><input type="date" style="border:1px solid var(--line);border-radius:8px;padding:4px 8px"><button class="btn" onclick="Swal.fire('Mock','ส่งออกรายงาน Audit ตามสิทธิ์ (FR-135/136) · กรองตามประเภท/ช่วงเวลา','info')">Export (FR-135)</button></div>
+        <div class="table-wrap"><table><thead><tr><th>เวลา</th><th>ผู้ดำเนินการ</th><th>เหตุการณ์ (FR-131)</th><th>เป้าหมาย</th><th>ประเภท (FR-132)</th><th>ผล</th><th>รายละเอียด (FR-134)</th><th>IP</th></tr></thead><tbody id="tb-audit"></tbody></table></div>
+      </div>
+      <div class="subpanel" id="p-a-groups">
+        <div class="table-wrap"><table><thead><tr><th>กลุ่มประเภท (FR-132)</th><th>รหัสเหตุการณ์</th><th>จำนวนวันนี้</th><th>ตัวอย่าง</th></tr></thead><tbody id="tb-auditgroups"></tbody></table></div>
+      </div>
+      <div class="subpanel" id="p-a-search">
+        <div class="card"><div class="card-head"><strong>ค้นหา & กรอง Log (FR-133) + รายละเอียด (FR-134)</strong><small>กรองตาม ผู้ใช้งาน/เวลา/ประเภทเหตุการณ์ · แสดง ผู้ดำเนินการ/เวลา/ผล</small></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+            <label>ผู้ใช้งาน <input style="width:100%;border:1px solid var(--line);border-radius:8px;padding:6px" placeholder="somsak.p"></label>
+            <label>ประเภท <select style="width:100%;border:1px solid var(--line);border-radius:8px;padding:6px"><option>AUTH</option><option>APPROVAL</option></select></label>
+            <label>ช่วงเวลา <input type="date" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:6px"></label>
+          </div>
+          <div class="table-wrap" style="margin-top:8px"><table><thead><tr><th>เวลา</th><th>ผู้ดำเนินการ</th><th>เหตุการณ์</th><th>รายละเอียด (FR-134)</th><th>ผล</th></tr></thead><tbody id="tb-auditsearch"></tbody></table></div>
+        </div>
+      </div>
+      <div class="subpanel" id="p-a-report">
+        <div class="card"><div class="card-head"><strong>รายงาน Log ตามสิทธิ์ (FR-135) + ควบคุมสิทธิ์เข้าถึง (FR-136)</strong></div>
+          <div class="toolbar"><button class="btn btn-primary" onclick="Swal.fire('Mock','ส่งออกรายงาน Log ตามสิทธิ์ (FR-135) — เฉพาะผู้มีสิทธิ์ตาม FR-136','info')">ส่งออกรายงาน</button><span class="badge badge-info">FR-136: เฉพาะ Admin ตรวจสอบเหตุการณ์ + Super Admin</span></div>
+          <div class="table-wrap"><table><thead><tr><th>รายงาน</th><th>ช่วงเวลา</th><th>ผู้ขอ</th><th>สิทธิ์ (FR-136)</th></tr></thead><tbody><tr><td>รายงาน Audit รายวัน</td><td>2026-08-01~16</td><td>Super Admin</td><td>อนุมัติ</td></tr><tr><td>รายงานส่งออกข้อมูล</td><td>2026-08-16</td><td>เขต 1 Admin</td><td>จำกัดตามขอบเขต</td></tr></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SYS06 Digital Signature ===================== -->
+    <section id="v-sign" style="display:none">
+      <div class="coverage"><strong>FR ครอบ:</strong> SYS06 — FR-137 นำเข้าใบรับรอง · 138 ตรวจความถูกต้อง/ชื่อผู้ถือ · 139 ผูก 1:1 · 140 สถานะ/ยกเลิก/ต่ออายุ · 141 ลงนามตามสิทธิ์ · 142 หลายผู้ลงนามตามลำดับ · 143 ตรวจหลักฐาน · 144 ประวัติ — <span class="fr-tag">razor: Sign, CertificateManagement, DocumentSigning</span></div>
+      <div class="kpi-row">
+        <div class="kpi"><small>ใบรับรอง (FR-137~140)</small><br><strong>298</strong> <small>ใบ · 1 คน : 1 ใบ (FR-139)</small><br><small>ผูก thumbprint · ตรวจชื่อผู้ถือ (FR-138)</small></div>
+        <div class="kpi"><small>ใกล้หมดอายุ (30 วัน)</small><br><strong style="color:var(--warn)">12</strong><br><small class="fr-tag">FR-140</small></div>
+        <div class="kpi"><small>เอกสารลงนามวันนี้ (FR-141)</small><br><strong>24</strong></div>
+        <div class="kpi"><small>หลายผู้ลงนามตามลำดับ (FR-142)</small><br><strong>6</strong> <small>ชุด · ยังไม่ครบลำดับ</small></div>
+      </div>
+      <div class="subtabs" id="st-sign">
+        <button class="active" data-t="s-propose">เสนอเอกสาร <span class="fr-tag">141</span></button>
+        <button data-t="s-verify">ตรวจสอบก่อนลงนาม <span class="fr-tag">143</span></button>
+        <button data-t="s-sign">ลงนาม <span class="fr-tag">141·142</span></button>
+        <button data-t="s-cert">จัดการใบรับรอง <span class="fr-tag">137~140</span></button>
+        <button data-t="s-history">หลักฐาน/ประวัติ <span class="fr-tag">143·144</span></button>
+      </div>
+      <div class="subpanel active" id="p-s-propose">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="card"><div class="card-head"><strong>เสนอเอกสารเพื่อลงนาม (SYS06.01 · FR-141)</strong><button class="btn btn-primary" onclick="Swal.fire('Mock','เสนอเอกสาร — แนบไฟล์/จัดทำเอกสาร + เสนอผู้มีอำนาจลงนาม (FR-141)','info')">+ เสนอเอกสาร</button></div><div class="table-wrap"><table><thead><tr><th>เอกสาร</th><th>ผู้เสนอ</th><th>เสนอถึง</th><th>สถานะ</th></tr></thead><tbody id="tb-signpropose"></tbody></table></div></div>
+          <div class="card"><div class="card-head"><strong>ตรวจสอบก่อนลงนาม (SYS06.02)</strong><small>ส่งกลับแก้ไขกรณีไม่ถูกต้อง</small></div><div class="table-wrap"><table><thead><tr><th>เอกสาร</th><th>ผู้ตรวจ</th><th>ผลตรวจ (FR-143)</th><th></th></tr></thead><tbody id="tb-signverify"></tbody></table></div></div>
+        </div>
+      </div>
+      <div class="subpanel" id="p-s-verify">
+        <div class="table-wrap"><table><thead><tr><th>เอกสาร</th><th>ผู้เสนอ</th><th>ลำดับลงนาม (FR-142)</th><th>ตรวจสอบหลักฐาน (FR-143)</th><th>สถานะ</th></tr></thead><tbody id="tb-signlog"></tbody></table></div>
+      </div>
+      <div class="subpanel" id="p-s-sign">
+        <div class="card"><div class="card-head"><strong>ลงลายมือชื่อดิจิทัล (FR-141) + หลายผู้ลงนามตามลำดับ (FR-142)</strong></div>
+          <div class="table-wrap"><table><thead><tr><th>เอกสาร</th><th>ลำดับ</th><th>ผู้ลงนามปัจจุบัน</th><th>สถานะ</th><th></th></tr></thead><tbody id="tb-signqueue"></tbody></table></div>
+          <div style="margin-top:8px;font-size:12px;color:var(--muted)">ของจริง: ตรวจ X509 thumbprint · 1 คน:1 Cert (unique partial index) · หลายผู้ลงนามตามลำดับ · ตรวจสอบ timestamp/hash · บันทึก <code>tbl_sys_digital_sign_log</code></div>
+        </div>
+      </div>
+      <div class="subpanel" id="p-s-cert">
+        <div class="card"><div class="card-head"><strong>จัดการใบรับรอง (FR-137~140)</strong><small>FR-137 นำเข้า · FR-138 ตรวจความถูกต้อง/ชื่อผู้ถือ · FR-139 ผูก 1:1 · FR-140 สถานะ/ยกเลิก/ต่ออายุ</small><button class="btn btn-primary" onclick="Swal.fire('Mock','นำเข้า Cert — ตรวจ thumbprint + ชื่อผู้ถือ + ผูก 1:1 (FR-139) + Worker ตรวจหมดอายุ (FR-140)','info')"><i class="fa-solid fa-certificate"></i> นำเข้า Cert (FR-137)</button></div><div class="table-wrap"><table><thead><tr><th>ผู้ถือ (FR-138)</th><th>เลข Cert</th><th>ออกโดย</th><th>หมดอายุ (FR-140)</th><th>ผูก 1:1 (FR-139)</th><th>สถานะ</th></tr></thead><tbody id="tb-cert"></tbody></table></div></div>
+      </div>
+      <div class="subpanel" id="p-s-history">
+        <div class="card"><div class="card-head"><strong>หลักฐานและประวัติการลงนาม (FR-143·144)</strong><small>FR-143 ตรวจสอบ/แสดงหลักฐานการลงนาม · FR-144 ประวัติเกี่ยวกับ Cert และการลงนาม</small></div><div class="table-wrap"><table><thead><tr><th>เวลา</th><th>เอกสาร</th><th>ผู้ลงนาม</th><th>หลักฐาน hash/timestamp (FR-143)</th><th>ผล</th></tr></thead><tbody id="tb-signhistory"></tbody></table></div></div>
+      </div>
+    </section>
+
+    <div style="margin-top:10px;font-size:11px;color:var(--muted)">Route: <code>#/users</code> · <code>#/roles</code> · <code>#/drive</code> (SYS02) · <code>#/news</code> (SYS03) · <code>#/master</code> · <code>#/audit</code> · <code>#/sign</code> — 7 โมดูลหลัก + 24 sub-tabs ครอบ <strong>30 โมดูลย่อย SYS01.01~06.05</strong> · <strong>FR144 ครบ</strong> (001~144) · 24 razor ต้นฉบับ mapped ครบ · ของกลางทุกกิจกรรม · ฐานกลาง (Single Source)</div>
+    <div class="coverage" style="margin-top:8px"><strong>Mapping 24 razor → 7 route:</strong> Users/Registrations → #/users (u-list/u-reg) · Transfers → #/users (u-trans) + #/master (m-dept) · Phonebook → #/drive (d-phone) · PublicRelations/News(Public) → #/news · SupportTickets/แจ้งปัญหา → #/drive (d-ticket) · SuperAdminDashboard → #/users + #/roles + #/master · SystemsManagement → #/roles (r-systems) + #/master (m-groups/m-api) · Master/Audit/Sign → #/master|audit|sign เต็ม · <span class="badge badge-ok">24/24 ครบ</span></div>
+  </div>
+</main>
+</div>
+<script src="./assets/sweetalert2/sweetalert2.all.min.js"></script>
+<script>
+function doExport(){ Swal.fire({icon:'info',title:'Export (Mock)',text:'ผู้ใช้งาน · Excel/PDF · บันทึกประวัติเรียกดู (FR-054/055/056)'}); }
+function openAddUser(){ Swal.fire({title:'เพิ่มผู้ใช้ (Mock)', html:'<div style=\"text-align:left\"><label>ชื่อ-สกุล<br><input id=\"sw-name\" class=\"swal2-input\" placeholder=\"เช่น นายสมชาย ใจดี\"></label><br><label>หน่วยงาน<br><select id=\"sw-dept\" class=\"swal2-input\"><option>ส่วนกลาง</option><option>เขต 1</option><option>เขต 2</option></select></label></div>', showCancelButton:true, confirmButtonText:'สร้าง', preConfirm:()=>{ const v=document.getElementById('sw-name').value.trim(); if(!v) {Swal.showValidationMessage('กรอกชื่อ'); return false} return true; }}).then(r=>{if(r.isConfirmed) Swal.fire('สร้างแล้ว','รอแจ้งผลทางอีเมล (FR-007)','success')}); }
+function openImport(){ Swal.fire('นำเข้า','Mock: นำเข้าไฟล์ Excel รายชื่อผู้ใช้ (ตรวจซ้ำ FR-004 + ThaiD verify FR-003)','info'); }
+function openNews(kind){ Swal.fire({title:`สร้าง${kind} (Mock)`, html:'<div style=\"text-align:left\"><label>หัวข้อ<br><input class=\"swal2-input\" placeholder=\"หัวข้อข่าว\"></label><br><label>กำหนดกลุ่มผู้รับ (SYS02 FR-059)<br><select class=\"swal2-input\"><option>ทุกคน</option><option>เขต 1</option><option>บทบาท Officer</option></select></label><br><small style=\"color:#62738a\">SYS03 ต้องมี Preview (FR-086) + เผยแพร่ตามเวลา (FR-089) + ประวัติ version (FR-090)</small><br><label>แนบไฟล์/รูป/วิดีโอ (FR-058)<br><input type=\"file\" class=\"swal2-input\"></label></div>', showCancelButton:true, confirmButtonText:'บันทึก'}); }
+function submitReg(){ const nm=document.getElementById('reg-name').value.trim(), em=document.getElementById('reg-email').value.trim(); if(!nm) return Swal.fire('กรอกชื่อ','FR-004 ตรวจความครบถ้วน','warning'); if(em && !em.includes('@')) return Swal.fire('อีเมลไม่ถูกต้อง','','warning'); Swal.fire('ส่งคำขอแล้ว','ส่งให้ Admin หน่วยงานพิจารณา (FR-005) · บันทึกผล (FR-006) · แจ้งผล (FR-007)','success'); }
+
+// ===== mock data =====
+const USERS=[
+  {u:"somsak.p",name:"นายสมศักดิ์ ใจดี",dept:"ส่วนกลาง",pos:"นักสืบสวน",role:"OFFICER",st:"Active",last:"2026-08-16 09:12"},
+  {u:"wilai.k",name:"นางวิไล ขยัน",dept:"เขต 1",pos:"ผอ.กลุ่ม",role:"DIV_DIRECTOR",st:"Active",last:"2026-08-16 08:44"},
+  {u:"prasert.t",name:"นายประเสริฐ ดีเยี่ยม",dept:"เขต 2",pos:"ผอ.กอง",role:"BUREAU_DIRECTOR",st:"Active",last:"2026-08-15 16:20"},
+  {u:"newuser01",name:"นายทดสอบ หนึ่ง",dept:"เขต 1",pos:"เจ้าหน้าที่",role:"OFFICER",st:"รออนุมัติ",last:"—"},
+  {u:"locked01",name:"นายถูกล็อก ทดสอบ",dept:"กบด.",pos:"เจ้าหน้าที่",role:"OFFICER",st:"ถูกล็อก",last:"2026-08-14 11:03"},
+];
+const PENDING=[
+  {d:"2026-08-15",name:"นางสาวดาว เรือง",dept:"เขต 2",pos:"นักวิชาการ",role:"OFFICER",thaid:"ยืนยันแล้ว"},
+  {d:"2026-08-14",name:"นายมานะ พากเพียร",dept:"เขต 1",pos:"นิติกร",role:"OFFICER",thaid:"ยืนยันแล้ว"},
+  {d:"2026-08-13",name:"นางสุดา ใจงาม",dept:"ส่วนกลาง",pos:"เจ้าหน้าที่",role:"ORG_ADMIN",thaid:"รอตรวจ"},
+];
+const MENUS=[
+  ["ก4 รับเรื่อง","✓","✓","✓","","","✓"],
+  ["ก5 ไต่สวน","✓","✓","✓","","","✓"],
+  ["ก6 คุ้มครองพยาน","✓","","","","✓",""],
+  ["ก7 มติ กก.","✓","","","","✓",""],
+  ["ก8 ตรวจประวัติ (CHK001/002/003)","✓","✓","✓","","✓","✓"],
+  ["ก9 หมายจับ","✓","✓","✓","","✓",""],
+  ["ก10 กฎหมายในคดี","✓","✓","✓","","","✓"],
+  ["ก12 วิเคราะห์ (12.1-12.12)","✓","","","","","✓"],
+  ["ก13 เชื่อมโยง","✓","","","","",""],
+  ["ก14 บริหารกลาง","✓","✓","✓","✓","✓","✓"],
+];
+const TRANSFERS=[
+  {d:"2026-08-15",name:"นายมานะ พากเพียร",from:"เขต 1",to:"ส่วนกลาง",reason:"ย้ายตามคำสั่ง",st:"รอปลายทาง"},
+  {d:"2026-08-14",name:"นางวิไล ขยัน",from:"เขต 1",to:"เขต 2",reason:"ช่วยราชการ",st:"รอต้นทาง"},
+  {d:"2026-08-10",name:"นายทดสอบ หนึ่ง",from:"กบด.",to:"เขต 1",reason:"ปรับโครงสร้าง",st:"อนุมัติแล้ว"},
+];
+const PERMREQS=[
+  {d:"2026-08-15",name:"นายสมศักดิ์ ใจดี",from:"OFFICER",to:"DIV_DIRECTOR",reason:"รักษาการ ผอ.กลุ่ม",st:"รออนุมัติ"},
+  {d:"2026-08-14",name:"นางสุดา ใจงาม",from:"OFFICER",to:"ORG_ADMIN",reason:"ดูแลระบบเขต",st:"อนุมัติแล้ว"},
+];
+
+function fillUsers(){
+  const q=(document.getElementById('q-users')?.value||"").toLowerCase();
+  const fs=document.getElementById('f-users-status')?.value||"", fd=document.getElementById('f-users-dept')?.value||"";
+  const rows=USERS.filter(r=>(!q||`${r.u} ${r.name} ${r.dept}`.toLowerCase().includes(q))&&(!fs||r.st===fs)&&(!fd||r.dept===fd));
+  const tb=document.getElementById('tb-users');
+  if(tb) tb.innerHTML=rows.map(r=>`<tr><td><code>${r.u}</code></td><td>${r.name}</td><td>${r.dept}</td><td>${r.pos}</td><td><span class="badge badge-info">${r.role}</span></td><td><span class="badge ${r.st==='Active'?'badge-ok':r.st==='รออนุมัติ'?'badge-warn':r.st==='ถูกล็อก'?'badge-bad':'badge-muted'}">${r.st}</span></td><td>${r.last}</td><td>${r.st==='Active'?'<span class="badge badge-ok">FR-018</span>':'—'}</td><td><button class="btn btn-sm" onclick="Swal.fire('Mock','จัดการผู้ใช้: แก้ไข/กำหนดสถานะ Active/Inactive (FR-022/033) · ย้ายหน่วยงาน 2 ขั้น (FR-027) · ขอสิทธิ์ (FR-028)','info')">จัดการ</button></td></tr>`).join('')||`<tr><td colspan="9" style="text-align:center;color:#62738a;padding:12px">ไม่พบ</td></tr>`;
+  const tp=document.getElementById('tb-pending');
+  if(tp) tp.innerHTML=PENDING.map(r=>`<tr><td>${r.d}</td><td>${r.name}</td><td>${r.dept}</td><td>${r.pos}</td><td><span class="badge badge-info">${r.role}</span></td><td><span class="badge ${r.thaid==='ยืนยันแล้ว'?'badge-ok':'badge-warn'}">${r.thaid} (FR-003)</span></td><td><button class="btn btn-primary btn-sm" onclick="Swal.fire('อนุมัติ','อนุมัติ ${r.name} · สร้างบัญชี + แจ้งอีเมล (FR-006/007)','success')">อนุมัติ (FR-021)</button> <button class="btn btn-sm" onclick="Swal.fire('ปฏิเสธ','ปฏิเสธคำขอ ${r.name} (FR-006)','info')">ปฏิเสธ</button></td></tr>`).join('');
+  const tf=document.getElementById('tb-transfers');
+  if(tf) tf.innerHTML=TRANSFERS.map(r=>`<tr><td>${r.d}</td><td>${r.name}</td><td>${r.from}</td><td>${r.to}</td><td>${r.reason}</td><td><span class="badge ${r.st.includes('รอ')?'badge-warn':'badge-ok'}">${r.st}</span></td><td><button class="btn btn-sm" onclick="Swal.fire('Mock','พิจารณาคำขอย้าย — ต้นทาง/ปลายทาง (FR-027/095)','info')">พิจารณา</button></td></tr>`).join('');
+  const pr=document.getElementById('tb-permreq');
+  if(pr) pr.innerHTML=PERMREQS.map(r=>`<tr><td>${r.d}</td><td>${r.name}</td><td><span class="badge badge-info">${r.from}</span></td><td><span class="badge badge-warn">${r.to}</span></td><td>${r.reason}</td><td><span class="badge ${r.st==='รออนุมัติ'?'badge-warn':'badge-ok'}">${r.st}</span></td><td><button class="btn btn-sm" onclick="Swal.fire('Mock','รับ/พิจารณาคำขอแก้ไขสิทธิ์ (FR-028) + กำหนดบทบาท (FR-029)','info')">พิจารณา</button></td></tr>`).join('');
+  const al=document.getElementById('tb-authlog');
+  if(al) al.innerHTML=[
+    {t:"2026-08-16 09:12",u:"somsak.p",ch:"รหัสผ่าน",rs:"สำเร็จ"},
+    {t:"2026-08-16 08:44",u:"wilai.k",ch:"ThaiD",rs:"สำเร็จ"},
+    {t:"2026-08-15 11:03",u:"unknown",ch:"รหัสผ่าน",rs:"ล้มเหลว"},
+  ].map(r=>`<tr><td>${r.t}</td><td>${r.u}</td><td>${r.ch}</td><td><span class="badge ${r.rs==='สำเร็จ'?'badge-ok':'badge-bad'}">${r.rs}</span></td><td>10.1.2.34</td></tr>`).join('');
+  const pw=document.getElementById('tb-pwd');
+  if(pw) pw.innerHTML=[
+    {u:"somsak.p",last:"2026-07-16",exp:"2026-10-14",st:"ปกติ"},
+    {u:"wilai.k",last:"2026-05-01",exp:"2026-07-30",st:"หมดอายุ"},
+  ].map(r=>`<tr><td>${r.u}</td><td>${r.last}</td><td>${r.exp}</td><td><span class="badge ${r.st==='ปกติ'?'badge-ok':'badge-bad'}">${r.st}</span></td><td><button class="btn btn-sm" onclick="Swal.fire('Mock','Admin รีเซ็ตรหัสผ่าน (FR-023/034)','info')">รีเซ็ต</button></td></tr>`).join('');
+}
+function fillMatrix(){
+  const el=document.getElementById('tb-matrix');
+  if(el) el.innerHTML=MENUS.map(m=>`<tr><td>${m[0]}</td>`+m.slice(1).map(v=>`<td style="text-align:center">${v==="✓"?'<input type="checkbox" checked>':'<input type="checkbox">'}</td>`).join('')+"</tr>").join('');
+  const rl=document.getElementById('tb-roles');
+  if(rl) rl.innerHTML=[
+    {r:"SUPER_ADMIN",d:"ผู้ดูแลส่วนกลาง",c:2,st:"Active"},
+    {r:"ORG_ADMIN",d:"Admin หน่วยงาน (เขต)",c:8,st:"Active"},
+    {r:"BUREAU_DIRECTOR",d:"ผอ.กอง",c:4,st:"Active"},
+    {r:"DIV_DIRECTOR",d:"ผอ.กลุ่ม",c:12,st:"Active"},
+    {r:"OFFICER",d:"เจ้าหน้าที่ปฏิบัติงาน",c:298,st:"Active"},
+  ].map(x=>`<tr><td><span class="badge badge-info">${x.r}</span></td><td>${x.d}</td><td>${x.c}</td><td><span class="badge badge-ok">${x.st}</span></td><td><span class="badge badge-muted">FR-050</span></td><td><button class="btn btn-sm" onclick="Swal.fire('Mock','แก้ไขบทบาท (FR-039) + บันทึกประวัติ (FR-050)','info')">แก้ไข</button></td></tr>`).join('');
+  const sy=document.getElementById('tb-systems');
+  if(sy) sy.innerHTML=[
+    {g:"ก14 บริหารกลาง",sub:"สิทธิ์/ฐานกลาง/Audit/ลายเซ็น",m:"42 เมนู",o:"ศทส.",r:"SUPER_ADMIN"},
+    {g:"ก5 ไต่สวน",sub:"รับเรื่อง/ไต่สวน",m:"18 เมนู",o:"กบด.",r:"OFFICER"},
+  ].map(r=>`<tr><td>${r.g}</td><td>${r.sub}</td><td>${r.m}</td><td>${r.o}</td><td><span class="badge badge-info">${r.r}</span></td><td><span class="badge badge-ok">Active</span></td></tr>`).join('');
+}
+function fillDrive(){
+  const an=document.getElementById('tb-announce');
+  if(an) an.innerHTML=[
+    {d:"2026-08-15",t:"ซ้อมแผนรับมือเหตุฉุกเฉิน",a:"ทุกคน",f:"PDF 2 ไฟล์",s:"เผยแพร่"},
+    {d:"2026-08-14",t:"อบรม ThaiD สำหรับ จนท. เขต 1",a:"เขต 1",f:"รูป 3",s:"ร่าง"},
+  ].map(r=>`<tr><td>${r.d}</td><td>${r.t}</td><td><span class="badge badge-info">${r.a}</span></td><td>${r.f}</td><td><span class="badge ${r.s==='เผยแพร่'?'badge-ok':'badge-warn'}">${r.s}</span></td><td><button class="btn btn-sm">ดู (FR-061)</button></td></tr>`).join('');
+  const man=document.getElementById('tb-manual');
+  if(man) man.innerHTML=[
+    {n:"คู่มือลงทะเบียนผู้ใช้",f:"PDF",d:"2026-08-10",s:"เผยแพร่"},
+    {n:"คู่มือ ThaiD",f:"PDF",d:"2026-08-12",s:"เผยแพร่"},
+  ].map(r=>`<tr><td>${r.n}</td><td>${r.f}</td><td>${r.d}</td><td><span class="badge badge-ok">${r.s}</span></td></tr>`).join('');
+  const vid=document.getElementById('tb-video');
+  if(vid) vid.innerHTML=[
+    {t:"สาธิตลงทะเบียนผู้ใช้",l:"youtube.com/...",a:"ทุกคน",s:"เผยแพร่"},
+    {t:"สาธิตยื่นคำขอย้ายหน่วยงาน",l:"youtube.com/...",a:"ทุกคน",s:"เผยแพร่"},
+  ].map(r=>`<tr><td>${r.t}</td><td><a href="#">${r.l}</a></td><td>${r.a}</td><td><span class="badge badge-ok">${r.s}</span></td></tr>`).join('');
+  const faq=document.getElementById('tb-faq');
+  if(faq) faq.innerHTML=[
+    {c:"ใช้งานระบบ",q:"ลืมรหัสผ่านทำอย่างไร",a:"กดลืมรหัสผ่าน → กรอกอีเมล → รับลิงก์ (FR-012)",s:"เผยแพร่"},
+    {c:"ไต่สวน",q:"ขอขยายเวลา 213 ทำอย่างไร",a:"เมนูขยายเวลา → กรอกเหตุผล → เสนอ ผอ.",s:"เผยแพร่"},
+    {c:"คุ้มครองพยาน",q:"ยื่น คบ.1 ช่องทางใด",a:"เมนูคุ้มครองพยาน → สร้างคำร้อง",s:"ร่าง"},
+  ].map(r=>`<tr><td><span class="badge badge-info">${r.c}</span></td><td>${r.q}</td><td>${r.a}</td><td><span class="badge ${r.s==='เผยแพร่'?'badge-ok':'badge-warn'}">${r.s} (FR-066)</span></td><td><span class="badge badge-muted">FR-069</span></td><td><button class="btn btn-sm">อ่าน (FR-068)</button></td></tr>`).join('');
+  const tk=document.getElementById('tb-ticket');
+  if(tk) tk.innerHTML=[
+    {id:"TK-001",t:"เข้า ThaiD ไม่ได้",u:"somsak.p",cat:"Auth",st:"รับเรื่องแล้ว",o:"ศทส."},
+    {id:"TK-002",t:"พิมพ์รายงานไม่ออก",u:"wilai.k",cat:"Report",st:"กำลังแก้ไข",o:"ศทส."},
+    {id:"TK-003",t:"เชื่อม API หมดอายุ",u:"api-user",cat:"API",st:"ปิดแล้ว",o:"ศทส."},
+  ].map(r=>`<tr><td><code>${r.id}</code></td><td>${r.t}</td><td>${r.u}</td><td>${r.cat} (FR-073)</td><td><span class="badge ${r.st==='ปิดแล้ว'?'badge-ok':r.st==='รับเรื่องแล้ว'?'badge-warn':'badge-info'}">${r.st} (FR-074)</span></td><td>${r.o}</td><td><button class="btn btn-sm" onclick="Swal.fire('Mock','FR-075 ปิดงาน + แจ้งผลกลับผู้แจ้ง · FR-076 ประวัติ','info')">ติดตาม</button></td></tr>`).join('');
+  const ph=document.getElementById('tb-phone');
+  if(ph) ph.innerHTML=[
+    {n:"นายสมศักดิ์ ใจดี",d:"ส่วนกลาง",p:"นักสืบสวน",tel:"02-123-4567",mail:"somsak.p@pacc.go.th",s:"ทุกคน"},
+    {n:"นางวิไล ขยัน",d:"เขต 1",p:"ผอ.กลุ่ม",tel:"02-123-4568",mail:"wilai.k@pacc.go.th",s:"เขต 1"},
+    {n:"ศูนย์เทคโนโลยีสารสนเทศ",d:"ส่วนกลาง",p:"Helpdesk",tel:"02-123-4599",mail:"helpdesk@pacc.go.th",s:"ทุกคน"},
+  ].map(r=>`<tr><td>${r.n}</td><td>${r.d}</td><td>${r.p}</td><td>${r.tel}</td><td>${r.mail}</td><td><span class="badge badge-info">${r.s} (FR-079)</span></td></tr>`).join('');
+}
+function fillPublicNews(){
+  const el=document.getElementById('tb-publicnews');
+  if(el) el.innerHTML=[
+    {d:"2026-08-16",t:"ป.ป.ท. เปิดศูนย์รับเรื่องร้องเรียนใหม่",cat:"ข่าวประชาสัมพันธ์",f:"รูป 5",s:"เผยแพร่",until:"2026-09-16"},
+    {d:"2026-08-12",t:"ประกาศรับสมัครเจ้าหน้าที่",cat:"ประกาศ",f:"PDF",s:"หมดอายุ",until:"2026-08-15"},
+    {d:"2026-08-10",t:"กิจกรรมวันต่อต้านทุจริต",cat:"กิจกรรม",f:"วิดีโอ",s:"ร่าง",until:"—"},
+  ].map(r=>`<tr><td>${r.d}</td><td>${r.t}</td><td>${r.cat} (FR-084)</td><td>${r.f}</td><td><span class="badge ${r.s==='เผยแพร่'?'badge-ok':r.s==='ร่าง'?'badge-warn':'badge-muted'}">${r.s}</span></td><td>${r.until} (FR-089)</td><td><button class="btn btn-sm" onclick="Swal.fire('Mock','Preview (FR-086) / ตรวจสอบ (FR-087)','info')">Preview</button></td></tr>`).join('');
+  const cats=document.getElementById('tb-newscats');
+  if(cats) cats.innerHTML=[
+    {c:"ข่าวประชาสัมพันธ์",n:32},{c:"ประกาศ",n:12},{c:"กิจกรรม",n:8},{c:"บทความ",n:4},
+  ].map(r=>`<tr><td>${r.c}</td><td>${r.n}</td><td>—</td><td><span class="badge badge-ok">ประชาชนค้นหาได้ (FR-088)</span></td><td><button class="btn btn-sm">จัดการ</button></td></tr>`).join('');
+  const pv=document.getElementById('tb-preview');
+  if(pv) pv.innerHTML=[
+    {t:"กิจกรรมวันต่อต้านทุจริต",cat:"กิจกรรม",u:"admin-pr"},
+  ].map(r=>`<tr><td>${r.t}</td><td>${r.cat}</td><td>${r.u}</td><td><button class="btn btn-sm" onclick="Swal.fire('Preview (FR-086)','แสดงตัวอย่างก่อนเผยแพร่','info')">Preview</button></td><td><button class="btn btn-sm" onclick="Swal.fire('ตรวจทาน (FR-087)','ตรวจสอบก่อนเผยแพร่','info')">ตรวจ</button></td><td><button class="btn btn-sm btn-primary">เผยแพร่ (FR-087)</button></td></tr>`).join('');
+  const sc=document.getElementById('tb-schedule');
+  if(sc) sc.innerHTML=[
+    {t:"ป.ป.ท. เปิดศูนย์รับเรื่องใหม่",s:"2026-08-16",e:"2026-09-16",st:"เผยแพร่"},
+    {t:"ประกาศรับสมัคร",s:"2026-08-10",e:"2026-08-15",st:"หมดอายุ (FR-089)"},
+  ].map(r=>`<tr><td>${r.t}</td><td>${r.s}</td><td>${r.e}</td><td><span class="badge ${r.st.includes('เผยแพร่')?'badge-ok':'badge-muted'}">${r.st}</span></td><td><button class="btn btn-sm">แก้ไขเวลา</button></td></tr>`).join('');
+  const hs=document.getElementById('tb-newshist');
+  if(hs) hs.innerHTML=[
+    {t:"2026-08-16 10:00",n:"ศูนย์รับเรื่องใหม่",a:"เผยแพร่",u:"admin-pr",v:"v3"},
+    {t:"2026-08-15 16:20",n:"ศูนย์รับเรื่องใหม่",a:"แก้ไข",u:"admin-pr",v:"v2"},
+    {t:"2026-08-14 09:00",n:"ประกาศรับสมัคร",a:"ยกเลิกเผยแพร่ (FR-089)",u:"admin-pr",v:"v1"},
+  ].map(r=>`<tr><td>${r.t}</td><td>${r.n}</td><td>${r.a}</td><td>${r.u}</td><td>${r.v}</td></tr>`).join('');
+}
+function fillMaster(){
+  const tree=document.getElementById('deptTree');
+  if(tree) tree.innerHTML=`
+    <div><i class="fa-solid fa-building" style="color:#1d3975"></i> สำนักงาน ป.ป.ท. (ส่วนกลาง) <span class="fr-tag">FR-091 ลำดับชั้น</span></div>
+    <div style="padding-left:16px">├─ <i class="fa-solid fa-sitemap"></i> สำนักไต่สวน 1 (กบด.)</div>
+    <div style="padding-left:32px">│  ├─ กองคดีป้องกันภาครัฐ 1</div>
+    <div style="padding-left:32px">│  └─ กองคดีป้องกันภาครัฐ 2</div>
+    <div style="padding-left:16px">├─ <i class="fa-solid fa-sitemap"></i> ป.ป.ท. เขต 1</div>
+    <div style="padding-left:16px">└─ <i class="fa-solid fa-sitemap"></i> ป.ป.ท. เขต 2</div>`;
+  const dreq=document.getElementById('tb-deptreq');
+  if(dreq) dreq.innerHTML=TRANSFERS.slice(0,2).map(r=>`<tr><td>${r.name}</td><td>${r.from}</td><td>${r.to}</td><td><span class="badge badge-warn">${r.st} (FR-095)</span></td><td><button class="btn btn-sm" onclick="Swal.fire('Mock','อนุมัติคำขอย้าย — อัปเดตหน่วยงาน (FR-096) + ประวัติ (FR-097)','info')">อนุมัติ</button></td></tr>`).join('');
+  const mu=document.getElementById('tb-masterusers');
+  if(mu) mu.innerHTML=[
+    {n:"นายสมศักดิ์ ใจดี",d:"ส่วนกลาง",p:"นักสืบสวน",rol:"OFFICER",sc:"ส่วนกลาง",h:"FR-104"},
+    {n:"นางวิไล ขยัน",d:"เขต 1",p:"ผอ.กลุ่ม",rol:"DIV_DIRECTOR",sc:"เขต 1",h:"FR-104"},
+  ].map(r=>`<tr><td>${r.n}</td><td>${r.d}</td><td>${r.p} (FR-101)</td><td>${r.rol} (FR-102)</td><td>${r.sc} (FR-103)</td><td>${r.h}</td></tr>`).join('');
+  const pos=document.getElementById('tb-pos');
+  if(pos) pos.innerHTML=[
+    {id:"P01",n:"นักสืบสวน",c:120,st:"Active"},
+    {id:"P02",n:"นิติกร",c:45,st:"Active"},
+    {id:"P03",n:"ผอ.กลุ่ม",c:18,st:"Active"},
+    {id:"P04",n:"ผอ.กอง",c:6,st:"Active"},
+  ].map(r=>`<tr><td>${r.id}</td><td>${r.n}</td><td>FR-108 เชื่อมผู้ใช้</td><td>${r.c} (FR-109)</td><td><span class="badge badge-ok">${r.st}</span></td><td><button class="btn btn-sm">แก้ไข (FR-106)</button></td></tr>`).join('');
+  const mo=document.getElementById('tb-masterother');
+  if(mo) mo.innerHTML=[
+    {n:"ประเภทเรื่องร้องเรียน",c:"18",o:"กบด.",s:"Active",use:"ก4 รับเรื่อง"},
+    {n:"ประเภทตำแหน่ง",c:"18",o:"บริหารกลาง",s:"Active",use:"สิทธิ์/รายงาน"},
+    {n:"ระดับความลับ",c:"3",o:"กบด.",s:"Active",use:"ทุกกิจกรรม"},
+    {n:"สถานะสำนวน",c:"12",o:"กบด.",s:"Active",use:"ก5-ก10"},
+  ].map(r=>`<tr><td>${r.n} (FR-111)</td><td>${r.c}</td><td>${r.o} (FR-114)</td><td>${r.use} (FR-115)</td><td><span class="badge badge-ok">${r.s}</span></td></tr>`).join('');
+  const ak=document.getElementById('tb-apikey');
+  if(ak) ak.innerHTML=[
+    {n:"Open Data กรณีศึกษา",cond:"IP whitelist",tok:"•••• ab12",exp:"2027-02-01",st:"Active",c:"1,240"},
+    {n:"เชื่อม DOPA",cond:"mTLS",tok:"•••• 9f33",exp:"2026-12-31",st:"Active",c:"8,420"},
+    {n:"ทดสอบ (หมดอายุ)",cond:"—",tok:"•••• 0011",exp:"2026-06-01",st:"หมดอายุ",c:"—"},
+  ].map(r=>`<tr><td>${r.n} (FR-117)</td><td>${r.cond} (FR-118)</td><td><code>${r.tok}</code></td><td>${r.exp} (FR-120)</td><td><span class="badge ${r.st==='Active'?'badge-ok':'badge-bad'}">${r.st} (FR-121)</span></td><td>${r.c} (FR-123)</td></tr>`).join('');
+  const al=document.getElementById('tb-apilog');
+  if(al) al.innerHTML=[
+    {t:"2026-08-16 09:00",u:"ext-dopa",ep:"/api/v1/person/verify",rs:"200"},
+    {t:"2026-08-16 08:30",u:"ext-open",ep:"/api/v1/cases/public",rs:"200"},
+    {t:"2026-08-15 22:11",u:"test",ep:"/api/v1/cases/public",rs:"401"},
+  ].map(r=>`<tr><td>${r.t}</td><td>${r.u} (FR-122)</td><td>${r.ep}</td><td><span class="badge ${r.rs==='200'?'badge-ok':'badge-bad'}">${r.rs} (FR-123)</span></td><td>203.0.113.5</td></tr>`).join('');
+  const mg=document.getElementById('tb-mastergroups');
+  if(mg) mg.innerHTML=[
+    {g:"บริหารกลาง (SYS01)",sub:"ผู้ใช้งาน/บทบาท",m:"ผู้ใช้งาน, บทบาท, รายงาน",o:"ศทส.",r:"SUPER_ADMIN"},
+    {g:"ฐานกลาง (SYS04)",sub:"หน่วยงาน/ตำแหน่ง/API",m:"หน่วยงาน, API Keys",o:"ศทส.",r:"SUPER_ADMIN"},
+  ].map(r=>`<tr><td>${r.g} (FR-124)</td><td>${r.sub}</td><td>${r.m} (FR-125)</td><td>${r.o} (FR-126)</td><td>${r.r} (FR-127)</td><td><span class="badge badge-ok">Active</span></td></tr>`).join('');
+}
+function fillAudit(){
+  const q=(document.getElementById('q-audit')?.value||"").toLowerCase();
+  const rows=[
+    {t:"2026-08-16 09:12:04",u:"somsak.p",e:"ล็อกอิน (รหัสผ่าน)",tar:"/auth/login",cat:"AUTH",rs:"สำเร็จ",ip:"10.1.2.34",det:"FR-130/131"},
+    {t:"2026-08-16 09:14:22",u:"somsak.p",e:"อนุมัติคำขอลงทะเบียน",tar:"newuser01",cat:"APPROVAL",rs:"สำเร็จ",ip:"10.1.2.34",det:"FR-131"},
+    {t:"2026-08-16 09:18:11",u:"wilai.k",e:"ส่งออก รายงานผู้ใช้งาน",tar:"/reports/users?format=excel",cat:"EXPORT",rs:"สำเร็จ",ip:"10.1.3.11",det:"FR-131"},
+    {t:"2026-08-15 16:20:33",u:"prasert.t",e:"ลงนามเอกสาร",tar:"หนังสือ ปป 0040/ว112",cat:"SIGN",rs:"สำเร็จ",ip:"10.1.4.2",det:"FR-131"},
+    {t:"2026-08-15 11:03:01",u:"unknown",e:"ล็อกอินล้มเหลว",tar:"/auth/login",cat:"AUTH",rs:"ล้มเหลว",ip:"203.0.113.5",det:"FR-130"},
+  ].filter(r=>!q||`${r.u} ${r.e} ${r.tar}`.toLowerCase().includes(q));
+  const tb=document.getElementById('tb-audit');
+  if(tb) tb.innerHTML=rows.map(r=>`<tr><td>${r.t}</td><td><code>${r.u}</code></td><td>${r.e}</td><td>${r.tar}</td><td><span class="badge badge-info">${r.cat} (FR-132)</span></td><td><span class="badge ${r.rs==='สำเร็จ'?'badge-ok':'badge-bad'}">${r.rs}</span></td><td>${r.det} (FR-134)</td><td>${r.ip}</td></tr>`).join('');
+  const ag=document.getElementById('tb-auditgroups');
+  if(ag) ag.innerHTML=[
+    {g:"AUTH",ids:"FR-009~012",n:342,ex:"ล็อกอิน/ล็อกเอาต์/ThaiD"},
+    {g:"APPROVAL",ids:"FR-006/021",n:24,ex:"อนุมัติลงทะเบียน/ย้าย/สิทธิ์"},
+    {g:"EXPORT",ids:"FR-054/135",n:18,ex:"ส่งออกรายงาน"},
+    {g:"SIGN",ids:"FR-141~144",n:24,ex:"ลงนาม/ใบรับรอง"},
+    {g:"PERMISSION",ids:"FR-050",n:11,ex:"เปลี่ยนสิทธิ์"},
+  ].map(r=>`<tr><td>${r.g} (FR-132)</td><td>${r.ids}</td><td>${r.n}</td><td>${r.ex}</td></tr>`).join('');
+  const as=document.getElementById('tb-auditsearch');
+  if(as) as.innerHTML=rows.slice(0,3).map(r=>`<tr><td>${r.t}</td><td>${r.u}</td><td>${r.e}</td><td>${r.tar} · IP ${r.ip} · ${r.rs} (FR-134)</td><td><span class="badge badge-ok">${r.rs}</span></td></tr>`).join('');
+}
+function fillCert(){
+  const cert=document.getElementById('tb-cert');
+  if(cert) cert.innerHTML=[
+    {o:"นายสมศักดิ์ ใจดี",n:"CN=ส.ใจดี",by:"CA ป.ป.ท.",exp:"2027-03-15",one:"1:1 ผูกแล้ว (FR-139)",st:"ใช้งาน (FR-140)"},
+    {o:"นางวิไล ขยัน",n:"CN=ว.ขยัน",by:"CA ป.ป.ท.",exp:"2026-09-01",one:"1:1 ผูกแล้ว",st:"ใกล้หมดอายุ"},
+  ].map(r=>`<tr><td>${r.o} (FR-138 ตรวจชื่อ)</td><td><code>${r.n}</code></td><td>${r.by}</td><td>${r.exp}</td><td><span class="badge badge-ok">${r.one}</span></td><td><span class="badge ${r.st.includes('ใช้งาน')?'badge-ok':'badge-warn'}">${r.st}</span></td></tr>`).join('');
+  const slog=document.getElementById('tb-signlog');
+  if(slog) slog.innerHTML=[
+    {d:"หนังสือแจ้งเวียน ว112",u:"จนท. ศร",seq:"1/3 → ผอ.กลุ่ม → ผอ.กอง",st:"รอ ผอ.กลุ่ม",ev:"hash sha256: a1b2…"},
+    {d:"รายงานติดตาม ตว.1",u:"จนท. ศร",seq:"1/2 → ผอ.กลุ่ม",st:"อนุมัติแล้ว",ev:"hash sha256: 9f33…"},
+  ].map(r=>`<tr><td>${r.d}</td><td>${r.u}</td><td>${r.seq} (FR-142)</td><td>${r.ev} (FR-143)</td><td><span class="badge ${r.st.includes('รอ')?'badge-warn':'badge-ok'}">${r.st}</span></td></tr>`).join('');
+  const prop=document.getElementById('tb-signpropose');
+  if(prop) prop.innerHTML=[
+    {d:"หนังสือเชิญประชุม 001/2569",u:"จนท. ก",to:"ผอ.กอง",st:"เสนอแล้ว (FR-141)"},
+  ].map(r=>`<tr><td>${r.d}</td><td>${r.u}</td><td>${r.to}</td><td><span class="badge badge-warn">${r.st}</span></td></tr>`).join('');
+  const ver=document.getElementById('tb-signverify');
+  if(ver) ver.innerHTML=[
+    {d:"หนังสือเชิญประชุม 001/2569",u:"ผอ.กอง",rs:"ผ่าน — เอกสารถูกต้อง (FR-143)"},
+  ].map(r=>`<tr><td>${r.d}</td><td>${r.u}</td><td><span class="badge badge-ok">${r.rs}</span></td><td><button class="btn btn-sm">ส่งกลับแก้ไข</button></td></tr>`).join('');
+  const que=document.getElementById('tb-signqueue');
+  if(que) que.innerHTML=[
+    {d:"หนังสือแจ้งเวียน ว112",seq:"1/3",u:"ผอ.กลุ่ม",st:"รอลงนาม"},
+    {d:"รายงาน ตว.1",seq:"2/2",u:"ผอ.กอง",st:"ลงนามแล้ว"},
+  ].map(r=>`<tr><td>${r.d}</td><td>${r.seq} (FR-142)</td><td>${r.u}</td><td><span class="badge ${r.st.includes('รอ')?'badge-warn':'badge-ok'}">${r.st}</span></td><td><button class="btn btn-sm btn-primary" onclick="Swal.fire('ลงนาม (FR-141)','ตรวจสิทธิ์ + ลงลายมือชื่อดิจิทัลตามลำดับ (FR-142) + บันทึกหลักฐาน (FR-143)','info')">ลงนาม</button></td></tr>`).join('');
+  const hist=document.getElementById('tb-signhistory');
+  if(hist) hist.innerHTML=[
+    {t:"2026-08-16 09:20",d:"หนังสือ ว112",u:"ผอ.กอง",ev:"sha256:a1b2… ts:2026-08-16T09:20Z",rs:"สำเร็จ"},
+    {t:"2026-08-15 16:21",d:"รายงาน ตว.1",u:"ผอ.กลุ่ม",ev:"sha256:9f33… ts:2026-08-15T16:21Z",rs:"สำเร็จ"},
+  ].map(r=>`<tr><td>${r.t}</td><td>${r.d}</td><td>${r.u}</td><td><code>${r.ev} (FR-143)</code></td><td><span class="badge badge-ok">${r.rs} (FR-144)</span></td></tr>`).join('');
+}
+
+function route(){
+  const h=location.hash||"#/users";
+  document.querySelectorAll('.nav-link').forEach(b=>{
+    const active=h.startsWith(b.dataset.h);
+    b.classList.toggle('active',active);
+  });
+  document.querySelectorAll('section[id^="v-"]').forEach(s=>s.style.display='none');
+  const map={"#/users":"v-users","#/roles":"v-roles","#/drive":"v-drive","#/news":"v-news","#/master":"v-master","#/audit":"v-audit","#/sign":"v-sign"};
+  const key=Object.keys(map).find(k=>h.startsWith(k))||"#/users";
+  const sec=document.getElementById(map[key]);
+  if(sec) sec.style.display='block';
+  const titles={"#/users":["ผู้ใช้งาน & ลงทะเบียน","SYS01 · FR-001~042 · 5 sub-tabs"],"#/roles":["บทบาท/สิทธิ์","SYS01.09-10 · FR-043~050 · FR-124~129"],"#/drive":["ขับเคลื่อนกระบวนงาน","SYS02 · FR-057~082 · 5 sub-tabs"],"#/news":["ประชาสัมพันธ์","SYS03 · FR-083~090 · 5 sub-tabs"],"#/master":["ฐานกลาง & API Keys","SYS04 · FR-091~129 · 6 sub-tabs"],"#/audit":["บันทึกเหตุการณ์","SYS05 · FR-130~136 · 4 sub-tabs"],"#/sign":["ลายเซ็นดิจิทัล","SYS06 · FR-137~144 · 5 sub-tabs"]};
+  const t=titles[key]||titles["#/users"];
+  document.getElementById('ttl').textContent=t[0];
+  document.getElementById('sub').textContent=t[1];
+}
+function bindSubtabs(){
+  document.querySelectorAll('.subtabs').forEach(g=>{
+    g.querySelectorAll('button').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        g.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        const t=btn.dataset.t;
+        const sec=g.closest('section');
+        sec.querySelectorAll('.subpanel').forEach(p=>p.classList.remove('active'));
+        const target=sec.querySelector('#p-'+t);
+        if(target) target.classList.add('active');
+      });
+    });
+  });
+}
+
+document.querySelectorAll('.nav-link').forEach(b=>b.addEventListener('click',()=>{location.hash=b.dataset.h}));
+window.addEventListener('hashchange',route);
+document.getElementById('q-users')?.addEventListener('input',fillUsers);
+document.getElementById('f-users-status')?.addEventListener('change',fillUsers);
+document.getElementById('f-users-dept')?.addEventListener('change',fillUsers);
+document.getElementById('q-audit')?.addEventListener('input',fillAudit);
+document.getElementById('q-qa')?.addEventListener('input',()=>{/* filter handled in fillDrive */});
+bindSubtabs();
+route(); fillUsers(); fillMatrix(); fillDrive(); fillPublicNews(); fillMaster(); fillAudit(); fillCert();
+</script>
+<script>
+// Auth guard — require login, else redirect to login.html
+(function(){
+  try{
+    const needLogin = !localStorage.getItem('ecmis-transform-auth-v1');
+    if(needLogin){
+      const next = encodeURIComponent(location.pathname + location.search);
+      // from activity subfolder, login is at ../login.html
+      location.replace('../login.html?next=' + next);
+    }
+  }catch(e){}
+})();
+</script>
+
+
+<script>
+/* ==========================================================================
+   บัญชีจริงของระบบสาธิต + ตารางสิทธิ์ — อ่านจาก shared-assets/auth.js
+   ก14 มีหน้าที่ "เห็นทุกคน + จัดสิทธิ์" จึงต้องผูกกับ AUTH_USERS ตัวจริง
+   (ตารางเดิมด้านบนคงไว้ เพราะจำลองบัญชีระดับองค์กรคนละชุด)
+
+   แก้ 2026-08-18: บัญชีเปลี่ยนจาก 11 บัญชีตามโฟลเดอร์ เป็น 28 คนจริงตามตำแหน่ง
+   ตารางจึงสลับแกนเป็น คน(แถว) × กิจกรรม(คอลัมน์) และจัดกลุ่มตามหน่วยงาน
+   ========================================================================== */
+(function(){
+  var A = window.ECMISAuth;
+  if(!A) return;
+  var ACTS = A.ACT_KEYS;
+  function esc(x){ return String(x==null?"":x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  function card(title, sub, inner){
+    return '<div class="card" style="margin-bottom:16px">'
+      + '<div class="card-head"><div><h2>'+title+'</h2><p>'+sub+'</p></div>'
+      + '<span class="badge"><i class="fa-solid fa-lock"></i> บังคับใช้จริง</span></div>'
+      + inner + '</div>';
+  }
+
+  /* ---- บัญชีผู้ใช้ จัดตามกิจกรรมที่สังกัด ---- */
+  var groups = A.usersByAct();
+  var accRows = groups.map(function(g){
+    return '<tr><td colspan="4" style="background:#f3f6fa;font-weight:600;color:#14294a;font-size:12px">'
+         + '<i class="fa-solid ' + g.icon + '" style="color:#16558f;margin-right:6px"></i>' + esc(g.th)
+         + ' <span style="color:#7a8aa3;font-weight:400">' + g.users.length + ' คน</span></td></tr>'
+         + g.users.map(function(u){
+             var tags = (u.readOnly ? '<span class="badge">ดูอย่างเดียว</span> ' : '')
+                      + (u.manageUsers ? '<span class="badge badge-ok">จัดสิทธิ์ได้</span>' : '');
+             return '<tr><td><strong>' + esc(u.u) + '</strong><br><small>รหัส ' + esc(u.p) + '</small></td>'
+                  + '<td>' + esc(u.name) + '</td>'
+                  + '<td><small>' + esc(u.title) + '</small><br><small style="color:#8ea0b5">' + esc(u.org||'') + '</small></td>'
+                  + '<td>' + (tags || '<small style="color:#8ea0b5">—</small>') + '</td></tr>';
+           }).join('');
+  }).join('');
+
+  var accounts = card("ผู้ใช้งานระบบ — แยกตามกิจกรรม (" + A.USERS.length + " บัญชี)",
+    "ผู้ใช้งานหนึ่งคนสังกัดกิจกรรมเดียว · รายชื่อมาจากบทบาทที่แต่ละกิจกรรมนิยามไว้เอง · แก้ได้ที่ shared-assets/auth.js",
+    '<div class="table-wrap"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ-สกุล</th><th>ตำแหน่ง / หน่วยงาน</th>'
+    + '<th>คุณสมบัติพิเศษ</th></tr></thead><tbody>' + accRows + '</tbody></table></div>');
+
+  /* ---- ตารางสิทธิ์: กิจกรรม × จำนวนผู้ใช้ ---- */
+  var matRows = groups.map(function(g){
+    return '<tr><td><strong>' + esc(g.short) + '</strong><br><small style="color:#8ea0b5">' + esc(g.th) + '</small></td>'
+         + '<td style="text-align:center"><strong>' + g.users.length + '</strong></td>'
+         + '<td><small>' + g.users.map(function(u){ return esc(u.title); }).join(' · ') + '</small></td></tr>';
+  }).join('');
+  var matrix = card("สิทธิ์เข้าถึงกิจกรรม",
+    "ผู้ใช้งานเข้าได้เฉพาะกิจกรรมที่ตัวเองสังกัด — บังคับด้วยฉากกั้นทุกหน้า",
+    '<div class="table-wrap"><table><thead><tr><th>กิจกรรม</th><th style="text-align:center">ผู้ใช้งาน</th>'
+    + '<th>ตำแหน่งในกิจกรรม</th></tr></thead><tbody>' + matRows + '</tbody></table></div>');
+
+  function mount(){
+    var vu = document.getElementById("v-users");
+    if(vu && !document.getElementById("realAccounts")){
+      var d = document.createElement("div"); d.id="realAccounts"; d.innerHTML = accounts;
+      vu.insertBefore(d, vu.firstChild);
+    }
+    var vr = document.getElementById("v-roles");
+    if(vr && !document.getElementById("realMatrix")){
+      var m = document.createElement("div"); m.id="realMatrix"; m.innerHTML = matrix;
+      vr.insertBefore(m, vr.firstChild);
+    }
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", function(){ setTimeout(mount,150); });
+  else setTimeout(mount,150);
+  setTimeout(mount, 700);
+})();
+</script>
+</body>
+</html>

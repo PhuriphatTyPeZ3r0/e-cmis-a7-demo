@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ทะเบียนสำนวน 7.1 | E-CMIS</title>
+<link rel="icon" type="image/png" href="pacc_logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<link href="assets/ecmis-app.css" rel="stylesheet">
+</head>
+<body>
+
+<main class="app-main">
+  <div class="page-head">
+    <div>
+      <h1><i class="fa-solid fa-folder-open me-2"></i>ทะเบียนสำนวนชั้นไต่สวนเบื้องต้น</h1>
+      <div class="sub">สืบค้นตามเงื่อนไข TOR 7.3 (9 รายการ) และเงื่อนไขที่ผูกกับมติ — ทุกบทบาทเห็นได้ แต่ "แก้ไข" ได้เฉพาะผู้มีสิทธิ์</div>
+    </div>
+    <span class="flow-ref ms-auto">ผัง: TO-BE 7.1 · TOR 7.3</span>
+  </div>
+
+  <div class="card card-ecmis mb-3">
+    <div class="card-header"><i class="fa-solid fa-magnifying-glass"></i> เงื่อนไขการสืบค้น</div>
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-md-4">
+          <label class="form-label">คำค้น (เรื่องกล่าวหา / เลขเรื่อง / เลข PCMS)</label>
+          <input class="form-control" id="q" placeholder="เช่น 1547/2568 หรือ จัดซื้อจัดจ้าง">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">ชื่อผู้ถูกกล่าวหา</label>
+          <input class="form-control" id="qAccused" placeholder="ระบุชื่อ-นามสกุล">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">สถานะสำนวน</label>
+          <select class="form-select" id="qStatus"><option value="">— ทั้งหมด —</option></select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">ฐานการรับเรื่อง</label>
+          <select class="form-select" id="qBase">
+            <option value="">— ทั้งหมด —</option>
+            <option value="ม.18/4">ม.18/4 พรบ.มาตรการฯ</option>
+            <option value="ม.62">ม.62 พรป.ปปช.</option>
+          </select>
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+          <button class="btn btn-navy w-100" id="btnSearch"><i class="fa-solid fa-magnifying-glass"></i></button>
+        </div>
+      </div>
+      <div class="mt-2 d-flex gap-2 flex-wrap">
+        <button class="btn btn-sm btn-outline-secondary filter-chip" data-f="all">ทั้งหมด</button>
+        <button class="btn btn-sm btn-outline-danger filter-chip" data-f="late">เกินกำหนด SLA</button>
+        <button class="btn btn-sm btn-outline-warning filter-chip" data-f="urgent">เรื่องเร่งด่วน</button>
+        <button class="btn btn-sm btn-outline-primary filter-chip" data-f="mine">คิวของฉัน</button>
+        <button class="btn btn-sm btn-outline-dark filter-chip" data-f="dup">เตือนสำนวนซ้ำ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-ecmis">
+    <div class="card-header">
+      <i class="fa-solid fa-table-list"></i> ผลการสืบค้น
+      <span class="badge bg-secondary rounded-pill ms-2" id="cnt">0</span>
+      <button class="btn btn-sm btn-outline-secondary ms-auto"><i class="fa-solid fa-file-excel me-1"></i>ส่งออก Excel</button>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover tbl-ecmis mb-0">
+          <thead>
+            <tr>
+              <th>เลขเรื่อง</th><th>เรื่องกล่าวหา</th><th>ผู้ถูกกล่าวหา</th>
+              <th>ฐานรับเรื่อง</th><th>สถานะ</th><th>ค้างที่</th><th>SLA</th>
+              <th>อายุความ (ม.23)</th><th class="text-end"></th>
+            </tr>
+          </thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="assets/ecmis-app.js"></script>
+<script>
+ECMIS.renderShell('02-case-register.html');
+const role = ECMIS.currentRole();
+
+/* สถานะ dropdown */
+document.getElementById('qStatus').insertAdjacentHTML('beforeend',
+  Object.keys(ECMIS.STATUS).map(k => `<option value="${k}">${ECMIS.STATUS[k].label}</option>`).join(''));
+
+let filter = 'all';
+
+function matches(c){
+  const q = document.getElementById('q').value.trim();
+  const qa = document.getElementById('qAccused').value.trim();
+  const qs = document.getElementById('qStatus').value;
+  const qb = document.getElementById('qBase').value;
+
+  if(q && !(c.id.includes(q) || c.pcms.includes(q) || c.subject.includes(q))) return false;
+  if(qa && !c.accused.some(a => a.name.includes(qa))) return false;
+  if(qs && c.status !== qs) return false;
+  if(qb && c.legalBase !== qb) return false;
+
+  if(filter === 'late'   && !(c.slaDays > c.slaLimit)) return false;
+  if(filter === 'urgent' && !c.urgent) return false;
+  if(filter === 'mine'   && !ECMIS.canAct(c, role.id)) return false;
+  if(filter === 'dup'    && !c.dupWarning) return false;
+  return true;
+}
+
+function render(){
+  const rows = ECMIS.CASES.filter(matches);
+  document.getElementById('cnt').textContent = rows.length;
+  document.getElementById('tb').innerHTML = rows.length ? rows.map(c => {
+    const holder = ECMIS.STATUS[c.status] ? ECMIS.getRole(ECMIS.STATUS[c.status].owner) : null;
+    const actionable = ECMIS.canAct(c, role.id);
+    return `<tr>
+      <td>
+        <span class="case-no">${c.id}</span>
+        ${c.urgent ? '<span class="st st-urgent ms-1">ด่วน</span>' : ''}
+        ${c.dupWarning ? '<span class="st st-returned ms-1" title="ระบบตรวจพบสำนวนที่อาจซ้ำซ้อน"><i class="fa-solid fa-clone"></i> ซ้ำ?</span>' : ''}
+        <br><small class="text-muted">${c.pcms}</small>
+      </td>
+      <td style="max-width:280px"><div class="text-truncate" title="${c.subject}">${c.subject}</div>
+          <small class="text-muted">เจ้าของสำนวน: ${c.owner}</small></td>
+      <td style="font-size:.8rem">${c.accused.map(a => a.name).join('<br>')}</td>
+      <td><span class="chip">${c.legalBase}</span></td>
+      <td>${ECMIS.statusBadge(c.status)}</td>
+      <td style="font-size:.8rem">${holder ? holder.title : '—'}</td>
+      <td>${ECMIS.slaBadge(c)}</td>
+      <td style="font-size:.78rem">
+        <div>เริ่มไต่สวน: ${ECMIS.thaiDate(c.deadline60)}</div>
+        <div class="text-muted">ครบ 2 ปี: ${ECMIS.thaiDate(c.deadline2y)}</div>
+      </td>
+      <td class="text-end">
+        <a href="03-report-213.html?case=${encodeURIComponent(c.id)}"
+           class="btn btn-sm ${actionable?'btn-navy':'btn-outline-secondary'}">
+          <i class="fa-regular ${actionable?'fa-pen-to-square':'fa-eye'} me-1"></i>${actionable?'ดำเนินการ':'ดูรายละเอียด'}
+        </a>
+      </td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="9" class="text-center text-muted py-4">ไม่พบสำนวนที่ตรงกับเงื่อนไข</td></tr>`;
+}
+
+document.getElementById('btnSearch').addEventListener('click', render);
+['q','qAccused'].forEach(id => document.getElementById(id).addEventListener('keyup', e => { if(e.key==='Enter') render(); }));
+['qStatus','qBase'].forEach(id => document.getElementById(id).addEventListener('change', render));
+document.querySelectorAll('.filter-chip').forEach(b => b.addEventListener('click', () => {
+  filter = b.dataset.f;
+  document.querySelectorAll('.filter-chip').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  render();
+}));
+render();
+</script>
+</body>
+</html>

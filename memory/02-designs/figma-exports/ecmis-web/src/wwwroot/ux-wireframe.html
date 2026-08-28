@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UX Wireframe — Home.razor · PACC E-CMIS</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --wire-bg:       #f5f5f0;
+    --wire-surface:  #ffffff;
+    --wire-border:   #c8c8c4;
+    --wire-img-bg:   #e4e4de;
+    --wire-img-x:    #b0b0aa;
+    --wire-text:     #2a2a28;
+    --wire-muted:    #7a7a76;
+    --wire-section:  #eaeae5;
+    --pin-red:       #d94040;
+    --pin-bg:        #d94040;
+    --note-bg:       #fffbee;
+    --note-border:   #e8c96a;
+    --new-tag:       #1a5c3a;
+    --new-tag-bg:    #d4f0e0;
+    --font: 'Sarabun', system-ui, sans-serif;
+  }
+
+  body {
+    background: var(--wire-bg);
+    color: var(--wire-text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── DOC HEADER ──────────────────────────────── */
+  .doc-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #1e1e1c;
+    color: #fff;
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .doc-header-left { display: flex; align-items: center; gap: 12px; }
+  .doc-badge {
+    background: var(--pin-red);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .08em;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .doc-title { font-size: 15px; font-weight: 700; }
+  .doc-sub { font-size: 12px; color: #a0a09c; }
+  .doc-meta { font-size: 12px; color: #a0a09c; }
+
+  /* ── LEGEND ──────────────────────────────────── */
+  .legend {
+    background: var(--wire-surface);
+    border-bottom: 1px solid var(--wire-border);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: var(--wire-muted); }
+  .legend-swatch {
+    width: 28px; height: 18px; border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ls-img    { background: var(--wire-img-bg); border: 1.5px solid var(--wire-img-x); }
+  .ls-text   { background: #e0e8f8; border: 1.5px solid #8aaad4; }
+  .ls-action { background: #f0e0f8; border: 1.5px solid #b48ad4; }
+  .ls-new    { background: var(--new-tag-bg); border: 1.5px solid #7dc4a0; }
+  .ls-pin    { background: var(--pin-red); border-radius: 50%; width: 18px; height: 18px; color: #fff; font-size: 10px; font-weight: 900; line-height: 18px; text-align: center; }
+
+  /* ── MAIN CANVAS ─────────────────────────────── */
+  .canvas {
+    max-width: 960px;
+    margin: 32px auto;
+    padding: 0 24px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* ── GENERIC BLOCKS ──────────────────────────── */
+  .wire-block {
+    background: var(--wire-surface);
+    border: 1.5px solid var(--wire-border);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+  }
+  .wire-block + .wire-block { margin-top: 0; }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--wire-section);
+    border-bottom: 1px solid var(--wire-border);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .06em;
+    color: var(--wire-muted);
+    text-transform: uppercase;
+  }
+  .section-label .new-tag {
+    background: var(--new-tag-bg);
+    color: var(--new-tag);
+    font-size: 10px;
+    font-weight: 900;
+    padding: 1px 7px;
+    border-radius: 20px;
+    letter-spacing: .04em;
+  }
+
+  .wire-row {
+    display: flex;
+    gap: 0;
+  }
+
+  .wire-pad { padding: 16px 18px; }
+
+  /* ── IMAGE PLACEHOLDER ───────────────────────── */
+  .img-placeholder {
+    position: relative;
+    background: var(--wire-img-bg);
+    border: 1.5px dashed var(--wire-img-x);
+    border-radius: 5px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .img-placeholder svg.cross {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    opacity: .35;
+  }
+  .img-placeholder .img-label {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    pointer-events: none;
+  }
+  .img-placeholder .img-label strong {
+    display: block;
+    font-size: 11px;
+    font-weight: 900;
+    color: #606058;
+  }
+  .img-placeholder .img-label span {
+    display: block;
+    font-size: 10px;
+    color: var(--wire-muted);
+    margin-top: 2px;
+  }
+  .img-placeholder .img-label .img-size {
+    display: inline-block;
+    background: rgba(0,0,0,.1);
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: #505048;
+    margin-top: 4px;
+  }
+
+  /* ── ANNOTATION PIN ──────────────────────────── */
+  .pin {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px; height: 22px;
+    background: var(--pin-red);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 900;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,.25);
+  }
+  .pin-float {
+    position: absolute;
+    top: 8px; right: 8px;
+    z-index: 10;
+  }
+
+  /* ── CONTENT SKELETON ────────────────────────── */
+  .skel {
+    background: #e8e8e4;
+    border-radius: 4px;
+    display: block;
+  }
+  .skel-text { height: 10px; }
+  .skel-title { height: 14px; }
+  .skel-h1 { height: 22px; }
+
+  .text-block { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+  .text-block .skel-text { width: 92%; }
+  .text-block .skel-text:nth-child(2) { width: 78%; }
+  .text-block .skel-text:nth-child(3) { width: 60%; }
+
+  /* ── BUTTON SKELETON ─────────────────────────── */
+  .btn-skel {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .btn-skel.primary { background: #2a4080; color: #fff; }
+  .btn-skel.secondary { background: transparent; border: 1.5px solid #2a4080; color: #2a4080; }
+  .btn-skel.gold { background: #e8c96a; color: #0d1b3e; }
+
+  /* ── NOTE BOX ────────────────────────────────── */
+  .note {
+    background: var(--note-bg);
+    border: 1.5px solid var(--note-border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #5a4a10;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .note-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+  .note strong { font-weight: 800; }
+
+  /* ── ANNOTATION TABLE ────────────────────────── */
+  .annot-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 32px;
+  }
+  .annot-table th {
+    background: #1e1e1c;
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: .05em;
+    font-weight: 800;
+  }
+  .annot-table th:first-child { border-radius: 6px 0 0 0; }
+  .annot-table th:last-child { border-radius: 0 6px 0 0; }
+  .annot-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--wire-border);
+    vertical-align: top;
+  }
+  .annot-table tr:nth-child(even) td { background: #fafaf8; }
+  .annot-table tr:last-child td { border-bottom: none; }
+  .annot-table td:first-child { text-align: center; width: 44px; }
+
+  .status-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .dot-wait   { background: #e8a020; }
+  .dot-ok     { background: #28a060; }
+  .dot-miss   { background: var(--pin-red); }
+
+  /* ─────────────────────────────────────────────── */
+  /* SECTION-SPECIFIC LAYOUTS                        */
+  /* ─────────────────────────────────────────────── */
+
+  /* NAVBAR */
+  .navbar-wire {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    background: #f0f0ec;
+  }
+  .navbar-wire .nav-links {
+    flex: 1;
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+  }
+  .nav-link-skel {
+    width: 48px;
+    height: 10px;
+    background: var(--wire-border);
+    border-radius: 3px;
+  }
+
+  /* HERO */
+  .hero-wire {
+    position: relative;
+    min-height: 220px;
+    padding: 28px 24px 20px;
+    background: #e8eaf0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .hero-headline { display: flex; flex-direction: column; gap: 8px; max-width: 500px; }
+  .hero-actions { display: flex; gap: 10px; }
+  .hero-strip {
+    display: flex;
+    gap: 10px;
+    max-width: 520px;
+  }
+  .strip-item {
+    flex: 1;
+    height: 50px;
+    background: rgba(255,255,255,.6);
+    border: 1.5px solid var(--wire-border);
+    border-radius: 6px;
+  }
+
+  /* KEYMESSAGE */
+  .keymsg-wire {
+    background: #d0d4e0;
+    padding: 22px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .keymsg-text { display: flex; flex-direction: column; gap: 8px; }
+  .keymsg-contact { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+  /* SERVICE BAND */
+  .service-wire {
+    padding: 16px 20px;
+    display: flex;
+    gap: 12px;
+  }
+  .service-card-skel {
+    flex: 1;
+    height: 64px;
+    background: #f0f0ec;
+    border: 1.5px solid var(--wire-border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+  }
+  .service-icon-skel {
+    width: 32px; height: 32px;
+    background: var(--wire-img-bg);
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  /* NEWS */
+  .news-wire {
+    display: flex;
+    gap: 0;
+  }
+  .news-feature {
+    flex: 0 0 380px;
+    padding: 16px;
+    border-right: 1px solid var(--wire-border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .news-list-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .news-list-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0ec;
+    align-items: flex-start;
+  }
+  .news-list-item:last-child { border-bottom: none; }
+
+  /* RESOURCES */
+  .resource-wire {
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .resource-skel {
+    border: 1.5px solid var(--wire-border);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #fafaf8;
+  }
+  .resource-icon-skel {
+    width: 36px; height: 36px;
+    background: var(--wire-img-bg);
+    border-radius: 8px;
+  }
+
+  /* FOOTER */
+  .footer-wire {
+    padding: 20px;
+    background: #e0e0dc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  /* ── DIVIDER ──────────────────────────────────── */
+  .wire-divider {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--wire-muted);
+    letter-spacing: .08em;
+    padding: 4px 0;
+    position: relative;
+  }
+  .wire-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 0; right: 0;
+    height: 1px;
+    background: var(--wire-border);
+    z-index: 0;
+  }
+  .wire-divider span {
+    position: relative;
+    z-index: 1;
+    background: var(--wire-bg);
+    padding: 0 12px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── DOC HEADER ──────────────────────── -->
+<div class="doc-header">
+  <div class="doc-header-left">
+    <span class="doc-badge">UX WIREFRAME</span>
+    <div>
+      <div class="doc-title">Home.razor — ป.ป.ท. Public PR Page</div>
+      <div class="doc-sub">src/Pages/Home.razor · E-CMIS Web</div>
+    </div>
+  </div>
+  <div class="doc-meta">📌 พื้นที่สีเทามีกากบาท = ต้องใส่รูปจริง &nbsp;|&nbsp; เลขสีแดง = annotation</div>
+</div>
+
+<!-- ── LEGEND ──────────────────────────── -->
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-swatch ls-img">
+      <svg width="12" height="10" viewBox="0 0 12 10"><line x1="0" y1="0" x2="12" y2="10" stroke="#b0b0aa" stroke-width="1.5"/><line x1="12" y1="0" x2="0" y2="10" stroke="#b0b0aa" stroke-width="1.5"/></svg>
+    </div>
+    พื้นที่รูปภาพ
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch ls-text"></div>
+    Content / Text
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch ls-action"></div>
+    Interactive / Button
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch ls-new"></div>
+    Section ใหม่ที่เพิ่งเพิ่ม
+  </div>
+  <div class="legend-item">
+    <div class="ls-pin">1</div>
+    Annotation หมายเลข
+  </div>
+</div>
+
+<!-- ── CANVAS ──────────────────────────── -->
+<div class="canvas">
+
+  <!-- ① NAVBAR -->
+  <div class="wire-block">
+    <div class="section-label">① NAVBAR — sticky top</div>
+    <div class="navbar-wire">
+      <!-- Logo zone -->
+      <div style="position:relative;">
+        <div class="img-placeholder" style="width:44px;height:44px;border-radius:50%;">
+          <svg class="cross" viewBox="0 0 44 44" preserveAspectRatio="none">
+            <line x1="0" y1="0" x2="44" y2="44" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+            <line x1="44" y1="0" x2="0" y2="44" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+          </svg>
+          <div class="img-label"><strong style="font-size:8px;">โลโก้</strong></div>
+        </div>
+        <div class="pin" style="position:absolute;top:-6px;right:-8px;width:18px;height:18px;font-size:9px;">A</div>
+      </div>
+      <!-- Brand text -->
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <div class="skel skel-title" style="width:130px;"></div>
+        <div class="skel skel-text" style="width:220px;"></div>
+      </div>
+      <!-- Nav -->
+      <div class="nav-links">
+        <div class="nav-link-skel"></div>
+        <div class="nav-link-skel"></div>
+        <div class="nav-link-skel"></div>
+        <div class="nav-link-skel"></div>
+        <div class="nav-link-skel"></div>
+        <div class="nav-link-skel"></div>
+      </div>
+      <!-- CTA -->
+      <div class="btn-skel primary" style="font-size:12px;">แจ้งเบาะแส 1206</div>
+    </div>
+  </div>
+
+  <div class="wire-divider"><span>scroll down</span></div>
+
+  <!-- ② HERO -->
+  <div class="wire-block">
+    <div class="section-label">② HERO SECTION</div>
+    <!-- Hero bg image -->
+    <div style="position:relative;">
+      <div class="img-placeholder" style="height:64px;border-radius:0;border:none;width:100%;background:#dde0e8;">
+        <svg class="cross" viewBox="0 0 960 64" preserveAspectRatio="none">
+          <line x1="0" y1="0" x2="960" y2="64" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+          <line x1="960" y1="0" x2="0" y2="64" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+        </svg>
+        <div class="img-label" style="z-index:1;position:relative;text-align:center;">
+          <strong>HERO BACKGROUND PHOTO</strong>
+          <span>ภาพกิจกรรมสำนักงาน / อาคาร PACC</span>
+          <span class="img-size">1920 × 600 px · overlay gradient ทับ</span>
+        </div>
+        <div class="pin pin-float">B</div>
+      </div>
+    </div>
+
+    <div class="hero-wire">
+      <!-- Kicker -->
+      <div class="skel skel-text" style="width:320px;"></div>
+      <!-- H1 -->
+      <div class="hero-headline">
+        <div class="skel skel-h1" style="width:380px;"></div>
+        <div class="skel skel-h1" style="width:280px;"></div>
+      </div>
+      <!-- Body -->
+      <div style="display:flex;flex-direction:column;gap:6px;max-width:500px;">
+        <div class="skel skel-text" style="width:480px;"></div>
+        <div class="skel skel-text" style="width:420px;"></div>
+        <div class="skel skel-text" style="width:360px;"></div>
+      </div>
+      <!-- Actions -->
+      <div class="hero-actions">
+        <div class="btn-skel primary">ดูข่าวสารล่าสุด</div>
+        <div class="btn-skel secondary">แจ้งเบาะแส / ร้องเรียน</div>
+      </div>
+      <!-- Hotline strip -->
+      <div class="hero-strip">
+        <div class="strip-item"></div>
+        <div class="strip-item"></div>
+        <div class="strip-item"></div>
+      </div>
+      <div class="note" style="max-width:500px;">
+        <span class="note-icon">💡</span>
+        <div><strong>Hotline Strip</strong> — 1206 · 02-502-6670-80 · Saraban@pacc.go.th<br>พื้นหลังใสทับบน hero background</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wire-divider"><span></span></div>
+
+  <!-- ③ KEYMESSAGE BAND (NEW) -->
+  <div class="wire-block">
+    <div class="section-label">③ PACC KEYMESSAGE BAND <span class="new-tag">NEW</span></div>
+    <div class="keymsg-wire">
+      <div class="keymsg-text">
+        <div class="skel skel-text" style="background:rgba(255,255,255,.3);width:340px;"></div>
+        <div class="skel skel-h1" style="background:rgba(232,201,106,.5);width:280px;"></div>
+        <div class="note" style="margin-top:6px;max-width:420px;">
+          <span class="note-icon">📌</span>
+          <div><strong>PACC Key Message:</strong> "พบเห็นเจ้าหน้าที่ทุจริต แจ้ง ป.ป.ท. ได้ทันที"<br>Typography ขนาดใหญ่ สีทอง บน navy — ไม่ต้องการรูป</div>
+        </div>
+      </div>
+      <div class="keymsg-contact">
+        <div class="btn-skel" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);gap:6px;font-size:11px;color:#444;">
+          📞 1206
+        </div>
+        <div class="btn-skel" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);gap:6px;font-size:11px;color:#444;">
+          ✉ Saraban@pacc.go.th
+        </div>
+        <div class="btn-skel gold">แจ้งเบาะแส →</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wire-divider"><span></span></div>
+
+  <!-- ④ SERVICE SHORTCUTS -->
+  <div class="wire-block">
+    <div class="section-label">④ SERVICE SHORTCUTS — 3 ทางลัด</div>
+    <div class="wire-pad" style="padding-bottom:12px;">
+      <div class="skel skel-text" style="width:80px;margin-bottom:6px;"></div>
+      <div class="skel skel-title" style="width:220px;margin-bottom:14px;"></div>
+    </div>
+    <div class="service-wire">
+      <div class="service-card-skel">
+        <div class="service-icon-skel"></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+          <div class="skel skel-title" style="width:80%;"></div>
+          <div class="skel skel-text" style="width:90%;"></div>
+        </div>
+      </div>
+      <div class="service-card-skel">
+        <div class="service-icon-skel"></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+          <div class="skel skel-title" style="width:75%;"></div>
+          <div class="skel skel-text" style="width:85%;"></div>
+        </div>
+      </div>
+      <div class="service-card-skel">
+        <div class="service-icon-skel"></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+          <div class="skel skel-title" style="width:70%;"></div>
+          <div class="skel skel-text" style="width:80%;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="wire-pad" style="padding-top:4px;">
+      <div class="note">
+        <span class="note-icon">💡</span>
+        <div>Icons ใช้ Bootstrap Icons — ยังไม่ต้องการรูปจริง</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wire-divider"><span></span></div>
+
+  <!-- ⑤ NEWS SECTION -->
+  <div class="wire-block">
+    <div class="section-label">⑤ ศูนย์ข่าวพร้อมเผยแพร่ — Feature + List</div>
+
+    <!-- Header + filter tabs -->
+    <div class="wire-pad" style="border-bottom:1px solid var(--wire-border);display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+      <div>
+        <div class="skel skel-text" style="width:120px;margin-bottom:6px;"></div>
+        <div class="skel skel-title" style="width:260px;"></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <div class="skel" style="width:52px;height:28px;border-radius:20px;"></div>
+        <div class="skel" style="width:76px;height:28px;border-radius:20px;"></div>
+        <div class="skel" style="width:76px;height:28px;border-radius:20px;"></div>
+        <div class="skel" style="width:64px;height:28px;border-radius:20px;"></div>
+        <div class="skel" style="width:60px;height:28px;border-radius:20px;"></div>
+      </div>
+    </div>
+
+    <div class="news-wire">
+      <!-- Feature news -->
+      <div class="news-feature">
+        <div style="position:relative;">
+          <div class="img-placeholder" style="width:100%;height:200px;">
+            <svg class="cross" viewBox="0 0 340 200" preserveAspectRatio="none">
+              <line x1="0" y1="0" x2="340" y2="200" stroke="var(--wire-img-x)" stroke-width="2"/>
+              <line x1="340" y1="0" x2="0" y2="200" stroke="var(--wire-img-x)" stroke-width="2"/>
+            </svg>
+            <div class="img-label">
+              <strong>ภาพข่าวเด่น (Featured)</strong>
+              <span>ภาพกิจกรรมผู้บริหาร / ข่าวนโยบาย</span>
+              <span class="img-size">400 × 240 px · ratio 5:3</span>
+            </div>
+          </div>
+          <div class="pin pin-float">D</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="skel" style="width:80px;height:20px;border-radius:4px;"></div>
+          <div class="skel skel-title" style="width:95%;"></div>
+          <div class="skel skel-title" style="width:80%;"></div>
+          <div class="skel skel-text" style="width:100%;"></div>
+          <div class="skel skel-text" style="width:88%;"></div>
+          <div class="skel skel-text" style="width:72%;"></div>
+        </div>
+      </div>
+
+      <!-- News list -->
+      <div class="news-list-col">
+        <!-- list item 1 -->
+        <div class="news-list-item">
+          <div style="position:relative;flex-shrink:0;">
+            <div class="img-placeholder" style="width:76px;height:76px;">
+              <svg class="cross" viewBox="0 0 76 76" preserveAspectRatio="none">
+                <line x1="0" y1="0" x2="76" y2="76" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+                <line x1="76" y1="0" x2="0" y2="76" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+              </svg>
+              <div class="img-label"><strong style="font-size:8px;">Thumb</strong></div>
+            </div>
+            <div class="pin" style="position:absolute;top:-5px;right:-7px;width:16px;height:16px;font-size:8px;background:#d94040;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;">E</div>
+          </div>
+          <div class="text-block">
+            <div class="skel" style="width:70px;height:18px;border-radius:4px;"></div>
+            <div class="skel skel-title"></div>
+            <div class="skel skel-text"></div>
+            <div class="skel skel-text"></div>
+          </div>
+        </div>
+        <!-- list item 2 -->
+        <div class="news-list-item">
+          <div style="flex-shrink:0;">
+            <div class="img-placeholder" style="width:76px;height:76px;">
+              <svg class="cross" viewBox="0 0 76 76" preserveAspectRatio="none">
+                <line x1="0" y1="0" x2="76" y2="76" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+                <line x1="76" y1="0" x2="0" y2="76" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+              </svg>
+              <div class="img-label"><strong style="font-size:8px;">Thumb</strong></div>
+            </div>
+          </div>
+          <div class="text-block">
+            <div class="skel" style="width:90px;height:18px;border-radius:4px;"></div>
+            <div class="skel skel-title"></div>
+            <div class="skel skel-text"></div>
+            <div class="skel skel-text"></div>
+          </div>
+        </div>
+        <!-- list item 3 -->
+        <div class="news-list-item">
+          <div style="flex-shrink:0;">
+            <div class="img-placeholder" style="width:76px;height:76px;">
+              <svg class="cross" viewBox="0 0 76 76" preserveAspectRatio="none">
+                <line x1="0" y1="0" x2="76" y2="76" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+                <line x1="76" y1="0" x2="0" y2="76" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+              </svg>
+              <div class="img-label"><strong style="font-size:8px;">Thumb</strong></div>
+            </div>
+          </div>
+          <div class="text-block">
+            <div class="skel" style="width:60px;height:18px;border-radius:4px;"></div>
+            <div class="skel skel-title"></div>
+            <div class="skel skel-text"></div>
+            <div class="skel skel-text"></div>
+          </div>
+        </div>
+        <!-- list item 4 -->
+        <div class="news-list-item">
+          <div style="flex-shrink:0;">
+            <div class="img-placeholder" style="width:76px;height:76px;">
+              <svg class="cross" viewBox="0 0 76 76" preserveAspectRatio="none">
+                <line x1="0" y1="0" x2="76" y2="76" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+                <line x1="76" y1="0" x2="0" y2="76" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+              </svg>
+              <div class="img-label"><strong style="font-size:8px;">Thumb</strong></div>
+            </div>
+          </div>
+          <div class="text-block">
+            <div class="skel" style="width:80px;height:18px;border-radius:4px;"></div>
+            <div class="skel skel-title"></div>
+            <div class="skel skel-text"></div>
+          </div>
+        </div>
+        <div class="wire-pad">
+          <div class="note">
+            <span class="note-icon">📌</span>
+            <div><strong>E — Thumbnails ×6:</strong> ตอนนี้ใช้ color block (photo-blue, photo-gold ฯลฯ)<br>เมื่อได้รูปจริง เปลี่ยน CSS VisualClass เป็น background-image</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wire-divider"><span></span></div>
+
+  <!-- ⑥ RESOURCES -->
+  <div class="wire-block">
+    <div class="section-label">⑥ คลังความรู้ & สื่อประชาสัมพันธ์</div>
+    <div class="wire-pad" style="padding-bottom:8px;">
+      <div class="skel skel-text" style="width:160px;margin-bottom:6px;"></div>
+      <div class="skel skel-title" style="width:240px;margin-bottom:14px;"></div>
+    </div>
+    <div class="resource-wire">
+      <!-- PACC Keymessage card -->
+      <div class="resource-skel" style="border-color:#c8a844;background:#fffbee;">
+        <div class="resource-icon-skel"></div>
+        <div class="skel skel-text" style="width:60%;"></div>
+        <div class="skel skel-title"></div>
+        <div class="skel skel-text"></div>
+        <div class="note" style="padding:6px 8px;font-size:11px;">
+          <span>📢</span>
+          <div><strong>PACC Keymessage</strong><br>เอกสาร + สื่อรณรงค์</div>
+        </div>
+      </div>
+      <div class="resource-skel">
+        <div class="resource-icon-skel"></div>
+        <div class="skel skel-text" style="width:50%;"></div>
+        <div class="skel skel-title"></div>
+        <div class="skel skel-text"></div>
+      </div>
+      <div class="resource-skel">
+        <div class="resource-icon-skel"></div>
+        <div class="skel skel-text" style="width:55%;"></div>
+        <div class="skel skel-title"></div>
+        <div class="skel skel-text"></div>
+      </div>
+      <!-- PACC Videos card -->
+      <div class="resource-skel" style="border-color:#8aaad4;background:#f0f4fb;">
+        <div style="position:relative;display:inline-block;">
+          <div class="img-placeholder" style="width:100%;height:56px;border-radius:4px;">
+            <svg class="cross" viewBox="0 0 120 56" preserveAspectRatio="none">
+              <line x1="0" y1="0" x2="120" y2="56" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+              <line x1="120" y1="0" x2="0" y2="56" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+            </svg>
+            <div class="img-label"><strong style="font-size:8px;">Video Thumbnail</strong></div>
+          </div>
+          <div class="pin" style="position:absolute;top:-5px;right:-6px;width:16px;height:16px;font-size:8px;background:#d94040;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;">F</div>
+        </div>
+        <div class="skel skel-text" style="width:50%;margin-top:6px;"></div>
+        <div class="skel skel-title"></div>
+      </div>
+    </div>
+    <div class="wire-pad" style="padding-top:6px;">
+      <div class="note">
+        <span class="note-icon">💡</span>
+        <div><strong>F — Video Thumbnail (optional):</strong> 200×130px · เพิ่มเมื่อมีลิงก์ YouTube / ไฟล์จริง</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wire-divider"><span></span></div>
+
+  <!-- ⑦ Q&A + SUPPORT -->
+  <div class="wire-block">
+    <div class="section-label">⑦ Q&A + แจ้งปัญหา — 2 คอลัมน์</div>
+    <div style="display:flex;gap:0;">
+      <div style="flex:1;padding:16px 18px;border-right:1px solid var(--wire-border);">
+        <div class="skel skel-text" style="width:80px;margin-bottom:6px;"></div>
+        <div class="skel skel-title" style="width:140px;margin-bottom:14px;"></div>
+        <div style="background:#f0f0ec;border-radius:6px;height:36px;margin-bottom:12px;"></div>
+        <div style="display:flex;gap:6px;margin-bottom:12px;">
+          <div class="skel" style="width:60px;height:26px;border-radius:20px;"></div>
+          <div class="skel" style="width:80px;height:26px;border-radius:20px;"></div>
+          <div class="skel" style="width:56px;height:26px;border-radius:20px;"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:1px;">
+          <div style="background:#f8f8f6;border-radius:4px;height:40px;margin-bottom:2px;border:1px solid var(--wire-border);"></div>
+          <div style="background:#f8f8f6;border-radius:4px;height:40px;margin-bottom:2px;border:1px solid var(--wire-border);"></div>
+          <div style="background:#f8f8f6;border-radius:4px;height:40px;margin-bottom:2px;border:1px solid var(--wire-border);"></div>
+          <div style="background:#f8f8f6;border-radius:4px;height:40px;border:1px solid var(--wire-border);"></div>
+        </div>
+        <div class="note" style="margin-top:12px;">
+          <span class="note-icon">💡</span>
+          <div>ไม่ต้องการรูป — text only</div>
+        </div>
+      </div>
+      <div style="flex:1;padding:16px 18px;">
+        <div class="skel skel-text" style="width:80px;margin-bottom:6px;"></div>
+        <div class="skel skel-title" style="width:180px;margin-bottom:14px;"></div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="background:#f0f0ec;border-radius:6px;height:40px;"></div>
+          <div style="background:#f0f0ec;border-radius:6px;height:80px;"></div>
+          <div style="background:#f0f0ec;border-radius:6px;height:40px;"></div>
+        </div>
+        <div class="btn-skel primary" style="margin-top:14px;width:100%;justify-content:center;">ส่งเรื่องแจ้งปัญหา</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wire-divider"><span></span></div>
+
+  <!-- ⑧ DIRECTORY -->
+  <div class="wire-block">
+    <div class="section-label">⑧ สมุดโทรศัพท์ / ติดต่อ</div>
+    <div class="wire-pad">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:16px;flex-wrap:wrap;">
+        <div>
+          <div class="skel skel-text" style="width:80px;margin-bottom:6px;"></div>
+          <div class="skel skel-title" style="width:240px;"></div>
+        </div>
+        <div style="background:#f0f0ec;border-radius:6px;height:36px;width:220px;"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+        <div style="border:1px solid var(--wire-border);border-radius:8px;padding:14px;display:flex;gap:10px;align-items:flex-start;">
+          <div style="position:relative;">
+            <div class="img-placeholder" style="width:44px;height:44px;border-radius:50%;">
+              <svg class="cross" viewBox="0 0 44 44" preserveAspectRatio="none">
+                <line x1="0" y1="0" x2="44" y2="44" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+                <line x1="44" y1="0" x2="0" y2="44" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+              </svg>
+              <div class="img-label"><strong style="font-size:7px;">G</strong></div>
+            </div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px;">
+            <div class="skel skel-text"></div>
+            <div class="skel skel-text" style="width:70%;"></div>
+            <div class="skel skel-text" style="width:85%;"></div>
+          </div>
+        </div>
+        <div style="border:1px solid var(--wire-border);border-radius:8px;padding:14px;display:flex;gap:10px;align-items:flex-start;">
+          <div class="img-placeholder" style="width:44px;height:44px;border-radius:50%;">
+            <svg class="cross" viewBox="0 0 44 44" preserveAspectRatio="none">
+              <line x1="0" y1="0" x2="44" y2="44" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+              <line x1="44" y1="0" x2="0" y2="44" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px;">
+            <div class="skel skel-text"></div>
+            <div class="skel skel-text" style="width:70%;"></div>
+            <div class="skel skel-text" style="width:85%;"></div>
+          </div>
+        </div>
+        <div style="border:1px solid var(--wire-border);border-radius:8px;padding:14px;display:flex;gap:10px;align-items:flex-start;">
+          <div class="img-placeholder" style="width:44px;height:44px;border-radius:50%;">
+            <svg class="cross" viewBox="0 0 44 44" preserveAspectRatio="none">
+              <line x1="0" y1="0" x2="44" y2="44" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+              <line x1="44" y1="0" x2="0" y2="44" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px;">
+            <div class="skel skel-text"></div>
+            <div class="skel skel-text" style="width:70%;"></div>
+            <div class="skel skel-text" style="width:85%;"></div>
+          </div>
+        </div>
+        <div style="border:1px solid var(--wire-border);border-radius:8px;padding:14px;display:flex;gap:10px;align-items:flex-start;">
+          <div class="img-placeholder" style="width:44px;height:44px;border-radius:50%;">
+            <svg class="cross" viewBox="0 0 44 44" preserveAspectRatio="none">
+              <line x1="0" y1="0" x2="44" y2="44" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+              <line x1="44" y1="0" x2="0" y2="44" stroke="var(--wire-img-x)" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px;">
+            <div class="skel skel-text"></div>
+            <div class="skel skel-text" style="width:70%;"></div>
+            <div class="skel skel-text" style="width:85%;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="note" style="margin-top:12px;">
+        <span class="note-icon">💡</span>
+        <div><strong>G — Avatar:</strong> ตอนนี้ใช้ initials (สีพื้น) — รูปถ่ายบุคลากร 48×48px เพิ่มได้รอบหลัง</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wire-divider"><span></span></div>
+
+  <!-- ⑨ FOOTER -->
+  <div class="wire-block">
+    <div class="section-label">⑨ FOOTER</div>
+    <div class="footer-wire">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div class="skel skel-title" style="width:340px;background:rgba(0,0,0,.15);"></div>
+        <div class="skel skel-text" style="width:280px;background:rgba(0,0,0,.1);"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div class="skel skel-title" style="width:200px;background:rgba(0,0,0,.15);"></div>
+        <div class="skel skel-text" style="width:260px;background:rgba(0,0,0,.1);"></div>
+      </div>
+    </div>
+    <div style="background:#d0d0cc;padding:10px 20px;display:flex;gap:16px;">
+      <div class="skel skel-text" style="width:80px;background:rgba(0,0,0,.1);"></div>
+      <div class="skel skel-text" style="width:70px;background:rgba(0,0,0,.1);"></div>
+      <div class="skel skel-text" style="width:120px;background:rgba(0,0,0,.1);"></div>
+    </div>
+  </div>
+
+  <!-- ── ANNOTATION TABLE ──────────────────────── -->
+  <div style="margin-top:48px;">
+    <div style="font-size:11px;font-weight:900;letter-spacing:.08em;color:var(--wire-muted);text-transform:uppercase;margin-bottom:12px;">IMAGE ASSET SPECIFICATION</div>
+    <table class="annot-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>ชื่อ Zone</th>
+          <th>ขนาด</th>
+          <th>เนื้อหาภาพ</th>
+          <th>สถานะ</th>
+          <th>Priority</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="pin" style="margin:0 auto;">A</div></td>
+          <td><strong>โลโก้ ป.ป.ท.</strong><br><span style="font-size:11px;color:var(--wire-muted);">Navbar</span></td>
+          <td>SVG หรือ PNG transparent<br>~48 × 48 px</td>
+          <td>ตราสัญลักษณ์ทางการ ป.ป.ท.</td>
+          <td><span class="status-dot dot-wait"></span>รอ asset ทางการ</td>
+          <td>🔴 สูงมาก</td>
+        </tr>
+        <tr>
+          <td><div class="pin" style="margin:0 auto;">B</div></td>
+          <td><strong>Hero Background</strong><br><span style="font-size:11px;color:var(--wire-muted);">Section Hero</span></td>
+          <td>1920 × 600 px<br>ratio 16:5</td>
+          <td>ภาพกิจกรรมสำนักงาน / อาคาร / ภาพราชการ neutral</td>
+          <td><span class="status-dot dot-wait"></span>ใช้ solid color แทน</td>
+          <td>🔴 สูง</td>
+        </tr>
+        <tr>
+          <td><div class="pin" style="margin:0 auto;">D</div></td>
+          <td><strong>Featured News Photo</strong><br><span style="font-size:11px;color:var(--wire-muted);">ข่าวเด่น (pr-news-photo)</span></td>
+          <td>400 × 240 px<br>ratio 5:3</td>
+          <td>ภาพกิจกรรมผู้บริหาร ข่าวนโยบาย ประกาศสำคัญ</td>
+          <td><span class="status-dot dot-ok"></span>placeholder สีพร้อม</td>
+          <td>🔴 สูง</td>
+        </tr>
+        <tr>
+          <td><div class="pin" style="margin:0 auto;">E</div></td>
+          <td><strong>News Thumbnails ×6</strong><br><span style="font-size:11px;color:var(--wire-muted);">รายการข่าว (pr-list-thumb)</span></td>
+          <td>80 × 80 px<br>ratio 1:1</td>
+          <td>ภาพประกอบข่าวแต่ละรายการ (crop square)</td>
+          <td><span class="status-dot dot-ok"></span>placeholder สีพร้อม</td>
+          <td>🔴 สูง</td>
+        </tr>
+        <tr>
+          <td><div class="pin" style="margin:0 auto;">F</div></td>
+          <td><strong>Video Thumbnail</strong><br><span style="font-size:11px;color:var(--wire-muted);">PACC Videos card</span></td>
+          <td>200 × 130 px<br>ratio 3:2</td>
+          <td>Thumbnail YouTube หรือภาพปกวิดีโอ</td>
+          <td><span class="status-dot dot-wait"></span>optional / รอบหลัง</td>
+          <td>🟡 กลาง</td>
+        </tr>
+        <tr>
+          <td><div class="pin" style="margin:0 auto;">G</div></td>
+          <td><strong>Avatar บุคลากร</strong><br><span style="font-size:11px;color:var(--wire-muted);">Directory cards</span></td>
+          <td>48 × 48 px<br>circle crop</td>
+          <td>รูปถ่ายบุคลากร (ชุดราชการ/ชุดสุภาพ)</td>
+          <td><span class="status-dot dot-ok"></span>initials avatar พร้อม</td>
+          <td>🟢 ต่ำ</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── HOW TO REPLACE ────────────────────────── -->
+  <div style="margin-top:32px;background:var(--wire-surface);border:1.5px solid var(--wire-border);border-radius:8px;overflow:hidden;">
+    <div style="padding:12px 18px;background:var(--wire-section);font-size:11px;font-weight:900;letter-spacing:.06em;color:var(--wire-muted);text-transform:uppercase;border-bottom:1px solid var(--wire-border);">
+      วิธีใส่รูปจริงเมื่อได้ Asset ทางการ
+    </div>
+    <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px;font-size:13px;">
+      <div class="note">
+        <span class="note-icon">A</span>
+        <div><strong>โลโก้:</strong> วาง <code>pacc-logo.svg</code> ใน <code>wwwroot/img/</code> แล้วเปลี่ยน <code>.pr-brand-mark</code> ให้ใช้ <code>&lt;img src="img/pacc-logo.svg"&gt;</code></div>
+      </div>
+      <div class="note">
+        <span class="note-icon">B</span>
+        <div><strong>Hero:</strong> เพิ่ม CSS ใน <code>ecmis-pr.css</code> → <code>.pr-hero { background-image: url('/img/hero-bg.jpg'); background-size: cover; }</code></div>
+      </div>
+      <div class="note">
+        <span class="note-icon">D·E</span>
+        <div><strong>ภาพข่าว:</strong> ใน <code>Home.razor</code> เปลี่ยน <code>NewsItem(..., "photo-blue", "PACC")</code> → ใส่ URL รูปจริง แล้วแก้ CSS <code>.pr-news-photo.photo-real { background-image: url(...); background-size: cover; }</code></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /canvas -->
+
+</body>
+</html>

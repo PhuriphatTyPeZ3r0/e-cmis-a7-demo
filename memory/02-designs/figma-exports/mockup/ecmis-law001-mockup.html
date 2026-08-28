@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-CMIS Mockup — LAW001 สำนวนคดีชั้นอัยการและชั้นศาล (Flow 10.1)</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ==== Design Tokens ตาม ecmis.css / Design.md ==== */
+:root{--navy-deep:#0D1B3E;--navy:#1A2F6B;--navy-mid:#2A4A8F;--blue-light:#3B6CC7;--gold:#C9A84C;--gold-light:#E8C96A;--silver:#B8C4D8;--off-white:#F0F4FA;--card-bg:#FFF;--text-dark:#0D1B3E;--text-muted:#6B7A99;--green:#1B7A4A;--orange:#D4630A;--teal:#0E7C7B;--red:#C0392B;--sidebar-w:260px;--sidebar-mini-w:68px;--header-h:64px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Sarabun',sans-serif;background:var(--off-white);color:var(--text-dark);font-size:14px;overflow-x:hidden}
+
+/* ══════════ SIDEBAR (ecmis.css) ══════════ */
+.sidebar{position:fixed;top:0;left:0;width:var(--sidebar-w);height:100vh;background:linear-gradient(180deg,var(--navy-deep) 0%,var(--navy) 60%,#1e3575 100%);z-index:1050;display:flex;flex-direction:column;box-shadow:0 4px 24px rgba(13,27,62,.3);transition:transform .35s cubic-bezier(.23,1,.32,1)}
+.sidebar{transition:width .35s cubic-bezier(.23,1,.32,1)}
+body.side-mini .sidebar{width:var(--sidebar-mini-w)}
+body.side-mini .sidebar-brand{justify-content:center;padding:20px 6px 16px}
+body.side-mini .brand-text{display:none}
+body.side-mini .nav-group{padding:2px 6px}
+body.side-mini .nav-group-toggle{justify-content:center;padding:11px 0}
+body.side-mini .nav-group-label{gap:0}
+body.side-mini .nav-group-label span:not(.ni){display:none}
+body.side-mini .nav-group-arrow{display:none}
+body.side-mini .nav-group-items{display:none}
+body.side-mini .sidebar-footer{padding:12px 8px}
+body.side-mini .user-card{justify-content:center;padding:8px 4px}
+body.side-mini .user-card > div:last-child{display:none}
+.sidebar-brand{display:flex;align-items:center;gap:12px;padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar-brand .logo{width:44px;height:44px;border-radius:50%;border:2px solid var(--gold);background:var(--gold);color:var(--navy-deep);font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;flex:none}
+.brand-title{font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px;line-height:1.1}
+.brand-sub{font-size:10px;color:var(--gold);font-weight:500;letter-spacing:1px}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0}
+.sidebar-nav::-webkit-scrollbar{width:5px}.sidebar-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
+.nav-section-title{font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(184,196,216,.55);text-transform:uppercase;padding:14px 20px 6px}
+.nav-item-custom{padding:2px 10px}
+.nav-link-custom{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:8px;color:rgba(255,255,255,.72);font-size:13.5px;font-weight:500;text-decoration:none;cursor:pointer;transition:all .2s ease;position:relative}
+.nav-link-custom:hover{background:rgba(255,255,255,.08);color:#fff;transform:translateX(3px)}
+.nav-link-custom.active{background:linear-gradient(135deg,var(--gold) 0%,#a8852a 100%);color:var(--navy-deep)!important;font-weight:700;box-shadow:0 4px 15px rgba(201,168,76,.35)}
+.nav-link-custom .ni{font-size:15px;width:20px;text-align:center}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:700;background:var(--orange);color:#fff;padding:2px 7px;border-radius:10px}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.08)}
+.user-card{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border-radius:10px;padding:10px 12px;cursor:pointer;transition:background .2s}
+.user-card:hover{background:rgba(255,255,255,.1)}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--navy-mid),var(--blue-light));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;border:2px solid var(--gold);flex:none}
+.user-name{font-size:12.5px;font-weight:600;color:#fff}
+.user-role{font-size:10px;color:var(--silver)}
+
+
+/* Nav Group (collapsible — ตาม NavMenu.razor / ecmis.css) */
+.nav-group{padding:2px 10px}
+.nav-group-toggle{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-radius:8px;color:rgba(255,255,255,.72);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s cubic-bezier(.4,0,.2,1)}
+.nav-group-toggle:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-group-toggle.open{color:#fff;background:rgba(255,255,255,.06)}
+.nav-group-label{display:flex;align-items:center;gap:10px}
+.nav-group-label .ni{font-size:14px;width:20px;text-align:center}
+.nav-group-arrow{font-size:10px;transition:transform .3s cubic-bezier(.4,0,.2,1);color:rgba(255,255,255,.4)}
+.nav-group-toggle.open .nav-group-arrow{transform:rotate(180deg);color:var(--gold)}
+.nav-group-items{max-height:0;overflow:hidden;transition:max-height .35s cubic-bezier(.4,0,.2,1),opacity .25s ease;opacity:0}
+.nav-group-items.open{max-height:400px;opacity:1}
+.nav-sublink{display:flex;align-items:center;gap:10px;padding:7px 14px 7px 32px;border-radius:6px;color:rgba(255,255,255,.58);font-size:12.5px;font-weight:500;text-decoration:none;cursor:pointer;transition:all .2s cubic-bezier(.4,0,.2,1);margin:1px 0}
+.nav-sublink .ni{font-size:12px;width:18px;text-align:center;opacity:.7}
+.nav-sublink:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);transform:translateX(3px)}
+.nav-sublink.active{background:linear-gradient(135deg,rgba(201,168,76,.2),rgba(201,168,76,.08));color:var(--gold)!important;font-weight:700;border-left:3px solid var(--gold);padding-left:29px}
+.nav-sublink .nav-badge{margin-left:auto}
+
+/* ══════════ TOPBAR (ecmis.css) ══════════ */
+.topbar{position:fixed;top:0;left:var(--sidebar-w);right:0;height:var(--header-h);background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(26,47,107,.1);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:1040;box-shadow:0 2px 16px rgba(13,27,62,.07);transition:left .35s cubic-bezier(.23,1,.32,1)}
+body.side-mini .topbar{left:var(--sidebar-mini-w)}
+.hamburger-toggle{background:none;border:none;cursor:pointer;padding:6px;display:flex;flex-direction:column;gap:5px}
+.hamburger-toggle span{width:20px;height:2px;background:var(--navy-deep);border-radius:1px}
+.topbar-search{flex:1;max-width:400px;position:relative}
+.topbar-search input{width:100%;background:var(--off-white);border:1.5px solid rgba(26,47,107,.12);border-radius:10px;padding:8px 16px 8px 38px;font-size:13px;font-family:'Sarabun',sans-serif;color:var(--text-dark);transition:all .2s;outline:none}
+.topbar-search input:focus{border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(42,74,143,.12);background:#fff}
+.topbar-search .si{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px}
+.topbar-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+.icon-btn{position:relative;width:38px;height:38px;border-radius:10px;border:none;background:transparent;font-size:17px;cursor:pointer;transition:background .2s;display:flex;align-items:center;justify-content:center}
+.icon-btn:hover{background:var(--off-white)}
+.notif-dot{position:absolute;top:5px;right:5px;background:var(--red);color:#fff;font-size:9px;font-weight:700;border-radius:9px;padding:1px 5px;line-height:1.3}
+.topbar-divider{width:1px;height:28px;background:rgba(26,47,107,.12);margin:0 4px}
+.user-pill{display:flex;align-items:center;gap:10px;cursor:pointer;padding:5px 10px 5px 5px;border-radius:24px;transition:background .2s}
+.user-pill:hover{background:var(--off-white)}
+.user-pill-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--navy-mid),var(--blue-light));color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;border:2px solid var(--gold)}
+.user-pill-name{font-size:12.5px;font-weight:600;color:var(--text-dark)}
+.user-pill-role{font-size:10px;color:var(--text-muted)}
+
+/* ══════════ MAIN / PAGE HEADER ══════════ */
+.main-content{margin-left:var(--sidebar-w);padding-top:var(--header-h);transition:margin-left .35s cubic-bezier(.23,1,.32,1)}
+body.side-mini .main-content{margin-left:var(--sidebar-mini-w)}
+.page-body{padding:24px}
+.page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.page-title{font-size:22px;font-weight:800;color:var(--navy-deep)}
+.page-subtitle{font-size:13px;color:var(--text-muted);margin-top:2px}
+.breadcrumb-custom{font-size:12px;color:var(--text-muted);margin-bottom:6px}
+.breadcrumb-custom span{color:var(--navy);font-weight:600}
+.backlink{color:var(--blue-light);cursor:pointer;font-weight:600}
+
+/* ══════════ STAT CARDS (gradient ตาม ecmis.css) ══════════ */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.stat-card{border-radius:14px;border:none;padding:22px 24px;position:relative;overflow:hidden;transition:transform .25s ease,box-shadow .25s ease;cursor:pointer;color:#fff}
+.stat-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.15)}
+.stat-card-navy{background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 100%)}
+.stat-card-teal{background:linear-gradient(135deg,var(--teal) 0%,#16a09e 100%)}
+.stat-card-orange{background:linear-gradient(135deg,#b85000 0%,var(--orange) 100%)}
+.stat-card-red{background:linear-gradient(135deg,#a02020 0%,var(--red) 100%)}
+.stat-label{font-size:12px;font-weight:600;opacity:.82;letter-spacing:.5px;text-transform:uppercase}
+.stat-value{font-size:36px;font-weight:800;line-height:1.1;margin:6px 0 4px}
+.stat-change{font-size:12px;opacity:.85}
+.stat-card-bg-icon{position:absolute;right:-6px;bottom:-14px;font-size:80px;opacity:.12;line-height:1}
+
+/* ══════════ CARDS ══════════ */
+.ecmis-card{background:#fff;border-radius:14px;border:1.5px solid rgba(26,47,107,.08);box-shadow:0 2px 16px rgba(13,27,62,.06);overflow:hidden}
+.ecmis-card-header{padding:18px 22px 14px;border-bottom:1.5px solid rgba(26,47,107,.07);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ecmis-card-title{font-size:15px;font-weight:700;color:var(--navy-deep);display:flex;align-items:center;gap:9px}
+.ecmis-card-title .badge-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);display:inline-block;animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,.5)}50%{box-shadow:0 0 0 5px rgba(201,168,76,0)}}
+.ecmis-card-body{padding:18px 22px}
+
+/* ══════════ TABLE ══════════ */
+.ecmis-table{width:100%;border-collapse:collapse}
+.ecmis-table th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);padding:10px 14px;background:var(--off-white);border-bottom:2px solid rgba(26,47,107,.1);text-align:left;white-space:nowrap}
+.ecmis-table td{padding:12px 14px;font-size:13px;border-bottom:1px solid rgba(26,47,107,.06);vertical-align:middle}
+.ecmis-table tbody tr{transition:background .15s;cursor:pointer}
+.ecmis-table tbody tr:hover{background:#f7f9ff}
+.mono{font-weight:700;color:var(--navy)}
+.sub2{font-size:11px;color:var(--text-muted)}
+.due-red{color:var(--red);font-weight:700}.due-orange{color:var(--orange);font-weight:700}
+
+/* ══════════ STATUS BADGE (Design.md §4.3) ══════════ */
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.status-badge.green{background:#e6f4ed;color:var(--green)}
+.status-badge.orange{background:#fff3e8;color:#b85000}
+.status-badge.teal{background:#e8f7f7;color:var(--teal)}
+.status-badge.red{background:#fde8e8;color:#a0281e}
+.status-badge.navy{background:#e8f0ff;color:#1a3575}
+
+/* ══════════ BUTTONS (ecmis.css §BTN) ══════════ */
+.btn-navy{background:linear-gradient(135deg,var(--navy-deep),var(--navy));color:#fff;border:none;border-radius:9px;padding:9px 22px;font-size:13.5px;font-weight:600;font-family:'Sarabun',sans-serif;cursor:pointer;transition:all .2s}
+.btn-navy:hover{box-shadow:0 6px 20px rgba(13,27,62,.35);transform:translateY(-1px)}
+.btn-gold{background:linear-gradient(135deg,#a8852a,var(--gold));color:var(--navy-deep);border:none;border-radius:9px;padding:9px 22px;font-size:13.5px;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;transition:all .2s}
+.btn-gold:hover{box-shadow:0 6px 20px rgba(201,168,76,.4);transform:translateY(-1px)}
+.btn-outline-navy{background:transparent;color:var(--navy);border:1.5px solid var(--navy);border-radius:9px;padding:8px 18px;font-size:13px;font-weight:600;font-family:'Sarabun',sans-serif;cursor:pointer;transition:all .2s}
+.btn-outline-navy:hover{background:var(--navy);color:#fff}
+.btn-sm{padding:5px 12px!important;font-size:12px!important}
+button:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+
+/* ══════════ STEP WIZARD (ecmis.css) ══════════ */
+.step-wizard{display:flex;align-items:flex-start;gap:0;margin:18px 0 4px;position:relative}
+.step-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;z-index:1}
+.step-circle{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;transition:all .3s;border:3px solid rgba(26,47,107,.15);background:#fff;color:var(--text-muted)}
+.step-item.active .step-circle{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 100%);color:#fff;border-color:var(--navy);box-shadow:0 4px 18px rgba(26,47,107,.35);transform:scale(1.1)}
+.step-item.done .step-circle{background:linear-gradient(135deg,var(--green),#27ae60);color:#fff;border-color:var(--green)}
+.step-label{font-size:11.5px;font-weight:600;color:var(--text-muted);text-align:center;line-height:1.3;max-width:120px}
+.step-item.active .step-label{color:var(--navy);font-weight:800}
+.step-item.done .step-label{color:var(--green)}
+.step-line{position:absolute;top:22px;left:50%;right:-50%;height:3px;background:rgba(26,47,107,.1);z-index:0}
+.step-item:last-child .step-line{display:none}
+.step-item.done .step-line{background:var(--green)}
+
+/* ══════════ FORM / FILTER ══════════ */
+.form-control-custom{border:1.5px solid rgba(26,47,107,.15);border-radius:9px;padding:8px 14px;font-size:13px;font-family:'Sarabun',sans-serif;transition:all .2s;outline:none;background:#fff;color:var(--text-dark)}
+.form-control-custom:focus{border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(42,74,143,.12)}
+select.form-control-custom{color:var(--text-muted)}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:16px 22px}
+textarea.form-control-custom{width:100%;min-height:70px;resize:vertical}
+.upload-zone{border:2px dashed rgba(26,47,107,.2);border-radius:12px;background:var(--off-white);padding:20px;text-align:center;color:var(--text-muted);font-size:12.5px;cursor:pointer;transition:all .2s;margin-top:4px}
+.upload-zone:hover{border-color:var(--navy-mid);background:#fff}
+.upload-zone.has{border-color:var(--green);color:var(--green);font-weight:600}
+.frm label{display:block;font-size:11px;color:var(--text-muted);font-weight:700;margin:14px 0 5px;letter-spacing:.3px}
+.frm .form-control-custom{width:100%}
+.radio-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chip{border:1.5px solid rgba(26,47,107,.2);border-radius:20px;padding:6px 14px;font-size:12.5px;cursor:pointer;user-select:none;transition:all .15s}
+.chip:hover{border-color:var(--navy-mid)}
+.chip.sel-on{border-color:var(--navy);background:linear-gradient(135deg,rgba(26,47,107,.1),rgba(42,74,143,.06));color:var(--navy);font-weight:700}
+.note{background:#fff3e8;border-radius:9px;padding:10px 14px;font-size:11.5px;color:#b85000;font-weight:600;margin-top:12px;display:none}
+
+/* ══════════ DETAIL / TIMELINE ══════════ */
+.detail-grid{display:grid;grid-template-columns:1fr 380px;gap:16px}
+.fieldgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 18px}
+.f .lb{font-size:10.5px;color:var(--text-muted);font-weight:700;letter-spacing:.3px}
+.f .v{font-size:13px;margin-top:2px;font-weight:500}
+.flownode{background:linear-gradient(135deg,rgba(201,168,76,.14),rgba(201,168,76,.05));border:1.5px dashed var(--gold);border-radius:10px;padding:9px 16px;font-size:12.5px;margin:14px 0 4px;display:flex;gap:8px;align-items:center}
+.flownode b{color:var(--navy)}
+.timeline-item{display:flex;gap:12px;margin-bottom:14px;position:relative}
+.timeline-item::before{content:'';position:absolute;left:13px;top:30px;bottom:-16px;width:2px;background:rgba(26,47,107,.08)}
+.timeline-item:last-child::before{display:none}
+.timeline-icon{width:28px;height:28px;border-radius:50%;background:#e8f7f7;color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:12px;flex:none;z-index:1}
+.timeline-item.green .timeline-icon{background:#e6f4ed;color:var(--green)}
+.timeline-item.red .timeline-icon{background:#fde8e8;color:var(--red)}
+.timeline-item.orange .timeline-icon{background:#fff3e8;color:var(--orange)}
+.timeline-title{font-size:12.5px;font-weight:600;color:var(--navy-deep);line-height:1.4}
+.timeline-time{font-size:10.5px;color:var(--text-muted);margin-top:2px}
+.progress-custom{background:rgba(26,47,107,.08);border-radius:6px;height:10px;overflow:hidden;margin:10px 0}
+.progress-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--teal),#16a09e)}
+.progress-fill.red{background:linear-gradient(90deg,#a02020,var(--red))}
+.warr{background:#fde8e8;border:1.5px solid rgba(192,57,43,.25);border-radius:10px;padding:12px 16px;font-size:12.5px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.doc-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(26,47,107,.06);font-size:13px}
+
+/* ══════════ MODAL ══════════ */
+.overlay{position:fixed;inset:0;background:rgba(13,27,62,.5);backdrop-filter:blur(2px);display:none;align-items:flex-start;justify-content:center;z-index:2000;padding:56px 16px}
+.overlay.show{display:flex}
+.modal{background:#fff;border-radius:14px;width:640px;max-width:100%;max-height:84vh;overflow:auto;box-shadow:0 24px 70px rgba(13,27,62,.35);animation:fadeSlideIn .25s ease}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1.5px solid rgba(26,47,107,.07)}
+.modal-head b{font-size:15px;color:var(--navy-deep)}
+.modal-body{padding:6px 22px 18px}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 22px;border-top:1.5px solid rgba(26,47,107,.07)}
+.x{cursor:pointer;font-size:22px;color:var(--text-muted);border:none;background:none}
+
+#toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--navy-deep);color:#fff;padding:12px 24px;border-radius:12px;font-size:13px;opacity:0;transition:opacity .3s;z-index:3000;pointer-events:none;box-shadow:0 8px 30px rgba(13,27,62,.4)}
+#toast.show{opacity:1}
+#toast b{color:var(--gold-light)}
+.pag{display:flex;justify-content:space-between;align-items:center;padding:12px 22px;font-size:11.5px;color:var(--text-muted);flex-wrap:wrap;gap:6px}
+.hidden{display:none!important}
+@media(max-width:1100px){.detail-grid{grid-template-columns:1fr}.stat-grid{grid-template-columns:repeat(2,1fr)}.fieldgrid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo" style="font-size:11px">ป.ป.ท.</div>
+    <div class="brand-text"><div class="brand-title">E-CMIS</div><div class="brand-sub">COMPLAINT MANAGEMENT</div></div>
+  </div>
+  <nav class="sidebar-nav"><div class="nav-group"><div class="nav-group-toggle" onclick="toggleGroup(this)"><div class="nav-group-label"><span class="ni">📥</span><span>รับเรื่องร้องเรียน</span></div><span class="nav-group-arrow">▼</span></div><div class="nav-group-items"><a class="nav-sublink" onclick="softAlert('โมดูลรับเรื่องร้องเรียน — นอกขอบเขต Mockup Flow 10.1')"><span class="ni">•</span> ภาพรวมโมดูล</a></div></div><div class="nav-group"><div class="nav-group-toggle" onclick="toggleGroup(this)"><div class="nav-group-label"><span class="ni">🔎</span><span>แสวงหาข้อเท็จจริง</span></div><span class="nav-group-arrow">▼</span></div><div class="nav-group-items"><a class="nav-sublink" onclick="softAlert('ระบบไต่สวน (กิจกรรมที่ 8) — รับข้อมูลเชื่อมโยงเมื่อปิดสำนวน')"><span class="ni">•</span> สำนวนไต่สวน (กิจ. 8)</a></div></div><div class="nav-group"><div class="nav-group-toggle" onclick="toggleGroup(this)"><div class="nav-group-label"><span class="ni">📝</span><span>วินิจฉัย/สรุปผล</span></div><span class="nav-group-arrow">▼</span></div><div class="nav-group-items"><a class="nav-sublink" onclick="softAlert('โมดูลวินิจฉัย/สรุปผล — นอกขอบเขต Mockup Flow 10.1')"><span class="ni">•</span> ภาพรวมโมดูล</a></div></div><div class="nav-group"><div class="nav-group-toggle" onclick="toggleGroup(this)"><div class="nav-group-label"><span class="ni">👥</span><span>มติคณะกรรมการ ป.ป.ท.</span></div><span class="nav-group-arrow">▼</span></div><div class="nav-group-items"><a class="nav-sublink" onclick="softAlert('โมดูลมติคณะกรรมการ — นอกขอบเขต Mockup Flow 10.1')"><span class="ni">•</span> ภาพรวมโมดูล</a></div></div><div class="nav-group"><div class="nav-group-toggle" onclick="toggleGroup(this)"><div class="nav-group-label"><span class="ni">🕐</span><span>ติดตามภายหลังมติ</span></div><span class="nav-group-arrow">▼</span></div><div class="nav-group-items"><a class="nav-sublink" onclick="softAlert('โมดูลติดตามภายหลังมติ — นอกขอบเขต Mockup Flow 10.1')"><span class="ni">•</span> ภาพรวมโมดูล</a></div></div><div class="nav-group"><div class="nav-group-toggle" onclick="toggleGroup(this)"><div class="nav-group-label"><span class="ni">🚨</span><span>การดำเนินการตามหมายจับ</span></div><span class="nav-group-arrow">▼</span></div><div class="nav-group-items"><a class="nav-sublink" onclick="softAlert('ระบบหมายจับ (กิจกรรมที่ 9) — เชื่อมโยงเมื่อผู้ถูกกล่าวหาไม่มาตามนัด')"><span class="ni">•</span> ทะเบียนหมายจับ (กิจ. 9)</a></div></div><div class="nav-group"><div class="nav-group-toggle open" onclick="toggleGroup(this)"><div class="nav-group-label"><span class="ni">🏛️</span><span>งานกฎหมายและคดีศาล</span></div><span class="nav-group-arrow">▼</span></div><div class="nav-group-items open"><a class="nav-sublink active" onclick="goList()"><span class="ni">📁</span> สำนวนคดีชั้นอัยการ/ศาล<span class="nav-badge" id="navCnt">6</span></a><a class="nav-sublink" onclick="softAlert('คำร้องขอเปิดเผยข้อมูล (LAW002) — นอกขอบเขต Mockup Flow 10.1')"><span class="ni">📄</span> คำร้องขอเปิดเผยข้อมูล</a><a class="nav-sublink" onclick="softAlert('อุทธรณ์ไม่เปิดเผยข้อมูล — นอกขอบเขต Mockup Flow 10.1')"><span class="ni">📨</span> อุทธรณ์ไม่เปิดเผยข้อมูล</a><a class="nav-sublink" onclick="softAlert('คดีปกครอง (LAW003) — นอกขอบเขต Mockup Flow 10.1')"><span class="ni">⚖️</span> คดีปกครอง</a></div></div><div class="nav-group"><div class="nav-group-toggle" onclick="toggleGroup(this)"><div class="nav-group-label"><span class="ni">📊</span><span>วิเคราะห์/รายงาน</span></div><span class="nav-group-arrow">▼</span></div><div class="nav-group-items"><a class="nav-sublink" onclick="softAlert('โมดูลวิเคราะห์/รายงาน — นอกขอบเขต Mockup Flow 10.1')"><span class="ni">•</span> ภาพรวมโมดูล</a></div></div><div class="nav-group"><div class="nav-group-toggle" onclick="toggleGroup(this)"><div class="nav-group-label"><span class="ni">⚙️</span><span>จัดการระบบ</span></div><span class="nav-group-arrow">▼</span></div><div class="nav-group-items"><a class="nav-sublink" onclick="softAlert('โมดูลจัดการระบบ (Super Admin) — นอกขอบเขต Mockup Flow 10.1')"><span class="ni">•</span> ภาพรวมโมดูล</a></div></div><div class="nav-group"><div class="nav-group-toggle" onclick="toggleGroup(this)"><div class="nav-group-label"><span class="ni">👤</span><span>บทบาทของฉัน</span></div><span class="nav-group-arrow">▼</span></div><div class="nav-group-items"><a class="nav-sublink" onclick="softAlert('บทบาทของฉัน — นอกขอบเขต Mockup Flow 10.1')"><span class="ni">•</span> ภาพรวมโมดูล</a></div></div><div class="nav-group"><div class="nav-group-toggle" onclick="toggleGroup(this)"><div class="nav-group-label"><span class="ni">🧩</span><span>บริหารกลางและสนับสนุน</span></div><span class="nav-group-arrow">▼</span></div><div class="nav-group-items"><a class="nav-sublink" onclick="softAlert('บริหารกลางและสนับสนุน — นอกขอบเขต Mockup Flow 10.1')"><span class="ni">•</span> ภาพรวมโมดูล</a></div></div></nav>
+  <div class="sidebar-footer">
+    <div class="user-card" onclick="softAlert('โปรไฟล์ผู้ใช้ · สิทธิ์ RBAC: นิติกร (Create/Read/Update/Search)')">
+      <div class="user-avatar">ณ</div>
+      <div><div class="user-name">ณีรนุช พัฒนอำพันทอง</div><div class="user-role">นิติกร · กองกฎหมาย</div></div>
+    </div>
+  </div>
+</aside>
+
+<header class="topbar">
+  <button class="hamburger-toggle" onclick="document.body.classList.toggle('side-mini')"><span></span><span></span><span></span></button>
+  <div class="topbar-search"><span class="si">🔍</span><input placeholder="ค้นหาทั่วทั้งระบบ… (เลขสำนวน, คดีดำ-แดง, ชื่อบุคคล)"></div>
+  <div class="topbar-actions">
+    <button class="icon-btn" onclick="showNoti()">🔔<span class="notif-dot">3</span></button>
+    <div class="topbar-divider"></div>
+    <div class="user-pill" onclick="softAlert('โปรไฟล์ผู้ใช้ · Audit ทุกการเข้าถึงข้อมูล')">
+      <div class="user-pill-avatar">ณพ</div>
+      <div><div class="user-pill-name">ณีรนุช พัฒนอำพันทอง</div><div class="user-pill-role">นิติกร · กองกฎหมาย</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="main-content"><div class="page-body">
+
+<!-- ================= LIST VIEW ================= -->
+<section id="view-list">
+  <div class="breadcrumb-custom">งานกฎหมายในทางคดี &rsaquo; <span>สำนวนคดีชั้นอัยการและชั้นศาล</span></div>
+  <div class="page-header">
+    <div><div class="page-title">สารบบสำนวนคดีชั้นอัยการและชั้นศาล</div>
+      <div class="page-subtitle">LAW001 · ขับเคลื่อนตามกระบวนงาน Flow 10.1 · แจ้งเตือนอัตโนมัติ 30/15/7/1 วัน</div></div>
+    <button class="btn-gold" onclick="openModal('newCase')">+ รับสำนวนใหม่จากอัยการ</button>
+  </div>
+
+  <div class="stat-grid" id="statCards"></div>
+
+  <div class="ecmis-card" style="margin-bottom:18px">
+    <div class="filters">
+      <input class="form-control-custom" id="q" style="width:250px" placeholder="เลขสำนวน, คดีดำ-แดง, ชื่อบุคคล…" oninput="renderTable()">
+      <select class="form-control-custom" id="fType" onchange="renderTable()">
+        <option value="">ประเภทสำนวน: ทั้งหมด (6 ประเภท)</option>
+        <option>ไม่ฟ้อง</option><option>ถอนฟ้อง</option><option>ไม่อุทธรณ์</option><option>ถอนอุทธรณ์</option><option>ไม่ฎีกา</option><option>ถอนฎีกา</option>
+      </select>
+      <select class="form-control-custom" id="fStage" onchange="renderTable()">
+        <option value="">ขั้นตอน (Flow 10.1): ทั้งหมด</option>
+        <option value="0">รับสำนวน/อัยการตรวจ</option><option value="1">ตีกลับ–ไต่สวนเพิ่ม</option><option value="2">ความเห็นอัยการ</option>
+        <option value="3">นัดหมาย/ศาล/หมายจับ</option><option value="4">มติบอร์ด ป.ป.ท.</option><option value="5">อสส. ชี้ขาด</option><option value="6">ปิดสำนวน</option>
+      </select>
+      <button class="btn-navy" onclick="renderTable()">ค้นหา</button>
+      <button class="btn-outline-navy" onclick="resetFilter()">ล้างเงื่อนไข</button>
+    </div>
+  </div>
+
+  <div class="ecmis-card">
+    <div class="ecmis-card-header">
+      <div class="ecmis-card-title"><span class="badge-dot"></span>รายการสำนวนคดี (LAW001)</div>
+      <button class="btn-outline-navy btn-sm" onclick="toast('Export สารบบตาม Template รายงานราชการ ป.ป.ท. (Word/Excel/PDF)')">Export ▾</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="ecmis-table">
+        <thead><tr>
+          <th>เลขสำนวน ป.ป.ท.</th><th>ประเภทสำนวน</th><th>ผู้กล่าวหา / ผู้ถูกกล่าวหา</th><th>คดีดำ/แดง</th>
+          <th>โหนดปัจจุบันใน Flow</th><th>ผู้รับผิดชอบ</th><th>สถานะ</th><th>ครบกำหนด</th><th>จัดการ</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="pag"><span id="pagInfo"></span><span>ทุกการบันทึกสร้าง Audit Trail + Notification อัตโนมัติ</span></div>
+  </div>
+</section>
+
+<!-- ================= DETAIL VIEW ================= -->
+<section id="view-detail" class="hidden">
+  <div class="breadcrumb-custom"><span class="backlink" onclick="goList()">← กลับหน้ารายการ</span> &nbsp;·&nbsp; งานกฎหมาย &rsaquo; สำนวนคดี &rsaquo; <span id="dCrumb"></span></div>
+
+  <div class="ecmis-card" style="margin-bottom:16px">
+    <div class="ecmis-card-body">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <div>
+          <span class="page-title" style="font-size:20px" id="dId"></span>
+          <span id="dBadges"></span>
+          <div class="sub2" style="margin-top:6px" id="dParties"></div>
+          <div class="sub2" id="dCourt"></div>
+        </div>
+        <div class="actions" id="dHeadActions"></div>
+      </div>
+      <div class="flownode">📍 <span>โหนดปัจจุบันตาม Flow 10.1: <b id="dNode"></b></span></div>
+      <div class="step-wizard" id="dStepper"></div>
+    </div>
+  </div>
+
+  <div class="detail-grid">
+    <div>
+      <div class="ecmis-card" style="margin-bottom:16px">
+        <div class="ecmis-card-header"><div class="ecmis-card-title"><span class="badge-dot"></span>ข้อมูลสำนวนคดี (๑๐.๑.๑.๒)</div></div>
+        <div class="ecmis-card-body fieldgrid" id="dFields"></div>
+      </div>
+      <div class="ecmis-card" style="margin-bottom:16px">
+        <div class="ecmis-card-header"><div class="ecmis-card-title"><span class="badge-dot"></span>การดำเนินการตาม Flow — Action ในขั้นตอนนี้</div></div>
+        <div class="ecmis-card-body actions" id="dActions"></div>
+      </div>
+      <div class="ecmis-card" id="warrCard" style="margin-bottom:16px;display:none">
+        <div class="ecmis-card-header"><div class="ecmis-card-title"><span class="badge-dot" style="background:var(--red)"></span>หมายจับที่เกี่ยวข้อง (เชื่อมโยงกิจกรรมที่ 9)</div></div>
+        <div class="ecmis-card-body" id="warrBody"></div>
+      </div>
+      <div class="ecmis-card">
+        <div class="ecmis-card-header"><div class="ecmis-card-title"><span class="badge-dot"></span>เอกสารในสำนวน (Word/Excel/PDF · Audit ทุกการเข้าถึง)</div>
+          <button class="btn-gold btn-sm" onclick="mockUpload()">+ อัปโหลดเอกสาร</button></div>
+        <div class="ecmis-card-body" id="dDocs"></div>
+      </div>
+    </div>
+    <div>
+      <div class="ecmis-card" style="margin-bottom:16px">
+        <div class="ecmis-card-header"><div class="ecmis-card-title"><span class="badge-dot"></span>กำหนดเวลา & แจ้งเตือน (๑๐.๑.๖)</div></div>
+        <div class="ecmis-card-body" id="dDue"></div>
+      </div>
+      <div class="ecmis-card">
+        <div class="ecmis-card-header"><div class="ecmis-card-title"><span class="badge-dot"></span>ประวัติการดำเนินการ (Audit Trail)</div></div>
+        <div class="ecmis-card-body" id="dTl"></div>
+      </div>
+    </div>
+  </div>
+</section>
+</div></div>
+
+<!-- ================= MODAL ================= -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-head"><b id="mTitle"></b><button class="x" onclick="closeModal()">×</button></div>
+    <div class="modal-body frm" id="mBody"></div>
+    <div class="modal-foot" id="mFoot"></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ================= DATA (state machine per Flow 10.1) ================= */
+const STEPS=["รับสำนวนจากอัยการ","อัยการตรวจสำนวน","ความเห็นอัยการ","นัดหมาย/ศาล/หมายจับ","มติบอร์ด ป.ป.ท.","อสส. ชี้ขาด (ม.46)","ปิดสำนวน/สารบบ"];
+let seq=120;
+let cases=[
+ {id:"ปปท. 115/2569",type:"ไม่ฟ้อง",accuser:"สำนักงาน ป.ป.ท.",accused:"นายสมชาย วงศ์ดี",black:"–",red:"–",court:"สนง.อัยการปราบฯ ภาค 1",owner:"ศิริพร ก.",step:4,node:"คณะกรรมการ ป.ป.ท. พิจารณามติ (เห็นชอบ/เห็นแย้ง)",status:"รอมติบอร์ด ป.ป.ท.",badge:"teal",due:"15 ก.ค. 69",days:12,warrant:null,returned:false,
+  tl:[e("12 พ.ค. 69","อัยการมีความเห็น 'ไม่ฟ้อง' ส่งความเห็นให้ ป.ป.ท.","teal"),e("13 พ.ค. 69","ธุรการกองกฎหมายออกเลขรับ/เสนอมอบหมาย","green"),e("14 พ.ค. 69","มอบหมาย ศิริพร ก. + Push Notification","green"),e("20 พ.ค. 69","นิติกรตรวจสอบความเห็น จัดทำเรื่องเสนอบอร์ด","green")],
+  docs:[d("ความเห็นพนักงานอัยการ (ไม่ฟ้อง).pdf","2.1 MB"),d("บันทึกเสนอบอร์ด.docx","240 KB")]},
+ {id:"ปปท. 108/2569",type:"ถอนฟ้อง",accuser:"สำนักงาน ป.ป.ท.",accused:"นางวิภา ชัยชนะ",black:"อท 98/68",red:"อ 45/69",court:"ศาลอาญาคดีทุจริตฯ กลาง",owner:"ธนกร ส.",step:5,node:"อัยการสูงสุด (อสส.) พิจารณาชี้ขาด ตาม ม.46",status:"รอ อสส. วินิจฉัยชี้ขาด",badge:"orange",due:"30 ก.ย. 69",days:89,warrant:null,returned:false,
+  tl:[e("12 พ.ค. 69","รับสำนวนพร้อมความเห็น 'ถอนฟ้อง' จากอัยการ","teal"),e("24 พ.ค. 69","ผอ.กองกฎหมายลงนามความเห็น (e-Approval)","green"),e("2 มิ.ย. 69","บอร์ด ป.ป.ท. มีมติ 'เห็นแย้ง' → ส่ง อสส. ชี้ขาด ตาม ม.46","red")],
+  docs:[d("ความเห็นอัยการ (ถอนฟ้อง).pdf","1.8 MB"),d("มติบอร์ด ครั้งที่ 12-2569.pdf","640 KB"),d("หนังสือส่ง อสส..pdf","310 KB")]},
+ {id:"ปปท. 104/2569",type:"ไม่ฟ้อง",accuser:"สำนักงาน ป.ป.ท.",accused:"นายอานนท์ ทวีสุข",black:"–",red:"–",court:"สนง.อัยการปราบฯ ภาค 4",owner:"วรรณา พ.",step:1,node:"อัยการตีกลับสำนวนไม่สมบูรณ์ → เจ้าของสำนวนไต่สวนเพิ่ม",status:"ตีกลับ–ไต่สวนเพิ่มเติม",badge:"red",due:"20 ก.ค. 69",days:17,warrant:null,returned:true,
+  tl:[e("5 มิ.ย. 69","ส่งสำนวนให้อัยการตรวจ","teal"),e("18 มิ.ย. 69","อัยการตีกลับ: พยานหลักฐานประเด็นที่ 3 ไม่สมบูรณ์","red"),e("20 มิ.ย. 69","เจ้าของสำนวนลงพื้นที่/แจ้งข้อหาเพิ่ม (ไต่สวนเพิ่ม)","orange")],
+  docs:[d("หนังสือตีกลับสำนวน.pdf","420 KB")]},
+ {id:"ปปท. 097/2568",type:"ถอนฟ้อง",accuser:"สำนักงาน ป.ป.ท.",accused:"นายประเสริฐ พ.",black:"อท 61/67",red:"–",court:"ศาลอาญาคดีทุจริตฯ ภาค 6",owner:"อรทัย ร.",step:3,node:"ผู้ถูกกล่าวหาไม่มาตามนัด → ขอศาลออกหมายจับ",status:"ออกหมายจับ–ติดตามตัว",badge:"red",due:"อายุความ 30 ก.ย. 70",days:452,returned:false,
+  warrant:{no:"จ 41/2569",status:"ประสานตำรวจติดตามจับกุม",issued:"14 มิ.ย. 69"},
+  tl:[e("28 พ.ค. 69","อัยการสั่งฟ้อง แจ้งนัดนำตัวผู้ถูกกล่าวหาส่งศาล","teal"),e("10 มิ.ย. 69","ผู้ถูกกล่าวหาไม่มาตามนัด","red"),e("12 มิ.ย. 69","รวบรวมหลักฐาน ยื่นคำร้องขอศาลออกหมายจับ","orange"),e("14 มิ.ย. 69","ศาลอนุมัติออกหมายจับ จ 41/2569 → เชื่อมโยงระบบหมายจับ (กิจ. 9)","red")],
+  docs:[d("คำร้องขอออกหมายจับ.pdf","520 KB"),d("หมายจับ จ 41-2569.pdf","180 KB")]},
+ {id:"ปปท. 076/2568",type:"ไม่อุทธรณ์",accuser:"สำนักงาน ป.ป.ท.",accused:"น.ส.กมลรัตน์ อ.",black:"อท 55/67",red:"อ 18/68",court:"ศาลอาญาคดีทุจริตฯ กลาง",owner:"ธนกร ส.",step:3,node:"ศาลอาญาคดีทุจริตฯ พิจารณาและมีคำพิพากษา",status:"อยู่ระหว่างศาลชั้นต้น",badge:"orange",due:"นัดฟังคำพิพากษา 12 ส.ค. 69",days:40,warrant:null,returned:false,
+  tl:[e("3 ก.พ. 69","อัยการยื่นฟ้องต่อศาลอาญาคดีทุจริตฯ","green"),e("15 พ.ค. 69","สืบพยานโจทก์นัดสุดท้าย","teal")],
+  docs:[d("คำฟ้อง.pdf","2.4 MB")]},
+ {id:"ปปท. 064/2567",type:"ไม่ฎีกา",accuser:"สำนักงาน ป.ป.ท.",accused:"นายวสันต์ คำแก้ว",black:"อท 41/67",red:"อ 09/67",court:"ศาลอาญาคดีทุจริตฯ ภาค 6",owner:"อรทัย ร.",step:6,node:"ปิดสำนวน · เชื่อมโยงข้อมูลกิจกรรมที่ 8",status:"คดีถึงที่สุด",badge:"green",due:"สิ้นสุดแล้ว",days:9999,warrant:null,returned:false,
+  tl:[e("18 มี.ค. 69","ศาลอุทธรณ์พิพากษายืน — ลงโทษจำคุก 4 ปี","green"),e("29 เม.ย. 69","อัยการมีความเห็นไม่ฎีกา · บอร์ดเห็นชอบ","green"),e("2 พ.ค. 69","บันทึกผลคดีขั้นสุดท้าย ปิดสำนวน + Audit Trail","green"),e("2 พ.ค. 69","นิติกรเชื่อมโยงข้อมูลผลคดีไปยังกิจกรรมที่ 8","green")],
+  docs:[d("คำพิพากษาศาลชั้นต้น.pdf","3.0 MB"),d("คำพิพากษาศาลอุทธรณ์.pdf","2.7 MB")]},
+];
+function e(dd,tt,cc){return{d:dd,t:tt,c:cc}}
+function d(n,s){return{n:n,s:s}}
+let current=null, filterStage="";
+
+/* ================= LIST ================= */
+function statData(){
+  return [
+   {lb:"สำนวนทั้งหมด",v:cases.length,cls:"stat-card-navy",ic:"📁",sub:"ปีงบประมาณ 2569",f:""},
+   {lb:"ชั้นอัยการ / บอร์ด / อสส.",v:cases.filter(c=>[0,1,2,4,5].includes(c.step)).length,cls:"stat-card-teal",ic:"🏛️",sub:"ตามเส้นทาง Flow 10.1",f:"pre"},
+   {lb:"ชั้นศาล / นัดหมาย / หมายจับ",v:cases.filter(c=>c.step===3).length,cls:"stat-card-orange",ic:"⚖️",sub:"รวมสำนวนที่มีหมายจับ",f:"3"},
+   {lb:"ตีกลับ / ใกล้ครบกำหนด",v:cases.filter(c=>c.returned||c.days<=30).length,cls:"stat-card-red",ic:"⏰",sub:"คลิกเพื่อกรองรายการ",f:"hot"}];
+}
+function renderCards(){
+  document.getElementById('statCards').innerHTML=statData().map(s=>
+   `<div class="stat-card ${s.cls}" onclick="cardFilter('${s.f}')">
+      <div class="stat-label">${s.lb}</div><div class="stat-value">${s.v}</div>
+      <div class="stat-change">${s.sub}</div><div class="stat-card-bg-icon">${s.ic}</div></div>`).join('');
+  document.getElementById('navCnt').textContent=cases.length;
+}
+function cardFilter(f){filterStage=f;renderTable();toast(f?'กรองรายการตามการ์ดที่เลือกแล้ว':'แสดงทั้งหมด');}
+function resetFilter(){document.getElementById('q').value='';document.getElementById('fType').value='';document.getElementById('fStage').value='';filterStage='';renderTable();}
+function rowsFiltered(){
+  const q=document.getElementById('q').value.trim(), t=document.getElementById('fType').value, st=document.getElementById('fStage').value;
+  return cases.filter(c=>{
+    if(q && !(c.id+c.black+c.red+c.accused+c.accuser).includes(q))return false;
+    if(t && c.type!==t)return false;
+    if(st!=="" && String(c.step)!==st)return false;
+    if(filterStage==="hot" && !(c.returned||c.days<=30))return false;
+    if(filterStage==="3" && c.step!==3)return false;
+    if(filterStage==="pre" && ![0,1,2,4,5].includes(c.step))return false;
+    return true;});
+}
+function renderTable(){
+  renderCards();
+  const rows=rowsFiltered();
+  document.getElementById('tbody').innerHTML=rows.map(c=>`
+   <tr onclick="openCase('${c.id}')">
+    <td><strong class="mono">${c.id}</strong>${c.warrant?' <span class="status-badge red" style="font-size:9.5px;padding:2px 8px">หมายจับ</span>':''}</td>
+    <td>${c.type}</td>
+    <td>${c.accuser}<div class="sub2">${c.accused}</div></td>
+    <td>${c.black}<div class="sub2">${c.red}</div></td>
+    <td style="max-width:210px;font-size:12px">${c.node}</td>
+    <td>${c.owner}</td>
+    <td><span class="status-badge ${c.badge}">${c.status}</span></td>
+    <td class="${c.days<=15?'due-red':(c.days<=30?'due-orange':'')}">${c.due}</td>
+    <td><button class="btn-outline-navy btn-sm" onclick="event.stopPropagation();openCase('${c.id}')">เปิดสำนวน</button></td>
+   </tr>`).join('');
+  document.getElementById('pagInfo').textContent=`แสดง 1–${rows.length} จากทั้งหมด ${cases.length} สำนวน (Mockup)`;
+}
+
+/* ================= DETAIL ================= */
+function openCase(id){
+  current=cases.find(c=>c.id===id);
+  document.getElementById('view-list').classList.add('hidden');
+  document.getElementById('view-detail').classList.remove('hidden');
+  renderDetail();window.scrollTo(0,0);
+}
+function goList(){
+  document.getElementById('view-detail').classList.add('hidden');
+  document.getElementById('view-list').classList.remove('hidden');
+  renderTable();
+}
+function renderDetail(){
+  const c=current;
+  document.getElementById('dCrumb').textContent=c.id;
+  document.getElementById('dId').textContent=c.id;
+  document.getElementById('dBadges').innerHTML=` <span class="status-badge teal">${c.type}</span> <span class="status-badge ${c.badge}">${c.status}</span>`+(c.returned?' <span class="status-badge red">ตีกลับ–ไม่สมบูรณ์</span>':'');
+  document.getElementById('dParties').textContent=`ผู้กล่าวหา: ${c.accuser} · ผู้ถูกกล่าวหา: ${c.accused} · คดีดำ ${c.black} · คดีแดง ${c.red}`;
+  document.getElementById('dCourt').textContent=`${c.court} · ผู้รับผิดชอบสำนวน: ${c.owner}`;
+  document.getElementById('dNode').textContent=c.node;
+  document.getElementById('dHeadActions').innerHTML=`
+    <button class="btn-outline-navy" onclick="toast('Export สำนวน + สารบบ (Word/Excel/PDF ตาม Template ราชการ)')">Export ▾</button>
+    <button class="btn-outline-navy" onclick="openModal('assign')">มอบหมายใหม่</button>
+    <button class="btn-navy" onclick="openModal('notify')">แจ้งผลหน่วยงานภายใน</button>`;
+  document.getElementById('dStepper').innerHTML=STEPS.map((s,i)=>{
+    const cls=i<c.step?'done':(i===c.step?'active':'');
+    return `<div class="step-item ${cls}"><div class="step-circle">${i<c.step?'✓':i+1}</div><div class="step-label">${s}</div><div class="step-line"></div></div>`;}).join('');
+  document.getElementById('dFields').innerHTML=[
+    ["ประเภทสำนวน",c.type],["เลขสำนวน ป.ป.ท.",c.id],["คดีดำ / คดีแดง",`${c.black} · ${c.red}`],["สนง.อัยการ / ศาล",c.court],
+    ["โจทก์",c.accuser],["จำเลย/ผู้ถูกกล่าวหา",c.accused],["หน่วยงานรับผิดชอบ","กองกฎหมาย กลุ่มงานคดี"],["ระยะเวลา/อายุความ",c.due]
+  ].map(f=>`<div class="f"><div class="lb">${f[0]}</div><div class="v">${f[1]}</div></div>`).join('');
+  renderActions();renderWarrant();renderDocs();renderDue();renderTl();
+}
+function renderActions(){
+  const c=current;const A=[];
+  const btn=(label,fn,style='btn-navy',dis=false)=>A.push(`<button class="${style}" ${dis?'disabled':''} onclick="openModal('${fn}')">${label}</button>`);
+  if(c.step===0||c.step===1) btn("บันทึกผลการตรวจสำนวนของอัยการ","exam");
+  if(c.step===1) btn("ส่งสำนวนกลับอัยการ (ไต่สวนเพิ่มแล้ว)","resubmit","btn-gold");
+  if(c.step===2) btn("บันทึกความเห็นพนักงานอัยการ","opinion","btn-gold");
+  if(c.step===3&&!c.warrant) btn("บันทึกผลการนัดหมายนำตัวส่งศาล","appointment");
+  if(c.step===3&&c.warrant) btn("อัปเดตสถานะหมายจับ (กิจ. 9)","warrantUpd");
+  if(c.step===3) btn("บันทึกคำพิพากษา / คำสั่งศาล","judgment","btn-gold");
+  if(c.step===4) btn("บันทึกมติคณะกรรมการ ป.ป.ท.","board","btn-gold");
+  if(c.step===5) btn("บันทึกผลคำวินิจฉัยชี้ขาด อสส. (ม.46)","ag","btn-gold");
+  if(c.step===6) btn("เชื่อมโยงข้อมูลไปกิจกรรมที่ 8","link8");
+  if(c.step<6) btn("ปิดสำนวน / บันทึกผลคดีขั้นสุดท้าย","close","btn-outline-navy",c.step<4);
+  document.getElementById('dActions').innerHTML=A.join('')+`<div style="width:100%;font-size:11px;color:var(--text-muted);margin-top:6px">ปุ่มเปิด/ปิดตามขั้นตอนใน Flow 10.1 — ทุกการบันทึกสร้าง Audit Trail และ Notification อัตโนมัติ</div>`;
+}
+function renderWarrant(){
+  const c=current,el=document.getElementById('warrCard');
+  if(!c.warrant){el.style.display='none';return}
+  el.style.display='block';
+  document.getElementById('warrBody').innerHTML=`<div class="warr"><b>หมายจับเลขที่ ${c.warrant.no}</b> · ออกเมื่อ ${c.warrant.issued}<br>
+   สถานะ: <span class="status-badge red">${c.warrant.status}</span><br>
+   <span class="sub2">แจ้งเตือนครบกำหนดอายุความตามหมายจับอัตโนมัติ · เมื่อจับกุมได้ระบบจะนำเข้าขั้นตอน "นำตัวส่งอัยการ" และรายงานเลขาธิการฯ/ศาลเพื่อขอยุติหมายจับ</span></div>`;
+}
+function renderDocs(){
+  document.getElementById('dDocs').innerHTML=current.docs.map(x=>
+   `<div class="doc-row"><span>📄 <b>${x.n}</b> <span class="sub2">${x.s}</span></span>
+     <button class="btn-outline-navy btn-sm" onclick="toast('ดาวน์โหลด — บันทึก Audit Log การเข้าถึงแล้ว')">ดาวน์โหลด</button></div>`).join('')||'<span class="sub2">ยังไม่มีเอกสาร</span>';
+}
+function renderDue(){
+  const c=current;
+  const pct=c.days>=9999?100:Math.max(4,Math.min(100,100-(c.days/365*100)));
+  document.getElementById('dDue').innerHTML= c.days>=9999?
+   `<div style="font-size:15px;font-weight:800;color:var(--green)">✓ คดีถึงที่สุด — ไม่มีกำหนดค้าง</div>`:
+   `<div><span style="font-size:36px;font-weight:800;color:${c.days<=30?'var(--red)':'var(--navy)'}">${c.days}</span> วัน ก่อนครบกำหนด<br>
+    <span class="sub2">${c.due}</span>
+    <div class="progress-custom"><div class="progress-fill ${c.days<=30?'red':''}" style="width:${pct}%"></div></div>
+    <span class="sub2">แจ้งเตือนอัตโนมัติ 30/15/7/1 วัน · Email + Push Notification</span></div>`;
+}
+function renderTl(){
+  const ic={green:'✓',red:'!',orange:'▲',teal:'•'};
+  document.getElementById('dTl').innerHTML=current.tl.slice().reverse().map(x=>
+   `<div class="timeline-item ${x.c}"><div class="timeline-icon">${ic[x.c]||'•'}</div>
+     <div><div class="timeline-title">${x.t}</div><div class="timeline-time">${x.d}</div></div></div>`).join('');
+}
+
+/* ================= MODALS ================= */
+let mSel={};
+function openModal(kind){
+  mSel={};const M=document.getElementById('mBody'),F=document.getElementById('mFoot'),T=document.getElementById('mTitle');
+  const chip=(g,v)=>`<span class="chip" data-g="${g}" data-v="${v}" onclick="pick(this)">${v}</span>`;
+  const up=`<div class="upload-zone" onclick="this.classList.add('has');this.textContent='✓ แนบไฟล์แล้ว: เอกสาร.pdf (1.2 MB) — สแกนไวรัสผ่าน'">ลากไฟล์มาวาง หรือคลิกเลือกไฟล์ (Word/Excel/PDF)</div>`;
+  const foot=(label,fn)=>{F.innerHTML=`<button class="btn-outline-navy" onclick="closeModal()">ยกเลิก</button><button class="btn-gold" onclick="${fn}">${label}</button>`};
+  if(kind==='newCase'){T.textContent='รับสำนวนใหม่จากพนักงานอัยการ (๑๐.๑.๑)';
+   M.innerHTML=`<label>ประเภทสำนวน (6 ประเภท ตาม TOR ๑๐.๑.๑.๑) *</label><div class="radio-row">${["ไม่ฟ้อง","ถอนฟ้อง","ไม่อุทธรณ์","ถอนอุทธรณ์","ไม่ฎีกา","ถอนฎีกา"].map(v=>chip('type',v)).join('')}</div>
+    <label>เลขสำนวน ป.ป.ท. (auto-suggest จากระบบไต่สวน กิจ. 8 — Single Data Input)</label><input class="form-control-custom" id="ncId" value="ปปท. ${seq}/2569">
+    <label>ผู้กล่าวหา / ผู้ถูกกล่าวหา *</label><input class="form-control-custom" id="ncAcc" value="สำนักงาน ป.ป.ท. / นายทดสอบ ระบบดี">
+    <label>สำนักงานอัยการ / ศาล</label><select class="form-control-custom"><option>สนง.อัยการปราบฯ กลาง</option><option>สนง.อัยการปราบฯ ภาค 1–9</option><option>ศาลอาญาคดีทุจริตฯ กลาง</option></select>
+    <label>วันครบกำหนด/อายุความ (ระบบตั้งแจ้งเตือน 30/15/7/1 วันอัตโนมัติ)</label><input class="form-control-custom" value="30 ก.ย. 2570">
+    <label>เอกสารสำนวน</label>${up}`;
+   foot('บันทึกรับสำนวน + ออกเลขอัตโนมัติ','submitNew()');}
+  else if(kind==='exam'){T.textContent='บันทึกผลการตรวจสำนวนของพนักงานอัยการ';
+   M.innerHTML=`<label>ผลการตรวจสำนวน *</label><div class="radio-row">${chip('r','สมบูรณ์ — อัยการรับสำนวนไว้พิจารณา')}${chip('r','ไม่สมบูรณ์ — ตีกลับให้ ป.ป.ท.')}</div>
+    <label>ประเด็นที่ต้องไต่สวนเพิ่ม (กรณีตีกลับ)</label><div class="radio-row">${chip('x','ทั่วไป (แจ้งข้อหาเพิ่ม)')}${chip('x','อัยการสั่งแยกสำนวน')}</div>
+    <label>รายละเอียด/เหตุผล</label><textarea class="form-control-custom" placeholder="เช่น พยานหลักฐานประเด็นที่ 3 ไม่ครบถ้วน…"></textarea>
+    <div class="note" id="splitNote">⚠ กรณี "อัยการสั่งแยกสำนวน" — หากบอร์ด ป.ป.ท. มีมติรับเป็นเรื่องใหม่ ระบบจะเริ่มไต่สวนและออกเลขสำนวนใหม่อัตโนมัติ (เชื่อมกิจ. 8)</div>${up}`;
+   foot('บันทึกผลการตรวจ','submitExam()');}
+  else if(kind==='resubmit'){T.textContent='ส่งสำนวนกลับอัยการ (ไต่สวนเพิ่มเติมแล้ว)';
+   M.innerHTML=`<label>สรุปผลการไต่สวนเพิ่ม/รายงานเสนอบอร์ด</label><textarea class="form-control-custom">ลงพื้นที่รวบรวมพยานหลักฐานประเด็นที่ 3 ครบถ้วน · บอร์ดพิจารณาเห็นชอบเมื่อ 1 ก.ค. 69</textarea>
+    <label>เอกสารประกอบ</label>${up}`;
+   foot('รวบรวมสำนวนส่งอัยการ','submitResubmit()');}
+  else if(kind==='opinion'){T.textContent='บันทึกความเห็นพนักงานอัยการ (๑๐.๑.๔)';
+   M.innerHTML=`<label>ความเห็น *</label><div class="radio-row">${chip('r','สั่งฟ้อง')}${chip('r','ไม่ฟ้อง/ถอนฟ้อง')}${chip('r','ไม่อุทธรณ์/ถอนอุทธรณ์')}${chip('r','ไม่ฎีกา/ถอนฎีกา')}</div>
+    <div class="note" id="opNote1">→ กรณี "สั่งฟ้อง": ระบบเปิดขั้นตอนนัดหมายนำตัวผู้ถูกกล่าวหาส่งอัยการ/ศาล</div>
+    <div class="note" id="opNote2">→ กรณีความเห็นไม่ฟ้อง/ไม่อุทธรณ์/ไม่ฎีกา: ธุรการออกเลขรับ → นิติกรตรวจสอบ → เสนอบอร์ด ป.ป.ท. พิจารณา</div>
+    <label>ไฟล์ความเห็นอัยการ</label>${up}`;
+   foot('บันทึกความเห็น','submitOpinion()');}
+  else if(kind==='appointment'){T.textContent='บันทึกผลการนัดหมายนำตัวผู้ถูกกล่าวหา';
+   M.innerHTML=`<label>ผลการนัดหมาย *</label><div class="radio-row">${chip('r','มาตามนัด — นำตัวส่งอัยการ/ศาล')}${chip('r','ไม่มาตามนัด')}</div>
+    <div class="note" id="apNote">⚠ กรณีไม่มาตามนัด: อัยการแจ้ง ป.ป.ท. รวบรวมหลักฐานยื่นคำร้องขอศาลออกหมายจับ → เชื่อมโยงระบบหมายจับ (กิจกรรมที่ 9) และประสานตำรวจติดตามจับกุม</div>
+    <label>บันทึกเพิ่มเติม</label><textarea class="form-control-custom" placeholder="วันเวลานัด สถานที่ ผลการตรวจสอบที่อยู่…"></textarea>`;
+   foot('บันทึกผลนัดหมาย','submitAppt()');}
+  else if(kind==='warrantUpd'){T.textContent='อัปเดตสถานะหมายจับ (เชื่อมโยงกิจกรรมที่ 9)';
+   M.innerHTML=`<label>สถานะ *</label><div class="radio-row">${chip('r','อยู่ระหว่างประสานติดตาม')}${chip('r','จับกุมได้ — นำตัวส่งอัยการ')}${chip('r','ขอยุติหมายจับ (รายงานเลขาธิการฯ/ศาล)')}${chip('r','ขาดอายุความ')}</div>
+    <label>บันทึกการจับกุม/เอกสาร</label>${up}`;
+   foot('บันทึกสถานะหมายจับ','submitWarr()');}
+  else if(kind==='judgment'){T.textContent='บันทึกคำพิพากษา / คำสั่งศาล (๑๐.๑.๔)';
+   M.innerHTML=`<label>ชั้นศาล *</label><div class="radio-row">${chip('c','ศาลชั้นต้น')}${chip('c','ศาลอุทธรณ์')}${chip('c','ศาลฎีกา')}</div>
+    <label>ผลคำพิพากษา *</label><div class="radio-row">${chip('r','ลงโทษ')}${chip('r','ยกฟ้อง/ไม่ครบองค์ประกอบ')}</div>
+    <div class="note" id="jNote">→ หลังคำพิพากษา: อัยการพิจารณาอุทธรณ์/ฎีกา — หากมีความเห็น "ไม่อุทธรณ์/ไม่ฎีกา" ระบบเข้าสู่วงจรเสนอบอร์ด ป.ป.ท. อีกครั้ง</div>
+    <label>สรุปย่อคำพิพากษา (เข้าสารบบ Knowledge Base อัตโนมัติ)</label><textarea class="form-control-custom"></textarea>
+    <label>ไฟล์คำพิพากษา (Word/Excel/PDF)</label>${up}`;
+   foot('บันทึกคำพิพากษา','submitJudgment()');}
+  else if(kind==='board'){T.textContent='บันทึกมติคณะกรรมการ ป.ป.ท. (๑๐.๑.๕)';
+   M.innerHTML=`<label>มติ *</label><div class="radio-row">${chip('r','เห็นชอบตามความเห็นอัยการ')}${chip('r','เห็นแย้ง — ยืนยันควรฟ้อง (ส่ง อสส. ตาม ม.46)')}</div>
+    <label>ครั้งที่ประชุม / วันที่</label><input class="form-control-custom" value="ครั้งที่ 13/2569 · 7 ก.ค. 2569">
+    <div class="note" id="bNote">⚠ กรณีเห็นแย้ง: ระบบจัดทำหนังสือส่งสำนวนพร้อมมติให้ อสส. วินิจฉัยชี้ขาด + แจ้งผลให้พนักงานอัยการทราบอัตโนมัติ (Alert ให้นิติกรจัดทำความเห็นใหม่ตาม FRLAW002)</div>
+    <label>ไฟล์มติที่ประชุม</label>${up}`;
+   foot('บันทึกมติบอร์ด','submitBoard()');}
+  else if(kind==='ag'){T.textContent='บันทึกผลคำวินิจฉัยชี้ขาดอัยการสูงสุด (๑๐.๑.๗ · ม.46)';
+   M.innerHTML=`<label>ผลชี้ขาด *</label><div class="radio-row">${chip('r','ชี้ขาดให้ฟ้อง/สู้คดี — อัยการยื่นฟ้อง/อุทธรณ์/ฎีกา')}${chip('r','ชี้ขาดไม่ฟ้อง — ยุติเรื่อง')}</div>
+    <label>เลขคำวินิจฉัย / วันที่</label><input class="form-control-custom" value="อสส. 58/2569 · 15 ก.ค. 2569">
+    <label>ไฟล์คำวินิจฉัย (เข้าสารบบ ๑๐.๑.๑๐.๑ อัตโนมัติ)</label>${up}`;
+   foot('บันทึกผลชี้ขาด','submitAG()');}
+  else if(kind==='close'){T.textContent='ปิดสำนวน / บันทึกผลคดีขั้นสุดท้าย';
+   M.innerHTML=`<label>ผลคดีขั้นสุดท้าย</label><textarea class="form-control-custom">คดีถึงที่สุด — ศาลอุทธรณ์พิพากษายืน</textarea>
+    <div class="note" style="display:block;background:#e6f4ed;color:var(--green)">ระบบจะ: ① บันทึกผลลงฐานข้อมูลกลาง ② สร้าง Audit Trail ③ แจ้งผู้เกี่ยวข้อง ④ เชื่อมโยงข้อมูลไปกิจกรรมที่ 8 (ตามโหนดสุดท้ายของ Flow)</div>`;
+   foot('ปิดสำนวน','submitClose()');}
+  else if(kind==='assign'){T.textContent='มอบหมายผู้รับผิดชอบสำนวน (๑๐.๑.๒)';
+   M.innerHTML=`<label>นิติกรผู้รับผิดชอบ (แสดง workload)</label><select class="form-control-custom" id="asOwner"><option>ธนกร ส. (8 สำนวน)</option><option>ศิริพร ก. (6 สำนวน)</option><option>วรรณา พ. (5 สำนวน)</option><option>อรทัย ร. (7 สำนวน)</option></select>
+    <label>ขอบเขตงาน</label><textarea class="form-control-custom">ติดตามสำนวนในชั้นอัยการและชั้นศาลจนคดีถึงที่สุด</textarea>`;
+   foot('มอบหมาย + Push Notification','submitAssign()');}
+  else if(kind==='notify'){T.textContent='แจ้งผลการดำเนินคดีให้หน่วยงานภายใน (๑๐.๑.๙)';
+   M.innerHTML=`<label>เลือกหน่วยงาน (multi-select)</label><div class="radio-row">${["กองบริหารคดี","กอง/สำนักเจ้าของสำนวน","สำนักเลขาธิการ","ปปท. เขต 1–9"].map(v=>chip('m',v)).join('')}</div>
+    <label>Template หนังสือแจ้งผล</label><select class="form-control-custom"><option>หนังสือแจ้งผลคดี (แบบสำนักงาน ป.ป.ท.)</option><option>รายงานผลตามมติที่ประชุมบอร์ด (๑๐.๑.๘)</option></select>`;
+   foot('ส่งแจ้งผล + บันทึกหลักฐาน','submitNotify()');}
+  else if(kind==='link8'){T.textContent='เชื่อมโยงข้อมูลไปกิจกรรมที่ 8 (ระบบไต่สวน)';
+   M.innerHTML=`<div class="note" style="display:block;background:#e8f7f7;color:var(--teal)">นิติกรรับมอบหมาย/เชื่อมโยงข้อมูลผลคดี คำพิพากษา และสถานะสุดท้ายกลับไปยังสำนวนไต่สวนต้นทาง (กิจกรรมที่ 8) — Single Data Input ไม่ต้องคีย์ซ้ำ</div>`;
+   foot('ยืนยันเชื่อมโยงข้อมูล','submitLink8()');}
+  document.getElementById('overlay').classList.add('show');
+}
+function pick(el){
+  const g=el.dataset.g;
+  if(g==='m'){el.classList.toggle('sel-on');return}
+  document.querySelectorAll(`.chip[data-g="${g}"]`).forEach(c=>c.classList.remove('sel-on'));
+  el.classList.add('sel-on');mSel[g]=el.dataset.v;
+  const show=(id,cond)=>{const n=document.getElementById(id);if(n)n.style.display=cond?'block':'none'};
+  show('splitNote',(mSel['x']||'').includes('แยกสำนวน'));
+  show('opNote1',(mSel['r']||'')==='สั่งฟ้อง');show('opNote2',(mSel['r']||'').startsWith('ไม่'));
+  show('apNote',(mSel['r']||'')==='ไม่มาตามนัด');
+  show('bNote',(mSel['r']||'').startsWith('เห็นแย้ง'));
+  show('jNote',!!mSel['c']);
+}
+function closeModal(){document.getElementById('overlay').classList.remove('show')}
+function today(){return '6 ก.ค. 69'}
+function push(c,txt,col,newStatus,newBadge,newStep,newNode){
+  c.tl.push(e(today(),txt,col));
+  if(newStatus)c.status=newStatus;if(newBadge)c.badge=newBadge;
+  if(newStep!==undefined)c.step=newStep;if(newNode)c.node=newNode;
+}
+/* --- submit handlers (state transitions per Flow 10.1) --- */
+function submitNew(){
+  const t=mSel['type']||'ไม่ฟ้อง';
+  const nc={id:document.getElementById('ncId').value,type:t,accuser:"สำนักงาน ป.ป.ท.",accused:document.getElementById('ncAcc').value.split('/')[1]||'ผู้ถูกกล่าวหาใหม่',black:"–",red:"–",court:"สนง.อัยการปราบฯ กลาง",owner:"รอมอบหมาย",step:0,node:"ธุรการกองกฎหมายออกเลขรับ/เสนอมอบหมาย",status:"รับสำนวนใหม่",badge:"teal",due:"30 ก.ย. 70",days:451,warrant:null,returned:false,tl:[e(today(),"รับสำนวนพร้อมความเห็น '"+t+"' จากพนักงานอัยการ · ออกเลขอัตโนมัติ","green")],docs:[d("ความเห็นอัยการ.pdf","1.0 MB")]};
+  seq++;cases.unshift(nc);closeModal();goList();toast('<b>บันทึกสำเร็จ</b> — รับสำนวน '+nc.id+' ออกเลขและส่งเสนอมอบหมายแล้ว');
+}
+function submitExam(){const c=current;
+  if((mSel['r']||'').startsWith('ไม่สมบูรณ์')){c.returned=true;push(c,'อัยการตีกลับสำนวนไม่สมบูรณ์ — '+(mSel['x']||'ทั่วไป'),'red','ตีกลับ–ไต่สวนเพิ่มเติม','red',1,'อัยการตีกลับสำนวนไม่สมบูรณ์ → เจ้าของสำนวนไต่สวนเพิ่ม');}
+  else{c.returned=false;push(c,'อัยการตรวจสำนวนแล้ว รับไว้พิจารณามีความเห็น','green','รอความเห็นอัยการ','teal',2,'พนักงานอัยการพิจารณามีความเห็น (สั่งฟ้อง/ไม่ฟ้อง)');}
+  closeModal();renderDetail();toast('<b>บันทึกผลการตรวจแล้ว</b> — สถานะสำนวนอัปเดตตาม Flow');}
+function submitResubmit(){const c=current;c.returned=false;
+  push(c,'บอร์ดเห็นชอบรายงานไต่สวนเพิ่ม · รวบรวมสำนวนส่งอัยการ','green','ส่งสำนวนให้อัยการตรวจ','teal',0,'พนักงานอัยการตรวจสำนวน');
+  closeModal();renderDetail();toast('<b>ส่งสำนวนกลับอัยการแล้ว</b>');}
+function submitOpinion(){const c=current;const r=mSel['r']||'สั่งฟ้อง';
+  if(r==='สั่งฟ้อง')push(c,'อัยการมีความเห็นสั่งฟ้อง · แจ้งนัดนำตัวผู้ถูกกล่าวหาส่งศาล','orange','นัดหมายนำตัวส่งอัยการ/ศาล','orange',3,'เจ้าของสำนวนตรวจสอบที่อยู่ & ส่งหนังสือแจ้งผู้ถูกกล่าวหา');
+  else push(c,'อัยการมีความเห็น "'+r+'" · ธุรการออกเลขรับ → นิติกรตรวจสอบเสนอบอร์ด','teal','รอมติบอร์ด ป.ป.ท.','teal',4,'คณะกรรมการ ป.ป.ท. พิจารณามติ (เห็นชอบ/เห็นแย้ง)');
+  closeModal();renderDetail();toast('<b>บันทึกความเห็นอัยการแล้ว</b>');}
+function submitAppt(){const c=current;
+  if((mSel['r']||'')==='ไม่มาตามนัด'){c.warrant={no:'จ '+(40+seq%9)+'/2569',status:'ยื่นคำร้องขอศาลออกหมายจับ',issued:today()};
+   push(c,'ผู้ถูกกล่าวหาไม่มาตามนัด → ยื่นคำร้องขอศาลออกหมายจับ (เชื่อมกิจ. 9)','red','ออกหมายจับ–ติดตามตัว','red',3,'ผู้ถูกกล่าวหาไม่มาตามนัด → ขอศาลออกหมายจับ');}
+  else push(c,'ผู้ถูกกล่าวหามาตามนัด · นำตัวส่งอัยการยื่นฟ้องต่อศาล','green','อยู่ระหว่างศาลชั้นต้น','orange',3,'ศาลอาญาคดีทุจริตฯ พิจารณาและมีคำพิพากษา');
+  closeModal();renderDetail();toast('<b>บันทึกผลนัดหมายแล้ว</b>');}
+function submitWarr(){const c=current;const r=mSel['r']||'อยู่ระหว่างประสานติดตาม';
+  c.warrant.status=r;
+  if(r.startsWith('จับกุมได้')){push(c,'จับกุมตัวได้ · นำตัวส่งพนักงานอัยการ · รายงานเลขาธิการฯ/ศาลขอยุติหมายจับ','green','อยู่ระหว่างศาลชั้นต้น','orange',3,'ศาลอาญาคดีทุจริตฯ พิจารณาและมีคำพิพากษา');c.warrant=null;}
+  else push(c,'อัปเดตหมายจับ: '+r,'orange');
+  closeModal();renderDetail();toast('<b>อัปเดตหมายจับแล้ว</b> (Audit + แจ้งเตือนอายุความหมายจับ)');}
+function submitJudgment(){const c=current;
+  push(c,'บันทึกคำพิพากษา '+(mSel['c']||'ศาลชั้นต้น')+' — '+(mSel['r']||'ลงโทษ')+' · เข้าสารบบ KB อัตโนมัติ','green','อัยการพิจารณาอุทธรณ์/ฎีกา','teal',2,'พนักงานอัยการพิจารณาอุทธรณ์/ฎีกา (สุดท้าย → เข้าวงจรความเห็น)');
+  c.docs.push(d('คำพิพากษา'+(mSel['c']||'ศาลชั้นต้น')+'.pdf','2.2 MB'));
+  closeModal();renderDetail();toast('<b>บันทึกคำพิพากษาแล้ว</b> — สารบบ ๑๐.๑.๑๐ อัปเดต');}
+function submitBoard(){const c=current;
+  if((mSel['r']||'').startsWith('เห็นแย้ง'))push(c,'บอร์ด ป.ป.ท. มีมติเห็นแย้ง → ส่งสำนวนพร้อมมติให้ อสส. ชี้ขาด (ม.46) + แจ้งอัยการ','red','รอ อสส. วินิจฉัยชี้ขาด','orange',5,'อัยการสูงสุด (อสส.) พิจารณาชี้ขาด ตาม ม.46');
+  else push(c,'บอร์ด ป.ป.ท. มีมติเห็นชอบตามความเห็นอัยการ · แจ้งอัยการดำเนินการต่อ','green','บอร์ดเห็นชอบ — รอบันทึกผลสุดท้าย','green',6,'บันทึกผลคดีขั้นสุดท้าย · ปิดสำนวน');
+  closeModal();renderDetail();toast('<b>บันทึกมติบอร์ดแล้ว</b> — ระบบแจ้งผลอัตโนมัติ');}
+function submitAG(){const c=current;
+  if((mSel['r']||'').startsWith('ชี้ขาดให้ฟ้อง'))push(c,'อสส. ชี้ขาดให้ฟ้อง/สู้คดี → อัยการยื่นฟ้อง/อุทธรณ์/ฎีกา','orange','อยู่ระหว่างชั้นศาล','orange',3,'ศาลอาญาคดีทุจริตฯ พิจารณาและมีคำพิพากษา');
+  else push(c,'อสส. ชี้ขาดไม่ฟ้อง — ยุติเรื่อง · บันทึกลงฐานข้อมูลกลาง','green','ยุติเรื่องตามคำชี้ขาด อสส.','green',6,'บันทึกผลคดีขั้นสุดท้าย · ปิดสำนวน');
+  closeModal();renderDetail();toast('<b>บันทึกคำวินิจฉัย อสส. แล้ว</b> — เข้าสารบบ ๑๐.๑.๑๐.๑');}
+function submitClose(){const c=current;
+  push(c,'ปิดสำนวน · บันทึกผลคดีขั้นสุดท้ายลงฐานข้อมูลกลาง + Audit Trail + แจ้งผู้เกี่ยวข้อง','green','คดีถึงที่สุด','green',6,'ปิดสำนวน · เชื่อมโยงข้อมูลกิจกรรมที่ 8');
+  c.due='สิ้นสุดแล้ว';c.days=9999;closeModal();renderDetail();toast('<b>ปิดสำนวนแล้ว</b>');}
+function submitAssign(){const c=current;const o=document.getElementById('asOwner').value.split(' (')[0];
+  c.owner=o;push(c,'มอบหมาย '+o+' เป็นผู้รับผิดชอบสำนวน + Push Notification','green');
+  closeModal();renderDetail();toast('<b>มอบหมายแล้ว</b> — แจ้งเตือนนิติกรทันที');}
+function submitNotify(){const c=current;
+  const units=[...document.querySelectorAll('.chip[data-g="m"].sel-on')].map(x=>x.dataset.v);
+  push(c,'แจ้งผลการดำเนินคดีให้หน่วยงานภายใน: '+(units.join(', ')||'กองบริหารคดี')+' (๑๐.๑.๙)','teal');
+  closeModal();renderDetail();toast('<b>ส่งแจ้งผลแล้ว</b> — บันทึกหลักฐานการแจ้งใน Audit Trail');}
+function submitLink8(){const c=current;
+  push(c,'เชื่อมโยงข้อมูลผลคดีไปยังสำนวนไต่สวนต้นทาง (กิจกรรมที่ 8) สำเร็จ','green');
+  closeModal();renderDetail();toast('<b>เชื่อมโยงกิจกรรมที่ 8 แล้ว</b>');}
+function mockUpload(){current.docs.push(d('เอกสารแนบใหม่.pdf','0.8 MB'));renderDocs();toast('อัปโหลดแล้ว — สแกนไวรัส + เก็บเวอร์ชัน + Audit Log');}
+/* ================= MISC ================= */
+function toast(msg){const t=document.getElementById('toast');t.innerHTML=msg;t.classList.add('show');clearTimeout(t._x);t._x=setTimeout(()=>t.classList.remove('show'),3200);}
+function softAlert(m){toast(m)}
+function toggleGroup(el){el.classList.toggle('open');el.nextElementSibling.classList.toggle('open');}
+function showNoti(){toast('🔔 3 แจ้งเตือน: ปปท. 104/2569 ตีกลับ · ปปท. 115/2569 ครบกำหนดใน 12 วัน · หมายจับ จ 41/2569 รอติดตาม');}
+renderTable();
+</script>
+</body>
+</html>

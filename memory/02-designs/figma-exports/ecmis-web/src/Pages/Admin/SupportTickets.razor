@@ -1,0 +1,291 @@
+@page "/admin/support-tickets"
+@using EcmisWeb.Services
+@inject CentralSupportApiService CentralSupportApi
+
+<PageTitle>คำร้อง IT — E-CMIS Admin</PageTitle>
+
+<div style="background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 60%,#1e3575 100%);border-radius:18px;padding:28px 32px;margin-bottom:24px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-40px;right:-40px;width:220px;height:220px;border-radius:50%;background:rgba(201,168,76,.08);pointer-events:none"></div>
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">
+                    <i class="bi bi-headset" style="color:var(--navy-deep)"></i>
+                </div>
+                <div>
+                    <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.2">คำร้องขอรับการสนับสนุน IT</div>
+                    <div style="font-size:12px;color:rgba(255,255,255,.5)">จัดการคำขอแจ้งปัญหา — ศูนย์สนับสนุนกลาง</div>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <a href="/admin/phonebook-requests" class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25)">
+                <i class="bi bi-telephone me-1"></i>คำขอสมุดโทรศัพท์
+            </a>
+            <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px 16px;min-width:80px;text-align:center">
+                <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em">ใหม่</div>
+                <div style="font-size:22px;font-weight:900;color:#fbbf24;line-height:1">@tickets.Count(t => t.Status == "new")</div>
+            </div>
+            <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px 16px;min-width:80px;text-align:center">
+                <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em">กำลังดำเนินการ</div>
+                <div style="font-size:22px;font-weight:900;color:#60a5fa;line-height:1">@tickets.Count(t => t.Status == "in_progress")</div>
+            </div>
+            <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px 16px;min-width:80px;text-align:center">
+                <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em">แก้ไขแล้ว</div>
+                <div style="font-size:22px;font-weight:900;color:#4ade80;line-height:1">@tickets.Count(t => t.Status == "resolved")</div>
+            </div>
+            <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px 16px;min-width:80px;text-align:center">
+                <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em">ส่งทีมพัฒนา</div>
+                <div style="font-size:22px;font-weight:900;color:#f87171;line-height:1">@tickets.Count(t => t.Status == "escalated")</div>
+            </div>
+            <button class="btn-navy" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25)" @onclick="Load" disabled="@loading">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:center">
+        <i class="bi bi-exclamation-triangle-fill"></i>@error
+    </div>
+}
+@if (!string.IsNullOrWhiteSpace(successMsg))
+{
+    <div style="background:#ecfdf5;color:#065f46;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:center">
+        <i class="bi bi-check-circle-fill"></i>@successMsg
+    </div>
+}
+
+<div style="display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start">
+    @* — Ticket list — *@
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(15,23,42,.05)">
+        <div style="padding:14px 16px;border-bottom:1px solid #f1f5f9;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            @foreach (var (label, val) in new[] { ("ทั้งหมด",""), ("ใหม่","new"), ("กำลังดำเนินการ","in_progress"), ("แก้ไขแล้ว","resolved"), ("ส่งทีมพัฒนา","escalated"), ("ปิด","closed") })
+            {
+                <button class="@(statusFilter == val ? "btn-navy" : "btn-outline-navy")"
+                        style="font-size:12px;padding:5px 12px"
+                        @onclick="() => SetFilter(val)">
+                    @label
+                </button>
+            }
+        </div>
+
+        @if (loading)
+        {
+            <div style="padding:32px;text-align:center;color:#94a3b8">กำลังโหลด...</div>
+        }
+        else if (FilteredTickets.Count == 0)
+        {
+            <div style="padding:32px;text-align:center;color:#94a3b8">ไม่มีคำร้องในขณะนี้</div>
+        }
+        else
+        {
+            @foreach (var t in FilteredTickets)
+            {
+                var isSelected = selectedTicket?.Id == t.Id;
+                <div style="padding:14px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer;background:@(isSelected?"#f0f4ff":"#fff");transition:background .15s"
+                     @onclick="() => SelectTicket(t)">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                        <div style="min-width:0">
+                            <div style="font-size:11px;color:var(--navy-mid);font-weight:700;margin-bottom:2px">@t.TicketNo</div>
+                            <div style="font-weight:700;color:var(--navy-deep);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@t.Title</div>
+                            <div style="font-size:12px;color:#64748b;margin-top:2px">@t.RequesterName @(string.IsNullOrWhiteSpace(t.RequesterEmail) ? "" : $"({t.RequesterEmail})")</div>
+                        </div>
+                        <div style="flex-shrink:0">
+                            <span class="@StatusBadgeClass(t.Status)" style="font-size:11px">@StatusLabel(t.Status)</span>
+                        </div>
+                    </div>
+                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">@t.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                </div>
+            }
+        }
+    </div>
+
+    @* — Detail panel — *@
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px;box-shadow:0 4px 16px rgba(15,23,42,.05)">
+        @if (selectedTicket is null)
+        {
+            <div style="text-align:center;color:#94a3b8;padding:32px 0">
+                <i class="bi bi-cursor-fill" style="font-size:28px;margin-bottom:8px;display:block"></i>
+                เลือกคำร้องเพื่อดูรายละเอียด
+            </div>
+        }
+        else
+        {
+            <div style="margin-bottom:14px">
+                <div style="font-size:11px;color:var(--navy-mid);font-weight:700">@selectedTicket.TicketNo</div>
+                <h3 style="margin:4px 0 8px;color:var(--navy-deep);font-size:17px;font-weight:800">@selectedTicket.Title</h3>
+                <span class="@StatusBadgeClass(selectedTicket.Status)">@StatusLabel(selectedTicket.Status)</span>
+            </div>
+
+            <div style="font-size:13px;color:#475569;margin-bottom:12px">
+                <div><strong>ผู้แจ้ง:</strong> @selectedTicket.RequesterName</div>
+                @if (!string.IsNullOrWhiteSpace(selectedTicket.RequesterEmail))
+                {
+                    <div><strong>อีเมล:</strong> @selectedTicket.RequesterEmail</div>
+                }
+                <div style="margin-top:6px"><strong>รายละเอียด:</strong></div>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:8px 10px;margin-top:4px;line-height:1.55">@selectedTicket.Description</div>
+                @if (!string.IsNullOrWhiteSpace(selectedTicket.Resolution))
+                {
+                    <div style="margin-top:8px"><strong>วิธีแก้ไข:</strong></div>
+                    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:8px 10px;margin-top:4px;line-height:1.55">@selectedTicket.Resolution</div>
+                }
+                <div style="margin-top:8px;font-size:11px;color:#94a3b8">สร้างเมื่อ @selectedTicket.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+            </div>
+
+            <div style="border-top:1px solid #f1f5f9;padding-top:14px">
+                <div style="font-size:13px;font-weight:800;color:var(--navy-deep);margin-bottom:10px">อัปเดตสถานะ</div>
+                <label style="font-size:12px;font-weight:700;color:var(--navy-deep)">สถานะ</label>
+                <select @bind="updateStatus" style="width:100%;border:1px solid #d7dde8;border-radius:8px;padding:8px 10px;margin-bottom:8px;outline:none">
+                    <option value="new">ใหม่</option>
+                    <option value="in_progress">กำลังดำเนินการ</option>
+                    <option value="resolved">แก้ไขแล้ว</option>
+                    <option value="escalated">ต้องการความช่วยเหลือจากทีมพัฒนา</option>
+                    <option value="closed">ปิด</option>
+                </select>
+                <label style="font-size:12px;font-weight:700;color:var(--navy-deep)">วิธีแก้ไข / หมายเหตุ</label>
+                <textarea @bind="updateResolution" rows="3"
+                          placeholder="บันทึกวิธีแก้ไขหรือหมายเหตุ..."
+                          style="width:100%;border:1px solid #d7dde8;border-radius:8px;padding:8px 10px;resize:vertical;margin-bottom:8px;outline:none"></textarea>
+                <button class="btn-navy" style="width:100%" @onclick="SaveStatus" disabled="@updating">
+                    @if (updating) { <span>กำลังบันทึก...</span> } else { <span><i class="bi bi-check-lg"></i> บันทึกสถานะ</span> }
+                </button>
+                @if (selectedTicket.Status is "new" or "in_progress")
+                {
+                    <button class="btn btn-warning" style="width:100%;margin-top:8px;font-weight:700"
+                            @onclick="EscalateTicket" disabled="@updating">
+                        <i class="bi bi-person-exclamation me-1"></i> แจ้งทีมพัฒนาระบบ (SYS152)
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<SupportTicketDto> tickets = new();
+    private SupportTicketDetailDto? selectedTicket;
+    private string statusFilter = "";
+    private string updateStatus = "new";
+    private string updateResolution = "";
+    private bool loading = true;
+    private bool updating;
+    private string error = "";
+    private string successMsg = "";
+
+    private List<SupportTicketDto> FilteredTickets =>
+        string.IsNullOrEmpty(statusFilter)
+            ? tickets
+            : tickets.Where(t => t.Status == statusFilter).ToList();
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    private async Task Load()
+    {
+        loading = true;
+        error = "";
+        try
+        {
+            tickets = await CentralSupportApi.GetSupportTicketsAsync();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void SetFilter(string val)
+    {
+        statusFilter = val;
+        selectedTicket = null;
+    }
+
+    private async Task SelectTicket(SupportTicketDto t)
+    {
+        error = "";
+        successMsg = "";
+        try
+        {
+            selectedTicket = await CentralSupportApi.GetSupportTicketAsync(t.Id);
+            updateStatus = selectedTicket.Status;
+            updateResolution = selectedTicket.Resolution;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task SaveStatus()
+    {
+        if (selectedTicket is null) return;
+        updating = true;
+        error = "";
+        successMsg = "";
+        try
+        {
+            await CentralSupportApi.UpdateSupportTicketStatusAsync(selectedTicket.Id, updateStatus, updateResolution);
+            successMsg = "อัปเดตสถานะคำร้องแล้ว";
+            await Load();
+            selectedTicket = await CentralSupportApi.GetSupportTicketAsync(selectedTicket.Id);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            updating = false;
+        }
+    }
+
+    private async Task EscalateTicket()
+    {
+        if (selectedTicket is null) return;
+        updating = true;
+        error = "";
+        successMsg = "";
+        try
+        {
+            await CentralSupportApi.UpdateSupportTicketStatusAsync(selectedTicket.Id, "escalated", updateResolution);
+            successMsg = "ส่งแจ้งทีมพัฒนาระบบแล้ว — email ถูกส่งไปยังทีมพัฒนาแล้ว";
+            await Load();
+            selectedTicket = await CentralSupportApi.GetSupportTicketAsync(selectedTicket.Id);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            updating = false;
+        }
+    }
+
+    private static string StatusLabel(string status) => status switch
+    {
+        "new" => "ใหม่",
+        "in_progress" => "กำลังดำเนินการ",
+        "resolved" => "แก้ไขแล้ว",
+        "closed" => "ปิด",
+        "escalated" => "ส่งทีมพัฒนา",
+        _ => status
+    };
+
+    private static string StatusBadgeClass(string status) => status switch
+    {
+        "new" => "badge bg-warning text-dark",
+        "in_progress" => "badge bg-primary",
+        "resolved" => "badge bg-success",
+        "closed" => "badge bg-secondary",
+        "escalated" => "badge bg-danger",
+        _ => "badge bg-secondary"
+    };
+}

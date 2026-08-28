@@ -1,0 +1,235 @@
+@inject IJSRuntime JSRuntime
+
+<!-- VIEW: PROOF OF CONCEPT (POC) -->
+<div id="view-poc" class="app-view">
+    <div class="kpi-card mb-4 p-4" style="border-left: 5px solid var(--gold); background: rgba(26, 47, 107, 0.02);">
+        <h5 class="fw-bold text-primary mb-2">🧪 ระบบพิสูจน์แนวคิดการใช้เทคโนโลยี (Proof of Concept - Library Verification)</h5>
+        <p class="text-muted mb-0" style="font-size: 13px; line-height: 1.6;">
+            หน้านี้ออกแบบมาเพื่อแสดงผลการเรียกใช้งาน (Proof of Concept) ของไลบรารีสากล C# Blazor ทั้งหมดที่ถูกระบุในแบบแผนระบบ 
+            เพื่อยืนยันว่าการคอมไพล์และสถาปัตยกรรมทำงานร่วมกันได้สมบูรณ์แบบบนฝั่ง Backend Server 
+            และตอบโจทย์กระบวนการทำงานของ ป.ป.ท. กิจกรรมที่ 10
+        </p>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Column 1: MudBlazor Component Suite -->
+        <div class="col-lg-6">
+            <div class="table-container p-4 h-100">
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-cpu"></i> 1. MudBlazor UI Component Suite (&lt;MudDataGrid&gt;)</h6>
+                <p class="text-muted mb-3" style="font-size: 12px;">
+                    แสดงการกรอง (Filtering), เรียงลำดับ (Sorting), และแบ่งหน้า (Pagination) จากฝั่ง C# หลังบ้าน โดยไม่ต้องเขียน JavaScript เพิ่มเติม
+                </p>
+                
+                <MudDataGrid T="CaseRecord" Items="@pocCases" Filterable="true" SortMode="SortMode.Multiple" Class="border rounded shadow-sm" Style="font-size:12px; font-family:'Sarabun',sans-serif;">
+                    <Columns>
+                        <PropertyColumn T="CaseRecord" TProperty="string" Property="x => x.Id" Title="เลขสำนวน ป.ป.ท." />
+                        <PropertyColumn T="CaseRecord" TProperty="string" Property="x => x.Type" Title="ประเภทสำนวน" />
+                        <PropertyColumn T="CaseRecord" TProperty="string" Property="x => x.Accused" Title="ผู้ถูกกล่าวหา" />
+                        <PropertyColumn T="CaseRecord" TProperty="string" Property="x => x.Responsible" Title="ผู้รับผิดชอบ" />
+                        <PropertyColumn T="CaseRecord" TProperty="string" Property="x => x.Status" Title="สถานะคดี" />
+                    </Columns>
+                </MudDataGrid>
+
+                <div class="mt-4 p-3 border rounded bg-light">
+                    <label class="form-label text-muted d-block" style="font-size:11.5px;">ทดสอบ MudDatePicker & MudButton C# Interactions</label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <MudDatePicker Label="ทดสอบปฏิทิน MudBlazor" Date="DateTime.Today" Style="max-width: 250px;" Margin="MudBlazor.Margin.Dense" />
+                        <MudButton Variant="MudBlazor.Variant.Filled" Color="MudBlazor.Color.Primary" OnClick="@(() => JSRuntime.InvokeVoidAsync("alert", "C# OnClick Triggered successfully via MudBlazor Button!"))" Style="height: 38px;">
+                            ทดสอบกด C# Click
+                        </MudButton>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 2: Radzen Charts & Documents Export -->
+        <div class="col-lg-6">
+            <div class="table-container p-4 h-100">
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-bar-chart"></i> 2. Radzen Charts (Interactive Executive Graph)</h6>
+                <p class="text-muted mb-2" style="font-size: 12px;">
+                    การวาดกราฟสถิติคดีและคำร้องด้วย Radzen Blazor Chart พร้อมการโต้ตอบด้วยเมาส์ (Tooltips)
+                </p>
+
+                <div class="border rounded p-3 bg-white mb-4" style="height: 200px;">
+                    <RadzenChart Style="height: 100%;">
+                        <RadzenColumnSeries Data="@chartData" CategoryProperty="Month" ValueProperty="Value" Title="จำนวนคำร้องขอข้อมูลข่าวสาร" LineType="LineType.Dashed" />
+                        <RadzenCategoryAxis Padding="20" />
+                        <RadzenValueAxis Min="0" Max="25" Step="5" />
+                    </RadzenChart>
+                </div>
+
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-file-earmark-arrow-down"></i> 3. Document Export Engines (C# Server Side)</h6>
+                <p class="text-muted mb-3" style="font-size: 12px;">
+                    สร้างไฟล์เอกสารสดแบบเรียลไทม์จากฝั่ง C# Server โดยใช้ ClosedXML, Open-XML-SDK และ QuestPDF
+                </p>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-md-4">
+                        <button class="btn btn-grad-navy w-100 btn-sm py-2" @onclick="ExportExcelPOC">
+                            <i class="bi bi-file-earmark-excel"></i> Export Excel (ClosedXML)
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-grad-navy w-100 btn-sm py-2" @onclick="ExportWordPOC">
+                            <i class="bi bi-file-earmark-word"></i> Export Word (OpenXML)
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-grad-navy w-100 btn-sm py-2" @onclick="ExportPdfPOC">
+                            <i class="bi bi-file-earmark-pdf"></i> Export PDF (QuestPDF)
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Model and data classes
+    public class CaseRecord
+    {
+        public string Id { get; set; } = "";
+        public string Type { get; set; } = "";
+        public string Accused { get; set; } = "";
+        public string Responsible { get; set; } = "";
+        public string Status { get; set; } = "";
+        public DateTime DueDate { get; set; }
+    }
+
+    private List<CaseRecord> pocCases = new()
+    {
+        new() { Id = "ปปท. 115/2569", Type = "ไม่ฟ้อง", Accused = "นายสมชาย วงศ์ดี", Responsible = "นายปิติคุณ อู่ตะเภา", Status = "รอคำวินิจฉัยอัยการ", DueDate = DateTime.Parse("2026-07-15") },
+        new() { Id = "ปปท. 108/2569", Type = "ถอนฟ้อง", Accused = "นางวิภา ชัยชนะ", Responsible = "นายอานนท์ ชนประชา", Status = "อยู่ระหว่างศาลชั้นต้น", DueDate = DateTime.Parse("2026-09-30") },
+        new() { Id = "ปปท. 093/2568", Type = "ไม่อุทธรณ์", Accused = "นายอานนท์ ทวีสุข", Responsible = "นายปิติคุณ อู่ตะเภา", Status = "รอมติบอร์ด ป.ป.ท.", DueDate = DateTime.Parse("2026-07-19") },
+        new() { Id = "ปปท. 087/2568", Type = "ไม่ฎีกา", Accused = "นายประเสริฐ พ.", Responsible = "นางสาว อรวรรณ ทูลมณี", Status = "ใกล้ครบอายุความ", DueDate = DateTime.Parse("2026-07-22") },
+    };
+
+    public class ChartDataItem
+    {
+        public string Month { get; set; } = "";
+        public double Value { get; set; }
+    }
+
+    private List<ChartDataItem> chartData = new()
+    {
+        new() { Month = "ม.ค.", Value = 12 },
+        new() { Month = "ก.พ.", Value = 19 },
+        new() { Month = "มี.ค.", Value = 14 },
+        new() { Month = "เม.ย.", Value = 15 },
+        new() { Month = "พ.ค.", Value = 18 },
+        new() { Month = "มิ.ย.", Value = 8 }
+    };
+
+
+
+    private async Task ExportExcelPOC()
+    {
+        try
+        {
+            using var workbook = new ClosedXML.Excel.XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Case Statistics");
+            worksheet.Cell(1, 1).Value = "เลขสำนวน ป.ป.ท.";
+            worksheet.Cell(1, 2).Value = "ประเภทสำนวน";
+            worksheet.Cell(1, 3).Value = "ผู้ถูกกล่าวหา";
+            worksheet.Cell(1, 4).Value = "ผู้รับผิดชอบ";
+            worksheet.Cell(1, 5).Value = "สถานะ";
+
+            for (int i = 0; i < pocCases.Count; i++)
+            {
+                worksheet.Cell(i + 2, 1).Value = pocCases[i].Id;
+                worksheet.Cell(i + 2, 2).Value = pocCases[i].Type;
+                worksheet.Cell(i + 2, 3).Value = pocCases[i].Accused;
+                worksheet.Cell(i + 2, 4).Value = pocCases[i].Responsible;
+                worksheet.Cell(i + 2, 5).Value = pocCases[i].Status;
+            }
+
+            using var stream = new System.IO.MemoryStream();
+            workbook.SaveAs(stream);
+            var base64 = Convert.ToBase64String(stream.ToArray());
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", "E-CMIS_ClosedXML_POC.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", base64);
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"เกิดข้อผิดพลาดในการสร้าง Excel: {ex.Message}");
+        }
+    }
+
+    private async Task ExportWordPOC()
+    {
+        try
+        {
+            using var stream = new System.IO.MemoryStream();
+            using (var wordDocument = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Create(stream, DocumentFormat.OpenXml.WordprocessingDocumentType.Document))
+            {
+                var mainPart = wordDocument.AddMainDocumentPart();
+                mainPart.Document = new DocumentFormat.OpenXml.Wordprocessing.Document(
+                    new DocumentFormat.OpenXml.Wordprocessing.Body(
+                        new DocumentFormat.OpenXml.Wordprocessing.Paragraph(
+                            new DocumentFormat.OpenXml.Wordprocessing.Run(
+                                new DocumentFormat.OpenXml.Wordprocessing.Text("เอกสารสรุปสำนวนคดี (สร้างด้วย Open-XML-SDK)\n\n")
+                            )
+                        ),
+                        new DocumentFormat.OpenXml.Wordprocessing.Paragraph(
+                            new DocumentFormat.OpenXml.Wordprocessing.Run(
+                                new DocumentFormat.OpenXml.Wordprocessing.Text($"คดีตัวอย่างแรก: {pocCases[0].Id} - {pocCases[0].Accused} (สถานะ: {pocCases[0].Status})")
+                            )
+                        )
+                    )
+                );
+                wordDocument.Save();
+            }
+
+            var base64 = Convert.ToBase64String(stream.ToArray());
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", "E-CMIS_OpenXML_POC.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", base64);
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"เกิดข้อผิดพลาดในการสร้าง Word: {ex.Message}");
+        }
+    }
+
+    private async Task ExportPdfPOC()
+    {
+        try
+        {
+            var pdfBytes = QuestPDF.Fluent.Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(QuestPDF.Helpers.PageSizes.A4);
+                    page.Margin(2, QuestPDF.Infrastructure.Unit.Centimetre);
+                    page.Header().Text("รายงานมติและรายละเอียดสำนวนคดี E-CMIS (QuestPDF POC)")
+                        .FontSize(18).Bold().FontColor(QuestPDF.Helpers.Colors.Blue.Darken2);
+                    
+                    page.Content().PaddingVertical(1, QuestPDF.Infrastructure.Unit.Centimetre).Column(column =>
+                    {
+                        column.Spacing(10);
+                        column.Item().Text("รายการคดีในการควบคุม (กิจกรรมที่ 10):").FontSize(14).Bold();
+                        
+                        foreach (var c in pocCases)
+                        {
+                            column.Item().Text($"• สำนวน {c.Id} - {c.Accused} | {c.Type} ({c.Status})").FontSize(11);
+                        }
+                    });
+                    
+                    page.Footer().AlignCenter().Text(x =>
+                    {
+                        x.Span("หน้า ");
+                        x.CurrentPageNumber();
+                    });
+                });
+            }).GeneratePdf();
+
+            var base64 = Convert.ToBase64String(pdfBytes);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", "E-CMIS_QuestPDF_POC.pdf", "application/pdf", base64);
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"เกิดข้อผิดพลาดในการสร้าง PDF: {ex.Message}");
+        }
+    }
+
+
+}

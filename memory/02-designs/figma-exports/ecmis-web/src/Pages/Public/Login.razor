@@ -1,0 +1,1235 @@
+@page "/login"
+@layout Components.Layout.BlankLayout
+@inject NavigationManager Nav
+@inject EcmisWeb.Services.AuthApiService AuthApi
+@inject EcmisWeb.Services.ThaiDService ThaiDSvc
+@inject EcmisWeb.Services.SessionService SessionSvc
+@inject EcmisWeb.Services.CurrentUserService CurrentUserSvc
+@inject EcmisWeb.Services.SystemAccessApiService SystemApi
+@implements IDisposable
+
+<style>
+/* ═══════════════════════════════════════════════════
+   E-CMIS LOGIN  —  Luxury Dark Edition
+   ═══════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --ink:     #050b18;
+    --ink2:    #080f1f;
+    --navy:    #0a162d;
+    --gold:    #c8a96e;
+    --gold-hi: #e8c98a;
+    --gold-lo: rgba(200,169,110,.18);
+    --muted:   rgba(255,255,255,.38);
+}
+
+html, body { height: 100%; background: var(--ink); }
+
+.lx-root {
+    display: flex;
+    min-height: 100vh;
+    font-family: 'Sarabun', 'IBM Plex Sans Thai', sans-serif;
+    background: var(--ink);
+    opacity: 0;
+    animation: lx-fade .6s ease .05s forwards;
+}
+@@keyframes lx-fade { to { opacity: 1; } }
+
+/* ─── LEFT  ───────────────────────────────────────── */
+.lx-left {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 60px 48px 48px;
+}
+
+/* Vignette bg */
+.lx-left::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+        radial-gradient(ellipse 70% 60% at 50% 44%,
+            rgba(200,169,110,.07) 0%,
+            transparent 65%),
+        radial-gradient(ellipse 100% 100% at 50% 50%,
+            #0b1628 0%, var(--ink) 100%);
+    pointer-events: none;
+}
+
+/* Scan-lines overlay — subtle, gives depth */
+.lx-left::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0,0,0,.06) 3px,
+        rgba(0,0,0,.06) 4px
+    );
+    pointer-events: none;
+    opacity: .4;
+}
+
+/* Moving grid */
+.lx-grid {
+    position: absolute; inset: -10%;
+    background-image:
+        linear-gradient(rgba(200,169,110,.028) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(200,169,110,.028) 1px, transparent 1px);
+    background-size: 80px 80px;
+    animation: lx-drift 60s linear infinite;
+    pointer-events: none;
+}
+@@keyframes lx-drift {
+    from { transform: translate(0,0); }
+    to   { transform: translate(80px,80px); }
+}
+
+.lx-ptcl { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.lx-p {
+    position: absolute; width: 2px; height: 2px; border-radius: 50%;
+    background: var(--gold); opacity: 0;
+    animation: lx-rise var(--d) ease-in-out var(--delay) infinite;
+}
+@@keyframes lx-rise {
+    0%   { opacity: 0; transform: translate(0,0) scale(0); }
+    15%  { opacity: .6; }
+    85%  { opacity: .2; }
+    100% { opacity: 0; transform: translate(var(--tx),-100px) scale(.4); }
+}
+
+/* ── EMBLEM ─── */
+.lx-em-wrap {
+    position: relative; width: 260px; height: 260px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 52px;
+    animation: lx-em-in 1.4s cubic-bezier(.16,1,.3,1) .2s both;
+}
+@@keyframes lx-em-in { from { opacity: 0; transform: scale(.55) translateY(24px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.lx-halo {
+    position: absolute; width: 290px; height: 290px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(200,169,110,.12) 0%, rgba(200,169,110,.04) 40%, transparent 68%);
+    animation: lx-halo-beat 4s ease-in-out infinite; pointer-events: none;
+}
+@@keyframes lx-halo-beat { 0%,100% { transform: scale(1); opacity: .7; } 50% { transform: scale(1.15); opacity: 1; } }
+.lx-ring { position: absolute; border-radius: 50%; border: 1px solid transparent; }
+.lx-r1 { width: 260px; height: 260px; border-top-color: rgba(200,169,110,.75); border-right-color: rgba(200,169,110,.18); border-bottom-color: rgba(200,169,110,.08); animation: lx-cw 10s linear infinite; }
+.lx-r2 { width: 214px; height: 214px; border-bottom-color: rgba(200,169,110,.55); border-left-color: rgba(200,169,110,.14); animation: lx-ccw 14s linear infinite; }
+.lx-r3 { width: 168px; height: 168px; border-top-color: rgba(200,169,110,.85); border-right-color: rgba(200,169,110,.22); animation: lx-cw 6s linear infinite; }
+.lx-r4 { width: 130px; height: 130px; border-bottom-color: rgba(255,255,255,.1); border-left-color: rgba(255,255,255,.05); animation: lx-ccw 11s linear infinite; }
+@@keyframes lx-cw  { to { transform: rotate( 360deg); } }
+@@keyframes lx-ccw { to { transform: rotate(-360deg); } }
+.lx-r1::before, .lx-r3::before {
+    content: ''; position: absolute; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--gold-hi); box-shadow: 0 0 10px 4px rgba(200,169,110,.65);
+    top: -3.5px; left: 50%; transform: translateX(-50%);
+}
+.lx-r3::before { width: 5px; height: 5px; top: -2.5px; box-shadow: 0 0 8px 3px rgba(200,169,110,.5); }
+.lx-ticks { position: absolute; width: 260px; height: 260px; animation: lx-ccw 40s linear infinite; }
+.lx-disk {
+    position: relative; z-index: 3; width: 108px; height: 108px; border-radius: 50%;
+    background: linear-gradient(150deg, #122050 0%, #060c1a 100%);
+    border: 2px solid rgba(200,169,110,.5);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 8px rgba(200,169,110,.06), 0 0 50px rgba(200,169,110,.15), inset 0 1px 0 rgba(255,255,255,.06);
+    overflow: hidden;
+}
+.lx-disk::before {
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent 0%, rgba(200,169,110,.15) 8%, transparent 16%);
+    animation: lx-cw 3.5s linear infinite;
+}
+.lx-disk-name { position: relative; font-size: 16px; font-weight: 900; color: var(--gold-hi); letter-spacing: 1.5px; text-shadow: 0 0 14px rgba(200,169,110,.7); }
+.lx-disk-sub  { position: relative; font-size: 8px; font-weight: 700; color: rgba(200,169,110,.5); letter-spacing: 3px; margin-top: 3px; }
+
+/* ── HERO ─── */
+.lx-hero { position: relative; z-index: 2; text-align: center; animation: lx-up .9s cubic-bezier(.16,1,.3,1) .65s both; }
+@@keyframes lx-up { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+.lx-hero-name { font-size: 72px; font-weight: 900; color: #fff; letter-spacing: -4px; line-height: 1; margin-bottom: 10px; }
+.lx-hero-name span { color: var(--gold-hi); }
+.lx-hero-bar { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 0 auto 14px; }
+.lx-bar-line { flex: 1; max-width: 90px; height: 1px; background: linear-gradient(90deg, transparent, rgba(200,169,110,.55)); }
+.lx-bar-line:last-child { transform: scaleX(-1); }
+.lx-bar-gem { width: 8px; height: 8px; border-radius: 1px; background: var(--gold); transform: rotate(45deg); box-shadow: 0 0 12px rgba(200,169,110,.8); animation: lx-gem 2.5s ease-in-out infinite; }
+@@keyframes lx-gem { 0%,100% { box-shadow: 0 0 12px rgba(200,169,110,.7); } 50% { box-shadow: 0 0 22px rgba(200,169,110,1), 0 0 44px rgba(200,169,110,.35); } }
+.lx-hero-sub { font-size: 13px; color: var(--muted); line-height: 1.75; letter-spacing: .3px; margin-bottom: 48px; }
+
+/* ─── RIGHT PANEL ────────────────────────────────── */
+.lx-right {
+    width: 460px; flex-shrink: 0;
+    background: var(--ink2);
+    box-shadow: -32px 0 64px rgba(0,0,0,.55);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 52px 44px;
+    position: relative;
+    animation: lx-slide .75s cubic-bezier(.16,1,.3,1) .12s both;
+}
+@@keyframes lx-slide {
+    from { opacity: 0; transform: translateX(36px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Top shimmer */
+.lx-right::before {
+    content: '';
+    position: absolute; top: 0; left: 15%; right: 15%; height: 1px;
+    background: linear-gradient(90deg,
+        transparent, var(--gold-hi) 40%, var(--gold) 50%, var(--gold-hi) 60%, transparent);
+    opacity: .7;
+}
+
+/* Bottom-right corner accent */
+.lx-right::after {
+    content: '';
+    position: absolute; bottom: 0; right: 0;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle at 100% 100%, rgba(200,169,110,.07), transparent 70%);
+    pointer-events: none;
+}
+
+.lx-card { width: 100%; max-width: 360px; }
+
+/* Icon */
+.lx-icon {
+    width: 58px; height: 58px; border-radius: 22px;
+    background: linear-gradient(150deg, #12265a 0%, #060c1a 100%);
+    border: 1px solid rgba(200,169,110,.38);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: var(--gold-hi); margin-bottom: 22px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.35), 0 0 0 6px rgba(200,169,110,.06);
+    animation: lx-icon-glow 3.5s ease-in-out infinite;
+}
+@@keyframes lx-icon-glow {
+    0%,100% { box-shadow: 0 8px 32px rgba(0,0,0,.35), 0 0 0 6px rgba(200,169,110,.06); }
+    50%     { box-shadow: 0 8px 32px rgba(0,0,0,.35), 0 0 0 9px rgba(200,169,110,.14), 0 0 36px rgba(200,169,110,.1); }
+}
+.lx-icon-amber { background: linear-gradient(150deg, #6b4010 0%, #2a1700 100%); }
+.lx-icon-red   { background: linear-gradient(150deg, #6b1a10 0%, #2a0900 100%); }
+
+.lx-title { font-size: 23px; font-weight: 800; color: #fff; letter-spacing: -.3px; margin-bottom: 5px; }
+.lx-sub   { font-size: 13px; color: var(--muted); line-height: 1.55; margin-bottom: 28px; }
+
+/* Tabs */
+.lx-tabs {
+    display: flex; gap: 3px;
+    background: rgba(255,255,255,.034);
+    border: 1px solid rgba(255,255,255,.065);
+    border-radius: 16px; padding: 4px; margin-bottom: 24px;
+}
+.lx-tab {
+    flex: 1; padding: 10px 8px; border: none; border-radius: 12px;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all .25s cubic-bezier(.4,0,.2,1);
+    color: var(--muted); background: transparent;
+}
+.lx-tab-on {
+    color: #fff;
+    background: rgba(200,169,110,.13);
+    border: 1px solid rgba(200,169,110,.22) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+
+/* Field */
+.lx-field { margin-bottom: 16px; }
+.lx-lbl {
+    display: block; font-size: 10.5px; font-weight: 700;
+    color: rgba(255,255,255,.32); letter-spacing: .9px;
+    text-transform: uppercase; margin-bottom: 8px;
+}
+.lx-iw { position: relative; }
+.lx-ico {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    font-size: 15px; color: rgba(255,255,255,.22); pointer-events: none; transition: color .2s;
+}
+.lx-inp {
+    width: 100%; padding: 13px 14px 13px 42px;
+    background: rgba(255,255,255,.045);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px;
+    color: #fff; font-family: inherit; font-size: 14px;
+    outline: none; transition: all .28s cubic-bezier(.4,0,.2,1);
+}
+.lx-inp::placeholder { color: rgba(255,255,255,.18); }
+.lx-inp:focus {
+    border-color: rgba(200,169,110,.5);
+    background: rgba(200,169,110,.055);
+    box-shadow: 0 0 0 4px rgba(200,169,110,.1);
+}
+.lx-iw:focus-within .lx-ico { color: var(--gold); }
+.lx-inp-pr { padding-right: 46px; }
+.lx-eye {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    color: rgba(255,255,255,.25); font-size: 14px; padding: 4px; transition: color .2s;
+}
+.lx-eye:hover { color: rgba(255,255,255,.65); }
+
+/* Between */
+.lx-between { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.lx-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); cursor: pointer; }
+.lx-check input { width: 14px; height: 14px; accent-color: var(--gold); cursor: pointer; }
+.lx-session-note { margin: -12px 0 16px; font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+/* Link */
+.lx-link {
+    background: none; border: none; padding: 0;
+    color: var(--gold); font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; text-decoration: none; transition: opacity .2s;
+}
+.lx-link:hover { opacity: .72; }
+.lx-back {
+    width: 100%; background: none; border: none;
+    color: var(--muted); font-family: inherit; font-size: 13px;
+    cursor: pointer; margin-top: 12px; text-align: center; transition: color .2s;
+}
+.lx-back:hover { color: rgba(255,255,255,.7); }
+
+/* Button */
+.lx-btn {
+    width: 100%; padding: 14px;
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    border: none; border-radius: 18px;
+    font-family: inherit; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all .3s cubic-bezier(.4,0,.2,1); letter-spacing: .1px;
+}
+.lx-gold {
+    background: linear-gradient(135deg, #e0c070 0%, #c8a050 45%, #a07828 100%);
+    color: #080f1a;
+    box-shadow: 0 6px 28px rgba(200,160,60,.22);
+}
+.lx-gold:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(200,160,60,.36);
+    filter: brightness(1.07);
+}
+.lx-gold:active:not(:disabled) { transform: translateY(0); }
+.lx-gold:disabled { opacity: .5; cursor: not-allowed; }
+.lx-blue {
+    background: linear-gradient(135deg, #1e4db4 0%, #0d2468 100%);
+    color: #fff; margin-top: 20px;
+    box-shadow: 0 4px 20px rgba(30,77,180,.38);
+}
+.lx-blue:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(30,77,180,.5); }
+
+/* Spinner */
+.lx-spin {
+    display: inline-block; width: 17px; height: 17px;
+    border: 2.5px solid rgba(8,15,26,.2);
+    border-top-color: #080f1a; border-radius: 50%;
+    animation: lx-do-spin .6s linear infinite;
+}
+@@keyframes lx-do-spin { to { transform: rotate(360deg); } }
+
+/* Alert */
+.lx-alert {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 11px 13px; border-radius: 14px;
+    font-size: 13px; line-height: 1.5; margin-bottom: 16px;
+}
+.a-err  { background: rgba(220,38,38,.09);  border: 1px solid rgba(220,38,38,.22);  color: #f87171; }
+.a-ok   { background: rgba(22,163,74,.09);  border: 1px solid rgba(22,163,74,.22);  color: #4ade80; }
+.a-warn { background: rgba(234,179,8,.07);  border: 1px solid rgba(234,179,8,.22);  color: #fbbf24; }
+
+/* OTP */
+.lx-otp-mail {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 13px 14px; border-radius: 16px;
+    background: rgba(200,169,110,.075);
+    border: 1px solid rgba(200,169,110,.20);
+    margin-bottom: 18px;
+}
+.lx-otp-mail i { color: var(--gold-hi); font-size: 18px; margin-top: 2px; }
+.lx-otp-mail strong { color: var(--gold-hi); font-weight: 800; overflow-wrap: anywhere; }
+.lx-otp-input {
+    width: 100%;
+    padding: 16px 18px;
+    border-radius: 18px;
+    border: 1.5px solid rgba(200,169,110,.26);
+    background: rgba(255,255,255,.055);
+    color: #fff;
+    text-align: center;
+    font-family: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 10px;
+    outline: none;
+    transition: all .25s;
+}
+.lx-otp-input:focus {
+    border-color: rgba(200,169,110,.55);
+    box-shadow: 0 0 0 4px rgba(200,169,110,.10);
+}
+.lx-otp-meta {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin: 10px 0 18px;
+    font-size: 12px; color: var(--muted);
+}
+.lx-otp-code {
+    font-family: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+    font-weight: 800; color: var(--gold-hi);
+}
+
+/* ThaiD */
+.lx-thaid { text-align: center; padding: 4px 0; }
+.lx-thaid-ico {
+    width: 76px; height: 76px; border-radius: 50%;
+    background: linear-gradient(145deg, #1c3ea4, #091a60);
+    border: 2px solid rgba(200,169,110,.28);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; color: #fff; margin: 0 auto 16px;
+    box-shadow: 0 8px 28px rgba(28,62,164,.42);
+}
+.lx-thaid-t { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+.lx-thaid-d { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.lx-thaid-n { font-size: 11px; color: rgba(255,255,255,.25); margin-top: 16px; }
+
+/* Strength */
+.lx-bar { height: 4px; background: rgba(255,255,255,.07); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+.lx-bar-fill { height: 100%; border-radius: 2px; transition: width .35s, background .35s; }
+.lx-bar-lbl  { font-size: 11px; font-weight: 600; margin-top: 4px; }
+
+/* Card footer */
+.lx-reg {
+    text-align: center; font-size: 13px; color: rgba(255,255,255,.32);
+    margin-top: 22px; padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,.055);
+}
+.lx-reg a { color: var(--gold); font-weight: 600; text-decoration: none; margin-left: 4px; }
+.lx-reg a:hover { opacity: .75; }
+
+/* Panel footer */
+.lx-foot {
+    position: absolute; bottom: 22px; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    font-size: 11px; color: rgba(255,255,255,.18);
+}
+.lx-foot a { color: rgba(200,169,110,.38); text-decoration: none; }
+.lx-foot a:hover { color: var(--gold); }
+.lx-dot { opacity: .3; }
+
+@@media (max-width: 860px) {
+    .lx-root { flex-direction: column; }
+    .lx-left { min-height: 52vh; padding: 40px 24px 44px; }
+    .lx-hero-name { font-size: 52px; }
+    .lx-em-wrap { width: 190px; height: 190px; }
+    .lx-r1 { width: 190px; height: 190px; }
+    .lx-r2 { width: 155px; height: 155px; }
+    .lx-r3 { width: 122px; height: 122px; }
+    .lx-r4 { width:  94px; height:  94px; }
+    .lx-ticks { width: 190px; height: 190px; }
+    .lx-disk  { width:  80px; height:  80px; }
+    .lx-halo  { width: 210px; height: 210px; }
+    .lx-right { width: 100%; padding: 40px 24px 68px; border-left: none; border-top: 1px solid rgba(200,169,110,.09); }
+    .lx-light .lx-right { border-top: 4px solid #1a3575; }
+}
+
+/* ── TOGGLE BUTTON ───────────────────────────────── */
+.lx-theme-btn {
+    position: absolute; top: 16px; right: 16px;
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; cursor: pointer; transition: all .22s; z-index: 10;
+    /* dark default */
+    background: rgba(255,255,255,.07);
+    border: 1.5px solid rgba(200,169,110,.25);
+    color: rgba(200,169,110,.8);
+    box-shadow: none;
+}
+.lx-theme-btn:hover { transform: scale(1.12); background: rgba(200,169,110,.14); color: var(--gold-hi); }
+
+/* ── LIGHT THEME OVERRIDES (เพิ่มเมื่อ toggle เป็น light) ── */
+.lx-light { background: #eaf0fb; }
+
+.lx-light .lx-right {
+    background: #ffffff;
+    box-shadow: -32px 0 80px rgba(13,27,62,.28);
+}
+.lx-light .lx-right::before {
+    left: 0; right: 0; height: 4px; opacity: 1;
+    background: linear-gradient(90deg, #0d2258, #1a3575, #2d52a0);
+}
+.lx-light .lx-right::after { display: none; }
+
+.lx-light .lx-theme-btn {
+    background: #eef3ff;
+    border-color: rgba(13,27,62,.14);
+    color: #1a3575;
+    box-shadow: 0 2px 8px rgba(13,27,62,.1);
+}
+.lx-light .lx-theme-btn:hover { background: #dce8ff; color: #0d2258; }
+
+.lx-light .lx-icon {
+    background: linear-gradient(150deg, #1a3575, #0d2258);
+    border-color: rgba(26,53,117,.25); color: #ffffff;
+    animation: lx-icon-glow-lt 3.5s ease-in-out infinite;
+}
+@@keyframes lx-icon-glow-lt {
+    0%,100% { box-shadow: 0 8px 24px rgba(13,34,88,.22), 0 0 0 6px rgba(26,53,117,.08); }
+    50%     { box-shadow: 0 8px 30px rgba(13,34,88,.32), 0 0 0 9px rgba(26,53,117,.16), 0 0 28px rgba(26,53,117,.1); }
+}
+.lx-light .lx-icon-amber { background: linear-gradient(150deg,#92590e,#5c3200); border-color: rgba(180,100,10,.3); color:#fff; }
+.lx-light .lx-icon-red   { background: linear-gradient(150deg,#b91c1c,#7f1d1d); border-color: rgba(185,28,28,.3); color:#fff; }
+
+.lx-light .lx-title { color: #0d1b42; }
+.lx-light .lx-sub   { color: rgba(13,27,62,.48); }
+
+.lx-light .lx-tabs  { background: #f0f5ff; border-color: rgba(13,27,62,.09); }
+.lx-light .lx-tab   { color: rgba(13,27,62,.48); }
+.lx-light .lx-tab-on { color: #1a3575; background: #ffffff; border-color: rgba(26,53,117,.16) !important; box-shadow: 0 2px 10px rgba(13,27,62,.1); }
+
+.lx-light .lx-lbl { color: rgba(13,27,62,.45); }
+.lx-light .lx-ico { color: rgba(13,27,62,.28); }
+.lx-light .lx-iw:focus-within .lx-ico { color: #1a3575; }
+.lx-light .lx-inp { background: #f6f9ff; border: 1.5px solid rgba(13,27,62,.11); color: #0d1b42; }
+.lx-light .lx-inp::placeholder { color: rgba(13,27,62,.28); }
+.lx-light .lx-inp:focus { border-color: rgba(26,53,117,.5); background: #ffffff; box-shadow: 0 0 0 4px rgba(26,53,117,.1); }
+.lx-light .lx-eye       { color: rgba(13,27,62,.28); }
+.lx-light .lx-eye:hover { color: #1a3575; }
+
+.lx-light .lx-between { /* no change needed */ }
+.lx-light .lx-check   { color: rgba(13,27,62,.5); }
+.lx-light .lx-check input { accent-color: #1a3575; }
+.lx-light .lx-link    { color: #1a3575; }
+.lx-light .lx-back    { color: rgba(13,27,62,.48); }
+.lx-light .lx-back:hover { color: #1a3575; }
+
+.lx-light .lx-gold { background: linear-gradient(135deg,#2d52a0 0%,#1a3575 50%,#0d2258 100%); color: #ffffff; box-shadow: 0 4px 22px rgba(13,34,88,.28); }
+.lx-light .lx-gold:hover:not(:disabled) { box-shadow: 0 10px 32px rgba(13,34,88,.4); filter: brightness(1.12); }
+.lx-light .lx-spin { border-color: rgba(255,255,255,.3); border-top-color: #fff; }
+
+.lx-light .a-err  { background: rgba(220,38,38,.07);  border-color: rgba(220,38,38,.2);  color: #dc2626; }
+.lx-light .a-ok   { background: rgba(22,163,74,.07);  border-color: rgba(22,163,74,.2);  color: #15803d; }
+.lx-light .a-warn { background: rgba(217,119,6,.07);  border-color: rgba(217,119,6,.2);  color: #b45309; }
+.lx-light .lx-otp-mail {
+    background: rgba(26,53,117,.06);
+    border-color: rgba(26,53,117,.16);
+}
+.lx-light .lx-otp-mail i,
+.lx-light .lx-otp-mail strong { color:#1a3575; }
+.lx-light .lx-otp-input {
+    background:#f6f9ff;
+    border-color:rgba(13,27,62,.12);
+    color:#0d1b42;
+}
+.lx-light .lx-otp-input:focus {
+    border-color:rgba(26,53,117,.5);
+    background:#ffffff;
+    box-shadow:0 0 0 4px rgba(26,53,117,.1);
+}
+.lx-light .lx-otp-code { color:#1a3575; }
+
+.lx-light .lx-thaid-ico { border-color: rgba(26,53,117,.25); }
+.lx-light .lx-thaid-t   { color: #0d1b42; }
+.lx-light .lx-thaid-d   { color: rgba(13,27,62,.48); }
+.lx-light .lx-thaid-n   { color: rgba(13,27,62,.35); }
+
+.lx-light .lx-bar  { background: rgba(13,27,62,.08); }
+.lx-light .lx-reg  { color: rgba(13,27,62,.45); border-top-color: rgba(13,27,62,.1); }
+.lx-light .lx-reg a { color: #1a3575; }
+.lx-light .lx-foot  { color: rgba(13,27,62,.32); }
+.lx-light .lx-foot a { color: rgba(26,53,117,.5); }
+.lx-light .lx-foot a:hover { color: #1a3575; }
+.lx-light .lx-dot   { opacity: .4; }
+</style>
+
+<div class="lx-root @(isDark ? "" : "lx-light")">
+
+    @* ══ LEFT ══════════════════════════════════════ *@
+    <div class="lx-left">
+        <div class="lx-grid"></div>
+
+        <div class="lx-ptcl">
+            @for (int i = 0; i < 20; i++)
+            {
+                var l   = (i * 41 + 7) % 100;
+                var bot = (i * 17 % 55) + 5;
+                var tx  = ((i % 7) - 3) * 22;
+                var d   = (4.5 + i % 5).ToString("F1", System.Globalization.CultureInfo.InvariantCulture) + "s";
+                var dl  = (i * 0.38).ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + "s";
+                <div class="lx-p"
+                     style="left:@(l)%;bottom:@(bot)px;--d:@d;--delay:@dl;--tx:@(tx)px"></div>
+            }
+        </div>
+
+        <!-- Emblem -->
+        <div class="lx-em-wrap">
+            <div class="lx-halo"></div>
+
+            <div class="lx-ticks">
+                @for (int t = 0; t < 36; t++)
+                {
+                    var deg = t * 10;
+                    var h   = t % 3 == 0 ? 9 : 5;
+                    var op  = t % 3 == 0 ? ".38" : ".18";
+                    <div style="position:absolute;width:1px;height:@(h)px;
+                                background:rgba(200,169,110,@op);
+                                left:50%;top:0;
+                                transform:rotate(@(deg)deg) translateX(-50%);
+                                transform-origin:bottom center;margin-top:-1px"></div>
+                }
+            </div>
+
+            <div class="lx-ring lx-r1"></div>
+            <div class="lx-ring lx-r2"></div>
+            <div class="lx-ring lx-r3"></div>
+            <div class="lx-ring lx-r4"></div>
+
+            <div class="lx-disk">
+                <div class="lx-disk-name">ป.ป.ท.</div>
+                <div class="lx-disk-sub">PACC</div>
+            </div>
+        </div>
+
+        <!-- Hero text -->
+        <div class="lx-hero">
+            <div class="lx-hero-name">E<span>‑</span>CMIS</div>
+            <div class="lx-hero-bar">
+                <div class="lx-bar-line"></div>
+                <div class="lx-bar-gem"></div>
+                <div class="lx-bar-line"></div>
+            </div>
+            <div class="lx-hero-sub">
+                ระบบบริหารจัดการคดีและการตรวจสอบ<br />
+                สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ
+            </div>
+
+        </div>
+    </div>
+
+    @* ══ RIGHT ══════════════════════════════════════ *@
+    <div class="lx-right">
+        <button class="lx-theme-btn" @onclick="ToggleTheme"
+                title="@(isDark ? "เปลี่ยนเป็นธีมสว่าง" : "เปลี่ยนเป็นธีมมืด")">
+            <i class="bi @(isDark ? "bi-sun-fill" : "bi-moon-stars-fill")"></i>
+        </button>
+        <div class="lx-card">
+
+            @if (viewMode == LoginView.ForgotPassword)
+            {
+                <div class="lx-title">ลืมรหัสผ่าน</div>
+                <div class="lx-sub">กรอกอีเมลที่ลงทะเบียนไว้ ระบบจะส่งลิงก์รีเซ็ตไปทาง Email</div>
+
+                @if (forgotSuccess)
+                {
+                    <div class="lx-alert a-ok">
+                        <i class="bi bi-check-circle-fill"></i>
+                        @forgotSuccessMessage
+                    </div>
+                }
+                else
+                {
+                    <div class="lx-field">
+                        <label class="lx-lbl">อีเมล</label>
+                        <div class="lx-iw">
+                            <input class="lx-inp" type="email" @bind="forgotEmail" placeholder="อีเมลที่ลงทะเบียนไว้" />
+                            <i class="bi bi-envelope lx-ico"></i>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(forgotErr))
+                    {
+                        <div class="lx-alert a-err"><i class="bi bi-exclamation-circle-fill"></i> @forgotErr</div>
+                    }
+
+                    <button class="lx-btn lx-gold" @onclick="SubmitForgotPassword" disabled="@busy">
+                        @if (busy) { <span class="lx-spin"></span><span>กำลังส่งลิงก์...</span> }
+                        else { <i class="bi bi-send"></i><span>ส่งลิงก์รีเซ็ตรหัสผ่าน</span> }
+                    </button>
+                }
+                <button class="lx-back" @onclick='() => { viewMode = LoginView.Main; forgotErr = ""; forgotEmail = ""; forgotSuccess = false; }'>
+                    <i class="bi bi-arrow-left me-1"></i>กลับ
+                </button>
+            }
+            else if (viewMode == LoginView.Otp)
+            {
+                <div class="lx-title">ยืนยัน OTP</div>
+                <div class="lx-sub">กรอกรหัส 6 หลักที่ส่งไปยังอีเมล</div>
+
+                <div class="lx-otp-mail">
+                    <i class="bi bi-envelope-check-fill"></i>
+                    <div>
+                        ส่งรหัสไปที่ <strong>@otpEmail</strong>
+                    </div>
+                </div>
+
+                <input class="lx-otp-input" inputmode="numeric" maxlength="6"
+                       @bind="otpCode" @bind:event="oninput" @onkeydown="OnOtpKey"
+                       placeholder="000000" />
+
+                <div class="lx-otp-meta">
+                    <span>@OtpExpiryText</span>
+                    <button type="button" class="lx-link" @onclick="ResendOtp" disabled="@busy">ส่งรหัสใหม่</button>
+                </div>
+
+                @if (!string.IsNullOrEmpty(otpErr))
+                {
+                    <div class="lx-alert a-err"><i class="bi bi-exclamation-circle-fill"></i> @otpErr</div>
+                }
+
+                <button class="lx-btn lx-gold" @onclick="SubmitOtp" disabled="@busy">
+                    @if (busy)
+                    {
+                        <span class="lx-spin"></span><span>กำลังยืนยัน...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-shield-check"></i><span>ยืนยัน OTP</span>
+                    }
+                </button>
+
+                <button class="lx-back" @onclick='() => { viewMode = LoginView.Main; otpErr = ""; otpCode = ""; }'>
+                    <i class="bi bi-arrow-left me-1"></i>กลับ
+                </button>
+            }
+            else if (viewMode == LoginView.ForceChangePassword)
+            {
+                <div class="lx-title">ตั้งรหัสผ่านใหม่</div>
+                <div class="lx-sub">กรุณาตั้งรหัสผ่านใหม่ก่อนเข้าใช้งานระบบ</div>
+                <div class="lx-alert a-warn">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    ผู้ดูแลระบบกำหนดให้เปลี่ยนรหัสผ่านหลังยืนยัน OTP สำเร็จ
+                </div>
+
+                <div class="lx-field">
+                    <label class="lx-lbl">รหัสผ่านใหม่</label>
+                    <div class="lx-iw">
+                        <input class="lx-inp lx-inp-pr" type="@(showNewPwd ? "text" : "password")"
+                               @bind="newPwd" placeholder="อย่างน้อย 8 ตัวอักษร" />
+                        <i class="bi bi-lock lx-ico"></i>
+                        <button type="button" class="lx-eye" @onclick='() => showNewPwd = !showNewPwd'>
+                            <i class="bi @(showNewPwd ? "bi-eye-slash" : "bi-eye")"></i>
+                        </button>
+                    </div>
+                    <div class="lx-bar"><div class="lx-bar-fill" style="width:@GetPwdPct()%;background:@GetPwdColor()"></div></div>
+                    @if (!string.IsNullOrEmpty(GetPwdLabel()))
+                    {
+                        <div class="lx-bar-lbl" style="color:@GetPwdColor()">@GetPwdLabel()</div>
+                    }
+                </div>
+                <div class="lx-field">
+                    <label class="lx-lbl">ยืนยันรหัสผ่านใหม่</label>
+                    <div class="lx-iw">
+                        <input class="lx-inp lx-inp-pr" type="@(showConfirmPwd ? "text" : "password")"
+                               @bind="confirmPwd" placeholder="กรอกซ้ำอีกครั้ง" />
+                        <i class="bi bi-lock lx-ico"></i>
+                        <button type="button" class="lx-eye" @onclick='() => showConfirmPwd = !showConfirmPwd'>
+                            <i class="bi @(showConfirmPwd ? "bi-eye-slash" : "bi-eye")"></i>
+                        </button>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(changePwdErr))
+                {
+                    <div class="lx-alert a-err"><i class="bi bi-exclamation-circle-fill"></i> @changePwdErr</div>
+                }
+                <button class="lx-btn lx-gold" @onclick="SubmitChangePwd" disabled="@busy">
+                    @if (busy)
+                    {
+                        <span class="lx-spin"></span><span>กำลังบันทึก...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-check2"></i><span>บันทึกรหัสผ่านใหม่</span>
+                    }
+                </button>
+            }
+            else
+            {
+                <div class="lx-title">เข้าสู่ระบบ</div>
+                <div class="lx-sub">ยินดีต้อนรับสู่ E-CMIS สำนักงาน ป.ป.ท.</div>
+
+                <div class="lx-tabs">
+                    <button class="lx-tab @(tab == "pw" ? "lx-tab-on" : "")"
+                            @onclick='() => { tab = "pw"; loginErr = ""; loginSuccessMessage = ""; }'>
+                        <i class="bi bi-person-badge me-1"></i>Username / Email
+                    </button>
+                    <button class="lx-tab @(tab == "td" ? "lx-tab-on" : "")"
+                            @onclick='() => { tab = "td"; loginErr = ""; loginSuccessMessage = ""; }'>
+                        <i class="bi bi-credit-card-2-front me-1"></i>ThaiD
+                    </button>
+                </div>
+
+                @if (tab == "pw")
+                {
+                    @if (!string.IsNullOrEmpty(loginSuccessMessage))
+                    {
+                        <div class="lx-alert a-ok"><i class="bi bi-check-circle-fill me-1"></i>@loginSuccessMessage</div>
+                    }
+                    @if (!string.IsNullOrEmpty(loginErr))
+                    {
+                        <div class="lx-alert a-err"><i class="bi bi-shield-exclamation me-1"></i>@loginErr</div>
+                        @if (loginErr.Contains("รออนุมัติ"))
+                        {
+                            <div style="margin-top:12px;text-align:center">
+                                <a href="@PendingStatusUrl" class="lx-btn lx-gold" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;padding:10px 20px;font-size:13px">
+                                    <i class="bi bi-search"></i> ติดตามสถานะคำขอ
+                                </a>
+                            </div>
+                        }
+                    }
+                    <form autocomplete="@FormAutocomplete" @onsubmit="SubmitLogin" @onsubmit:preventDefault>
+                    <div class="lx-field">
+                        <label class="lx-lbl" for="lx-username">ชื่อผู้ใช้งานหรืออีเมล</label>
+                        <div class="lx-iw">
+                            <input id="lx-username" name="username" class="lx-inp" @bind="username" @bind:event="oninput"
+                                   placeholder="กรอกชื่อผู้ใช้งานหรืออีเมล"
+                                   autocomplete="@UsernameAutocomplete" />
+                            <i class="bi bi-person lx-ico"></i>
+                        </div>
+                    </div>
+                    <div class="lx-field">
+                        <label class="lx-lbl" for="lx-password">รหัสผ่าน</label>
+                        <div class="lx-iw">
+                            <input id="lx-password" name="password" class="lx-inp lx-inp-pr" type="@(showPw ? "text" : "password")"
+                                   @bind="password" @bind:event="oninput"
+                                   placeholder="กรอกรหัสผ่าน" autocomplete="@PasswordAutocomplete" />
+                            <i class="bi bi-lock lx-ico"></i>
+                            <button type="button" class="lx-eye" @onclick='() => showPw = !showPw'>
+                                <i class="bi @(showPw ? "bi-eye-slash" : "bi-eye")"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="lx-between">
+                        <label class="lx-check">
+                            <input type="checkbox" @bind="remember" />
+                            <span title="จดจำชื่อผู้ใช้บนเครื่องนี้ และให้เบราว์เซอร์จัดเก็บรหัสผ่าน (ไม่เก็บรหัสผ่านในระบบ)">จดจำการเข้าสู่ระบบ</span>
+                        </label>
+                        <button type="button" class="lx-link"
+                                @onclick='() => { viewMode = LoginView.ForgotPassword; loginErr = ""; }'>
+                            ลืมรหัสผ่าน?
+                        </button>
+                    </div>
+                    <p class="lx-session-note">หลังเข้าสู่ระบบ การใช้งานจะหมดอายุภายใน 8 ชั่วโมง</p>
+                    <button type="submit" class="lx-btn lx-gold" disabled="@busy">
+                        @if (busy)
+                        {
+                            <span class="lx-spin"></span><span>กำลังตรวจสอบ...</span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-box-arrow-in-right"></i><span>เข้าสู่ระบบ</span>
+                        }
+                    </button>
+                    </form>
+                }
+                else
+                {
+                    <div class="lx-thaid">
+                        <div class="lx-thaid-ico"><i class="bi bi-credit-card-2-front-fill"></i></div>
+                        <div class="lx-thaid-t">ยืนยันตัวตนด้วย ThaiD</div>
+                        <div class="lx-thaid-d">
+                            รองรับบัตรประชาชนอิเล็กทรอนิกส์<br />และแอปพลิเคชัน ThaID
+                        </div>
+                        <button class="lx-btn lx-blue" @onclick="LoginThaiD">
+                            <i class="bi bi-credit-card-fill"></i>เชื่อมต่อ ThaiD
+                        </button>
+                        <div class="lx-thaid-n">
+                            <i class="bi bi-info-circle me-1"></i>
+                            ต้องติดตั้งแอป ThaID และผูกบัตรประชาชนก่อนใช้งาน
+                        </div>
+                    </div>
+                }
+
+                <div class="lx-reg">
+                    ยังไม่มีบัญชี?
+                    <a href="/register">ลงทะเบียนเจ้าหน้าที่</a>
+                    @*
+                    <span style="color:rgba(255,255,255,.2);margin:0 6px">|</span>
+                    <a href="/register/citizen">ลงทะเบียนประชาชน</a>
+                    *@
+                </div>
+            }
+
+        </div>
+
+        <div class="lx-foot">
+            <span>E-CMIS v1.0</span>
+            <span class="lx-dot">·</span>
+            <span>สำนักงาน ป.ป.ท.</span>
+            <span class="lx-dot">·</span>
+            <a href="mailto:itsupport@pacc.go.th">itsupport@pacc.go.th</a>
+        </div>
+    </div>
+
+</div>
+
+@code {
+    private enum LoginView { Main, ForgotPassword, Otp, ForceChangePassword }
+    private LoginView viewMode = LoginView.Main;
+    private bool isDark = false;
+    private void ToggleTheme() => isDark = !isDark;
+    private string tab = "pw";
+    private string username = "";
+    private string password = "";
+    private bool showPw, remember, busy;
+
+    private string FormAutocomplete => remember ? "on" : "off";
+    private string UsernameAutocomplete => remember ? "username" : "off";
+    private string PasswordAutocomplete => remember ? "current-password" : "off";
+    private string loginErr = "";
+    private string loginSuccessMessage = "";
+    private string forgotEmail = "", forgotErr = "";
+    private bool forgotSuccess;
+    private string forgotSuccessMessage = "";
+    private string newPwd = "", confirmPwd = "";
+    private bool showNewPwd, showConfirmPwd;
+    private string changePwdErr = "";
+    private string pendingTrackingId = "";
+    private string pendingUsername = "";
+    private string tokenUsername = ""; // for force password change
+    private string accessToken = "";
+    private string refreshToken = "";
+    private string otpCode = "";
+    private string otpErr = "";
+    private string otpEmail = "";
+    private DateTimeOffset? otpExpiresAt;
+    private System.Threading.Timer? _timer;
+    private string PendingStatusUrl =>
+        string.IsNullOrWhiteSpace(pendingTrackingId)
+            ? "/register/status"
+            : $"/register/status?id={Uri.EscapeDataString(pendingTrackingId)}";
+    private string OtpExpiryText =>
+        otpExpiresAt is null
+            ? "รหัสมีอายุ 5 นาที"
+            : $"หมดอายุ {otpExpiresAt.Value.ToLocalTime():HH:mm:ss}";
+
+    [SupplyParameterFromQuery(Name = "reset")]
+    public string? ResetStatus { get; set; }
+
+    [SupplyParameterFromQuery(Name = "reason")]
+    public string? RedirectReason { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (string.Equals(ResetStatus, "success", StringComparison.OrdinalIgnoreCase))
+            loginSuccessMessage = "ตั้งรหัสผ่านสำเร็จ กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่";
+        else if (string.Equals(RedirectReason, "session-expired", StringComparison.OrdinalIgnoreCase))
+            loginErr = "เซสชันหมดอายุหรือไม่ได้เข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่ (เซสชันใช้งานได้ 8 ชั่วโมง)";
+    }
+
+    protected override void OnInitialized()
+    {
+        _timer = new System.Threading.Timer(_ =>
+        {
+            if (otpExpiresAt is not null)
+                InvokeAsync(StateHasChanged);
+        }, null, 1000, 1000);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var savedUser = await SessionSvc.LoadSavedUsernameAsync();
+        if (!string.IsNullOrWhiteSpace(savedUser))
+        {
+            username = savedUser;
+            remember = true;
+            StateHasChanged();
+        }
+
+        if (await AuthApi.TryRestoreSessionAsync())
+        {
+            CurrentUserSvc.InvalidateCache();
+            if (await CurrentUserSvc.GetCurrentUserAsync() is not null)
+            {
+                Nav.NavigateTo(await GetPostLoginUrl(), forceLoad: true);
+                return;
+            }
+
+            // Stale tokens in browser — clear so user can log in without a redirect loop
+            await SessionSvc.ClearSessionAsync();
+        }
+
+        var raw = await ThaiDSvc.ReadRawAsync("thaid_login_result");
+        if (string.IsNullOrEmpty(raw)) return;
+
+        await ThaiDSvc.ClearRawAsync("thaid_login_result");
+
+        try
+        {
+            var loginResult = System.Text.Json.JsonSerializer.Deserialize<LoginResponse>(raw, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (loginResult is null) return;
+            await HandleLoginResponse(loginResult);
+        }
+        catch { }
+    }
+
+    public void Dispose() => _timer?.Dispose();
+
+    private Task SubmitLogin() => DoLogin();
+
+    private async Task DoLogin()
+    {
+        busy = true;
+        loginErr = "";
+        loginSuccessMessage = "";
+        pendingTrackingId = "";
+
+        try
+        {
+            var result = await AuthApi.LoginAsync(username, password, remember);
+            await HandleLoginResponse(result);
+        }
+        catch (Exception ex)
+        {
+            var msg = ex.Message;
+            var trackingId = ExtractTrackingId(msg);
+
+            if (!string.IsNullOrWhiteSpace(trackingId))
+            {
+                pendingTrackingId = trackingId;
+                loginErr = msg.Contains("รออนุมัติ", StringComparison.OrdinalIgnoreCase)
+                    ? msg
+                    : "บัญชียังรออนุมัติ กรุณาติดต่อ Admin หน่วยงานของท่าน";
+            }
+            else if (msg.Contains("รออนุมัติ", StringComparison.OrdinalIgnoreCase) || msg.Contains("pending", StringComparison.OrdinalIgnoreCase))
+            {
+                loginErr = msg;
+            }
+            else
+            {
+                loginErr = msg;
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task HandleLoginResponse(LoginResponse result)
+    {
+        tokenUsername = result.Username;
+        accessToken = result.AccessToken;
+        refreshToken = result.RefreshToken;
+
+        if (result.MustResetPassword)
+        {
+            Nav.NavigateTo("/reset-password");
+            return;
+        }
+
+        if (result.RequiresOtp)
+        {
+            pendingUsername = result.Username;
+            otpEmail = result.Email;
+            otpExpiresAt = result.OtpExpiresAt;
+            otpCode = "";
+
+            otpErr = "";
+            viewMode = LoginView.Otp;
+            StateHasChanged();
+            return;
+        }
+
+        // TOBE 14.1.2 ข้อ 1: เข้าใช้งานครั้งแรก → Force Password Change ก่อนออก session
+        if (result.MustChangePassword)
+        {
+            if (!string.IsNullOrWhiteSpace(result.Username))
+                pendingUsername = result.Username;
+            // บันทึก token ชั่วคราวเพื่อให้ ChangePasswordAsync ส่ง Bearer header ได้
+            if (!string.IsNullOrWhiteSpace(accessToken))
+            {
+                await SessionSvc.SetSessionAsync(
+                    accessToken,
+                    refreshToken,
+                    result.TokenType ?? "Bearer",
+                    rememberMe: remember,
+                    expiresInSeconds: result.ExpiresIn > 0 ? result.ExpiresIn : null);
+            }
+            viewMode = LoginView.ForceChangePassword;
+            newPwd = "";
+            confirmPwd = "";
+            changePwdErr = "";
+            StateHasChanged();
+            return;
+        }
+
+        await SessionSvc.ApplyAuthTokensAsync(
+            accessToken,
+            refreshToken,
+            result.TokenType ?? "Bearer",
+            remember,
+            result.ExpiresIn > 0 ? result.ExpiresIn : null,
+            pendingUsername.Length > 0 ? pendingUsername : username);
+
+        CurrentUserSvc.InvalidateCache();
+        SystemApi.InvalidateMenuCache();
+        Nav.NavigateTo(await GetPostLoginUrl(), forceLoad: true);
+    }
+
+    private static string ExtractTrackingId(string msg)
+    {
+        try
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(msg ?? "", @"REG-[A-Za-z0-9]{8}");
+            return match.Success ? match.Value : "";
+        }
+        catch { return ""; }
+    }
+
+    private async Task OnOtpKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await SubmitOtp();
+    }
+
+    private async Task SubmitOtp()
+    {
+        otpErr = "";
+        if (string.IsNullOrWhiteSpace(pendingUsername) || string.IsNullOrWhiteSpace(otpCode))
+        {
+            otpErr = "กรุณากรอก OTP";
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await AuthApi.VerifyOtpAsync(pendingUsername, otpCode);
+            await HandleLoginResponse(result);
+        }
+        catch (Exception ex)
+        {
+            otpErr = ex.Message;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task ResendOtp()
+    {
+        otpErr = "";
+        if (string.IsNullOrWhiteSpace(pendingUsername))
+        {
+            otpErr = "ไม่พบชื่อผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่";
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await AuthApi.ResendOtpAsync(pendingUsername, remember);
+            otpEmail = result.Email;
+            otpExpiresAt = result.OtpExpiresAt;
+            otpCode = "";
+        }
+        catch (Exception ex)
+        {
+            otpErr = ex.Message;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task SubmitForgotPassword()
+    {
+        forgotErr = "";
+        if (string.IsNullOrWhiteSpace(forgotEmail))
+        { forgotErr = "กรุณากรอกอีเมล"; return; }
+
+        busy = true;
+        ForgotPasswordResult result;
+        try { result = await AuthApi.ForgotPasswordAsync(forgotEmail); }
+        catch (Exception ex) { result = ForgotPasswordResult.Fail($"เชื่อมต่อระบบไม่สำเร็จ: {ex.Message}"); }
+        busy = false;
+
+        if (!result.Success) { forgotErr = result.Error ?? "ส่งลิงก์รีเซ็ตไม่สำเร็จ"; return; }
+
+        forgotSuccess = true;
+        forgotSuccessMessage = string.IsNullOrWhiteSpace(result.Message)
+            ? "หากอีเมลนี้มีในระบบ จะส่งลิงก์รีเซ็ตไปยังอีเมลดังกล่าว"
+            : result.Message;
+    }
+
+    private async Task SubmitChangePwd()
+    {
+        busy = true;
+        changePwdErr = "";
+
+        if (string.IsNullOrWhiteSpace(pendingUsername))
+        {
+            changePwdErr = "Session ไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่";
+            busy = false;
+            viewMode = LoginView.Main;
+            return;
+        }
+
+        try
+        {
+            var result = await AuthApi.ChangePasswordAsync(pendingUsername, otpCode, newPwd, confirmPwd);
+            if (result.MustChangePassword)
+            {
+                changePwdErr = "ยังต้องเปลี่ยนรหัสผ่าน";
+                busy = false;
+                return;
+            }
+            await SessionSvc.ApplyAuthTokensAsync(
+                result.AccessToken,
+                result.RefreshToken,
+                result.TokenType ?? "Bearer",
+                remember,
+                result.ExpiresIn > 0 ? result.ExpiresIn : null,
+                pendingUsername);
+
+            CurrentUserSvc.InvalidateCache();
+            SystemApi.InvalidateMenuCache();
+            Nav.NavigateTo(await GetPostLoginUrl(), forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            changePwdErr = $"เชื่อมต่อระบบเปลี่ยนรหัสผ่านไม่สำเร็จ: {ex.Message}";
+        }
+        busy = false;
+    }
+
+    private async Task LoginThaiD()
+    {
+        busy = true;
+        loginErr = "";
+        try
+        {
+            await ThaiDSvc.RedirectToThaiDAsync("login");
+            // forceLoad: true — browser จะออกไปหน้า ThaiD จริงๆ
+            // code ด้านล่างนี้จะไม่ถูกเรียกในสถานการณ์ปกติ
+        }
+        catch (Exception ex)
+        {
+            loginErr = $"ไม่สามารถเชื่อมต่อ ThaiD ได้: {ex.Message}";
+            busy = false;
+        }
+    }
+
+    private async Task<string> GetPostLoginUrl()
+    {
+        var user = await CurrentUserSvc.GetCurrentUserAsync();
+        var url = user?.NextUrl;
+        return string.IsNullOrWhiteSpace(url) ? "/dashboard" : url;
+    }
+
+    private int GetPwdPct()
+    {
+        if (string.IsNullOrEmpty(newPwd)) return 0;
+        int s = 0;
+        if (newPwd.Length >= 8)  s += 25;
+        if (newPwd.Length >= 12) s += 15;
+        if (newPwd.Any(char.IsUpper)) s += 20;
+        if (newPwd.Any(char.IsDigit)) s += 20;
+        if (newPwd.Any(c => !char.IsLetterOrDigit(c))) s += 20;
+        return Math.Min(s, 100);
+    }
+    private string GetPwdColor() { var p = GetPwdPct(); return p < 40 ? "#ef4444" : p < 70 ? "#f59e0b" : "#22c55e"; }
+    private string GetPwdLabel() { var p = GetPwdPct(); return p == 0 ? "" : p < 40 ? "รหัสผ่านอ่อนแอ" : p < 70 ? "รหัสผ่านปานกลาง" : "รหัสผ่านแข็งแกร่ง"; }
+}
+กร่ง"; }
+}

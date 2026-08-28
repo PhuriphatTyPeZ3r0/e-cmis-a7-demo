@@ -1,0 +1,355 @@
+@page "/register/citizen"
+@layout Components.Layout.BlankLayout
+@inject NavigationManager Nav
+@inject EcmisWeb.Services.UserApiService UserApi
+@inject EcmisWeb.Services.ThaiDService ThaiDSvc
+@using EcmisWeb.Models
+
+<PageTitle>ลงทะเบียนสำหรับประชาชน — E-CMIS</PageTitle>
+
+<style>
+.cz-root {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0d2258 0%, #1a3575 50%, #2d52a0 100%);
+    padding: 32px 24px;
+    font-family: 'Sarabun', 'IBM Plex Sans Thai', sans-serif;
+}
+.cz-card {
+    max-width: 640px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    padding: 36px;
+}
+.cz-brand-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.cz-emblem {
+    width: 46px; height: 46px; border-radius: 50%;
+    border: 2px solid #c8a96e; display: flex; align-items: center; justify-content: center;
+    color: #c8a96e; font-weight: 800; font-size: 11px; background: #0d2258;
+}
+.cz-title { font-size: 22px; font-weight: 800; color: #0d1b42; }
+.cz-sub { font-size: 13px; color: #6b7280; margin-top: 2px; }
+
+.cz-thaid-box {
+    background: #f0f5ff;
+    border: 1px solid rgba(13,27,62,.1);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 12px;
+}
+.cz-thaid-box.verified { background: #ecfdf5; border-color: #86efac; }
+.cz-thaid-ico {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: linear-gradient(145deg, #1c3ea4, #091a60);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 20px; flex-shrink: 0;
+}
+.cz-thaid-ico.verified { background: #16a34a; }
+.cz-thaid-info { flex: 1; }
+.cz-thaid-t { font-size: 14px; font-weight: 700; color: #0d1b42; }
+.cz-thaid-d { font-size: 12px; color: #6b7280; margin-top: 2px; }
+
+.cz-sec { font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase;
+          letter-spacing: 1px; margin: 22px 0 10px; }
+.cz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cz-field { display: flex; flex-direction: column; gap: 6px; }
+.cz-lbl { font-size: 13px; font-weight: 600; color: #374151; }
+.cz-req { color: #ef4444; }
+.cz-inp {
+    height: 44px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    padding: 0 14px;
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    transition: border .15s;
+}
+.cz-inp:focus { border-color: #2d52a0; box-shadow: 0 0 0 3px rgba(45,82,160,.1); }
+.cz-inp:disabled, .cz-inp[readonly] { background: #f3f4f6; color: #6b7280; }
+.cz-err { font-size: 12px; color: #ef4444; }
+
+.cz-privacy {
+    margin-top: 20px;
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 12px;
+    padding: 14px;
+    display: flex; gap: 12px; align-items: flex-start;
+}
+.cz-privacy input[type=checkbox] { margin-top: 3px; width: 18px; height: 18px; accent-color: #f59e0b; }
+.cz-privacy-t { font-size: 14px; font-weight: 700; color: #78350f; }
+.cz-privacy-d { font-size: 12px; color: #92400e; line-height: 1.5; margin-top: 4px; }
+
+.cz-actions { display: flex; gap: 12px; margin-top: 28px; }
+.cz-btn {
+    flex: 1; height: 50px; border: 0; border-radius: 12px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all .2s;
+}
+.cz-btn-primary {
+    background: linear-gradient(135deg, #c8a96e, #a07828);
+    color: #0d1b42;
+    box-shadow: 0 4px 14px rgba(200,160,60,.3);
+}
+.cz-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(200,160,60,.4); }
+.cz-btn-primary:disabled { opacity: .5; cursor: wait; }
+.cz-btn-thaid {
+    background: linear-gradient(135deg, #1e4db4, #0d2468);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(30,77,180,.3);
+    width: 100%;
+    margin-top: 8px;
+}
+.cz-btn-thaid:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(30,77,180,.4); }
+.cz-link {
+    text-align: center; margin-top: 18px; font-size: 13px; color: #6b7280;
+}
+.cz-link a { color: #2d52a0; font-weight: 600; text-decoration: none; }
+
+.cz-alert-err {
+    margin-top: 16px;
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+}
+
+/* Success popup */
+.cz-popup-bg {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.6);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+}
+.cz-popup {
+    background: #fff;
+    border-radius: 18px;
+    padding: 36px 32px;
+    max-width: 480px;
+    width: 92%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,.4);
+}
+.cz-popup-ico {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: #dcfce7; color: #16a34a;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px; margin: 0 auto 20px;
+}
+.cz-popup-title { font-size: 20px; font-weight: 800; color: #0d1b42; margin-bottom: 8px; }
+.cz-popup-msg { font-size: 14px; color: #6b7280; line-height: 1.6; margin-bottom: 22px; }
+
+@@media (max-width: 640px) {
+    .cz-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="cz-root">
+    <div class="cz-card">
+        <div class="cz-brand-row">
+            <div class="cz-emblem">ป.ป.ท.</div>
+            <div>
+                <div class="cz-title">ลงทะเบียนสำหรับประชาชน</div>
+                <div class="cz-sub">E-CMIS — สำนักงาน ป.ป.ท.</div>
+            </div>
+        </div>
+
+        @* ── ThaiD section ─────────────────────────────────────────── *@
+        <div class="cz-thaid-box @(req.ThaiDVerified ? "verified" : "")">
+            <div class="cz-thaid-ico @(req.ThaiDVerified ? "verified" : "")">
+                <i class="bi @(req.ThaiDVerified ? "bi-check-lg" : "bi-credit-card-2-front-fill")"></i>
+            </div>
+            <div class="cz-thaid-info">
+                @if (req.ThaiDVerified)
+                {
+                    <div class="cz-thaid-t">ยืนยันตัวตน ThaiD แล้ว</div>
+                    <div class="cz-thaid-d">เลขบัตร @MaskId(req.NationalId) — @req.FirstName @req.LastName</div>
+                }
+                else
+                {
+                    <div class="cz-thaid-t">ยืนยันตัวตนด้วย ThaiD (แนะนำ)</div>
+                    <div class="cz-thaid-d">ระบบจะ Auto-fill เลขบัตร / ชื่อ / สกุล ให้อัตโนมัติ — หรือกรอกเองด้านล่าง</div>
+                }
+            </div>
+        </div>
+        @if (!req.ThaiDVerified)
+        {
+            <button type="button" class="cz-btn cz-btn-thaid" @onclick="DoThaiD" disabled="@busy">
+                <i class="bi bi-credit-card-fill"></i> ยืนยัน ThaiD
+            </button>
+        }
+
+        @* ── ข้อมูลส่วนตัว ─────────────────────────────────────────── *@
+        <div class="cz-sec">ข้อมูลส่วนตัว</div>
+        <div class="cz-field">
+            <label class="cz-lbl">เลขบัตรประชาชน <span class="cz-req">*</span></label>
+            <input class="cz-inp" maxlength="13" inputmode="numeric"
+                   @bind="req.NationalId"
+                   readonly="@req.ThaiDVerified"
+                   placeholder="1234567890123" />
+            @if (errs.TryGetValue("nid", out var e1)) { <span class="cz-err">@e1</span> }
+        </div>
+
+        <div class="cz-grid" style="margin-top:12px">
+            <div class="cz-field">
+                <label class="cz-lbl">ชื่อ <span class="cz-req">*</span></label>
+                <input class="cz-inp" @bind="req.FirstName"
+                       readonly="@req.ThaiDVerified"
+                       placeholder="ชื่อ" />
+                @if (errs.TryGetValue("fn", out var e2)) { <span class="cz-err">@e2</span> }
+            </div>
+            <div class="cz-field">
+                <label class="cz-lbl">นามสกุล <span class="cz-req">*</span></label>
+                <input class="cz-inp" @bind="req.LastName"
+                       readonly="@req.ThaiDVerified"
+                       placeholder="นามสกุล" />
+                @if (errs.TryGetValue("ln", out var e3)) { <span class="cz-err">@e3</span> }
+            </div>
+        </div>
+
+        @* ── ช่องทางติดต่อ ─────────────────────────────────────────── *@
+        <div class="cz-sec">ช่องทางติดต่อ</div>
+        <div class="cz-grid">
+            <div class="cz-field">
+                <label class="cz-lbl">โทรศัพท์มือถือ <span class="cz-req">*</span></label>
+                <input class="cz-inp" maxlength="12" inputmode="numeric"
+                       @bind="req.Mobile" placeholder="08x-xxx-xxxx" />
+                @if (errs.TryGetValue("mob", out var e4)) { <span class="cz-err">@e4</span> }
+            </div>
+            <div class="cz-field">
+                <label class="cz-lbl">อีเมล <span class="cz-req">*</span></label>
+                <input class="cz-inp" type="email" @bind="req.Email" placeholder="you@example.com" />
+                @if (errs.TryGetValue("em", out var e5)) { <span class="cz-err">@e5</span> }
+            </div>
+        </div>
+
+        @* ── Privacy checkbox ──────────────────────────────────────── *@
+        <label class="cz-privacy" for="cz-privacy-check">
+            <input type="checkbox" id="cz-privacy-check" @bind="req.PrivacyConsent" />
+            <div>
+                <div class="cz-privacy-t">☑ ต้องการปกปิดข้อมูลส่วนตัว</div>
+                <div class="cz-privacy-d">
+                    ระบบจะ encrypt ชื่อ-สกุล และเลขบัตรประชาชนใน Database
+                    เจ้าหน้าที่จะเห็นข้อมูลแบบ masked (เช่น "สมช***")
+                    เว้นแต่ได้รับอนุญาตให้ดูข้อมูลเต็ม
+                </div>
+            </div>
+        </label>
+
+        @if (!string.IsNullOrEmpty(submitError))
+        {
+            <div class="cz-alert-err"><i class="bi bi-exclamation-circle-fill me-1"></i>@submitError</div>
+        }
+
+        <div class="cz-actions">
+            <button class="cz-btn cz-btn-primary" @onclick="Submit" disabled="@busy">
+                @if (busy) { <span><i class="bi bi-arrow-repeat"></i> กำลังส่ง...</span> }
+                else { <span><i class="bi bi-send"></i> สมัคร</span> }
+            </button>
+        </div>
+
+        <div class="cz-link">
+            มีบัญชีแล้ว? <a href="/login">เข้าสู่ระบบ</a> |
+            เป็นบุคลากร ป.ป.ท.? <a href="/register">ลงทะเบียนเจ้าหน้าที่</a>
+        </div>
+    </div>
+</div>
+
+@if (showSuccessPopup)
+{
+    <div class="cz-popup-bg">
+        <div class="cz-popup">
+            <div class="cz-popup-ico"><i class="bi bi-envelope-check-fill"></i></div>
+            <div class="cz-popup-title">ลงทะเบียนสำเร็จ</div>
+            <div class="cz-popup-msg">
+                ระบบส่ง Username / Password ชั่วคราว<br />
+                ไปยังอีเมลที่ลงทะเบียนไว้<br />
+                <strong style="color:#0d1b42">@req.Email</strong>
+            </div>
+            <button class="cz-btn cz-btn-primary" @onclick='() => Nav.NavigateTo("/login")'>
+                <i class="bi bi-box-arrow-in-right"></i> ไปหน้าเข้าสู่ระบบ
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private CitizenRegistrationRequest req = new();
+    private Dictionary<string, string> errs = new();
+    private string submitError = "";
+    private bool busy;
+    private bool showSuccessPopup;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // ถ้ามาจาก ThaiD callback → auto-fill
+        var identity = await ThaiDSvc.ReadIdentityAsync();
+        if (identity is null) return;
+
+        req.NationalId    = identity.Pid;
+        req.FirstName     = identity.FirstNameTh;
+        req.LastName      = identity.LastNameTh;
+        req.ThaiDVerified = true;
+        req.ThaiDReference = identity.Reference;
+
+        await ThaiDSvc.ClearIdentityAsync();
+    }
+
+    private async Task DoThaiD()
+    {
+        try
+        {
+            // ใช้ flow "register_citizen" → backend จะ redirect กลับมาที่ /register/citizen
+            await ThaiDSvc.RedirectToThaiDAsync("register_citizen");
+        }
+        catch (Exception ex)
+        {
+            submitError = $"ไม่สามารถเชื่อมต่อ ThaiD ได้: {ex.Message}";
+        }
+    }
+
+    private async Task Submit()
+    {
+        errs.Clear();
+        submitError = "";
+
+        // Validation
+        var pidDigits = new string((req.NationalId ?? "").Where(char.IsDigit).ToArray());
+        if (pidDigits.Length != 13) errs["nid"] = "เลขบัตรประชาชนต้องเป็น 13 หลัก";
+        if (string.IsNullOrWhiteSpace(req.FirstName)) errs["fn"] = "กรุณากรอกชื่อ";
+        if (string.IsNullOrWhiteSpace(req.LastName))  errs["ln"] = "กรุณากรอกนามสกุล";
+        if (string.IsNullOrWhiteSpace(req.Mobile))    errs["mob"] = "กรุณากรอกเบอร์มือถือ";
+        if (string.IsNullOrWhiteSpace(req.Email) || !req.Email.Contains('@'))
+            errs["em"] = "กรุณากรอกอีเมลให้ถูกต้อง";
+
+        if (errs.Count > 0) return;
+
+        req.NationalId = pidDigits;
+        busy = true;
+        try
+        {
+            await UserApi.RegisterCitizenAsync(req);
+            showSuccessPopup = true;
+        }
+        catch (Exception ex)
+        {
+            submitError = ex.Message;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private static string MaskId(string id)
+    {
+        if (string.IsNullOrEmpty(id) || id.Length <= 3) return id ?? "";
+        return id[..3] + "***";
+    }
+}

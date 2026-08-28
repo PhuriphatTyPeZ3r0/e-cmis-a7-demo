@@ -1,0 +1,1514 @@
+#a5App {
+  --a5-action-clearance: 5.5rem;
+  max-width: 100%;
+  /* clip, not hidden — hidden forces overflow-y to auto-compute as "auto" too (CSS
+     overflow-x/-y coupling), which makes #a5App itself a scroll container and breaks
+     position:sticky on .ws-doc-pane (it sticks relative to #a5App's own box instead
+     of the real page viewport, so it scrolls off-screen instead of staying stuck).
+     clip suppresses horizontal overflow without creating a scrollport, so it doesn't
+     force overflow-y and sticky resolves against the real viewport again. */
+  overflow-x: clip;
+}
+
+/* ก6 คุ้มครองพยาน — แถบระดับสำนวน ใช้ได้ทุกขั้นตอน (owner 15 ส.ค. 69) */
+#a5App .a5-witness-bar { display: grid; gap: .45rem; margin-bottom: 1rem; padding: .7rem .95rem; border: 1px solid #d7dee6; border-radius: 12px; background: #fbfcfe; }
+#a5App .a5-plan-part { display: grid; gap: .65rem; margin-bottom: 1.1rem; padding: 1rem 1.1rem; border: 1px solid #d7dee6; border-radius: 12px; background: #fff; }
+#a5App .a5-plan-part-title { margin: 0 0 .35rem; font-size: 1.02rem; font-weight: 600; color: #082b50; padding-bottom: .45rem; border-bottom: 1px solid #e4e9f0; }
+#a5App .a5-plan-accused-block { display: grid; gap: .6rem; margin: 0 0 .85rem; padding: .85rem .95rem; border: 1px solid #ccd5e0; border-radius: 10px; background: #fbfcfe; }
+#a5App .a5-plan-accused-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; width: 100%; margin-bottom: .25rem; font-weight: 600; color: #12365f; }
+#a5App .a5-plan-accused-head .ws-button { font-size: .8rem; padding: .25rem .6rem; }
+#a5App .a5-plan-issue-block { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem .85rem; padding: .7rem .8rem; border: 1px solid #dfe5ec; border-radius: 9px; background: #fefefe; }
+#a5App .a5-plan-issue-title { grid-column: 1 / -1; font-weight: 600; color: #12365f; font-size: .92rem; padding-bottom: .3rem; border-bottom: 1px dashed #e4e9f0; }
+#a5App .a5-plan-issue-block .ws-field { margin: 0; }
+#a5App .a5-plan-issue-block .ws-field label { font-size: .82rem; color: #44546a; }
+#a5App .a5-plan-cb-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .2rem .7rem; margin-bottom: .35rem; }
+#a5App .a5-plan-cb { font-size: .82rem; line-height: 1.3; }
+#a5App .a5-plan-cb .ws-choice + span, #a5App .a5-plan-cb > span { font-weight: 400; }
+#a5App .a5-plan-limitation-row { align-items: end; }
+#a5App .a5-plan-editor .ws-grid-2, #a5App .a5-plan-editor .ws-grid-3 { gap: .7rem; }
+#a5App .a5-plan-editor .a5-plan-part .ws-field label, #a5App .a5-plan-editor .a5-plan-part label.ws-field label { font-size: .84rem; color: #44546a; }
+#a5App .a5-plan-signature-status { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; font-size: .9rem; }
+#a5App .a5-plan-signature-status .ws-button { margin: 0; color: #fff; background: var(--ws-navy, #082b50); border: 1px solid var(--ws-navy, #082b50); font-weight: 700; }
+#a5App .a5-plan-signature-status .ws-button:hover { background: #0f3d6e; }
+#a5App .a5-plan-witness-row, #a5App .a5-plan-document-row { padding: .55rem .6rem; border: 1px dashed #d7dee6; border-radius: 8px; background: #fcfdff; }
+#a5App .a5-plan-row { padding: .55rem .6rem; border: 1px dashed #d7dee6; border-radius: 8px; margin-bottom: .5rem; }
+#a5App .a5-plan-row-list .ws-actions, #a5App .a5-plan-editor .ws-actions { justify-content: flex-start; }
+#a5App .a5-plan-editor .ws-choice input[type="checkbox"] { accent-color: #082b50; }
+#a5App .a5-witness-bar-head { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; }
+#a5App .a5-hint { display: inline-flex; align-items: center; justify-content: center; width: 1.15rem; height: 1.15rem; margin-left: .35rem; border-radius: 50%; background: #e3ecf5; color: #0b4f8a; font-size: .72rem; font-weight: 700; cursor: help; vertical-align: middle; }
+#a5App .a5-case-size-badge { display: inline-block; padding: .18rem .55rem; border-radius: 999px; background: #eef4fa; border: 1px solid #c9d9e8; color: #173a5e; font-size: .72rem; }
+#a5App .a5-xl-badge { display: inline-flex; align-items: center; gap: .3rem; padding: .28rem .6rem; border-radius: 999px; font-size: .78rem; font-weight: 700; white-space: nowrap; }
+#a5App .a5-xl-badge.xl-done { background: #a32020; border: 1px solid #5f0c0c; color: #fff; box-shadow: 0 2px 8px rgba(122, 16, 16, .35); }
+#a5App .a5-xl-badge.xl-board { background: #b57700; border: 1px solid #6b4600; color: #fff; box-shadow: 0 2px 8px rgba(181, 119, 0, .35); }
+#a5App .a5-xl-badge.xl-pending { background: #8a7600; border: 1px solid #574a00; color: #fff; box-shadow: 0 2px 8px rgba(138, 118, 0, .3); }
+#a5App .ws-case-head-right { display: flex; flex-direction: column; align-items: flex-end; gap: .4rem; }
+#a5App .ws-case-head-right .a5-xl-badge { font-size: .85rem; padding: .35rem .75rem; }
+#a5App .ws-topbar .a5-xl-badge { font-size: .72rem; padding: .22rem .5rem; }
+#a5App #wsA5UnitField:not(.ws-hidden) { display: inline-flex; min-width: 0; align-items: center; gap: .45rem; }
+#a5App #wsA5UnitField .ws-role-select { width: clamp(7.5rem, 10vw, 9rem); }
+#a5App .a5-unit-context-banner { margin-bottom: .75rem; }
+#a5App .a5-unit-context-banner.is-empty { border-color: #c28b23; background: #fff8e6; color: #694b10; }
+#a5App .a5-case-size-badge + .a5-xl-badge { margin-left: .15rem; }
+#a5App .ws-table td .a5-xl-badge { margin-left: .45rem; vertical-align: middle; }
+#a5App .a5-witness-bar-note { margin-left: auto; color: #7c8a98; font-size: .7rem; }
+#a5App .a5-witness-bar-body { display: grid; grid-template-columns: minmax(220px, 340px) 1fr; gap: .8rem 1.2rem; align-items: end; }
+#a5App .a5-witness-result-field { margin: 0; }
+#a5App .a5-witness-req { display: grid; gap: .35rem; min-width: 0; }
+#a5App .a5-witness-req-detail { margin: 0; color: #5f7180; font-size: .76rem; line-height: 1.55; }
+#a5App .a5-witness-req-detail strong { color: #233d54; }
+#a5App .a5-witness-actions { display: flex; flex-wrap: wrap; gap: .55rem; }
+#a5App .a5-intervention-summary { display: grid; gap: .2rem; min-width: 0; }
+@media (max-width: 900px) { #a5App .a5-witness-bar-body { grid-template-columns: 1fr; } }
+
+@media (max-width: 1180px) and (min-width: 721px) {
+  #a5App .ws-topbar-inner { flex-wrap: wrap; }
+  #a5App .ws-profile { width: 100%; }
+}
+
+.swal2-popup .a5-size-modal { display: grid; gap: .7rem; text-align: left; }
+.swal2-popup .a5-size-modal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+.swal2-popup .a5-size-modal label { display: grid; align-content: start; gap: .3rem; color: #34495e; font-size: .82rem; font-weight: 600; }
+.swal2-popup .a5-size-modal .swal2-input,
+.swal2-popup .a5-size-modal .swal2-select,
+.swal2-popup .a5-size-modal .swal2-textarea { width: 100%; margin: 0; color: #233d54; font-size: .88rem; font-weight: 400; }
+.swal2-popup .a5-size-modal-help { color: #6b7a8c; font-size: .7rem; font-weight: 400; line-height: 1.45; }
+.swal2-popup .a5-size-modal-assessment { margin: 0; }
+@media (max-width: 640px) { .swal2-popup .a5-size-modal-grid { grid-template-columns: 1fr; } }
+
+#a5App .a5-plan-editor,
+#a5App .a5-worklog-editor {
+  padding-left: 0;
+}
+
+#a5App .a5-worklog-timeline li {
+  display: grid;
+  gap: .3rem;
+  padding: .75rem 0;
+}
+
+#a5App .a5-worklog-timeline time,
+#a5App .a5-plan-signature-status {
+  color: #52606d;
+  font-size: .88rem;
+}
+
+#a5App .a5-plan-signature-status {
+  margin-top: .75rem;
+  padding: .7rem .85rem;
+  border: 1px solid #cbd5df;
+  background: #f8fafc;
+}
+
+#a5App .a5-plan-signature-status p {
+  margin: .25rem 0;
+}
+
+#a5App .a5-case-plan-paper {
+  max-width: 210mm;
+}
+
+#a5App .a5-plan-paper-page {
+  min-height: 270mm;
+  padding: 12mm;
+  border-bottom: 1px dashed #aebdca;
+}
+
+#a5App .a5-case-plan-paper table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#a5App .a5-case-plan-paper th,
+#a5App .a5-case-plan-paper td {
+  padding: .45rem;
+  border: 1px solid #52606d;
+  text-align: left;
+  vertical-align: top;
+}
+
+#a5App .a5-plan-signatures {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2rem;
+  text-align: right;
+}
+
+#a5App .a5-plan-signature p {
+  margin: .2rem 0;
+}
+
+#a5App .a5-plan-signature small {
+  color: #9c3d10;
+}
+
+#a5App .a5-mock-account {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .35rem .55rem;
+  border: 1px solid rgba(255, 255, 255, .45);
+  border-radius: .55rem;
+  font-size: .78rem;
+}
+
+#a5App .a5-mock-account select {
+  max-width: 13rem;
+}
+
+#a5App .a5-assignment-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding-bottom: .85rem;
+  border-bottom: 2px solid #b08a3e;
+}
+
+#a5App .a5-assignment-heading p,
+#a5App .a5-clerk-opinion p {
+  margin: .25rem 0 0;
+  color: #52606d;
+}
+
+#a5App .a5-clerk-opinion {
+  margin: 1rem 0;
+  padding: .9rem 1rem;
+  background: #f7f8fa;
+}
+
+#a5App .a5-score-method {
+  margin: .75rem 0 1rem;
+  border: 1px solid #cbd5df;
+  background: #fff;
+}
+
+#a5App .a5-score-method summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: .65rem .85rem;
+  color: #082b50;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#a5App .a5-score-method p {
+  margin: 0;
+  padding: 0 .85rem .85rem;
+  color: #52606d;
+}
+
+#a5App .a5-decision-board {
+  min-width: 0;
+  border: 1px solid #aebdca;
+  border-top: 3px solid #082b50;
+  background: #fff;
+}
+
+#a5App .a5-decision-head,
+#a5App .a5-decision-row {
+  display: grid;
+  grid-template-columns: 4.25rem minmax(15rem, 1.8fr) minmax(7.5rem, .8fr) minmax(8.5rem, .9fr) 6.5rem minmax(10.5rem, 1fr);
+  gap: .75rem;
+  align-items: center;
+}
+
+#a5App .a5-decision-head {
+  min-height: 44px;
+  padding: .55rem .8rem;
+  color: #fff;
+  background: #082b50;
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+#a5App .a5-decision-row {
+  min-width: 0;
+  padding: .85rem .8rem;
+  border-top: 1px solid #d8e0e8;
+}
+
+#a5App .a5-decision-row:first-of-type {
+  border-top: 0;
+  background: #fffdf7;
+}
+
+#a5App .a5-rank-cell {
+  text-align: center;
+  color: #52606d;
+}
+
+#a5App .a5-rank-cell span,
+#a5App .a5-mobile-label {
+  display: block;
+  font-size: .75rem;
+}
+
+#a5App .a5-rank-cell strong {
+  display: block;
+  color: #082b50;
+  font-size: 1.45rem;
+}
+
+#a5App .a5-identity-cell,
+#a5App .a5-workload-cell,
+#a5App .a5-fit-cell,
+#a5App .a5-total-cell,
+#a5App .a5-team-choices {
+  min-width: 0;
+}
+
+#a5App .a5-identity-cell > strong,
+#a5App .a5-identity-cell > small,
+#a5App .a5-identity-cell > p {
+  display: block;
+}
+
+#a5App .a5-identity-cell > strong {
+  color: #082b50;
+}
+
+#a5App .a5-identity-cell > small,
+#a5App .a5-identity-cell > p {
+  margin: .2rem 0 0;
+  color: #52606d;
+  overflow-wrap: anywhere;
+}
+
+#a5App .a5-identity-cell details {
+  margin-top: .4rem;
+  font-size: .85rem;
+}
+
+#a5App .a5-identity-cell summary {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: #174f8a;
+  cursor: pointer;
+}
+
+#a5App .a5-score-meter {
+  display: block;
+  height: .42rem;
+  margin-top: .35rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dce4eb;
+}
+
+#a5App .a5-score-meter i {
+  display: block;
+  height: 100%;
+  background: #174f8a;
+}
+
+#a5App .a5-fit-cell span {
+  display: flex;
+  justify-content: space-between;
+  gap: .5rem;
+  white-space: normal;
+}
+
+#a5App .a5-total-cell {
+  text-align: center;
+  color: #52606d;
+}
+
+#a5App .a5-total-cell > strong {
+  color: #082b50;
+  font-size: 1.55rem;
+}
+
+#a5App .a5-team-choices {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .35rem;
+}
+
+#a5App .a5-team-choices label {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .35rem .5rem;
+  border: 1px solid #cbd5df;
+  background: #fff;
+  cursor: pointer;
+}
+
+#a5App .a5-team-choices label span {
+  writing-mode: horizontal-tb;
+  white-space: normal;
+  word-break: keep-all;
+}
+
+#a5App .a5-warning {
+  color: #9c3d10;
+  background: #fff5eb;
+  border-radius: .5rem;
+  padding: .5rem .65rem;
+}
+
+#a5App .a5-selected-team {
+  position: sticky;
+  bottom: calc(var(--a5-action-clearance) + env(safe-area-inset-bottom, 0px));
+  z-index: 5;
+  display: grid;
+  grid-template-columns: minmax(15rem, .8fr) minmax(18rem, 1.2fr);
+  gap: 1rem;
+  align-items: end;
+  margin-top: 1rem;
+  padding: .9rem 1rem;
+  border: 1px solid #9cabb8;
+  border-top: 3px solid #b08a3e;
+  background: #f8fafc;
+  box-shadow: 0 -4px 12px rgba(8, 43, 80, .08);
+}
+
+#a5App .a5-assignment-board {
+  container-type: inline-size;
+  container-name: a5-assignment;
+  padding-bottom: calc(var(--a5-action-clearance) + env(safe-area-inset-bottom, 0px) + 1rem);
+}
+
+#a5App .a5-selected-team h4,
+#a5App .a5-selected-team p {
+  margin: 0;
+}
+
+#a5App .a5-selected-team p {
+  margin-top: .3rem;
+  color: #334e68;
+}
+
+#a5App .a5-selected-team textarea {
+  min-height: 72px;
+}
+
+#a5App .a5-mobile-label,
+#a5App .a5-fit-cell .a5-mobile-label {
+  display: none;
+}
+
+@media (max-width: 1180px) {
+  #a5App .a5-decision-head {
+    display: none;
+  }
+
+  #a5App .a5-decision-row {
+    grid-template-columns: 4rem minmax(0, 1fr) 12rem;
+    grid-template-areas: "rank identity choices" "rank workload choices" "rank fit total";
+    align-items: start;
+  }
+
+  #a5App .a5-rank-cell { grid-area: rank; }
+  #a5App .a5-identity-cell { grid-area: identity; }
+  #a5App .a5-workload-cell { grid-area: workload; }
+  #a5App .a5-fit-cell { grid-area: fit; }
+  #a5App .a5-total-cell { grid-area: total; }
+  #a5App .a5-team-choices { grid-area: choices; }
+  #a5App .a5-mobile-label,
+  #a5App .a5-fit-cell .a5-mobile-label { display: block; color: #52606d; }
+}
+
+@container a5-assignment (max-width: 780px) {
+  #a5App .a5-decision-head {
+    display: none;
+  }
+
+  #a5App .a5-decision-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas: "rank identity identity" "workload fit total" "choices choices choices";
+    gap: .75rem;
+    align-items: start;
+    overflow: hidden;
+  }
+
+  #a5App .a5-rank-cell { grid-area: rank; text-align: left; }
+  #a5App .a5-identity-cell { grid-area: identity; }
+  #a5App .a5-workload-cell { grid-area: workload; }
+  #a5App .a5-fit-cell { grid-area: fit; }
+  #a5App .a5-total-cell { grid-area: total; }
+  #a5App .a5-team-choices {
+    grid-area: choices;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #a5App .a5-mobile-label,
+  #a5App .a5-fit-cell .a5-mobile-label {
+    display: block;
+    color: #52606d;
+    overflow-wrap: anywhere;
+  }
+
+  #a5App .a5-workload-cell,
+  #a5App .a5-fit-cell,
+  #a5App .a5-total-cell {
+    min-width: 0;
+    font-size: .82rem;
+    overflow-wrap: anywhere;
+  }
+
+  #a5App .a5-fit-cell span:not(.a5-mobile-label) {
+    display: block;
+  }
+
+  #a5App .a5-selected-team {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container a5-assignment (max-width: 480px) {
+  #a5App .a5-decision-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: "rank identity" "workload workload" "fit total" "choices choices";
+  }
+}
+
+#a5App .a5-master-detail-shell {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #cbd5df;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(8, 43, 80, .10);
+}
+
+#a5App .a5-master-list {
+  min-width: 0;
+  border: 0;
+}
+
+#a5App .a5-master-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 11.5rem;
+  align-items: center;
+  height: 80px;
+  min-width: 0;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-bottom: 1px solid #cbd5df;
+  background: #fff;
+}
+
+#a5App .a5-master-row:last-child {
+  border-bottom: 0;
+}
+
+#a5App .a5-master-row.is-focused {
+  border-left-color: #b08a3e;
+  background: #eef4f8;
+}
+
+#a5App .a5-master-focus {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr) 4.25rem;
+  align-items: center;
+  gap: .65rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: .45rem .7rem;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+#a5App .a5-master-focus:focus-visible {
+  outline: 3px solid #b08a3e;
+  outline-offset: -3px;
+}
+
+#a5App .a5-master-rank,
+#a5App .a5-master-score {
+  text-align: center;
+}
+
+#a5App .a5-master-rank small,
+#a5App .a5-master-score small,
+#a5App .a5-master-identity small {
+  display: block;
+  color: #52606d;
+  font-size: .72rem;
+}
+
+#a5App .a5-master-rank strong,
+#a5App .a5-master-score strong {
+  display: block;
+  color: #082b50;
+  font-size: 1.25rem;
+}
+
+#a5App .a5-master-rank strong {
+  width: 2rem;
+  height: 2rem;
+  margin: .1rem auto 0;
+  border: 1px solid #c6a15b;
+  border-radius: 50%;
+  color: #6d4b12;
+  background: #f7edd5;
+  font-size: 1rem;
+  line-height: 1.9rem;
+}
+
+#a5App .a5-master-identity {
+  min-width: 0;
+}
+
+#a5App .a5-master-identity strong,
+#a5App .a5-master-identity small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#a5App .a5-master-identity strong {
+  display: block;
+  color: #082b50;
+  font-size: .94rem;
+  font-weight: 650;
+}
+
+#a5App .a5-master-identity > span {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  min-width: 0;
+}
+
+#a5App .a5-recommended-pill {
+  flex: 0 0 auto;
+  padding: .15rem .48rem;
+  border: 1px solid #c6a15b;
+  border-radius: 999px;
+  color: #6d4b12;
+  background: #f7edd5;
+  font-size: .68rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+#a5App .a5-role-segment {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  min-width: 0;
+  margin-right: .65rem;
+  border: 1px solid #9cabb8;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+#a5App .a5-role-segment button {
+  min-width: 0;
+  min-height: 44px;
+  padding: .35rem .4rem;
+  border: 0;
+  border-right: 1px solid #cbd5df;
+  color: #334e68;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+#a5App .a5-role-segment button:last-child {
+  border-right: 0;
+}
+
+#a5App .a5-role-segment button[aria-pressed="true"] {
+  color: #fff;
+  background: #082b50;
+  font-weight: 700;
+}
+
+#a5App .a5-assignment-native-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+#a5App .a5-candidate-detail-host {
+  min-width: 0;
+  margin: .75rem;
+}
+
+#a5App .a5-candidate-detail {
+  min-width: 0;
+  padding: .9rem 1rem;
+  border: 1px solid #d6e0e8;
+  border-radius: 10px;
+  background: #f5f8fa;
+  box-shadow: inset 0 1px 3px rgba(8, 43, 80, .06);
+}
+
+#a5App .a5-candidate-detail[hidden] {
+  display: none;
+}
+
+#a5App .a5-candidate-detail > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: .65rem;
+  border-bottom: 1px solid #d8e0e8;
+}
+
+#a5App .a5-candidate-detail h4,
+#a5App .a5-candidate-detail header span {
+  display: block;
+  margin: 0;
+}
+
+#a5App .a5-candidate-detail header span {
+  color: #52606d;
+  font-size: .75rem;
+}
+
+#a5App .a5-candidate-detail > dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .65rem;
+  margin: .75rem 0;
+}
+
+#a5App .a5-candidate-detail dt {
+  color: #52606d;
+  font-size: .72rem;
+}
+
+#a5App .a5-candidate-detail dd {
+  margin: .15rem 0 0;
+  color: #082b50;
+  font-weight: 700;
+}
+
+#a5App .a5-assignment-reason {
+  margin-top: .9rem;
+}
+
+#a5App .a5-selected-team.a5-assignment-command {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: .45rem;
+  min-height: 52px;
+  border: 1px solid rgba(156, 171, 184, .82);
+  border-radius: 14px;
+  background: rgba(248, 250, 252, .9);
+  box-shadow: 0 10px 26px rgba(8, 43, 80, .14);
+  backdrop-filter: blur(12px);
+  white-space: nowrap;
+}
+
+#a5App .a5-assignment-command p {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@container a5-assignment (max-width: 580px) {
+  #a5App .a5-master-row {
+    grid-template-columns: minmax(0, 1fr) 10rem;
+  }
+
+  #a5App .a5-master-focus {
+    grid-template-columns: 2.6rem minmax(0, 1fr) 3.5rem;
+    gap: .35rem;
+    padding-inline: .45rem;
+  }
+
+  #a5App .a5-role-segment {
+    margin-right: .45rem;
+  }
+
+  #a5App .a5-candidate-detail > dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container a5-assignment (max-width: 460px) {
+  #a5App .a5-master-row {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 44px 44px;
+    height: 88px;
+  }
+
+  #a5App .a5-master-focus {
+    padding-block: .2rem;
+  }
+
+  #a5App .a5-role-segment {
+    width: auto;
+    margin: 0 .45rem;
+  }
+}
+
+@media (max-width: 720px) {
+  #a5App {
+    --a5-action-clearance: 8.5rem;
+  }
+
+  #a5App .a5-mock-account {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  #a5App .a5-decision-row {
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+    grid-template-areas: "rank identity" "workload workload" "fit total" "choices choices";
+  }
+
+  #a5App .a5-assignment-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  #a5App .a5-team-choices,
+  #a5App .a5-selected-team {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #a5App .a5-total-cell {
+    text-align: right;
+  }
+}
+
+#a5App .admin-queue-tabs {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+#a5App .admin-queue-tab {
+  flex: 1 0 8.5rem;
+}
+
+#a5App .a5-tab-panel,
+#a5App .document-workspace,
+#a5App .ws-editor,
+#a5App .ws-doc-pane {
+  min-width: 0;
+}
+
+#a5App .a5-tab-panel[hidden] {
+  display: none;
+}
+
+#a5App .a5-case-owner {
+  margin: .4rem 0 0;
+  color: #687789;
+  font-size: .8rem;
+}
+
+/* Sticky footer action bar (บันทึกร่าง/เสนอรายงาน 213/...) — matches the fixed
+   bottom-center technique used by .a4-walkin-shell/#caseDetailView in ecmis-workspace.css.
+   A prior fix set this to position:static because a naive fixed-bottom-center bar can sit
+   on top of .ws-doc-pane's sticky preview panel on the two-column document-workspace layout
+   (Activity 4 has no such competing sticky side panel, so it never hit this). The .ws-doc-pane
+   max-height rule below reserves exactly the bar's height so the two never overlap once the
+   pane is scrolled into its stuck position; right at the top of a long form, before enough
+   scrolling has happened to engage position:sticky, a brief overlap is still possible — a
+   real but minor trade-off versus the previous permanently-unstuck bar. */
+#a5App .ws-container > .ws-actions {
+  position: fixed;
+  z-index: 1020;
+  bottom: max(.65rem, env(safe-area-inset-bottom));
+  left: calc(var(--ecmis-sidebar-current-width, 0px) + (100vw - var(--ecmis-sidebar-current-width, 0px)) / 2);
+  transform: translateX(-50%);
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: .55rem;
+  align-items: center;
+  padding: .7rem .9rem;
+  background: rgba(238, 244, 249, .92);
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+  backdrop-filter: blur(22px) saturate(145%);
+  border: 1px solid rgba(205, 215, 227, .86);
+  border-radius: 18px;
+  box-shadow: 0 18px 50px rgba(5, 28, 52, .2);
+  max-width: calc(100vw - var(--ecmis-sidebar-current-width, 0px) - 2rem);
+}
+#a5App .ws-container > .ws-actions .ws-status {
+  margin-right: auto;
+}
+#a5App .ws-paper-stage {
+  padding-bottom: .5rem;
+}
+#a5App .ws-doc-pane:has(.doc-edit-fab) {
+  display: flex;
+  flex-direction: column;
+}
+#a5App .ws-doc-pane {
+  max-height: calc(100vh - 82px - 5.5rem);
+  overflow: hidden;
+}
+#a5App .ws-doc-pane:has(.doc-edit-fab) .ws-paper-stage {
+  flex: 0 0 auto;
+  min-height: auto;
+  max-height: none;
+  overflow: visible;
+}
+/* "แก้ไขเอกสาร" — ตำแหน่งล่างขวา ย้ายไปเป็นกฎกลางที่ ecmis-workspace.css
+   (.ws-doc-pane .doc-edit-fab) แล้ว เพื่อให้ ก4 ได้ตำแหน่งเดียวกัน — ที่นี่จึงไม่ต้องประกาศซ้ำ */
+
+#a5App .ws-stage-caption {
+  display: none;
+}
+
+#a5App .a5-stage-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+#a5App .a5-stage-compact span,
+#a5App .a5-stage-compact small,
+#a5App .a5-stage-compact strong {
+  display: block;
+}
+
+#a5App .a5-stage-compact small {
+  margin-bottom: .15rem;
+  color: #687789;
+}
+
+#a5App .a5-stage-compact strong {
+  color: var(--ws-navy);
+}
+
+#a5App .a5-stage-toggle {
+  flex: 0 0 auto;
+}
+
+#a5App .a5-stagebar.is-expanded .a5-stage-compact {
+  margin-bottom: .5rem;
+}
+
+#a5App .a5-stagebar .ws-stage-track {
+  padding: 1.25rem 1rem 1.35rem;
+}
+
+#a5App .a5-stagebar .ws-stage-track::before {
+  top: calc(1.25rem + 21px);
+}
+
+#a5App .ws-stagebar.a5 .ws-stage-node::after {
+  top: 21px;
+}
+
+#a5App .admin-queue-tabs {
+  margin-block: .7rem;
+}
+
+@media (min-width: 1181px) {
+  #a5App #a5BackList {
+    min-height: 36px;
+    margin-bottom: .45rem !important;
+    padding-block: .4rem;
+  }
+
+  #a5App .ws-case-head {
+    padding: .72rem 1rem;
+  }
+
+  #a5App .ws-case-head h1 {
+    margin-block: .05rem;
+    font-size: 1.35rem;
+  }
+
+  #a5App .admin-queue-tabs {
+    margin-block: .45rem;
+    padding-block: .2rem;
+  }
+
+  #a5App .admin-queue-tab {
+    min-height: 36px;
+    padding-block: .4rem;
+  }
+
+  #a5App .ws-editor-head {
+    padding: .7rem 1rem;
+  }
+
+  #a5App .ws-editor-head h2 {
+    font-size: 1.12rem;
+  }
+
+  #a5App .ws-editor-body {
+    padding: .8rem 1rem;
+  }
+
+  #a5App .ws-section h3 {
+    margin-bottom: .55rem;
+  }
+}
+
+#a5App .a5-rule-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  margin-inline-start: .35rem;
+  padding: .15rem .5rem;
+  border-radius: 999px;
+  font: 600 .75rem/1.25 Sarabun, sans-serif;
+}
+
+#a5App .a5-rule-badge.confirmed {
+  color: #205d45;
+  background: #e7f4ed;
+}
+
+#a5App .a5-rule-badge.pending {
+  color: #825510;
+  background: #fff2d6;
+}
+
+#a5App .a5-received-date-form,
+#a5App .a5-received-date-summary,
+#a5App .a5-custody-form,
+#a5App .a5-plan-lifecycle {
+  padding-left: 1rem;
+}
+
+#a5App .a5-document-list,
+#a5App .a5-history-timeline {
+  display: grid;
+  gap: .65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#a5App .a5-document-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .75rem;
+  padding: .75rem;
+  border: 1px solid var(--ws-line);
+  border-radius: 10px;
+}
+
+#a5App .a5-document-list small,
+#a5App .a5-history-timeline time {
+  display: block;
+  color: #687789;
+  font-size: .76rem;
+}
+
+#a5App .a5-history-timeline li {
+  padding: 0 0 .8rem 1rem;
+  border-left: 3px solid #c8d8e5;
+}
+
+#a5App .a5-doc-edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .5rem;
+  padding: .55rem .75rem;
+  border-inline: 1px solid var(--ws-line);
+  background: #fff;
+}
+
+#a5App .a5-doc-edit-actions[hidden] {
+  display: none;
+}
+
+#a5App .a5-admin-operation {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--ws-line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+#a5App .a5-admin-operation > h3,
+#a5App .a5-process-task > h3 { margin: 0 0 .85rem; color: var(--ws-navy); font-size: 1rem; }
+#a5App .a5-process-steps { display: flex; gap: 0; margin: 0 0 1rem; padding: 0; overflow-x: auto; list-style: none; scrollbar-width: thin; }
+#a5App .a5-process-steps li { position: relative; display: grid; flex: 1 0 7.5rem; justify-items: center; gap: .35rem; min-width: 0; padding: 0 .35rem; color: var(--ws-muted); text-align: center; }
+#a5App .a5-process-steps li::before { content: ''; position: absolute; z-index: 0; top: 13px; right: 50%; width: 100%; height: 2px; background: #dbe3ea; }
+#a5App .a5-process-steps li:first-child::before { display: none; }
+#a5App .a5-process-steps li > span { position: relative; z-index: 1; display: grid; place-items: center; width: 28px; height: 28px; border: 2px solid #cbd6df; border-radius: 50%; background: #fff; color: #6b7a8c; font-size: .72rem; font-weight: 700; }
+#a5App .a5-process-steps li > strong { font-size: .7rem; line-height: 1.35; font-weight: 600; }
+#a5App .a5-process-steps li[data-step-state='complete']::before,
+#a5App .a5-process-steps li[data-step-state='current']::before { background: #7595b2; }
+#a5App .a5-process-steps li[data-step-state='complete'] > span { border-color: var(--ws-navy); background: var(--ws-navy); color: #fff; }
+#a5App .a5-process-steps li[data-step-state='current'] > span { border-color: var(--ws-gold); color: #6a5108; background: var(--ws-gold-soft); box-shadow: 0 0 0 3px #fff; }
+#a5App .a5-process-steps li[data-step-state='current'] > strong { color: var(--ws-navy); }
+#a5App .a5-operation-status { display: flex; align-items: center; justify-content: space-between; gap: .8rem; margin: 0 0 .9rem; padding: .65rem .75rem; border: 1px solid #dfe6eb; border-radius: 8px; background: #f7f9fb; }
+#a5App .a5-operation-status > span { color: var(--ws-muted); font-size: .72rem; }
+#a5App .a5-operation-status > strong { color: var(--ws-navy); font-size: .82rem; text-align: right; }
+#a5App .a5-process-task-body { display: grid; gap: .75rem; }
+#a5App .a5-process-task-body > .ws-callout,
+#a5App .a5-process-task-body > .ws-readonly,
+#a5App .a5-process-task-body > .ws-field { margin: 0; }
+#a5App .a5-process-actions { display: flex; justify-content: flex-end; gap: .55rem; margin-top: .8rem; }
+#a5App .a5-case-size-panel { border-top: 3px solid #d8b24a; }
+#a5App .a5-case-size-status { margin-bottom: .75rem; }
+#a5App .a5-case-size-grid { align-items: start; }
+@media (max-width: 640px) {
+  #a5App .a5-process-steps li { flex-basis: 6.75rem; }
+  #a5App .a5-operation-status { align-items: flex-start; flex-direction: column; gap: .2rem; }
+  #a5App .a5-operation-status > strong { text-align: left; }
+  #a5App .a5-process-actions { justify-content: stretch; }
+  #a5App .a5-process-actions .ws-button { width: 100%; }
+}
+
+#a5App .a5-inbound-doc-pane {
+  overflow: hidden;
+  background: #fff;
+}
+
+#a5App .a5-inbound-pane-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--ws-line);
+  background: #fff;
+}
+
+#a5App .a5-inbound-pane-head h2,
+#a5App .a5-inbound-group h3,
+#a5App .a5-inbound-signed-document h3 {
+  margin: 0;
+}
+
+#a5App .a5-inbound-readonly {
+  flex: 0 0 auto;
+  padding: .25rem .55rem;
+  border-radius: 999px;
+  color: #33546f;
+  background: #e6eef5;
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+#a5App .a5-inbound-summary,
+#a5App .a5-inbound-group {
+  margin: .75rem;
+  padding: .85rem;
+  border: 1px solid var(--ws-line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+#a5App .a5-inbound-summary dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .65rem;
+  margin: 0;
+}
+
+#a5App .a5-inbound-summary dt {
+  color: #687789;
+  font-size: .75rem;
+}
+
+#a5App .a5-inbound-summary dd {
+  margin: .1rem 0 0;
+  color: var(--ws-navy);
+  font-weight: 700;
+}
+
+#a5App .a5-inbound-checklist,
+#a5App .a5-inbound-file-list {
+  display: grid;
+  gap: .5rem;
+  margin: .7rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+#a5App .a5-inbound-checklist li,
+#a5App .a5-inbound-file-list li {
+  padding: .65rem .75rem;
+  border: 1px solid var(--ws-line);
+  border-radius: 8px;
+}
+
+#a5App .a5-inbound-checklist li span,
+#a5App .a5-inbound-file-list span,
+#a5App .a5-inbound-file-list small {
+  display: block;
+  color: #687789;
+  font-size: .75rem;
+}
+
+#a5App .a5-inbound-checklist li.complete {
+  border-left: 4px solid #2f7c5c;
+}
+
+#a5App .a5-inbound-checklist li.missing {
+  border-left: 4px solid #b46b16;
+  background: #fff8e8;
+}
+
+#a5App .a5-inbound-signed-document {
+  margin-top: .75rem;
+}
+
+#a5App .a5-inbound-signed-document > header {
+  padding: .6rem .75rem;
+  border: 1px solid var(--ws-line);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: #eef3f7;
+}
+
+#a5App .a5-inbound-signed-document > header span {
+  color: #687789;
+  font-size: .72rem;
+}
+
+#a5App .a5-inbound-paper {
+  overflow: auto;
+  background: #fff;
+}
+
+#a5App .a5-inbound-sandbox {
+  display: block;
+  width: 100%;
+  min-height: 72vh;
+  border: 0;
+  background: #fff;
+}
+
+#a5App .a5-inbound-reference {
+  min-height: 760px;
+}
+
+#a5App .a5-inbound-all {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 1rem;
+}
+
+#a5App .a5-inbound-all-item {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ws-line);
+  background: #fff;
+}
+
+#a5App .a5-inbound-all-item > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .75rem 1rem;
+  border-bottom: 2px solid #c6a15b;
+  background: #eef3f7;
+}
+
+#a5App .a5-inbound-all-item > header span,
+#a5App .a5-inbound-all-item > header strong {
+  color: #52606d;
+  font-size: .76rem;
+}
+
+#a5App .a5-inbound-all-item > header h2 {
+  margin: .15rem 0 0;
+  color: #082b50;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+#a5App .a5-inbound-all-body {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 1rem;
+}
+
+#a5App .a5-inbound-all-body > *,
+#a5App .a5-inbound-all .a5-inbound-paper {
+  max-width: 100%;
+}
+
+#a5App .a5-inbound-all .a5-inbound-reference {
+  min-height: 0;
+}
+
+#a5App .a5-inbound-empty {
+  margin: .7rem 0 0;
+  color: #687789;
+}
+
+#a5App .a5-inbound-proof {
+  margin-top: .7rem;
+}
+
+@media (max-width: 1180px) {
+  #a5App .document-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #a5App .ws-doc-pane {
+    position: relative;
+    top: auto;
+  }
+}
+
+@media (max-width: 1200px) {
+  #a5App .a5-stage-compact {
+    display: flex;
+  }
+
+  #a5App .a5-stagebar:not(.is-expanded) #a5StageFull {
+    display: none;
+  }
+
+  #a5App .a5-stagebar.is-expanded #a5StageFull {
+    display: flex;
+  }
+}
+
+@media (max-width: 720px) {
+  #a5App .a5-inbound-all-item > header {
+    flex-direction: column;
+    gap: .35rem;
+  }
+
+  #a5App .a5-inbound-all-body {
+    padding: .6rem;
+  }
+
+  #a5App .a5-inbound-summary dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #a5App .ws-topbar-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: .4rem;
+    padding: .4rem .65rem;
+  }
+
+  #a5App .ws-search {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin: 0;
+  }
+
+  #a5App .ws-search input {
+    min-height: 44px;
+  }
+
+  #a5App .ws-brand {
+    display: none;
+  }
+
+  #a5App .ws-profile {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    width: 100%;
+    gap: .3rem;
+    margin: 0;
+  }
+
+  #a5App .ws-profile > span {
+    display: none;
+  }
+
+  #a5App .ws-font-controls {
+    grid-column: auto;
+    width: auto;
+    min-width: 0;
+    padding: .2rem;
+  }
+
+  #a5App .ws-font-controls button {
+    width: 38px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  #a5App .ws-role-select {
+    grid-column: auto;
+    width: 100%;
+    min-height: 44px;
+    max-width: none;
+    padding-block: .4rem;
+  }
+
+  #a5App #wsA5UnitField:not(.ws-hidden) {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    width: 100%;
+  }
+
+  #a5App #wsA5UnitField .ws-role-select {
+    width: 100%;
+  }
+
+  #a5App .ws-container {
+    padding-top: .6rem;
+  }
+
+  #a5App #a5BackList {
+    min-height: 44px;
+    margin-bottom: .45rem !important;
+    padding-block: .4rem;
+  }
+
+  #a5App .ws-case-head {
+    align-items: flex-start;
+    gap: .35rem .55rem;
+    margin-bottom: .5rem;
+    padding: .55rem .7rem;
+  }
+
+  #a5App .ws-case-head h1 {
+    margin-block: 0;
+    font-size: 1.2rem;
+    line-height: 1.16;
+  }
+
+  #a5App .ws-case-head .ws-kicker {
+    margin-bottom: .1rem;
+    font-size: .7rem;
+  }
+
+  #a5App .ws-case-meta {
+    gap: .1rem .45rem;
+    font-size: .74rem;
+  }
+
+  #a5App .a5-case-owner {
+    margin-top: .2rem;
+    font-size: .72rem;
+  }
+
+  #a5App .a5-stagebar {
+    padding: .45rem .65rem;
+  }
+
+  #a5App .a5-stage-compact {
+    align-items: center;
+    flex-direction: row;
+    gap: .45rem;
+  }
+
+  #a5App .a5-stage-toggle {
+    width: auto;
+    min-height: 44px;
+    padding-inline: .7rem;
+  }
+
+  #a5App .a5-stage-compact small {
+    margin-bottom: 0;
+    font-size: .7rem;
+  }
+
+  #a5App .a5-stage-compact strong {
+    font-size: .82rem;
+    line-height: 1.25;
+  }
+
+  #a5App .admin-queue-tabs {
+    position: static;
+    margin-block: .45rem;
+    padding: .2rem;
+  }
+
+  #a5App .admin-queue-tab {
+    min-height: 44px;
+    padding-block: .35rem;
+  }
+
+  #a5App .a5-document-list li,
+  #a5App .ws-grid-2,
+  #a5App .ws-grid-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #a5App .ws-actions:has(.ws-button:only-child) {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: 0;
+  }
+
+  #a5App .ws-actions:has(.ws-button:only-child) .ws-button {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 390px) {
+  #a5App .admin-queue-tab {
+    flex-basis: 7.5rem;
+  }
+
+  #a5App .a5-document-list .ws-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 320px) {
+  #a5App .ws-container {
+    padding-inline: .5rem;
+  }
+}
+
+@media print {
+  #a5App .admin-queue-tabs,
+  #a5App .ws-case-head,
+  #a5App .ws-stagebar,
+  #a5App .ws-editor,
+  #a5App .ws-actions,
+  #a5App .ws-doc-toolbar,
+  #a5App .doc-edit-bar,
+  #a5App .doc-edit-fab,
+  #a5App .a5-doc-edit-actions {
+    display: none !important;
+  }
+}
+
+#a5App .a5-duo-bars{margin-bottom:.8rem}
+#a5App .a5-duo-bars .a5-witness-bar{margin-bottom:0}
+@media(max-width:900px){#a5App .a5-duo-bars{grid-template-columns:1fr !important}}
+
+/* fix duo bars symmetry + stagebar spacing */
+#a5App .a5-duo-bars .a5-witness-bar{display:flex;flex-direction:column;height:100%}
+#a5App .a5-duo-bars .a5-witness-bar-body{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:72px}
+#a5App .a5-stagebar{padding:.75rem 1rem;border-radius:12px;background:#fff;border:1px solid #d7dee6}
+#a5App .a5-stage-compact{padding:.15rem 0}
+#a5App .a5-pill-action{ display:inline-flex;align-items:center;gap:.3rem;padding:.18rem .6rem;border-radius:999px;background:#f0f4f8;border:1px solid #c9d9e8;color:#173a5e;font-size:.72rem;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s }
+#a5App .a5-pill-action:hover{background:#e3ecf5;border-color:#a9bdd5}
+#a5App .a5-pill-ghost{ margin-left:.3rem;padding:.12rem .5rem;font-size:.70rem;background:#fff }
+#a5App .a5-pill-action + .a5-urgency-badge{margin-left:.15rem}
+#a5App .a5-duo-bars .a5-witness-bar{min-height:148px}
+#a5App .a5-duo-bars .a5-witness-result-field label{display:none}
+#a5App .a5-duo-bars .a5-witness-result-field input{height:32px;padding:.25rem .6rem;font-size:.82rem}
+#a5App .a5-duo-bars .a5-witness-req-detail{margin:0;font-size:.72rem}
+#a5App .a5-stagebar{margin:.8rem 0 !important;padding:1rem 1.2rem !important}
+#a5App .document-workspace{align-items:flex-start}
+#a5App .ws-doc-pane{position:sticky;top:82px;max-height:calc(100vh - 82px);overflow:auto;align-self:flex-start}
+#a5App .ws-doc-pane .ws-doc-toolbar{position:sticky;top:0;z-index:2;background:#fff}
+#a5App .document-workspace{align-items:flex-start !important}
+#a5App .ws-doc-pane{position:sticky !important;top:82px !important;max-height:calc(100vh - 82px) !important;overflow:auto !important;align-self:flex-start !important}
+#a5App .ws-doc-pane .ws-doc-toolbar{position:sticky !important;top:0 !important;z-index:10 !important;background:#fff !important}
+#a5App .a5-duo-bars .a5-witness-bar{min-height:160px}
+#a5App .a5-duo-bars .a5-witness-result-field{display:none !important}
+#a5App .a5-duo-bars .a5-witness-req-detail{margin:0 !important;font-size:.75rem !important;text-align:center}
+#a5App .a5-duo-bars .a5-witness-actions{justify-content:center !important}

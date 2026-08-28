@@ -1,0 +1,333 @@
+@page "/admin"
+@page "/admin/users"
+@inject EcmisWeb.Services.AdminApiService AdminApi
+@inject NavigationManager Nav
+@using EcmisWeb.Services
+@using EcmisWeb.Models
+
+@* ═══ ERROR ═══ *@
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:12px;padding:16px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
+        <i class="bi bi-exclamation-triangle-fill" style="color:#dc2626;font-size:20px"></i>
+        <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:#991b1b">เกิดข้อผิดพลาด</div>
+            <div style="font-size:12px;color:#7f1d1d">@ErrorMessage</div>
+        </div>
+        <button @onclick="LoadUsersAsync" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">
+            <i class="bi bi-arrow-clockwise me-1"></i>ลองใหม่
+        </button>
+    </div>
+}
+
+@* ── HERO ── *@
+<div style="background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 55%,#1e3575 100%);border-radius:18px;padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden" class="fade-in">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold-light),var(--gold),transparent)"></div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <i class="bi bi-people-fill" style="font-size:20px;color:var(--navy-deep)"></i>
+            </div>
+            <div>
+                <div style="font-size:19px;font-weight:800;color:#fff">จัดการข้อมูลผู้ใช้งาน</div>
+                <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px">รายชื่อบัญชีในระบบ · จัดการสถานะ · ดูสิทธิ์การเข้าถึง / ระบบงาน</div>
+            </div>
+        </div>
+        <div>
+            <a href="/admin/dashboard" class="btn btn-sm" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);font-size:12px;border-radius:8px;padding:8px 14px;font-weight:700">
+                <i class="bi bi-arrow-left me-1"></i>กลับภาพรวมระบบ
+            </a>
+        </div>
+    </div>
+</div>
+
+@* ── KPI mini ── *@
+<div class="row g-3 mb-3 fade-in">
+    <div class="col-md-3 col-6">
+        <div class="ecmis-card" style="padding:14px 18px">
+            <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase">ผู้ใช้ทั้งหมด</div>
+            <div style="font-size:26px;font-weight:900;color:var(--navy-deep)">@Users.Count</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="ecmis-card" style="padding:14px 18px">
+            <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase">ใช้งานอยู่</div>
+            <div style="font-size:26px;font-weight:900;color:#16a34a">@Users.Count(u => u.AccountStatus == "active")</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="ecmis-card" style="padding:14px 18px">
+            <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase">รออนุมัติ</div>
+            <div style="font-size:26px;font-weight:900;color:#d97706">@Users.Count(u => u.AccountStatus == "pending")</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="ecmis-card" style="padding:14px 18px">
+            <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase">ปิดบัญชี</div>
+            <div style="font-size:26px;font-weight:900;color:#64748b">@Users.Count(u => u.AccountStatus == "inactive" || u.AccountStatus == "terminated")</div>
+        </div>
+    </div>
+</div>
+
+@* ── Filter bar ── *@
+<div class="ecmis-card mb-3" style="padding:14px 18px">
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+        <div style="position:relative;flex:1;min-width:220px">
+            <i class="bi bi-search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#8A96A8;font-size:13px"></i>
+            <input @bind="SearchText" @bind:event="oninput" class="form-control"
+                   placeholder="ค้นหาชื่อ, username, email, หน่วยงาน..."
+                   style="padding-left:34px;font-size:13px;border-radius:9px;border:1.5px solid #e2e6f0" />
+        </div>
+        <select @bind="FilterStatus" class="form-select" style="width:150px;font-size:13px;border-radius:9px;border:1.5px solid #e2e6f0">
+            <option value="">ทุกสถานะ</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="pending">รออนุมัติ</option>
+            <option value="terminated">ปิดบัญชี</option>
+        </select>
+        <select @bind="FilterRole" class="form-select" style="width:170px;font-size:13px;border-radius:9px;border:1.5px solid #e2e6f0">
+            <option value="">ทุกสิทธิ์การเข้าถึง</option>
+            <option value="super_admin">ผู้ดูแลระบบสูงสุด</option>
+            <option value="admin">ผู้ดูแลหน่วยงาน</option>
+            <option value="activity_admin">ผู้ดูแลกิจกรรม</option>
+            <option value="officer">เจ้าหน้าที่</option>
+            <option value="investigator">พนักงานสืบสวน</option>
+            <option value="citizen">ประชาชน</option>
+        </select>
+        <select @bind="FilterSystem" class="form-select" style="width:170px;font-size:13px;border-radius:9px;border:1.5px solid #e2e6f0">
+            <option value="">ทุกระบบงาน</option>
+            <option value="PCMS">PCMS</option>
+            <option value="INVESTIGATION">INVESTIGATION</option>
+            <option value="WITNESS">WITNESS</option>
+            <option value="COMMITTEE">COMMITTEE</option>
+            <option value="PERSONCHECK">PERSONCHECK</option>
+            <option value="WARRANT">WARRANT</option>
+            <option value="LEGAL">LEGAL</option>
+        </select>
+        <button @onclick="LoadUsersAsync" class="btn btn-sm" style="background:var(--navy-deep);color:#fff;font-size:12.5px;border-radius:9px;padding:8px 14px;font-weight:700">
+            <i class="bi bi-arrow-clockwise me-1"></i>รีเฟรช
+        </button>
+    </div>
+</div>
+
+@* ── Table ── *@
+<div class="ecmis-card">
+    <div class="ecmis-card-header">
+        <div class="ecmis-card-title"><span class="badge-dot"></span>รายชื่อผู้ใช้งาน</div>
+        <div style="font-size:12px;color:var(--text-muted)">แสดง @FilteredUsers.Count() / @Users.Count รายการ</div>
+    </div>
+    @if (Loading)
+    {
+        <div style="padding:40px;text-align:center;color:var(--text-muted)">
+            <i class="bi bi-arrow-clockwise" style="font-size:28px;animation:spin 1s linear infinite"></i>
+            <div style="margin-top:8px;font-size:13px">กำลังโหลดข้อมูลผู้ใช้งาน...</div>
+        </div>
+    }
+    else if (!FilteredUsers.Any())
+    {
+        <div style="padding:40px;text-align:center;color:var(--text-muted)">
+            <i class="bi bi-inbox" style="font-size:32px"></i>
+            <div style="margin-top:8px;font-size:13px">ไม่พบผู้ใช้งานตามเงื่อนไข</div>
+        </div>
+    }
+    else
+    {
+        <div style="overflow-x:auto">
+            <table class="ecmis-table">
+                <thead>
+                    <tr>
+                        <th>ผู้ใช้งาน</th>
+                        <th>หน่วยงาน</th>
+                        <th>ตำแหน่ง</th>
+                        <th>สิทธิ์การเข้าถึง</th>
+                        <th>ระบบงาน</th>
+                        <th>สถานะ</th>
+                        <th>เข้าสู่ระบบล่าสุด</th>
+                        <th style="text-align:center">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in FilteredUsers)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#1B3178,#0B1940);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0">
+                                        @GetInitials(u)
+                                    </div>
+                                    <div>
+                                        <div style="font-weight:700;font-size:13px">@DisplayName(u)</div>
+                                        <div style="font-size:11px;color:var(--text-muted)">@u.Email</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="font-size:12.5px">@(string.IsNullOrEmpty(u.OrgName) ? "—" : u.OrgName)</td>
+                            <td style="font-size:12.5px;color:var(--text-muted)">@(string.IsNullOrEmpty(u.PositionName) ? "—" : u.PositionName)</td>
+                            <td>
+                                <div style="display:flex;flex-wrap:wrap;gap:3px">
+                                    @foreach (var r in u.Roles ?? Array.Empty<string>())
+                                    {
+                                        <span style="border-radius:5px;padding:2px 7px;font-size:10.5px;font-weight:700;
+                                                     background:@RoleBg(r);color:@RoleColor(r)">@RoleLabel(r)</span>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <div style="display:flex;flex-wrap:wrap;gap:3px">
+                                    @{ var sys = u.Systems ?? Array.Empty<string>(); }
+                                    @if (sys.Length == 0)
+                                    {
+                                        <span style="font-size:11px;color:var(--text-muted)">—</span>
+                                    }
+                                    else
+                                    {
+                                        foreach (var s in sys.Take(3))
+                                        {
+                                            <span style="border-radius:4px;padding:2px 6px;font-size:10px;font-weight:700;background:#e0f2fe;color:#0369a1">@s</span>
+                                        }
+                                        if (sys.Length > 3)
+                                        {
+                                            <span style="border-radius:4px;padding:2px 6px;font-size:10px;color:var(--text-muted);font-weight:700;background:#f1f5f9">+@(sys.Length - 3)</span>
+                                        }
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <span class="status-badge @StatusClass(u.AccountStatus)">@StatusLabel(u.AccountStatus)</span>
+                            </td>
+                            <td style="font-size:11.5px;color:var(--text-muted)">
+                                @(u.LastLoginAt.HasValue ? u.LastLoginAt.Value.ToLocalTime().ToString("dd/MM/yy HH:mm") : "ไม่เคยเข้า")
+                            </td>
+                            <td style="text-align:center">
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <a href="@($"/admin/users/{u.Id}")" class="btn btn-sm btn-outline-secondary" style="font-size:11px;border-radius:6px;padding:3px 8px" title="ดู / แก้ไข">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<style>
+    @@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
+
+@code {
+    private List<UserDto> Users = new();
+    private bool Loading;
+    private string? ErrorMessage;
+
+    private string SearchText = "";
+    private string FilterStatus = "";
+    private string FilterRole = "";
+    private string FilterSystem = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsersAsync();
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        Loading = true;
+        ErrorMessage = null;
+        try
+        {
+            Users = await AdminApi.GetUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"ไม่สามารถโหลดข้อมูลผู้ใช้งานได้: {ex.Message}";
+            Users = new();
+        }
+        finally
+        {
+            Loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<UserDto> FilteredUsers => Users.Where(u =>
+    {
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            var q = SearchText.Trim();
+            var blob = $"{u.Username} {u.Email} {u.FirstName} {u.LastName} {u.OrgName}";
+            if (!blob.Contains(q, StringComparison.OrdinalIgnoreCase)) return false;
+        }
+        if (!string.IsNullOrEmpty(FilterStatus) && !string.Equals(u.AccountStatus, FilterStatus, StringComparison.OrdinalIgnoreCase)) return false;
+        if (!string.IsNullOrEmpty(FilterRole) && !(u.Roles ?? Array.Empty<string>()).Contains(FilterRole, StringComparer.OrdinalIgnoreCase)) return false;
+        if (!string.IsNullOrEmpty(FilterSystem) && !(u.Systems ?? Array.Empty<string>()).Contains(FilterSystem, StringComparer.OrdinalIgnoreCase)) return false;
+        return true;
+    });
+
+    private string DisplayName(UserDto u)
+    {
+        var full = $"{u.FirstName} {u.LastName}".Trim();
+        return string.IsNullOrEmpty(full) ? u.Username : full;
+    }
+
+    private string GetInitials(UserDto u)
+    {
+        if (!string.IsNullOrWhiteSpace(u.FirstName) && !string.IsNullOrWhiteSpace(u.LastName))
+            return $"{u.FirstName[0]}{u.LastName[0]}".ToUpper();
+        var s = u.Username;
+        if (string.IsNullOrEmpty(s)) return "??";
+        var parts = s.Split('.');
+        if (parts.Length >= 2) return ($"{parts[0][0]}{parts[1][0]}").ToUpper();
+        return s.Length >= 2 ? s[..2].ToUpper() : s.ToUpper();
+    }
+
+    private string StatusClass(string s) => s switch {
+        "active" => "status-active",
+        "inactive" => "status-inactive",
+        "pending" => "status-pending",
+        "terminated" => "status-inactive",
+        _ => ""
+    };
+    private string StatusLabel(string s) => s switch {
+        "active" => "ใช้งาน",
+        "inactive" => "ไม่ได้ใช้งาน",
+        "pending" => "รออนุมัติ",
+        "terminated" => "พ้นสภาพ",
+        _ => s
+    };
+
+    private string RoleLabel(string r) => r switch {
+        "super_admin" => "ผู้ดูแลระบบสูงสุด",
+        "admin" => "ผู้ดูแลหน่วยงาน",
+        "activity_admin" => "ผู้ดูแลกิจกรรม",
+        "app_admin" => "ผู้ดูแลโปรแกรม",
+        "officer" => "เจ้าหน้าที่",
+        "investigator" => "พนักงานสืบสวน",
+        "citizen" => "ประชาชน",
+        "report_viewer" => "ผู้ดูรายงาน",
+        _ => r
+    };
+
+    private string RoleBg(string r) => r switch {
+        "super_admin" => "#edf3ff",
+        "admin" => "#fff3e8",
+        "activity_admin" => "#fef3c7",
+        "app_admin" => "#e0e7ff",
+        "investigator" => "#ecf8f1",
+        "citizen" => "#fce7f3",
+        "report_viewer" => "#f3e8ff",
+        _ => "#f0f2f8"
+    };
+    private string RoleColor(string r) => r switch {
+        "super_admin" => "#1a3575",
+        "admin" => "#b85000",
+        "activity_admin" => "#92400e",
+        "app_admin" => "#3730a3",
+        "investigator" => "#136036",
+        "citizen" => "#9d174d",
+        "report_viewer" => "#6b21a8",
+        _ => "#4a5568"
+    };
+}

@@ -1,0 +1,248 @@
+@inject IJSRuntime JSRuntime
+
+<div id="view-components-demo" class="app-view">
+<div class="container-fluid p-4" style="background-color: #f4f6fa; min-height: 100vh; font-family: 'Sarabun', sans-serif;">
+    <!-- Brand Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div>
+            <h4 class="fw-bold text-primary mb-1">🧩 E-CMIS Custom Bootstrap 5 Component Library</h4>
+            <p class="text-muted mb-0" style="font-size: 13px;">
+                คลัง Component สำเร็จรูปที่พัฒนาบนพื้นฐาน Bootstrap 5 และ C# Blazor เพื่อส่งต่อให้ทีมพัฒนานำไปใช้งานต่อได้ทันที
+            </p>
+        </div>
+        <a href="/" class="btn btn-outline-navy btn-sm"><i class="bi bi-arrow-left"></i> กลับหน้าหลัก E-CMIS</a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Part 1: Buttons and Badges -->
+        <div class="col-lg-6">
+            <!-- Buttons Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-primary mb-3"><i class="bi bi-hand-index-thumb"></i> 1. ปุ่มสารพัดประโยชน์ (EcmisButton)</h5>
+                    <p class="text-muted mb-3" style="font-size: 12px;">
+                        ปุ่มสำเร็จรูปที่สามารถกำหนดรูปแบบสี Gradient ตามอัตลักษณ์ของสำนักงาน ป.ป.ท. หรือใช้ Bootstrap คลาสมาตรฐานได้
+                    </p>
+                    
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <EcmisButton Text="ปุ่มสีกรมท่า (Navy)" Icon="bi-save" OnClick="@(() => Alert("คลิกปุ่มสีกรมท่า"))" />
+                        <EcmisButton Text="กรมท่าแบบ Outline" IsOutline="true" Icon="bi-arrow-repeat" OnClick="@(() => Alert("คลิกปุ่ม Outline"))" />
+                        <EcmisButton Text="ปุ่มสีทอง (Gold)" Variant="gold" Icon="bi-star-fill" OnClick="@(() => Alert("คลิกปุ่มสีทอง"))" />
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <EcmisButton Text="สีแจ้งเตือน (Danger)" Variant="danger" Icon="bi-trash" OnClick="@(() => Alert("ลบข้อมูล"))" />
+                        <EcmisButton Text="สีสำเร็จ (Success)" Variant="success" Icon="bi-check-circle" OnClick="@(() => Alert("บันทึกสำเร็จ"))" />
+                        <EcmisButton Text="แบบปิดใช้งาน (Disabled)" Variant="navy" Disabled="true" Icon="bi-lock" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Badges Card -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-primary mb-3"><i class="bi bi-tag"></i> 2. ป้ายแสดงสถานะ (EcmisStatusBadge)</h5>
+                    <p class="text-muted mb-3" style="font-size: 12px;">
+                        คลาสแสดงสถานะความด่วนหรือสถานะสำนวนคดี ค้นหาและจับคู่สีแบบอัตโนมัติ (Auto-mapping) จากข้อความภาษาไทย
+                    </p>
+
+                    <h6 class="fw-bold text-muted mb-2" style="font-size: 13px;">กำหนดสีโดยตรง (Variant Explicit):</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <EcmisStatusBadge Text="แดง (red)" Variant="red" />
+                        <EcmisStatusBadge Text="ส้ม (orange)" Variant="orange" />
+                        <EcmisStatusBadge Text="เหลือง (yellow)" Variant="yellow" />
+                        <EcmisStatusBadge Text="เขียว (green)" Variant="green" />
+                        <EcmisStatusBadge Text="ฟ้าคราม (teal)" Variant="teal" />
+                        <EcmisStatusBadge Text="กรมท่า (navy)" Variant="navy" />
+                    </div>
+
+                    <h6 class="fw-bold text-muted mb-2" style="font-size: 13px;">วิเคราะห์คำอัตโนมัติ (Auto-mapping by text):</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        <EcmisStatusBadge Text="สำนวนเกินกำหนด 30 วัน" />
+                        <EcmisStatusBadge Text="อยู่ระหว่างดำเนินการ" />
+                        <EcmisStatusBadge Text="รอเสนอบอร์ด ป.ป.ท." />
+                        <EcmisStatusBadge Text="ถึงที่สุดแล้ว/ชนะคดี" />
+                        <EcmisStatusBadge Text="คำร้องอุทธรณ์ส่งมอบแล้ว" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Part 2: Interactive Table & Modal Trigger -->
+        <div class="col-lg-6">
+            <!-- Custom Data Table Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold text-primary mb-0"><i class="bi bi-table"></i> 3. ตารางข้อมูล (EcmisTable)</h5>
+                        <EcmisButton Text="เพิ่มคดีใหม่" Variant="gold" Icon="bi-plus-circle" OnClick="OpenCreateModal" />
+                    </div>
+                    <p class="text-muted mb-3" style="font-size: 12px;">
+                        ตารางแสดงคดีรองรับการแบ่งหน้า (Pagination) และจัดการแถวข้อมูลผ่าน C# State โดยตรง
+                    </p>
+
+                    <EcmisTable TItem="DemoCase" Items="@demoCases" ItemsPerPage="3" Class="border rounded shadow-xs">
+                        <HeaderTemplate>
+                            <th class="py-2" style="font-size: 12px;">เลขสำนวน</th>
+                            <th class="py-2" style="font-size: 12px;">ผู้ถูกกล่าวหา</th>
+                            <th class="py-2" style="font-size: 12px;">สถานะสำนวน</th>
+                            <th class="py-2" style="font-size: 12px;">จัดการ</th>
+                        </HeaderTemplate>
+                        <RowTemplate>
+                            <td class="py-2 fw-bold" style="font-size: 12px;">@context.Id</td>
+                            <td class="py-2" style="font-size: 12px;">@context.Accused</td>
+                            <td class="py-2" style="font-size: 12px;">
+                                <EcmisStatusBadge Text="@context.Status" />
+                            </td>
+                            <td class="py-2">
+                                <EcmisButton Text="ดูรายละเอียด" Variant="navy" IsOutline="true" Class="btn-xs py-0 px-2" OnClick="@(() => OpenDetailsModal(context))" />
+                            </td>
+                        </RowTemplate>
+                    </EcmisTable>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<EcmisModal @ref="detailsModal" Id="detailsModalDemo" Title="รายละเอียดสำนวนคดี E-CMIS" Icon="bi-file-earmark-text">
+    <ChildContent>
+        @if (selectedCase != null)
+        {
+            <div class="p-2">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted mb-1" style="font-size: 12px;">เลขสำนวน ป.ป.ท.</label>
+                        <div class="fw-bold">@selectedCase.Id</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted mb-1" style="font-size: 12px;">สถานะปัจจุบัน</label>
+                        <div>
+                            <EcmisStatusBadge Text="@selectedCase.Status" />
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted mb-1" style="font-size: 12px;">ผู้ถูกกล่าวหา / จำเลย</label>
+                    <div class="fw-bold">@selectedCase.Accused</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted mb-1" style="font-size: 12px;">รายละเอียดข้อกล่าวหา</label>
+                    <div class="text-muted" style="font-size: 13px; line-height: 1.6;">
+                        สำนวนคดีนี้จัดอยู่ในความรับผิดชอบกลุ่มงานกฎหมายทางคดี 
+                        อยู่ระหว่างประสานงานพนักงานอัยการเพื่อติดตามคำวินิจฉัยและรายงานความคืบหน้าต่อคณะกรรมการ ป.ป.ท. ต่อไป
+                    </div>
+                </div>
+            </div>
+        }
+    </ChildContent>
+    <FooterContent>
+        <EcmisButton Text="ปิดหน้าต่าง" Variant="secondary" OnClick="@(() => detailsModal.HideAsync())" />
+        <EcmisButton Text="ยืนยันรับทราบ" Variant="navy" OnClick="@(() => ConfirmDetails())" />
+    </FooterContent>
+</EcmisModal>
+
+<!-- Create Case Modal -->
+<EcmisModal @ref="createModal" Id="createModalDemo" Title="ลงทะเบียนสำนวนคดีใหม่ (กิจกรรมที่ 10)" Icon="bi-folder-plus">
+    <ChildContent>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label text-muted mb-1" style="font-size: 12px;">เลขสำนวน ป.ป.ท. <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="เช่น ปปท. 101/2569" @bind="newCaseId">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted mb-1" style="font-size: 12px;">ผู้ถูกกล่าวหา <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="ระบุชื่อ-นามสกุล" @bind="newCaseAccused">
+            </div>
+            <div class="col-12">
+                <label class="form-label text-muted mb-1" style="font-size: 12px;">ประเภทสถานะเริ่มต้น</label>
+                <select class="form-select" @bind="newCaseStatus">
+                    <option value="อยู่ระหว่างดำเนินการ">อยู่ระหว่างดำเนินการ</option>
+                    <option value="สำนวนเกินกำหนด 30 วัน">สำนวนเกินกำหนด 30 วัน</option>
+                    <option value="รอเสนอบอร์ด ป.ป.ท.">รอเสนอบอร์ด ป.ป.ท.</option>
+                    <option value="ถึงที่สุดแล้ว/ชนะคดี">ถึงที่สุดแล้ว/ชนะคดี</option>
+                </select>
+            </div>
+        </div>
+    </ChildContent>
+    <FooterContent>
+        <EcmisButton Text="ยกเลิก" Variant="secondary" OnClick="@(() => createModal.HideAsync())" />
+        <EcmisButton Text="บันทึกข้อมูลคดี" Variant="navy" OnClick="SaveNewCase" />
+    </FooterContent>
+</EcmisModal>
+</div>
+
+@code {
+    private EcmisModal detailsModal = default!;
+    private EcmisModal createModal = default!;
+    
+    private DemoCase? selectedCase;
+    
+    // Create Form fields
+    private string newCaseId = "";
+    private string newCaseAccused = "";
+    private string newCaseStatus = "อยู่ระหว่างดำเนินการ";
+
+    public class DemoCase
+    {
+        public string Id { get; set; } = "";
+        public string Accused { get; set; } = "";
+        public string Status { get; set; } = "";
+    }
+
+    private List<DemoCase> demoCases = new()
+    {
+        new() { Id = "ปปท. 012/2569", Accused = "นายณรงค์ ชนะภัย", Status = "สำนวนเกินกำหนด 30 วัน" },
+        new() { Id = "ปปท. 045/2569", Accused = "นางวิไลลักษณ์ สุขสวัสดิ์", Status = "อยู่ระหว่างดำเนินการ" },
+        new() { Id = "ปปท. 078/2568", Accused = "นายกษิดิ์เดช พันธ์ดี", Status = "รอเสนอบอร์ด ป.ป.ท." },
+        new() { Id = "ปปท. 088/2568", Accused = "นายทนงศักดิ์ รักชาติ", Status = "ถึงที่สุดแล้ว/ชนะคดี" },
+        new() { Id = "ปปท. 099/2568", Accused = "นางสาวขนิษฐา แดนไทย", Status = "คำร้องอุทธรณ์ส่งมอบแล้ว" },
+    };
+
+    private async Task Alert(string message)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", message);
+    }
+
+    private async Task OpenDetailsModal(DemoCase item)
+    {
+        selectedCase = item;
+        StateHasChanged();
+        await detailsModal.ShowAsync();
+    }
+
+    private async Task ConfirmDetails()
+    {
+        await detailsModal.HideAsync();
+        await Alert($"รับทราบรายละเอียดสำนวน {selectedCase?.Id} เรียบร้อยแล้ว!");
+    }
+
+    private async Task OpenCreateModal()
+    {
+        newCaseId = "";
+        newCaseAccused = "";
+        newCaseStatus = "อยู่ระหว่างดำเนินการ";
+        StateHasChanged();
+        await createModal.ShowAsync();
+    }
+
+    private async Task SaveNewCase()
+    {
+        if (string.IsNullOrWhiteSpace(newCaseId) || string.IsNullOrWhiteSpace(newCaseAccused))
+        {
+            await Alert("กรุณากรอกเลขสำนวนและชื่อผู้ถูกกล่าวหาให้ครบถ้วน!");
+            return;
+        }
+
+        demoCases.Insert(0, new DemoCase
+        {
+            Id = newCaseId,
+            Accused = newCaseAccused,
+            Status = newCaseStatus
+        });
+
+        await createModal.HideAsync();
+        await Alert($"ลงทะเบียนสำนวน {newCaseId} สำเร็จ!");
+    }
+}

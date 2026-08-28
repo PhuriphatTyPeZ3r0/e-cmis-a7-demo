@@ -1,0 +1,89 @@
+<div class="table-card an-flex-card panel-glow">
+    <div class="tc-head">
+        <div class="tc-row1">
+            <div class="tc-title"><i class="bi bi-list-check wr-action-icon"></i> @Title [@ActiveTab]</div>
+            <div class="tc-meta"><button type="button" class="wr-link-action wr-link-btn" @onclick="OnViewAll">ดูทั้งหมด</button></div>
+        </div>
+        @if (Toolbar is not null)
+        {
+            @Toolbar
+        }
+    </div>
+    <div class="an-scroll">
+        <table class="an-tbl">
+            <thead>
+                <tr>
+                    <th>ลำดับ</th>
+                    <th>เรื่อง / โครงการ</th>
+                    <th>หน่วยงานรับผิดชอบ</th>
+                    @if (ShowAiUrgency)
+                    {
+                        <th>AI Urgency</th>
+                    }
+                    <th>สถานะ</th>
+                    @if (ShowOrderDates)
+                    {
+                        <th>วันที่สั่งการ</th>
+                    }
+                    <th>กำหนดแล้วเสร็จ</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Actions.Count == 0)
+                {
+                    <tr>
+                        <td colspan="@ColSpan" class="text-center an-muted py-4">@EmptyMessage</td>
+                    </tr>
+                }
+                else
+                {
+                    var actIdx = 1;
+                    @foreach (var item in Actions)
+                    {
+                        <tr class="@(RowClass?.Invoke(item) ?? "")">
+                            <td>@actIdx</td>
+                            <td><div class="an-strong">@item.Title</div></td>
+                            <td class="an-muted">@item.Owner</td>
+                            @if (ShowAiUrgency)
+                            {
+                                <td>
+                                    <div class="wr-ai-urgency">
+                                        <div class="wr-ai-urgency-bar"><div class="wr-ai-urgency-fill" style="width:@(AiUrgency?.Invoke(item) ?? 0)%"></div></div>
+                                        <span class="wr-ai-urgency-pct">@(AiUrgency?.Invoke(item) ?? 0)%</span>
+                                    </div>
+                                </td>
+                            }
+                            <td><span class="an-dot @item.Level"></span>@item.Status</td>
+                            @if (ShowOrderDates)
+                            {
+                                <td class="an-muted">@item.Due</td>
+                            }
+                            <td class="an-muted wr-deadline-cell">@item.Deadline</td>
+                        </tr>
+                        actIdx++;
+                    }
+                }
+            </tbody>
+        </table>
+        @if (Footer is not null)
+        {
+            @Footer
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "ACTION TRACKING (ติดตามการสั่งการ)";
+    [Parameter] public string ActiveTab { get; set; } = "ภาพรวม";
+    [Parameter] public IReadOnlyList<WarRoomActionRow> Actions { get; set; } = [];
+    [Parameter] public string EmptyMessage { get; set; } = "ไม่มีงานติดตามที่อยู่ในหมวดหมู่นี้";
+    [Parameter] public bool ShowOrderDates { get; set; } = true;
+    [Parameter] public bool ShowAiUrgency { get; set; }
+    [Parameter] public Func<WarRoomActionRow, int>? AiUrgency { get; set; }
+    [Parameter] public Func<WarRoomActionRow, string>? RowClass { get; set; }
+    [Parameter] public RenderFragment? Toolbar { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+    [Parameter] public EventCallback OnViewAll { get; set; }
+
+    private int ColSpan => 4 + (ShowAiUrgency ? 1 : 0) + (ShowOrderDates ? 1 : 0);
+}

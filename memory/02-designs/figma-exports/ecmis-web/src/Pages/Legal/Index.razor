@@ -1,0 +1,98 @@
+@page "/legal"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+<div class="routing-page-wrap">
+    <div class="complaints-page-header">
+        <div>
+            <div class="complaints-title">
+                <i class="bi bi-bank2"></i>
+                <span>ระบบบริหารจัดการกระบวนการคดี (Legal Process Dashboard)</span>
+            </div>
+            <div class="complaints-subtitle">
+                กิจกรรมที่ 10: ภาพรวมศาลยุติธรรม 3 ชั้นศาล, การฟ้องแย้งคดีปกครอง และบริการข้อมูลข่าวสาร
+            </div>
+        </div>
+    </div>
+
+    @* — High Level Analytics Cards — *@
+    <div class="routing-stat-grid" style="margin-bottom:24px;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr))">
+        <div class="routing-card border-navy" style="background:#f8fafc">
+            <div class="rc-title"><i class="bi bi-bar-chart-fill" style="color:var(--navy)"></i> คดีศาลทั้งหมด (Court Cases)</div>
+            <div class="rc-count" style="color:var(--navy-deep);font-size:32px">@totalCourt</div>
+            <div class="rc-desc">เรื่องอยู่ระหว่างพิจารณา: @pendingCourt</div>
+        </div>
+        <div class="routing-card border-green" style="background:#f0fdf4">
+             <div class="rc-title"><i class="bi bi-hammer" style="color:var(--green)"></i> สถิติพิพากษาลงโทษ</div>
+            <div class="rc-count" style="color:var(--green);font-size:32px">@guiltyCount คดี</div>
+            <div class="rc-desc">คิดเป็น @($"{Math.Round((double)guiltyCount/(totalCourt == 0 ? 1 : totalCourt) * 100)}%") ของคดีความทั้งหมด</div>
+        </div>
+        <div class="routing-card border-orange" style="background:#fff7ed">
+             <div class="rc-title"><i class="bi bi-bell-fill" style="color:var(--orange)"></i> แจ้งเตือน: ฎีกา/อุทธรณ์ใน 30 วัน</div>
+            <div class="rc-count" style="color:var(--orange);font-size:32px">@appealDueCount</div>
+            <div class="rc-desc">ควรเร่งรัดทำคำอุทธรณ์ให้ทันกำหนด</div>
+        </div>
+         <div class="routing-card border-red" style="background:#fef2f2">
+             <div class="rc-title"><i class="bi bi-envelope-exclamation-fill" style="color:var(--red)"></i> รอพิจารณาคำขอข้อมูลข่าวสาร</div>
+            <div class="rc-count" style="color:var(--red);font-size:32px">@pendingInfoRequests</div>
+            <div class="rc-desc">คำร้องรออนุญาตให้ตรวจสำนวน</div>
+        </div>
+    </div>
+
+    @* — Navigation Modules — *@
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:20px">
+        
+        @* Court Module *@
+        <div class="detail-card mb-0" style="cursor:pointer;transition:transform 0.2s" @onclick='() => Nav.NavigateTo("/legal/court")'>
+            <div style="font-size:40px;color:var(--navy);margin-bottom:12px;text-align:center">
+                <i class="bi bi-hammer"></i>
+            </div>
+            <h5 style="text-align:center;font-weight:700;color:var(--navy-deep)">กระบวนการทางศาล (3 ชั้นศาล)</h5>
+            <p style="text-align:center;font-size:13px;color:var(--text-muted)">
+                ติดตามความเห็นอัยการ (สั่งฟ้อง/แย้ง) และคำพิพากษาศาลชั้นต้น อุทธรณ์ ฎีกา
+            </p>
+            <div style="display:flex;justify-content:center">
+                <button class="btn-navy mt-2">เข้าสู่ระบบติดตามคำพิพากษา</button>
+            </div>
+        </div>
+
+        @* Admin Case Module *@
+        <div class="detail-card mb-0" style="cursor:pointer;transition:transform 0.2s" @onclick='() => Nav.NavigateTo("/legal/admin-case")'>
+            <div style="font-size:40px;color:var(--orange);margin-bottom:12px;text-align:center">
+                <i class="bi bi-building"></i>
+            </div>
+            <h5 style="text-align:center;font-weight:700;color:var(--navy-deep)">ทะเบียนคดีปกครอง</h5>
+            <p style="text-align:center;font-size:13px;color:var(--text-muted)">
+                ลงทะเบียนการฟ้องแย้งของหน่วยงานฝ่ายปกครอง และระบบค้นหาเพื่อจัดทำคำให้การแก้ฟ้อง
+            </p>
+            <div style="display:flex;justify-content:center">
+                <button class="btn-outline-navy mt-2" style="border-color:var(--orange);color:var(--orange)">เข้าสู่ระบบทะเบียนคดีปกครอง</button>
+            </div>
+        </div>
+
+        @* Information Access Module *@
+        <div class="detail-card mb-0" style="cursor:pointer;transition:transform 0.2s" @onclick='() => Nav.NavigateTo("/legal/info-request")'>
+            <div style="font-size:40px;color:var(--green);margin-bottom:12px;text-align:center">
+                <i class="bi bi-clipboard-check-fill"></i>
+            </div>
+            <h5 style="text-align:center;font-weight:700;color:var(--navy-deep)">บริการข้อมูลข่าวสาร</h5>
+            <p style="text-align:center;font-size:13px;color:var(--text-muted)">
+                ตรวจสอบและอนุญาตสิทธิการขอเข้าตรวจดูเอกสารพยานและทำสำเนาคดีของ ป.ป.ท.
+            </p>
+            <div style="display:flex;justify-content:center">
+                <button class="btn-outline-navy mt-2" style="border-color:var(--green);color:var(--green)">เข้าสู่ระบบจัดการคำร้อง</button>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+@code {
+    private int totalCourt = LegalData.CourtCases.Count;
+    private int pendingCourt = LegalData.CourtCases.Count(c => !c.IsFinal);
+    private int guiltyCount = LegalData.CourtCases.Count(c => c.Court1stStatus == "decided_guilty" || c.CourtAppStatus == "decided_guilty" || c.CourtSupStatus == "decided_guilty");
+    
+    private int appealDueCount = LegalData.CourtCases.Count(c => !string.IsNullOrEmpty(c.AppealDeadline) && LegalData.DaysUntil(c.AppealDeadline) <= 30);
+    private int pendingInfoRequests = LegalData.InfoRequests.Count(r => r.Status == "pending");
+}

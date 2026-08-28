@@ -1,0 +1,138 @@
+@page "/post-committee"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+<div class="routing-page-wrap">
+    <div class="complaints-page-header">
+        <div>
+            <div class="complaints-title">
+                <i class="bi bi-clock-history"></i>
+                <span>ติดตามผลคดี (อาญา/วินัย)</span>
+            </div>
+            <div class="complaints-subtitle">
+                Dashboard สำหรับ กองบริหารคดี — ติดตามส่งอัยการภายใน 60 วัน และแจ้งผลทางวินัยจากต้นสังกัด
+            </div>
+        </div>
+    </div>
+
+    @* — KPI Cards (Dashboard) — *@
+    <div class="routing-stat-grid" style="margin-bottom:14px">
+        <div class="routing-card border-red">
+            <div class="rc-title"><i class="bi bi-exclamation-triangle-fill" style="color:var(--red)"></i> อาญา: เกินกำหนด 60 วัน</div>
+            <div class="rc-count" style="color:var(--red)">@delayedCount</div>
+            <div class="rc-desc">ต้องเร่งจัดทำหนังสือถึงอัยการด่วน</div>
+        </div>
+        <div class="routing-card border-orange">
+            <div class="rc-title"><i class="bi bi-hourglass-split" style="color:var(--orange)"></i> วินัย: รอต้นสังกัดทำโทษ</div>
+            <div class="rc-count" style="color:var(--orange)">@waitingAgencyCount</div>
+            <div class="rc-desc">อาจต้องส่งหนังสือทวงถามครั้งที่ 1/2</div>
+        </div>
+        <div class="routing-card border-navy">
+             <div class="rc-title"><i class="bi bi-check2-all" style="color:var(--navy)"></i> อาญา: อาญาในกรอบเวลา</div>
+            <div class="rc-count" style="color:var(--navy)">@inProgressAgCount</div>
+            <div class="rc-desc">เวลาเหลือน้อยกว่า 60 วัน</div>
+        </div>
+        <div class="routing-card border-green">
+             <div class="rc-title"><i class="bi bi-slash-circle" style="color:var(--green)"></i> ปิดและยุติเรื่องแล้ว</div>
+            <div class="rc-count" style="color:var(--green)">@closedCount</div>
+            <div class="rc-desc">ลงโทษลุล่วงส่งรายงานที่ประชุม</div>
+        </div>
+    </div>
+
+    @* — Tab Selection — *@
+    <div style="display:flex;gap:12px;margin-bottom:14px">
+        <button class="btn @(currentTab == "criminal" ? "btn-navy" : "btn-outline-navy")" style="padding:6px 16px" @onclick='() => currentTab = "criminal"'>
+            <i class="bi bi-bank"></i> ติดตามคดีอาญา (ส่งอัยการ)
+        </button>
+        <button class="btn @(currentTab == "discipline" ? "btn-navy" : "btn-outline-navy")" style="padding:6px 16px" @onclick='() => currentTab = "discipline"'>
+            <i class="bi bi-building"></i> ติดตามคดีวินัย (ผลจากต้นสังกัด)
+        </button>
+    </div>
+
+    @* — Table List — *@
+    <div class="complaints-table-card">
+        <div class="complaints-table-head">
+            <div>
+                <div class="complaints-table-title">@(currentTab == "criminal" ? "รายการติดตามคดีอาญา" : "รายการติดตามคดีวินัย")</div>
+                <div class="complaints-table-subtitle">คลิกที่ "ดู/อัปเดต" เพื่อจัดการและส่งหนังสือทวงถาม</div>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto">
+            <table class="complaints-table">
+                <thead>
+                    <tr>
+                        <th>เลขที่เรื่อง</th>
+                        <th>ผู้ถูกชี้มูล</th>
+                        <th>ต้นสังกัด</th>
+                        <th>วันที่ลงมติ</th>
+                        <th>ประเภทคดี</th>
+                        <th style="min-width:140px">สถานะการติดตาม</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in filteredCases)
+                    {
+                        <tr>
+                            <td><span style="font-weight:700;font-size:14px">@c.CaseNo</span></td>
+                            <td><div style="font-size:13px;font-weight:600">@c.Accused</div></td>
+                            <td><span style="font-size:12px;color:var(--text-muted)">@c.AccusedAgency</span></td>
+                            <td><span style="font-size:12px">@c.ResolutionDate</span></td>
+                            <td>
+                                <span class="category-chip @(c.CaseType == "both" ? "cat-general" : "cat-discipline")">
+                                    @PostCommitteeData.TypeLabel(c.CaseType)
+                                </span>
+                            </td>
+                            <td>
+                                @if (currentTab == "criminal")
+                                {
+                                    <span class="complaints-status-chip @PostCommitteeData.StatusClass(c.CriminalStatus)">
+                                        @PostCommitteeData.StatusLabel(c.CriminalStatus)
+                                    </span>
+                                    @if(c.CriminalStatus == "tracking_60d" || c.CriminalStatus == "delayed")
+                                    {
+                                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+                                            เหลืออีก: @PostCommitteeData.SlaDaysRemaining(c.DaysPassedSinceResolution) / 60 วัน
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="complaints-status-chip @PostCommitteeData.StatusClass(c.DisciplineStatus)">
+                                        @PostCommitteeData.StatusLabel(c.DisciplineStatus)
+                                    </span>
+                                    @if(c.DisciplineStatus == "awaiting_agency" || c.DisciplineStatus.StartsWith("follow_up"))
+                                    {
+                                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+                                            เวลาผ่านไป: @c.DaysPassedSinceResolution วัน
+                                        </div>
+                                    }
+                                }
+                            </td>
+                            <td>
+                                <button class="complaints-manage-btn"
+                                    @onclick='() => Nav.NavigateTo($"/post-committee/case/{c.Id}")'>
+                                    ดู / อัปเดต
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string currentTab = "criminal"; // criminal, discipline
+
+    private IEnumerable<PostCase> filteredCases => currentTab == "criminal" 
+        ? PostCommitteeData.Cases.Where(c => c.CaseType is "criminal" or "both")
+        : PostCommitteeData.Cases.Where(c => c.CaseType is "discipline" or "both");
+
+    private int delayedCount => PostCommitteeData.Cases.Count(c => c.CriminalStatus == "delayed");
+    private int waitingAgencyCount => PostCommitteeData.Cases.Count(c => c.DisciplineStatus == "awaiting_agency" || c.DisciplineStatus.StartsWith("follow_up"));
+    private int closedCount => PostCommitteeData.Cases.Count(c => c.CriminalStatus == "closed" || c.DisciplineStatus == "closed");
+    private int inProgressAgCount => PostCommitteeData.Cases.Count(c => c.CriminalStatus == "tracking_60d");
+}

@@ -1,0 +1,232 @@
+@page "/public-relations"
+@using EcmisWeb.Services
+@inject CentralSupportApiService CentralSupportApi
+
+<div class="pr-page">
+    <div class="pr-hero">
+        <div>
+            <div class="pr-kicker">Central Support</div>
+            <h1>ระบบประชาสัมพันธ์ (web)</h1>
+            <p>จัดเตรียม ตรวจสอบ เผยแพร่ และแสดงข่าวประชาสัมพันธ์ที่อนุมัติแล้ว</p>
+        </div>
+        <button class="btn-navy" @onclick="Load" disabled="@loading">
+            <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+        </button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="pr-alert error"><i class="bi bi-exclamation-triangle-fill"></i>@error</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(success))
+    {
+        <div class="pr-alert success"><i class="bi bi-check-circle-fill"></i>@success</div>
+    }
+
+    <div class="pr-layout">
+        <section class="pr-feed">
+            <div class="pr-toolbar">
+                <button class="@(category == "" ? "active" : "")" @onclick='() => SetCategory("")'>ทั้งหมด</button>
+                <button class="@(category == "ประกาศ" ? "active" : "")" @onclick='() => SetCategory("ประกาศ")'>ประกาศ</button>
+                <button class="@(category == "ข่าวสาร" ? "active" : "")" @onclick='() => SetCategory("ข่าวสาร")'>ข่าวสาร</button>
+                <button class="@(category == "กิจกรรม" ? "active" : "")" @onclick='() => SetCategory("กิจกรรม")'>กิจกรรม</button>
+                <div style="display:flex;gap:6px;margin-left:auto">
+                    <input @bind="searchQuery" @bind:event="oninput"
+                           @onkeyup="@(async e => { if (e.Key == "Enter") await Load(); })"
+                           placeholder="ค้นหาข่าว..."
+                           style="border:1px solid #d7dde8;border-radius:8px;padding:6px 10px;font-size:13px;outline:none;width:160px" />
+                    <button @onclick="Load" style="border:1px solid #d7dde8;background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+
+            @if (loading)
+            {
+                <div class="pr-empty">กำลังโหลดข่าว...</div>
+            }
+            else if (news.Count == 0)
+            {
+                <div class="pr-empty">ยังไม่มีข่าวประชาสัมพันธ์ที่เผยแพร่</div>
+            }
+            else
+            {
+                <div class="pr-grid">
+                    @foreach (var item in news)
+                    {
+                        <article class="pr-card">
+                            <a href="/public-relations/@item.Id" style="text-decoration:none;display:contents">
+                                <div class="pr-image">
+                                    @if (!string.IsNullOrWhiteSpace(item.CoverImageUrl))
+                                    {
+                                        <img src="@item.CoverImageUrl" alt="" />
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-newspaper"></i>
+                                    }
+                                </div>
+                            </a>
+                            <div class="pr-card-body">
+                                <div class="pr-meta">
+                                    <span>@item.Category</span>
+                                    <span>@item.PublishedAt?.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                                </div>
+                                <h2><a href="/public-relations/@item.Id" style="color:inherit;text-decoration:none">@item.Title</a></h2>
+                                <p>@(string.IsNullOrWhiteSpace(item.Summary) ? item.Body : item.Summary)</p>
+                                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                                    <a href="/public-relations/@item.Id" style="color:var(--navy-mid);font-weight:700;font-size:13px">
+                                        อ่านต่อ <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                    @if (!string.IsNullOrWhiteSpace(item.AttachmentUrl))
+                                    {
+                                        <a href="@item.AttachmentUrl" target="_blank">
+                                            <i class="bi bi-paperclip"></i> เอกสารแนบ
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+
+        <aside class="pr-publisher">
+            <h2>นำเข้าข้อมูลประชาสัมพันธ์</h2>
+            <p>บันทึกเนื้อหา ตรวจสอบ แล้วเผยแพร่สู่หน้าเว็บอัตโนมัติ</p>
+            <label>หมวดหมู่</label>
+            <select @bind="formCategory">
+                <option>ประกาศ</option>
+                <option>ข่าวสาร</option>
+                <option>กิจกรรม</option>
+            </select>
+            <label>หัวข้อ</label>
+            <input @bind="formTitle" placeholder="หัวข้อข่าว" />
+            <label>สรุป</label>
+            <textarea @bind="formSummary" rows="2" placeholder="ข้อความสรุปสำหรับหน้าเว็บ"></textarea>
+            <label>เนื้อหา</label>
+            <textarea @bind="formBody" rows="6" placeholder="รายละเอียดข่าวประชาสัมพันธ์"></textarea>
+            <label>URL รูปหน้าปก</label>
+            <input @bind="formCoverUrl" placeholder="https://..." />
+            <label>URL เอกสารแนบ</label>
+            <input @bind="formAttachmentUrl" placeholder="/files/..." />
+            <div class="pr-actions">
+                <button class="btn-outline-navy" @onclick="SaveDraft" disabled="@submitting">บันทึก Draft</button>
+                <button class="btn-navy" @onclick="Publish" disabled="@submitting">
+                    <i class="bi bi-send-fill"></i> เผยแพร่
+                </button>
+            </div>
+        </aside>
+    </div>
+</div>
+
+@code {
+    private List<PublicNewsDto> news = new();
+    private string category = "";
+    private string searchQuery = "";
+    private string formCategory = "ประกาศ";
+    private string formTitle = "";
+    private string formSummary = "";
+    private string formBody = "";
+    private string formCoverUrl = "";
+    private string formAttachmentUrl = "";
+    private string error = "";
+    private string success = "";
+    private bool loading = true;
+    private bool submitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        loading = true;
+        error = "";
+        try
+        {
+            news = await CentralSupportApi.GetPublicNewsAsync(category, searchQuery);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task SetCategory(string value)
+    {
+        category = value;
+        await Load();
+    }
+
+    private Task SaveDraft() => SubmitNews(false);
+    private Task Publish() => SubmitNews(true);
+
+    private async Task SubmitNews(bool publish)
+    {
+        submitting = true;
+        error = "";
+        success = "";
+        try
+        {
+            await CentralSupportApi.CreatePublicNewsAsync(
+                formCategory, formTitle, formSummary, formBody, formCoverUrl, formAttachmentUrl, publish);
+            success = publish ? "เผยแพร่ข่าวประชาสัมพันธ์แล้ว" : "บันทึก Draft แล้ว";
+            formTitle = "";
+            formSummary = "";
+            formBody = "";
+            formCoverUrl = "";
+            formAttachmentUrl = "";
+            await Load();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+}
+
+<style>
+.pr-page { padding:6px; }
+.pr-hero { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:18px; }
+.pr-kicker { color:var(--gold); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
+.pr-hero h1 { margin:0 0 4px; color:var(--navy-deep); font-size:34px; font-weight:800; }
+.pr-hero p { margin:0; color:#64748b; }
+.pr-alert { display:flex; gap:10px; align-items:center; padding:12px 14px; border-radius:8px; margin-bottom:14px; font-weight:800; }
+.pr-alert.error { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
+.pr-alert.success { background:#ecfdf5; color:#065f46; border:1px solid #bbf7d0; }
+.pr-layout { display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:16px; align-items:start; }
+.pr-toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+.pr-toolbar button { border:1px solid #d7dde8; background:#fff; border-radius:8px; padding:8px 12px; color:var(--navy-deep); font-weight:800; }
+.pr-toolbar button.active { background:var(--navy-deep); color:#fff; }
+.pr-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+.pr-card, .pr-publisher, .pr-empty { background:#fff; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden; box-shadow:0 8px 20px rgba(15,23,42,.05); }
+.pr-empty { padding:24px; color:#64748b; }
+.pr-image { height:150px; background:#eef2ff; display:flex; align-items:center; justify-content:center; color:var(--navy-mid); font-size:34px; }
+.pr-image img { width:100%; height:100%; object-fit:cover; }
+.pr-card-body { padding:14px; }
+.pr-meta { display:flex; justify-content:space-between; gap:10px; color:#64748b; font-size:12px; font-weight:700; margin-bottom:8px; }
+.pr-card h2, .pr-publisher h2 { color:var(--navy-deep); font-size:18px; font-weight:800; margin:0 0 8px; }
+.pr-card p, .pr-publisher p { color:#475569; line-height:1.55; margin:0 0 10px; }
+.pr-card a { color:var(--navy-mid); text-decoration:none; font-weight:800; display:inline-flex; gap:6px; align-items:center; }
+.pr-publisher { padding:16px; display:grid; gap:10px; }
+.pr-publisher label { font-size:13px; font-weight:800; color:var(--navy-deep); }
+.pr-publisher input, .pr-publisher textarea, .pr-publisher select { width:100%; border:1px solid #d7dde8; border-radius:8px; padding:10px 12px; outline:none; }
+.pr-publisher textarea { resize:vertical; }
+.pr-actions { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+@@media (max-width: 1000px) {
+    .pr-layout { grid-template-columns:1fr; }
+    .pr-hero { display:block; }
+    .pr-hero .btn-navy { margin-top:10px; }
+}
+</style>

@@ -1,0 +1,73 @@
+@page "/legal/court"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+<div class="routing-page-wrap">
+    <div class="complaints-page-header">
+        <div>
+            <div class="complaints-title">
+                <i class="bi bi-hammer" style="color:var(--navy)"></i>
+                <span>ติดตามกระบวนการทางศาล (Judicial Tracking)</span>
+            </div>
+            <div class="complaints-subtitle">
+                ติดตามคำสั่งอัยการ (สั่งฟ้อง/แย้ง) และคำพิพากษาศาลชั้นต้น, ศาลอุทธรณ์, ศาลฎีกา
+            </div>
+        </div>
+        <div class="complaints-actions">
+            <button class="btn-outline-navy" @onclick='() => Nav.NavigateTo("/legal")'>
+                <i class="bi bi-arrow-left"></i> กลับไป Dashboard
+            </button>
+        </div>
+    </div>
+
+    <div class="complaints-table-card">
+        <div class="complaints-table-head">
+            <div>
+                <div class="complaints-table-title">ตารางรายคดีในกระบวนการยุติธรรม</div>
+                <div class="complaints-table-subtitle">คดีจากคณะกรรมการ ป.ป.ท. ชี้มูล ที่ส่งไปยังพนักงานอัยการสูงสุดแล้ว</div>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto">
+            <table class="complaints-table">
+                <thead>
+                    <tr>
+                        <th>เลขที่คดี (ป.ป.ท.)</th>
+                        <th>ผู้ถูกกล่าวหา</th>
+                        <th>ความเห็นอัยการ</th>
+                        <th>สถานะศาลชั้นต้น</th>
+                        <th>สถานะศาลอุทธรณ์</th>
+                        <th style="min-width:140px">ศาลฎีกา (สิ้นสุด)</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in LegalData.CourtCases)
+                    {
+                        var isWarning = LegalData.DaysUntil(c.AppealDeadline) <= 30;
+                        <tr style="@(isWarning ? "background:#fff5f5" : "")">
+                            <td>
+                                <span style="font-weight:700;font-size:14px">@c.CaseNo</span>
+                                @if(c.IsFinal)
+                                {
+                                    <div style="font-size:10px;background:var(--green);color:#fff;display:inline-block;padding:2px 6px;border-radius:4px;margin-top:4px">คดีถึงที่สุด</div>
+                                }
+                            </td>
+                            <td><div style="font-size:13px;font-weight:600">@c.AccusedName</div></td>
+                            <td><span style="font-size:12px;color:var(--navy-deep)">@LegalData.CourtStageText(c.ProsecutorOrder)</span></td>
+                            <td><span style="font-size:12px">@LegalData.CourtStageText(c.Court1stStatus)</span></td>
+                            <td><span style="font-size:12px">@LegalData.CourtStageText(c.CourtAppStatus)</span></td>
+                            <td><span style="font-size:12px;font-weight:600;color:var(--navy)">@LegalData.CourtStageText(c.CourtSupStatus)</span></td>
+                            <td>
+                                <button class="btn @(isWarning ? "btn-navy" : "btn-outline-navy")" style="padding:4px 10px;font-size:12px"
+                                        @onclick='() => Nav.NavigateTo($"/legal/court/{c.Id}")'>
+                                    @(isWarning ? "ยื่นเรื่องด่วน" : "อัปเดตสถานะ")
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,156 @@
+@page "/witness-protect/request"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+<div class="create-page-wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+        <div>
+            <div class="create-page-title" style="font-size:24px;font-weight:800;color:var(--navy-deep)">
+                <i class="bi bi-shield-plus" style="color:var(--gold)"></i> ยื่นคำร้องคุ้มครองพยาน
+            </div>
+            <div class="create-page-subtitle" style="font-size:13px;color:var(--text-muted)">
+                กรอกข้อมูลผู้ขอคุ้มครองและเหตุผลเพื่อเสนอผู้มีอำนาจอนุมัติ
+            </div>
+        </div>
+        <button class="btn-outline-navy" @onclick='() => Nav.NavigateTo("/witness-protect")'>
+            <i class="bi bi-arrow-left"></i> กลับ
+        </button>
+    </div>
+
+    <div class="create-card" style="margin-bottom:14px">
+        <div class="create-section-title">
+            <div class="section-icon" style="background:linear-gradient(135deg,var(--navy),var(--navy-mid))">
+                <i class="bi bi-link-45deg"></i>
+            </div>
+            เชื่อมโยงสำนวน
+        </div>
+        <div class="detail-grid">
+            <div>
+                <label class="form-label-custom">เลขสำนวนที่เชื่อมโยง <span style="color:var(--red)">*</span></label>
+                <select class="form-control-custom">
+                    <option value="">— เลือกสำนวน —</option>
+                    @foreach (var inv in InvestigationData.Cases)
+                    {
+                        <option value="@inv.CaseNo">@inv.CaseNo — @inv.Accused (@inv.AccusedAgency)</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="form-label-custom">นักสืบเจ้าของเรื่อง</label>
+                <input class="form-control-custom" value="นายสมศักดิ์ วิจิตร" readonly style="background:#f0f4fa" />
+            </div>
+        </div>
+    </div>
+
+    <div class="create-card" style="margin-bottom:14px">
+        <div class="create-section-title">
+            <div class="section-icon" style="background:linear-gradient(135deg,#cf6700,#d4630a)">
+                <i class="bi bi-person-fill-lock"></i>
+            </div>
+            ข้อมูลผู้ขอคุ้มครอง
+        </div>
+        <div class="detail-grid">
+            <div>
+                <label class="form-label-custom">ชื่อ-สกุล ผู้ขอคุ้มครอง <span style="color:var(--red)">*</span></label>
+                <input class="form-control-custom" placeholder="เช่น นายสมชาย มุ่งมั่น" />
+            </div>
+            <div>
+                <label class="form-label-custom">สถานะ <span style="color:var(--red)">*</span></label>
+                <select class="form-control-custom">
+                    <option>พยาน</option>
+                    <option>ผู้ร้องเรียน</option>
+                    <option>ผู้แจ้งเบาะแส</option>
+                    <option>อื่นๆ</option>
+                </select>
+            </div>
+            <div>
+                <label class="form-label-custom">ประเภทการคุ้มครอง <span style="color:var(--red)">*</span></label>
+                <select class="form-control-custom">
+                    <option>ย้ายที่อยู่</option>
+                    <option>เปลี่ยนชื่อ</option>
+                    <option>คุ้มกันส่วนตัว</option>
+                    <option>อื่นๆ</option>
+                </select>
+            </div>
+            <div>
+                <label class="form-label-custom">ระยะเวลาคุ้มครอง (วัน) <span style="color:var(--red)">*</span></label>
+                <input type="number" class="form-control-custom" value="90" max="90" min="1" />
+                <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+                    สูงสุดไม่เกิน 90 วัน/รอบ (รวมไม่เกิน 180 วัน)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="create-card" style="margin-bottom:14px">
+        <div class="create-section-title">
+            <div class="section-icon" style="background:linear-gradient(135deg,#a02020,#c0392b)">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            เหตุผลและความจำเป็น
+        </div>
+        <div style="margin-bottom:14px">
+            <label class="form-label-custom">รายละเอียดเหตุผลการขอคุ้มครอง <span style="color:var(--red)">*</span></label>
+            <textarea class="form-control-custom" rows="4" placeholder="อธิบายเหตุผลและสถานการณ์ที่จำเป็นต้องคุ้มครองพยาน..."></textarea>
+        </div>
+        <div style="margin-bottom:14px">
+            <div class="d-flex align-items-center gap-2" style="margin-bottom:8px">
+                <input type="checkbox" id="urgentCheck" @bind="isUrgent" style="accent-color:var(--red);width:18px;height:18px" />
+                <label for="urgentCheck" style="font-size:13px;font-weight:700;color:var(--red);cursor:pointer">
+                    <i class="bi bi-lightning-charge-fill"></i> กรณีเร่งด่วน (เหตุวิกฤต)
+                </label>
+            </div>
+            @if (isUrgent)
+            {
+                <div style="padding:10px 14px;border-radius:10px;background:#fef3e4;color:#bc6d00;font-size:12px">
+                    <i class="bi bi-info-circle"></i>
+                    กรณีเร่งด่วน — ผอ.สำนัก/เขต สามารถอนุมัติได้ทันที แล้วรายงานเลขาธิการทราบภายหลัง
+                </div>
+            }
+        </div>
+        <div>
+            <label class="form-label-custom">เอกสารประกอบ</label>
+            <div style="border:2px dashed rgba(26,47,107,.2);border-radius:10px;padding:20px;text-align:center;color:var(--text-muted);font-size:13px;cursor:pointer">
+                <i class="bi bi-cloud-arrow-up" style="font-size:24px"></i><br/>
+                ลากไฟล์มาวาง หรือคลิกเพื่อเลือก
+            </div>
+        </div>
+    </div>
+
+    <div class="create-card">
+        <div class="create-section-title">
+            <div class="section-icon" style="background:linear-gradient(135deg,#13683d,#1b7a4a)">
+                <i class="bi bi-diagram-3-fill"></i>
+            </div>
+            ขั้นตอนอนุมัติ
+        </div>
+        <div style="font-size:13px;color:var(--text-dark);line-height:1.8;margin-bottom:14px">
+            @if (isUrgent)
+            {
+                <p>🔴 <strong>กรณีเร่งด่วน:</strong> ผอ.สำนัก/เขต อนุมัติทันที → รายงานเลขาธิการทราบภายหลัง</p>
+            }
+            else
+            {
+                <p>📋 <strong>กรณีปกติ:</strong> นักสืบยื่น → ผอ.สำนัก/เขต เห็นชอบ → เลขาธิการ ป.ป.ท. อนุมัติ/ไม่อนุมัติ/สั่งตรวจสอบเพิ่ม</p>
+            }
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="btn-navy" style="min-width:200px" @onclick="() => submitted = true">
+                <i class="bi bi-send-fill"></i> ยื่นคำร้อง
+            </button>
+            <button class="btn-outline-navy" @onclick='() => Nav.NavigateTo("/witness-protect")'>ยกเลิก</button>
+        </div>
+        @if (submitted)
+        {
+            <div style="margin-top:12px;padding:12px 16px;border-radius:10px;background:#e6f4ed;color:#1b7a4a;font-size:13px;font-weight:700">
+                <i class="bi bi-check-circle-fill"></i>
+                ยื่นคำร้องสำเร็จ (Mockup) — @(isUrgent ? "ส่ง ผอ.สำนัก/เขต อนุมัติเร่งด่วน" : "ส่ง ผอ.สำนัก/เขต พิจารณา")
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private bool isUrgent;
+    private bool submitted;
+}

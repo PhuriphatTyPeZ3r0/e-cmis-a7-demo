@@ -1,0 +1,260 @@
+@page "/admin/log-categories"
+@using EcmisWeb.Services
+@inject AdminApiService AdminApi
+
+<PageTitle>หมวดหมู่ Log — E-CMIS Admin</PageTitle>
+
+<div style="background:linear-gradient(135deg,var(--navy-deep),var(--navy));border-radius:14px;padding:20px 24px;margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <i class="bi bi-journal-code" style="color:var(--gold);font-size:20px"></i>
+        <div style="font-size:18px;font-weight:800;color:#fff">หมวดหมู่ Log การใช้งาน</div>
+    </div>
+    <div style="font-size:12px;color:rgba(255,255,255,.5)">Log Categorization — S6-2</div>
+</div>
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <div style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:14px">
+        <i class="bi bi-exclamation-triangle-fill"></i> @error
+    </div>
+}
+@if (!string.IsNullOrEmpty(successMsg))
+{
+    <div style="background:#ecfdf5;color:#065f46;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin-bottom:14px">
+        <i class="bi bi-check-circle-fill"></i> @successMsg
+    </div>
+}
+
+@* Summary chart *@
+@if (categoryCounts.Any())
+{
+    <div class="ecmis-card mb-3">
+        <div class="ecmis-card-header">
+            <div class="ecmis-card-title"><span class="badge-dot"></span>สรุป Log 30 วันล่าสุด แยกตามหมวดหมู่</div>
+            <button class="btn-outline-navy" style="font-size:12px;padding:5px 12px" @onclick="ClassifyAsync" disabled="@submitting">
+                <i class="bi bi-magic me-1"></i>จัดหมวดหมู่ทันที
+            </button>
+        </div>
+        <div style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px">
+            @foreach (var c in categoryCounts.OrderByDescending(x => x.Count))
+            {
+                var cat = categories.FirstOrDefault(x => x.Code == c.Category);
+                var color = cat?.Color ?? "#64748b";
+                <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:@color20(color)">
+                    <span style="width:10px;height:10px;border-radius:50%;background:@color;display:inline-block;flex-shrink:0"></span>
+                    <span style="font-size:12px;font-weight:700;color:@color">@c.Category</span>
+                    <span style="font-size:12px;color:#64748b">@c.Count.ToString("N0")</span>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@* Add form *@
+<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(15,23,42,.04)">
+    <div style="font-size:14px;font-weight:800;color:var(--navy-deep);margin-bottom:12px">เพิ่มหมวดหมู่ใหม่</div>
+    <div class="row g-2">
+        <div class="col-md-2">
+            <input @bind="newCode" class="form-control form-control-sm" placeholder="code (เช่น auth)" />
+        </div>
+        <div class="col-md-3">
+            <input @bind="newNameTh" class="form-control form-control-sm" placeholder="ชื่อหมวดหมู่" />
+        </div>
+        <div class="col-md-3">
+            <input @bind="newPatterns" class="form-control form-control-sm" placeholder="Patterns คั่นด้วย , (เช่น login%,auth%)" />
+        </div>
+        <div class="col-md-2">
+            <input @bind="newColor" type="color" class="form-control form-control-sm form-control-color" title="สี" style="height:31px" />
+        </div>
+        <div class="col-md-2" style="display:flex;gap:6px;align-items:center">
+            <input @bind="newSortOrder" type="number" class="form-control form-control-sm" placeholder="ลำดับ" style="width:70px" />
+            <button class="btn-navy" style="font-size:12px;padding:6px 12px;white-space:nowrap" @onclick="AddCategoryAsync" disabled="@submitting">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+@* Category list *@
+<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.04)">
+    @if (loading)
+    {
+        <div style="padding:28px;text-align:center;color:#94a3b8">กำลังโหลด...</div>
+    }
+    else if (categories.Count == 0)
+    {
+        <div style="padding:28px;text-align:center;color:#94a3b8">ยังไม่มีหมวดหมู่</div>
+    }
+    else
+    {
+        @foreach (var cat in categories.OrderBy(c => c.SortOrder))
+        {
+            @if (editId == cat.Id)
+            {
+                <div style="padding:12px 16px;border-bottom:1px solid #f1f5f9;background:#f8fafc">
+                    <div class="row g-2">
+                        <div class="col-md-2">
+                            <input @bind="editCode" class="form-control form-control-sm" placeholder="code" />
+                        </div>
+                        <div class="col-md-3">
+                            <input @bind="editNameTh" class="form-control form-control-sm" placeholder="ชื่อ" />
+                        </div>
+                        <div class="col-md-3">
+                            <input @bind="editPatterns" class="form-control form-control-sm" placeholder="patterns" />
+                        </div>
+                        <div class="col-md-2" style="display:flex;align-items:center;gap:6px">
+                            <input @bind="editColor" type="color" class="form-control form-control-sm form-control-color" style="height:31px;width:50px" />
+                            <input @bind="editSortOrder" type="number" class="form-control form-control-sm" style="width:60px" />
+                        </div>
+                        <div class="col-md-2" style="display:flex;gap:6px;align-items:center">
+                            <label style="font-size:12px;display:flex;align-items:center;gap:4px">
+                                <input type="checkbox" @bind="editIsActive" /> ใช้งาน
+                            </label>
+                            <button class="btn-navy" style="font-size:11px;padding:4px 10px" @onclick="SaveEditAsync" disabled="@submitting">บันทึก</button>
+                            <button class="btn-outline-navy" style="font-size:11px;padding:4px 8px" @onclick="CancelEdit">ยกเลิก</button>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div style="padding:12px 16px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:10px">
+                    <span style="width:24px;height:24px;border-radius:50%;background:@cat.Color;flex-shrink:0"></span>
+                    <span style="width:28px;text-align:center;font-size:12px;color:#94a3b8;font-weight:700">@cat.SortOrder</span>
+                    <code style="font-size:11.5px;font-weight:700;color:#0d1b3e;background:rgba(13,27,62,.06);padding:2px 8px;border-radius:5px;flex-shrink:0">@cat.Code</code>
+                    <span style="font-weight:700;color:var(--navy-deep);font-size:13px;flex:1">@cat.NameTh</span>
+                    <span style="font-size:11px;color:#94a3b8">@string.Join(", ", cat.ActionPatterns)</span>
+                    @if (!cat.IsActive)
+                    {
+                        <span class="badge bg-secondary" style="font-size:10px">ปิด</span>
+                    }
+                    <button class="btn-outline-navy" style="font-size:11px;padding:4px 9px" @onclick="() => StartEdit(cat)">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button style="background:#fff;border:1px solid #fca5a5;color:#dc2626;border-radius:7px;font-size:11px;padding:4px 8px;cursor:pointer"
+                            @onclick="() => DeleteAsync(cat.Id)" disabled="@submitting">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            }
+        }
+    }
+</div>
+
+@code {
+    private List<LogCategoryDto> categories = new();
+    private List<CategoryCountDto> categoryCounts = new();
+    private bool loading = true;
+    private bool submitting;
+    private string error = "";
+    private string successMsg = "";
+
+    private Guid? editId;
+    private string editCode = "";
+    private string editNameTh = "";
+    private string editPatterns = "";
+    private string editColor = "#64748b";
+    private int editSortOrder;
+    private bool editIsActive;
+
+    private string newCode = "";
+    private string newNameTh = "";
+    private string newPatterns = "";
+    private string newColor = "#64748b";
+    private int newSortOrder;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        loading = true; error = "";
+        try
+        {
+            var t1 = AdminApi.GetLogCategoriesAsync();
+            var t2 = AdminApi.GetAuditLogsByCategoryAsync();
+            await Task.WhenAll(t1, t2);
+            categories = await t1;
+            categoryCounts = await t2;
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { loading = false; }
+    }
+
+    private async Task AddCategoryAsync()
+    {
+        if (string.IsNullOrWhiteSpace(newCode) || string.IsNullOrWhiteSpace(newNameTh))
+        { error = "กรุณาระบุ Code และชื่อ"; return; }
+        submitting = true; error = ""; successMsg = "";
+        try
+        {
+            var patterns = newPatterns.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            await AdminApi.SaveLogCategoryAsync(null, newCode, newNameTh, null, newColor, patterns, newSortOrder, true);
+            successMsg = "เพิ่มหมวดหมู่แล้ว";
+            newCode = ""; newNameTh = ""; newPatterns = ""; newSortOrder = 0;
+            await LoadAsync();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { submitting = false; }
+    }
+
+    private void StartEdit(LogCategoryDto cat)
+    {
+        editId = cat.Id;
+        editCode = cat.Code;
+        editNameTh = cat.NameTh;
+        editPatterns = string.Join(", ", cat.ActionPatterns);
+        editColor = cat.Color;
+        editSortOrder = cat.SortOrder;
+        editIsActive = cat.IsActive;
+    }
+
+    private void CancelEdit() => editId = null;
+
+    private async Task SaveEditAsync()
+    {
+        if (editId is null) return;
+        submitting = true; error = ""; successMsg = "";
+        try
+        {
+            var patterns = editPatterns.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            await AdminApi.SaveLogCategoryAsync(editId, editCode, editNameTh, null, editColor, patterns, editSortOrder, editIsActive);
+            successMsg = "อัปเดตหมวดหมู่แล้ว";
+            editId = null;
+            await LoadAsync();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { submitting = false; }
+    }
+
+    private async Task DeleteAsync(Guid id)
+    {
+        submitting = true; error = ""; successMsg = "";
+        try
+        {
+            await AdminApi.DeleteLogCategoryAsync(id);
+            successMsg = "ลบหมวดหมู่แล้ว";
+            await LoadAsync();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { submitting = false; }
+    }
+
+    private async Task ClassifyAsync()
+    {
+        submitting = true; error = ""; successMsg = "";
+        try
+        {
+            var n = await AdminApi.ClassifyLogsAsync();
+            successMsg = $"จัดหมวด Log แล้ว {n:N0} รายการ";
+            categoryCounts = await AdminApi.GetAuditLogsByCategoryAsync();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { submitting = false; }
+    }
+
+    private static string color20(string hex)
+    {
+        // Return same hex with low-opacity approximation using light background
+        return hex.Length == 7 ? hex + "22" : "#f1f5f9";
+    }
+}

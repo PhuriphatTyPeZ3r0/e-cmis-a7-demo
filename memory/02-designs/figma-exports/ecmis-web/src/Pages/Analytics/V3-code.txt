@@ -1,0 +1,138 @@
+// ═══════════════════════════════════════════════════════════
+// V3: Geographic Risk Intelligence — NEW C# Properties/Methods
+// Add these inside the @code block of Index.razor
+// ═══════════════════════════════════════════════════════════
+
+// ── V3 State ──
+private int _v3TimeSlider = 6;
+private string _v3SortColumn = "score";
+private bool _v3SortAsc = false;
+private HashSet<string> _v3SelectedProvinces = new();
+private string? _v3ActionRegionFilter = null;
+
+// ── V3 Computed: Sorted Provinces ──
+private List<ProvinceScore> SortedProvinces
+{
+    get
+    {
+        var list = _byProvince.ToList();
+        list = _v3SortColumn switch
+        {
+            "name" => _v3SortAsc ? list.OrderBy(p => p.Name).ToList() : list.OrderByDescending(p => p.Name).ToList(),
+            "score" => _v3SortAsc ? list.OrderBy(p => p.Score).ToList() : list.OrderByDescending(p => p.Score).ToList(),
+            "rank" => _v3SortAsc ? list.OrderBy(p => p.Index).ToList() : list.OrderByDescending(p => p.Index).ToList(),
+            _ => list
+        };
+        return list;
+    }
+}
+
+// ── V3 Computed: Filtered Actions by Region Chip ──
+private List<ActionRow> V3FilteredActions
+{
+    get
+    {
+        var actions = FilteredActions;
+        if (string.IsNullOrEmpty(_v3ActionRegionFilter))
+            return actions;
+        // Map action owner to region for demo purposes (deterministic fake mapping)
+        return actions.Where(a => ActionOwnerToRegion(a.Owner) == _v3ActionRegionFilter).ToList();
+    }
+}
+
+// ── V3 Helper: Map owner to region for demo filtering ──
+private static string ActionOwnerToRegion(string owner)
+{
+    return owner switch
+    {
+        "ป.ป.ท." => "ภาคกลาง",
+        "ป.ป.ช." => "ภาคเหนือ",
+        "DSI" => "ตะวันออก",
+        "สตง." => "ภาคใต้",
+        _ => "ตะวันออกเฉียงเหนือ"
+    };
+}
+
+// ── V3 Helper: Sort indicator text ──
+private string SortIndicator(string column)
+{
+    if (_v3SortColumn != column) return "";
+    return _v3SortAsc ? "▲" : "▼";
+}
+
+// ── V3 Helper: Region color for radar chart legend ──
+private static string V3RegionColor(string regionName)
+{
+    return regionName switch
+    {
+        "ภาคเหนือ" => "#2dd4bf",
+        "ตะวันออกเฉียงเหนือ" => "#34d399",
+        "ภาคกลาง" => "#14b8a6",
+        "ตะวันออก" => "#10b981",
+        "ภาคใต้" => "#059669",
+        _ => "#2dd4bf"
+    };
+}
+
+// ── V3 Interaction: Sort province table ──
+private void SortProvinceTable(string column)
+{
+    if (_v3SortColumn == column)
+        _v3SortAsc = !_v3SortAsc;
+    else
+    {
+        _v3SortColumn = column;
+        _v3SortAsc = column == "name"; // default asc for name, desc for score/rank
+    }
+}
+
+// ── V3 Interaction: Toggle province selection for comparison ──
+private void ToggleProvinceSelection(string provinceName)
+{
+    if (_v3SelectedProvinces.Contains(provinceName))
+        _v3SelectedProvinces.Remove(provinceName);
+    else if (_v3SelectedProvinces.Count < 3)
+        _v3SelectedProvinces.Add(provinceName);
+    // If already 3 selected, ignore new selection (or you could swap logic)
+}
+
+// ── V3 Interaction: Set action region filter ──
+private void SetV3ActionRegionFilter(string? region)
+{
+    _v3ActionRegionFilter = region;
+}
+
+// ── UPDATE RenderChartsAsync() V3 branch ──
+// Replace the existing V3 branch in RenderChartsAsync() with:
+/*
+else if (SelectedVersion == 3)
+{
+    // V3: 3D Map, Province Comparison Bar, Radar Chart
+    await JS.InvokeVoidAsync("initThailandRiskMap3D", "thailandRiskMapV3");
+
+    // Province comparison mini bar chart
+    var compareLabels = _v3SelectedProvinces.ToArray();
+    var compareData = compareLabels.Select(name => _byProvince.FirstOrDefault(p => p.Name == name)?.Score ?? 0).Cast<object>().ToArray();
+    await JS.InvokeVoidAsync("initAnalyticsChart", "chartCompareV3", "bar",
+        compareLabels.Length > 0 ? compareLabels : new[] { "ไม่มีการเลือก" },
+        compareData.Length > 0 ? compareData : new object[] { 0 },
+        new[] { "#14b8a6", "#2dd4bf", "#34d399" }, _isDark);
+
+    // Radar chart: 5 regions x 5 dimensions
+    var radarLabels = new[] { "คดี", "ทุจริต", "งบประมาณ", "ร้องเรียน", "RedFlag" };
+    var radarDatasets = _regions.Select((r, i) => new
+    {
+        label = r.Name,
+        data = new[] {
+            Math.Min(100, r.Score + 5 - i * 2),
+            Math.Min(100, r.Score + 10 - i * 3),
+            Math.Min(100, r.Score - 5 + i),
+            Math.Min(100, r.Score + 2 + i),
+            Math.Min(100, r.Score + 8 - i)
+        },
+        borderColor = V3RegionColor(r.Name),
+        backgroundColor = V3RegionColor(r.Name) + "33" // 20% opacity hex
+    }).ToArray();
+    await JS.InvokeVoidAsync("initRadarChartV3", "chartRadarV3", radarLabels, radarDatasets, _isDark);
+}
+*/

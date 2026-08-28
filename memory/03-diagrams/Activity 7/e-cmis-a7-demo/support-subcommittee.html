@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คณะอนุกรรมการสนับสนุนเลขาธิการฯ กลั่นกรองสำนวนซับซ้อน | E-CMIS</title>
+  <link rel="icon" type="image/png" href="assets/pacc_logo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="assets/ecmis-app.css" rel="stylesheet">
+  <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <main class="app-main">
+    <div class="page-head">
+      <div>
+        <h1><i class="fa-solid fa-user-tie me-2"></i>คณะอนุกรรมการสนับสนุนเลขาธิการฯ กลั่นกรองสำนวนซับซ้อน</h1>
+      </div>
+      <div class="ms-auto text-end">
+        <button type="button" class="btn btn-sm btn-outline-primary btn-manage-sug rounded-pill px-3 py-1 me-2 no-print" title="จัดการข้อความคำแนะนำและเหตุผลมาตรฐาน"><i class="fa-solid fa-lightbulb text-warning me-1"></i>จัดการคำแนะนำ</button>
+        <span class="flow-ref">กลั่นกรองสำนวนซับซ้อน / ความเห็นแย้งก่อนส่งต่อเลขาธิการฯ</span>
+        <div class="mt-1" id="stBadge"></div>
+      </div>
+    </div>
+
+    <div class="ws-card mb-3">
+      <div class="card-body pb-1" id="stepper"></div>
+    </div>
+
+    <div class="document-workspace" id="docWorkspace">
+      <!-- Left Form & Inputs -->
+      <div>
+
+        <!-- Card 1: Chain of Opinions (Identical to approval-review.html) -->
+        <div class="ws-card mb-3">
+          <div class="card-header"><i class="fa-solid fa-list-ol"></i> ที่มาของสำนวน — การเสนอตามลำดับชั้นภายในกอง/เขต (ต้นทาง กจ.5)</div>
+          <div class="card-body">
+            <ul class="tl mb-0" id="chain"></ul>
+          </div>
+        </div>
+
+        <!-- Card 2: Case Summary (Identical to approval-review.html) -->
+        <div class="ws-card mb-3">
+          <div class="card-header"><i class="fa-solid fa-circle-info"></i> สรุปสำนวนสำหรับผู้พิจารณา</div>
+          <div class="card-body">
+            <div class="row g-2 kv" id="summary"></div>
+            <hr>
+            <div class="mb-2"><span class="k text-muted">ข้อกล่าวหา</span>
+              <div class="v" id="sAllegation"></div>
+            </div>
+            <div><span class="k text-muted">ความเห็นของผู้รับผิดชอบสำนวน</span>
+              <div class="v" id="sOpinion"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Attachments with Upload Feature -->
+        <div class="ws-card mb-3">
+          <div class="card-header d-flex align-items-center justify-content-between">
+            <span><i class="fa-solid fa-paperclip"></i> ไฟล์แนบสำนวน</span>
+            <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 rounded-pill no-print" id="btnToggleUpload" style="font-size:0.75rem" title="อัปโหลดไฟล์แนบเพิ่มเติม">
+              <i class="fa-solid fa-cloud-arrow-up me-1"></i>อัปโหลดไฟล์
+            </button>
+          </div>
+          <div class="card-body">
+            <!-- Dropzone / Upload Box -->
+            <div id="uploadBox" class="mb-3 p-3 border border-dashed rounded bg-light d-none no-print">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="small fw-semibold text-primary"><i class="fa-solid fa-file-arrow-up me-1"></i>แนบไฟล์ประกอบการกลั่นกรอง</span>
+                <button type="button" class="btn-close btn-sm" id="btnCloseUpload" aria-label="Close" style="font-size:0.65rem"></button>
+              </div>
+              <div class="input-group input-group-sm mb-2">
+                <input type="file" class="form-control" id="fileInputAttach" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.rar,.png,.jpg,.jpeg">
+                <button class="btn btn-navy" type="button" id="btnUploadSubmit">
+                  <i class="fa-solid fa-upload me-1"></i>อัปโหลด
+                </button>
+              </div>
+              <small class="text-muted d-block" style="font-size:0.72rem">
+                รองรับไฟล์ PDF, Word, Excel, ZIP, รูปภาพ (ขนาดไม่เกิน 50MB ต่อไฟล์)
+              </small>
+            </div>
+
+            <!-- Attachment List -->
+            <div id="attachmentList" class="small text-muted">กำลังโหลด...</div>
+          </div>
+        </div>
+
+        <!-- Card 4: Screening Review & Opinion (Matching subcommittee-screening.html style) -->
+        <div class="ws-card mb-3">
+          <div class="card-header"><i class="fa-solid fa-people-group"></i> กลั่นกรองสำนวนซับซ้อนโดยคณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
+          <div class="card-body">
+            <div id="readOnlyBanner" class="alert alert-secondary d-flex align-items-center gap-2 mb-3 py-2 px-3 d-none">
+              <i class="fa-solid fa-lock text-secondary"></i>
+              <span><strong>สำนวนนี้กลั่นกรองแล้วเสร็จ (โหมดดูรายละเอียด / อ่านอย่างเดียว)</strong> ระบบล็อกข้อมูลไม่ให้แก้ไข</span>
+            </div>
+
+
+
+            <label class="form-label field-req">มติของคณะอนุกรรมการสนับสนุนเลขาธิการฯ</label>
+            <div class="list-group mb-3">
+              <label class="list-group-item d-flex gap-2 align-items-start">
+                <input class="form-check-input mt-1" type="radio" name="supportDecision" value="AGREE" checked>
+                <span><strong>เห็นพ้องกับความเห็นเดิมของผู้รับผิดชอบสำนวน (มีมูลความผิด)</strong>
+                  <br><small class="text-muted">อ้างอิง ม.24 / ม.28 — ข้อเท็จจริงและพยานหลักฐานครบถ้วน เสนอเลขาธิการฯ เพื่อ Fast-track บรรจุวาระด่วนได้</small></span>
+              </label>
+              <label class="list-group-item d-flex gap-2 align-items-start">
+                <input class="form-check-input mt-1" type="radio" name="supportDecision" value="DIFFER">
+                <span><strong>เห็นต่าง / มีความเห็นแย้ง (ไม่มีมูล หรือเห็นควรไม่รับ/สั่งจำหน่ายเรื่อง)</strong>
+                  <br><small class="text-muted">อ้างอิง ม.28 ประกอบ ม.25 / ม.26 — มีความเห็นแย้งในข้อกฎหมาย/ข้อเท็จจริง (ระบบจะเปิดช่องเลือกมาตราและระบุเหตุผลแย้ง)</small></span>
+              </label>
+              <label class="list-group-item d-flex gap-2 align-items-start">
+                <input class="form-check-input mt-1" type="radio" name="supportDecision" value="MORE_INFO">
+                <span><strong>ขอให้แสวงหาข้อเท็จจริง/พยานหลักฐานเพิ่มเติม</strong>
+                  <br><small class="text-muted">อ้างอิง ม.18 / ม.23 — แจ้งเจ้าของสำนวนขอเอกสารหรือสอบพยานเพิ่มเติมก่อนสรุปผล</small></span>
+              </label>
+              <label class="list-group-item d-flex gap-2 align-items-start">
+                <input class="form-check-input mt-1" type="radio" name="supportDecision" value="RETURN">
+                <span><strong>ส่งคืนสายงานต้นทาง (กจ.5) เพื่อปรับปรุงสำนวน</strong>
+                  <br><small class="text-muted">สำนวนไม่สมบูรณ์ตามระเบียบ ส่งคืนให้กอง/เขตดำเนินการใหม่</small></span>
+              </label>
+            </div>
+
+            <!-- Conditional Box 1: Dissent Reason & Law Reference (Matching Section 25/26) -->
+            <div id="dissentReasonBox" class="mb-3 d-none">
+              <div class="p-3 bg-light border border-danger-subtle rounded">
+                <label class="form-label field-req text-danger"><i class="fa-solid fa-scale-balanced me-1"></i>มาตราที่ใช้อ้างอิงประกอบความเห็นแย้ง (อ้างอิง ม.25 / ม.26)</label>
+                <select class="form-select mb-2" id="supportLaw">
+                  <option value="">— เลือกมาตราที่ใช้อ้างอิง —</option>
+                  <optgroup label="มาตรา 25: กรณีห้ามรับเรื่องไว้พิจารณา">
+                    <option value="25(1)">ม.25(1) ป.ป.ช. รับไว้พิจารณา/วินิจฉัยเสร็จเด็ดขาดแล้ว</option>
+                    <option value="25(2)">ม.25(2) บอร์ดวินิจฉัยเสร็จเด็ดขาดแล้ว ไม่มีพยานหลักฐานใหม่</option>
+                    <option value="25(3)">ม.25(3) ศาลประทับฟ้อง/พิพากษาเสร็จเด็ดขาดแล้ว</option>
+                    <option value="25(4)">ม.25(4) ผู้ถูกร้อง/ผู้ถูกกล่าวหาตาย</option>
+                    <option value="25(5)">ม.25(5) พ้นจากเจ้าหน้าที่ของรัฐก่อนถูกกล่าวหาเกิน 5 ปี</option>
+                  </optgroup>
+                  <optgroup label="มาตรา 26: กรณีไม่รับหรือสั่งจำหน่ายเรื่อง">
+                    <option value="26(1)">ม.26(1) ไม่ระบุพยานหลักฐาน/พฤติการณ์ชัดเจนเพียงพอ</option>
+                    <option value="26(2)">ม.26(2) ล่วงเลยเกิน 5 ปีนับแต่วันเกิดเหตุ</option>
+                    <option value="26(3)">ม.26(3) ไม่ใช่ความผิดวินัยอย่างร้ายแรง</option>
+                    <option value="26(4)">ม.26(4) ประพฤติมิชอบที่ไม่เสียหายแก่ราชการอย่างร้ายแรง</option>
+                    <option value="26(5)">ม.26(5) องค์กรบริหารงานบุคคลกำลังพิจารณา/ยุติแล้ว</option>
+                  </optgroup>
+                </select>
+                <div class="val-msg val-err" data-for="supportLaw">กรุณาเลือกมาตราที่ใช้อ้างอิง</div>
+
+                <label class="form-label field-req text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>เหตุผลในการแย้งความเห็นโดยละเอียด (Mandatory)</label>
+                <textarea class="form-control border-danger" id="dissentReason" rows="3"
+                  placeholder="ระบุเหตุผลข้อกฎหมาย หรือข้อเท็จจริงที่เห็นต่างจากผู้รับผิดชอบสำนวนโดยละเอียด..."></textarea>
+                <div class="val-msg val-err" data-for="dissentReason">กรุณาระบุเหตุผลในการแย้งความเห็น</div>
+              </div>
+            </div>
+
+            <!-- Conditional Box 2: More Info Request Items -->
+            <div id="moreInfoBox" class="mb-3 d-none">
+              <div class="p-3 bg-light border rounded">
+                <label class="form-label field-req text-info"><i class="fa-solid fa-list-check me-1"></i>ประเด็นและรายการเอกสารที่ต้องการเพิ่มเติม</label>
+                <textarea class="form-control mb-2" id="moreInfoItems" rows="2"
+                  placeholder="เช่น 1. ขอสำเนารายงานการตรวจสอบแนวเขตป่าไม้ฉบับจริง 2. ขอถ้อยคำพยานบุคคลเพิ่มเติม..."></textarea>
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <label class="form-label small">ผู้รับผิดชอบที่ต้องส่งข้อมูล</label>
+                    <input class="form-control form-control-sm autofilled" id="moreInfoAssignee" readonly>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small field-req">กำหนดส่งข้อมูลภายใน (วัน)</label>
+                    <input class="form-control form-control-sm" id="moreInfoDays" type="number" value="7" min="1">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <label class="form-label field-req">ความเห็น / ข้อสังเกตของคณะอนุกรรมการสนับสนุนเลขาธิการฯ</label>
+            <textarea class="form-control" id="supportOpinion" rows="5"
+              placeholder="คณะอนุกรรมการสนับสนุนเลขาธิการฯ พิจารณาสำนวนแล้วเห็นว่า..."></textarea>
+            <div class="val-msg val-err" data-for="supportOpinion">กรุณาระบุความเห็นกลั่นกรองของคณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Pane: Standard Document Workspace -->
+      <aside class="ws-doc-pane" style="top:calc(var(--topbar-h) + 14px)">
+        <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i
+            class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
+        <div class="ws-doc-toolbar">
+          <div class="d-flex flex-column w-100 gap-1">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="name"><i class="fa-solid fa-file-word"></i> บันทึกความเห็น (คณะอนุกรรมการสนับสนุนเลขาธิการฯ)</span>
+              <div class="d-flex gap-1 align-items-center">
+                <button type="button" class="btn-doc-edit" id="btnDocEdit" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
+                  <i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btnDocx" title="ส่งออกเป็นเอกสาร Microsoft Word (.docx)"><i class="fa-solid fa-file-word me-1"></i>ส่งออก DOCX</button>
+                <button type="button" class="btn btn-sm btn-light border" onclick="window.print()" title="พิมพ์เอกสารปัจจุบัน"><i class="fa-solid fa-print"></i></button>
+                <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
+              </div>
+            </div>
+
+            <!-- Symmetrical Pagination & Zoom Navigator Bar -->
+            <div class="pagination-toolbar-symmetric" id="docPaginationBar">
+              <!-- Left Group: View Mode & Page Jump Controls -->
+              <div class="toolbar-group">
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" id="btnModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น)">
+                    <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
+                  </button>
+                  <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnModeContinuous" title="โหมดดูทุกหน้าเรียงกัน">
+                    <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
+                  </button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnFirstPage" title="หน้าแรกสุด (หน้า 1)"><i class="fa-solid fa-backward-step"></i></button>
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnPrevPage" title="หน้าก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
+                </div>
+                
+                <div class="d-flex align-items-center gap-1">
+                  <span class="small opacity-75">หน้า</span>
+                  <input type="number" class="page-input-num" id="pageNumberInput" min="1" value="1">
+                  <span class="small opacity-75" id="totalPagesText">/ 1 หน้า</span>
+                </div>
+
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnNextPage" title="หน้าถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnLastPage" title="หน้าสุดท้าย"><i class="fa-solid fa-forward-step"></i></button>
+                </div>
+              </div>
+
+              <!-- Right Group: Zoom Stepper Controls -->
+              <div class="toolbar-group ms-auto">
+                <div class="d-flex align-items-center bg-dark rounded px-1" style="background:#06182c !important; border:1px solid #1a3d66; height:26px;">
+                  <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                  <span style="font-size:0.75rem; width:34px; text-align:center; font-weight:600;" id="zoomLevelText">75%</span>
+                  <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ws-paper-stage" id="docPaperStage">
+          <div id="docPaper"></div>
+        </div>
+      </aside>
+    </div>
+
+    <div id="actionBarSlot"></div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="assets/ecmis-app.js"></script>
+  <script src="assets/ecmis-model.js"></script>
+  <script>
+    ECMIS.renderShell('support-subcommittee.html');
+
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = (window.ECMIS && window.ECMIS.getSupabaseClient) ? window.ECMIS.getSupabaseClient(SUPABASE_URL, SUPABASE_KEY) : (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }) : null);
+
+    async function loadCaseFromSupabase(caseId) {
+      if (!sb) return null;
+      try {
+        const { data, error } = await sb
+          .from('tbl_res_request')
+          .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+          .eq('tbl_cmp_case.tcc_no', caseId)
+          .eq('is_deleted', false)
+          .maybeSingle();
+        if (error) throw error;
+        return data ? ECMIS.supabaseRowToCase(data) : null;
+      } catch (e) {
+        console.warn('Supabase load error:', e);
+        return null;
+      }
+    }
+
+    async function persistCase(kase, patch) {
+      const dbPatch = {};
+      if ('status' in patch) {
+        const code = ECMIS.STATUS_CODE[patch.status];
+        if (code) dbPatch.trr_status = code;
+      }
+      if (sb && kase.trr_id && Object.keys(dbPatch).length) {
+        try {
+          const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
+          if (error) console.warn('Supabase update warning:', error);
+        } catch (e) {
+          console.warn('Supabase update failed:', e);
+        }
+      }
+      Object.assign(kase, patch);
+      const memCase = ECMIS.CASES.find(x => x.id === kase.id);
+      if (memCase) Object.assign(memCase, patch);
+      ECMIS.saveCases();
+    }
+
+    const params = new URLSearchParams(location.search);
+    const role = ECMIS.currentRole();
+    const groupParam = params.get('group');
+    if (groupParam) {
+      sessionStorage.setItem('ecmis_support_sub_group', groupParam);
+      localStorage.setItem('ecmis_support_sub_group', groupParam);
+    }
+    const currentGroup = groupParam || sessionStorage.getItem('ecmis_support_sub_group') || localStorage.getItem('ecmis_support_sub_group') || 'group1';
+    const returnInboxUrl = `support-subcommittee-inbox.html?group=${encodeURIComponent(currentGroup)}`;
+    let kase = null, docType, isRuling;
+    let isReadOnly = false;
+
+    const TEAMS = [
+      { code: 'TEAM1', label: 'คณะที่ 1' },
+      { code: 'TEAM2', label: 'คณะที่ 2' }
+    ];
+
+    (async function main() {
+      const caseParam = params.get('case') || '2015/2569';
+      isReadOnly = (params.get('readonly') === 'true');
+
+      // ลองโหลดจาก Supabase ก่อน ถ้าไม่มี fallback เป็น mock
+      try {
+        kase = await loadCaseFromSupabase(caseParam);
+      } catch (err) {
+        console.warn('Fallback to local storage cases:', err);
+      }
+
+      if (!kase) {
+        kase = ECMIS.requireCase(caseParam);
+      }
+
+      if (!kase) return;
+
+      docType = ECMIS.DOC_TYPES[kase.docType] || ECMIS.DOC_TYPES['213'];
+      isRuling = (kase.docType === 'RULING');
+
+      // ตรวจสอบว่าสำนวนได้รับการกลั่นกรองและส่งต่อแล้ว หรือส่งคืนต้นทางแล้ว หรือรอข้อมูลเพิ่มหรือไม่ ถ้าใช่ให้เปิดโหมด Read-only ล็อกข้อมูล
+      if (kase.status === 'PENDING_SECGEN' || kase.status === 'PENDING_SECGEN_72' || kase.status === 'SIGNED' || kase.status === 'DONE' || kase.status === 'RETURNED' || kase.status === 'RETURNED_72' || isReadOnly) {
+        isReadOnly = true;
+      } else if (kase.status !== 'IN_SUPPORT_SUB' && kase.status !== 'IN_SUPPORT_SUB_72') {
+        kase.status = isRuling ? 'IN_SUPPORT_SUB_72' : 'IN_SUPPORT_SUB';
+      }
+
+      renderPage();
+    })();
+
+    function renderPage() {
+      document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
+      document.getElementById('stepper').innerHTML = isRuling
+        ? ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72)
+        : ECMIS.stepperHtml(kase.status);
+
+      // Render chain of opinions with modern E-CMIS timeline UI
+      const chainEl = document.getElementById('chain');
+      if (chainEl) {
+        if (kase.chainOpinions && kase.chainOpinions.length) {
+          const prior = kase.chainOpinions.map((o, idx, arr) => {
+            const r = ECMIS.getRole(o.roleId) || { title: 'ผู้พิจารณา', name: o.roleName || '-' };
+            const op = ECMIS.OPINION_TYPES[o.type] || { label: o.type || 'เห็นควรรับไว้ไต่สวน', cls: 'st-done' };
+            const isLast = (idx === arr.length - 1);
+            const isNow = isLast && (kase.status === 'IN_SUPPORT_SUB' || kase.status === 'IN_SUPPORT_SUB_72');
+            const slaText = o.isOverdue
+              ? `<span class="text-danger fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>ใช้ไป ${o.slaDays || 8}/5 วัน <span class="badge bg-danger ms-1">เกินกำหนด ${o.overdueDays || 3} วัน</span></span>`
+              : `<span class="text-success fw-medium"><i class="fa-solid fa-clock me-1"></i>ใช้ไป ${o.slaDays || 2}/5 วัน</span>`;
+
+            if (isNow) {
+              return `
+              <li class="now">
+                <span class="tl-dot"></span>
+                <div class="tl-t">${r.title} <span class="chip ms-1">คุณ</span></div>
+                <div class="tl-m">${r.name} · <strong>อยู่ระหว่างกลั่นกรอง</strong> · <span class="text-success fw-medium"><i class="fa-solid fa-clock me-1"></i>ใช้ไป 1/5 วัน</span></div>
+                <div class="tl-m mt-1">
+                  <span class="st st-pending" style="font-size:.68rem">รอเสนอความเห็น</span>
+                </div>
+              </li>`;
+            }
+
+            return `
+            <li class="ok">
+              <span class="tl-dot"></span>
+              <div class="tl-t">${r.title}</div>
+              <div class="tl-m">${r.name} · ${ECMIS.thaiDate(o.date)} · ${slaText}</div>
+              <div class="tl-m mt-1">
+                <span class="st st-done" style="font-size:.68rem">${op.label}</span>
+                <span class="ms-1 text-secondary">${o.note || 'พิจารณาสำนวนแล้วเห็นควรเสนอตามลำดับชั้น'}</span>
+              </div>
+            </li>`;
+          }).join('');
+          chainEl.innerHTML = prior;
+        } else {
+          // Fallback standard timeline
+          chainEl.innerHTML = `
+            <li class="ok">
+              <span class="tl-dot"></span>
+              <div class="tl-t">เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ</div>
+              <div class="tl-m">นางสาวศิริพร กิจการ · 28 กุมภาพันธ์ 2568 · <span class="text-success fw-medium"><i class="fa-solid fa-clock me-1"></i>ใช้ไป 2/5 วัน</span></div>
+              <div class="tl-m mt-1">
+                <span class="st st-done" style="font-size:.68rem">เห็นควรรับไว้ไต่สวน</span>
+                <span class="ms-1 text-secondary">พิจารณาสำนวนแล้วเห็นว่าเข้าหลักเกณฑ์รับไว้ดำเนินการ เห็นควรเสนอตามลำดับชั้น</span>
+              </div>
+            </li>
+            <li class="ok">
+              <span class="tl-dot"></span>
+              <div class="tl-t">เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ</div>
+              <div class="tl-m">นางสาวศิริพร กิจการ · 6 มีนาคม 2568 · <span class="text-success fw-medium"><i class="fa-solid fa-clock me-1"></i>ใช้ไป 1/5 วัน</span></div>
+              <div class="tl-m mt-1">
+                <span class="st st-done" style="font-size:.68rem">เห็นควรรับไว้ไต่สวน</span>
+                <span class="ms-1 text-secondary">ตรวจสอบสำนวนแล้วเห็นพ้องกับผู้รับผิดชอบสำนวน เห็นควรเสนอผู้บังคับบัญชาลำดับถัดไป</span>
+              </div>
+            </li>
+            <li class="ok">
+              <span class="tl-dot"></span>
+              <div class="tl-t">เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ</div>
+              <div class="tl-m">นางสาวศิริพร กิจการ · 13 มีนาคม 2568 · <span class="text-danger fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>ใช้ไป 8/5 วัน <span class="badge bg-danger ms-1">เกินกำหนด 3 วัน</span></span></div>
+              <div class="tl-m mt-1">
+                <span class="st st-done" style="font-size:.68rem">เห็นควรรับไว้ไต่สวน</span>
+                <span class="ms-1 text-secondary">พิจารณาแล้วเห็นชอบตามที่เสนอ เห็นควรเสนอลำดับชั้นถัดไป</span>
+              </div>
+            </li>
+            <li class="ok">
+              <span class="tl-dot"></span>
+              <div class="tl-t">เลขาธิการคณะกรรมการ ป.ป.ท.</div>
+              <div class="tl-m">นายอภิชาติ สุจริตกุล · 20 มีนาคม 2568 · <span class="text-success fw-medium"><i class="fa-solid fa-clock me-1"></i>ใช้ไป 3/5 วัน</span></div>
+              <div class="tl-m mt-1">
+                <span class="st st-done" style="font-size:.68rem">ส่งอนุกรรมการสนับสนุนฯ</span>
+                <span class="ms-1 text-secondary">สำนวนมีความยุ่งยากซับซ้อน มอบหมายคณะอนุกรรมการสนับสนุนเลขาธิการฯ กลั่นกรอง</span>
+              </div>
+            </li>
+            <li class="now">
+              <span class="tl-dot"></span>
+              <div class="tl-t">คณะอนุกรรมการสนับสนุนเลขาธิการฯ <span class="chip ms-1">คุณ</span></div>
+              <div class="tl-m">คณะที่ 1 · <strong>อยู่ระหว่างกลั่นกรอง</strong> · <span class="text-success fw-medium"><i class="fa-solid fa-clock me-1"></i>ใช้ไป 1/5 วัน</span></div>
+              <div class="tl-m mt-1">
+                <span class="st st-pending" style="font-size:.68rem">รอสรุปผลกลั่นกรอง</span>
+                <span class="ms-1 text-secondary">บันทึกมติกลั่นกรองและจัดทำร่างความเห็นเสนอคืนเลขาธิการฯ</span>
+              </div>
+            </li>
+          `;
+        }
+      }
+
+      // Render summary KV
+      const sumEl = document.getElementById('summary');
+      if (sumEl) {
+        sumEl.innerHTML = `
+          <div class="col-sm-6"><span class="k">เรื่องที่:</span> <span class="v">${kase.id}</span></div>
+          <div class="col-sm-6"><span class="k">ประเภท:</span> <span class="v">${docType.label}</span></div>
+          <div class="col-sm-6"><span class="k">ผู้รับผิดชอบ:</span> <span class="v">${kase.owner || '-'}</span></div>
+          <div class="col-sm-6"><span class="k">สังกัด:</span> <span class="v">${kase.ownerOrg || '-'}</span></div>
+          <div class="col-12"><span class="k">ผู้ถูกร้อง:</span> <span class="v">${(kase.accused || []).map(a => a.name).join(', ') || '-'}</span></div>
+          <div class="col-12"><span class="k">ผู้รับผิดชอบกลั่นกรอง:</span> <span class="v fw-medium text-navy"><i class="fa-solid fa-users-gear me-1"></i>คณะอนุกรรมการสนับสนุนเลขาธิการฯ</span></div>
+        `;
+      }
+
+      document.getElementById('sAllegation').textContent = kase.allegation || '-';
+      document.getElementById('sOpinion').textContent = kase.ownerOpinion || 'เห็นควรชี้มูลความผิดทางวินัยอย่างร้ายแรงและดำเนินคดีอาญา';
+      document.getElementById('moreInfoAssignee').value = `${kase.owner || 'ผู้รับผิดชอบสำนวน'} (${kase.ownerOrg || '-'})`;
+
+      // Render attachment list with Upload & Delete capability
+      renderAttachments();
+
+
+
+      if (kase.supportOpinion72 || kase.supportOpinion) {
+        document.getElementById('supportOpinion').value = kase.supportOpinion72 || kase.supportOpinion;
+      }
+      if (kase.supportLaw) {
+        document.getElementById('supportLaw').value = kase.supportLaw;
+      }
+      if (kase.dissentReason) {
+        document.getElementById('dissentReason').value = kase.dissentReason;
+      }
+      if (kase.supportDecision) {
+        const decRadio = document.querySelector(`input[name="supportDecision"][value="${kase.supportDecision}"]`);
+        if (decRadio) decRadio.checked = true;
+      }
+
+      // Event listeners
+      document.querySelectorAll('input[name="supportDecision"]').forEach(r => {
+        r.addEventListener('change', () => {
+          onDecisionChange();
+          renderDoc();
+          renderActionButtons();
+        });
+      });
+
+      document.getElementById('supportOpinion').addEventListener('input', () => {
+        const valMsg = document.querySelector('.val-msg[data-for="supportOpinion"]');
+        if (document.getElementById('supportOpinion').value.trim()) {
+          document.getElementById('supportOpinion').classList.remove('is-invalid-ecmis');
+          if (valMsg) valMsg.classList.remove('show');
+        }
+        renderDoc();
+      });
+
+      document.getElementById('supportLaw').addEventListener('change', () => {
+        const valMsg = document.querySelector('.val-msg[data-for="supportLaw"]');
+        if (document.getElementById('supportLaw').value) {
+          document.getElementById('supportLaw').classList.remove('is-invalid-ecmis');
+          if (valMsg) valMsg.classList.remove('show');
+        }
+        renderDoc();
+      });
+
+      document.getElementById('dissentReason').addEventListener('input', () => {
+        const valMsg = document.querySelector('.val-msg[data-for="dissentReason"]');
+        if (document.getElementById('dissentReason').value.trim()) {
+          document.getElementById('dissentReason').classList.remove('is-invalid-ecmis');
+          if (valMsg) valMsg.classList.remove('show');
+        }
+        renderDoc();
+      });
+
+      if (kase.moreInfoItems) {
+        document.getElementById('moreInfoItems').value = kase.moreInfoItems;
+      }
+      if (kase.moreInfoDays) {
+        document.getElementById('moreInfoDays').value = kase.moreInfoDays;
+      }
+      if (kase.statusCat === 'MORE_INFO' || kase.triggerType === 'MORE_INFO' || (kase.moreInfoItems && !kase.supportDecision)) {
+        const moreRadio = document.querySelector('input[name="supportDecision"][value="MORE_INFO"]');
+        if (moreRadio) moreRadio.checked = true;
+      }
+
+      if (isReadOnly) {
+        const banner = document.getElementById('readOnlyBanner');
+        banner.classList.remove('d-none');
+        if (kase.statusCat === 'MORE_INFO' || kase.triggerType === 'MORE_INFO') {
+          banner.className = 'alert alert-info d-flex align-items-center gap-2 mb-3 py-2 px-3';
+          banner.innerHTML = `<i class="fa-solid fa-file-circle-question text-info"></i><span><strong>สำนวนนี้อยู่ระหว่างรอข้อมูลเพิ่มเติมจากเจ้าของสำนวน (โหมดดูรายละเอียด / อ่านอย่างเดียว)</strong> ระบบล็อกข้อมูลไม่ให้แก้ไข</span>`;
+        } else if (kase.status === 'RETURNED' || kase.status === 'RETURNED_72' || kase.statusCat === 'RETURNED') {
+          banner.className = 'alert alert-danger d-flex align-items-center gap-2 mb-3 py-2 px-3';
+          banner.innerHTML = `<i class="fa-solid fa-arrow-left-long text-danger"></i><span><strong>สำนวนนี้ส่งคืนสายงานต้นทาง (กจ.5) แล้ว (โหมดดูรายละเอียด / อ่านอย่างเดียว)</strong> ระบบล็อกข้อมูลไม่ให้แก้ไข</span>`;
+        } else {
+          banner.className = 'alert alert-secondary d-flex align-items-center gap-2 mb-3 py-2 px-3';
+          banner.innerHTML = `<i class="fa-solid fa-lock text-secondary"></i><span><strong>สำนวนนี้กลั่นกรองแล้วเสร็จ (โหมดดูรายละเอียด / อ่านอย่างเดียว)</strong> ระบบล็อกข้อมูลไม่ให้แก้ไข</span>`;
+        }
+
+        document.querySelectorAll('input[name="supportDecision"], #supportLaw, #dissentReason, #moreInfoItems, #moreInfoDays, #supportOpinion').forEach(el => {
+          el.disabled = true;
+        });
+      }
+
+
+      // Upload box listeners
+      const btnToggle = document.getElementById('btnToggleUpload');
+      const uploadBox = document.getElementById('uploadBox');
+      const btnClose = document.getElementById('btnCloseUpload');
+      const btnSubmit = document.getElementById('btnUploadSubmit');
+
+      if (btnToggle && uploadBox) {
+        btnToggle.addEventListener('click', () => {
+          uploadBox.classList.toggle('d-none');
+        });
+      }
+      if (btnClose && uploadBox) {
+        btnClose.addEventListener('click', () => {
+          uploadBox.classList.add('d-none');
+        });
+      }
+      if (btnSubmit) {
+        btnSubmit.addEventListener('click', handleFileUpload);
+      }
+
+      if (isReadOnly) {
+        if (btnToggle) btnToggle.classList.add('d-none');
+        if (uploadBox) uploadBox.classList.add('d-none');
+      }
+
+      onDecisionChange();
+      renderDoc();
+      renderActionButtons();
+    }
+
+
+    function getFileIcon(filename) {
+      const ext = filename.split('.').pop().toLowerCase();
+      if (ext === 'pdf') return 'fa-file-pdf text-danger';
+      if (['doc', 'docx'].includes(ext)) return 'fa-file-word text-primary';
+      if (['xls', 'xlsx', 'csv'].includes(ext)) return 'fa-file-excel text-success';
+      if (['zip', 'rar', '7z'].includes(ext)) return 'fa-file-zipper text-warning';
+      if (['png', 'jpg', 'jpeg'].includes(ext)) return 'fa-file-image text-info';
+      return 'fa-file-lines text-secondary';
+    }
+
+    function renderAttachments() {
+      const el = document.getElementById('attachmentList');
+      if (!el) return;
+
+      if (!kase.attachments) {
+        kase.attachments = [];
+      }
+
+      if (!kase.attachments.length) {
+        el.innerHTML = '<div class="text-muted py-3 text-center" style="font-size:0.8rem"><i class="fa-solid fa-folder-open fa-lg d-block mb-1 text-secondary" style="font-size:1.4rem"></i>ยังไม่มีไฟล์แนบในสำนวนนี้</div>';
+        return;
+      }
+
+      const rows = kase.attachments.map((a, idx) => {
+        const icon = getFileIcon(a.name);
+        const delBtn = !isReadOnly
+          ? `<button type="button" class="btn btn-link text-danger p-0 ms-auto text-decoration-none btn-del-file" data-idx="${idx}" title="ลบไฟล์"><i class="fa-solid fa-trash-can" style="font-size:0.75rem"></i></button>`
+          : '';
+
+        return `
+          <li class="d-flex align-items-center justify-content-between py-1 border-bottom border-light">
+            <div class="d-flex align-items-center gap-2 text-truncate me-2">
+              <i class="fa-solid ${icon}" style="font-size:1.1rem; flex-shrink:0"></i>
+              <div class="text-truncate">
+                <a href="javascript:void(0)" onclick="previewOrDownloadFile('${ECMIS.escapeHtml(a.name)}')" class="text-primary text-decoration-none fw-medium text-truncate d-block" title="${ECMIS.escapeHtml(a.name)}">
+                  ${ECMIS.escapeHtml(a.name)}
+                </a>
+                <small class="text-muted" style="font-size:0.72rem">${a.size} · ${a.date} ${a.uploader ? `(${a.uploader})` : ''}</small>
+              </div>
+            </div>
+            ${delBtn}
+          </li>
+        `;
+      }).join('');
+
+      el.innerHTML = `<ul class="list-unstyled mb-0">${rows}</ul>`;
+
+      el.querySelectorAll('.btn-del-file').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = parseInt(btn.dataset.idx, 10);
+          deleteAttachment(idx);
+        });
+      });
+    }
+
+    function previewOrDownloadFile(fileName) {
+      ECMIS.toastOk(`เปิดดูไฟล์แนบ: ${fileName}`);
+    }
+
+    function deleteAttachment(index) {
+      Swal.fire({
+        title: 'ยืนยันลบไฟล์แนบ?',
+        text: `คุณต้องการลบไฟล์ "${kase.attachments[index].name}" ออกจากสำนวนใช่หรือไม่?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ลบไฟล์',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#DC2626'
+      }).then(res => {
+        if (res.isConfirmed) {
+          kase.attachments.splice(index, 1);
+          ECMIS.saveCases();
+          renderAttachments();
+          ECMIS.toastOk('ลบไฟล์แนบเรียบร้อยแล้ว');
+        }
+      });
+    }
+
+    function handleFileUpload() {
+      const input = document.getElementById('fileInputAttach');
+      if (!input.files || !input.files.length) {
+        ECMIS.toastWarn('กรุณาเลือกไฟล์ที่ต้องการอัปโหลด');
+        return;
+      }
+
+      const files = Array.from(input.files);
+      const subLabel = 'คณะอนุกรรมการสนับสนุนเลขาธิการฯ';
+
+      files.forEach(f => {
+        const sizeStr = f.size > 1024 * 1024
+          ? (f.size / (1024 * 1024)).toFixed(1) + ' MB'
+          : (f.size / 1024).toFixed(0) + ' KB';
+
+        kase.attachments.push({
+          name: f.name,
+          size: sizeStr,
+          date: 'วันนี้',
+          uploader: `คณะอนุกรรมการฯ (${'คณะอนุกรรมการสนับสนุนเลขาธิการฯ'})`,
+          isDefault: false
+        });
+      });
+
+      ECMIS.saveCases();
+      renderAttachments();
+      input.value = '';
+      document.getElementById('uploadBox').classList.add('d-none');
+      ECMIS.toastOk(`อัปโหลดไฟล์แนบ ${files.length} รายการเรียบร้อยแล้ว`);
+    }
+
+    function onDecisionChange() {
+      const dec = document.querySelector('input[name="supportDecision"]:checked')?.value || 'AGREE';
+      document.getElementById('dissentReasonBox').classList.toggle('d-none', dec !== 'DIFFER');
+      document.getElementById('moreInfoBox').classList.toggle('d-none', dec !== 'MORE_INFO');
+    }
+
+    function selectedTeam() {
+      const el = document.querySelector('input[name="supportTeam"]:checked');
+      return el ? el.value : 'TEAM1';
+    }
+
+    function renderDoc() {
+      const M = ECMIS.mergeField;
+      const subLabel = 'คณะอนุกรรมการสนับสนุนเลขาธิการฯ';
+      const dec = document.querySelector('input[name="supportDecision"]:checked')?.value || 'AGREE';
+      const opinion = document.getElementById('supportOpinion').value.trim();
+      const dissent = document.getElementById('dissentReason').value.trim();
+      const lawEl = document.getElementById('supportLaw');
+      const lawTxt = lawEl && lawEl.selectedIndex > 0 ? lawEl.options[lawEl.selectedIndex].text : '';
+
+      const DEC_TXT = {
+        AGREE: 'เห็นพ้องกับความเห็นของผู้รับผิดชอบสำนวน (มีมูลความผิด) และเห็นควรเสนอเลขาธิการ ป.ป.ท. เพื่อพิจารณาเสนอประธานกรรมการ ป.ป.ท. บรรจุวาระการประชุมต่อไป (อ้างอิง ม.24 / ม.28)',
+        DIFFER: 'เห็นต่างจากความเห็นของผู้รับผิดชอบสำนวน โดยเห็นควรไม่รับเรื่องหรือสั่งจำหน่ายเรื่องตามข้อกฎหมาย (อ้างอิง ม.28 ประกอบ ม.25 / ม.26)',
+        MORE_INFO: 'เห็นควรให้ผู้รับผิดชอบสำนวนแสวงหาข้อเท็จจริงหรือพยานหลักฐานเพิ่มเติมก่อนเสนอเลขาธิการ ป.ป.ท. (อ้างอิง ม.18 / ม.23)',
+        RETURN: 'เห็นควรส่งคืนสายงานต้นทาง (กจ.5) เพื่อปรับปรุงสำนวนให้ถูกต้องครบถ้วน'
+      };
+
+      const docPaperEl = document.getElementById('docPaper');
+      if (!docPaperEl) return;
+
+      docPaperEl.innerHTML = `
+        <div class="doc-paper doc-resolution a4-paper active-page" id="docPaperPage">
+          <div class="doc-secret">ลับ</div>
+          <div class="doc-title">
+            <div class="doc-title-l1">บันทึกข้อความความเห็นการกลั่นกรอง</div>
+            <div class="doc-title-l2">คณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
+          </div>
+          <div class="doc-sub">สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
+
+          <div class="doc-row"><span class="k">เรื่องที่</span> ${M(kase.id)}</div>
+          <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+          <div class="doc-row"><span class="k">ผู้รับผิดชอบ</span> ${M(kase.owner || '-')} (${M(kase.ownerOrg || '-')})</div>
+
+          <div class="doc-body-indent">
+            <div class="doc-h">ผู้ถูกร้อง</div>
+            ${(kase.accused || []).map(a => `<div>${a.no || 1}. ${M(a.name)} ${a.pos ? `— ${M(a.pos)}` : ''}</div>`).join('')}
+
+            <div class="doc-h">ข้อกล่าวหา</div>
+            <div class="doc-indent">${M(kase.allegation)}</div>
+
+            <div class="doc-h">ผลการพิจารณากลั่นกรองของคณะอนุกรรมการสนับสนุนเลขาธิการฯ</div>
+            <div class="doc-indent"><strong>${M(DEC_TXT[dec])}</strong></div>
+
+            ${dec === 'DIFFER' ? `
+            <div class="doc-h text-danger">ข้อกฎหมายและเหตุผลในการแย้งความเห็น</div>
+            ${lawTxt ? `<div class="doc-indent text-danger"><strong>ฐานกฎหมายอ้างอิง:</strong> ${M(lawTxt)}</div>` : ''}
+            <div class="doc-indent text-danger">${M(dissent, '…………………………………… (ระบุเหตุผลแย้งโดยละเอียด)')}</div>` : ''}
+
+            <div class="doc-h">ความเห็นและข้อสังเกตประกอบ</div>
+            <div class="doc-indent">${M(opinion, '…………………………………… (ระบุความเห็นกลั่นกรอง)')}</div>
+          </div>
+
+          <div class="doc-sign" style="margin-top:2rem">
+            (นางสาวจิราพร นิติกิจ)<br>
+            ประธานคณะอนุกรรมการสนับสนุนเลขาธิการฯ
+          </div>
+        </div>
+      `;
+      updatePaginationUI();
+      applyZoom();
+    }
+
+    function renderActionButtons() {
+      if (isReadOnly) {
+        let buttons = [
+          { act: 'back', label: 'ย้อนกลับหน้ารายการ', icon: 'fa-arrow-left', cls: 'btn-outline-secondary' },
+          { act: 'print', label: 'พิมพ์เอกสารความเห็น', icon: 'fa-print', cls: 'btn-navy' }
+        ];
+        document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buttons, { forceAllowed: true });
+        document.querySelectorAll('.action-bar [data-act]').forEach(b =>
+          b.addEventListener('click', () => handle(b.dataset.act)));
+        return;
+      }
+
+      const dec = document.querySelector('input[name="supportDecision"]:checked')?.value || 'AGREE';
+      let buttons = [
+        { act: 'save', label: 'บันทึกร่างความเห็น', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' }
+      ];
+
+      if (dec === 'MORE_INFO') {
+        buttons.push({ act: 'request_more', label: 'ส่งคำขอข้อมูลเพิ่มเติม', icon: 'fa-paper-plane', cls: 'btn-warning text-dark' });
+      } else if (dec === 'RETURN') {
+        buttons.push({ act: 'return_source', label: 'ส่งคืนสายงานต้นทาง (กจ.5)', icon: 'fa-arrow-left-long', cls: 'btn-outline-danger' });
+      } else {
+        buttons.push({ act: 'submit', label: 'เสนอความเห็นคืนเลขาธิการฯ', icon: 'fa-paper-plane', cls: 'btn-navy' });
+      }
+
+      document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buttons, { forceAllowed: true });
+      document.querySelectorAll('.action-bar [data-act]').forEach(b =>
+        b.addEventListener('click', () => handle(b.dataset.act)));
+    }
+
+    async function handle(act) {
+      if (act === 'back') {
+        location.href = returnInboxUrl;
+        return;
+      }
+      if (act === 'print') {
+        window.print();
+        return;
+      }
+
+      const subLabel = 'คณะอนุกรรมการสนับสนุนเลขาธิการฯ';
+      const dec = document.querySelector('input[name="supportDecision"]:checked')?.value || 'AGREE';
+      const op = document.getElementById('supportOpinion');
+      const dissent = document.getElementById('dissentReason');
+      const lawEl = document.getElementById('supportLaw');
+      const lawVal = lawEl ? lawEl.value : '';
+
+      if (act === 'save') {
+        await persistCase(kase, {
+          supportTeam72: 'SUB_COMMITTEE',
+          supportTeam: 'SUB_COMMITTEE',
+          supportOpinion72: op.value.trim(),
+          supportOpinion: op.value.trim(),
+          supportDecision: dec,
+          supportLaw: lawVal,
+          dissentReason: dissent.value.trim()
+        });
+        ECMIS.toastOk('บันทึกร่างความเห็นเรียบร้อย');
+        return;
+      }
+
+      if (act === 'request_more') {
+        const items = document.getElementById('moreInfoItems').value.trim();
+        if (!items) {
+          ECMIS.toastWarn('กรุณาระบุประเด็นและรายการเอกสารที่ต้องการเพิ่มเติม');
+          return;
+        }
+        ECMIS.confirmAction({
+          title: 'ส่งคำขอข้อมูลเพิ่มเติม',
+          html: `<p>สำนวน <strong>${kase.id}</strong> — แจ้งเจ้าของสำนวนจัดส่งข้อมูลเพิ่มเติมภายใน ${document.getElementById('moreInfoDays').value} วัน</p>`,
+          confirmText: 'ยืนยันส่งคำขอ'
+        }).then(async res => {
+          if (!res.isConfirmed) return;
+          await persistCase(kase, {
+            supportTeam72: 'SUB_COMMITTEE',
+            supportTeam: 'SUB_COMMITTEE',
+            supportOpinion72: op.value.trim(),
+            supportOpinion: op.value.trim(),
+            supportDecision: dec,
+            supportLaw: lawVal,
+            dissentReason: dissent.value.trim(),
+            moreInfoItems: items,
+            status: 'IN_SUPPORT_SUB'
+          });
+          ECMIS.toastOk('ส่งคำขอข้อมูลเพิ่มเติมเรียบร้อย');
+          setTimeout(() => location.href = returnInboxUrl, 1400);
+        });
+        return;
+      }
+
+      if (act === 'return_source') {
+        if (!op.value.trim()) {
+          op.classList.add('is-invalid-ecmis');
+          document.querySelector('.val-msg[data-for="supportOpinion"]').classList.add('show');
+          ECMIS.toastWarn('กรุณาระบุเหตุผลการส่งคืนสายงานต้นทาง');
+          return;
+        }
+        ECMIS.confirmAction({
+          title: 'ส่งคืนสายงานต้นทาง (กจ.5)',
+          html: `<p>สำนวน <strong>${kase.id}</strong> จะถูกตีกลับไปยังหน่วยงานต้นทาง</p>`,
+          confirmText: 'ยืนยันส่งคืน'
+        }).then(async res => {
+          if (!res.isConfirmed) return;
+          await persistCase(kase, {
+            supportTeam72: 'SUB_COMMITTEE',
+            supportTeam: 'SUB_COMMITTEE',
+            supportOpinion72: op.value.trim(),
+            supportOpinion: op.value.trim(),
+            supportDecision: dec,
+            status: isRuling ? 'RETURNED_72' : 'RETURNED'
+          });
+          ECMIS.toastOk('ส่งคืนสำนวนเรียบร้อย');
+          setTimeout(() => location.href = returnInboxUrl, 1400);
+        });
+        return;
+      }
+
+      if (act === 'submit') {
+        if (dec === 'DIFFER') {
+          if (!lawVal) {
+            lawEl.classList.add('is-invalid-ecmis');
+            document.querySelector('.val-msg[data-for="supportLaw"]').classList.add('show');
+            ECMIS.toastWarn('กรุณาเลือกมาตราที่ใช้อ้างอิงประกอบความเห็นแย้ง');
+            return;
+          }
+          lawEl.classList.remove('is-invalid-ecmis');
+          document.querySelector('.val-msg[data-for="supportLaw"]').classList.remove('show');
+
+          if (!dissent.value.trim()) {
+            dissent.classList.add('is-invalid-ecmis');
+            document.querySelector('.val-msg[data-for="dissentReason"]').classList.add('show');
+            ECMIS.toastWarn('กรณีมีความเห็นแย้ง กรุณาระบุเหตุผลในการแย้งความเห็นโดยละเอียด');
+            return;
+          }
+          dissent.classList.remove('is-invalid-ecmis');
+          document.querySelector('.val-msg[data-for="dissentReason"]').classList.remove('show');
+        }
+
+        if (!op.value.trim()) {
+          op.classList.add('is-invalid-ecmis');
+          document.querySelector('.val-msg[data-for="supportOpinion"]').classList.add('show');
+          ECMIS.toastWarn('กรุณาระบุความเห็นกลั่นกรองก่อนส่งกลับเลขาธิการฯ');
+          return;
+        }
+        op.classList.remove('is-invalid-ecmis');
+        document.querySelector('.val-msg[data-for="supportOpinion"]').classList.remove('show');
+
+        const isFastTrack = (dec === 'AGREE');
+        const nextMsg = isFastTrack
+          ? 'เห็นพ้องกับความเห็นเดิม — เลขาธิการฯ สามารถใช้สิทธิ์ Fast-track บรรจุวาระด่วนตรงถึงประธานฯ ได้ (ม.24/ม.28)'
+          : `มีความเห็นแย้งตาม ${lawVal ? 'ม.' + lawVal : 'ข้อกฎหมาย'} — ส่งผลกลั่นกรองกลับเลขาธิการฯ เพื่อพิจารณาสั่งการตาม ม.28`;
+
+        ECMIS.confirmAction({
+          title: 'เสนอความเห็นคืนเลขาธิการ ป.ป.ท.',
+          html: `<p>สำนวน <strong>${kase.id}</strong> — กลั่นกรองโดย <strong>${'คณะอนุกรรมการสนับสนุนเลขาธิการฯ'}</strong><br><small class="text-muted">${nextMsg}</small></p>`,
+          confirmText: 'ยืนยันเสนอความเห็นคืนเลขาธิการฯ'
+        }).then(async res => {
+          if (!res.isConfirmed) return;
+          await persistCase(kase, {
+            supportTeam72: 'SUB_COMMITTEE',
+            supportTeam: 'SUB_COMMITTEE',
+            supportOpinion72: op.value.trim(),
+            supportOpinion: op.value.trim(),
+            supportDecision: dec,
+            supportLaw: lawVal,
+            dissentReason: dissent.value.trim(),
+            status: isRuling ? 'PENDING_SECGEN_72' : 'PENDING_SECGEN'
+          });
+
+          ECMIS.toastOk('เสนอความเห็นคืนเลขาธิการฯ เรียบร้อย — ส่งกลับเข้าคิวพิจารณาของเลขาธิการฯ แล้ว');
+          setTimeout(() => location.href = 'approval-review.html?case=' + encodeURIComponent(kase.id), 1400);
+        });
+      }
+    }
+
+    /* ---------- Master Toolbar & Pagination Controls ---------- */
+    let docViewMode = 'SINGLE';
+    let docCurrentPage = 1;
+    let docTotalPages = 1;
+    let docZoomLevel = 0.75;
+
+    function updatePaginationUI() {
+      const docPaperEl = document.getElementById('docPaper');
+      if (!docPaperEl) return;
+      const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
+      docTotalPages = Math.max(1, pages.length);
+
+      if (docCurrentPage > docTotalPages) docCurrentPage = docTotalPages;
+      if (docCurrentPage < 1) docCurrentPage = 1;
+
+      $('#totalPagesText').text(`/ ${docTotalPages} หน้า`);
+      $('#pageNumberInput').attr('max', docTotalPages).val(docCurrentPage);
+
+      if (docViewMode === 'SINGLE') {
+        docPaperEl.classList.remove('mode-continuous');
+        docPaperEl.classList.add('mode-single');
+        pages.forEach((p, idx) => {
+          if (idx + 1 === docCurrentPage) {
+            p.classList.add('active-page');
+            p.style.display = 'block';
+          } else {
+            p.classList.remove('active-page');
+            p.style.display = 'none';
+          }
+        });
+        $('#btnModeSingle').removeClass('btn-outline-light').addClass('btn-primary');
+        $('#btnModeContinuous').removeClass('btn-primary').addClass('btn-outline-light');
+        $('#btnFirstPage, #btnPrevPage').prop('disabled', docCurrentPage === 1);
+        $('#btnNextPage, #btnLastPage').prop('disabled', docCurrentPage === docTotalPages);
+        $('#pageNumberInput').prop('disabled', false);
+        const stage = document.getElementById('docPaperStage');
+        if (stage) stage.scrollTop = 0;
+      } else {
+        docPaperEl.classList.remove('mode-single');
+        docPaperEl.classList.add('mode-continuous');
+        pages.forEach(p => {
+          p.classList.add('active-page');
+          p.style.display = 'block';
+        });
+        $('#btnModeContinuous').removeClass('btn-outline-light').addClass('btn-primary');
+        $('#btnModeSingle').removeClass('btn-primary').addClass('btn-outline-light');
+        $('#btnFirstPage, #btnPrevPage, #btnNextPage, #btnLastPage, #pageNumberInput').prop('disabled', true);
+      }
+      applyZoom();
+    }
+
+    function applyZoom() {
+      const docPaperEl = document.getElementById('docPaper');
+      if (!docPaperEl) return;
+      docPaperEl.style.transform = `scale(${docZoomLevel})`;
+      docPaperEl.style.transformOrigin = 'top center';
+      $('#zoomLevelText').text(`${Math.round(docZoomLevel * 100)}%`);
+
+      // Adjust wrapper height so stage scrolling is natural
+      const stage = document.getElementById('docPaperStage');
+      if (stage) {
+        const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
+        if (pages.length > 0) {
+          if (docViewMode === 'SINGLE') {
+            const activeP = docPaperEl.querySelector('.doc-paper.active-page, .a4-paper.active-page') || pages[0];
+            const h = activeP ? (activeP.offsetHeight || 1123) : 1123;
+            docPaperEl.style.height = `${Math.round(h * docZoomLevel)}px`;
+          } else {
+            let totalH = 0;
+            pages.forEach(p => { totalH += (p.offsetHeight || 1123) + 18; });
+            docPaperEl.style.height = `${Math.round(totalH * docZoomLevel)}px`;
+          }
+        }
+      }
+    }
+
+    $('#btnModeSingle').on('click', function () {
+      docViewMode = 'SINGLE';
+      updatePaginationUI();
+    });
+
+    $('#btnModeContinuous').on('click', function () {
+      docViewMode = 'CONTINUOUS';
+      updatePaginationUI();
+    });
+
+    $('#btnFirstPage').on('click', function () {
+      if (docCurrentPage > 1) {
+        docCurrentPage = 1;
+        updatePaginationUI();
+      }
+    });
+
+    $('#btnPrevPage').on('click', function () {
+      if (docCurrentPage > 1) {
+        docCurrentPage--;
+        updatePaginationUI();
+      }
+    });
+
+    $('#btnNextPage').on('click', function () {
+      if (docCurrentPage < docTotalPages) {
+        docCurrentPage++;
+        updatePaginationUI();
+      }
+    });
+
+    $('#btnLastPage').on('click', function () {
+      if (docCurrentPage < docTotalPages) {
+        docCurrentPage = docTotalPages;
+        updatePaginationUI();
+      }
+    });
+
+    $('#pageNumberInput').on('change', function () {
+      let val = parseInt($(this).val(), 10);
+      if (isNaN(val) || val < 1) val = 1;
+      if (val > docTotalPages) val = docTotalPages;
+      docCurrentPage = val;
+      updatePaginationUI();
+    });
+
+    $('#btnZoomIn').on('click', function () {
+      docZoomLevel = Math.min(1.5, Math.round((docZoomLevel + 0.08) * 100) / 100);
+      applyZoom();
+    });
+
+    $('#btnZoomOut').on('click', function () {
+      docZoomLevel = Math.max(0.35, Math.round((docZoomLevel - 0.08) * 100) / 100);
+      applyZoom();
+    });
+
+    $('#btnDocx').on('click', function () {
+      const caseSafeId = (kase && kase.id ? kase.id : 'case').replace(/[\/\\:]/g, '-');
+      const filename = `บันทึกความเห็น_คณะอนุกรรมการสนับสนุนเลขาธิการฯ_เรื่องที่_${caseSafeId}.docx`;
+      ECMIS.exportDocToDocx(document.getElementById('docPaper'), filename);
+    });
+
+    // Pane collapse toggle
+    const PANE_KEY = 'ecmis-support-subcommittee-docpane-collapsed';
+    function setPaneCollapsed(collapsed) {
+      document.body.classList.toggle('docpane-collapsed', collapsed);
+      const docWorkspace = document.getElementById('docWorkspace');
+      if (docWorkspace) docWorkspace.classList.toggle('pane-collapsed', collapsed);
+      try { localStorage.setItem(PANE_KEY, collapsed ? '1' : '0'); } catch (e) { }
+    }
+    $('#btnPaneCollapse').on('click', () => setPaneCollapsed(true));
+    $('#btnPaneExpand').on('click', () => setPaneCollapsed(false));
+    try {
+      if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
+    } catch (e) { }
+
+    const mayEdit = ECMIS.canEditMaster(role.id) || ['support_sub', 'sup_chair', 'sup_sec', 'sup_asst', 'secgen', 'affairs'].includes(role.id);
+    ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: mayEdit });
+  </script>
+</body>
+
+</html>

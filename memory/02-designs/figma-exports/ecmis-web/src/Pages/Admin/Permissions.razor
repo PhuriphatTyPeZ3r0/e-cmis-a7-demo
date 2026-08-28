@@ -1,0 +1,26 @@
+@page "/admin/permissions"
+@inject NavigationManager Nav
+
+<PageTitle>มอบสิทธิ์ให้ผู้ใช้งาน — E-CMIS</PageTitle>
+
+<div style="padding:48px;text-align:center;color:var(--text-muted)">
+    <i class="bi bi-arrow-clockwise" style="animation:spin 1s linear infinite;font-size:28px"></i>
+    <div style="margin-top:12px;font-size:14px">กำลังไปหน้าตั้งค่าเมนูและสิทธิ์...</div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        var tab = "assign-users";
+        var q = Nav.Uri.Contains('?') ? Nav.Uri.Split('?', 2)[1] : "";
+        foreach (var part in q.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (part.StartsWith("tab=", StringComparison.OrdinalIgnoreCase))
+            {
+                tab = Uri.UnescapeDataString(part["tab=".Length..]);
+                break;
+            }
+        }
+        Nav.NavigateTo($"/super-admin/systems?tab={Uri.EscapeDataString(tab)}", replace: true);
+    }
+}

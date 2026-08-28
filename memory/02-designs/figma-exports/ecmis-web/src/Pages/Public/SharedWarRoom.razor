@@ -1,0 +1,27 @@
+@page "/share/warroom/{Token}"
+@layout BlankLayout
+@using EcmisWeb.Services
+
+@if (_valid)
+{
+    <EcmisWeb.Pages.Analytics.Index ShareMode="true" />
+}
+else
+{
+    <div class="swr-expired font-sarabun">
+        <div class="swr-card">
+            <i class="bi bi-clock-history"></i>
+            <h2>ลิงก์หมดอายุหรือไม่ถูกต้อง</h2>
+            <p>กรุณาติดต่อเจ้าหน้าที่เพื่อขอลิงก์เข้าดูใหม่</p>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Token { get; set; } = "";
+
+    private bool _valid;
+
+    protected override void OnInitialized()
+        => _valid = ShareToken.IsValid(Token, DateTime.UtcNow);
+}

@@ -1,0 +1,167 @@
+@page "/admin/news-categories"
+@using EcmisWeb.Services
+@inject CentralSupportApiService CentralSupportApi
+
+<PageTitle>จัดการหมวดหมู่ข่าว — E-CMIS Admin</PageTitle>
+
+<div style="max-width:700px">
+    <div style="background:linear-gradient(135deg,var(--navy-deep),var(--navy));border-radius:14px;padding:20px 24px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+            <i class="bi bi-tags-fill" style="color:var(--gold);font-size:20px"></i>
+            <div style="font-size:18px;font-weight:800;color:#fff">จัดการหมวดหมู่ข่าว</div>
+        </div>
+        <div style="font-size:12px;color:rgba(255,255,255,.5)">News Categories — Central Support</div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:14px">
+            <i class="bi bi-exclamation-triangle-fill"></i> @error
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(successMsg))
+    {
+        <div style="background:#ecfdf5;color:#065f46;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin-bottom:14px">
+            <i class="bi bi-check-circle-fill"></i> @successMsg
+        </div>
+    }
+
+    @* Add form *@
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(15,23,42,.04)">
+        <div style="font-size:14px;font-weight:800;color:var(--navy-deep);margin-bottom:10px">เพิ่มหมวดหมู่ใหม่</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input @bind="newName" placeholder="ชื่อหมวดหมู่"
+                   style="flex:1;min-width:160px;border:1px solid #d7dde8;border-radius:8px;padding:8px 10px;outline:none" />
+            <input @bind="newSortOrder" type="number" placeholder="ลำดับ"
+                   style="width:80px;border:1px solid #d7dde8;border-radius:8px;padding:8px 10px;outline:none" />
+            <button class="btn-navy" @onclick="AddCategory" disabled="@submitting">
+                <i class="bi bi-plus-lg"></i> เพิ่ม
+            </button>
+        </div>
+    </div>
+
+    @* Category list *@
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.04)">
+        @if (loading)
+        {
+            <div style="padding:28px;text-align:center;color:#94a3b8">กำลังโหลด...</div>
+        }
+        else if (categories.Count == 0)
+        {
+            <div style="padding:28px;text-align:center;color:#94a3b8">ยังไม่มีหมวดหมู่</div>
+        }
+        else
+        {
+            @foreach (var cat in categories.OrderBy(c => c.SortOrder).ThenBy(c => c.Name))
+            {
+                @if (editingId == cat.Id)
+                {
+                    <div style="padding:12px 16px;border-bottom:1px solid #f1f5f9;background:#f8fafc;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                        <input @bind="editName" style="flex:1;min-width:120px;border:1px solid #d7dde8;border-radius:6px;padding:6px 10px;outline:none" />
+                        <input @bind="editSortOrder" type="number" style="width:70px;border:1px solid #d7dde8;border-radius:6px;padding:6px 10px;outline:none" />
+                        <label style="display:flex;align-items:center;gap:4px;font-size:13px">
+                            <input type="checkbox" @bind="editIsActive" /> เปิดใช้งาน
+                        </label>
+                        <button class="btn-navy" style="font-size:12px;padding:6px 10px" @onclick="SaveEdit" disabled="@submitting">บันทึก</button>
+                        <button class="btn-outline-navy" style="font-size:12px;padding:6px 10px" @onclick="CancelEdit">ยกเลิก</button>
+                    </div>
+                }
+                else
+                {
+                    <div style="padding:12px 16px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:10px">
+                        <span style="width:28px;text-align:center;font-size:12px;color:#94a3b8;font-weight:700">@cat.SortOrder</span>
+                        <span style="flex:1;font-weight:700;color:var(--navy-deep)">@cat.Name</span>
+                        @if (!cat.IsActive)
+                        {
+                            <span class="badge bg-secondary" style="font-size:10px">ปิดใช้งาน</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success" style="font-size:10px">เปิดใช้งาน</span>
+                        }
+                        <button class="btn-outline-navy" style="font-size:12px;padding:5px 10px" @onclick="() => StartEdit(cat)">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </div>
+                }
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private List<NewsCategoryDto> categories = new();
+    private int? editingId;
+    private string newName = "";
+    private int newSortOrder;
+    private string editName = "";
+    private int editSortOrder;
+    private bool editIsActive;
+    private bool loading = true;
+    private bool submitting;
+    private string error = "";
+    private string successMsg = "";
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    private async Task Load()
+    {
+        loading = true;
+        error = "";
+        try
+        {
+            categories = await CentralSupportApi.GetNewsCategoriesAsync();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task AddCategory()
+    {
+        if (string.IsNullOrWhiteSpace(newName)) { error = "กรุณาระบุชื่อหมวดหมู่"; return; }
+        submitting = true;
+        error = "";
+        try
+        {
+            await CentralSupportApi.CreateNewsCategoryAsync(newName, newSortOrder);
+            successMsg = "เพิ่มหมวดหมู่แล้ว";
+            newName = "";
+            newSortOrder = 0;
+            await Load();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { submitting = false; }
+    }
+
+    private void StartEdit(NewsCategoryDto cat)
+    {
+        editingId = cat.Id;
+        editName = cat.Name;
+        editSortOrder = cat.SortOrder;
+        editIsActive = cat.IsActive;
+    }
+
+    private void CancelEdit() => editingId = null;
+
+    private async Task SaveEdit()
+    {
+        if (editingId is null) return;
+        submitting = true;
+        error = "";
+        try
+        {
+            await CentralSupportApi.UpdateNewsCategoryAsync(editingId.Value, editName, editSortOrder, editIsActive);
+            successMsg = "อัปเดตหมวดหมู่แล้ว";
+            editingId = null;
+            await Load();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { submitting = false; }
+    }
+}

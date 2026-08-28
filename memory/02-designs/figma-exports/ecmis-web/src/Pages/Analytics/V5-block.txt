@@ -1,0 +1,362 @@
+        else if (SelectedVersion == 5)
+        {
+            @* ═══════════════════════════════════════════════════════════
+               VERSION 5: NOC Crisis Center (Red/Orange Theme)
+               ─────────────────────────────────────────────────────────
+               Theme: Red/Orange  |  Persona: Crisis Manager/NOC Operator
+               Focus: Live alerts, Crisis map, Multi-agency coordination,
+                      Incident timeline, Escalation matrix, Resource deployment
+               ═══════════════════════════════════════════════════════════ *@
+
+            @* ── ROW 1: LIVE ALERTS / CRISIS MAP + AGENCY BOARD / KPI + SLA + TEAMS ── *@
+            <div class="wr-grid-top">
+
+                @* 1. LIVE NOC ALERT STREAM *@
+                <div class="table-card an-flex-card panel-glow" style="border:1px solid rgba(239,68,68,0.25);display:flex;flex-direction:column;min-height:0;">
+                    <div class="tc-head" style="border-bottom-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.06);">
+                        <div class="tc-row1">
+                            <div class="tc-title" style="color:#f87171;"><span class="wr-live-dot" style="margin-right:6px;"></span> LIVE NOC ALERT STREAM</div>
+                            <span style="background:#ef4444;color:#fff;font-weight:900;font-size:0.6rem;padding:3px 10px;border-radius:4px;animation:an-pulse 1.2s infinite;">LIVE</span>
+                        </div>
+                        @* Filter buttons *@
+                        <div style="display:flex;gap:4px;margin-top:8px;">
+                            <button class="fbtn @(_v5AlertFilter == "ALL" ? "active" : "")" style="@(_v5AlertFilter == "ALL" ? "background:rgba(239,68,68,0.2);border-color:rgba(239,68,68,0.4);color:#f87171;" : "")" @onclick="() => SetV5AlertFilter("ALL")">ALL</button>
+                            <button class="fbtn @(_v5AlertFilter == "CRITICAL" ? "active" : "")" style="@(_v5AlertFilter == "CRITICAL" ? "background:rgba(239,68,68,0.2);border-color:rgba(239,68,68,0.4);color:#f87171;" : "")" @onclick="() => SetV5AlertFilter("CRITICAL")">CRITICAL</button>
+                            <button class="fbtn @(_v5AlertFilter == "HIGH" ? "active" : "")" style="@(_v5AlertFilter == "HIGH" ? "background:rgba(245,158,11,0.2);border-color:rgba(245,158,11,0.4);color:#fbbf24;" : "")" @onclick="() => SetV5AlertFilter("HIGH")">HIGH</button>
+                            <button class="fbtn @(_v5AlertFilter == "MEDIUM" ? "active" : "")" style="@(_v5AlertFilter == "MEDIUM" ? "background:rgba(59,130,246,0.2);border-color:rgba(59,130,246,0.4);color:#60a5fa;" : "")" @onclick="() => SetV5AlertFilter("MEDIUM")">MEDIUM</button>
+                        </div>
+                    </div>
+                    <div class="an-scroll" style="padding:8px;display:flex;flex-direction:column;gap:6px;background:rgba(0,0,0,0.1);flex:1;min-height:0;">
+                        @foreach (var alert in V5FilteredAlerts)
+                        {
+                            var borderColor = alert.Level == "red" ? "#ef4444" : alert.Level == "amber" ? "#f59e0b" : "#3b82f6";
+                            var dotAnim = alert.Level == "red" ? "animation:an-pulse 1.2s infinite;" : "";
+                            <div class="an-alert-row" style="border-left:3px solid @borderColor;background:rgba(15,23,42,0.5);border-radius:0 8px 8px 0;padding:8px 10px;display:flex;align-items:flex-start;gap:10px;">
+                                <div style="width:8px;height:8px;background:@borderColor;border-radius:50%;flex-shrink:0;margin-top:4px;@dotAnim"></div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+                                        <strong style="font-size:0.74rem;color:var(--wr-text-main);font-weight:800;">@alert.Title</strong>
+                                        <span style="font-size:0.58rem;color:var(--wr-text-muted);font-family:monospace;white-space:nowrap;">@alert.Time</span>
+                                    </div>
+                                    <div style="font-size:0.62rem;color:var(--wr-text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@alert.Detail</div>
+                                </div>
+                                <span class="wr-risk-score @ScoreClass(alert.Score)" style="font-size:0.62rem;padding:2px 6px;flex-shrink:0;">@alert.Score%</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @* 2. CRISIS MAP + MULTI-AGENCY BOARD *@
+                <div class="table-card an-flex-card panel-glow" style="display:flex;flex-direction:column;min-height:0;">
+                    <div class="tc-head" style="border-bottom-color:rgba(239,68,68,0.2);">
+                        <div class="tc-row1">
+                            <div class="tc-title" style="color:#fb923c;"><i class="bi bi-geo-alt-fill" style="color:#f97316;margin-right:6px;"></i> CRISIS MAP — แผนที่เหตุการณ์ด่วน</div>
+                            <span class="v2-badge" style="background:rgba(249,115,22,0.15);color:#fb923c;border:1px solid rgba(249,115,22,0.3);">NOC MODE</span>
+                        </div>
+                    </div>
+                    <div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;padding:10px;">
+                        @* 3D Map *@
+                        <div class="wr-thai-map wr-thai-map-3d" style="min-height:200px;flex:1;position:relative;">
+                            <canvas id="thailandRiskMapV5" class="wr-thailand-canvas"></canvas>
+                            <div class="wr-map-legend">
+                                <span><i class="risk-low"></i>ต่ำ</span>
+                                <span><i class="risk-mid"></i>ปานกลาง</span>
+                                <span><i class="risk-high"></i>สูง</span>
+                                <span><i class="risk-critical"></i>วิกฤติ</span>
+                            </div>
+                            @* Blinking pin overlays *@
+                            <div style="position:absolute;left:48%;top:24%;z-index:4;">
+                                <div style="width:10px;height:10px;background:#ef4444;border-radius:50%;animation:an-pulse 1.2s infinite;box-shadow:0 0 8px #ef4444;"></div>
+                            </div>
+                            <div style="position:absolute;left:43%;top:48%;z-index:4;">
+                                <div style="width:10px;height:10px;background:#f59e0b;border-radius:50%;animation:an-pulse 1.5s infinite;box-shadow:0 0 8px #f59e0b;"></div>
+                            </div>
+                            <div style="position:absolute;right:28%;top:35%;z-index:4;">
+                                <div style="width:10px;height:10px;background:#ef4444;border-radius:50%;animation:an-pulse 1.2s infinite;box-shadow:0 0 8px #ef4444;"></div>
+                            </div>
+                        </div>
+
+                        @* Multi-Agency Board *@
+                        <div style="border:1px solid rgba(239,68,68,0.15);border-radius:8px;background:rgba(0,0,0,0.12);overflow:hidden;">
+                            <div style="padding:8px 12px;font-size:0.7rem;font-weight:800;color:#f87171;border-bottom:1px solid rgba(239,68,68,0.15);background:rgba(239,68,68,0.06);">
+                                <i class="bi bi-shield-fill-check" style="margin-right:4px;"></i> MULTI-AGENCY BOARD
+                            </div>
+                            <table class="an-tbl" style="font-size:0.72rem;">
+                                <thead>
+                                    <tr><th style="padding:6px 10px;">หน่วยงาน</th><th style="padding:6px 10px;">คดี</th><th style="padding:6px 10px;">สถานะ</th><th style="padding:6px 10px;">Action</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding:6px 10px;"><div class="an-strong" style="color:#60a5fa;font-weight:800;">ป.ป.ช.</div></td>
+                                        <td style="padding:6px 10px;color:var(--wr-text-muted);">3 คดี</td>
+                                        <td style="padding:6px 10px;"><span class="an-dot amber"></span>สอบสวน</td>
+                                        <td style="padding:6px 10px;"><button class="btn-panel-action" style="font-size:0.6rem;padding:3px 8px;" @onclick='() => ClickProvince("ประสาน ป.ป.ช.")'>ประสาน</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:6px 10px;"><div class="an-strong" style="color:#34d399;font-weight:800;">ป.ป.ท.</div></td>
+                                        <td style="padding:6px 10px;color:var(--wr-text-muted);">5 คดี</td>
+                                        <td style="padding:6px 10px;"><span class="an-dot red"></span>ลงพื้นที่</td>
+                                        <td style="padding:6px 10px;"><button class="btn-panel-action" style="font-size:0.6rem;padding:3px 8px;" @onclick='() => ClickProvince("ส่งทีม ป.ป.ท.")'>ส่งทีม</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:6px 10px;"><div class="an-strong" style="color:#a78bfa;font-weight:800;">DSI</div></td>
+                                        <td style="padding:6px 10px;color:var(--wr-text-muted);">2 คดี</td>
+                                        <td style="padding:6px 10px;"><span class="an-dot amber"></span>สืบสวน</td>
+                                        <td style="padding:6px 10px;"><button class="btn-panel-action" style="font-size:0.6rem;padding:3px 8px;" @onclick='() => ClickProvince("ประสาน DSI")'>ประสาน</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        @* Emergency Action Buttons *@
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                            <button class="btn-panel-action" style="background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#f87171;font-size:0.65rem;padding:6px 8px;" @onclick='() => ClickProvince("ส่งกองบังคับการร่วมตรวจสอบ")'><i class="bi bi-send-fill" style="margin-right:4px;"></i>ส่งทีมตรวจ</button>
+                            <button class="btn-panel-action" style="background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.3);color:#fbbf24;font-size:0.65rem;padding:6px 8px;" @onclick='() => ClickProvince("ระงับงบประมาณชั่วคราว")'><i class="bi bi-x-octagon-fill" style="margin-right:4px;"></i>ระงับงบ</button>
+                            <button class="btn-panel-action" style="background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3);color:#60a5fa;font-size:0.65rem;padding:6px 8px;" @onclick='() => ClickProvince("ประสาน ป.ป.ช. ยื่นคัดค้าน TOR")'><i class="bi bi-shield-fill-check" style="margin-right:4px;"></i>ประสาน ป.ป.ช.</button>
+                            <button class="btn-panel-action" style="background:rgba(220,38,38,0.15);border-color:rgba(220,38,38,0.4);color:#ef4444;font-size:0.65rem;padding:6px 8px;font-weight:800;" @onclick='() => ClickProvince("สั่งระงับธุรกรรม")'><i class="bi bi-exclamation-triangle-fill" style="margin-right:4px;"></i>ระงับธุรกรรม</button>
+                        </div>
+                    </div>
+                </div>
+
+                @* 3. KPI 4 CARDS + SLA GAUGE + RESPONSE TEAM STATUS *@
+                <div style="display:flex;flex-direction:column;gap:10px;min-height:0;">
+                    @* KPI 4 cards *@
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div class="table-card panel-glow" style="padding:10px;text-align:center;border-top:2px solid #ef4444;">
+                            <div style="font-size:0.58rem;color:var(--wr-text-muted);font-weight:700;letter-spacing:0.04em;">คดีดำเนินการ</div>
+                            <div style="font-size:1.3rem;font-weight:900;color:#f87171;">@KpiActiveCount.ToString("N0")</div>
+                        </div>
+                        <div class="table-card panel-glow" style="padding:10px;text-align:center;border-top:2px solid #f97316;">
+                            <div style="font-size:0.58rem;color:var(--wr-text-muted);font-weight:700;letter-spacing:0.04em;">มูลค่าเสียหาย</div>
+                            <div style="font-size:1.3rem;font-weight:900;color:#fb923c;">@KpiDamageCount.ToString("N0")</div>
+                        </div>
+                        <div class="table-card panel-glow" style="padding:10px;text-align:center;border-top:2px solid #f59e0b;">
+                            <div style="font-size:0.58rem;color:var(--wr-text-muted);font-weight:700;letter-spacing:0.04em;">Red Flag</div>
+                            <div style="font-size:1.3rem;font-weight:900;color:#fbbf24;">@FilteredAlerts.Count(a => a.Level == "red")</div>
+                        </div>
+                        <div class="table-card panel-glow" style="padding:10px;text-align:center;border-top:2px solid #10b981;">
+                            <div style="font-size:0.58rem;color:var(--wr-text-muted);font-weight:700;letter-spacing:0.04em;">ร้องเรียน</div>
+                            <div style="font-size:1.3rem;font-weight:900;color:#34d399;">@KpiTotalComplaints.ToString("N0")</div>
+                        </div>
+                    </div>
+
+                    @* SLA Gauge *@
+                    <div class="table-card an-flex-card panel-glow" style="flex:1;min-height:0;display:flex;flex-direction:column;">
+                        <div class="tc-head" style="padding:10px 14px;"><div class="tc-row1">
+                            <div class="tc-title" style="font-size:0.78rem;"><i class="bi bi-speedometer2" style="color:#f59e0b;margin-right:4px;"></i> SLA RESPONSE TIME</div>
+                            <span class="v2-badge" style="background:rgba(16,185,129,0.12);color:#34d399;border:1px solid rgba(16,185,129,0.25);">88%</span>
+                        </div></div>
+                        <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:8px;min-height:0;">
+                            <div style="width:110px;height:110px;position:relative;">
+                                <canvas id="chartSlaV5" style="width:100%;height:100%;"></canvas>
+                                <div style="position:absolute;bottom:10%;left:50%;transform:translateX(-50%);text-align:center;">
+                                    <div style="font-size:1.4rem;font-weight:900;color:#f59e0b;">88</div>
+                                    <div style="font-size:0.55rem;color:var(--wr-text-muted);">ของ 100 นาที</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Response Team Status *@
+                    <div class="table-card panel-glow" style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;">
+                        <div style="font-size:0.65rem;font-weight:800;color:#f87171;letter-spacing:0.04em;text-transform:uppercase;"><i class="bi bi-people-fill" style="margin-right:4px;"></i>Response Team Status</div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:rgba(34,197,94,0.08);border-radius:6px;border:1px solid rgba(34,197,94,0.15);">
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <span style="font-size:0.7rem;">🟢</span>
+                                <span style="font-size:0.72rem;font-weight:700;color:#34d399;">ทีม ป.ป.ท.</span>
+                            </div>
+                            <span style="font-size:0.6rem;color:var(--wr-text-muted);">พร้อม (ETA 5 นาที)</span>
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:rgba(245,158,11,0.08);border-radius:6px;border:1px solid rgba(245,158,11,0.15);">
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <span style="font-size:0.7rem;">🟡</span>
+                                <span style="font-size:0.72rem;font-weight:700;color:#fbbf24;">ทีม DSI</span>
+                            </div>
+                            <span style="font-size:0.6rem;color:var(--wr-text-muted);">กำลังเดินทาง (ETA 15 นาที)</span>
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:rgba(239,68,68,0.08);border-radius:6px;border:1px solid rgba(239,68,68,0.15);">
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <span style="font-size:0.7rem;">🔴</span>
+                                <span style="font-size:0.72rem;font-weight:700;color:#f87171;">ทีม ป.ป.ช.</span>
+                            </div>
+                            <span style="font-size:0.6rem;color:var(--wr-text-muted);">รอ mobilize (ETA 45 นาที)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* ── ROW 2: INCIDENT TIMELINE / ESCALATION MATRIX / RESOURCE DEPLOYMENT ── *@
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px;">
+
+                @* 1. INCIDENT TIMELINE *@
+                <div class="table-card an-flex-card panel-glow" style="display:flex;flex-direction:column;min-height:0;">
+                    <div class="tc-head" style="padding:10px 14px;"><div class="tc-row1">
+                        <div class="tc-title" style="font-size:0.78rem;color:#fb923c;"><i class="bi bi-clock-history" style="margin-right:4px;"></i> INCIDENT TIMELINE — 24 ชม. ล่าสุด</div>
+                    </div></div>
+                    <div style="flex:1;min-height:0;overflow-y:auto;padding:12px 14px;">
+                        <div style="display:flex;flex-direction:column;gap:0;position:relative;">
+                            @* Vertical connecting line *@
+                            <div style="position:absolute;left:11px;top:8px;bottom:8px;width:2px;background:rgba(239,68,68,0.2);border-radius:1px;"></div>
+                            @foreach (var evt in V5TimelineEvents)
+                            {
+                                <div style="display:flex;align-items:flex-start;gap:12px;padding:8px 0;position:relative;">
+                                    <div style="width:24px;height:24px;border-radius:50%;background:@(evt.IsCritical ? "rgba(239,68,68,0.15)" : "rgba(245,158,11,0.15)");border:2px solid @(evt.IsCritical ? "#ef4444" : "#f59e0b");display:flex;align-items:center;justify-content:center;flex-shrink:0;z-index:1;">
+                                        <div style="width:8px;height:8px;border-radius:50%;background:@(evt.IsCritical ? "#ef4444" : "#f59e0b");@(evt.IsCritical ? "animation:an-pulse 1.2s infinite;" : "")"></div>
+                                    </div>
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+                                            <strong style="font-size:0.74rem;color:var(--wr-text-main);font-weight:800;">@evt.Title</strong>
+                                            <span style="font-size:0.58rem;color:var(--wr-text-muted);font-family:monospace;white-space:nowrap;">@evt.Time</span>
+                                        </div>
+                                        <div style="font-size:0.62rem;color:var(--wr-text-muted);margin-top:2px;">@evt.Description</div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                @* 2. ESCALATION MATRIX *@
+                <div class="table-card an-flex-card panel-glow" style="display:flex;flex-direction:column;min-height:0;">
+                    <div class="tc-head" style="padding:10px 14px;"><div class="tc-row1">
+                        <div class="tc-title" style="font-size:0.78rem;color:#f87171;"><i class="bi bi-diagram-3-fill" style="margin-right:4px;"></i> ESCALATION MATRIX</div>
+                    </div></div>
+                    <div style="flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:14px;gap:10px;">
+                        @* Flow steps *@
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            @for (int i = 0; i < V5EscalationLevels.Count; i++)
+                            {
+                                var level = V5EscalationLevels[i];
+                                var isLast = i == V5EscalationLevels.Count - 1;
+                                var stepColor = i == 0 ? "#3b82f6" : i == 1 ? "#f59e0b" : i == 2 ? "#f97316" : "#ef4444";
+                                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+                                    <div style="width:36px;height:36px;border-radius:50%;background:rgba(239,68,68,0.1);border:2px solid @stepColor;display:flex;align-items:center;justify-content:center;color:@stepColor;font-size:0.75rem;font-weight:900;">
+                                        @level.Count
+                                    </div>
+                                    <div style="font-size:0.62rem;font-weight:700;color:@stepColor;text-align:center;white-space:nowrap;">@level.Label</div>
+                                </div>
+                                @if (!isLast)
+                                {
+                                    <div style="color:rgba(239,68,68,0.4);font-size:0.8rem;margin-top:-16px;"><i class="bi bi-chevron-right"></i></div>
+                                }
+                            }
+                        </div>
+                        @* Progress bar *@
+                        <div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;display:flex;margin-top:4px;">
+                            @{
+                                var totalEsc = V5EscalationLevels.Sum(l => l.Count);
+                                var escColors = new[] { "#3b82f6", "#f59e0b", "#f97316", "#ef4444" };
+                            }
+                            @for (int i = 0; i < V5EscalationLevels.Count; i++)
+                            {
+                                var pct = totalEsc > 0 ? (double)V5EscalationLevels[i].Count * 100 / totalEsc : 0;
+                                <div style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%;height:100%;background:@escColors[i];transition:width 0.6s ease;"></div>
+                            }
+                        </div>
+                        @* Summary stats *@
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
+                            <div style="text-align:center;padding:8px;background:rgba(239,68,68,0.06);border-radius:6px;border:1px solid rgba(239,68,68,0.12);">
+                                <div style="font-size:0.9rem;font-weight:900;color:#f87171;">@V5EscalationLevels.Last().Count</div>
+                                <div style="font-size:0.58rem;color:var(--wr-text-muted);">ดำเนินคดีแล้ว</div>
+                            </div>
+                            <div style="text-align:center;padding:8px;background:rgba(245,158,11,0.06);border-radius:6px;border:1px solid rgba(245,158,11,0.12);">
+                                <div style="font-size:0.9rem;font-weight:900;color:#fbbf24;">@totalEsc</div>
+                                <div style="font-size:0.58rem;color:var(--wr-text-muted);">รวมทั้งหมด</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* 3. RESOURCE DEPLOYMENT *@
+                <div class="table-card an-flex-card panel-glow" style="display:flex;flex-direction:column;min-height:0;">
+                    <div class="tc-head" style="padding:10px 14px;"><div class="tc-row1">
+                        <div class="tc-title" style="font-size:0.78rem;color:#fbbf24;"><i class="bi bi-calendar-week-fill" style="margin-right:4px;"></i> RESOURCE DEPLOYMENT</div>
+                    </div></div>
+                    <div style="flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:14px;gap:14px;">
+                        @foreach (var team in V5ResourceTeams)
+                        {
+                            var barPct = team.MaxDays > 0 ? (double)team.UsedDays * 100 / team.MaxDays : 0;
+                            var barColor = barPct >= 80 ? "#ef4444" : barPct >= 50 ? "#f59e0b" : "#22c55e";
+                            <div style="display:flex;flex-direction:column;gap:4px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span style="font-size:0.72rem;font-weight:700;color:var(--wr-text-main);">@team.Name</span>
+                                    <span style="font-size:0.62rem;color:var(--wr-text-muted);font-family:monospace;">@team.UsedDays/@team.MaxDays วัน</span>
+                                </div>
+                                <div style="height:10px;background:rgba(255,255,255,0.05);border-radius:5px;overflow:hidden;">
+                                    <div style="width:@barPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%;height:100%;background:@barColor;border-radius:5px;transition:width 0.8s ease;"></div>
+                                </div>
+                                <div style="display:flex;gap:2px;flex-wrap:wrap;">
+                                    @for (int d = 0; d < team.MaxDays; d++)
+                                    {
+                                        <div style="width:8px;height:8px;border-radius:2px;background:@(d < team.UsedDays ? barColor : "rgba(255,255,255,0.06)");flex-shrink:0;"></div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        @* Team availability legend *@
+                        <div style="display:flex;gap:12px;margin-top:4px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);">
+                            <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#22c55e;"></div><span style="font-size:0.58rem;color:var(--wr-text-muted);">ปกติ</span></div>
+                            <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#f59e0b;"></div><span style="font-size:0.58rem;color:var(--wr-text-muted);">ใกล้เต็ม</span></div>
+                            <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#ef4444;"></div><span style="font-size:0.58rem;color:var(--wr-text-muted);">วิกฤติ</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* ── ROW 3: TOP 10 RISK (compact) + ACTION TRACKING (crisis-prioritized) ── *@
+            <div class="wr-grid-bottom" style="margin-top:12px;">
+                @* TOP 10 Risk compact *@
+                <div class="table-card an-flex-card panel-glow">
+                    <div class="tc-head"><div class="tc-row1">
+                        <div class="tc-title" style="color:#f87171;"><i class="bi bi-exclamation-octagon-fill" style="margin-right:4px;"></i> TOP 10 โครงการเสี่ยงสูงสุด</div>
+                        <div class="tc-meta"><span class="bdg-nv">RISK SCORE</span></div>
+                    </div></div>
+                    <div class="an-scroll">
+                        <table class="an-tbl" style="font-size:0.75rem;">
+                            <thead><tr><th style="padding:6px 10px;">ลำดับ</th><th style="padding:6px 10px;">ชื่อโครงการ</th><th style="padding:6px 10px;">หน่วยงาน</th><th style="padding:6px 10px;">คะแนน</th></tr></thead>
+                            <tbody>
+                                @{ int v5i = 1; }
+                                @foreach (var item in FilteredRiskRows)
+                                {
+                                    <tr>
+                                        <td style="padding:6px 10px;"><span class="an-rank @(v5i <= 3 ? "top3" : "")" style="width:20px;height:20px;font-size:0.65rem;">@v5i</span></td>
+                                        <td style="padding:6px 10px;"><div class="an-strong" style="font-size:0.72rem;">@item.Title</div></td>
+                                        <td style="padding:6px 10px;color:var(--wr-text-muted);font-size:0.68rem;">@item.Owner</td>
+                                        <td style="padding:6px 10px;"><span class="wr-risk-score @ScoreClass(item.Score)" style="font-size:0.65rem;padding:2px 6px;">@item.Score%</span></td>
+                                    </tr>
+                                    v5i++;
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                @* ACTION TRACKING — crisis prioritized *@
+                <div class="table-card an-flex-card panel-glow">
+                    <div class="tc-head"><div class="tc-row1">
+                        <div class="tc-title" style="color:#fbbf24;"><i class="bi bi-list-check" style="margin-right:4px;"></i> ACTION TRACKING — CRISIS PRIORITY</div>
+                        <span class="v2-badge" style="background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.25);">@V5CrisisActions.Count ด่วน</span>
+                    </div></div>
+                    <div class="an-scroll">
+                        <table class="an-tbl" style="font-size:0.75rem;">
+                            <thead><tr><th style="padding:6px 10px;">ลำดับ</th><th style="padding:6px 10px;">เรื่อง</th><th style="padding:6px 10px;">หน่วยงาน</th><th style="padding:6px 10px;">สถานะ</th><th style="padding:6px 10px;">ครบกำหนด</th></tr></thead>
+                            <tbody>
+                                @{ int v5a = 1; }
+                                @foreach (var item in V5CrisisActions)
+                                {
+                                    var rowBorder = item.Level == "red" ? "border-left:2px solid #ef4444;" : item.Level == "amber" ? "border-left:2px solid #f59e0b;" : "";
+                                    <tr style="@rowBorder">
+                                        <td style="padding:6px 10px;">@v5a</td>
+                                        <td style="padding:6px 10px;"><div class="an-strong" style="font-size:0.72rem;">@item.Title</div></td>
+                                        <td style="padding:6px 10px;color:var(--wr-text-muted);font-size:0.68rem;">@item.Owner</td>
+                                        <td style="padding:6px 10px;"><span class="an-dot @item.Level"></span><span style="font-size:0.68rem;">@item.Status</span></td>
+                                        <td style="padding:6px 10px;color:#f87171;font-size:0.68rem;font-weight:700;">@item.Deadline</td>
+                                    </tr>
+                                    v5a++;
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }

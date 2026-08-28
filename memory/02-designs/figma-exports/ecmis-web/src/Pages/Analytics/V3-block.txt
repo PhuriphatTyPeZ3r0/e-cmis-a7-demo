@@ -1,0 +1,293 @@
+        else if (SelectedVersion == 3)
+        {
+            @* ═══════════════════════════════════════════════════════════
+               VERSION 3: Geographic Risk Intelligence (Redesigned)
+               ─────────────────────────────────────────────────────────
+               Theme: Teal/Green  |  Persona: Geo Analyst
+               Focus: 3D Map, Province ranking/comparison, Radar chart
+               ═══════════════════════════════════════════════════════════ *@
+
+            @* ── ROW 1: 3D MAP / PROVINCE TABLE + COMPARISON / KPI + ALERTS ── *@
+            <div class="wr-grid-top">
+
+                @* 1. THAILAND 3D MAP + TIME SLIDER + REGION LIST + TOP 5 *@
+                <div class="table-card an-flex-card panel-glow" style="border-color:rgba(20,184,166,.18);">
+                    <div class="tc-head" style="border-bottom-color:rgba(20,184,166,.15);background:rgba(20,184,166,.04);">
+                        <div class="tc-row1">
+                            <div class="tc-title"><i class="bi bi-geo-alt-fill" style="color:#14b8a6"></i> แผนที่ความเสี่ยงภูมิศาสตร์ (GEO INTELLIGENCE)</div>
+                            <div class="tc-meta">
+                                <span class="v2-badge" style="background:rgba(20,184,166,.12);color:#2dd4bf;border-color:rgba(20,184,166,.25);"><span class="wr-live-dot" style="background:#14b8a6;margin-right:4px;"></span>LIVE SCANNED</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="an-scroll an-map-scroll" style="flex:1;min-height:0;">
+                        <div class="wr-map-layout" style="min-height:380px;">
+                            <div class="wr-thai-map wr-thai-map-3d" role="img" aria-label="โมเดล 3D แผนที่ประเทศไทย">
+                                <canvas id="thailandRiskMapV3" class="wr-thailand-canvas"></canvas>
+                                <div class="wr-map-legend">
+                                    <span><i class="risk-low"></i>ความเสี่ยงต่ำ</span>
+                                    <span><i class="risk-mid"></i>ความเสี่ยงปานกลาง</span>
+                                    <span><i class="risk-high"></i>ความเสี่ยงสูง</span>
+                                    <span><i class="risk-critical"></i>ความเสี่ยงสูงมาก</span>
+                                </div>
+                            </div>
+                            <div class="wr-map-side">
+                                <div class="an-map-metric" style="border-color:rgba(20,184,166,.15);background:rgba(20,184,166,.04);">
+                                    <div class="an-muted" style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#2dd4bf;">ความเสี่ยงรายภูมิภาค</div>
+                                </div>
+                                @foreach (var region in _regions)
+                                {
+                                    <div class="an-row" style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+                                        <span style="font-size:.75rem;color:rgba(226,232,240,.7);">@region.Name</span>
+                                        <strong class="@ScoreTextClass(region.Score)" style="font-size:.8rem;">@region.Score% · @RiskLabel(region.Score)</strong>
+                                    </div>
+                                }
+                                <div class="an-mini-head" style="margin-top:10px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#2dd4bf;">จังหวัดเสี่ยงสูงสุด (คลิกดูข้อมูล)</div>
+                                @foreach (var province in _byProvince.Take(5))
+                                {
+                                    <div class="an-row wr-clickable-row" @onclick="() => ClickProvince(province.Name)" style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;">
+                                        <span style="font-size:.75rem;color:rgba(226,232,240,.7);">@(province.Index + 1). @province.Name <i class="bi bi-info-circle ms-1" style="font-size:10px;opacity:.6;"></i></span>
+                                        <strong class="wr-badge-score" style="font-size:.8rem;color:#f97316;">@province.Score%</strong>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    @* Time Slider *@
+                    <div style="padding:10px 16px;border-top:1px solid rgba(20,184,166,.12);background:rgba(20,184,166,.03);">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <span style="font-size:.7rem;font-weight:700;color:#2dd4bf;white-space:nowrap;"><i class="bi bi-calendar-range" style="margin-right:4px;"></i>ช่วงเวลา:</span>
+                            <input type="range" min="1" max="12" @bind="_v3TimeSlider" @bind:event="oninput" style="flex:1;accent-color:#14b8a6;cursor:pointer;" />
+                            <span style="font-size:.75rem;font-weight:800;color:#fff;background:rgba(20,184,166,.18);padding:3px 10px;border-radius:6px;min-width:64px;text-align:center;">@_v3TimeSlider เดือน</span>
+                        </div>
+                    </div>
+                </div>
+
+                @* 2. PROVINCE RANKING TABLE (Sortable) + PROVINCE COMPARISON *@
+                <div style="display:flex;flex-direction:column;gap:12px;min-height:0;">
+                    @* Province Ranking *@
+                    <div class="table-card an-flex-card panel-glow" style="flex:1.5;min-height:0;border-color:rgba(20,184,166,.18);">
+                        <div class="tc-head" style="border-bottom-color:rgba(20,184,166,.15);background:rgba(20,184,166,.04);">
+                            <div class="tc-row1">
+                                <div class="tc-title"><i class="bi bi-bar-chart-steps" style="color:#14b8a6"></i> จังหวัดเป้าหมายตรวจสอบเข้มข้น</div>
+                                <div class="tc-meta"><span class="bdg-nv" style="background:rgba(20,184,166,.1);color:#2dd4bf;">TOP DETECTED</span></div>
+                            </div>
+                        </div>
+                        <div class="an-scroll" style="flex:1;min-height:0;">
+                            <table class="an-tbl">
+                                <thead>
+                                    <tr>
+                                        <th style="cursor:pointer;" @onclick="() => SortProvinceTable("rank")">ลำดับ @(SortIndicator("rank"))</th>
+                                        <th style="cursor:pointer;" @onclick="() => SortProvinceTable("name")">จังหวัด @(SortIndicator("name"))</th>
+                                        <th style="cursor:pointer;text-align:center;" @onclick="() => SortProvinceTable("score")">ดัชนีเสี่ยง @(SortIndicator("score"))</th>
+                                        <th>ระดับ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (SortedProvinces.Count == 0)
+                                    {
+                                        <tr><td colspan="4" class="text-center an-muted py-4">ไม่พบข้อมูลจังหวัด</td></tr>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var province in SortedProvinces)
+                                        {
+                                            <tr class="wr-clickable-row" @onclick="() => ClickProvince(province.Name)" style="cursor:pointer;">
+                                                <td><span class="an-rank @(province.Index + 1 <= 3 ? "top3" : "")" style="background:@(province.Index + 1 <= 3 ? "rgba(20,184,166,.2)" : "");color:@(province.Index + 1 <= 3 ? "#2dd4bf" : "");">@(province.Index + 1)</span></td>
+                                                <td><div class="an-strong">@province.Name</div></td>
+                                                <td style="text-align:center;"><span class="wr-risk-score @ScoreClass(province.Score)">@province.Score%</span></td>
+                                                <td><span class="an-muted">@RiskLabel(province.Score)</span></td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="panel-foot-action">
+                            <button class="btn-panel-action" @onclick='() => ClickProvince("จังหวัดทั้งหมด")'>ดูทั้งหมด <i class="bi bi-arrow-right-short"></i></button>
+                        </div>
+                    </div>
+
+                    @* Province Comparison *@
+                    <div class="table-card panel-glow" style="flex:1;min-height:0;border-color:rgba(20,184,166,.18);">
+                        <div class="tc-head" style="border-bottom-color:rgba(20,184,166,.15);background:rgba(20,184,166,.04);">
+                            <div class="tc-row1">
+                                <div class="tc-title"><i class="bi bi-layout-split" style="color:#14b8a6"></i> เปรียบเทียบจังหวัด</div>
+                                <span class="v2-badge" style="background:rgba(20,184,166,.12);color:#2dd4bf;border-color:rgba(20,184,166,.25);">@_v3SelectedProvinces.Count เลือก</span>
+                            </div>
+                        </div>
+                        <div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;">
+                            @* Province selector chips *@
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                                @foreach (var province in _byProvince)
+                                {
+                                    var isSelected = _v3SelectedProvinces.Contains(province.Name);
+                                    <button @onclick="() => ToggleProvinceSelection(province.Name)"
+                                            style="font-size:.7rem;font-weight:700;padding:4px 10px;border-radius:999px;border:1px solid @(isSelected ? "rgba(20,184,166,.45)" : "rgba(255,255,255,.12)");background:@(isSelected ? "rgba(20,184,166,.18)" : "rgba(255,255,255,.04)");color:@(isSelected ? "#2dd4bf" : "rgba(226,232,240,.6)");cursor:pointer;transition:all .15s;"
+                                            onmouseover="this.style.borderColor='rgba(20,184,166,.5)';this.style.background='rgba(20,184,166,.1)'"
+                                            onmouseout="this.style.borderColor='@(isSelected ? "rgba(20,184,166,.45)" : "rgba(255,255,255,.12)")';this.style.background='@(isSelected ? "rgba(20,184,166,.18)" : "rgba(255,255,255,.04)")'">
+                                        <i class="bi @(isSelected ? "bi-check-circle-fill" : "bi-circle")" style="margin-right:4px;font-size:10px;"></i>@province.Name
+                                    </button>
+                                }
+                            </div>
+                            @* Mini comparison chart *@
+                            <div style="flex:1;min-height:100px;position:relative;">
+                                <canvas id="chartCompareV3" style="width:100%;height:100%;"></canvas>
+                            </div>
+                            @if (_v3SelectedProvinces.Count < 2)
+                            {
+                                <div style="font-size:.65rem;color:rgba(226,232,240,.35);text-align:center;padding:4px 0;">เลือก 2-3 จังหวัดเพื่อเปรียบเทียบ</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                @* 3. KPI 4 CARDS + ALERT FEED (FULL LIST) *@
+                <div style="display:flex;flex-direction:column;gap:12px;min-height:0;">
+                    @* KPI Cards - Teal/Green theme *@
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div class="table-card panel-glow" style="padding:12px 10px;text-align:center;border-color:rgba(20,184,166,.18);background:rgba(20,184,166,.04);">
+                            <div style="font-size:.6rem;color:#2dd4bf;font-weight:700;text-transform:uppercase;letter-spacing:.04em;"><i class="bi bi-folder-check" style="margin-right:3px;"></i>คดีดำเนินการ</div>
+                            <div style="font-size:1.5rem;font-weight:900;color:#2dd4bf;margin-top:4px;">@KpiActiveCount.ToString("N0")</div>
+                            <div style="font-size:.6rem;color:rgba(226,232,240,.35);margin-top:2px;">+12% จากเดือนที่แล้ว</div>
+                        </div>
+                        <div class="table-card panel-glow" style="padding:12px 10px;text-align:center;border-color:rgba(239,68,68,.18);">
+                            <div style="font-size:.6rem;color:#f87171;font-weight:700;text-transform:uppercase;letter-spacing:.04em;"><i class="bi bi-currency-dollar" style="margin-right:3px;"></i>มูลค่าเสียหาย</div>
+                            <div style="font-size:1.5rem;font-weight:900;color:#f87171;margin-top:4px;">@KpiDamageCount.ToString("N0")</div>
+                            <div style="font-size:.6rem;color:rgba(226,232,240,.35);margin-top:2px;">ล้านบาท</div>
+                        </div>
+                        <div class="table-card panel-glow" style="padding:12px 10px;text-align:center;border-color:rgba(249,115,22,.18);">
+                            <div style="font-size:.6rem;color:#fb923c;font-weight:700;text-transform:uppercase;letter-spacing:.04em;"><i class="bi bi-flag-fill" style="margin-right:3px;"></i>Red Flag</div>
+                            <div style="font-size:1.5rem;font-weight:900;color:#fb923c;margin-top:4px;">@FilteredAlerts.Count(a => a.Level == "red")</div>
+                            <div style="font-size:.6rem;color:rgba(226,232,240,.35);margin-top:2px;">รายการวันนี้</div>
+                        </div>
+                        <div class="table-card panel-glow" style="padding:12px 10px;text-align:center;border-color:rgba(16,185,129,.18);background:rgba(16,185,129,.04);">
+                            <div style="font-size:.6rem;color:#34d399;font-weight:700;text-transform:uppercase;letter-spacing:.04em;"><i class="bi bi-chat-left-dots-fill" style="margin-right:3px;"></i>ร้องเรียน</div>
+                            <div style="font-size:1.5rem;font-weight:900;color:#34d399;margin-top:4px;">@KpiTotalComplaints.ToString("N0")</div>
+                            <div style="font-size:.6rem;color:rgba(226,232,240,.35);margin-top:2px;">+15% WoW</div>
+                        </div>
+                    </div>
+
+                    @* Alert Feed - FULL LIST *@
+                    <div class="table-card an-flex-card panel-glow" style="flex:1;min-height:0;border-color:rgba(20,184,166,.18);">
+                        <div class="tc-head" style="border-bottom-color:rgba(20,184,166,.15);background:rgba(20,184,166,.04);">
+                            <div class="tc-row1">
+                                <div class="tc-title"><i class="bi bi-bell-fill" style="color:#f87171"></i> ALERT & RED FLAG</div>
+                                <span class="v2-badge red">@FilteredAlerts.Count รายการ</span>
+                            </div>
+                        </div>
+                        <div class="an-scroll" style="padding:8px;flex:1;min-height:0;">
+                            @if (FilteredAlerts.Count == 0)
+                            {
+                                <div class="p-4 text-center an-muted">ไม่มีรายการแจ้งเตือน</div>
+                            }
+                            else
+                            {
+                                @foreach (var alert in FilteredAlerts)
+                                {
+                                    <div class="an-alert-row" style="border-left:2px solid @(alert.Level == "red" ? "#ef4444" : alert.Level == "amber" ? "#f59e0b" : "#eab308");padding-left:8px;margin-bottom:6px;">
+                                        <span class="an-alert-time">@alert.Time</span>
+                                        <span class="an-alert-type @alert.Level" style="font-size:.65rem;padding:1px 6px;border-radius:4px;">@alert.Type</span>
+                                        <div class="an-alert-copy">
+                                            <strong style="font-size:.75rem;">@alert.Title</strong>
+                                            <small style="font-size:.65rem;display:block;color:rgba(226,232,240,.4);">@alert.Detail</small>
+                                        </div>
+                                        <span class="wr-risk-score @ScoreClass(alert.Score)" style="font-size:.7rem;">@alert.Score%</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            @* ── ROW 2: RADAR CHART / ACTION TRACKING + REGION FILTER ── *@
+            <div class="wr-grid-bottom">
+
+                @* 1. RADAR CHART — Region comparison across 5 dimensions *@
+                <div class="table-card an-flex-card panel-glow" style="border-color:rgba(20,184,166,.18);">
+                    <div class="tc-head" style="border-bottom-color:rgba(20,184,166,.15);background:rgba(20,184,166,.04);">
+                        <div class="tc-row1">
+                            <div class="tc-title"><i class="bi bi-bullseye" style="color:#14b8a6"></i> เปรียบเทียบภูมิภาค — 5 มิติความเสี่ยง</div>
+                            <span class="v2-badge" style="background:rgba(20,184,166,.12);color:#2dd4bf;border-color:rgba(20,184,166,.25);">RADAR</span>
+                        </div>
+                    </div>
+                    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:12px;min-height:260px;">
+                        <div style="width:100%;max-width:420px;height:300px;position:relative;">
+                            <canvas id="chartRadarV3" style="width:100%;height:100%;"></canvas>
+                        </div>
+                    </div>
+                    <div style="padding:8px 16px 12px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;border-top:1px solid rgba(20,184,166,.08);">
+                        @foreach (var region in _regions)
+                        {
+                            <div style="display:flex;align-items:center;gap:5px;font-size:.7rem;color:rgba(226,232,240,.6);">
+                                <span style="width:8px;height:8px;border-radius:50%;background:@V3RegionColor(region.Name);display:inline-block;"></span>
+                                @region.Name
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @* 2. ACTION TRACKING + Province Quick Filter chips *@
+                <div class="table-card an-flex-card panel-glow" style="border-color:rgba(20,184,166,.18);">
+                    <div class="tc-head" style="border-bottom-color:rgba(20,184,166,.15);background:rgba(20,184,166,.04);">
+                        <div class="tc-row1">
+                            <div class="tc-title"><i class="bi bi-list-check" style="color:#14b8a6"></i> ACTION TRACKING (ติดตามการสั่งการ)</div>
+                            <span class="v2-badge green">@V3FilteredActions.Count รายการ</span>
+                        </div>
+                    </div>
+                    @* Region Quick Filter Chips *@
+                    <div style="padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid rgba(20,184,166,.08);">
+                        <button @onclick="() => SetV3ActionRegionFilter(null)"
+                                style="font-size:.65rem;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid @(_v3ActionRegionFilter == null ? "rgba(20,184,166,.5)" : "rgba(255,255,255,.12)");background:@(_v3ActionRegionFilter == null ? "rgba(20,184,166,.2)" : "rgba(255,255,255,.04)");color:@(_v3ActionRegionFilter == null ? "#2dd4bf" : "rgba(226,232,240,.55)");cursor:pointer;">
+                            ทั้งหมด
+                        </button>
+                        @foreach (var region in _regions)
+                        {
+                            <button @onclick="() => SetV3ActionRegionFilter(region.Name)"
+                                    style="font-size:.65rem;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid @(_v3ActionRegionFilter == region.Name ? "rgba(20,184,166,.5)" : "rgba(255,255,255,.12)");background:@(_v3ActionRegionFilter == region.Name ? "rgba(20,184,166,.2)" : "rgba(255,255,255,.04)");color:@(_v3ActionRegionFilter == region.Name ? "#2dd4bf" : "rgba(226,232,240,.55)");cursor:pointer;">
+                                @region.Name
+                            </button>
+                        }
+                    </div>
+                    <div class="an-scroll" style="flex:1;min-height:0;">
+                        <table class="an-tbl">
+                            <thead>
+                                <tr>
+                                    <th>ลำดับ</th>
+                                    <th>เรื่อง</th>
+                                    <th>หน่วยงาน</th>
+                                    <th>สถานะ</th>
+                                    <th>ครบกำหนด</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (V3FilteredActions.Count == 0)
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center an-muted py-4">ไม่มีงานติดตามในภูมิภาคนี้</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @{ int v3a = 1; }
+                                    @foreach (var item in V3FilteredActions)
+                                    {
+                                        <tr>
+                                            <td>@v3a</td>
+                                            <td><div class="an-strong">@item.Title</div></td>
+                                            <td class="an-muted">@item.Owner</td>
+                                            <td><span class="an-dot @item.Level" style="width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;background:@(item.Level == "red" ? "#ef4444" : item.Level == "amber" ? "#f59e0b" : "#22c55e");"></span>@item.Status</td>
+                                            <td class="an-muted" style="color:#f87171;">@item.Deadline</td>
+                                        </tr>
+                                        v3a++;
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        }

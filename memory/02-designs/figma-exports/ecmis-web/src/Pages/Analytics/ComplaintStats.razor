@@ -1,0 +1,688 @@
+@page "/analytics/complaint-stats"
+@layout MainLayout
+@implements IDisposable
+@using EcmisWeb.Data
+@using EcmisWeb.Models
+@using EcmisWeb.Pages.Analytics.Components
+@inject IComplaintStatsService Stats
+@inject IJSRuntime JS
+
+<div class="cs-shell intake-room v6-active @(_isDark ? "" : "app-light")">
+  <div class="wr-topbar">
+    <div class="wr-logo-area" title="ศูนย์รับเรื่องร้องเรียน · TOR 12.2">
+      <div class="wr-logo-seal">
+        <i class="bi bi-inbox-fill" style="font-size: 20px; color: #0b0f1e;"></i>
+      </div>
+      <div class="wr-logo-text-block">
+        <div class="wr-logo-title">สถิติรับเรื่องร้องเรียน</div>
+        <div class="wr-logo-sub">ศูนย์รับเรื่องร้องเรียน ป.ป.ท.</div>
+        <div class="wr-logo-en">COMPLAINT INTAKE ANALYTICS</div>
+      </div>
+    </div>
+
+    <div class="wr-topbar-tabs">
+      <div class="v6-inline-controls">
+        <div class="v6-toggle-buttons">
+          <button class="v6-toggle-btn @(_filter.YearMode == YearMode.Fiscal ? "active" : "")" @onclick="@(() => SetYearMode(YearMode.Fiscal))">ปีงบประมาณ</button>
+          <button class="v6-toggle-btn @(_filter.YearMode == YearMode.Calendar ? "active" : "")" @onclick="@(() => SetYearMode(YearMode.Calendar))">ปีปฏิทิน</button>
+        </div>
+        <select class="v6-select" @onchange="OnTypeChanged" title="ประเภทคดี">
+          <option value="">ทุกประเภท</option>
+          @foreach (var t in new[] { LegalType.M18_4_2, LegalType.M62, LegalType.M58_2, LegalType.M18_1Ka })
+          { <option value="@t">@ComplaintStatsData.LegalTypeLabel(t)</option> }
+        </select>
+        <select class="v6-select" @onchange="OnStatusChanged" title="สถานะ">
+          <option value="">ทุกสถานะ</option>
+          @foreach (var s in Enum.GetValues<CaseStatus>())
+          { <option value="@s">@ComplaintStatsData.StatusLabel(s)</option> }
+        </select>
+        <select class="v6-select" value="@(_filter.Zone?.ToString() ?? "")" @onchange="OnZoneChanged" title="เขต ป.ป.ท.">
+          <option value="">ทุกเขต</option>
+          @foreach (var z in Enum.GetValues<Zone>())
+          { <option value="@z">@ComplaintStatsData.ZoneLabel(z)</option> }
+        </select>
+        <input type="date" class="v6-select v6-date" value="@(_filter.PeriodFrom?.ToString("yyyy-MM-dd"))" @onchange="OnFromChanged" title="ตั้งแต่วันที่" />
+        <input type="date" class="v6-select v6-date" value="@(_filter.PeriodTo?.ToString("yyyy-MM-dd"))" @onchange="OnToChanged" title="ถึงวันที่" />
+        <button class="wr-export-btn" @onclick="ClearFilter" title="ล้างตัวกรอง"><i class="bi bi-x-circle"></i></button>
+      </div>
+    </div>
+
+    <div class="wr-topbar-right">
+      <input class="v6-select v6-intake-search" placeholder="ค้นหาเลขสำนวน/จังหวัด/สถานะ..." @bind="_unifiedQuery" @bind:event="oninput" @onkeyup="UnifiedSearchKey" />
+      <button class="wr-export-btn" @onclick="PrintAsync" title="พิมพ์/บันทึก PDF"><i class="bi bi-printer"></i></button>
+      <div class="wr-export-wrapper">
+        <button class="wr-export-btn wr-btn-gold" @onclick="ExportDailyAsync" title="รายงานประจำวัน"><i class="bi bi-calendar-day"></i><span>รายวัน</span></button>
+        <button class="wr-export-btn wr-btn-gold" @onclick="ExportMonthlyAsync" title="รายงานประจำเดือน"><i class="bi bi-calendar-month"></i><span>รายเดือน</span></button>
+        <button class="wr-export-btn wr-btn-gold" @onclick="ExportAnnualAsync" title="รายงานประจำปี"><i class="bi bi-calendar3"></i><span>รายปี</span></button>
+      </div>
+    </div>
+  </div>
+
+  @if (_loadError)
+  {
+    <div class="an-body"><div class="ir-state-panel ir-state-error">
+      <i class="bi bi-exclamation-octagon-fill"></i>
+      <div>โหลดข้อมูลไม่สำเร็จ เซิร์ฟเวอร์อาจไม่ตอบสนอง</div>
+      <button class="ir-gold-btn" @onclick="ReloadAsync">ลองใหม่</button>
+    </div></div>
+  }
+  else if (_snap is null)
+  {
+    <div class="an-body"><div class="ir-state-panel ir-state-loading">
+      <span class="spinner-border" role="status"></span>
+      <div>กำลังโหลดข้อมูล...</div>
+    </div></div>
+  }
+  else
+  {
+    <div class="an-body">
+      <div class="v6-layout font-sarabun">
+        <div class="v6-main-layout">
+          <div class="v6-main-left">
+            <div class="table-card an-flex-card panel-glow map-hud-card" style="position:relative; flex: 1; min-height: 0; display: flex; flex-direction: column;">
+              <div class="tc-head">
+                <div class="tc-row1">
+                  <div class="tc-title"><i class="bi bi-map-fill text-emerald"></i> แผนที่เรื่องร้องเรียนรายเขต ปปท.</div>
+                  <span class="bdg-nv border-emerald text-emerald font-monospace uppercase">รวม @(_snap?.Kpi.ReceivedThisYear ?? 0) เรื่อง</span>
+                </div>
+              </div>
+              <div class="v6-map-area">
+                <ThailandHeatmap Zones="_heatZones" MaxValue="_heatMax" ValueLabel="เรื่องร้องเรียน" SelectedZone="SelectedHeatZone" OnZoneClick="OnHeatZoneClick" />
+                <div class="v6-map-note">
+                  ส่วนกลาง (กปท.1–5 + กอท.): <b>@_centralCount</b> เรื่อง
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="v6-main-right">
+            <div class="v6-law-hud-row">
+              <div class="v6-sec-card border-yellow v6-sec-card-click" title="กดเพื่อดูรายปี" @onclick='() => OpenListPop("รับเรื่องสะสมทั้งหมด", r => true)'>
+                <div class="v6-sec-header"><span class="v6-sec-title">สะสมทั้งหมด</span></div>
+                <div class="v6-sec-value">@_snap!.Kpi.Accumulated.ToString("N0") <small>เรื่อง</small></div>
+              </div>
+              <div class="v6-sec-card border-cyan v6-sec-card-click" title="รับปีงบประมาณปัจจุบัน" @onclick='() => OpenListPop("รับปีงบ 2569", r => true)'>
+                <div class="v6-sec-header"><span class="v6-sec-title">รับปีงบ 2569</span></div>
+                <div class="v6-sec-value text-emerald">@_snap!.Kpi.ReceivedThisYear <small>เรื่อง</small></div>
+              </div>
+              <div class="v6-sec-card border-yellow v6-sec-card-click" title="กดเพื่อดูแยกรายเจ้าหน้าที่" @onclick="OpenPendingByOwnerPop">
+                <div class="v6-sec-header"><span class="v6-sec-title">คงค้างคัดกรอง</span><span class="v6-sec-subtitle">รายเจ้าหน้าที่</span></div>
+                <div class="v6-sec-value text-yellow">@PendingScreen <small>เรื่อง</small></div>
+              </div>
+              <div class="v6-sec-card border-red v6-sec-card-click" title="กดเพื่อดูรายการที่ใกล้หลุดกรอบ" @onclick='() => OpenListPop("ใกล้หลุดกรอบคัดกรอง 45 วัน", r => r.Status == CaseStatus.Pending && DaysLeft(r) <= 7)'>
+                <div class="v6-sec-header"><span class="v6-sec-title">ใกล้หลุดกรอบ</span><span class="v6-sec-subtitle">คัดกรอง 45 วัน</span></div>
+                <div class="v6-sec-value text-red">@SlaRisk().Count() <small>เรื่อง</small></div>
+              </div>
+              <div class="v6-sec-card border-cyan v6-sec-card-click" title="กดเพื่อดูแยกตามการดำเนินการ" @onclick="OpenRoutingPop">
+                <div class="v6-sec-header"><span class="v6-sec-title">การดำเนินการ</span><span class="v6-sec-subtitle">มอบหมาย/ส่งต่อ/ส่งคืน</span></div>
+                <div class="v6-sec-value text-cyan">@(_snap?.Rows.Count ?? 0) <small>รายการ</small></div>
+              </div>
+              <div class="v6-sec-card border-purple v6-sec-card-click" title="กดเพื่อดูรายชื่อที่ตรวจพบซ้ำ" @onclick="OpenDuplicatesPop">
+                <div class="v6-sec-header"><span class="v6-sec-title">ส่อซ้ำซ้อน</span><span class="v6-sec-subtitle">ผู้ถูกร้อง <span class="cs-demo-badge">สาธิต</span></span></div>
+                <div class="v6-sec-value text-purple">@IntakeInsightData.DuplicateOffenders.Length <small>ราย</small></div>
+              </div>
+            </div>
+
+            <div class="v6-alerts-container">
+              <div class="table-card an-flex-card panel-glow" style="flex:1; display:flex; flex-direction:column; min-height:0;">
+                <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-pie-chart-fill text-purple"></i> ช่องทางนำเข้าเรื่องร้องเรียน</div></div></div>
+                <div class="v6-chart-box v6-intake-donut">
+                  <canvas id="csiChannel"></canvas>
+                </div>
+                <div class="v6-drill-bars an-scroll">
+                  @{ var chMax = _snap!.Channels.All.Count > 0 ? _snap!.Channels.All.Max(c => c.Count) : 0; }
+                  @foreach (var ch in _snap!.Channels.All.Select((c, i) => (c.Label, c.Count, Index: i)).Where(c => c.Count > 0).OrderByDescending(c => c.Count))
+                  {
+                    <button class="v6-bar-row v6-bar-row-click" title="กดเพื่อดูรายการ" @onclick='() => OpenListPop($"ช่องทาง: {ch.Label}", r => r.ChannelIndex == ch.Index)'>
+                      <span class="v6-bar-lbl">@ch.Label</span>
+                      <span class="v6-bar-track"><span class="v6-bar-fill fill-purple" style="width:@(chMax > 0 ? Math.Round(100.0 * ch.Count / chMax, 1) : 0)%"></span></span>
+                      <span class="v6-bar-num">@ch.Count</span>
+                      <i class="bi bi-chevron-right v6-bar-go"></i>
+                    </button>
+                  }
+                </div>
+              </div>
+              <div class="table-card an-flex-card panel-glow" style="flex:1.6; display:flex; flex-direction:column; min-height:0;">
+                <div class="tc-head">
+                  <div class="tc-row1">
+                    <div class="tc-title"><i class="bi bi-bar-chart-steps text-cyan"></i> รับเรื่องรายเดือนเทียบปีงบ 2568 vs 2569 <span class="cs-demo-badge">ปี 68 = ค่ากระจายสาธิต</span></div>
+                    <button class="v6-toggle-btn @(_quarterView ? "active" : "")" @onclick="ToggleQuarter">ไตรมาส</button>
+                  </div>
+                </div>
+                <div class="v6-chart-box" style="flex:1; padding:10px; min-height:0;">
+                  <canvas id="csiSection"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="v6-bottom-grid">
+              <div class="table-card an-flex-card panel-glow" style="grid-column: span 4; display:flex; flex-direction:column;">
+                <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-diagram-2 text-cyan"></i> ประเภทคดี: กฎหมาย &amp; พฤติการณ์</div></div></div>
+                <div class="ir-split-row">
+                  <div class="ir-split-col">
+                    <div class="ir-canvas-sq"><canvas id="csiLegal"></canvas></div>
+                    <div class="ir-split-label">ตามกฎหมาย</div>
+                  </div>
+                  <div class="ir-split-col">
+                    <div class="ir-canvas-sq"><canvas id="csiBehavior"></canvas></div>
+                    <div class="ir-split-label">ตามพฤติการณ์</div>
+                  </div>
+                </div>
+              </div>
+              <div class="table-card an-flex-card panel-glow" style="grid-column: span 4; display:flex; flex-direction:column;">
+                <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-bar-chart-line text-emerald"></i> รับเรื่องแยกตามเขต ปปท.1–9 + ส่วนกลาง</div></div></div>
+                <div class="v6-chart-box" style="flex:1; padding:10px; min-height:0;"><canvas id="csiZone"></canvas></div>
+              </div>
+              <div class="table-card an-flex-card panel-glow" style="grid-column: span 4; display:flex; flex-direction:column;">
+                <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-pin-map-fill text-yellow"></i> 10 อันดับจังหวัดร้องเรียนหนาแน่น</div></div></div>
+                <div class="v6-drill-bars an-scroll">
+                  @{ var pvMax = _snap!.TopProvinces.Count > 0 ? _snap!.TopProvinces.Max(p => p.Count) : 0; }
+                  @foreach (var pv in _snap!.TopProvinces.Take(10))
+                  {
+                    <button class="v6-bar-row v6-bar-row-click" title="กดเพื่อดูรายการ" @onclick='() => OpenListPop($"จังหวัด{pv.Label}", r => r.Province == pv.Label)'>
+                      <span class="v6-bar-lbl">@pv.Label</span>
+                      <span class="v6-bar-track"><span class="v6-bar-fill fill-yellow" style="width:@(pvMax > 0 ? Math.Round(100.0 * pv.Count / pvMax, 1) : 0)%"></span></span>
+                      <span class="v6-bar-num">@pv.Count</span>
+                      <i class="bi bi-chevron-right v6-bar-go"></i>
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div class="v6-bottom-grid">
+              <div class="table-card an-flex-card panel-glow is-demo" style="grid-column: span 4; display:flex; flex-direction:column;">
+                <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-building text-cyan"></i> หน่วยงานถูกร้องเรียน — กระทรวง → กรม <span class="cs-demo-badge">ข้อมูลสาธิต</span></div></div></div>
+                <div class="v6-drill-bars an-scroll">
+                  @{ var mrMax = IntakeInsightData.TopMinistries.Length > 0 ? IntakeInsightData.TopMinistries.Max(x => x.Count) : 0; }
+                  @foreach (var m in IntakeInsightData.TopMinistries.OrderByDescending(x => x.Count))
+                  {
+                    <button class="v6-bar-row v6-bar-row-click" title="กดเพื่อดูกรมภายในกระทรวงนี้" @onclick="() => OpenMinistryPop(m)">
+                      <span class="v6-bar-lbl">@m.Ministry</span>
+                      <span class="v6-bar-track"><span class="v6-bar-fill" style="width:@(mrMax > 0 ? Math.Round(100.0 * m.Count / mrMax, 1) : 0)%"></span></span>
+                      <span class="v6-bar-num">@m.Count</span>
+                      <i class="bi bi-chevron-right v6-bar-go"></i>
+                    </button>
+                  }
+                </div>
+              </div>
+              <div class="table-card an-flex-card panel-glow is-demo" style="grid-column: span 4; display:flex; flex-direction:column;">
+                <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-hash text-purple"></i> คำค้น/ประเด็นร้องเรียนบ่อย + แนวโน้ม 6 เดือน <span class="cs-demo-badge">ข้อมูลสาธิต</span></div></div></div>
+                <div class="ir-kw-trend"><canvas id="csiKwTrend"></canvas></div>
+                <div class="cs-tagcloud an-scroll">
+                  @foreach (var k in IntakeInsightData.TopKeywords)
+                  { <span class="cs-tag" style="font-size:@(0.72 + k.Percent * 0.016)rem">@k.Tag <small>@k.Percent%</small></span> }
+                </div>
+              </div>
+              <div class="table-card an-flex-card panel-glow is-demo" style="grid-column: span 4; display:flex; flex-direction:column;">
+                <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-arrow-left-right text-emerald"></i> การเชื่อมรับเรื่องจาก ป.ป.ช. (ม.62) <span class="cs-demo-badge">ข้อมูลสาธิต</span></div></div></div>
+                <div class="an-scroll">
+                  <table class="cs-dtable">
+                    <tbody>
+                    @foreach (var s in IntakeInsightData.NccSyncStatus)
+                    { <tr><td>@s.Label</td><td style="white-space:nowrap;font-weight:800">@s.Value</td></tr> }
+                    </tbody>
+                  </table>
+                </div>
+                <div class="cs-note">สถานะจริงจะอ่านจาก API เชื่อมโยง ป.ป.ช. ตามข้อตกลง ม.62 แจ้งเตือนเมื่อดึงข้อมูลล้มเหลวเพื่อกันเรื่องตกหล่น</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (_popRoot is not null)
+  {
+    <div class="irp-overlay" @onclick="ClosePop">
+      <div class="irp-modal" @onclick:stopPropagation>
+        <div class="irp-bar">
+          <nav class="irp-crumbs">
+            @if (_popSub is null && _popCase is null)
+            { <span class="irp-cur">@_popRoot</span> }
+            else
+            { <button class="irp-link" @onclick="PopBackRoot">@_popRoot</button> }
+            @if (_popSub is not null)
+            {
+              <span class="irp-sep">›</span>
+              @if (_popCase is null)
+              { <span class="irp-cur">@_popSub.Value.Label</span> }
+              else
+              { <button class="irp-link" @onclick="() => _popCase = null">@_popSub.Value.Label</button> }
+            }
+            @if (_popCase is not null)
+            {
+              <span class="irp-sep">›</span>
+              <span class="irp-cur">@CaseIdentity.Describe(_popCase).CaseNo</span>
+            }
+          </nav>
+          <div class="irp-actions">
+            @if (_popCase is null && _popDemoLines is null)
+            { <span class="irp-total">@PopHeaderCount() <small>เรื่อง</small></span> }
+            <button class="irp-x" @onclick="ClosePop">&times;</button>
+          </div>
+        </div>
+
+        @if (_popCase is not null)
+        {
+          var dd = CaseIdentity.Describe(_popCase);
+          <div class="irp-detail">
+            <h3>@dd.Title</h3>
+            <div class="irp-fields">
+              <div><span>เลขสำนวน</span><strong>@dd.CaseNo</strong></div>
+              <div><span>ผู้รับผิดชอบ</span><strong>@dd.Owner</strong></div>
+              <div><span>มาตรา</span><strong>@ComplaintStatsData.LegalTypeLabel(_popCase.Type)</strong></div>
+              <div><span>หน่วยรับผิดชอบ</span><strong>@ComplaintStatsData.ZoneLabel(_popCase.Zone)</strong></div>
+              <div><span>จังหวัดที่เกิดเหตุ</span><strong>@_popCase.Province</strong></div>
+              <div><span>วันที่รับเรื่อง</span><strong>@ThaiShortDate(_popCase.ReceivedAt) (อายุ @AgeDays(_popCase) วัน)</strong></div>
+              <div><span>ช่องทางรับเรื่อง</span><strong>@ComplaintStatsData.ChannelTotals[_popCase.ChannelIndex].Label</strong></div>
+              <div><span>สถานะ</span><strong>@ComplaintStatsData.StatusLabel(_popCase.Status)</strong></div>
+            </div>
+            <small class="cs-note">ชื่อเรื่อง เลขสำนวน และผู้รับผิดชอบเป็นข้อมูลสังเคราะห์ผูกกับรายการสถิติ — ข้อมูลจริงจะเชื่อมจาก ecmis-investigation</small>
+          </div>
+        }
+        else if (_popDemoLines is not null)
+        {
+          <div class="irp-detail">
+            @foreach (var line in _popDemoLines)
+            { <div class="irp-demo-line">@line</div> }
+            @if (_popNote is not null)
+            { <small class="cs-note">@_popNote</small> }
+          </div>
+        }
+        else if (_popSub is not null || _popRootPred is not null)
+        {
+          <div class="irp-rows">
+            @foreach (var r in PopCases())
+            {
+              var dd = CaseIdentity.Describe(r);
+              <button class="irp-row" @onclick="() => _popCase = r">
+                <span class="irp-caseno">@dd.CaseNo</span>
+                <span class="irp-rowtitle">@dd.Title</span>
+                <span class="irp-owner"><i class="bi bi-person-fill"></i> @dd.Owner</span>
+                <i class="bi bi-chevron-right irp-go"></i>
+              </button>
+            }
+          </div>
+        }
+        else if (_popGroups is not null)
+        {
+          var max = _popGroups.Count > 0 ? _popGroups.Max(x => x.Count) : 0;
+          <div class="irp-rows">
+            @foreach (var g in _popGroups)
+            {
+              @if (g.Pred is not null)
+              {
+                <button class="irp-row" @onclick="() => SelectPopGroup(g)">
+                  <span class="irp-rowtitle" style="flex:0 0 38%">@g.Label</span>
+                  <span class="irp-track"><span class="irp-fill" style="width:@(max > 0 ? Math.Round(100.0 * g.Count / max, 1) : 0)%"></span></span>
+                  <span class="irp-num">@g.Count.ToString("N0")</span>
+                  <i class="bi bi-chevron-right irp-go"></i>
+                </button>
+              }
+              else
+              {
+                <div class="irp-row irp-row-static">
+                  <span class="irp-rowtitle" style="flex:0 0 38%">@g.Label</span>
+                  <span class="irp-track"><span class="irp-fill" style="width:@(max > 0 ? Math.Round(100.0 * g.Count / max, 1) : 0)%"></span></span>
+                  <span class="irp-num">@g.Count.ToString("N0")</span>
+                </div>
+              }
+            }
+          </div>
+          @if (_popNote is not null)
+          { <small class="cs-note" style="padding:0 14px 10px">@_popNote</small> }
+        }
+      </div>
+    </div>
+  }
+
+</div>
+
+@code {
+    private bool _isDark = true;
+    private bool _quarterView;
+    private StatsFilter _filter = StatsFilter.Default;
+    private StatsSnapshot? _snap;
+    private bool _loadError;
+    private DotNetObjectReference<ComplaintStats>? _dotNetRef;
+
+    [SupplyParameterFromQuery(Name = "zone")]
+    public string? ZoneParam { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // อ่านธีมก่อนวาดรอบแรก — เดิมอ่านใน OnAfterRender แล้วไม่ re-render ทำให้ผิวหน้า/สีกราฟไม่ตรงกัน
+        try
+        {
+            var theme = await JS.InvokeAsync<string?>("localStorage.getItem", "dashTheme");
+            _isDark = theme != "light";
+        }
+        catch { }
+
+        if (Enum.TryParse<Zone>(ZoneParam, out var z))
+            _filter = _filter with { Zone = z };
+        await ReloadAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var theme = await JS.InvokeAsync<string?>("localStorage.getItem", "dashTheme");
+            _isDark = theme != "light";
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("registerAnalyticsComponent", _dotNetRef);
+        }
+        if (_snap is not null) await RenderChartsAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        try
+        {
+            _snap = await Stats.GetSnapshotAsync(_filter);
+            _loadError = false;
+            RebuildHeatZones();
+        }
+        catch
+        {
+            _loadError = true;
+        }
+        StateHasChanged();
+    }
+
+    [JSInvokable] public async Task OnThemeChangedAsync(bool isDark)
+    { _isDark = isDark; await RenderChartsAsync(); }
+
+    private async Task RenderChartsAsync()
+    {
+        if (_snap is null) return;
+        // โดนัทแสดงแค่ Top 5 + "อื่นๆ" (เหมือน "Top 5 ช่องทางรับเรื่อง" ใน WAR ROOM) — ตารางด้านล่างยังมีครบทุกช่องทาง
+        var chRanked = _snap.Channels.All.Where(c => c.Count > 0).OrderByDescending(c => c.Count).ToArray();
+        var chTop5 = chRanked.Take(5).ToArray();
+        var chOtherSum = chRanked.Skip(5).Sum(c => c.Count);
+        var chLabels = chTop5.Select(c => c.Label).ToList();
+        var chData = chTop5.Select(c => (object)c.Count).ToList();
+        if (chOtherSum > 0) { chLabels.Add("อื่นๆ"); chData.Add((object)chOtherSum); }
+        await JS.InvokeVoidAsync("initAnalyticsChart", "csiChannel", "doughnut",
+            chLabels.ToArray(), chData.ToArray(),
+            new[] { "#26408b", "#06d6a0", "#f59e0b", "#a855f7", "#3b82f6", "#94a3b8" }, _isDark);
+
+        var lg = _snap.LegalType.Slices.ToArray();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "csiLegal", "doughnut",
+            lg.Select(c => c.Label).ToArray(), lg.Select(c => (object)c.Count).ToArray(),
+            new[] { "#7e3ca8","#26408b","#06d6a0","#f59e0b","#94a3b8" }, _isDark);
+
+        var bh = _snap.Behavior.Slices.ToArray();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "csiBehavior", "doughnut",
+            bh.Select(c => c.Label).ToArray(), bh.Select(c => (object)c.Count).ToArray(),
+            new[] { "#dc2626", "#f59e0b", "#3b82f6" }, _isDark);
+
+        var m68 = IntakeInsightData.Monthly2568();
+        var yoyLabels = m68.Select(m => m.Month).ToArray();
+        var y69 = yoyLabels.Select(l => (object)(_snap.Monthly.ByMonth.FirstOrDefault(b => b.Label.StartsWith(l))?.Count ?? 0)).ToArray();
+        var kw = IntakeInsightData.KeywordTrend();
+        await JS.InvokeVoidAsync("initGroupedBarChart", "csiKwTrend", kw.Select(k => k.Month).ToArray(),
+            new object[]
+            {
+                new { label = "#จัดซื้อจัดจ้าง", data = kw.Select(k => (object)k.Procurement).ToArray(), backgroundColor = "#c8a96e" },
+                new { label = "#ก่อสร้างถนน", data = kw.Select(k => (object)k.Road).ToArray(), backgroundColor = "#6366f1" },
+                new { label = "#ออกใบอนุญาต", data = kw.Select(k => (object)k.License).ToArray(), backgroundColor = "#10b981" }
+            }, _isDark);
+
+        if (_quarterView)
+        {
+            var q = _snap.Monthly.ByQuarter.ToArray();
+            await JS.InvokeVoidAsync("initGroupedBarChart", "csiSection", q.Select(c => c.Label).ToArray(),
+                new object[] { new { label = "ปีงบ 2569 (ไตรมาส)", data = q.Select(c => (object)c.Count).ToArray(), backgroundColor = "#26408b" } },
+                _isDark);
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("initGroupedBarChart", "csiSection", yoyLabels,
+                new object[]
+                {
+                    new { label = "ปีงบ 2568", data = m68.Select(m => (object)m.Count).ToArray(), backgroundColor = "#94a3b8" },
+                    new { label = "ปีงบ 2569", data = y69, backgroundColor = "#26408b" }
+                }, _isDark);
+        }
+
+        var zn = _snap.Zones.ByRegion.ToArray();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "csiZone", "bar",
+            zn.Select(c => c.Label).ToArray(), zn.Select(c => (object)c.Count).ToArray(),
+            new[] { "#26408b" }, _isDark);
+    }
+
+    // ── แผนที่เรื่องร้องเรียนรายเขต — component เดียวกับ WAR ROOM V6 (ThailandHeatmap) ──
+    private Dictionary<int, ZoneHeatValue> _heatZones = new();
+    private int _heatMax;
+    private int _centralCount;
+
+    private void RebuildHeatZones()
+    {
+        _heatZones = new();
+        _centralCount = 0;
+        if (_snap is null) return;
+        foreach (var r in _snap.Zones.ByRegion)
+        {
+            if (HeatmapLogic.ZoneFromRegionLabel(r.Label) is int zi)
+                _heatZones[zi] = new ZoneHeatValue(r.Count, r.Count);
+            else
+                _centralCount += r.Count;
+        }
+        _heatMax = _heatZones.Count > 0 ? _heatZones.Values.Max(v => v.Value) : 0;
+    }
+
+    private int? SelectedHeatZone
+        => _filter.Zone is Zone z && z.ToString().StartsWith("Pt") ? int.Parse(z.ToString()[2..]) : null;
+
+    private async Task OnHeatZoneClick(int zone)
+    {
+        if (!Enum.TryParse<Zone>($"Pt{zone}", out var z)) return;
+        _filter = _filter with { Zone = _filter.Zone == z ? null : z };
+        await ReloadAsync();
+    }
+
+    private async Task SetYearMode(YearMode m) { _filter = _filter with { YearMode = m }; await ReloadAsync(); }
+    private async Task OnTypeChanged(ChangeEventArgs e) { _filter = _filter with { Type = Parse<LegalType>(e.Value?.ToString()) }; await ReloadAsync(); }
+    private async Task OnStatusChanged(ChangeEventArgs e) { _filter = _filter with { Status = Parse<CaseStatus>(e.Value?.ToString()) }; await ReloadAsync(); }
+    private async Task OnZoneChanged(ChangeEventArgs e) { _filter = _filter with { Zone = Parse<Zone>(e.Value?.ToString()) }; await ReloadAsync(); }
+    private async Task ClearFilter() { _filter = StatsFilter.Default; await ReloadAsync(); }
+
+    private async Task OnFromChanged(ChangeEventArgs e)
+    {
+        _filter = _filter with { PeriodFrom = DateTime.TryParse(e.Value?.ToString(), out var d) ? d : null };
+        await ReloadAsync();
+    }
+
+    private async Task OnToChanged(ChangeEventArgs e)
+    {
+        _filter = _filter with { PeriodTo = DateTime.TryParse(e.Value?.ToString(), out var d) ? d : null };
+        await ReloadAsync();
+    }
+
+    // ── KPI ตามผัง Intake 12.2: คำนวณจากแถวข้อมูลจริงใน snapshot ──
+    private static readonly DateTime AsOf = new(2568, 11, 30);
+
+    private DateTime LatestDay
+        => _snap is { Rows.Count: > 0 } ? _snap.Rows.Max(r => r.ReceivedAt) : AsOf;
+
+    private int PendingScreen
+        => _snap?.Rows.Count(r => r.Status == CaseStatus.Pending) ?? 0;
+
+    // ── เฟส A: เครื่องมือสั่งงานของเจ้าของกิจกรรม ──
+
+    private IEnumerable<(string Owner, int Count)> PendingByOwner()
+        => _snap is null ? [] : _snap.Rows
+            .Where(r => r.Status == CaseStatus.Pending)
+            .GroupBy(r => CaseIdentity.Describe(r).Owner)
+            .OrderByDescending(g => g.Count())
+            .Select(g => (g.Key, g.Count()));
+
+    private int AgeDays(StatRecord r) => (AsOf - r.ReceivedAt).Days;
+
+    private int DaysLeft(StatRecord r) => 45 - AgeDays(r);
+
+    /// <summary>เรื่องรอคัดกรองที่เหลือเวลา ≤ 7 วัน (หรือเกินกรอบแล้ว) เรียงวิกฤตก่อน</summary>
+    private IEnumerable<StatRecord> SlaRisk()
+        => _snap is null ? [] : _snap.Rows
+            .Where(r => r.Status == CaseStatus.Pending && DaysLeft(r) <= 7)
+            .OrderBy(DaysLeft);
+
+    // ── popup drill กลางจอแบบ 12.1 ──
+    private string? _popRoot;
+    private string? _popNote;
+    private List<(string Label, int Count, Func<StatRecord, bool>? Pred)>? _popGroups;
+    private (string Label, Func<StatRecord, bool> Pred)? _popSub;
+    private Func<StatRecord, bool>? _popRootPred;
+    private StatRecord? _popCase;
+    private List<string>? _popDemoLines;
+
+    private void ClosePop()
+    {
+        _popRoot = null; _popNote = null; _popGroups = null;
+        _popSub = null; _popRootPred = null; _popCase = null; _popDemoLines = null;
+    }
+
+    private void PopBackRoot() { _popSub = null; _popCase = null; }
+
+    private void OpenListPop(string root, Func<StatRecord, bool> pred)
+    { ClosePop(); _popRoot = root; _popRootPred = pred; }
+
+    private void OpenGroupPop(string root, List<(string Label, int Count, Func<StatRecord, bool>? Pred)> groups, string? note = null)
+    { ClosePop(); _popRoot = root; _popGroups = groups; _popNote = note; }
+
+    private void OpenDemoPop(string root, List<string> lines, string note)
+    { ClosePop(); _popRoot = root; _popDemoLines = lines; _popNote = note; }
+
+    private void OpenMinistryPop((string Ministry, int Count, (string Department, int Count)[] Departments) m)
+    {
+        var lines = m.Departments.OrderByDescending(d => d.Count)
+            .Select(d => $"• {d.Department} — {d.Count} เรื่อง").ToList();
+        OpenDemoPop(m.Ministry, lines,
+            "ข้อมูลหน่วยงานผู้ถูกร้องเป็นชุดสาธิต — รอเชื่อมจากระบบรับเรื่องจริง");
+    }
+
+    private void SelectPopGroup((string Label, int Count, Func<StatRecord, bool>? Pred) g)
+    { if (g.Pred is not null) { _popSub = (g.Label, g.Pred); _popCase = null; } }
+
+    private IEnumerable<StatRecord> PopCases()
+    {
+        var pred = _popSub?.Pred ?? _popRootPred;
+        return _snap is null || pred is null ? [] : _snap.Rows.Where(pred);
+    }
+
+    private int PopHeaderCount()
+        => _popSub is not null || _popRootPred is not null ? PopCases().Count()
+            : _popGroups?.Sum(g => g.Count) ?? 0;
+
+    private void OpenPendingByOwnerPop()
+    {
+        var groups = new List<(string Label, int Count, Func<StatRecord, bool>? Pred)>();
+        foreach (var o in PendingByOwner())
+            groups.Add((o.Owner, o.Count, r => r.Status == CaseStatus.Pending && CaseIdentity.Describe(r).Owner == o.Owner));
+        OpenGroupPop("คงค้างคัดกรองรายเจ้าหน้าที่", groups);
+    }
+
+    private void OpenRoutingPop()
+    {
+        var groups = new List<(string Label, int Count, Func<StatRecord, bool>? Pred)>();
+        foreach (var ra in (_snap?.Rows ?? []).GroupBy(r => r.Routing).OrderByDescending(g => g.Count()))
+            groups.Add((ComplaintStatsData.RoutingLabel(ra.Key), ra.Count(), r => r.Routing == ra.Key));
+        OpenGroupPop("มอบหมาย/ส่งต่อ/ส่งคืน/ดึงเรื่องกลับ", groups);
+    }
+
+    private void OpenDuplicatesPop()
+    {
+        var lines = IntakeInsightData.DuplicateOffenders
+            .Select(d => $"• {d.Name} ({d.Agency}) — ถูกร้องซ้ำ {d.Times} ครั้งในรอบปีงบประมาณ")
+            .ToList();
+        OpenDemoPop("ผู้ถูกร้องส่อคดีซ้ำซ้อน", lines,
+            "ระบบจริงจะเทียบ ชื่อ/เลขบัตร 13 หลัก/สถานที่/พฤติการณ์ กับฐานคดีทั้งหมดใน ecmis-complaint");
+    }
+
+    // ── เฟส C: ค้นหารวม (เลขสำนวน/เลขคดี PCMS/สถานะ/ชื่อผู้ร้อง/ชื่อผู้ถูกกล่าวหา) ──
+    private string _unifiedQuery = "";
+
+    private void UnifiedSearchKey(KeyboardEventArgs e) { if (e.Key == "Enter") RunUnifiedSearch(); }
+
+    private void RunUnifiedSearch()
+    {
+        var q = _unifiedQuery.Trim();
+        if (q.Length < 2 || _snap is null) return;
+        bool Match(StatRecord r)
+        {
+            var d = CaseIdentity.Describe(r);
+            return d.CaseNo.Contains(q, StringComparison.OrdinalIgnoreCase)
+                || d.Title.Contains(q, StringComparison.OrdinalIgnoreCase)
+                || d.Owner.Contains(q, StringComparison.OrdinalIgnoreCase)
+                || r.Province.Contains(q, StringComparison.OrdinalIgnoreCase)
+                || ComplaintStatsData.StatusLabel(r.Status).Contains(q, StringComparison.OrdinalIgnoreCase);
+        }
+        OpenListPop($"ผลค้นหา: \"{q}\"", Match);
+    }
+
+    private static string ThaiShortDate(DateTime d)
+    {
+        string[] m = { "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค." };
+        return $"{d.Day} {m[d.Month - 1]} {d.Year}";
+    }
+    private async Task ToggleQuarter() { _quarterView = !_quarterView; await RenderChartsAsync(); }
+
+    private static T? Parse<T>(string? v) where T : struct, Enum
+        => Enum.TryParse<T>(v, out var r) ? r : null;
+
+    private async Task ExportDailyAsync()
+    {
+        if (_snap is null) return;
+        var todays = _snap.Rows.Where(r => r.ReceivedAt == LatestDay)
+            .Select(r => { var d = CaseIdentity.Describe(r); return new object[] { d.CaseNo, d.Title, d.Owner, ComplaintStatsData.StatusLabel(r.Status) }; })
+            .Prepend(new object[] { "เลขสำนวน", "เรื่อง", "ผู้รับผิดชอบ", "สถานะ" }).ToArray();
+        var sheets = new object[] { new { name = $"รายวัน {ThaiShortDate(LatestDay)}", aoa = todays } };
+        await JS.InvokeVoidAsync("exportStatsXlsx", $"complaint-stats-daily-{LatestDay:yyyyMMdd}.xlsx", sheets);
+    }
+
+    private async Task ExportMonthlyAsync()
+    {
+        if (_snap is null) return;
+        var sheets = new object[]
+        {
+            new { name = "รายเดือน", aoa = _snap.Monthly.ByMonth
+                .Select(m => new object[] { m.Label, m.Count })
+                .Prepend(new object[] { "เดือน", "จำนวน" }).ToArray() },
+            new { name = "ช่องทาง", aoa = _snap.Channels.All
+                .Select(c => new object[] { c.Label, c.Count })
+                .Prepend(new object[] { "ช่องทาง", "จำนวน" }).ToArray() },
+        };
+        await JS.InvokeVoidAsync("exportStatsXlsx", $"complaint-stats-monthly-{ComplaintStatsData.SeedYear}.xlsx", sheets);
+    }
+
+    private async Task ExportAnnualAsync()
+    {
+        if (_snap is null) return;
+        var sheets = new object[]
+        {
+            new { name = "KPI", aoa = new object[][]
+            {
+                new object[] { "ตัวชี้วัด", "ค่า" },
+                new object[] { "รับปี 2569", _snap.Kpi.ReceivedThisYear },
+                new object[] { "สะสม", _snap.Kpi.Accumulated },
+                new object[] { "ม.62", _snap.Kpi.M62 },
+                new object[] { "ม.18/4(2)", _snap.Kpi.M18_4_2 },
+            }},
+            new { name = "รายปี", aoa = _snap.YearlyTrend.Bars
+                .Select(b => new object[] { b.Label, b.Count })
+                .Prepend(new object[] { "พ.ศ.", "จำนวน" }).ToArray() },
+            new { name = "จังหวัด", aoa = _snap.TopProvinces
+                .Select(p => new object[] { p.Label, p.Count })
+                .Prepend(new object[] { "จังหวัด", "จำนวน" }).ToArray() },
+        };
+        await JS.InvokeVoidAsync("exportStatsXlsx", $"complaint-stats-annual-{ComplaintStatsData.SeedYear}.xlsx", sheets);
+    }
+
+    private async Task PrintAsync() => await JS.InvokeVoidAsync("window.print");
+
+    public void Dispose() { _dotNetRef?.Dispose(); }
+}

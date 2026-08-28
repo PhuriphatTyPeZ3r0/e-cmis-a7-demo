@@ -1,0 +1,322 @@
+@page "/investigation/{Id:int}"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+@if (c is null)
+{
+    <div class="detail-page-wrap" style="text-align:center;padding:60px">
+        <i class="bi bi-exclamation-triangle" style="font-size:48px;color:var(--orange)"></i>
+        <div style="font-size:18px;font-weight:700;margin-top:12px">ไม่พบสำนวนคดี</div>
+        <button class="btn-navy" style="margin-top:16px" @onclick='() => Nav.NavigateTo("/assign")'>กลับหน้ามอบหมาย</button>
+    </div>
+}
+else
+{
+    <div class="detail-page-wrap">
+        @* — Header — *@
+        <div class="detail-header">
+            <div>
+                <div class="detail-caseno">
+                    <i class="bi bi-journal-bookmark-fill" style="color:var(--navy-mid)"></i>
+                    สำนวนที่ @c.CaseNo
+                </div>
+                <div class="detail-meta-row">
+                    <span class="complaints-status-chip @InvestigationData.StatusClass(c.Status)">
+                        @InvestigationData.StatusLabel(c.Status)
+                    </span>
+                    <span class="category-chip @ComplaintData.CategoryClass(c.Category)">@c.Category</span>
+                    <span class="priority-dot @c.Priority"></span>
+                    <span style="font-size:12px;color:var(--text-muted)">
+                        <i class="bi bi-link-45deg"></i> จาก @c.OriginalComplaintNo
+                    </span>
+                    <span style="font-size:12px;color:var(--text-muted)">
+                        <i class="bi bi-building"></i> @c.Division
+                    </span>
+                </div>
+            </div>
+            <div class="detail-actions">
+                <button class="btn-outline-navy" @onclick='() => Nav.NavigateTo("/assign")'>
+                    <i class="bi bi-arrow-left"></i> กลับ
+                </button>
+                @if (c.ExtensionCount < 2)
+                {
+                    <button class="btn-gold" @onclick="() => extensionRequested = true">
+                        <i class="bi bi-clock-history"></i> ขอขยายเวลา
+                    </button>
+                }
+                <button class="btn-navy" @onclick="() => reportOpen = true">
+                    <i class="bi bi-clipboard-plus"></i> รายงานความคืบหน้า
+                </button>
+            </div>
+        </div>
+
+        @* — SLA Bar — *@
+        <div class="detail-card" style="margin-bottom:14px">
+            <div class="detail-card-title">
+                <div class="icon-box @(InvestigationData.DaysRemaining(c) <= 15 ? "red" : "navy")">
+                    <i class="bi bi-speedometer2"></i>
+                </div>
+                ระยะเวลาดำเนินการ (SLA)
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+                <div>
+                    <div style="font-size:13px;color:var(--text-muted)">
+                        Clock Start: <strong>@c.ReceivedDate</strong> (วันลงรับครั้งแรก)
+                    </div>
+                    <div style="font-size:13px;color:var(--text-muted);margin-top:4px">
+                        ขยายเวลาแล้ว: <strong>@c.ExtensionCount / 2 ครั้ง</strong>
+                        &nbsp;|&nbsp; กำหนด: <strong>@c.MaxDays วัน</strong>
+                    </div>
+                </div>
+                <div style="text-align:right">
+                    <div style="font-size:28px;font-weight:800;color:var(--navy-deep)">
+                        @c.DaysUsed <span style="font-size:14px;font-weight:600;color:var(--text-muted)">/ @c.MaxDays วัน</span>
+                    </div>
+                    <span class="sla-text @InvestigationData.SlaClass(c)" style="font-size:13px">
+                        @InvestigationData.SlaLabel(c)
+                    </span>
+                </div>
+            </div>
+            <div class="sla-bar" style="height:12px;border-radius:6px;margin-top:12px">
+                <div class="sla-fill @InvestigationData.SlaClass(c)"
+                    style="width:@((int)InvestigationData.SlaPercent(c))%;height:100%;border-radius:6px;transition:width .5s ease"></div>
+            </div>
+            @if (InvestigationData.DaysRemaining(c) <= 15)
+            {
+                <div style="margin-top:10px;padding:8px 14px;border-radius:8px;background:#fef3e4;color:#bc6d00;font-size:12px;font-weight:700">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    ⚠ เหลือเวลาไม่ถึง 15 วัน — กรุณาเตรียมสรุปสำนวนหรือขอขยายเวลา
+                </div>
+            }
+        </div>
+
+        @* — Info Grid — *@
+        <div class="detail-grid">
+            <div class="detail-card">
+                <div class="detail-card-title">
+                    <div class="icon-box orange"><i class="bi bi-person-exclamation"></i></div>
+                    ข้อมูลผู้ถูกร้อง
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">ชื่อ-สกุล</div>
+                    <div class="detail-value">@c.Accused</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">หน่วยงานสังกัด</div>
+                    <div class="detail-value">@c.AccusedAgency</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">จังหวัด</div>
+                    <div class="detail-value">@c.Province</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">รายละเอียด</div>
+                    <div class="detail-value" style="font-weight:500">@c.Description</div>
+                </div>
+            </div>
+
+            <div class="detail-card">
+                <div class="detail-card-title">
+                    <div class="icon-box navy"><i class="bi bi-person-badge"></i></div>
+                    ทีมดำเนินการ
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">นักสืบสวนเจ้าของสำนวน</div>
+                    <div class="detail-value">@(c.Investigator == "-" ? "ยังไม่มอบหมาย" : c.Investigator)</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">สำนัก/กอง</div>
+                    <div class="detail-value">@c.Division</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">ผอ.กลุ่มงาน</div>
+                    <div class="detail-value">@c.Director</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">วันที่มอบหมาย / รับงาน</div>
+                    <div class="detail-value">@c.AssignedDate / @c.AcceptedDate</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="detail-grid">
+            @* — Opinion Workflow — *@
+            <div class="detail-card">
+                <div class="detail-card-title">
+                    <div class="icon-box green"><i class="bi bi-chat-left-quote-fill"></i></div>
+                    ขั้นตอนให้ความเห็น (Opinion Workflow)
+                </div>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-dot @(c.OpinionStatus != "none" ? "done" : c.Status == "investigating" ? "active" : "")"></div>
+                        <div class="timeline-title">นักสืบสวนสรุปสำนวน</div>
+                        <div class="timeline-desc">@c.Investigator รวบรวมพยานหลักฐานและสรุปประเด็น</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot @(c.OpinionStatus is "group_director" or "division_director" or "submitted" ? "done" : c.OpinionStatus == "investigator_done" ? "active" : "")"></div>
+                        <div class="timeline-title">ผอ.กลุ่มงาน ให้ความเห็น</div>
+                        <div class="timeline-desc">@c.Director ตรวจสอบและลงความเห็น</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot @(c.OpinionStatus is "division_director" or "submitted" ? "done" : c.OpinionStatus == "group_director" ? "active" : "")"></div>
+                        <div class="timeline-title">ผอ.สำนัก ให้ความเห็น</div>
+                        <div class="timeline-desc">ผอ.@c.Division ตรวจสอบและลงความเห็น</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot @(c.OpinionStatus == "submitted" ? "done" : c.OpinionStatus == "division_director" ? "active" : "")"></div>
+                        <div class="timeline-title">เสนอผู้บริหาร (ชั้น 14)</div>
+                        <div class="timeline-desc">ส่งสำนวนเสนอเลขาธิการ ป.ป.ท. พิจารณา</div>
+                    </div>
+                </div>
+            </div>
+
+            @* — Document Management — *@
+            <div class="detail-card">
+                <div class="detail-card-title">
+                    <div class="icon-box blue"><i class="bi bi-files"></i></div>
+                    เอกสารสำนวน
+                    @if (c.DocumentPages > 0)
+                    {
+                        <span style="font-size:11px;font-weight:600;color:var(--text-muted);margin-left:auto">
+                            @c.DocumentPages.ToString("N0") หน้า
+                        </span>
+                    }
+                </div>
+
+                @if (c.DocumentPages > 500)
+                {
+                    <div style="padding:10px 14px;border-radius:10px;background:#fef3e4;color:#bc6d00;font-size:12px;font-weight:600;margin-bottom:12px">
+                        <i class="bi bi-info-circle"></i> ไฟล์มีจำนวนมาก (@c.DocumentPages.ToString("N0") หน้า) — แบ่งเป็น @((c.DocumentPages / 500) + 1) ไฟล์ย่อย (ไฟล์ละ ~500 หน้า)
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        @for (int i = 0; i < (c.DocumentPages / 500) + 1; i++)
+                        {
+                            var start = i * 500 + 1;
+                            var end = Math.Min((i + 1) * 500, c.DocumentPages);
+                            <button class="doc-btn">
+                                <i class="bi bi-file-earmark-pdf"></i>
+                                สำนวน ส่วนที่ @(i + 1) (หน้า @start–@end)
+                            </button>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-2">
+                        <button class="doc-btn"><i class="bi bi-file-earmark-pdf"></i> สำนวนฉบับเต็ม</button>
+                        <button class="doc-btn"><i class="bi bi-upload"></i> อัปโหลดเอกสารเพิ่มเติม</button>
+                    </div>
+                }
+
+                <div style="margin-top:14px">
+                    <div style="font-size:12px;font-weight:700;color:var(--navy-deep);margin-bottom:8px">
+                        สร้างเอกสารอัตโนมัติ
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="doc-btn" @onclick="() => docGenMsg = true"><i class="bi bi-file-earmark-richtext"></i> แบบ 103</button>
+                        <button class="doc-btn" @onclick="() => docGenMsg = true"><i class="bi bi-envelope-paper"></i> แจ้งผลผู้ร้อง</button>
+                        <button class="doc-btn" @onclick="() => docGenMsg = true"><i class="bi bi-file-earmark-text"></i> บันทึกเสนอ ผบ.</button>
+                    </div>
+                    @if (docGenMsg)
+                    {
+                        <div style="margin-top:8px;padding:8px 12px;border-radius:8px;background:#e6f4ed;color:#1b7a4a;font-size:12px;font-weight:700">
+                            <i class="bi bi-check-circle-fill"></i> สร้างเอกสารสำเร็จ (Mockup)
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* — Extension Request Dialog — *@
+        @if (extensionRequested)
+        {
+            <div class="detail-card" style="margin-top:14px;border-left:4px solid var(--gold)">
+                <div class="detail-card-title">
+                    <div class="icon-box orange"><i class="bi bi-clock-history"></i></div>
+                    ขอขยายเวลาไต่สวน (ครั้งที่ @(c.ExtensionCount + 1))
+                </div>
+                <p style="font-size:13px;color:var(--text-dark);margin-bottom:12px">
+                    ขยายเวลาได้ครั้งละไม่เกิน <strong>60 วัน</strong> (สูงสุดรวม 180 วัน)
+                    ระบบจะขยาย MaxDays เป็น <strong>@(c.MaxDays + 60) วัน</strong>
+                </p>
+                <textarea class="form-control-custom" rows="3" placeholder="เหตุผลในการขอขยายเวลา..."></textarea>
+                <div class="d-flex gap-2 mt-2">
+                    <button class="btn-gold" @onclick="() => { extensionRequested = false; extensionDone = true; }">
+                        <i class="bi bi-check-lg"></i> ยื่นคำขอ
+                    </button>
+                    <button class="btn-outline-navy" @onclick="() => extensionRequested = false">ยกเลิก</button>
+                </div>
+            </div>
+        }
+        @if (extensionDone)
+        {
+            <div style="margin-top:14px;padding:12px 16px;border-radius:10px;background:#e6f4ed;color:#1b7a4a;font-size:13px;font-weight:700">
+                <i class="bi bi-check-circle-fill"></i> ส่งคำขอขยายเวลาสำเร็จ (Mockup) — รอผู้บริหารอนุมัติ
+            </div>
+        }
+
+        @* — Progress Report Dialog — *@
+        @if (reportOpen)
+        {
+            <div class="detail-card" style="margin-top:14px;border-left:4px solid var(--navy)">
+                <div class="detail-card-title">
+                    <div class="icon-box navy"><i class="bi bi-clipboard-plus"></i></div>
+                    รายงานความคืบหน้า
+                </div>
+                <div class="mb-2">
+                    <label class="form-label-custom">การดำเนินการ</label>
+                    <div class="d-flex flex-column gap-1" style="font-size:13px">
+                        <label><input type="radio" name="action" style="accent-color:var(--navy)" /> สอบผู้ร้อง</label>
+                        <label><input type="radio" name="action" style="accent-color:var(--navy)" /> ขอเอกสาร</label>
+                        <label><input type="radio" name="action" style="accent-color:var(--navy)" /> ลงพื้นที่</label>
+                        <label><input type="radio" name="action" style="accent-color:var(--navy)" /> สอบพยาน</label>
+                        <label><input type="radio" name="action" style="accent-color:var(--navy)" /> อื่นๆ</label>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label-custom">รายละเอียด</label>
+                    <textarea class="form-control-custom" rows="4" placeholder="บันทึกรายละเอียดการดำเนินการ..."></textarea>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label-custom">เอกสารแนบ</label>
+                    <div style="border:2px dashed rgba(26,47,107,.2);border-radius:10px;padding:20px;text-align:center;color:var(--text-muted);font-size:13px;cursor:pointer">
+                        <i class="bi bi-cloud-arrow-up" style="font-size:24px"></i><br/>
+                        ลากไฟล์มาวาง หรือคลิกเพื่อเลือก (สูงสุด 50MB/ไฟล์)
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn-navy" @onclick="() => { reportOpen = false; reportDone = true; }">
+                        <i class="bi bi-check-lg"></i> บันทึกรายงาน
+                    </button>
+                    <button class="btn-outline-navy" @onclick="() => reportOpen = false">ยกเลิก</button>
+                </div>
+            </div>
+        }
+        @if (reportDone)
+        {
+            <div style="margin-top:14px;padding:12px 16px;border-radius:10px;background:#e6f4ed;color:#1b7a4a;font-size:13px;font-weight:700">
+                <i class="bi bi-check-circle-fill"></i> บันทึกรายงานความคืบหน้าสำเร็จ (Mockup)
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private InvestigationCase? c;
+    private bool extensionRequested;
+    private bool extensionDone;
+    private bool reportOpen;
+    private bool reportDone;
+    private bool docGenMsg;
+
+    protected override void OnParametersSet()
+    {
+        c = InvestigationData.GetById(Id);
+        extensionRequested = false;
+        extensionDone = false;
+        reportOpen = false;
+        reportDone = false;
+        docGenMsg = false;
+    }
+}

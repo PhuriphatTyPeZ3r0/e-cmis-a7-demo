@@ -1,0 +1,409 @@
+@page "/support-center"
+@using EcmisWeb.Services
+@inject CentralSupportApiService CentralSupportApi
+
+<div class="support-page">
+    <div class="support-head">
+        <div>
+            <div class="support-kicker">Central Support</div>
+            <h1>ระบบรองรับการขับเคลื่อนกระบวนงาน</h1>
+            <p>ประกาศภายใน คู่มือ FAQ แจ้งปัญหา และสมุดโทรศัพท์จากฐานข้อมูลกลาง</p>
+        </div>
+        <button class="btn-navy" @onclick="Load" disabled="@loading">
+            <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+        </button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="support-alert error"><i class="bi bi-exclamation-triangle-fill"></i>@error</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(success))
+    {
+        <div class="support-alert success"><i class="bi bi-check-circle-fill"></i>@success</div>
+    }
+
+    <div class="support-tabs">
+        <button class="@(tab == "info" ? "active" : "")" @onclick='() => tab = "info"'>
+            <i class="bi bi-megaphone-fill"></i> ประกาศ/คู่มือ
+        </button>
+        <button class="@(tab == "faq" ? "active" : "")" @onclick='() => tab = "faq"'>
+            <i class="bi bi-question-circle-fill"></i> FAQ
+        </button>
+        <button class="@(tab == "ticket" ? "active" : "")" @onclick='() => tab = "ticket"'>
+            <i class="bi bi-life-preserver"></i> แจ้งปัญหา
+        </button>
+        <button class="@(tab == "phone" ? "active" : "")" @onclick='() => tab = "phone"'>
+            <i class="bi bi-telephone-fill"></i> สมุดโทรศัพท์
+        </button>
+    </div>
+
+    @if (loading)
+    {
+        <div class="support-loading">กำลังโหลดข้อมูล...</div>
+    }
+    else if (tab == "info")
+    {
+        var newsItems = center.Announcements
+            .Where(a => a.Kind != "guide" && a.Kind != "manual" && string.IsNullOrWhiteSpace(a.VideoUrl))
+            .ToList();
+        var manualItems = center.Announcements
+            .Where(a => a.Kind == "guide" || a.Kind == "manual" || !string.IsNullOrWhiteSpace(a.VideoUrl))
+            .ToList();
+
+        @* Sub-section: ข่าวสาร & ประกาศ (SYS139) *@
+        @if (newsItems.Count > 0)
+        {
+            <div style="font-size:13px;font-weight:800;color:var(--navy-deep);margin-bottom:10px;display:flex;align-items:center;gap:8px">
+                <i class="bi bi-megaphone-fill" style="color:var(--gold)"></i> ข่าวสาร &amp; ประกาศ
+            </div>
+            <section class="support-grid" style="margin-bottom:24px">
+                @foreach (var item in newsItems)
+                {
+                    <article class="support-card">
+                        <div class="support-card-top">
+                            <span class="support-badge">@KindText(item.Kind)</span>
+                            <span>@item.PublishedAt?.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                        </div>
+                        <h2>@item.Title</h2>
+                        <p>@item.Body</p>
+                        @if (!string.IsNullOrWhiteSpace(item.AttachmentUrl))
+                        {
+                            <a class="support-link" href="@item.AttachmentUrl" target="_blank">
+                                <i class="bi bi-paperclip"></i> เปิดเอกสารแนบ
+                            </a>
+                        }
+                    </article>
+                }
+            </section>
+        }
+
+        @* Sub-section: คู่มือ & วิดีโอสาธิต (SYS140) *@
+        @if (manualItems.Count > 0)
+        {
+            <div style="font-size:13px;font-weight:800;color:var(--navy-deep);margin-bottom:10px;display:flex;align-items:center;gap:8px">
+                <i class="bi bi-play-circle-fill" style="color:#0e8088"></i> คู่มือ &amp; วิดีโอสาธิต
+            </div>
+            <section class="support-grid">
+                @foreach (var item in manualItems)
+                {
+                    <article class="support-card">
+                        <div class="support-card-top">
+                            <span class="support-badge" style="background:#e0f2fe;color:#0369a1">@KindText(item.Kind)</span>
+                            <span>@item.PublishedAt?.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                        </div>
+                        <h2>@item.Title</h2>
+                        <p>@item.Body</p>
+                        @if (!string.IsNullOrWhiteSpace(item.VideoUrl))
+                        {
+                            <div style="margin-top:10px;border-radius:10px;overflow:hidden;aspect-ratio:16/9">
+                                <iframe src="@item.VideoUrl" style="width:100%;height:100%;border:none"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowfullscreen title="@item.Title"></iframe>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(item.AttachmentUrl))
+                        {
+                            <a class="support-link" href="@item.AttachmentUrl" target="_blank">
+                                <i class="bi bi-paperclip"></i> เปิดเอกสารแนบ
+                            </a>
+                        }
+                    </article>
+                }
+            </section>
+        }
+
+        @if (center.Announcements.Count == 0)
+        {
+            <div style="padding:24px;text-align:center;color:#94a3b8;background:#fff;border-radius:8px;border:1px solid #e5e7eb">
+                ยังไม่มีประกาศหรือคู่มือในระบบ
+            </div>
+        }
+    }
+    else if (tab == "faq")
+    {
+        @* Category filter buttons (SYS145) *@
+        var faqCategories = center.Faqs
+            .Select(f => f.Category)
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Distinct()
+            .OrderBy(c => c)
+            .ToList();
+        @if (faqCategories.Count > 1)
+        {
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+                <button class="@(faqCategoryFilter == "" ? "btn-navy" : "btn-outline-navy")"
+                        style="font-size:12px;padding:5px 12px"
+                        @onclick='() => faqCategoryFilter = ""'>
+                    ทั้งหมด
+                </button>
+                @foreach (var cat in faqCategories)
+                {
+                    <button class="@(faqCategoryFilter == cat ? "btn-navy" : "btn-outline-navy")"
+                            style="font-size:12px;padding:5px 12px"
+                            @onclick="() => faqCategoryFilter = cat">
+                        @cat
+                    </button>
+                }
+            </div>
+        }
+        <section class="support-list">
+            @foreach (var faq in FilteredFaqs)
+            {
+                <article class="support-row">
+                    <div class="support-badge">@faq.Category</div>
+                    <div>
+                        <h2>@faq.Question</h2>
+                        <p>@faq.Answer</p>
+                    </div>
+                </article>
+            }
+            @if (!FilteredFaqs.Any())
+            {
+                <div style="padding:24px;text-align:center;color:#94a3b8;background:#fff;border-radius:8px;border:1px solid #e5e7eb">
+                    ไม่มี FAQ ในหมวดหมู่นี้
+                </div>
+            }
+        </section>
+    }
+    else if (tab == "ticket")
+    {
+        <section class="support-form-shell">
+            <div class="support-form">
+                <label>ชื่อผู้แจ้ง</label>
+                <input @bind="ticketRequesterName" placeholder="ชื่อ-นามสกุล" />
+                <label>อีเมล</label>
+                <input @bind="ticketRequesterEmail" placeholder="name@pacc.go.th" />
+                <label>หัวข้อปัญหา</label>
+                <input @bind="ticketTitle" placeholder="สรุปปัญหาที่พบ" />
+                <label>รายละเอียด</label>
+                <textarea @bind="ticketDescription" rows="5" placeholder="ระบุขั้นตอน อาการ และผลกระทบ"></textarea>
+                <button class="btn-navy" @onclick="SubmitTicket" disabled="@submitting">
+                    <i class="bi bi-send-fill"></i> ส่งแจ้งปัญหา
+                </button>
+            </div>
+            <div class="support-note">
+                <h2>ขั้นตอนการแจ้งปัญหา</h2>
+                <p>ผู้ใช้งานแจ้งปัญหา ระบบบันทึกคำขอและมอบหมายให้ IT Support เป็นผู้รับเรื่อง ก่อนอัปเดตสถานะและแจ้งปิดงานภายหลัง</p>
+            </div>
+        </section>
+    }
+    else if (tab == "phone")
+    {
+        <section class="support-phone">
+            <div class="support-search">
+                <input @bind="phoneQuery" @bind:event="oninput" placeholder="ค้นหาชื่อ หน่วยงาน หรืออีเมล" />
+                <button class="btn-navy" @onclick="SearchPhonebook" disabled="@submitting">
+                    <i class="bi bi-search"></i> ค้นหา
+                </button>
+            </div>
+            <div class="support-table-wrap">
+                <table class="ecmis-table">
+                    <thead>
+                        <tr>
+                            <th>ชื่อ</th>
+                            <th>หน่วยงาน</th>
+                            <th>ตำแหน่ง</th>
+                            <th>โทรศัพท์</th>
+                            <th>อีเมล</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var person in people)
+                        {
+                            <tr>
+                                <td>@person.DisplayName</td>
+                                <td>@person.OrgName</td>
+                                <td>@person.JobTitle</td>
+                                <td>@person.Phone</td>
+                                <td>@person.Email</td>
+                            </tr>
+                        }
+                        @if (people.Count == 0 && phoneHasSearched)
+                        {
+                            <tr>
+                                <td colspan="5" style="text-align:center;padding:20px;color:#94a3b8;font-size:14px">
+                                    <i class="bi bi-search" style="font-size:20px;display:block;margin-bottom:6px"></i>
+                                    ไม่พบข้อมูลที่ค้นหา
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="support-form compact">
+                <h2>ส่งคำขอแก้ไขข้อมูลติดต่อ</h2>
+                <input @bind="phoneContactName" placeholder="ชื่อผู้ติดต่อ" />
+                <input @bind="phoneOrgName" placeholder="หน่วยงาน" />
+                <input @bind="phoneNumber" placeholder="เบอร์โทรศัพท์ที่ถูกต้อง" />
+                <input @bind="phoneEmail" placeholder="อีเมลที่ถูกต้อง" />
+                <textarea @bind="phoneChanges" rows="3" placeholder="รายละเอียดที่ต้องแก้ไข"></textarea>
+                <button class="btn-navy" @onclick="SubmitPhonebookUpdate" disabled="@submitting">
+                    <i class="bi bi-check2-circle"></i> ส่งคำขออัปเดต
+                </button>
+            </div>
+        </section>
+    }
+</div>
+
+@code {
+    private SupportCenterDto center = new(new(), new());
+    private List<PhonebookPersonDto> people = new();
+    private string tab = "info";
+    private bool loading = true;
+    private bool submitting;
+    private string error = "";
+    private string success = "";
+    private string ticketRequesterName = "";
+    private string ticketRequesterEmail = "";
+    private string ticketTitle = "";
+    private string ticketDescription = "";
+    private string phoneQuery = "";
+    private string phoneContactName = "";
+    private string phoneOrgName = "";
+    private string phoneNumber = "";
+    private string phoneEmail = "";
+    private string phoneChanges = "";
+    private string faqCategoryFilter = "";
+    private bool phoneHasSearched;
+
+    private IEnumerable<CentralSupportFaqDto> FilteredFaqs =>
+        string.IsNullOrEmpty(faqCategoryFilter)
+            ? center.Faqs
+            : center.Faqs.Where(f => f.Category == faqCategoryFilter);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        loading = true;
+        error = "";
+        try
+        {
+            center = await CentralSupportApi.GetSupportCenterAsync();
+            people = await CentralSupportApi.SearchPhonebookAsync("");
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task SubmitTicket()
+    {
+        submitting = true;
+        error = "";
+        success = "";
+        try
+        {
+            var result = await CentralSupportApi.CreateSupportTicketAsync(
+                ticketTitle, ticketDescription, ticketRequesterName, ticketRequesterEmail);
+            success = $"รับแจ้งปัญหาแล้ว เลขที่ {result.TicketNo}";
+            ticketTitle = "";
+            ticketDescription = "";
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private async Task SearchPhonebook()
+    {
+        submitting = true;
+        error = "";
+        try
+        {
+            people = await CentralSupportApi.SearchPhonebookAsync(phoneQuery);
+            phoneHasSearched = true;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private async Task SubmitPhonebookUpdate()
+    {
+        submitting = true;
+        error = "";
+        success = "";
+        try
+        {
+            await CentralSupportApi.RequestPhonebookUpdateAsync(
+                phoneContactName, phoneOrgName, phoneNumber, phoneEmail, phoneChanges);
+            success = "ส่งคำขออัปเดตสมุดโทรศัพท์แล้ว";
+            phoneChanges = "";
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private static string KindText(string kind) => kind switch
+    {
+        "guide" => "คู่มือ",
+        "manual" => "คู่มือ/วิดีโอ",
+        "news" => "ข่าวสาร",
+        "announcement" => "ประกาศ",
+        _ => kind
+    };
+}
+
+<style>
+.support-page { padding: 6px; }
+.support-head { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:18px; }
+.support-kicker { color:var(--gold); font-weight:800; font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+.support-head h1 { font-size:34px; font-weight:800; color:var(--navy-deep); margin:0 0 4px; }
+.support-head p { color:#64748b; margin:0; }
+.support-tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; }
+.support-tabs button { border:1px solid #d7dde8; background:#fff; color:var(--navy-deep); border-radius:8px; padding:10px 14px; font-weight:700; display:flex; gap:8px; align-items:center; }
+.support-tabs button.active { background:var(--navy-deep); color:#fff; border-color:var(--navy-deep); }
+.support-alert { padding:12px 14px; border-radius:8px; margin-bottom:14px; display:flex; gap:10px; align-items:center; font-weight:700; }
+.support-alert.error { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
+.support-alert.success { background:#ecfdf5; color:#065f46; border:1px solid #bbf7d0; }
+.support-loading { padding:24px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; color:#64748b; }
+.support-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.support-card, .support-row, .support-form, .support-note { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:16px; box-shadow:0 8px 20px rgba(15,23,42,.05); }
+.support-card-top { display:flex; justify-content:space-between; gap:10px; color:#64748b; font-size:12px; margin-bottom:10px; }
+.support-card h2, .support-row h2, .support-form h2, .support-note h2 { font-size:18px; color:var(--navy-deep); font-weight:800; margin:0 0 8px; }
+.support-card p, .support-row p, .support-note p { color:#475569; margin:0; line-height:1.55; }
+.support-badge { display:inline-flex; align-items:center; width:max-content; padding:4px 8px; background:#eef2ff; color:#1e3a8a; border-radius:999px; font-size:12px; font-weight:800; }
+.support-link { display:inline-flex; gap:6px; align-items:center; margin-top:12px; color:var(--navy-mid); font-weight:800; text-decoration:none; }
+.support-list { display:grid; gap:10px; }
+.support-row { display:grid; grid-template-columns:120px 1fr; gap:14px; align-items:start; }
+.support-form-shell { display:grid; grid-template-columns:minmax(300px,520px) 1fr; gap:16px; align-items:start; }
+.support-form { display:grid; gap:10px; }
+.support-form.compact { margin-top:16px; max-width:680px; }
+.support-form label { font-weight:800; color:var(--navy-deep); font-size:13px; }
+.support-form input, .support-form textarea, .support-search input { width:100%; border:1px solid #d7dde8; border-radius:8px; padding:10px 12px; outline:none; }
+.support-form textarea { resize:vertical; }
+.support-search { display:flex; gap:8px; margin-bottom:12px; max-width:760px; }
+.support-table-wrap { overflow:auto; background:#fff; border-radius:8px; border:1px solid #e5e7eb; }
+@@media (max-width: 900px) {
+    .support-head, .support-form-shell, .support-search { display:block; }
+    .support-head .btn-navy, .support-search .btn-navy { margin-top:10px; }
+    .support-row { grid-template-columns:1fr; }
+}
+</style>

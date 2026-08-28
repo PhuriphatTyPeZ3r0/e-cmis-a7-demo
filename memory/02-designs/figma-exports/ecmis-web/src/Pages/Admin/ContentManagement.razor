@@ -1,0 +1,438 @@
+@page "/admin/content"
+@using EcmisWeb.Services
+@inject CentralSupportApiService CentralSupportApi
+
+<PageTitle>จัดการเนื้อหา — E-CMIS Admin</PageTitle>
+
+<div style="background:linear-gradient(135deg,var(--navy-deep),var(--navy));border-radius:14px;padding:20px 24px;margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <i class="bi bi-megaphone-fill" style="color:var(--gold);font-size:20px"></i>
+        <div style="font-size:18px;font-weight:800;color:#fff">จัดการเนื้อหา</div>
+    </div>
+    <div style="font-size:12px;color:rgba(255,255,255,.5)">Announcements &amp; FAQ — Central Support (Admin)</div>
+</div>
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <div style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:14px">
+        <i class="bi bi-exclamation-triangle-fill"></i> @error
+    </div>
+}
+@if (!string.IsNullOrEmpty(successMsg))
+{
+    <div style="background:#ecfdf5;color:#065f46;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin-bottom:14px">
+        <i class="bi bi-check-circle-fill"></i> @successMsg
+    </div>
+}
+
+@* Tabs *@
+<div style="display:flex;gap:8px;margin-bottom:16px">
+    <button class="@(tab=="ann" ? "btn-navy" : "btn-outline-navy")" @onclick='() => tab = "ann"'>
+        <i class="bi bi-megaphone me-1"></i>ประกาศ / คู่มือ
+    </button>
+    <button class="@(tab=="faq" ? "btn-navy" : "btn-outline-navy")" @onclick='() => tab = "faq"'>
+        <i class="bi bi-question-circle me-1"></i>FAQ
+    </button>
+</div>
+
+@if (tab == "ann")
+{
+    @* Add announcement form *@
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(15,23,42,.04)">
+        <div style="font-size:14px;font-weight:800;color:var(--navy-deep);margin-bottom:12px">เพิ่มประกาศใหม่</div>
+        <div class="row g-2">
+            <div class="col-md-3">
+                <select @bind="annKind" class="form-select form-select-sm">
+                    <option value="announcement">ประกาศ</option>
+                    <option value="guide">คู่มือ</option>
+                    <option value="news">ข่าวสาร</option>
+                    <option value="maintenance">แจ้งบำรุงรักษา</option>
+                </select>
+            </div>
+            <div class="col-md-9">
+                <input @bind="annTitle" class="form-control form-control-sm" placeholder="หัวข้อ" />
+            </div>
+            <div class="col-12">
+                <textarea @bind="annBody" rows="3" class="form-control form-control-sm" placeholder="เนื้อหา"></textarea>
+            </div>
+            <div class="col-md-6">
+                <input @bind="annAttachUrl" class="form-control form-control-sm" placeholder="URL เอกสารแนบ (ถ้ามี)" />
+            </div>
+            <div class="col-md-6">
+                <input @bind="annVideoUrl" class="form-control form-control-sm" placeholder="Video embed URL (YouTube embed หรือ iframe src)" />
+            </div>
+            <div class="col-12" style="display:flex;gap:8px;align-items:center">
+                <label style="display:flex;align-items:center;gap:6px;font-size:13px">
+                    <input type="checkbox" @bind="annPublish" /> เผยแพร่ทันที
+                </label>
+                <button class="btn-navy" style="font-size:12px;padding:6px 14px" @onclick="AddAnnouncementAsync" disabled="@submitting">
+                    <i class="bi bi-plus-lg"></i> เพิ่ม
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @* Announcement list *@
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.04)">
+        @if (loadingAnn)
+        {
+            <div style="padding:28px;text-align:center;color:#94a3b8">กำลังโหลด...</div>
+        }
+        else if (announcements.Count == 0)
+        {
+            <div style="padding:28px;text-align:center;color:#94a3b8">ยังไม่มีประกาศ</div>
+        }
+        else
+        {
+            @foreach (var ann in announcements)
+            {
+                @if (editAnnId == ann.Id)
+                {
+                    <div style="padding:14px 16px;border-bottom:1px solid #f1f5f9;background:#f8fafc">
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <select @bind="editAnnKind" class="form-select form-select-sm">
+                                    <option value="announcement">ประกาศ</option>
+                                    <option value="guide">คู่มือ</option>
+                                    <option value="news">ข่าวสาร</option>
+                                    <option value="maintenance">แจ้งบำรุงรักษา</option>
+                                </select>
+                            </div>
+                            <div class="col-md-9">
+                                <input @bind="editAnnTitle" class="form-control form-control-sm" placeholder="หัวข้อ" />
+                            </div>
+                            <div class="col-12">
+                                <textarea @bind="editAnnBody" rows="3" class="form-control form-control-sm" placeholder="เนื้อหา"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <input @bind="editAnnAttachUrl" class="form-control form-control-sm" placeholder="URL เอกสารแนบ" />
+                            </div>
+                            <div class="col-md-6">
+                                <input @bind="editAnnVideoUrl" class="form-control form-control-sm" placeholder="Video embed URL" />
+                            </div>
+                            <div class="col-12" style="display:flex;gap:8px;align-items:center">
+                                <label style="display:flex;align-items:center;gap:6px;font-size:13px">
+                                    <input type="checkbox" @bind="editAnnPublish" /> เผยแพร่
+                                </label>
+                                <button class="btn-navy" style="font-size:12px;padding:5px 12px" @onclick="SaveAnnEditAsync" disabled="@submitting">บันทึก</button>
+                                <button class="btn-outline-navy" style="font-size:12px;padding:5px 10px" @onclick="CancelAnnEdit">ยกเลิก</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div style="padding:12px 16px;border-bottom:1px solid #f1f5f9;display:flex;align-items:flex-start;gap:10px">
+                        <div style="flex:1">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+                                <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:#eef2f9;color:#1a2f6b">@ann.Kind</span>
+                                @if (ann.Status == "published")
+                                {
+                                    <span class="badge bg-success" style="font-size:10px">เผยแพร่</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary" style="font-size:10px">ฉบับร่าง</span>
+                                }
+                                @if (!string.IsNullOrEmpty(ann.VideoUrl))
+                                {
+                                    <span class="badge bg-primary" style="font-size:10px"><i class="bi bi-play-circle me-1"></i>VDO</span>
+                                }
+                            </div>
+                            <div style="font-weight:700;color:var(--navy-deep);font-size:13px">@ann.Title</div>
+                            <div style="font-size:11.5px;color:#64748b;margin-top:2px">@ann.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                        </div>
+                        <div style="display:flex;gap:6px">
+                            <button class="btn-outline-navy" style="font-size:11px;padding:4px 10px" @onclick="() => StartAnnEdit(ann)">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button style="background:#fff;border:1px solid #fca5a5;color:#dc2626;border-radius:7px;font-size:11px;padding:4px 10px;font-weight:700;cursor:pointer"
+                                    @onclick="() => DeleteAnnouncementAsync(ann.Id)" disabled="@submitting">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                }
+            }
+        }
+    </div>
+}
+else
+{
+    @* Add FAQ form *@
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(15,23,42,.04)">
+        <div style="font-size:14px;font-weight:800;color:var(--navy-deep);margin-bottom:12px">เพิ่ม FAQ ใหม่</div>
+        <div class="row g-2">
+            <div class="col-md-3">
+                <input @bind="faqCategory" class="form-control form-control-sm" placeholder="หมวดหมู่ (เช่น ทั่วไป)" />
+            </div>
+            <div class="col-md-2">
+                <input @bind="faqSortOrder" type="number" class="form-control form-control-sm" placeholder="ลำดับ" />
+            </div>
+            <div class="col-md-7">
+                <input @bind="faqQuestion" class="form-control form-control-sm" placeholder="คำถาม" />
+            </div>
+            <div class="col-12">
+                <textarea @bind="faqAnswer" rows="3" class="form-control form-control-sm" placeholder="คำตอบ"></textarea>
+            </div>
+            <div class="col-12" style="display:flex;gap:8px;align-items:center">
+                <label style="display:flex;align-items:center;gap:6px;font-size:13px">
+                    <input type="checkbox" @bind="faqIsActive" /> เผยแพร่
+                </label>
+                <button class="btn-navy" style="font-size:12px;padding:6px 14px" @onclick="AddFaqAsync" disabled="@submitting">
+                    <i class="bi bi-plus-lg"></i> เพิ่ม
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @* FAQ list *@
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.04)">
+        @if (loadingFaq)
+        {
+            <div style="padding:28px;text-align:center;color:#94a3b8">กำลังโหลด...</div>
+        }
+        else if (faqs.Count == 0)
+        {
+            <div style="padding:28px;text-align:center;color:#94a3b8">ยังไม่มี FAQ</div>
+        }
+        else
+        {
+            @foreach (var faq in faqs)
+            {
+                @if (editFaqId == faq.Id)
+                {
+                    <div style="padding:14px 16px;border-bottom:1px solid #f1f5f9;background:#f8fafc">
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <input @bind="editFaqCategory" class="form-control form-control-sm" placeholder="หมวดหมู่" />
+                            </div>
+                            <div class="col-md-2">
+                                <input @bind="editFaqSortOrder" type="number" class="form-control form-control-sm" />
+                            </div>
+                            <div class="col-md-6">
+                                <input @bind="editFaqQuestion" class="form-control form-control-sm" placeholder="คำถาม" />
+                            </div>
+                            <div class="col-12">
+                                <textarea @bind="editFaqAnswer" rows="3" class="form-control form-control-sm" placeholder="คำตอบ"></textarea>
+                            </div>
+                            <div class="col-12" style="display:flex;gap:8px;align-items:center">
+                                <label style="display:flex;align-items:center;gap:6px;font-size:13px">
+                                    <input type="checkbox" @bind="editFaqIsActive" /> เผยแพร่
+                                </label>
+                                <button class="btn-navy" style="font-size:12px;padding:5px 12px" @onclick="SaveFaqEditAsync" disabled="@submitting">บันทึก</button>
+                                <button class="btn-outline-navy" style="font-size:12px;padding:5px 10px" @onclick="CancelFaqEdit">ยกเลิก</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div style="padding:12px 16px;border-bottom:1px solid #f1f5f9;display:flex;align-items:flex-start;gap:10px">
+                        <span style="width:28px;text-align:center;font-size:12px;color:#94a3b8;font-weight:700;flex-shrink:0">@faq.SortOrder</span>
+                        <div style="flex:1">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+                                <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:#fef3c7;color:#92400e">@faq.Category</span>
+                                @if (faq.Status == "published")
+                                {
+                                    <span class="badge bg-success" style="font-size:10px">เผยแพร่</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary" style="font-size:10px">ฉบับร่าง</span>
+                                }
+                            </div>
+                            <div style="font-weight:700;color:var(--navy-deep);font-size:13px">@faq.Question</div>
+                            <div style="font-size:11.5px;color:#64748b;margin-top:2px">@faq.Answer</div>
+                        </div>
+                        <div style="display:flex;gap:6px">
+                            <button class="btn-outline-navy" style="font-size:11px;padding:4px 10px" @onclick="() => StartFaqEdit(faq)">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button style="background:#fff;border:1px solid #fca5a5;color:#dc2626;border-radius:7px;font-size:11px;padding:4px 10px;font-weight:700;cursor:pointer"
+                                    @onclick="() => DeleteFaqAsync(faq.Id)" disabled="@submitting">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                }
+            }
+        }
+    </div>
+}
+
+@code {
+    private string tab = "ann";
+    private List<AdminAnnouncementDto> announcements = new();
+    private List<AdminFaqDto> faqs = new();
+
+    private bool loadingAnn = true;
+    private bool loadingFaq = true;
+    private bool submitting;
+    private string error = "";
+    private string successMsg = "";
+
+    // Add announcement form
+    private string annKind = "announcement";
+    private string annTitle = "";
+    private string annBody = "";
+    private string annAttachUrl = "";
+    private string annVideoUrl = "";
+    private bool annPublish = true;
+
+    // Edit announcement
+    private int? editAnnId;
+    private string editAnnKind = "";
+    private string editAnnTitle = "";
+    private string editAnnBody = "";
+    private string editAnnAttachUrl = "";
+    private string editAnnVideoUrl = "";
+    private bool editAnnPublish;
+
+    // Add FAQ form
+    private string faqCategory = "ทั่วไป";
+    private string faqQuestion = "";
+    private string faqAnswer = "";
+    private int faqSortOrder;
+    private bool faqIsActive = true;
+
+    // Edit FAQ
+    private int? editFaqId;
+    private string editFaqCategory = "";
+    private string editFaqQuestion = "";
+    private string editFaqAnswer = "";
+    private int editFaqSortOrder;
+    private bool editFaqIsActive;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(LoadAnnouncementsAsync(), LoadFaqsAsync());
+    }
+
+    private async Task LoadAnnouncementsAsync()
+    {
+        loadingAnn = true;
+        try { announcements = await CentralSupportApi.GetAdminAnnouncementsAsync(); }
+        catch (Exception ex) { error = ex.Message; }
+        finally { loadingAnn = false; }
+    }
+
+    private async Task LoadFaqsAsync()
+    {
+        loadingFaq = true;
+        try { faqs = await CentralSupportApi.GetAdminFaqsAsync(); }
+        catch (Exception ex) { error = ex.Message; }
+        finally { loadingFaq = false; }
+    }
+
+    private async Task AddAnnouncementAsync()
+    {
+        if (string.IsNullOrWhiteSpace(annTitle)) { error = "กรุณาระบุหัวข้อ"; return; }
+        submitting = true; error = ""; successMsg = "";
+        try
+        {
+            await CentralSupportApi.CreateAnnouncementAsync(annKind, annTitle, annBody, annAttachUrl, annVideoUrl, annPublish);
+            successMsg = "เพิ่มประกาศแล้ว";
+            annTitle = ""; annBody = ""; annAttachUrl = ""; annVideoUrl = "";
+            await LoadAnnouncementsAsync();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { submitting = false; }
+    }
+
+    private void StartAnnEdit(AdminAnnouncementDto ann)
+    {
+        editAnnId = ann.Id;
+        editAnnKind = ann.Kind;
+        editAnnTitle = ann.Title;
+        editAnnBody = ann.Body;
+        editAnnAttachUrl = ann.AttachmentUrl;
+        editAnnVideoUrl = ann.VideoUrl;
+        editAnnPublish = ann.Status == "published";
+    }
+
+    private void CancelAnnEdit() => editAnnId = null;
+
+    private async Task SaveAnnEditAsync()
+    {
+        if (editAnnId is null) return;
+        submitting = true; error = ""; successMsg = "";
+        try
+        {
+            await CentralSupportApi.UpdateAnnouncementAsync(editAnnId.Value, editAnnKind, editAnnTitle, editAnnBody, editAnnAttachUrl, editAnnVideoUrl, editAnnPublish);
+            successMsg = "อัปเดตประกาศแล้ว";
+            editAnnId = null;
+            await LoadAnnouncementsAsync();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { submitting = false; }
+    }
+
+    private async Task DeleteAnnouncementAsync(int id)
+    {
+        submitting = true; error = ""; successMsg = "";
+        try
+        {
+            await CentralSupportApi.DeleteAnnouncementAsync(id);
+            successMsg = "ลบประกาศแล้ว";
+            await LoadAnnouncementsAsync();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { submitting = false; }
+    }
+
+    private async Task AddFaqAsync()
+    {
+        if (string.IsNullOrWhiteSpace(faqQuestion)) { error = "กรุณาระบุคำถาม"; return; }
+        submitting = true; error = ""; successMsg = "";
+        try
+        {
+            await CentralSupportApi.CreateFaqAsync(faqCategory, faqQuestion, faqAnswer, faqSortOrder, faqIsActive);
+            successMsg = "เพิ่ม FAQ แล้ว";
+            faqQuestion = ""; faqAnswer = ""; faqSortOrder = 0;
+            await LoadFaqsAsync();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { submitting = false; }
+    }
+
+    private void StartFaqEdit(AdminFaqDto faq)
+    {
+        editFaqId = faq.Id;
+        editFaqCategory = faq.Category;
+        editFaqQuestion = faq.Question;
+        editFaqAnswer = faq.Answer;
+        editFaqSortOrder = faq.SortOrder;
+        editFaqIsActive = faq.Status == "published";
+    }
+
+    private void CancelFaqEdit() => editFaqId = null;
+
+    private async Task SaveFaqEditAsync()
+    {
+        if (editFaqId is null) return;
+        submitting = true; error = ""; successMsg = "";
+        try
+        {
+            await CentralSupportApi.UpdateFaqAsync(editFaqId.Value, editFaqCategory, editFaqQuestion, editFaqAnswer, editFaqSortOrder, editFaqIsActive);
+            successMsg = "อัปเดต FAQ แล้ว";
+            editFaqId = null;
+            await LoadFaqsAsync();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { submitting = false; }
+    }
+
+    private async Task DeleteFaqAsync(int id)
+    {
+        submitting = true; error = ""; successMsg = "";
+        try
+        {
+            await CentralSupportApi.DeleteFaqAsync(id);
+            successMsg = "ลบ FAQ แล้ว";
+            await LoadFaqsAsync();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { submitting = false; }
+    }
+}

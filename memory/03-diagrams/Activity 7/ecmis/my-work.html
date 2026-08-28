@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E-CMIS | คิวงานของฉัน</title>
+<link rel="stylesheet" href="./shared-assets/fontawesome/css/all.min.css">
+<link rel="stylesheet" href="./shared-assets/sweetalert2/sweetalert2.min.css">
+<link rel="stylesheet" href="./shared-assets/mockup.css">
+<link rel="stylesheet" href="./shared-assets/auth.css">
+<script src="./shared-assets/auth.js"></script>
+<script src="./cases.js"></script>
+<style>
+  .me-card{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:16px 19px;border-radius:11px;
+    background:linear-gradient(120deg,#0d1b3e 0%,#1d3975 62%,#16558f 100%);color:#fff;margin-bottom:16px}
+  .me-avatar{display:grid;width:54px;height:54px;flex:0 0 54px;place-items:center;border:2px solid #d0ad3d;
+    border-radius:50%;background:rgba(255,255,255,.12);font-size:20px;font-weight:600}
+  .me-card h1{margin:0;font-size:21px;font-weight:600;color:#fff}
+  .me-card .me-title{margin:3px 0 0;font-size:13px;color:#f0c75a}
+  .me-card .me-org{font-size:12px;opacity:.8}
+  .me-caps{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+  .me-caps span{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.2);
+    border-radius:999px;padding:4px 10px;font-size:11px}
+
+  .q-row{display:grid;grid-template-columns:112px minmax(0,1fr) 190px 150px;gap:12px;align-items:center;
+    padding:13px 17px;border-top:1px solid #e5eaf0}
+  .q-row:first-of-type{border-top:0}
+  .q-row:hover{background:#f6f9fc}
+  .q-id{font-weight:600;color:#173d68}
+  .q-sub{display:block;color:#22344d}
+  .q-meta{display:block;margin-top:3px;color:#718298;font-size:11.5px}
+  .q-why{font-size:11px;border-radius:999px;padding:3px 9px;white-space:nowrap;display:inline-block}
+  .why-mine{background:#e8f1fa;color:#16558f;border:1px solid #c5dbf0}
+  .why-wait{background:#fff6df;color:#8a6111;border:1px solid #e3c77e}
+  .why-back{background:#fff0ef;color:#9e3e3b;border:1px solid #e8c9c7}
+  .why-here{background:#e9f6ee;color:#24714a;border:1px solid #b8e0c8}
+  @media(max-width:900px){ .q-row{grid-template-columns:1fr;gap:5px} }
+
+  /* mockup.css สไตล์เฉพาะ `.nav button.nav-link` — ลิงก์ <a> จึงไม่ได้สไตล์เลย ต้องเติมเอง */
+  .nav a.nav-link{display:flex;width:100%;min-height:44px;align-items:center;gap:11px;margin:3px 0;
+    padding:10px 12px 10px 38px;border:1px solid transparent;border-radius:7px;background:transparent;
+    color:#cad5e9;font-size:13px;font-weight:500;text-align:left;text-decoration:none}
+  .nav a.nav-link:hover{background:rgba(255,255,255,.07);color:#fff}
+  .nav a.nav-link .icon{width:18px;color:#8fa1c6;text-align:center}
+  .nav .nav-link.nav-lock{opacity:.4;cursor:not-allowed;position:relative}
+  .nav .nav-link.nav-lock .lock{position:absolute;right:12px;font-size:10px;color:#8fa1c6}
+  .empty-q{padding:38px;text-align:center;color:#6d7d91}
+  .empty-q strong{display:block;color:#344862;margin-bottom:5px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <img class="seal" src="./shared-assets/images/pacc-logo.webp" alt="">
+      <div><strong>E-CMIS</strong><small>สำนักงาน ป.ป.ท.</small></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-module-label"><i class="fa-solid fa-briefcase icon"></i><span>งานของฉัน</span></div>
+      <button class="nav-link active"><i class="fa-solid fa-list-check icon"></i><span>คิวงานของฉัน</span></button>
+      <div class="nav-section-label">กิจกรรมที่เข้าได้</div>
+      <div id="navActs"></div>
+      <div class="nav-section-label">อื่น ๆ</div>
+      <a class="nav-link" href="./activities.html" style="text-decoration:none"><i class="fa-solid fa-diagram-project icon"></i><span>แผนผังทุกกิจกรรม</span></a>
+      <a class="nav-link" href="./index.html" style="text-decoration:none"><i class="fa-solid fa-globe icon"></i><span>หน้าสาธารณะ</span></a>
+    </nav>
+    <div class="profile">
+      <div class="avatar" id="navAvatar">·</div>
+      <div><strong id="navName">—</strong><small id="navTitle"></small></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="top">
+      <button class="collapse" aria-label="เมนู"><i class="fa-solid fa-bars"></i></button>
+      <div class="global-search"><i class="fa-solid fa-magnifying-glass"></i> ค้นหาเลขสำนวน / เรื่อง / ผู้ถูกกล่าวหา</div>
+      <div class="top-right">
+        <button class="icon-btn" aria-label="แจ้งเตือน"><i class="fa-regular fa-bell"></i><span class="notification-dot"></span></button>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="me-card">
+        <div class="me-avatar" id="meAvatar">·</div>
+        <div>
+          <h1 id="meName">—</h1>
+          <p class="me-title" id="meTitle"></p>
+          <p class="me-org" id="meOrg"></p>
+        </div>
+        <div class="me-caps" id="meCaps"></div>
+      </div>
+
+      <div class="stats" id="kpis"></div>
+
+      <div class="card">
+        <div class="card-head">
+          <div><h2>คิวงานของฉัน</h2><p id="qSub">สำนวนที่อยู่ในความรับผิดชอบ หรือรอให้คุณดำเนินการ</p></div>
+          <span class="badge" id="qCount">—</span>
+        </div>
+        <div id="queue"></div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-head"><div><h2>กิจกรรมที่คุณเข้าได้</h2><p>สิทธิ์มาจากตำแหน่งของคุณ ไม่ใช่ชื่อบัญชี</p></div></div>
+        <div class="catalog" style="padding:15px 19px" id="actGrid"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="./shared-assets/sweetalert2/sweetalert2.all.min.js"></script>
+<script>
+(function(){
+  const A = window.ECMISAuth, H = window.ECMISHub;
+  const me = A.getAuth();
+  if(!me){ location.replace("./login.html?next=" + encodeURIComponent("/my-work.html")); return; }
+
+  const $ = s => document.querySelector(s);
+  const esc = x => String(x==null?"":x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  const initial = (me.displayName||"?").replace(/^(นาย|นาง|นางสาว)\s*/,"").charAt(0) || "·";
+
+  /* ---- ตัวตน ---- */
+  $("#meAvatar").textContent = initial; $("#navAvatar").textContent = initial;
+  $("#meName").textContent  = me.displayName; $("#navName").textContent = me.displayName;
+  $("#meTitle").textContent = me.title || ""; $("#navTitle").textContent = me.title || "";
+  $("#meOrg").textContent   = me.org || "";
+  $("#meCaps").innerHTML =
+    (me.act === "*" ? ["เห็นทุกกิจกรรม"] : [A.actTh(me.act)])
+      .map(t=>`<span>${esc(t)}</span>`).join("")
+    + (me.readOnly ? '<span style="background:#7a5c14">ดูได้อย่างเดียว</span>' : "");
+
+  /* ---- เมนูข้าง + การ์ดกิจกรรม: เฉพาะที่เข้าได้ ---- */
+  const acts = me.visible || [];
+  $("#navActs").innerHTML = A.ACT_KEYS.map(k=>{
+    const ok = acts.indexOf(k)!==-1;
+    return ok
+      ? `<a class="nav-link" href="./${A.actEntry(k)}" style="text-decoration:none"><i class="fa-solid ${A.actIcon(k)} icon"></i><span>${esc(A.actShort(k))}</span></a>`
+      : `<button class="nav-link nav-lock" data-locked="${k}"><i class="fa-solid ${A.actIcon(k)} icon"></i><span>${esc(A.actShort(k))}</span><i class="fa-solid fa-lock lock"></i></button>`;
+  }).join("");
+  $("#actGrid").innerHTML = acts.map(k=>
+    `<a class="form-tile" href="./${A.actEntry(k)}" style="text-decoration:none">
+       <span class="form-code"><i class="fa-solid ${A.actIcon(k)}"></i></span>
+       <span><strong>${esc(A.actShort(k))}</strong><small>${esc(A.actTh(k))}</small></span>
+       <span class="btn secondary">เปิด</span>
+     </a>`).join("") || '<p class="empty">ไม่มีกิจกรรมที่เข้าได้</p>';
+
+  document.addEventListener("click", e=>{
+    const b = e.target.closest("[data-locked]");
+    if(!b) return;
+    const k = b.getAttribute("data-locked");
+    const owners = A.ownersOf(k).slice(0,4).map(o=>o.name+" — "+o.title).join("<br>");
+    Swal.fire({icon:"info", title:"ไม่มีสิทธิ์เข้าถึง",
+      html:`<b>${esc(A.actTh(k))}</b><br><br>เป็นงานของ:<br>${owners||"ผู้ดูแลระบบ"}`,
+      confirmButtonColor:"#0d1b3e", customClass:{popup:"ecmis-swal"}});
+  });
+
+  /* ---- คิวงาน: ดึงจากทะเบียนกลางจริง ---- */
+  function classify(c){
+    if(c.pending && acts.indexOf(c.pending.to)!==-1)
+      return {why:"รอคุณรับเรื่อง", cls:"why-wait", rank:0};
+    if(c.returned && c.ownerLogin === me.username)
+      return {why:"ถูกตีกลับ ต้องแก้ไข", cls:"why-back", rank:1};
+    if(c.ownerLogin === me.username)
+      return {why:"สำนวนของคุณ", cls:"why-mine", rank:2};
+    if(c.at && acts.indexOf(c.at)!==-1)
+      return {why:"อยู่ในงานที่คุณดูแล", cls:"why-here", rank:3};
+    return null;
+  }
+  const rows = H.getAllCases()
+    .map(c => ({ c, k: classify(c) }))
+    .filter(x => x.k)
+    .sort((a,b) => a.k.rank - b.k.rank);
+
+  $("#qCount").textContent = rows.length + " เรื่อง";
+  $("#queue").innerHTML = rows.length ? rows.map(({c,k})=>`
+    <a class="q-row" href="./${esc(A.actEntry(c.at||acts[0]))}?case=${encodeURIComponent(c.id)}" style="text-decoration:none;color:inherit">
+      <span class="q-id">${esc(c.id)}</span>
+      <span>
+        <strong class="q-sub">${esc(c.subject||c.title||"-")}</strong>
+        <small class="q-meta">${esc(c.agency||"")}${c.accused? " · ผู้ถูกกล่าวหา "+esc(c.accused) : ""}</small>
+      </span>
+      <span><span class="q-why ${k.cls}">${esc(k.why)}</span><small class="q-meta">${esc(c.status||"")}</small></span>
+      <span><small class="q-meta"><i class="fa-solid ${A.actIcon(c.at)}"></i> ${esc(A.actShort(c.at||"-"))}</small>
+        ${c.sla213? `<small class="q-meta">SLA ${esc(c.sla213)}</small>`:""}</span>
+    </a>`).join("")
+    : `<div class="empty-q"><strong>ยังไม่มีงานในคิว</strong>
+        สำนวนจะเข้ามาที่นี่เมื่อมีคนส่งต่อให้คุณ หรือเมื่อคุณเป็นเจ้าของสำนวน</div>`;
+
+  /* ---- KPI ---- */
+  const n = f => rows.filter(f).length;
+  $("#kpis").innerHTML = [
+    ["ทั้งหมดในคิว", rows.length, "", "เรื่อง"],
+    ["รอคุณรับเรื่อง", n(x=>x.k.rank===0), "warning", "เรื่อง"],
+    ["ถูกตีกลับ", n(x=>x.k.rank===1), "danger", "เรื่อง"],
+    ["สำนวนของคุณ", n(x=>x.k.rank===2), "success", "เรื่อง"],
+    ["กิจกรรมที่เข้าได้", acts.length, "", "กิจกรรม"],
+  ].map(([t,v,cls,u])=>`<div class="stat ${cls}"><span>${t}</span><strong>${v}</strong><small>${u}</small></div>`).join("");
+})();
+</script>
+</body>
+</html>

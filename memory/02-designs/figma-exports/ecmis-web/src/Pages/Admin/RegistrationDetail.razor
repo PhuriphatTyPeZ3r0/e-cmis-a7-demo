@@ -1,0 +1,668 @@
+@page "/admin/registrations/{Id}"
+@inject EcmisWeb.Services.AdminApiService AdminApi
+@inject EcmisWeb.Services.SystemAccessApiService SystemApi
+@inject EcmisWeb.Services.CurrentUserService CurrentUser
+@inject EcmisWeb.Services.OrgApiService OrgApi
+@inject NavigationManager Nav
+@inject IConfiguration Config
+@using EcmisWeb.Models
+
+<PageTitle>รายละเอียดคำขอลงทะเบียน — E-CMIS Admin</PageTitle>
+
+@if (isLoading)
+{
+    <div style="padding:40px;text-align:center">
+        <span class="spinner-border" style="color:var(--navy)"></span>
+    </div>
+}
+else if (dto is null)
+{
+    <div class="page-header">
+        <div class="page-title">ไม่พบคำขอ</div>
+    </div>
+    <div class="reg-alert reg-alert-error" style="margin-top:0">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        ไม่พบคำขอรหัส "@Id"
+    </div>
+    <button class="btn-outline-navy mt-3" @onclick='() => Nav.NavigateTo("/admin/registrations")'>
+        <i class="bi bi-arrow-left me-1"></i> กลับรายการ
+    </button>
+}
+else
+{
+    <div class="page-header">
+        <div>
+            <div class="page-title">
+                <i class="bi bi-person-badge-fill me-2" style="color:var(--gold)"></i>
+                @dto.FirstName @dto.LastName
+            </div>
+            <div class="page-subtitle" style="display:flex;align-items:center;gap:8px">
+                <span style="font-family:monospace;font-size:13px">@dto.TrackingId</span>
+                <span class="admin-status-badge @StatusCss(CurrentStatus)">@StatusLabel(CurrentStatus)</span>
+            </div>
+        </div>
+        <button class="btn-outline-navy" @onclick='() => Nav.NavigateTo("/admin/registrations")'>
+            <i class="bi bi-arrow-left me-1"></i> กลับรายการ
+        </button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:flex-start">
+
+        @* ══ LEFT ══ *@
+        <div>
+            <div class="admin-detail-section">
+                <div class="admin-detail-section-title">
+                    <i class="bi bi-person-fill" style="color:var(--gold)"></i>
+                    ข้อมูลส่วนบุคคล
+                </div>
+                <div class="admin-info-grid">
+                    <div class="admin-info-item"><label>ชื่อ-นามสกุล</label><span>@dto.FirstName @dto.LastName</span></div>
+                    <div class="admin-info-item"><label>Username</label><span style="font-family:monospace">@dto.Username</span></div>
+                    <div class="admin-info-item"><label>อีเมล</label><span>@dto.Email</span></div>
+                    <div class="admin-info-item"><label>เบอร์โทร</label><span>@dto.PhoneNumber</span></div>
+                    <div class="admin-info-item"><label>ยื่นเมื่อ</label><span>@dto.CreatedAt.LocalDateTime.ToString("dd/MM/yyyy HH:mm")</span></div>
+                    <div class="admin-info-item">
+                        <label>หน่วยงาน (สังกัด)</label>
+                        <span style="@(dto.TargetOrgId.HasValue ? "" : "color:var(--danger-color,#c0392b)")">
+                            @(string.IsNullOrEmpty(dto.TargetOrgNameTh) ? "ยังไม่ได้กำหนด" : dto.TargetOrgNameTh)
+                        </span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(dto.PositionName))
+                    {
+                        <div class="admin-info-item"><label>ตำแหน่ง</label><span>@dto.PositionName</span></div>
+                    }
+                    @if (dto.AssignedGroups is { Count: > 0 })
+                    {
+                        <div class="admin-info-item" style="grid-column:1/-1">
+                            <label>กลุ่มสิทธิ์ที่มอบแล้ว</label>
+                            <span>
+                                @foreach (var g in dto.AssignedGroups)
+                                {
+                                    <span style="display:inline-block;background:#eff4ff;border:1px solid #bfdbfe;border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:12px">
+                                        @g.GroupName <span style="color:var(--text-muted)">(@g.GroupCode)</span>
+                                    </span>
+                                }
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (dto.ApplicationDetail is not null && HasApplicationDetail(dto.ApplicationDetail))
+            {
+                <div class="admin-detail-section">
+                    <div class="admin-detail-section-title">
+                        <i class="bi bi-building" style="color:var(--navy)"></i>
+                        รายละเอียดคำขอ (สังกัด / ตำแหน่งงาน)
+                    </div>
+                    <div class="admin-info-grid">
+                        @if (!string.IsNullOrEmpty(dto.ApplicationDetail.Bureau))
+                        {
+                            <div class="admin-info-item"><label>สำนัก/กอง/ศูนย์ (ข้อความ)</label><span>@dto.ApplicationDetail.Bureau</span></div>
+                        }
+                        @if (!string.IsNullOrEmpty(dto.ApplicationDetail.OfficerType))
+                        {
+                            <div class="admin-info-item"><label>ประเภทเจ้าหน้าที่</label><span>@dto.ApplicationDetail.OfficerType</span></div>
+                        }
+                        @if (!string.IsNullOrEmpty(dto.ApplicationDetail.JobTitle))
+                        {
+                            <div class="admin-info-item"><label>ตำแหน่งงานในสังกัด</label><span>@dto.ApplicationDetail.JobTitle</span></div>
+                        }
+                        @if (!string.IsNullOrEmpty(dto.ApplicationDetail.Division))
+                        {
+                            <div class="admin-info-item"><label>ส่วน/กลุ่ม/ฝ่าย</label><span>@dto.ApplicationDetail.Division</span></div>
+                        }
+                        @if (!string.IsNullOrEmpty(dto.ApplicationDetail.SubDivision))
+                        {
+                            <div class="admin-info-item"><label>ส่วน/กลุ่ม/ย่อย</label><span>@dto.ApplicationDetail.SubDivision</span></div>
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (dto.AdminApprovedAt.HasValue)
+            {
+                <div class="admin-detail-section">
+                    <div class="admin-detail-section-title">
+                        <i class="bi @(CurrentStatus == RegistrationStatus.Approved ? "bi-check-circle-fill text-success" : "bi-x-circle-fill text-danger")"></i>
+                        ผลการพิจารณา Admin
+                    </div>
+                    <div class="admin-info-grid">
+                        <div class="admin-info-item">
+                            <label>ผลการพิจารณา</label>
+                            <span><span class="admin-status-badge @StatusCss(CurrentStatus)">@StatusLabel(CurrentStatus)</span></span>
+                        </div>
+                        <div class="admin-info-item"><label>พิจารณาโดย</label><span>@dto.AdminApprovedBy</span></div>
+                        <div class="admin-info-item"><label>วันที่พิจารณา</label><span>@dto.AdminApprovedAt?.LocalDateTime.ToString("dd/MM/yyyy HH:mm")</span></div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(dto.RejectReason))
+                    {
+                        <div class="reg-alert reg-alert-error mt-2">
+                            <i class="bi bi-x-circle-fill"></i>
+                            <div><strong>เหตุผลที่ปฏิเสธ:</strong> @dto.RejectReason</div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(dto.AdminNote))
+                    {
+                        <div style="background:#f8f9fe;border-radius:8px;padding:10px 14px;margin-top:8px;font-size:13px">
+                            <strong>หมายเหตุ Admin:</strong> @dto.AdminNote
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        @* ══ RIGHT: Actions ══ *@
+        <div>
+            @if (!string.IsNullOrEmpty(actionError))
+            {
+                <div class="reg-alert reg-alert-error mb-3">
+                    <i class="bi bi-exclamation-circle-fill"></i> @actionError
+                </div>
+            }
+
+            @if (CurrentStatus == RegistrationStatus.Pending)
+            {
+                <div class="admin-detail-section">
+                    <div class="admin-detail-section-title">
+                        <i class="bi bi-person-check-fill" style="color:var(--green)"></i>
+                        อนุมัติคำขอลงทะเบียน
+                    </div>
+                    <div class="reg-field">
+                        <label class="reg-label">หน่วยงาน (สังกัด) <span style="color:#c0392b">*</span></label>
+                        @if (CanPickOrg)
+                        {
+                            <select class="reg-input" value="@approveOrgIdText" @onchange="OnApproveOrgChanged">
+                                <option value="">— เลือกหน่วยงาน —</option>
+                                @foreach (var org in OrgsForPicker)
+                                {
+                                    <option value="@org.Id">@org.NameTh</option>
+                                }
+                            </select>
+                            @if (dto?.TargetOrgId is > 0)
+                            {
+                                <span style="font-size:11px;color:var(--text-muted)">ผู้สมัครระบุมาแล้ว — ผู้ดูแลระบบสูงสุดแก้สังกัดได้ก่อนอนุมัติ</span>
+                            }
+                            else
+                            {
+                                <span style="font-size:11px;color:var(--text-muted)">ผู้สมัครไม่ได้ระบุหน่วยงาน — กำหนดก่อนอนุมัติ</span>
+                            }
+                        }
+                        else if (ShowOrgReadOnly)
+                        {
+                            <div class="reg-input" style="background:#f1f5f9;cursor:default">@ResolvedOrgName</div>
+                        }
+                        else
+                        {
+                            <div class="reg-alert reg-alert-error" style="margin-top:0;font-size:12px">
+                                คำขอไม่มีหน่วยงาน — เฉพาะผู้ดูแลระบบกำหนดหน่วยงานได้
+                            </div>
+                        }
+                    </div>
+                    <div class="reg-field">
+                        <label class="reg-label">กลุ่มสิทธิ์ <span style="color:#c0392b">*</span></label>
+                        <select class="reg-input" @bind="approveGroupIdText">
+                            <option value="">— เลือกกลุ่มสิทธิ์ —</option>
+                            @foreach (var g in assignableGroups)
+                            {
+                                <option value="@g.Id">@g.NameTh (@g.Code)@(g.IsActive ? "" : " — ปิดใช้งาน")</option>
+                            }
+                        </select>
+                        <span style="font-size:11px;color:var(--text-muted)">ผู้ใช้จะเห็นเมนูตามกลุ่มที่เลือก (ต้องติ๊กเมนูในกลุ่มไว้แล้ว)</span>
+                    </div>
+                    <div class="reg-field">
+                        <label class="reg-label">หมายเหตุ</label>
+                        <textarea class="reg-input" rows="3" @bind="adminNote"
+                                  placeholder="บันทึกเพิ่มเติม (ไม่บังคับ)..."></textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn-approve flex-fill" @onclick="DoApprove" disabled="@(isActing || !CanApprove)">
+                            @if (isActing)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span><text>กำลังดำเนินการ</text>
+                            }
+                            else
+                            {
+                                <i class="bi bi-check-lg"></i><text> อนุมัติและสร้างบัญชี</text>
+                            }
+                        </button>
+                        <button class="btn-reject flex-fill" @onclick='() => { rejectReason = ""; showRejectModal = true; }' disabled="@isActing">
+                            <i class="bi bi-x-lg"></i> ปฏิเสธ
+                        </button>
+                    </div>
+                </div>
+            }
+
+            @if (CurrentStatus is RegistrationStatus.Approved or RegistrationStatus.Rejected)
+            {
+                <div class="admin-detail-section">
+                    <div class="admin-detail-section-title">
+                        <i class="bi bi-flag-fill" style="color:var(--gold)"></i>
+                        ดำเนินการเสร็จสิ้น
+                    </div>
+                    <div class="reg-alert @(CurrentStatus == RegistrationStatus.Approved ? "reg-alert-success" : "reg-alert-error")" style="margin-top:0">
+                        <i class="bi @(CurrentStatus == RegistrationStatus.Approved ? "bi-check-circle-fill" : "bi-x-circle-fill")"></i>
+                        @(CurrentStatus == RegistrationStatus.Approved ? "คำขอได้รับการอนุมัติแล้ว" : "คำขอถูกปฏิเสธแล้ว")
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@if (showRejectModal)
+{
+    <div class="reg-modal-bg" @onclick='() => showRejectModal = false'>
+        <div class="reg-modal" @onclick:stopPropagation="true">
+            <div class="reg-modal-title">ปฏิเสธคำขอลงทะเบียน</div>
+            <div class="reg-modal-sub">กรุณาระบุเหตุผลเพื่อแจ้งให้ผู้ยื่นคำขอทราบ</div>
+            <div class="reg-field">
+                <label class="reg-label">เหตุผล <span class="text-danger">*</span></label>
+                <textarea class="reg-input" rows="4" @bind="rejectReason"
+                          placeholder="ระบุเหตุผลที่ปฏิเสธ..."></textarea>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+                <button class="btn-outline-navy flex-fill" style="padding:10px" @onclick='() => showRejectModal = false'>
+                    ยกเลิก
+                </button>
+                <button class="btn-reject flex-fill" @onclick="DoReject" disabled="@(isActing || string.IsNullOrWhiteSpace(rejectReason))">
+                    <i class="bi bi-x-lg me-1"></i>ยืนยันการปฏิเสธ
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+.admin-detail-section {
+    background: #fff;
+    border: 1px solid #eaecf2;
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(13,27,62,.04);
+}
+.admin-detail-section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--navy-deep, #0d1b3e);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eaecf2;
+}
+.admin-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.admin-info-item label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted, #8b94a5);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-bottom: 3px;
+}
+.admin-info-item span {
+    font-size: 14px;
+    color: var(--navy, #1a3575);
+    font-weight: 500;
+}
+.admin-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.admin-status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+.admin-status-pending-admin {
+    background: #dbeafe;
+    color: #1e40af;
+}
+.admin-status-approved {
+    background: #d1fae5;
+    color: #065f46;
+}
+.admin-status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.btn-provision {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    background: var(--navy-mid, #2d4a8e);
+    color: #fff;
+    transition: background .2s;
+}
+.btn-provision:hover { filter: brightness(1.1); }
+.btn-approve {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    background: #059669;
+    color: #fff;
+    transition: background .2s;
+}
+.btn-approve:hover { background: #047857; }
+.btn-reject {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    background: #dc2626;
+    color: #fff;
+    transition: background .2s;
+}
+.btn-reject:hover { background: #b91c1c; }
+.btn-outline-navy {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1.5px solid var(--navy, #1a3575);
+    background: #fff;
+    color: var(--navy, #1a3575);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .15s;
+}
+.btn-outline-navy:hover { background: #f0f3ff; }
+
+.reg-field { margin-bottom: 14px; }
+.reg-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--navy-deep, #0d1b3e);
+    margin-bottom: 6px;
+}
+.reg-input {
+    width: 100%;
+    border: 1.5px solid #eaecf2;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    font-family: 'Sarabun', sans-serif;
+    background: #fafbff;
+    resize: vertical;
+    outline: none;
+    transition: border-color .2s;
+}
+.reg-input:focus { border-color: var(--navy-mid, #2d4a8e); }
+
+.reg-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+.reg-alert-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.reg-alert-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.reg-alert-info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+
+.reg-modal-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.reg-modal {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px 28px;
+    width: 440px;
+    max-width: 94vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,.15);
+}
+.reg-modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--navy-deep, #0d1b3e);
+    margin-bottom: 6px;
+}
+.reg-modal-sub {
+    font-size: 13px;
+    color: var(--text-muted, #8b94a5);
+    margin-bottom: 18px;
+}
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.page-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--navy-deep, #0d1b3e);
+}
+.page-subtitle {
+    font-size: 13px;
+    color: var(--text-muted, #8b94a5);
+    margin-top: 4px;
+}
+.d-flex { display: flex; }
+.gap-2 { gap: 8px; }
+.flex-fill { flex: 1; }
+.text-danger { color: #dc2626; }
+.text-success { color: #059669; }
+.mt-2 { margin-top: 8px; }
+.mt-3 { margin-top: 12px; }
+.mb-3 { margin-bottom: 12px; }
+
+.sys-check-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 2px;
+}
+.sys-check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1.5px solid #eaecf2;
+    background: #fafbff;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--navy, #1a3575);
+    transition: border-color .15s, background .15s;
+    user-select: none;
+}
+.sys-check-item:hover { border-color: var(--navy-mid, #2d4a8e); background: #eff4ff; }
+.sys-check-item input[type=checkbox] { accent-color: var(--navy-mid, #2d4a8e); width: 15px; height: 15px; cursor: pointer; }
+.sys-check-selected { border-color: var(--navy-mid, #2d4a8e) !important; background: #eff4ff !important; }
+</style>
+
+@code {
+    [Parameter] public string Id { get; set; } = "";
+
+    private RegistrationDto? dto;
+    private bool isLoading = true;
+    private bool isActing;
+    private string actionError = "";
+    private string adminNote = "";
+    private string rejectReason = "";
+    private bool showRejectModal;
+    private CurrentUserDto? _currentUser;
+    private bool _isSuperAdmin;
+    private List<OrgItem> allOrgs = new();
+    private List<SystemGroupDto> assignableGroups = new();
+    private string approveOrgIdText = "";
+    private string approveGroupIdText = "";
+
+    private RegistrationStatus CurrentStatus =>
+        dto is null ? RegistrationStatus.Pending : MapStatus(dto.ApprovalStatus);
+
+    private int? ResolvedOrgId =>
+        dto?.TargetOrgId ?? (int.TryParse(approveOrgIdText, out var oid) ? oid : null);
+
+    private string ResolvedOrgName =>
+        !string.IsNullOrEmpty(dto?.TargetOrgNameTh) ? dto.TargetOrgNameTh!
+        : allOrgs.FirstOrDefault(o => o.Id == ResolvedOrgId)?.NameTh ?? "—";
+
+    private bool ShowOrgReadOnly => dto?.TargetOrgId is > 0 && !_isSuperAdmin;
+
+    private bool CanPickOrg => _isSuperAdmin;
+
+    private IEnumerable<OrgItem> OrgsForPicker => allOrgs;
+
+    private bool CanApprove =>
+        ResolvedOrgId is > 0 && int.TryParse(approveGroupIdText, out var gid) && gid > 0;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!int.TryParse(Id, out var guid)) { isLoading = false; return; }
+        isLoading = true;
+        try
+        {
+            var userTask = CurrentUser.GetCurrentUserAsync();
+            var dtoTask  = AdminApi.GetRegistrationAsync(guid);
+            var orgTask  = OrgApi.GetOrganizationsAsync();
+            var grpTask  = SystemApi.ListSystemGroupsAsync();
+            await Task.WhenAll(userTask, dtoTask, orgTask, grpTask);
+            _currentUser  = await userTask;
+            _isSuperAdmin = _currentUser?.Roles.Any(r =>
+                string.Equals(r, "super_admin", StringComparison.OrdinalIgnoreCase)) ?? false;
+            dto           = await dtoTask;
+            allOrgs       = await orgTask ?? new();
+            assignableGroups = await grpTask ?? new();
+            approveOrgIdText = dto?.TargetOrgId?.ToString() ?? "";
+            approveGroupIdText = "";
+        }
+        catch { dto = null; assignableGroups = new(); }
+        finally { isLoading = false; }
+    }
+
+    private void OnApproveOrgChanged(ChangeEventArgs e) => approveOrgIdText = e.Value?.ToString() ?? "";
+
+    private async Task DoApprove()
+    {
+        if (!int.TryParse(Id, out var guid)) return;
+        if (!int.TryParse(approveGroupIdText, out var groupId) || groupId <= 0)
+        {
+            actionError = "กรุณาเลือกกลุ่มสิทธิ์";
+            return;
+        }
+        isActing = true;
+        actionError = "";
+        try
+        {
+            int? orgOverride = null;
+            if (_isSuperAdmin && int.TryParse(approveOrgIdText, out var oid))
+                orgOverride = oid;
+            else if (dto?.TargetOrgId is not > 0 && int.TryParse(approveOrgIdText, out oid))
+                orgOverride = oid;
+            await AdminApi.ApproveRegistrationAsync(
+                guid, adminNote, _currentUser?.Username ?? "", orgOverride, new[] { groupId });
+            dto = await AdminApi.GetRegistrationAsync(guid);
+            adminNote = "";
+            approveGroupIdText = "";
+        }
+        catch (Exception ex) { actionError = "ไม่สามารถอนุมัติได้: " + ex.Message; }
+        finally { isActing = false; }
+    }
+
+    private async Task DoReject()
+    {
+        if (string.IsNullOrWhiteSpace(rejectReason) || !int.TryParse(Id, out var guid)) return;
+        isActing = true;
+        actionError = "";
+        showRejectModal = false;
+        try
+        {
+            await AdminApi.RejectRegistrationAsync(guid, rejectReason, _currentUser?.Username ?? "");
+            dto = await AdminApi.GetRegistrationAsync(guid);
+            rejectReason = "";
+        }
+        catch (Exception ex) { actionError = "ไม่สามารถปฏิเสธได้: " + ex.Message; }
+        finally { isActing = false; }
+    }
+
+    private static RegistrationStatus MapStatus(string s) => s switch
+    {
+        "pending" or "pending_it_review" or "pending_admin_approval" => RegistrationStatus.Pending,
+        "approved" => RegistrationStatus.Approved,
+        "rejected" => RegistrationStatus.Rejected,
+        _ => RegistrationStatus.Pending
+    };
+
+    private static string StatusCss(RegistrationStatus s) => s switch
+    {
+        RegistrationStatus.Pending  => "admin-status-pending",
+        RegistrationStatus.Approved => "admin-status-approved",
+        RegistrationStatus.Rejected => "admin-status-rejected",
+        _ => ""
+    };
+
+    private static bool HasApplicationDetail(RegistrationApplicationDetailDto d) =>
+        !string.IsNullOrEmpty(d.Bureau) || !string.IsNullOrEmpty(d.Division)
+        || !string.IsNullOrEmpty(d.SubDivision) || !string.IsNullOrEmpty(d.OfficerType)
+        || !string.IsNullOrEmpty(d.JobTitle);
+
+    private static string StatusLabel(RegistrationStatus s) => s switch
+    {
+        RegistrationStatus.Pending  => "รออนุมัติ",
+        RegistrationStatus.Approved => "อนุมัติแล้ว",
+        RegistrationStatus.Rejected => "ปฏิเสธ",
+        _ => ""
+    };
+
+    private string ResolveDocUrl(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return "#";
+        if (path.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return path;
+        var baseUrl = Config["ApiBaseUrl:EcmisAdmin"] ?? "http://localhost:5001/";
+        return new Uri(new Uri(baseUrl), path.TrimStart('/')).ToString();
+    }
+}

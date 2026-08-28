@@ -1,0 +1,654 @@
+@page "/citizen/complaint/new"
+@layout BlankLayout
+@inject NavigationManager Nav
+
+<style>
+@@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800;900&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #f0f5fb; font-family: 'Sarabun', 'IBM Plex Sans Thai', sans-serif; }
+
+.cf-root { min-height: 100vh; background: #f0f5fb; display: flex; flex-direction: column; }
+
+/* ── NAV ── */
+.cf-nav {
+    background: #0c1945; border-bottom: 1px solid rgba(255,255,255,.08);
+    padding: 0 32px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+}
+.cf-nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.cf-nav-seal {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(145deg, rgba(255,255,255,.15), rgba(255,255,255,.06));
+    border: 1.5px solid rgba(255,255,255,.2);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.cf-nav-seal-th { font-size: 8px; font-weight: 900; color: #bfdbfe; letter-spacing: .3px; }
+.cf-nav-seal-en { font-size: 4px; font-weight: 700; color: rgba(191,219,254,.4); letter-spacing: 1.5px; }
+.cf-nav-name-th { font-size: 14px; font-weight: 700; color: #fff; }
+.cf-nav-name-sys { font-size: 10px; color: rgba(255,255,255,.3); display: block; }
+.cf-nav-right { display: flex; align-items: center; gap: 12px; }
+.cf-nav-tag {
+    font-size: 11px; font-weight: 600; color: #60a5fa;
+    background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.25);
+    padding: 3px 10px; border-radius: 20px;
+}
+.cf-nav-logout {
+    font-size: 13px; color: rgba(255,255,255,.45); background: none; border: none;
+    cursor: pointer; font-family: inherit; padding: 6px 12px; border-radius: 8px;
+    transition: background .18s, color .18s;
+}
+.cf-nav-logout:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.8); }
+
+/* ── BODY ── */
+.cf-body { flex: 1; max-width: 780px; margin: 0 auto; padding: 32px 16px 60px; width: 100%; }
+
+/* ── STEPS ── */
+.cf-steps {
+    display: flex; align-items: center; margin-bottom: 28px; gap: 0;
+}
+.cf-step {
+    flex: 1; display: flex; flex-direction: column; align-items: center; position: relative;
+}
+.cf-step:not(:last-child)::after {
+    content: ''; position: absolute; top: 20px; left: calc(50% + 22px);
+    width: calc(100% - 44px); height: 2px;
+    background: #dde5f0; z-index: 0;
+}
+.cf-step:not(:last-child).done::after { background: #1d4ed8; }
+.cf-step-dot {
+    width: 40px; height: 40px; border-radius: 50%; z-index: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 800;
+    background: #e8eef8; color: #94a3b8; border: 2px solid #dde5f0;
+    transition: all .25s;
+}
+.cf-step.done .cf-step-dot { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+.cf-step.active .cf-step-dot { background: #fff; color: #1d4ed8; border-color: #1d4ed8; box-shadow: 0 0 0 4px rgba(29,78,216,.12); }
+.cf-step-label { font-size: 11px; font-weight: 600; color: #94a3b8; margin-top: 8px; text-align: center; }
+.cf-step.active .cf-step-label { color: #1d4ed8; font-weight: 700; }
+.cf-step.done .cf-step-label { color: #374151; }
+
+/* ── CARD ── */
+.cf-card {
+    background: #fff; border-radius: 20px;
+    box-shadow: 0 2px 16px rgba(12,25,69,.07), 0 0 0 1px rgba(12,25,69,.04);
+    overflow: hidden; margin-bottom: 20px;
+}
+.cf-card-head {
+    background: linear-gradient(135deg, #0c1945 0%, #1d3d8f 100%);
+    padding: 20px 28px; display: flex; align-items: center; gap: 14px;
+}
+.cf-card-head-ico {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: #93c5fd; flex-shrink: 0;
+}
+.cf-card-head-title { font-size: 16px; font-weight: 800; color: #fff; }
+.cf-card-head-sub { font-size: 12px; color: rgba(255,255,255,.5); margin-top: 2px; }
+.cf-card-body { padding: 28px; }
+
+/* ── FIELDS ── */
+.cf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.cf-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.cf-full { grid-column: 1 / -1; }
+.cf-field { display: flex; flex-direction: column; gap: 6px; }
+.cf-lbl {
+    font-size: 12px; font-weight: 700; color: #374151;
+    letter-spacing: .4px; text-transform: uppercase;
+}
+.cf-req { color: #dc2626; margin-left: 2px; }
+.cf-inp, .cf-sel, .cf-textarea {
+    padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 12px;
+    font-family: inherit; font-size: 14px; color: #0f172a;
+    background: #f8fafc; outline: none;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+    -webkit-appearance: none; appearance: none;
+}
+.cf-inp:focus, .cf-sel:focus, .cf-textarea:focus {
+    border-color: #3b82f6; background: #fff;
+    box-shadow: 0 0 0 4px rgba(59,130,246,.1);
+}
+.cf-inp::placeholder, .cf-textarea::placeholder { color: #c0cad5; font-weight: 300; }
+.cf-sel { cursor: pointer; }
+.cf-textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+.cf-counter { font-size: 11px; color: #94a3b8; text-align: right; margin-top: 3px; }
+.cf-hint { font-size: 11.5px; color: #64748b; margin-top: 4px; }
+
+/* ── ACCUSED LIST ── */
+.cf-accused-item {
+    background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px;
+    padding: 18px; margin-bottom: 14px;
+    display: flex; flex-direction: column; gap: 14px;
+}
+.cf-accused-header { display: flex; align-items: center; justify-content: space-between; }
+.cf-accused-no { font-size: 13px; font-weight: 700; color: #374151; }
+.cf-btn-remove {
+    background: none; border: 1.5px solid #fecaca; color: #dc2626; border-radius: 8px;
+    padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: background .18s;
+}
+.cf-btn-remove:hover { background: #fef2f2; }
+.cf-btn-add {
+    width: 100%; padding: 11px; border: 1.5px dashed #c7d7f0; border-radius: 12px;
+    background: transparent; color: #3b82f6; font-family: inherit; font-size: 14px;
+    font-weight: 600; cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.cf-btn-add:hover { background: #eff6ff; border-color: #3b82f6; }
+
+/* ── UPLOAD ── */
+.cf-upload {
+    border: 2px dashed #c7d7f0; border-radius: 14px; padding: 28px 20px;
+    text-align: center; cursor: pointer; transition: all .2s; background: #f8fafc;
+}
+.cf-upload:hover { border-color: #3b82f6; background: #eff6ff; }
+.cf-upload-ico { font-size: 32px; color: #93c5fd; margin-bottom: 10px; }
+.cf-upload-text { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 4px; }
+.cf-upload-sub { font-size: 12px; color: #94a3b8; }
+.cf-file-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.cf-file-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 12px; background: #f0f5ff; border: 1px solid #dbeafe;
+    border-radius: 8px; font-size: 12.5px; color: #374151;
+}
+.cf-file-rm { background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 14px; padding: 0 4px; }
+.cf-file-rm:hover { color: #dc2626; }
+
+/* ── ACTIONS ── */
+.cf-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
+.cf-btn-back {
+    padding: 12px 24px; border: 1.5px solid #dde5f0; border-radius: 12px;
+    background: #fff; color: #374151; font-family: inherit; font-size: 14px;
+    font-weight: 600; cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; gap: 8px;
+}
+.cf-btn-back:hover { border-color: #94a3b8; }
+.cf-btn-next {
+    flex: 1; max-width: 260px; padding: 13px 24px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, #1e3a8a, #2554c7 60%, #3b82f6);
+    color: #fff; font-family: inherit; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all .25s; box-shadow: 0 4px 14px rgba(29,78,216,.28);
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+}
+.cf-btn-next:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(29,78,216,.38); }
+.cf-btn-submit {
+    flex: 1; max-width: 300px; padding: 13px 24px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, #065f46, #047857 60%, #10b981);
+    color: #fff; font-family: inherit; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all .25s; box-shadow: 0 4px 14px rgba(5,150,105,.28);
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+}
+.cf-btn-submit:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(5,150,105,.4); }
+
+/* ── SUCCESS ── */
+.cf-success {
+    text-align: center; padding: 60px 24px;
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+}
+.cf-success-ico {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: linear-gradient(135deg, #059669, #10b981);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; color: #fff;
+    box-shadow: 0 8px 32px rgba(5,150,105,.35);
+    animation: cf-pop .5s cubic-bezier(.16,1,.3,1);
+}
+@@keyframes cf-pop { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.cf-success-title { font-size: 24px; font-weight: 800; color: #0f172a; }
+.cf-success-sub { font-size: 14px; color: #64748b; line-height: 1.7; max-width: 380px; }
+.cf-trackno {
+    font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 800;
+    color: #1d4ed8; background: #eff6ff; padding: 12px 28px; border-radius: 12px;
+    border: 1.5px solid #bfdbfe; letter-spacing: 2px;
+}
+</style>
+
+<div class="cf-root">
+
+    <nav class="cf-nav">
+        <a class="cf-nav-brand" href="/citizen">
+            <div class="cf-nav-seal">
+                <div class="cf-nav-seal-th">ป.ป.ท.</div>
+                <div class="cf-nav-seal-en">PACC</div>
+            </div>
+            <div>
+                <div class="cf-nav-name-th">E‑CMIS</div>
+                <span class="cf-nav-name-sys">สำนักงาน ป.ป.ท.</span>
+            </div>
+        </a>
+        <div class="cf-nav-right">
+            <span class="cf-nav-tag">Citizen Portal</span>
+            <button class="cf-nav-logout" @onclick='() => Nav.NavigateTo("/citizen/login")'>
+                <i class="bi bi-box-arrow-right me-1"></i>ออกจากระบบ
+            </button>
+        </div>
+    </nav>
+
+    <div class="cf-body">
+
+        @if (submitted)
+        {
+            <div class="cf-card">
+                <div class="cf-success">
+                    <div class="cf-success-ico"><i class="bi bi-check-lg"></i></div>
+                    <div class="cf-success-title">ส่งคำร้องสำเร็จ</div>
+                    <div class="cf-success-sub">
+                        ระบบได้รับเรื่องร้องเรียนของท่านแล้ว<br />
+                        กรุณาเก็บเลขติดตามไว้เพื่อตรวจสอบสถานะ
+                    </div>
+                    <div class="cf-trackno">@trackNo</div>
+                    <div style="font-size:13px;color:#94a3b8">
+                        สามารถติดตามสถานะได้ที่ <strong style="color:#1d4ed8">ป.ป.ท. Citizen Portal</strong> หรือโทร <strong>1206</strong>
+                    </div>
+                    <button class="cf-btn-next" style="max-width:220px;margin-top:8px"
+                            @onclick='() => Nav.NavigateTo("/citizen")'>
+                        <i class="bi bi-house"></i>กลับหน้าหลัก
+                    </button>
+                </div>
+            </div>
+        }
+        else
+        {
+            @* Steps indicator *@
+            <div class="cf-steps">
+                <div class="cf-step @(step > 1 ? "done" : step == 1 ? "active" : "")">
+                    <div class="cf-step-dot">
+                        @if (step > 1) { <i class="bi bi-check-lg"></i> } else { <span>1</span> }
+                    </div>
+                    <div class="cf-step-label">ข้อมูลผู้ร้อง</div>
+                </div>
+                <div class="cf-step @(step > 2 ? "done" : step == 2 ? "active" : "")">
+                    <div class="cf-step-dot">
+                        @if (step > 2) { <i class="bi bi-check-lg"></i> } else { <span>2</span> }
+                    </div>
+                    <div class="cf-step-label">รายละเอียดร้องเรียน</div>
+                </div>
+                <div class="cf-step @(step == 3 ? "active" : "")">
+                    <div class="cf-step-dot"><span>3</span></div>
+                    <div class="cf-step-label">ผู้ถูกร้องเรียน</div>
+                </div>
+            </div>
+
+            @* ── STEP 1 ── *@
+            @if (step == 1)
+            {
+                <div class="cf-card">
+                    <div class="cf-card-head">
+                        <div class="cf-card-head-ico"><i class="bi bi-person-vcard-fill"></i></div>
+                        <div>
+                            <div class="cf-card-head-title">ส่วนที่ 1 — ข้อมูลผู้ร้อง</div>
+                            <div class="cf-card-head-sub">1 จาก 3</div>
+                        </div>
+                    </div>
+                    <div class="cf-card-body">
+                        <div class="cf-grid">
+                            <div class="cf-field cf-full">
+                                <label class="cf-lbl">เลขประจำตัวประชาชน</label>
+                                <input class="cf-inp" type="text" maxlength="13"
+                                       @bind="citizenId" placeholder="กรอกเลข 13 หลัก (ไม่บังคับ)" />
+                            </div>
+
+                            <div class="cf-field">
+                                <label class="cf-lbl">คำนำหน้า</label>
+                                <select class="cf-sel" @bind="prefix">
+                                    <option value="">เลือก</option>
+                                    <option>นาย</option>
+                                    <option>นาง</option>
+                                    <option>น.ส.</option>
+                                    <option>เด็กชาย</option>
+                                    <option>เด็กหญิง</option>
+                                </select>
+                            </div>
+                            <div></div>
+
+                            <div class="cf-field">
+                                <label class="cf-lbl">ชื่อ</label>
+                                <input class="cf-inp" type="text" @bind="firstName" placeholder="ชื่อจริง" />
+                            </div>
+                            <div class="cf-field">
+                                <label class="cf-lbl">นามสกุล</label>
+                                <input class="cf-inp" type="text" @bind="lastName" placeholder="นามสกุล" />
+                            </div>
+
+                            <div class="cf-field cf-full">
+                                <label class="cf-lbl">ที่อยู่ปัจจุบัน</label>
+                                <textarea class="cf-textarea" style="min-height:80px"
+                                          maxlength="250"
+                                          @bind="address"
+                                          placeholder="บ้านเลขที่ ถนน แขวง/ตำบล เขต/อำเภอ จังหวัด"></textarea>
+                                <div class="cf-counter">@address.Length/250</div>
+                            </div>
+
+                            <div class="cf-field">
+                                <label class="cf-lbl">หมายเลขโทรศัพท์ที่ติดต่อได้</label>
+                                <input class="cf-inp" type="tel" @bind="phone" placeholder="0812345678" />
+                            </div>
+                            <div class="cf-field">
+                                <label class="cf-lbl">อีเมล</label>
+                                <input class="cf-inp" type="email" @bind="email" placeholder="example@email.com" />
+                            </div>
+
+                            <div class="cf-field cf-full">
+                                <label class="cf-lbl">สถานะเครือข่าย ป.ป.ท. <span class="cf-req">*</span></label>
+                                <select class="cf-sel" @bind="network">
+                                    <option value="">— กรุณาเลือก —</option>
+                                    <option value="ไม่ได้เป็นเครือข่าย">ไม่ได้เป็นเครือข่าย ป.ป.ท.</option>
+                                    <option value="เป็นเครือข่าย">เป็นเครือข่าย ป.ป.ท.</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cf-actions">
+                    <div></div>
+                    <button class="cf-btn-next" @onclick="GoStep2">
+                        ถัดไป <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            }
+
+            @* ── STEP 2 ── *@
+            @if (step == 2)
+            {
+                <div class="cf-card">
+                    <div class="cf-card-head">
+                        <div class="cf-card-head-ico"><i class="bi bi-file-earmark-text-fill"></i></div>
+                        <div>
+                            <div class="cf-card-head-title">ส่วนที่ 2 — รายละเอียดการร้องเรียน</div>
+                            <div class="cf-card-head-sub">2 จาก 3</div>
+                        </div>
+                    </div>
+                    <div class="cf-card-body">
+                        <div style="display:flex;flex-direction:column;gap:16px">
+
+                            <div class="cf-field">
+                                <label class="cf-lbl">รายละเอียดการร้องเรียน / เบาะแส <span class="cf-req">*</span></label>
+                                <textarea class="cf-textarea" style="min-height:130px"
+                                          maxlength="3000" @bind="detail"
+                                          placeholder="โปรดอธิบายรายละเอียดเหตุการณ์ที่ต้องการร้องเรียนให้ชัดเจน..."></textarea>
+                                <div class="cf-counter">@detail.Length/3000</div>
+                            </div>
+
+                            <div class="cf-field">
+                                <label class="cf-lbl">หน่วยงานที่ต้องการร้องเรียน</label>
+                                <input class="cf-inp" type="text" maxlength="150" @bind="agencyName" placeholder="ชื่อหน่วยงาน" />
+                                <div class="cf-counter">@agencyName.Length/150</div>
+                            </div>
+
+                            <div class="cf-field">
+                                <label class="cf-lbl">วัน–เวลาเกิดเหตุ</label>
+                                <input class="cf-inp" type="datetime-local" @bind="incidentDate" />
+                            </div>
+
+                            <div class="cf-field">
+                                <label class="cf-lbl">สถานที่เกิดเหตุ <span class="cf-req">*</span></label>
+                                <input class="cf-inp" type="text" maxlength="300" @bind="locationAddress"
+                                       placeholder="บ้านเลขที่ ถนน หมู่บ้าน ฯลฯ" />
+                                <div class="cf-counter">@locationAddress.Length/300</div>
+                            </div>
+
+                            <div class="cf-grid-3">
+                                <div class="cf-field">
+                                    <label class="cf-lbl">จังหวัด <span class="cf-req">*</span></label>
+                                    <select class="cf-sel" @bind="province" @bind:after="OnProvinceChanged">
+                                        <option value="">โปรดระบุจังหวัด</option>
+                                        @foreach (var p in Provinces)
+                                        {
+                                            <option value="@p">@p</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="cf-field">
+                                    <label class="cf-lbl">อำเภอ</label>
+                                    <select class="cf-sel" @bind="district">
+                                        <option value="">เลือกอำเภอ</option>
+                                        @foreach (var d in Districts)
+                                        {
+                                            <option value="@d">@d</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="cf-field">
+                                    <label class="cf-lbl">ตำบล</label>
+                                    <select class="cf-sel" @bind="subdistrict">
+                                        <option value="">เลือกตำบล</option>
+                                        @foreach (var s in Subdistricts)
+                                        {
+                                            <option value="@s">@s</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="cf-field" style="max-width:200px">
+                                <label class="cf-lbl">รหัสไปรษณีย์</label>
+                                <input class="cf-inp" type="text" maxlength="5" @bind="postalCode" placeholder="รหัสไปรษณีย์" />
+                            </div>
+
+                            <div class="cf-field">
+                                <label class="cf-lbl">คำอธิบายสถานที่เกิดเหตุเพิ่มเติม</label>
+                                <textarea class="cf-textarea" style="min-height:80px"
+                                          maxlength="300" @bind="locationDetail"
+                                          placeholder="รายละเอียดเพิ่มเติมเกี่ยวกับสถานที่"></textarea>
+                                <div class="cf-counter">@locationDetail.Length/300</div>
+                            </div>
+
+                            <div class="cf-field">
+                                <label class="cf-lbl">ความประสงค์ให้สำนักงาน ป.ป.ท. ดำเนินการ <span class="cf-req">*</span></label>
+                                <textarea class="cf-textarea" style="min-height:100px"
+                                          maxlength="1500" @bind="requestAction"
+                                          placeholder="ระบุความประสงค์ของท่าน เช่น ขอให้สอบสวน ขอให้ดำเนินคดี..."></textarea>
+                                <div class="cf-counter">@requestAction.Length/1500</div>
+                            </div>
+
+                            <div class="cf-field">
+                                <label class="cf-lbl">เอกสารแนบ (ไม่เกิน 10 ไฟล์ รวมไม่เกิน 50 MB)</label>
+                                <div class="cf-upload" @onclick="TriggerUpload">
+                                    <div class="cf-upload-ico"><i class="bi bi-cloud-upload-fill"></i></div>
+                                    <div class="cf-upload-text">คลิกเพื่อเลือกไฟล์ หรือลากวางที่นี่</div>
+                                    <div class="cf-upload-sub">png, jpg, jpeg, pdf, docx, xlsx</div>
+                                </div>
+                                <input type="file" style="display:none" id="cf-file-input" multiple
+                                       accept=".png,.jpg,.jpeg,.pdf,.docx,.xlsx"
+                                       @onchange="OnFilesChanged" />
+                                @if (attachedFiles.Any())
+                                {
+                                    <div class="cf-file-list">
+                                        @foreach (var f in attachedFiles)
+                                        {
+                                            <div class="cf-file-item">
+                                                <span><i class="bi bi-paperclip me-1"></i>@f</span>
+                                                <button type="button" class="cf-file-rm" @onclick="() => attachedFiles.Remove(f)">
+                                                    <i class="bi bi-x"></i>
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cf-actions">
+                    <button class="cf-btn-back" @onclick='() => step = 1'>
+                        <i class="bi bi-arrow-left"></i> ย้อนกลับ
+                    </button>
+                    <button class="cf-btn-next" @onclick="GoStep3">
+                        ถัดไป <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            }
+
+            @* ── STEP 3 ── *@
+            @if (step == 3)
+            {
+                <div class="cf-card">
+                    <div class="cf-card-head">
+                        <div class="cf-card-head-ico"><i class="bi bi-person-workspace"></i></div>
+                        <div>
+                            <div class="cf-card-head-title">ส่วนที่ 3 — ข้อมูลผู้ถูกร้องเรียน</div>
+                            <div class="cf-card-head-sub">3 จาก 3</div>
+                        </div>
+                    </div>
+                    <div class="cf-card-body">
+
+                        @for (int i = 0; i < accused.Count; i++)
+                        {
+                            var idx = i;
+                            var acc = accused[idx];
+                            <div class="cf-accused-item">
+                                <div class="cf-accused-header">
+                                    <div class="cf-accused-no">
+                                        <i class="bi bi-person-fill me-1" style="color:#3b82f6"></i>
+                                        ผู้ถูกร้องเรียนคนที่ @(idx + 1)
+                                    </div>
+                                    @if (accused.Count > 1)
+                                    {
+                                        <button type="button" class="cf-btn-remove"
+                                                @onclick="() => accused.RemoveAt(idx)">
+                                            <i class="bi bi-trash3 me-1"></i>ลบ
+                                        </button>
+                                    }
+                                </div>
+                                <div class="cf-grid-3">
+                                    <div class="cf-field">
+                                        <label class="cf-lbl">คำนำหน้า</label>
+                                        <select class="cf-sel" @bind="accused[idx].Prefix">
+                                            <option value="">เลือก</option>
+                                            <option>นาย</option>
+                                            <option>นาง</option>
+                                            <option>น.ส.</option>
+                                        </select>
+                                    </div>
+                                    <div class="cf-field">
+                                        <label class="cf-lbl">ชื่อ</label>
+                                        <input class="cf-inp" type="text" @bind="accused[idx].FirstName" placeholder="ชื่อจริง" />
+                                    </div>
+                                    <div class="cf-field">
+                                        <label class="cf-lbl">นามสกุล</label>
+                                        <input class="cf-inp" type="text" @bind="accused[idx].LastName" placeholder="นามสกุล" />
+                                    </div>
+                                </div>
+                                <div class="cf-grid">
+                                    <div class="cf-field">
+                                        <label class="cf-lbl">ตำแหน่ง</label>
+                                        <input class="cf-inp" type="text" @bind="accused[idx].Position" placeholder="ตำแหน่งงาน" />
+                                    </div>
+                                    <div class="cf-field">
+                                        <label class="cf-lbl">สังกัด</label>
+                                        <input class="cf-inp" type="text" @bind="accused[idx].Agency" placeholder="หน่วยงาน / สังกัด" />
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        @if (accused.Count < 5)
+                        {
+                            <button type="button" class="cf-btn-add" @onclick="AddAccused">
+                                <i class="bi bi-plus-circle"></i> เพิ่มผู้ถูกร้องเรียน
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <div class="cf-actions">
+                    <button class="cf-btn-back" @onclick='() => step = 2'>
+                        <i class="bi bi-arrow-left"></i> ย้อนกลับ
+                    </button>
+                    <button class="cf-btn-submit" @onclick="Submit">
+                        <i class="bi bi-send-check-fill"></i> บันทึกคำร้อง — ตรวจสอบก่อนส่ง
+                    </button>
+                </div>
+            }
+        }
+
+    </div>
+</div>
+
+@code {
+    private int step = 1;
+    private bool submitted = false;
+    private string trackNo = "";
+
+    // Step 1
+    private string citizenId = "", prefix = "", firstName = "", lastName = "";
+    private string address = "", phone = "", email = "", network = "";
+
+    // Step 2
+    private string detail = "", agencyName = "", locationAddress = "";
+    private string province = "", district = "", subdistrict = "", postalCode = "", locationDetail = "", requestAction = "";
+    private DateTime? incidentDate;
+    private List<string> attachedFiles = new();
+
+    // Step 3
+    private List<AccusedPerson> accused = new() { new() };
+
+    private class AccusedPerson
+    {
+        public string Prefix = "", FirstName = "", LastName = "", Position = "", Agency = "";
+    }
+
+    private void GoStep2()
+    {
+        if (string.IsNullOrWhiteSpace(network)) return;
+        step = 2;
+    }
+
+    private void GoStep3()
+    {
+        if (string.IsNullOrWhiteSpace(detail) || string.IsNullOrWhiteSpace(locationAddress) || string.IsNullOrWhiteSpace(province) || string.IsNullOrWhiteSpace(requestAction)) return;
+        step = 3;
+    }
+
+    private void AddAccused() => accused.Add(new());
+
+    private void Submit()
+    {
+        trackNo = $"PACC-{DateTime.Now:yy}{new Random().Next(10000, 99999)}";
+        submitted = true;
+    }
+
+    private void TriggerUpload() { }
+    private void OnFilesChanged() { }
+
+    private void OnProvinceChanged()
+    {
+        district = "";
+        subdistrict = "";
+    }
+
+    private static readonly string[] Provinces = new[]
+    {
+        "กรุงเทพมหานคร","กระบี่","กาญจนบุรี","กาฬสินธุ์","กำแพงเพชร","ขอนแก่น","จันทบุรี","ฉะเชิงเทรา",
+        "ชลบุรี","ชัยนาท","ชัยภูมิ","ชุมพร","เชียงราย","เชียงใหม่","ตรัง","ตราด","ตาก","นครนายก",
+        "นครปฐม","นครพนม","นครราชสีมา","นครศรีธรรมราช","นครสวรรค์","นนทบุรี","นราธิวาส","น่าน",
+        "บึงกาฬ","บุรีรัมย์","ปทุมธานี","ประจวบคีรีขันธ์","ปราจีนบุรี","ปัตตานี","พระนครศรีอยุธยา",
+        "พะเยา","พังงา","พัทลุง","พิจิตร","พิษณุโลก","เพชรบุรี","เพชรบูรณ์","แพร่","ภูเก็ต",
+        "มหาสารคาม","มุกดาหาร","แม่ฮ่องสอน","ยโสธร","ยะลา","ร้อยเอ็ด","ระนอง","ระยอง","ราชบุรี",
+        "ลพบุรี","ลำปาง","ลำพูน","เลย","ศรีสะเกษ","สกลนคร","สงขลา","สตูล","สมุทรปราการ",
+        "สมุทรสงคราม","สมุทรสาคร","สระแก้ว","สระบุรี","สิงห์บุรี","สุโขทัย","สุพรรณบุรี",
+        "สุราษฎร์ธานี","สุรินทร์","หนองคาย","หนองบัวลำภู","อ่างทอง","อำนาจเจริญ","อุดรธานี",
+        "อุตรดิตถ์","อุทัยธานี","อุบลราชธานี"
+    };
+
+    private IEnumerable<string> Districts => province switch
+    {
+        "กรุงเทพมหานคร" => new[]{ "พระนคร","ดุสิต","หนองจอก","บางรัก","บางเขน","บางกอกน้อย","ลาดกระบัง","ยานนาวา","สัมพันธวงศ์","พระโขนง","มีนบุรี","ลาดพร้าว","วังทองหลาง","คลองสาน" },
+        "เชียงใหม่" => new[]{ "เมืองเชียงใหม่","จอมทอง","แม่แจ่ม","เชียงดาว","ดอยสะเก็ด","แม่แตง","แม่ริม","สะเมิง","ฝาง","แม่อาย","พร้าว","สันป่าตอง","สันกำแพง","สันทราย" },
+        "นครราชสีมา" => new[]{ "เมืองนครราชสีมา","ครบุรี","เสิงสาง","คง","บ้านเหลื่อม","จักราช","โชคชัย","ด่านขุนทด","โนนไทย","โนนสูง","ขามสะแกแสง","บัวใหญ่","ประทาย","ปักธงชัย" },
+        "ขอนแก่น" => new[]{ "เมืองขอนแก่น","บ้านฝาง","พระยืน","หนองเรือ","ชุมแพ","สีสุก","น้ำพอง","อุบลรัตน์","กระนวน","บ้านไผ่","เปือยน้อย","พล","แวงใหญ่","แวงน้อย" },
+        _ => Enumerable.Empty<string>()
+    };
+
+    private IEnumerable<string> Subdistricts => district switch
+    {
+        "เมืองเชียงใหม่" => new[]{ "ศรีภูมิ","พระสิงห์","หายยา","บ้านเหล่า","ดอนแก้ว","เชิงดอย","สุเทพ","แม่เหียะ","ป่าแดด","หนองหอย","ท่าศาลา","หนองป่าครั่ง","ฟ้าฮ่าม","ป่าตัน" },
+        "พระนคร" => new[]{ "พระบรมมหาราชวัง","วังบูรพาภิรมย์","วัดราชบพิธ","สำราญราษฎร์","ศาลเจ้าพ่อเสือ","เสาชิงช้า","บวรนิเวศ","ตลาดยอด","ชนะสงคราม","บ้านพานถม","บางขุนพรหม","วัดสามพระยา" },
+        _ => Enumerable.Empty<string>()
+    };
+}

@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จัดทำรายงานมติการประชุม | E-CMIS</title>
+  <link rel="icon" type="image/png" href="assets/pacc_logo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="assets/ecmis-app.css" rel="stylesheet">
+  <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <main class="app-main">
+    <div class="page-head">
+      <div>
+        <h1><i class="fa-solid fa-file-contract me-2"></i>จัดทำรายงานมติการประชุม</h1>
+      </div>
+      <div class="ms-auto text-end">
+        <span class="flow-ref">รวบรวมมติที่ประชุมทุกเรื่องในวันประชุมเดียวกันเป็นรายงานฉบับเดียว</span>
+      </div>
+    </div>
+
+    <div class="document-workspace" id="docWorkspace">
+      <div>
+
+        <div class="ws-card mb-3">
+          <div class="card-header"><i class="fa-solid fa-calendar-check"></i> เลือกการประชุม</div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-md-6"><label class="form-label field-req">ครั้งที่ประชุม</label>
+                <select class="form-select" id="meetNoSelect"></select>
+              </div>
+              <div class="col-md-6"><label class="form-label field-req">วันที่ประชุม</label>
+                <input class="form-control" id="meetDate" type="date">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ws-card mb-3">
+          <div class="card-header d-flex align-items-center gap-2">
+            <i class="fa-solid fa-list-check"></i> มติที่ประชุม — ทุกเรื่องในการประชุมนี้
+            <span class="badge bg-primary rounded-pill ms-1" id="itemCount">0</span>
+          </div>
+          <div class="card-body p-0">
+            <table class="table tbl-ecmis mb-0">
+              <thead>
+                <tr>
+                  <th style="width:80px">วาระที่</th>
+                  <th>เลขสำนวน / เรื่อง</th>
+                  <th style="width:220px">มติที่ประชุม</th>
+                  <th style="width:220px">สถานะการจัดทำมติ</th>
+                </tr>
+              </thead>
+              <tbody id="itemsTb"></tbody>
+            </table>
+            <div class="text-center text-muted p-4 d-none" id="emptyState">
+              <i class="fa-solid fa-folder-open fa-2x mb-2 d-block"></i>
+              ไม่มีสำนวนที่บอร์ดมีมติแล้วสำหรับการประชุมครั้งนี้
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <aside class="ws-doc-pane" id="docCol" style="top:calc(var(--topbar-h) + 14px)">
+        <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
+        <div class="ws-doc-toolbar">
+          <div class="d-flex flex-column w-100 gap-1">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="name"><i class="fa-solid fa-file-lines me-1"></i> รายงานการประชุมคณะกรรมการ ป.ป.ท.</span>
+              <div class="d-flex gap-1 align-items-center">
+                <button type="button" class="btn-doc-edit" id="btnDocEdit" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
+                  <i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btnDocx" title="ส่งออกเป็นเอกสาร Microsoft Word (.docx)"><i class="fa-solid fa-file-word me-1"></i>ส่งออก DOCX</button>
+                <button class="btn btn-sm btn-light border" onclick="window.print()" title="พิมพ์เฉพาะเอกสาร Preview"><i class="fa-solid fa-print"></i></button>
+                <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
+              </div>
+            </div>
+
+            <!-- Symmetrical Pagination & Zoom Navigator Bar -->
+            <div class="pagination-toolbar-symmetric" id="docPaginationBar">
+              <!-- Left Group: View Mode & Page Jump Controls -->
+              <div class="toolbar-group">
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" id="btnModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น)">
+                    <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
+                  </button>
+                  <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnModeContinuous" title="โหมดดูทุกหน้าเรียงกัน">
+                    <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
+                  </button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnFirstPage" title="หน้าแรกสุด (หน้า 1)"><i class="fa-solid fa-backward-step"></i></button>
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnPrevPage" title="หน้าก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
+                </div>
+                
+                <div class="d-flex align-items-center gap-1">
+                  <span class="small opacity-75">หน้า</span>
+                  <input type="number" class="page-input-num" id="pageNumberInput" min="1" value="1">
+                  <span class="small opacity-75" id="totalPagesText">/ 1 หน้า</span>
+                </div>
+
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnNextPage" title="หน้าถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+                  <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnLastPage" title="หน้าสุดท้าย"><i class="fa-solid fa-forward-step"></i></button>
+                </div>
+              </div>
+
+              <!-- Right Group: Zoom Stepper Controls -->
+              <div class="toolbar-group ms-auto">
+                <div class="d-flex align-items-center bg-dark rounded px-1" style="background:#06182c !important; border:1px solid #1a3d66; height:26px;">
+                  <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                  <span style="font-size:0.75rem; width:34px; text-align:center; font-weight:600;" id="zoomLevelText">75%</span>
+                  <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ws-paper-stage" id="docPaperStage">
+          <div id="docPaper"></div>
+        </div>
+      </aside>
+    </div>
+
+    <div id="actionBarSlot"></div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pizzip@3/dist/pizzip.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/build/docxtemplater.js"></script>
+  <script src="assets/ecmis-app.js"></script>
+  <script src="assets/ecmis-model.js"></script>
+  <script>
+    ECMIS.renderShell('meeting-report.html');
+    const role = ECMIS.currentRole();
+    const mayEdit = ECMIS.can('compile.minutes', role.id);
+
+    /* ---------- รวบรวมสำนวนที่บอร์ดมีมติแล้ว (RESOLVED) ตามครั้งที่ประชุม ---------- */
+    const params = new URLSearchParams(location.search);
+    const resolvedCases = ECMIS.CASES.filter(c => c.status === 'RESOLVED' && c.meetingNo && !ECMIS.isCase72(c));
+    const meetingNos = [...new Set(resolvedCases.map(c => c.meetingNo))].sort();
+    let currentMeetNo = params.get('meet') || meetingNos[0] || '';
+
+    const meetSelect = document.getElementById('meetNoSelect');
+    meetSelect.innerHTML = meetingNos.length
+      ? meetingNos.map(n => `<option value="${n}" ${n === currentMeetNo ? 'selected' : ''}>ครั้งที่ ${n}</option>`).join('')
+      : `<option value="">— ไม่มีสำนวนที่บอร์ดมีมติแล้ว —</option>`;
+
+    function itemsForMeeting(meetNo) {
+      return resolvedCases
+        .filter(c => c.meetingNo === meetNo)
+        .sort((a, b) => (parseFloat(a.agendaNo) || 0) - (parseFloat(b.agendaNo) || 0));
+    }
+
+    let items = itemsForMeeting(currentMeetNo);
+    if (items[0]) document.getElementById('meetDate').value = items[0].meetingDate || '';
+
+    function stageLabel(c) {
+      if (!c.resolutionStage) return 'อยู่ระหว่างการจัดทำมติ';
+      return ECMIS.resolutionStageLabel(c.resolutionStage) || 'จัดทำรายงานประชุมแล้วเสร็จ';
+    }
+
+    function renderItems() {
+      const tb = document.getElementById('itemsTb');
+      document.getElementById('itemCount').textContent = items.length;
+      document.getElementById('emptyState').classList.toggle('d-none', items.length > 0);
+      tb.innerHTML = items.map(c => {
+        const res = ECMIS.resolutionOf(c.resolution);
+        const stage = c.resolutionStage || 1;
+        return `
+    <tr>
+      <td>${c.agendaNo || '—'}</td>
+      <td><div class="fw-medium text-truncate" style="max-width:280px" title="${c.subject}">${c.id} — ${c.subject}</div></td>
+      <td><span class="st st-done" style="font-size:.7rem" title="${res ? res.label : ''}">${res ? res.group : '—'}</span></td>
+      <td>
+        <span class="badge rounded-pill ${stage >= 6 ? 'bg-success' : 'bg-warning text-dark'}" style="font-size:.68rem">
+          ${stage}. ${stageLabel(c)}
+        </span>
+      </td>
+    </tr>`;
+      }).join('');
+    }
+
+    /* ---------- เอกสาร ----------
+       โครงสร้างตามรายงานการประชุมคณะกรรมการ ป.ป.ท. ฉบับจริงที่ลูกค้าให้มา — เปิดประชุม/รับรอง
+       รายงานครั้งก่อน (วาระ 1-4) แล้วจึงเข้าเรื่องพิจารณา (วาระ 5) ต่อด้วยเรื่องอื่น ๆ (วาระ 6)
+       ไม่ใช่แค่หัวข้อเดียวพร้อมรายการมติแบบเดิม */
+    const SEC = ECMIS.getRole('board_sec');
+    function runningHeader(pageNo) {
+      return `
+    <div class="doc-run-title">รายงานการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${ECMIS.mergeField(currentMeetNo)} (ต่อ)</div>
+    <div class="doc-run-page">- ${ECMIS.toThaiDigits(pageNo)} -</div>`;
+    }
+
+    function renderDoc() {
+      const M = ECMIS.mergeField;
+      const meetNo = currentMeetNo;
+      const meetDate = ECMIS.thaiDate(document.getElementById('meetDate').value.trim());
+      const meetTimeText = 'เวลา ๐๙.๓๐ นาฬิกา';
+
+      const introBlock = `
+      <div class="doc-title">รายงานการประชุม<br>คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
+      <div class="doc-sub">ครั้งที่ ${M(meetNo)} วันที่ ${M(meetDate)}</div>
+
+      <div class="doc-indent" style="margin-top:8px">เริ่มประชุม${meetTimeText}</div>
+      <div class="doc-indent" style="margin-top:6px">
+        ประธานกรรมการ ป.ป.ท. กล่าวเปิดประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)} โดยเป็นการประชุมและ
+        ชี้แจงผ่านสื่ออิเล็กทรอนิกส์ ตามพระราชกำหนดว่าด้วยการประชุมผ่านสื่ออิเล็กทรอนิกส์ พ.ศ. ๒๕๖๓
+        และตามระเบียบคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ ว่าด้วยการประชุมคณะกรรมการ ป.ป.ท.
+      </div>
+      <div class="doc-indent" style="margin-top:6px">
+        ${M(SEC.name)} ผู้อำนวยการกองบริหารคดี ปฏิบัติหน้าที่เลขานุการคณะกรรมการ ป.ป.ท. กล่าวต่อที่ประชุมว่า
+        เพื่อให้เป็นไปตามระเบียบคณะกรรมการ ป.ป.ท. ว่าด้วยการประชุมคณะกรรมการ ป.ป.ท. จึงขออนุญาตให้ผู้ที่เกี่ยวข้อง
+        เข้าร่วมประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)}
+      </div>
+
+      <div class="doc-h" style="margin-top:10px">ระเบียบวาระที่ ๑&emsp;เรื่องที่ประธานแจ้งให้ที่ประชุมทราบ</div>
+      <div class="doc-indent">-ไม่มี-</div>
+
+      <div class="doc-h" style="margin-top:10px">ระเบียบวาระที่ ๒&emsp;เรื่องรับรองรายงานการประชุมคณะกรรมการ ป.ป.ท.</div>
+      <div class="doc-indent">รับรองรายงานการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ผ่านมา</div>
+      <div class="doc-indent" style="margin-top:4px"><strong>มติที่ประชุม</strong>&emsp;รับรองรายงานการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ผ่านมาตามที่ฝ่ายเลขานุการเสนอ</div>
+
+      <div class="doc-h" style="margin-top:10px">ระเบียบวาระที่ ๓&emsp;เรื่องที่เสนอให้ที่ประชุมทราบ</div>
+      <div class="doc-indent">-ไม่มี-</div>
+
+      <div class="doc-h" style="margin-top:10px">ระเบียบวาระที่ ๔&emsp;เรื่องสืบเนื่องจากการประชุม</div>
+      <div class="doc-indent">-ไม่มี-</div>
+
+      <div class="doc-h" style="margin-top:10px">ระเบียบวาระที่ ๕&emsp;เรื่องเสนอให้ที่ประชุมพิจารณา</div>`;
+
+      const flowBlocks = items.length ? items.map(c => {
+        const res = ECMIS.resolutionOf(c.resolution);
+        const complainant = c.complainant ? `<div class="doc-indent" style="margin-top:2px">ผู้กล่าวหา&emsp;${M(c.complainant)}</div>` : '';
+        const accusedList = (c.accused || []).length
+          ? `<div class="doc-indent" style="margin-top:2px">ผู้ถูกร้อง&emsp;${(c.accused || []).map(a => `${M(a.name)} ${M(a.pos)}`).join(', ')}</div>`
+          : '';
+        const allegation = c.allegation ? `<div class="doc-indent" style="margin-top:2px">ข้อกล่าวหา&emsp;${M(c.allegation)}</div>` : '';
+        return `
+        <div style="margin-top:10px">
+          <div class="doc-row"><span class="k">วาระที่ ${M(c.agendaNo)}</span> เรื่องที่ ${M(c.id)} กรณี ${M(c.subject)}</div>
+          ${complainant}${accusedList}${allegation}
+          <div class="doc-indent" style="margin-top:4px">
+            <strong>มติที่ประชุม</strong>&emsp;ที่ประชุมพิจารณาแล้วมีมติ${M(res ? res.label : c.resolution)}
+          </div>
+        </div>`;
+      }) : [`<div class="text-muted" style="margin-top:8px">— ไม่มีมติในการประชุมครั้งนี้ —</div>`];
+
+      const signBlock = `
+      <div class="doc-h" style="margin-top:16px">ระเบียบวาระที่ ๖&emsp;เรื่องอื่น ๆ</div>
+      <div class="doc-indent">พิจารณากำหนดวัน เวลา ในการประชุมครั้งต่อไป</div>
+      <div class="doc-indent" style="margin-top:6px">ปิดประชุมเวลา ๑๖.๓๐ นาฬิกา</div>
+
+      <div class="doc-sign" style="margin-top:28px">
+        <span class="doc-dots"></span><br>(${M(SEC.name)})<br>
+        ${M(SEC.title)}<br>ผู้จัดทำรายงานการประชุม
+      </div>`;
+
+      ECMIS.paginateDoc(document.getElementById('docPaper'), { introBlock, flowBlocks, signBlock, runningHeaderHtml: runningHeader });
+      updatePaginationUI();
+      applyZoom();
+    }
+
+    document.getElementById('meetDate').addEventListener('input', renderDoc);
+    meetSelect.addEventListener('change', () => {
+      currentMeetNo = meetSelect.value;
+      items = itemsForMeeting(currentMeetNo);
+      if (items[0]) document.getElementById('meetDate').value = items[0].meetingDate || '';
+      renderItems(); renderDoc(); renderActions();
+    });
+
+    /* ---------- Document workspace: collapsible pane ---------- */
+    const docWorkspace = document.getElementById('docWorkspace');
+    const PANE_KEY = 'ecmis-meeting-report-docpane-collapsed';
+    function setPaneCollapsed(collapsed) {
+      if (docWorkspace) docWorkspace.classList.toggle('pane-collapsed', collapsed);
+      localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
+    }
+    if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
+    const btnCollapse = document.getElementById('btnPaneCollapse');
+    const btnExpand = document.getElementById('btnPaneExpand');
+    if (btnCollapse) btnCollapse.addEventListener('click', () => setPaneCollapsed(true));
+    if (btnExpand) btnExpand.addEventListener('click', () => setPaneCollapsed(false));
+
+    /* ---------- action bar ---------- */
+    function renderActions() {
+      const slot = document.getElementById('actionBarSlot');
+      if (!mayEdit) { slot.innerHTML = ''; return; }
+      const allDone = items.length > 0 && items.every(c => (c.resolutionStage || 1) >= 6);
+      slot.innerHTML = `
+    <button type="button" class="btn btn-outline-secondary btn-sm" data-act="save">
+      <i class="fa-solid fa-floppy-disk me-1"></i>บันทึกร่างรายงาน</button>
+    <button type="button" class="btn btn-navy btn-sm" data-act="confirm" ${items.length ? '' : 'disabled'}>
+      <i class="fa-solid fa-check-double me-1"></i>${allDone ? 'รายงานการประชุมเสร็จสมบูรณ์แล้ว' : 'ยืนยันรายงานการประชุมเสร็จสมบูรณ์ — ทุกเรื่อง'}</button>`;
+      document.querySelectorAll('#actionBarSlot [data-act]').forEach(b =>
+        b.addEventListener('click', () => handle(b.dataset.act)));
+    }
+
+    function handle(act) {
+      if (act === 'save') {
+        ECMIS.saveCases();
+        ECMIS.toastOk('บันทึกร่างรายงานการประชุมเรียบร้อย');
+        return;
+      }
+      if (act === 'confirm') {
+        if (!items.length) return;
+        ECMIS.confirmAction({
+          title: 'ยืนยันรายงานการประชุมเสร็จสมบูรณ์',
+          html: `<p>รายงานการประชุมครั้งที่ <strong>${currentMeetNo}</strong> รวม <strong>${items.length}</strong> เรื่อง
+            จะถูกทำเครื่องหมายว่า "จัดทำรายงานประชุมแล้วเสร็จ" (ขั้นตอนที่ 6) ทุกเรื่อง</p>`,
+          confirmText: 'ยืนยันรายงานเสร็จสมบูรณ์'
+        }).then(res => {
+          if (!res.isConfirmed) return;
+          items.forEach(c => ECMIS.Model.CaseStore.update(c.id, { resolutionStage: 6, meetingReportDone: true }));
+          ECMIS.toastOk('บันทึกรายงานการประชุมเสร็จสมบูรณ์เรียบร้อย');
+          renderItems(); renderActions();
+        });
+      }
+    }
+
+    /* ---------- Master Toolbar & Pagination Controls ---------- */
+    let docViewMode = 'SINGLE';
+    let docCurrentPage = 1;
+    let docTotalPages = 1;
+    let docZoomLevel = 0.75;
+
+    function updatePaginationUI() {
+      const docPaperEl = document.getElementById('docPaper');
+      if (!docPaperEl) return;
+      const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
+      docTotalPages = Math.max(1, pages.length);
+
+      if (docCurrentPage > docTotalPages) docCurrentPage = docTotalPages;
+      if (docCurrentPage < 1) docCurrentPage = 1;
+
+      $('#totalPagesText').text(`/ ${docTotalPages} หน้า`);
+      $('#pageNumberInput').attr('max', docTotalPages).val(docCurrentPage);
+
+      if (docViewMode === 'SINGLE') {
+        docPaperEl.classList.remove('mode-continuous');
+        docPaperEl.classList.add('mode-single');
+        pages.forEach((p, idx) => {
+          if (idx + 1 === docCurrentPage) {
+            p.classList.add('active-page');
+            p.style.display = 'block';
+          } else {
+            p.classList.remove('active-page');
+            p.style.display = 'none';
+          }
+        });
+        $('#btnModeSingle').removeClass('btn-outline-light').addClass('btn-primary');
+        $('#btnModeContinuous').removeClass('btn-primary').addClass('btn-outline-light');
+        $('#btnFirstPage, #btnPrevPage').prop('disabled', docCurrentPage === 1);
+        $('#btnNextPage, #btnLastPage').prop('disabled', docCurrentPage === docTotalPages);
+        $('#pageNumberInput').prop('disabled', false);
+        const stage = document.getElementById('docPaperStage');
+        if (stage) stage.scrollTop = 0;
+      } else {
+        docPaperEl.classList.remove('mode-single');
+        docPaperEl.classList.add('mode-continuous');
+        pages.forEach(p => {
+          p.classList.add('active-page');
+          p.style.display = 'block';
+        });
+        $('#btnModeContinuous').removeClass('btn-outline-light').addClass('btn-primary');
+        $('#btnModeSingle').removeClass('btn-primary').addClass('btn-outline-light');
+        $('#btnFirstPage, #btnPrevPage, #btnNextPage, #btnLastPage, #pageNumberInput').prop('disabled', true);
+      }
+      applyZoom();
+    }
+
+    function applyZoom() {
+      const docPaperEl = document.getElementById('docPaper');
+      if (!docPaperEl) return;
+      docPaperEl.style.transform = `scale(${docZoomLevel})`;
+      docPaperEl.style.transformOrigin = 'top center';
+      $('#zoomLevelText').text(`${Math.round(docZoomLevel * 100)}%`);
+
+      const stage = document.getElementById('docPaperStage');
+      if (stage) {
+        const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
+        if (pages.length > 0) {
+          if (docViewMode === 'SINGLE') {
+            const activeP = docPaperEl.querySelector('.doc-paper.active-page, .a4-paper.active-page') || pages[0];
+            const h = activeP ? (activeP.offsetHeight || 1123) : 1123;
+            docPaperEl.style.height = `${Math.round(h * docZoomLevel)}px`;
+          } else {
+            let totalH = 0;
+            pages.forEach(p => { totalH += (p.offsetHeight || 1123) + 18; });
+            docPaperEl.style.height = `${Math.round(totalH * docZoomLevel)}px`;
+          }
+        }
+      }
+    }
+
+    $('#btnModeSingle').on('click', function () {
+      docViewMode = 'SINGLE';
+      updatePaginationUI();
+    });
+
+    $('#btnModeContinuous').on('click', function () {
+      docViewMode = 'CONTINUOUS';
+      updatePaginationUI();
+    });
+
+    $('#btnFirstPage').on('click', function () {
+      if (docCurrentPage > 1) {
+        docCurrentPage = 1;
+        updatePaginationUI();
+      }
+    });
+
+    $('#btnPrevPage').on('click', function () {
+      if (docCurrentPage > 1) {
+        docCurrentPage--;
+        updatePaginationUI();
+      }
+    });
+
+    $('#btnNextPage').on('click', function () {
+      if (docCurrentPage < docTotalPages) {
+        docCurrentPage++;
+        updatePaginationUI();
+      }
+    });
+
+    $('#btnLastPage').on('click', function () {
+      if (docCurrentPage < docTotalPages) {
+        docCurrentPage = docTotalPages;
+        updatePaginationUI();
+      }
+    });
+
+    $('#pageNumberInput').on('change', function () {
+      let val = parseInt($(this).val(), 10);
+      if (isNaN(val) || val < 1) val = 1;
+      if (val > docTotalPages) val = docTotalPages;
+      docCurrentPage = val;
+      updatePaginationUI();
+    });
+
+    $('#btnZoomIn').on('click', function () {
+      if (docZoomLevel < 1.5) {
+        docZoomLevel = Math.min(1.5, Math.round((docZoomLevel + 0.1) * 10) / 10);
+        applyZoom();
+      }
+    });
+
+    $('#btnZoomOut').on('click', function () {
+      if (docZoomLevel > 0.4) {
+        docZoomLevel = Math.max(0.4, Math.round((docZoomLevel - 0.1) * 10) / 10);
+        applyZoom();
+      }
+    });
+
+    $('#btnDocx').on('click', function () {
+      if (typeof ECMIS !== 'undefined' && typeof ECMIS.exportDocToDocx === 'function') {
+        const meetName = (currentMeetNo || 'meeting').replace(/[\/\s]/g, '-');
+        ECMIS.exportDocToDocx('docPaper', `รายงานการประชุม_ครั้งที่_${meetName}.docx`);
+      } else {
+        window.print();
+      }
+    });
+
+    try {
+      ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: mayEdit });
+    } catch (e) { }
+
+    renderItems(); renderDoc(); renderActions();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,591 @@
+@page "/citizen/register"
+@layout Components.Layout.BlankLayout
+@inject NavigationManager Nav
+@inject EcmisWeb.Services.UserApiService UserApi
+@inject EcmisWeb.Services.ThaiDService ThaiDSvc
+@using EcmisWeb.Models
+
+<style>
+@@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100% !important; overflow: hidden !important; background: #ffffff !important; color: inherit !important; }
+
+.cr-root {
+    height: 100vh; display: flex; flex-direction: column;
+    background: #ffffff; font-family: 'Sarabun', 'IBM Plex Sans Thai', sans-serif;
+}
+
+/* ── Header ───────────────────────────────────────────── */
+.cr-header {
+    display: flex; align-items: center; justify-content: flex-end;
+    padding: 0 52px; height: 56px; flex-shrink: 0;
+}
+.cr-header-right { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: #9ca3af; }
+.cr-header-login { color: #111; font-weight: 600; text-decoration: none; transition: opacity .15s; }
+.cr-header-login:hover { opacity: .65; }
+
+/* ── Main ─────────────────────────────────────────────── */
+.cr-main {
+    flex: 1; overflow-y: auto;
+    display: flex; justify-content: center; align-items: flex-start;
+    padding: 44px 24px 48px;
+}
+.cr-content { width: 100%; max-width: 360px; }
+
+/* ── Step / Title ─────────────────────────────────────── */
+.cr-step-tag { font-size: 13px; color: #6b7280; margin-bottom: 6px; }
+.cr-title {
+    font-size: 38px; font-weight: 700; color: #111;
+    letter-spacing: 0; line-height: 1.18; margin-bottom: 24px;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    text-decoration: none !important;
+    -webkit-text-decoration: none !important;
+    -webkit-text-stroke: 0 transparent;
+}
+.cr-title *,
+.cr-title::before,
+.cr-title::after,
+.cr-title *::before,
+.cr-title *::after {
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    text-decoration: none !important;
+    -webkit-text-decoration: none !important;
+    -webkit-text-stroke: 0 transparent;
+}
+
+/* ── Anonymous toggle ─────────────────────────────────── */
+.cr-anon-wrap {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 16px; border-radius: 12px;
+    background: #f8fafc; border: 1.5px solid #eaeff7;
+    margin-bottom: 20px; cursor: pointer;
+}
+.cr-anon-wrap:hover { border-color: #c7d7f0; }
+.cr-anon-info strong { display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; }
+.cr-anon-info span   { font-size: 12px; color: #94a3b8; }
+.cr-toggle { position: relative; display: inline-block; width: 42px; height: 23px; cursor: pointer; flex-shrink: 0; }
+.cr-toggle input { opacity: 0; width: 0; height: 0; }
+.cr-toggle-track {
+    position: absolute; inset: 0; border-radius: 23px;
+    background: #e2e8f0; transition: background .2s;
+}
+.cr-toggle-thumb {
+    position: absolute; width: 17px; height: 17px; border-radius: 50%;
+    background: #fff; top: 3px; left: 3px;
+    transition: transform .2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.18);
+}
+.cr-toggle input:checked ~ .cr-toggle-track { background: #1e3a8a; }
+.cr-toggle input:checked ~ .cr-toggle-thumb { transform: translateX(19px); }
+
+/* Anonymous notice banner */
+.cr-anon-notice {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 16px;
+    font-size: 13px; color: #1e40af; line-height: 1.55;
+}
+.cr-anon-notice i { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+/* ── Fields (matches Login) ───────────────────────────── */
+.cr-field { margin-bottom: 13px; }
+.cr-field-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 13px; }
+.cr-field-row3 { display: grid; grid-template-columns: 60px 1fr 90px; gap: 8px; margin-bottom: 13px; }
+.cr-lbl {
+    display: block; font-size: 11px; font-weight: 700;
+    color: #374151; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 7px;
+}
+.cr-lbl-opt { font-weight: 400; color: #94a3b8; font-size: 10px; text-transform: none; letter-spacing: 0; margin-left: 3px; }
+.cr-iw { position: relative; }
+.cr-ico {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    font-size: 14px; color: #94a3b8; pointer-events: none; transition: color .18s;
+}
+.cr-inp {
+    width: 100%; padding: 12px 14px 12px 42px;
+    background: #f8fafc; border: 1.5px solid #eaeff7; border-radius: 12px;
+    color: #0f172a; font-family: inherit; font-size: 14.5px;
+    outline: none; transition: border-color .22s, background .22s, box-shadow .22s;
+    -webkit-appearance: none; appearance: none;
+}
+.cr-inp-no-ico { padding-left: 14px; }
+.cr-inp::placeholder { color: #c0cad5; font-weight: 300; }
+.cr-inp:focus { background: #fff; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,.1); }
+.cr-iw:focus-within .cr-ico { color: #3b82f6; }
+.cr-inp-pr { padding-right: 46px; }
+.cr-eye {
+    position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    color: #94a3b8; font-size: 14px; padding: 4px; line-height: 1; transition: color .15s;
+}
+.cr-eye:hover { color: #1d4ed8; }
+
+/* Select */
+.cr-select {
+    width: 100%; padding: 12px 36px 12px 14px;
+    background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2394a3b8' d='M6 8L0 0h12z'/%3E%3C/svg%3E") no-repeat right 13px center;
+    border: 1.5px solid #eaeff7; border-radius: 12px;
+    color: #0f172a; font-family: inherit; font-size: 14.5px;
+    outline: none; -webkit-appearance: none; appearance: none;
+    transition: border-color .22s, background .22s, box-shadow .22s; cursor: pointer;
+}
+.cr-select:focus { background-color: #fff; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,.1); }
+.cr-select option[value=""] { color: #c0cad5; }
+
+/* ID field hint */
+.cr-field-hint { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+
+/* Password strength */
+.cr-strength { margin-top: 6px; }
+.cr-strength-bar { height: 3px; border-radius: 2px; background: #f1f5f9; overflow: hidden; margin-bottom: 3px; }
+.cr-strength-fill { height: 100%; border-radius: 2px; transition: width .35s, background .35s; }
+.cr-strength-lbl  { font-size: 11px; font-weight: 600; }
+
+/* Terms */
+.cr-terms { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 16px; }
+.cr-terms input { width: 15px; height: 15px; accent-color: #1e3a8a; cursor: pointer; margin-top: 3px; flex-shrink: 0; }
+.cr-terms-text { font-size: 12.5px; color: #64748b; line-height: 1.55; }
+.cr-terms-text a { color: #1d4ed8; font-weight: 600; text-decoration: none; }
+.cr-terms-text a:hover { text-decoration: underline; }
+
+/* ── Buttons (matches Login) ──────────────────────────── */
+.cr-btn-primary {
+    width: 100%; padding: 13px 20px;
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #2554c7 60%, #3b82f6 100%);
+    color: #fff; border: none; border-radius: 12px;
+    font-family: inherit; font-size: 15px; font-weight: 700;
+    cursor: pointer; letter-spacing: .1px; margin-bottom: 12px;
+    transition: opacity .25s, transform .2s, box-shadow .25s;
+    box-shadow: 0 4px 14px rgba(29,78,216,.3);
+}
+.cr-btn-primary:hover:not(:disabled) { opacity: .92; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(29,78,216,.42); }
+.cr-btn-primary:active:not(:disabled) { transform: translateY(0); }
+.cr-btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+.cr-btn-thaid {
+    width: 100%; padding: 12px 20px;
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    background: #f8faff; border: 1.5px solid #e8eef8;
+    border-radius: 12px; color: #374151;
+    font-family: inherit; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: border-color .22s, background .22s, color .22s;
+}
+.cr-btn-thaid:hover { border-color: #bfdbfe; background: #eff6ff; color: #2554c7; }
+
+/* Spinner */
+.cr-spin {
+    display: inline-block; width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+    border-radius: 50%; animation: cr-sp .6s linear infinite;
+}
+@@keyframes cr-sp { to { transform: rotate(360deg); } }
+
+/* Alert */
+.cr-alert {
+    display: flex; align-items: flex-start; gap: 9px;
+    padding: 12px 14px; border-radius: 12px;
+    font-size: 13.5px; line-height: 1.55; margin-bottom: 16px;
+}
+.cr-err { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+
+/* OR */
+.cr-or {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 12px; color: #d1d5db; margin: 12px 0; letter-spacing: .4px;
+}
+.cr-or::before, .cr-or::after { content: ''; flex: 1; height: 1px; background: #f1f5f9; }
+
+/* Back */
+.cr-back-btn {
+    width: 100%; background: none; border: none; cursor: pointer;
+    font-family: inherit; font-size: 13.5px; color: #94a3b8;
+    text-align: center; padding: 8px 0 0; transition: color .18s;
+}
+.cr-back-btn:hover { color: #475569; }
+
+/* Success */
+.cr-success { text-align: left; }
+.cr-success-icon {
+    width: 56px; height: 56px; border-radius: 50%; background: #16a34a;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px; font-size: 22px; color: #fff;
+    animation: cr-pop .5s cubic-bezier(.16,1,.3,1) both;
+}
+@@keyframes cr-pop { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+.cr-success-title { font-size: 34px; font-weight: 700; color: #111; letter-spacing: 0; line-height: 1.18; margin-bottom: 10px; }
+.cr-success-sub { font-size: 14px; color: #6b7280; line-height: 1.7; margin-bottom: 28px; }
+.cr-success-sub strong { color: #111; }
+
+/* Responsive */
+@@media (max-width: 600px) {
+    html, body { overflow: auto !important; }
+    .cr-root { height: auto; min-height: 100vh; }
+    .cr-header { padding: 0 24px; }
+    .cr-main { padding: 32px 20px 48px; }
+    .cr-title { font-size: 30px; }
+    .cr-field-row2 { grid-template-columns: 1fr; }
+    .cr-field-row3 { grid-template-columns: 60px 1fr 80px; gap: 6px; }
+}
+</style>
+
+<div class="cr-root">
+
+    <header class="cr-header">
+        <div class="cr-header-right">
+            <span>มีบัญชีแล้ว?</span>
+            <a href="/citizen/login" class="cr-header-login">เข้าสู่ระบบ</a>
+        </div>
+    </header>
+
+    <main class="cr-main">
+        <div class="cr-content">
+
+            @if (step == 3)
+            {
+                <div class="cr-success">
+                    <div class="cr-success-icon" aria-hidden="true"><i class="bi bi-check2"></i></div>
+                    <div class="cr-success-title">ลงทะเบียนสำเร็จ</div>
+                    <div class="cr-success-sub">
+                        @if (isAnonymous)
+                        {
+                            <span>สร้างบัญชีแบบ<strong>ไม่เปิดเผยตัวตน</strong>เรียบร้อยแล้ว<br />
+                            ระบบส่งลิงก์ยืนยันไปที่ <strong>@email</strong></span>
+                        }
+                        else
+                        {
+                            <span>ระบบส่งลิงก์ยืนยันไปที่<br />
+                            <strong>@email</strong><br />
+                            กรุณาตรวจสอบกล่องจดหมายและกดยืนยันเพื่อเปิดใช้งาน</span>
+                        }
+                    </div>
+                    <button class="cr-btn-primary" @onclick='() => Nav.NavigateTo("/citizen/login")'>
+                        <span>ไปยังหน้าเข้าสู่ระบบ</span>
+                    </button>
+                </div>
+            }
+            else if (step == 2)
+            {
+                <div class="cr-step-tag">ขั้นตอนที่ 2 จาก 2</div>
+                <h1 class="cr-title">ตั้งรหัสผ่าน</h1>
+
+                @if (!string.IsNullOrEmpty(errMsg))
+                {
+                    <div class="cr-alert cr-err" role="alert">
+                        <i class="bi bi-exclamation-circle-fill"></i><span>@errMsg</span>
+                    </div>
+                }
+
+                <div class="cr-field">
+                    <label class="cr-lbl" for="cr-pw">รหัสผ่าน</label>
+                    <div class="cr-iw">
+                        <input id="cr-pw" class="cr-inp cr-inp-pr"
+                               type="@(showPw ? "text" : "password")"
+                               @bind="password" @bind:event="oninput"
+                               placeholder="อย่างน้อย 8 ตัวอักษร" autocomplete="new-password" />
+                        <i class="bi bi-lock cr-ico"></i>
+                        <button type="button" class="cr-eye" @onclick='() => showPw = !showPw'
+                                aria-label="@(showPw ? "ซ่อน" : "แสดง")รหัสผ่าน">
+                            <i class="bi @(showPw ? "bi-eye-slash" : "bi-eye")"></i>
+                        </button>
+                    </div>
+                    @if (!string.IsNullOrEmpty(password))
+                    {
+                        <div class="cr-strength">
+                            <div class="cr-strength-bar">
+                                <div class="cr-strength-fill" style="width:@PwdPct()%;background:@PwdColor()"></div>
+                            </div>
+                            <span class="cr-strength-lbl" style="color:@PwdColor()">@PwdLabel()</span>
+                        </div>
+                    }
+                </div>
+
+                <div class="cr-field">
+                    <label class="cr-lbl" for="cr-confirm">ยืนยันรหัสผ่าน</label>
+                    <div class="cr-iw">
+                        <input id="cr-confirm" class="cr-inp cr-inp-pr"
+                               type="@(showConfirm ? "text" : "password")"
+                               @bind="confirm" @bind:event="oninput"
+                               placeholder="กรอกรหัสผ่านอีกครั้ง" autocomplete="new-password" />
+                        <i class="bi bi-lock cr-ico"></i>
+                        <button type="button" class="cr-eye" @onclick='() => showConfirm = !showConfirm'
+                                aria-label="@(showConfirm ? "ซ่อน" : "แสดง")รหัสผ่าน">
+                            <i class="bi @(showConfirm ? "bi-eye-slash" : "bi-eye")"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="cr-terms">
+                    <input type="checkbox" id="cr-terms" @bind="agreedTerms" />
+                    <label class="cr-terms-text" for="cr-terms">
+                        ข้าพเจ้ายอมรับ <a href="/terms" target="_blank">ข้อกำหนดการใช้งาน</a>
+                        และ <a href="/privacy" target="_blank">นโยบายความเป็นส่วนตัว</a> ของสำนักงาน ป.ป.ท.
+                    </label>
+                </div>
+
+                <button class="cr-btn-primary" @onclick="DoRegister"
+                        disabled="@(busy || !agreedTerms || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(confirm))">
+                    @if (busy)
+                    {
+                        <span class="cr-spin" aria-hidden="true"></span><span>กำลังสมัครสมาชิก...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-person-check-fill"></i><span>สมัครสมาชิก</span>
+                    }
+                </button>
+
+                <button type="button" class="cr-back-btn" @onclick='() => { step = 1; errMsg = ""; }'>
+                    <i class="bi bi-arrow-left me-1"></i>กลับขั้นตอนก่อนหน้า
+                </button>
+            }
+            else
+            {
+                <div class="cr-step-tag">ขั้นตอนที่ 1 จาก 2</div>
+                <h1 class="cr-title">สร้างบัญชี</h1>
+
+                @* Anonymous toggle *@
+                <label class="cr-anon-wrap" for="cr-anon-cb">
+                    <div class="cr-anon-info">
+                        <strong>ปกปิดตัวตน</strong>
+                        <span>ยื่นเรื่องโดยไม่เปิดเผยชื่อ-นามสกุล</span>
+                    </div>
+                    <div class="cr-toggle">
+                        <input id="cr-anon-cb" type="checkbox" @bind="isAnonymous" />
+                        <div class="cr-toggle-track"></div>
+                        <div class="cr-toggle-thumb"></div>
+                    </div>
+                </label>
+
+                @if (isAnonymous)
+                {
+                    <div class="cr-anon-notice">
+                        <i class="bi bi-shield-lock-fill"></i>
+                        <span>ข้อมูลส่วนตัวของท่านจะไม่ถูกบันทึก ระบบจะใช้เฉพาะอีเมลสำหรับการติดต่อกลับ</span>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(errMsg))
+                {
+                    <div class="cr-alert cr-err" role="alert">
+                        <i class="bi bi-exclamation-circle-fill"></i><span>@errMsg</span>
+                    </div>
+                }
+
+                @if (!isAnonymous)
+                {
+                    <div class="cr-field">
+                        <label class="cr-lbl" for="cr-prefix">คำนำหน้า</label>
+                        <select id="cr-prefix" class="cr-select" @bind="prefix">
+                            <option value="">-- เลือก --</option>
+                            <option value="นาย">นาย</option>
+                            <option value="นาง">นาง</option>
+                            <option value="นางสาว">นางสาว</option>
+                            <option value="อื่นๆ">อื่นๆ</option>
+                        </select>
+                    </div>
+
+                    <div class="cr-field-row2">
+                        <div>
+                            <label class="cr-lbl" for="cr-first-th">ชื่อ</label>
+                            <div class="cr-iw">
+                                <input id="cr-first-th" class="cr-inp" @bind="firstNameTh" @bind:event="oninput"
+                                       placeholder="ชื่อจริง" autocomplete="given-name" />
+                                <i class="bi bi-person cr-ico"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="cr-lbl" for="cr-last-th">นามสกุล</label>
+                            <div class="cr-iw">
+                                <input id="cr-last-th" class="cr-inp" @bind="lastNameTh" @bind:event="oninput"
+                                       placeholder="นามสกุล" autocomplete="family-name" />
+                                <i class="bi bi-person cr-ico"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cr-field">
+                        <label class="cr-lbl" for="cr-nid">เลขบัตรประชาชน</label>
+                        <div class="cr-iw">
+                            <input id="cr-nid" class="cr-inp" @bind="nationalId" @bind:event="oninput"
+                                   placeholder="- - - - - - - - - - - - -"
+                                   maxlength="13" inputmode="numeric" autocomplete="off" />
+                            <i class="bi bi-credit-card-2-front cr-ico"></i>
+                        </div>
+                        <div class="cr-field-hint">13 หลัก ไม่ต้องใส่ขีด</div>
+                    </div>
+
+                    <div class="cr-field">
+                        <label class="cr-lbl">วันเกิด</label>
+                        <div class="cr-field-row3">
+                            <div>
+                                <input class="cr-inp cr-inp-no-ico" @bind="birthDay" @bind:event="oninput"
+                                       placeholder="วว" maxlength="2" inputmode="numeric" />
+                            </div>
+                            <div>
+                                <select class="cr-select" @bind="birthMonth" style="padding-left:10px">
+                                    <option value="">เดือน</option>
+                                    <option value="1">มกราคม</option>
+                                    <option value="2">กุมภาพันธ์</option>
+                                    <option value="3">มีนาคม</option>
+                                    <option value="4">เมษายน</option>
+                                    <option value="5">พฤษภาคม</option>
+                                    <option value="6">มิถุนายน</option>
+                                    <option value="7">กรกฎาคม</option>
+                                    <option value="8">สิงหาคม</option>
+                                    <option value="9">กันยายน</option>
+                                    <option value="10">ตุลาคม</option>
+                                    <option value="11">พฤศจิกายน</option>
+                                    <option value="12">ธันวาคม</option>
+                                </select>
+                            </div>
+                            <div>
+                                <input class="cr-inp cr-inp-no-ico" @bind="birthYear" @bind:event="oninput"
+                                       placeholder="ปปปป" maxlength="4" inputmode="numeric" />
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="cr-field">
+                    <label class="cr-lbl" for="cr-email">อีเมล</label>
+                    <div class="cr-iw">
+                        <input id="cr-email" class="cr-inp" type="email"
+                               @bind="email" @bind:event="oninput"
+                               placeholder="example@email.com" autocomplete="email" />
+                        <i class="bi bi-envelope cr-ico"></i>
+                    </div>
+                </div>
+
+                <div class="cr-field">
+                    <label class="cr-lbl" for="cr-phone">
+                        เบอร์โทรศัพท์ <span class="cr-lbl-opt">(ไม่บังคับ)</span>
+                    </label>
+                    <div class="cr-iw">
+                        <input id="cr-phone" class="cr-inp" type="tel"
+                               @bind="phone" @bind:event="oninput"
+                               placeholder="0812345678" autocomplete="tel" inputmode="tel" />
+                        <i class="bi bi-telephone cr-ico"></i>
+                    </div>
+                </div>
+
+                <button class="cr-btn-primary" @onclick="GoStep2"
+                        disabled="@IsStep1Invalid()">
+                    <span>ถัดไป</span><i class="bi bi-arrow-right"></i>
+                </button>
+
+                <div class="cr-or" aria-hidden="true">หรือลงทะเบียนด้วย</div>
+
+                <button class="cr-btn-thaid" @onclick="RegisterThaiD" disabled="@busy">
+                    <i class="bi bi-credit-card-2-front-fill"></i><span>ลงทะเบียนด้วย ThaiD</span>
+                </button>
+            }
+
+        </div>
+    </main>
+
+</div>
+
+@code {
+    private int    step        = 1;
+    private bool   isAnonymous = false;
+
+    // Personal info (non-anonymous)
+    private string prefix      = "", firstNameTh = "", lastNameTh = "";
+    private string nationalId  = "", birthDay = "", birthMonth = "", birthYear = "";
+
+    // Contact
+    private string email = "", phone = "";
+
+    // Password
+    private string password = "", confirm = "";
+    private bool   showPw, showConfirm, agreedTerms, busy;
+    private string errMsg = "";
+
+    private bool IsStep1Invalid()
+    {
+        if (string.IsNullOrWhiteSpace(email)) return true;
+        if (!isAnonymous)
+        {
+            if (string.IsNullOrWhiteSpace(prefix))      return true;
+            if (string.IsNullOrWhiteSpace(firstNameTh)) return true;
+            if (string.IsNullOrWhiteSpace(lastNameTh))  return true;
+            if (string.IsNullOrWhiteSpace(nationalId))  return true;
+            if (string.IsNullOrWhiteSpace(birthDay) || string.IsNullOrWhiteSpace(birthMonth) || string.IsNullOrWhiteSpace(birthYear)) return true;
+        }
+        return false;
+    }
+
+    private void GoStep2()
+    {
+        errMsg = "";
+        if (!email.Contains('@'))
+        { errMsg = "รูปแบบอีเมลไม่ถูกต้อง"; return; }
+
+        if (!isAnonymous)
+        {
+            if (nationalId.Length != 13 || !nationalId.All(char.IsDigit))
+            { errMsg = "เลขบัตรประชาชนต้องมี 13 หลัก"; return; }
+            if (!int.TryParse(birthDay, out int d) || d < 1 || d > 31)
+            { errMsg = "วันเกิดไม่ถูกต้อง"; return; }
+            if (!int.TryParse(birthYear, out int y) || y < 1900 || y > 2100)
+            { errMsg = "ปีเกิดไม่ถูกต้อง"; return; }
+        }
+
+        step = 2;
+    }
+
+    private async Task DoRegister()
+    {
+        errMsg = "";
+        if (password.Length < 8)
+        { errMsg = "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"; return; }
+        if (password != confirm)
+        { errMsg = "รหัสผ่านไม่ตรงกัน กรุณากรอกใหม่"; return; }
+
+        busy = true;
+        try
+        {
+            await UserApi.RegisterCitizenAsync(new CitizenRegistrationRequest
+            {
+                FirstName        = isAnonymous ? "ไม่ระบุ" : firstNameTh.Trim(),
+                LastName         = isAnonymous ? "ตัวตน"  : lastNameTh.Trim(),
+                Email            = email.Trim(),
+                Mobile           = phone.Trim(),
+                NationalId       = isAnonymous ? "" : nationalId.Trim(),
+                Password         = password,
+                PrivacyConsent     = agreedTerms,
+                ThaiDVerified    = false,
+            });
+            step = 3;
+        }
+        catch (Exception ex) { errMsg = ex.Message; }
+        finally { busy = false; }
+    }
+
+    private async Task RegisterThaiD()
+    {
+        busy = true;
+        try { await ThaiDSvc.RedirectToThaiDAsync("register_citizen"); }
+        catch (Exception ex) { errMsg = $"ไม่สามารถเชื่อมต่อ ThaiD ได้: {ex.Message}"; busy = false; }
+    }
+
+    private int PwdPct()
+    {
+        if (string.IsNullOrEmpty(password)) return 0;
+        int s = 0;
+        if (password.Length >= 8)  s += 25;
+        if (password.Length >= 12) s += 15;
+        if (password.Any(char.IsUpper)) s += 20;
+        if (password.Any(char.IsDigit)) s += 20;
+        if (password.Any(c => !char.IsLetterOrDigit(c))) s += 20;
+        return Math.Min(s, 100);
+    }
+    private string PwdColor() { var p = PwdPct(); return p < 40 ? "#ef4444" : p < 70 ? "#f59e0b" : "#16a34a"; }
+    private string PwdLabel() { var p = PwdPct(); return p == 0 ? "" : p < 40 ? "รหัสผ่านอ่อนแอ" : p < 70 ? "ปานกลาง" : "แข็งแกร่ง"; }
+}

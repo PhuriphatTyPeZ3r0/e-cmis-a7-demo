@@ -1,0 +1,658 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รายละเอียดวาระการประชุม | E-CMIS</title>
+  <link rel="icon" type="image/png" href="../assets/pacc_logo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="../assets/ecmis-app.css" rel="stylesheet">
+  <style>
+    .agenda-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin-bottom:1rem}
+    .agenda-stat{padding:.9rem 1.05rem;border:1px solid var(--border-divider);border-radius:var(--radius-card);background:var(--bg-surface)}
+    .agenda-stat span{display:block;color:var(--text-disabled);font-size:.72rem;font-weight:600;letter-spacing:.02em}
+    .agenda-stat strong{display:block;margin-top:.2rem;font-size:1.5rem;color:var(--ecmis-navy);font-family:var(--serif)}
+    .agenda-stat small{display:block;margin-top:.15rem;color:var(--ecmis-muted);font-size:.72rem}
+    .agenda-stat.clickable{cursor:pointer;transition:border-color .15s,box-shadow .15s}
+    .agenda-stat.clickable:hover{border-color:var(--ecmis-navy)}
+    .agenda-stat.clickable.active{border-color:var(--ecmis-navy);border-width:2px;box-shadow:0 0 0 2px rgba(15,42,98,.08)}
+    .cat-badge{display:inline-flex;align-items:center;padding:.2rem .55rem;border-radius:999px;font-size:.72rem;font-weight:600;white-space:nowrap}
+    .cat-finding{color:#1e6141;background:#dff0e7}
+    .cat-preliminary{color:#174e80;background:#e8f2fc}
+    .cat-policy{color:#3d4f61;background:#e8edf2}
+    .cat-overdue{color:#8c261f;background:#f9e1df}
+    .cat-prosecutor{color:#654b08;background:#fdf1d6}
+    .flag-badge{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .55rem;border-radius:999px;font-size:.72rem;font-weight:600;color:#8c261f;background:#f9e1df}
+    .case-chip{color:var(--ecmis-navy);font-weight:600;text-decoration:none;white-space:nowrap}
+    .case-chip:hover{text-decoration:underline}
+    .remark-cell{font-size:.78rem;color:var(--ecmis-muted);line-height:1.4}
+    .case-schedule-table{font-size:.76rem}
+    .case-schedule-table th,.case-schedule-table td{padding:.3rem .5rem;vertical-align:middle}
+    .detail-tabs{display:flex;gap:.4rem;padding:.7rem .9rem 0}
+    .detail-tab{border:1px solid var(--border-divider);border-bottom:none;background:var(--bg-page);color:var(--ecmis-muted);
+      padding:.45rem 1rem;border-radius:8px 8px 0 0;font-size:.85rem;font-weight:600;cursor:pointer}
+    .detail-tab.active{background:var(--bg-surface);color:var(--ecmis-navy);border-color:var(--border-divider)}
+    .agenda-no-input{width:80px;display:inline-block}
+    .move-btn{border:0;background:none;color:var(--ecmis-muted);padding:0 .25rem;cursor:pointer}
+    .move-btn:disabled{opacity:.3;cursor:default}
+    .move-btn:hover:not(:disabled){color:var(--ecmis-navy)}
+    .swal2-popup .form-label{font-size:.82rem;font-weight:600;margin-bottom:.25rem;display:block;text-align:left}
+    @media(max-width:900px){.agenda-stats{grid-template-columns:1fr}}
+  </style>
+</head>
+
+<body>
+
+  <main class="app-main">
+    <div class="page-head">
+      <div>
+        <a href="agenda-registry.html" class="text-decoration-none small d-block mb-1" style="color:var(--ecmis-muted)">
+          <i class="fa-solid fa-arrow-left me-1"></i>กลับทะเบียนวาระการประชุม</a>
+        <h1><i class="fa-solid fa-list-ol me-2"></i><span id="pageTitle">รายละเอียดวาระ</span></h1>
+      </div>
+      <span class="flow-ref ms-auto" id="meetSubline"></span>
+    </div>
+
+    <div id="notFoundBox" class="d-none alert alert-warning">
+      ไม่พบครั้งที่ประชุมนี้ในทะเบียน — <a href="agenda-registry.html">กลับไปเลือกครั้งที่ประชุม</a>
+    </div>
+
+    <div id="detailWrap">
+      <div class="agenda-stats" id="statsBox"></div>
+
+      <div class="card card-ecmis">
+        <div class="card-header">
+          <i class="fa-solid fa-list-ol"></i> <span id="cardHeaderTitle">รายการวาระ</span>
+          <span class="badge bg-secondary rounded-pill ms-2" id="cnt">0</span>
+          <span id="confirmedBadge"></span>
+          <div class="btn-group ms-auto">
+            <button class="btn btn-sm btn-outline-secondary" id="btnExportCsv"><i class="fa-solid fa-file-excel me-1"></i>Excel/CSV (๙ คอลัมน์)</button>
+            <button class="btn btn-sm btn-navy" id="btnAddItem"><i class="fa-solid fa-plus me-1"></i>เพิ่มวาระ</button>
+          </div>
+        </div>
+        <div class="detail-tabs" id="tabWrap">
+          <button type="button" class="detail-tab active" data-tab="items" id="tabItemsBtn">รายการวาระ</button>
+          <a href="#" id="linkDocs" class="detail-tab text-decoration-none">เอกสารการประชุม <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size:.7em"></i></a>
+        </div>
+
+        <div id="paneItems">
+          <div class="card-body border-bottom border-top" id="filterBar">
+            <div class="row g-2 align-items-end">
+              <div class="col-lg-4 col-md-12">
+                <label class="form-label fw-bold text-dark"><i class="fa-solid fa-calendar-check me-1 text-primary"></i>เลือกครั้งที่ประชุม</label>
+                <select class="form-select form-select-sm fw-semibold" id="qMeeting"></select>
+              </div>
+              <div class="col-lg-2 col-md-4">
+                <label class="form-label">วาระที่</label>
+                <input class="form-control form-control-sm" id="qAgendaNo" placeholder="เช่น 5.12">
+              </div>
+              <div class="col-lg-3 col-md-4">
+                <label class="form-label">คำค้น (ชื่อเรื่อง/เลขคดี/ผู้รับผิดชอบ/กอง)</label>
+                <input class="form-control form-control-sm" id="q" placeholder="พิมพ์คำค้น...">
+              </div>
+              <div class="col-lg-3 col-md-4">
+                <label class="form-label">หมวดหมู่วาระ</label>
+                <select class="form-select form-select-sm" id="qCategory">
+                  <option value="">— ทุกหมวดหมู่ —</option>
+                  <option value="finding">รายงานไต่สวนเพื่อวินิจฉัยชี้มูล</option>
+                  <option value="preliminary">รายงานไต่สวนเบื้องต้น (ชุด/บัญชีแนบ)</option>
+                  <option value="policy">เรื่องเชิงนโยบาย/บริหารงาน</option>
+                  <option value="overdue">รายงานเกินกรอบระยะเวลา</option>
+                  <option value="prosecutor">ความเห็นอัยการ / กันบุคคลไว้เป็นพยาน</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover tbl-ecmis mb-0 align-middle">
+                <thead id="tblHead">
+                  <tr>
+                    <th style="width:75px">วาระที่</th>
+                    <th style="width:135px">หมวดหมู่</th>
+                    <th>ชื่อเรื่องเสนอพิจารณา</th>
+                    <th style="width:130px">เรื่องเลขคดีที่</th>
+                    <th style="width:160px">ผู้รับผิดชอบ ปราบ/เขต</th>
+                    <th style="width:130px">กอง/สำนัก</th>
+                    <th style="width:170px">หมายเหตุ</th>
+                    <th style="width:70px"></th>
+                  </tr>
+                </thead>
+                <tbody id="tb"></tbody>
+              </table>
+            </div>
+            <div class="text-center text-muted p-4 d-none" id="emptyState">
+              <i class="fa-solid fa-folder-open fa-2x mb-2 d-block"></i>
+              ไม่พบวาระตามเงื่อนไขที่ค้นหา
+            </div>
+            <div class="p-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <span class="small text-muted" id="pageIndicator">กำลังแสดงหน้า 1 จาก 1</span>
+              <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm m-0" id="pager" style="display:flex; list-style:none; gap:4px"></ul>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="../assets/ecmis-app.js"></script>
+  <script src="../assets/agenda-registry-data.js"></script>
+  <script>
+    ECMIS.renderShell('agenda-registry.html');
+    const M = ECMIS.mergeField;
+    /* MS = mergeField สำหรับ "หน้าจอ" (ตาราง/สถิติ/เลขหน้า) — ใช้เลขอาราบิกเสมอ
+       ต่างจาก M() ที่แปลงเป็นเลขไทยเพราะใช้เฉพาะใน "เอกสาร" (ระเบียบวาระ/หนังสือเชิญประชุม) */
+    function MS(value, placeholder) {
+      if (value === undefined || value === null || String(value).trim() === '') {
+        return `<span class="mergefield empty" title="ยังไม่มีข้อมูล — ต้องกรอกในฟอร์มด้านซ้าย">${placeholder || '……………'}</span>`;
+      }
+      return `<span class="mergefield filled" title="Auto-fill จากฟอร์ม/ฐานข้อมูลกลาง E-CMIS">${value}</span>`;
+    }
+    const AR = AgendaRegistry;
+    const role = ECMIS.currentRole();
+    const mayEdit = ECMIS.can('create.agenda', role.id);
+
+    AR.ready.then(main).catch(err => {
+      console.error('โหลดข้อมูลทะเบียนวาระการประชุมไม่สำเร็จ:', err);
+      ECMIS.toastWarn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ');
+    });
+
+    function main() {
+      const params = new URLSearchParams(location.search);
+      let rawMeet = params.get('meet');
+      let activeMeetId = (rawMeet && rawMeet.toUpperCase() === 'ALL') ? 'ALL' : (rawMeet ? +rawMeet : 'ALL');
+
+      // Populate qMeeting select dropdown
+      const qMeetingEl = document.getElementById('qMeeting');
+      let optionsHtml = '<option value="ALL">📋 ทะเบียนคุมวาระรวมทุกครั้ง (Master View)</option>';
+      AR.MEETINGS.forEach(m => {
+        optionsHtml += `<option value="${m.trc_id}">ครั้งที่ ${m.trc_name} (${ECMIS.thaiDate(m.trc_date)})</option>`;
+      });
+      qMeetingEl.innerHTML = optionsHtml;
+
+      // Validate activeMeetId
+      if (activeMeetId !== 'ALL' && !AR.MEETINGS.some(m => m.trc_id === activeMeetId)) {
+        activeMeetId = 'ALL';
+      }
+      qMeetingEl.value = String(activeMeetId);
+
+      let filter = 'all';
+      let currentPage = 1;
+      const pageSize = 15;
+
+      qMeetingEl.addEventListener('change', () => {
+        activeMeetId = qMeetingEl.value === 'ALL' ? 'ALL' : +qMeetingEl.value;
+        const newUrl = 'agenda-detail.html?meet=' + activeMeetId;
+        history.replaceState(null, '', newUrl);
+        currentPage = 1;
+        filter = 'all';
+        renderView();
+      });
+
+      function getActiveMeeting() {
+        return activeMeetId === 'ALL' ? null : AR.MEETINGS.find(m => m.trc_id === activeMeetId);
+      }
+
+      function safeSortKey(it) {
+        if (typeof AR.itemSortKey === 'function') return AR.itemSortKey(it);
+        if (!it || it.trci_number === undefined) return 0;
+        const arabic = (window.ECMIS && window.ECMIS.toArabicDigits) ? window.ECMIS.toArabicDigits(String(it.trci_number)) : String(it.trci_number);
+        const clean = arabic.replace(/[^0-9.]/g, '');
+        const parts = clean.split('.');
+        const maj = parseFloat(parts[0]);
+        const min = parseFloat(parts[1]);
+        return (isNaN(maj) ? 0 : maj) * 1000 + (isNaN(min) ? 0 : min);
+      }
+
+      function getAllActiveItems() {
+        if (activeMeetId === 'ALL') {
+          return AR.ITEMS.map(it => {
+            const m = AR.meetingOf(it) || { trc_name: '-', trc_date: '' };
+            return {
+              ...it,
+              meetingName: m.trc_name,
+              meetingDate: m.trc_date
+            };
+          }).sort((a, b) => {
+            if (b.trc_id !== a.trc_id) return b.trc_id - a.trc_id;
+            return safeSortKey(a) - safeSortKey(b);
+          });
+        } else {
+          return AR.itemsOf(activeMeetId);
+        }
+      }
+
+      function renderStats() {
+        const all = getAllActiveItems();
+        const flaggedCount = all.filter(AR.isFlagged).length;
+        const bundledCount = all.filter(AR.isBundled).length;
+        const isMaster = activeMeetId === 'ALL';
+        const cls = f => `agenda-stat clickable${filter === f ? ' active' : ''}`;
+        document.getElementById('statsBox').innerHTML = `
+        <div class="${cls('all')}" data-f="all"><span>${isMaster ? 'จำนวนวาระรวมทุกครั้ง' : 'จำนวนวาระในการประชุมนี้'}</span><strong>${all.length}</strong><small>อนุวาระ</small></div>
+        <div class="${cls('flagged')}" data-f="flagged"><span>อนุกรรมการเห็นแย้ง / ไม่ผ่าน</span><strong style="color:#8c261f">${flaggedCount}</strong><small>อนุวาระ</small></div>
+        <div class="${cls('bundle')}" data-f="bundle"><span>รวมหลายสำนวนในวาระเดียว</span><strong style="color:#174e80">${bundledCount}</strong><small>อนุวาระ</small></div>`;
+        document.querySelectorAll('#statsBox .agenda-stat.clickable').forEach(el => el.addEventListener('click', () => {
+          filter = el.dataset.f;
+          currentPage = 1;
+          renderStats(); renderDetail();
+        }));
+      }
+
+      function matches(item) {
+        const qAgendaNo = document.getElementById('qAgendaNo').value.trim();
+        const q = document.getElementById('q').value.trim();
+        const qCategory = document.getElementById('qCategory').value;
+
+        if (qAgendaNo && !String(item.trci_number).includes(qAgendaNo)) return false;
+        if (q && !(
+          (item.trci_topic && item.trci_topic.toLowerCase().includes(q.toLowerCase())) ||
+          (item.case_ref && item.case_ref.toLowerCase().includes(q.toLowerCase())) ||
+          (item.owner && item.owner.toLowerCase().includes(q.toLowerCase())) ||
+          (item.org && item.org.toLowerCase().includes(q.toLowerCase())) ||
+          (item.meetingName && item.meetingName.toLowerCase().includes(q.toLowerCase())) ||
+          (item.remark && item.remark.toLowerCase().includes(q.toLowerCase()))
+        )) return false;
+        if (qCategory && item.category !== qCategory) return false;
+        if (filter === 'flagged' && !AR.isFlagged(item)) return false;
+        if (filter === 'bundle' && !AR.isBundled(item)) return false;
+        return true;
+      }
+
+      async function moveItem(trciId, dir) {
+        try {
+          const moved = await AR.swapItemNumber(trciId, dir);
+          if (!moved) return;
+        } catch (err) {
+          console.error('เลื่อนลำดับวาระไม่สำเร็จ:', err);
+          ECMIS.toastWarn('เลื่อนลำดับไม่สำเร็จ ลองใหม่อีกครั้ง');
+          return;
+        }
+        renderDetail();
+      }
+
+      function renderView() {
+        const isMaster = activeMeetId === 'ALL';
+        const meeting = getActiveMeeting();
+
+        if (isMaster) {
+          document.getElementById('pageTitle').textContent = 'ทะเบียนคุมเลขคดีและวาระการประชุม (รวมทุกครั้ง)';
+          document.getElementById('meetSubline').textContent = 'สืบค้นและติดตามวาระการประชุมคณะกรรมการ ป.ป.ท. ทุกครั้ง';
+          document.getElementById('cardHeaderTitle').textContent = 'ทะเบียนคุมวาระรวมทุกครั้ง (Master View)';
+          document.getElementById('confirmedBadge').innerHTML = '';
+          document.getElementById('btnAddItem').style.display = 'none';
+          document.getElementById('linkDocs').style.display = 'none';
+          document.getElementById('tabItemsBtn').textContent = 'ทะเบียนคุมวาระ (รวม)';
+        } else {
+          document.getElementById('pageTitle').textContent = `รายละเอียดวาระ — ครั้งที่ ${meeting.trc_name}`;
+          document.getElementById('meetSubline').textContent = `วันที่ ${ECMIS.thaiDate(meeting.trc_date)}`;
+          document.getElementById('cardHeaderTitle').textContent = `รายการวาระ — ครั้งที่ ${meeting.trc_name}`;
+          document.getElementById('confirmedBadge').innerHTML = AR.meetingBadge(meeting.trc_status, meeting.trc_confirmed);
+          document.getElementById('btnAddItem').style.display = '';
+          document.getElementById('btnAddItem').disabled = !mayEdit;
+          document.getElementById('linkDocs').style.display = '';
+          document.getElementById('linkDocs').href = `meeting-docs.html?meet=${meeting.trc_id}`;
+          document.getElementById('tabItemsBtn').textContent = 'รายการวาระ';
+        }
+
+        // Render Table Header
+        const thead = document.getElementById('tblHead');
+        if (isMaster) {
+          thead.innerHTML = `
+            <tr>
+              <th style="width:45px" class="text-center">ที่</th>
+              <th style="width:95px">ครั้งที่ประชุม</th>
+              <th style="width:105px">วันที่ประชุม</th>
+              <th style="width:75px">วาระที่</th>
+              <th>ชื่อเรื่องเสนอพิจารณา</th>
+              <th style="width:125px">เรื่องเลขคดีที่</th>
+              <th style="width:155px">ผู้รับผิดชอบ ปราบ/เขต</th>
+              <th style="width:120px">กอง/สำนัก</th>
+              <th style="width:150px">หมายเหตุ</th>
+            </tr>`;
+        } else {
+          thead.innerHTML = `
+            <tr>
+              <th style="width:75px">วาระที่</th>
+              <th style="width:135px">หมวดหมู่</th>
+              <th>ชื่อเรื่องเสนอพิจารณา</th>
+              <th style="width:130px">เรื่องเลขคดีที่</th>
+              <th style="width:160px">ผู้รับผิดชอบ ปราบ/เขต</th>
+              <th style="width:130px">กอง/สำนัก</th>
+              <th style="width:170px">หมายเหตุ</th>
+              <th style="width:70px"></th>
+            </tr>`;
+        }
+
+        renderStats();
+        renderDetail();
+      }
+
+      function renderDetail() {
+        const isMaster = activeMeetId === 'ALL';
+        const meeting = getActiveMeeting();
+        const all = getAllActiveItems();
+        const filtered = all.filter(matches);
+        const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        const pageRows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+        document.getElementById('cnt').textContent = filtered.length;
+
+        const tbody = document.getElementById('tb');
+        const emptyState = document.getElementById('emptyState');
+        if (!pageRows.length) {
+          tbody.innerHTML = ''; emptyState.classList.remove('d-none');
+        } else {
+          emptyState.classList.add('d-none');
+        }
+
+        const noFilterActive = !document.getElementById('qAgendaNo').value.trim() && !document.getElementById('q').value.trim()
+          && !document.getElementById('qCategory').value && filter === 'all';
+
+        if (isMaster) {
+          tbody.innerHTML = pageRows.map((it, idx) => {
+            const globalIdx = (currentPage - 1) * pageSize + idx + 1;
+            return `
+            <tr>
+              <td class="text-center text-muted fw-semibold">${globalIdx}</td>
+              <td><a href="javascript:void(0)" class="fw-bold text-decoration-none link-jump-meet" data-meet="${it.trc_id}" title="คลิกดูเฉพาะครั้งที่ ${it.meetingName}">${it.meetingName}</a></td>
+              <td class="text-nowrap small text-muted">${ECMIS.thaiDate(it.meetingDate)}</td>
+              <td class="fw-semibold">${it.trci_number}</td>
+              <td>
+                <div class="fw-medium">${it.trci_topic}</div>
+                <span class="cat-badge ${AR.CATEGORY_CLASS[it.category]}" style="font-size:0.68rem; padding:0.1rem 0.45rem">${AR.CATEGORY_LABEL[it.category]}</span>
+                ${AR.renderQualifierChips(it) ? `<div class="mt-1">${AR.renderQualifierChips(it)}</div>` : ''}
+                ${AR.renderPresenters(it)}
+              </td>
+              <td>${AR.renderCaseRef(it.case_ref)}${AR.renderCaseSchedule(it)}</td>
+              <td><span class="small fw-medium">${it.owner && it.owner !== '-' ? it.owner : '<span class="text-muted">—</span>'}</span></td>
+              <td><span class="small text-muted">${it.org && it.org !== '-' ? it.org : '—'}</span></td>
+              <td class="remark-cell">${it.remark && it.remark !== '-' ? it.remark : '<span class="text-muted">—</span>'}</td>
+            </tr>`;
+          }).join('');
+
+          tbody.querySelectorAll('.link-jump-meet').forEach(el => el.addEventListener('click', e => {
+            qMeetingEl.value = e.currentTarget.dataset.meet;
+            qMeetingEl.dispatchEvent(new Event('change'));
+          }));
+        } else {
+          tbody.innerHTML = pageRows.map((it) => {
+            const flagged = AR.isFlagged(it);
+            const idx = all.indexOf(it);
+            const canReorder = mayEdit && noFilterActive;
+            return `
+        <tr data-trci="${it.trci_id}">
+          <td class="fw-semibold">${mayEdit
+                ? `<input class="form-control form-control-sm agenda-no-input" data-trci="${it.trci_id}" value="${it.trci_number}">`
+                : MS(it.trci_number)}</td>
+          <td><span class="cat-badge ${AR.CATEGORY_CLASS[it.category]}">${AR.CATEGORY_LABEL[it.category]}</span></td>
+          <td>${it.trci_topic}
+            ${AR.renderQualifierChips(it) ? `<div class="mt-1">${AR.renderQualifierChips(it)}</div>` : ''}
+            ${AR.renderPresenters(it)}</td>
+          <td>${AR.renderCaseRef(it.case_ref)}${AR.renderCaseSchedule(it)}</td>
+          <td><span class="small fw-medium">${it.owner && it.owner !== '-' ? it.owner : '<span class="text-muted">—</span>'}</span></td>
+          <td><span class="small text-muted">${it.org && it.org !== '-' ? it.org : '—'}</span></td>
+          <td class="remark-cell">${it.remark && it.remark !== '-' ? it.remark : '<span class="text-muted">—</span>'}
+            ${flagged ? '<div class="mt-1"><span class="flag-badge"><i class="fa-solid fa-triangle-exclamation"></i>อนุกรรมการเห็นแย้ง/ไม่ผ่าน</span></div>' : ''}</td>
+          <td class="text-end">
+            ${canReorder ? `
+            <button type="button" class="move-btn move-up" data-trci="${it.trci_id}" title="เลื่อนขึ้น" ${idx === 0 ? 'disabled' : ''}><i class="fa-solid fa-arrow-up"></i></button>
+            <button type="button" class="move-btn move-down" data-trci="${it.trci_id}" title="เลื่อนลง" ${idx === all.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-arrow-down"></i></button>` : ''}
+            ${mayEdit ? `<button type="button" class="move-btn text-danger btn-delete-item" data-trci="${it.trci_id}" data-no="${it.trci_number}" title="ลบวาระนี้"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+          </td>
+        </tr>`;
+          }).join('');
+
+          tbody.querySelectorAll('.agenda-no-input').forEach(el => el.addEventListener('change', async e => {
+            const trciId = +e.target.dataset.trci;
+            const newNumber = e.target.value.trim();
+            try {
+              await AR.updateItemNumber(trciId, newNumber);
+            } catch (err) {
+              console.error('แก้ไขวาระที่ไม่สำเร็จ:', err);
+              ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+            }
+          }));
+          tbody.querySelectorAll('.move-up').forEach(el => el.addEventListener('click', e => moveItem(+e.currentTarget.dataset.trci, -1)));
+          tbody.querySelectorAll('.move-down').forEach(el => el.addEventListener('click', e => moveItem(+e.currentTarget.dataset.trci, 1)));
+          tbody.querySelectorAll('.btn-delete-item').forEach(el => el.addEventListener('click', async e => {
+            const trciId = +e.currentTarget.dataset.trci;
+            const no = e.currentTarget.dataset.no;
+            const confirmed = await ECMIS.confirmAction({
+              title: `ลบวาระที่ ${no}?`,
+              html: 'ระบบจะซ่อนรายการนี้ออกจากรายการวาระ (ข้อมูลยังอยู่ในฐานข้อมูล)',
+              confirmText: 'ลบ', danger: true
+            });
+            if (!confirmed.isConfirmed) return;
+            try {
+              await AR.deleteItem(trciId);
+            } catch (err) {
+              console.error('ลบวาระไม่สำเร็จ:', err);
+              ECMIS.toastWarn('ลบไม่สำเร็จ ลองใหม่อีกครั้ง');
+              return;
+            }
+            ECMIS.toastOk(`ลบวาระที่ ${no} เรียบร้อย`);
+            renderStats(); renderDetail();
+          }));
+        }
+
+        document.getElementById('pageIndicator').textContent = `กำลังแสดงหน้า ${currentPage} จาก ${totalPages}`;
+        const pager = document.getElementById('pager');
+        pager.innerHTML = '';
+        for (let p = 1; p <= totalPages; p++) {
+          const li = document.createElement('li');
+          li.innerHTML = `<button class="btn btn-sm ${p === currentPage ? 'btn-navy' : 'btn-outline-secondary'}" style="min-width:34px">${p}</button>`;
+          li.querySelector('button').addEventListener('click', () => { currentPage = p; renderDetail(); });
+          pager.appendChild(li);
+        }
+      }
+
+      ['qAgendaNo', 'q', 'qCategory'].forEach(id =>
+        document.getElementById(id).addEventListener('input', () => { currentPage = 1; renderDetail(); }));
+
+      document.getElementById('btnExportCsv').addEventListener('click', () => {
+        const isMaster = activeMeetId === 'ALL';
+        const meeting = getActiveMeeting();
+        const all = getAllActiveItems();
+        const filtered = all.filter(matches);
+        const header = [
+          'ที่',
+          'การประชุมครั้งที่',
+          'วัน เดือน ปี ที่ประชุม',
+          'วาระการประชุมที่',
+          'ชื่อเรื่องเสนอพิจารณา',
+          'เรื่องเลขคดีที่',
+          'ผู้รับผิดชอบ ปราบ/เขต',
+          'กอง/สำนัก ที่รับผิดชอบ',
+          'หมายเหตุ/ระบุ รายละเอียดเพิ่มเติม'
+        ];
+        const lines = [header.join(',')];
+        filtered.forEach((it, idx) => {
+          const mName = isMaster ? it.meetingName : meeting.trc_name;
+          const mDate = isMaster ? it.meetingDate : meeting.trc_date;
+          const row = [
+            idx + 1,
+            `"${mName}"`,
+            `"${ECMIS.thaiDate(mDate)}"`,
+            `"${it.trci_number}"`,
+            `"${(it.trci_topic || '').replace(/"/g, '""')}"`,
+            `"${(it.case_ref || '').replace(/"/g, '""')}"`,
+            `"${(it.owner && it.owner !== '-' ? it.owner : '').replace(/"/g, '""')}"`,
+            `"${(it.org && it.org !== '-' ? it.org : '').replace(/"/g, '""')}"`,
+            `"${(it.remark && it.remark !== '-' ? it.remark : '').replace(/"/g, '""')}"`
+          ];
+          lines.push(row.join(','));
+        });
+        const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = isMaster
+          ? 'ทะเบียนคุมเลขคดีและวาระประชุมกรรมการ(รวม).csv'
+          : `ทะเบียนวาระการประชุม-ครั้งที่${meeting.trc_name}.csv`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      });
+
+      renderView();
+
+      /* ===================================================================
+         เพิ่มวาระ — บันทึกลง Supabase จริง
+         =================================================================== */
+      function nextItemNo() {
+        const meeting = getActiveMeeting();
+        if (!meeting) return '5.1';
+        const items = AR.itemsOf(meeting.trc_id);
+        let major = 5, minor = 0;
+        items.forEach(it => {
+          const parts = String(it.trci_number).split('.');
+          const maj = parseInt(parts[0], 10);
+          const min = parseInt(parts[1], 10) || 0;
+          if (!isNaN(maj) && (maj > major || (maj === major && min > minor))) { major = maj; minor = min; }
+        });
+        return `${major}.${minor + 1}`;
+      }
+
+      document.getElementById('btnAddItem').addEventListener('click', () => {
+        const meeting = getActiveMeeting();
+        if (!meeting) return;
+        const catOptions = Object.entries(AR.CATEGORY_LABEL).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+        Swal.fire({
+          title: `เพิ่มวาระ — ครั้งที่ ${meeting.trc_name}`,
+          width: 580,
+          html: `
+          <div class="row g-2 text-start">
+            <div class="col-12">
+              <label class="form-label">ค้นหาจากเลขสำนวน (ถ้ามีในระบบ)</label>
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" id="swLookup" class="form-control" placeholder="พิมพ์เลขสำนวน เช่น 1547/2568 แล้วดึงข้อมูลอัตโนมัติ">
+              </div>
+              <small class="d-block mt-1" id="swLookupStatus" style="min-height:1.1em"></small>
+            </div>
+            <div class="col-4"><label class="form-label">วาระที่ *</label>
+              <input type="text" id="swItemNo" class="form-control" value="${nextItemNo()}" placeholder="เช่น 5.31"></div>
+            <div class="col-8"><label class="form-label">หมวดหมู่ *</label>
+              <select id="swItemCat" class="form-select">${catOptions}</select></div>
+            <div class="col-12"><label class="form-label">ชื่อเรื่องเสนอพิจารณา *</label>
+              <input type="text" id="swItemTopic" class="form-control" placeholder="เช่น รายงานไต่สวนข้อเท็จจริงเพื่อวินิจฉัยชี้มูล"></div>
+            <div class="col-12">
+              <label class="form-label d-flex justify-content-between align-items-center mb-1">
+                <span>เรื่องเลขคดีที่ (เว้นว่างได้ถ้าไม่มี — เพิ่มช่องได้หากวาระนี้รวมหลายสำนวน)</span>
+                <button type="button" id="btnAddCaseRow" class="btn btn-sm btn-link p-0" style="font-size:.8rem"><i class="fa-solid fa-plus me-1"></i>เพิ่มเลขที่เรื่อง</button>
+              </label>
+              <div id="swItemCaseList"></div>
+            </div>
+            <div class="col-6">
+              <label class="form-label">ผู้รับผิดชอบ ปราบ/เขต</label>
+              <input type="text" id="swItemOwner" class="form-control" placeholder="เช่น ฝ่ายเลขาฯ หรือ ชื่อ-สกุล">
+            </div>
+            <div class="col-6">
+              <label class="form-label">กอง/สำนัก ที่รับผิดชอบ</label>
+              <input type="text" id="swItemOrg" class="form-control" placeholder="เช่น กปท. 1 หรือ ปปท. เขต 5">
+            </div>
+            <div class="col-12"><label class="form-label">หมายเหตุ / ระบุรายละเอียดเพิ่มเติม</label>
+              <input type="text" id="swItemRemark" class="form-control" placeholder="เช่น ครบอายุความ .../ ผ่านการพิจารณา"></div>
+          </div>`,
+          focusConfirm: false,
+          showCancelButton: true,
+          confirmButtonText: '<i class="fa-solid fa-floppy-disk me-1"></i>บันทึก',
+          cancelButtonText: '<i class="fa-solid fa-xmark me-1"></i>ยกเลิก',
+          confirmButtonColor: '#0F2A62',
+          didOpen: () => {
+            const caseRowHtml = (value = '') => `
+              <div class="input-group input-group-sm mb-2 case-ref-row">
+                <input type="text" class="form-control case-ref-input" value="${value}" placeholder="เช่น 1234/2569">
+                <button type="button" class="btn btn-outline-secondary btn-remove-case-row" tabindex="-1"><i class="fa-solid fa-xmark"></i></button>
+              </div>`;
+            const listEl = document.getElementById('swItemCaseList');
+            const addCaseRow = (value = '') => { listEl.insertAdjacentHTML('beforeend', caseRowHtml(value)); };
+            listEl.addEventListener('click', e => {
+              const btn = e.target.closest('.btn-remove-case-row');
+              if (!btn) return;
+              if (listEl.querySelectorAll('.case-ref-row').length > 1) btn.closest('.case-ref-row').remove();
+              else btn.closest('.case-ref-row').querySelector('.case-ref-input').value = '';
+            });
+            document.getElementById('btnAddCaseRow').addEventListener('click', () => addCaseRow());
+            addCaseRow();
+
+            document.getElementById('swLookup').addEventListener('change', async e => {
+              const statusEl = document.getElementById('swLookupStatus');
+              const q = e.target.value.trim();
+              if (!q) { statusEl.innerHTML = ''; return; }
+              statusEl.innerHTML = '<span class="text-muted"><i class="fa-solid fa-spinner fa-spin me-1"></i>กำลังค้นหา...</span>';
+              let hit = null;
+              try {
+                hit = await AR.lookupCaseForAgenda(q);
+              } catch (err) {
+                console.error('ค้นหาสำนวนไม่สำเร็จ:', err);
+                statusEl.innerHTML = '<span style="color:#8c261f"><i class="fa-solid fa-circle-xmark me-1"></i>ค้นหาไม่สำเร็จ ลองใหม่อีกครั้ง</span>';
+                return;
+              }
+              if (!hit) {
+                statusEl.innerHTML = '<span style="color:#8c261f"><i class="fa-solid fa-circle-xmark me-1"></i>ไม่พบสำนวนนี้ในระบบ — กรอกข้อมูลเองด้านล่าง</span>';
+                return;
+              }
+              document.getElementById('swItemCat').value = hit.category;
+              document.getElementById('swItemTopic').value = hit.topic;
+              const firstInput = listEl.querySelector('.case-ref-input');
+              if (firstInput) firstInput.value = hit.caseRef;
+              if (hit.owner) document.getElementById('swItemOwner').value = hit.owner;
+              if (hit.org) document.getElementById('swItemOrg').value = hit.org;
+              document.getElementById('swItemRemark').value = hit.remark;
+              statusEl.innerHTML = '<span style="color:#1e6141"><i class="fa-solid fa-circle-check me-1"></i>ดึงข้อมูลจากระบบแล้ว — ตรวจสอบและแก้ไขได้ก่อนบันทึก</span>';
+            });
+          },
+          preConfirm: () => {
+            const trci_number = document.getElementById('swItemNo').value.trim();
+            const trci_topic = document.getElementById('swItemTopic').value.trim();
+            if (!trci_number || !trci_topic) { Swal.showValidationMessage('กรุณากรอกวาระที่และลักษณะเรื่องให้ครบถ้วน'); return false; }
+            const caseNos = Array.from(document.querySelectorAll('.case-ref-input')).map(el => el.value.trim()).filter(Boolean);
+            const seen = new Set();
+            const dupes = [];
+            caseNos.forEach(v => {
+              const key = v.toLowerCase();
+              if (seen.has(key)) dupes.push(v); else seen.add(key);
+            });
+            if (dupes.length) { Swal.showValidationMessage(`กรอกเลขที่เรื่องซ้ำกัน: ${dupes.join(', ')}`); return false; }
+            return {
+              trci_number, trci_topic,
+              category: document.getElementById('swItemCat').value,
+              case_ref: caseNos.length ? caseNos.join(', ') : '-',
+              owner: document.getElementById('swItemOwner').value.trim() || '-',
+              org: document.getElementById('swItemOrg').value.trim() || '-',
+              remark: document.getElementById('swItemRemark').value.trim() || '-'
+            };
+          }
+        }).then(async res => {
+          if (!res.isConfirmed) return;
+          try {
+            await AR.addItem({ trc_id: meeting.trc_id, ...res.value });
+          } catch (err) {
+            console.error('เพิ่มวาระไม่สำเร็จ:', err);
+            ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+            return;
+          }
+          currentPage = 1;
+          renderStats(); renderDetail();
+          ECMIS.toastOk(`เพิ่มวาระที่ ${res.value.trci_number} เรียบร้อย`);
+        });
+      });
+    }
+  </script>
+</body>
+
+</html>

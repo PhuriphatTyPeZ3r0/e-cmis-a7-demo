@@ -1,0 +1,183 @@
+@page "/assign"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+<div class="routing-page-wrap">
+    <div class="complaints-page-header">
+        <div>
+            <div class="complaints-title">
+                <i class="bi bi-person-check-fill"></i>
+                <span>มอบหมายงาน / ตู้รับงานส่วนตัว</span>
+            </div>
+            <div class="complaints-subtitle">
+                จ่ายงานให้นักสืบสวนแบบเวียนลำดับ (Round-robin) และจัดการสำนวนคดีในอำนาจ
+            </div>
+        </div>
+        <button class="btn-gold" @onclick="ShowRoundRobin">
+            <i class="bi bi-arrow-repeat"></i> จ่ายงานอัตโนมัติ (Round-robin)
+        </button>
+    </div>
+
+    @* — Stats — *@
+    <div class="routing-stat-grid">
+        <div class="routing-card border-orange">
+            <div class="rc-title"><i class="bi bi-inbox-fill" style="color:var(--orange)"></i> รอมอบหมาย</div>
+            <div class="rc-count" style="color:var(--orange)">@unassigned.Count()</div>
+            <div class="rc-desc">สำนวนที่ยังไม่มีเจ้าของ</div>
+        </div>
+        <div class="routing-card border-navy">
+            <div class="rc-title"><i class="bi bi-person-workspace" style="color:var(--navy)"></i> กำลังดำเนินการ</div>
+            <div class="rc-count" style="color:var(--navy)">@investigating.Count()</div>
+            <div class="rc-desc">อยู่ระหว่างแสวงหาข้อเท็จจริง</div>
+        </div>
+        <div class="routing-card border-green">
+            <div class="rc-title"><i class="bi bi-chat-left-quote" style="color:var(--green)"></i> รอความเห็น</div>
+            <div class="rc-count" style="color:var(--green)">@opinionPending.Count()</div>
+            <div class="rc-desc">รอ ผอ.กลุ่มงาน / ผอ.สำนัก</div>
+        </div>
+        <div class="routing-card border-red">
+            <div class="rc-title"><i class="bi bi-exclamation-triangle" style="color:var(--red)"></i> SLA ใกล้หมด</div>
+            <div class="rc-count" style="color:var(--red)">@slaWarning.Count()</div>
+            <div class="rc-desc">เหลือเวลาไม่เกิน 15 วัน</div>
+        </div>
+    </div>
+
+    @* — Round-robin confirmation — *@
+    @if (showRoundRobin)
+    {
+        <div class="detail-card" style="margin-bottom:14px;border-left:4px solid var(--gold)">
+            <div class="detail-card-title">
+                <div class="icon-box orange"><i class="bi bi-arrow-repeat"></i></div>
+                จ่ายงานอัตโนมัติ — Round-robin
+            </div>
+            <p style="font-size:13px;color:var(--text-dark);margin-bottom:12px">
+                ระบบจะกระจายสำนวนที่รอมอบหมาย <strong>@unassigned.Count() เรื่อง</strong> ให้นักสืบสวนตามลำดับ:
+            </p>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+                @foreach (var inv in InvestigationData.Investigators)
+                {
+                    <span class="category-chip cat-misconduct">
+                        <i class="bi bi-person-fill"></i> @inv
+                    </span>
+                }
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn-gold" @onclick="() => { showRoundRobin = false; roundRobinDone = true; }">
+                    <i class="bi bi-check-lg"></i> ยืนยันจ่ายงาน
+                </button>
+                <button class="btn-outline-navy" @onclick="() => showRoundRobin = false">ยกเลิก</button>
+            </div>
+        </div>
+    }
+    @if (roundRobinDone)
+    {
+        <div style="margin-bottom:14px;padding:12px 16px;border-radius:10px;background:#e6f4ed;color:#1b7a4a;font-size:13px;font-weight:700">
+            <i class="bi bi-check-circle-fill"></i> จ่ายงานสำเร็จ (Mockup) — มอบหมาย @unassigned.Count() สำนวนให้นักสืบสวนเรียบร้อย
+        </div>
+    }
+
+    @* — Investigator Personal Inbox — *@
+    <div class="detail-card" style="margin-bottom:14px">
+        <div class="detail-card-title">
+            <div class="icon-box navy"><i class="bi bi-person-badge-fill"></i></div>
+            ตู้รับงานส่วนตัว — <select class="complaints-status-select" style="width:auto;height:32px;font-size:12px;margin-left:8px"
+                @bind="selectedInvestigator">
+                <option value="">ทุกคน</option>
+                @foreach (var inv in InvestigationData.Investigators)
+                {
+                    <option value="@inv">@inv</option>
+                }
+            </select>
+        </div>
+
+        <div style="overflow-x:auto">
+            <table class="complaints-table">
+                <thead>
+                    <tr>
+                        <th>เลขสำนวน</th>
+                        <th>เรื่องต้นทาง</th>
+                        <th>ผู้ถูกร้อง</th>
+                        <th>นักสืบ</th>
+                        <th>SLA</th>
+                        <th>สถานะ</th>
+                        <th>ความเห็น</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in filteredCases)
+                    {
+                        <tr>
+                            <td><span class="complaints-case-no">@c.CaseNo</span></td>
+                            <td style="font-size:12px;color:var(--text-muted)">@c.OriginalComplaintNo</td>
+                            <td>
+                                <div style="font-size:13px;font-weight:600">@c.Accused</div>
+                                <div style="font-size:11px;color:var(--text-muted)">@c.AccusedAgency</div>
+                            </td>
+                            <td>
+                                @if (c.Investigator == "-")
+                                {
+                                    <span style="color:var(--orange);font-weight:700;font-size:12px">
+                                        <i class="bi bi-exclamation-circle"></i> ยังไม่มอบหมาย
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="font-size:12px">@c.Investigator</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="sla-bar-wrap">
+                                    <div class="sla-bar">
+                                        <div class="sla-fill @InvestigationData.SlaClass(c)"
+                                            style="width:@((int)InvestigationData.SlaPercent(c))%"></div>
+                                    </div>
+                                    <span class="sla-text @InvestigationData.SlaClass(c)">
+                                        @InvestigationData.SlaLabel(c)
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="complaints-status-chip @InvestigationData.StatusClass(c.Status)">
+                                    @InvestigationData.StatusLabel(c.Status)
+                                </span>
+                            </td>
+                            <td style="font-size:11px;color:var(--text-muted)">
+                                @InvestigationData.OpinionLabel(c.OpinionStatus)
+                            </td>
+                            <td>
+                                <button class="complaints-manage-btn"
+                                    @onclick='() => Nav.NavigateTo($"/investigation/{c.Id}")'>ดู</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool showRoundRobin;
+    private bool roundRobinDone;
+    private string selectedInvestigator = string.Empty;
+
+    private IEnumerable<InvestigationCase> unassigned =>
+        InvestigationData.Cases.Where(c => c.Status == "unassigned");
+
+    private IEnumerable<InvestigationCase> investigating =>
+        InvestigationData.Cases.Where(c => c.Status == "investigating");
+
+    private IEnumerable<InvestigationCase> opinionPending =>
+        InvestigationData.Cases.Where(c => c.Status == "opinion");
+
+    private IEnumerable<InvestigationCase> slaWarning =>
+        InvestigationData.Cases.Where(c => InvestigationData.DaysRemaining(c) <= 15);
+
+    private IEnumerable<InvestigationCase> filteredCases =>
+        string.IsNullOrEmpty(selectedInvestigator)
+            ? InvestigationData.Cases
+            : InvestigationData.Cases.Where(c => c.Investigator == selectedInvestigator);
+
+    private void ShowRoundRobin() => showRoundRobin = true;
+}

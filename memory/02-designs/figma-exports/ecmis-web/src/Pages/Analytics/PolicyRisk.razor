@@ -1,0 +1,439 @@
+@page "/analytics/policy-risk"
+@layout MainLayout
+@implements IDisposable
+@using EcmisWeb.Data
+@inject IJSRuntime JS
+
+<div class="cs-shell">
+
+    <div class="cs-header">
+        <div class="cs-header-inner">
+            <div class="cs-bc">
+                <i class="bi bi-house-fill"></i>
+                <a href="/">หน้าหลัก</a>
+                <i class="bi bi-chevron-right"></i>
+                <span>วิเคราะห์และรายงานผล</span>
+                <i class="bi bi-chevron-right"></i>
+                <span>ประเมินความเสี่ยงเชิงนโยบาย</span>
+            </div>
+            <div class="cs-ph-row">
+                <div>
+                    <div class="cs-title">สถิติประเมินความเสี่ยงเชิงนโยบาย</div>
+                    <div class="cs-sub">TOR 12.12 · วิเคราะห์สถิติข้อมูลการประเมินความเสี่ยงเชิงนโยบายในโครงการขนาดใหญ่ของภาครัฐ</div>
+                </div>
+                <div class="cs-actions">
+                    <button type="button" class="btn-ghost-d" @onclick="PrintReportAsync">
+                        <i class="bi bi-printer"></i>
+                        พิมพ์ PDF
+                    </button>
+                    <button type="button" class="btn-accent" @onclick="ExportCsvAsync">
+                        <i class="bi bi-file-earmark-spreadsheet"></i>
+                        Export Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cs-body">
+
+        @* ── KPI Stats ── *@
+        <div class="cs-stats-row">
+            <div class="sc sc-blue">
+                <div class="sc-head">โครงการที่ประเมิน</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@_filtered.Count.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-hint">ช่วงที่เลือก</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-red">
+                <div class="sc-head">เสี่ยงสูงมาก%</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@HighestRiskPct()</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-up">@HighestRiskCount() โครงการ</span>
+                        <span class="sc-hint">ระดับสูงมาก</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-orange">
+                <div class="sc-head">งบประมาณกลุ่มเสี่ยงสูง (ลบ.)</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@PolicyRiskData.HighRiskBudgetTotal(_filtered).ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-hint">สูงมาก + สูง</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-purple">
+                <div class="sc-head">ส่งตรวจสอบเพิ่มเติม</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@_filtered.Count(r => r.Status == "ส่งตรวจสอบเพิ่มเติม").ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-hint">รายการที่ส่งต่อ</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ── Filter + Charts card ── *@
+        <section class="table-card">
+            <div class="tc-head">
+                <div class="tc-row1">
+                    <div>
+                        <div class="tc-title">วิเคราะห์ความเสี่ยงเชิงนโยบาย</div>
+                        <div class="tc-sub">กรองปีงบประมาณ กระทรวง ระดับความเสี่ยง หรือมูลค่าโครงการ แล้วกด แสดงผล</div>
+                    </div>
+                    <div class="tc-meta">
+                        <span class="bdg-nv">ทั้งหมด @_all.Count</span>
+                        <span class="bdg-gd">แสดง @_filtered.Count</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-row">
+                <div class="fgrp">
+                    <label class="flbl" for="prYear">ปีงบประมาณ</label>
+                    <select id="prYear" class="fsel" @bind="_yearFilter">
+                        <option value="">ทั้งหมด</option>
+                        <option value="2565">2565</option>
+                        <option value="2566">2566</option>
+                        <option value="2567">2567</option>
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="prMinistry">กระทรวง</label>
+                    <select id="prMinistry" class="fsel" @bind="_ministryFilter">
+                        <option value="">ทั้งหมด</option>
+                        @foreach (var m in _ministries)
+                        {
+                            <option value="@m">@m</option>
+                        }
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="prLevel">ระดับความเสี่ยง</label>
+                    <select id="prLevel" class="fsel" @bind="_levelFilter">
+                        <option value="">ทั้งหมด</option>
+                        <option value="สูงมาก">สูงมาก</option>
+                        <option value="สูง">สูง</option>
+                        <option value="ปานกลาง">ปานกลาง</option>
+                        <option value="ต่ำ">ต่ำ</option>
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="prBudget">มูลค่าโครงการ</label>
+                    <select id="prBudget" class="fsel" @bind="_budgetFilter">
+                        <option value="">ทั้งหมด</option>
+                        <option value="lt100">&lt;100 ลบ.</option>
+                        <option value="100-999">100–999 ลบ.</option>
+                        <option value="1000plus">1,000+ ลบ.</option>
+                    </select>
+                </div>
+                <button type="button" class="btn-accent btn-sm-f" @onclick="OnApplyFilter">
+                    <i class="bi bi-search"></i> แสดงผล
+                </button>
+                <button type="button" class="fbtn" @onclick="OnResetFilter">
+                    <i class="bi bi-x-lg"></i> ล้างค่า
+                </button>
+            </div>
+
+            @if (_filtered.Count == 0)
+            {
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <span>ไม่พบข้อมูลตามเงื่อนไขที่เลือก กรุณาเปลี่ยนตัวกรอง</span>
+                </div>
+            }
+            else
+            {
+                <div class="cs-charts-wrap layout-fill">
+                    @* ── Top row: Score bar | Level doughnut | Ministry bar ── *@
+                    <div class="cs-charts-top">
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-bar-chart-fill"></i> คะแนนความเสี่ยง Top 20 โครงการ</div>
+                            <div class="cs-chart-canvas"><canvas id="prChartScore"></canvas></div>
+                        </div>
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-pie-chart-fill"></i> สัดส่วนระดับความเสี่ยง</div>
+                            <div class="cs-chart-canvas"><canvas id="prChartLevel"></canvas></div>
+                        </div>
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-building"></i> จำนวนโครงการแยกตามกระทรวง</div>
+                            <div class="cs-chart-canvas"><canvas id="prChartMinistry"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="cs-charts-bot cols-1">
+                    <div class="cs-chart-card span-full has-table">
+                        <div class="cs-chart-title"><i class="bi bi-table"></i> รายโครงการ (เรียงคะแนนเสี่ยงสูง-ต่ำ)</div>
+                        <table class="cs-status-table" id="exportTable">
+                            <thead>
+                                <tr>
+                                    <th>ชื่อโครงการ</th>
+                                    <th>หน่วยงาน</th>
+                                    <th>กระทรวง</th>
+                                    <th style="text-align:right">งบ (ลบ.)</th>
+                                    <th>คะแนนเสี่ยง</th>
+                                    <th>ระดับ</th>
+                                    <th>ประเด็นเสี่ยงหลัก</th>
+                                    <th>สถานะ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in _filtered.OrderByDescending(r => r.RiskScore))
+                                {
+                                    <tr>
+                                        <td>@r.ProjectName</td>
+                                        <td>@r.Agency</td>
+                                        <td>@r.Ministry</td>
+                                        <td style="text-align:right">@r.BudgetMillion.ToString("N0")</td>
+                                        <td>@r.RiskScore</td>
+                                        <td>
+                                            <span class="badge-status @PolicyRiskData.RiskLevelClass(r.RiskLevel)">@r.RiskLevel</span>
+                                        </td>
+                                        <td>@r.MainRiskFactor</td>
+                                        <td>@r.Status</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    </div>
+                </div>
+
+                @* ── Export footer ── *@
+                <div class="cs-footer">
+                    <span class="cs-footer-info">
+                        แสดงผล <strong>@_filtered.Count.ToString("N0") โครงการ</strong>
+                        @if (!string.IsNullOrEmpty(_yearFilter)) { <span> · ปี @_yearFilter</span> }
+                        @if (!string.IsNullOrEmpty(_ministryFilter)) { <span> · @_ministryFilter</span> }
+                        @if (!string.IsNullOrEmpty(_levelFilter)) { <span> · ความเสี่ยง@_levelFilter</span> }
+                        @if (!string.IsNullOrEmpty(_budgetFilter)) { <span> · มูลค่า @BudgetFilterLabel()</span> }
+                    </span>
+                    <div class="cs-footer-btns">
+                        <button type="button" class="btn-ghost-d" @onclick="PrintReportAsync">
+                            <i class="bi bi-printer"></i> พิมพ์ PDF
+                        </button>
+                        <button type="button" class="btn-accent" @onclick="ExportCsvAsync">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+            }
+        </section>
+    </div>
+</div>
+
+@code {
+    private List<PolicyRiskRecord> _all = new();
+    private List<PolicyRiskRecord> _filtered = new();
+    private List<string> _ministries = new();
+
+    private string _yearFilter    = "";
+    private string _ministryFilter = "";
+    private string _levelFilter   = "";
+    private string _budgetFilter  = "";
+
+    private bool _isDark = true;
+    private bool _chartsReady = false;
+    private DotNetObjectReference<PolicyRisk>? _dotNetRef;
+
+    // ── KPI helpers ──────────────────────────────────────────────────────────
+
+    private int HighestRiskCount() => _filtered.Count(r => r.RiskLevel == "สูงมาก");
+
+    private string HighestRiskPct()
+    {
+        if (_filtered.Count == 0) return "0%";
+        return $"{(int)Math.Round((double)HighestRiskCount() * 100 / _filtered.Count)}%";
+    }
+
+    // ── Chart data helpers ───────────────────────────────────────────────────
+
+    private (string[] Labels, int[] Data, string[] Colors) ScoreChartData()
+    {
+        var levelColors = new Dictionary<string, string>
+        {
+            ["สูงมาก"]  = "#f87171",
+            ["สูง"]     = "#f77f00",
+            ["ปานกลาง"] = "#fbbf24",
+            ["ต่ำ"]     = "#06d6a0"
+        };
+        var top20 = _filtered.OrderByDescending(r => r.RiskScore).Take(20).ToList();
+        return (
+            top20.Select(r => r.ProjectName.Length > 20 ? r.ProjectName[..20] : r.ProjectName).ToArray(),
+            top20.Select(r => r.RiskScore).ToArray(),
+            top20.Select(r => levelColors.TryGetValue(r.RiskLevel, out var c) ? c : "#6366f1").ToArray()
+        );
+    }
+
+    private (string[] Labels, int[] Data, string[] Colors) LevelChartData()
+    {
+        var levels = new (string Level, string Color)[]
+        {
+            ("สูงมาก",  "#f87171"),
+            ("สูง",     "#f77f00"),
+            ("ปานกลาง", "#fbbf24"),
+            ("ต่ำ",     "#06d6a0")
+        };
+        return (
+            levels.Select(l => l.Level).ToArray(),
+            levels.Select(l => _filtered.Count(r => r.RiskLevel == l.Level)).ToArray(),
+            levels.Select(l => l.Color).ToArray()
+        );
+    }
+
+    private (string[] Labels, int[] Data) MinistryChartData()
+    {
+        var groups = _filtered
+            .GroupBy(r => r.Ministry)
+            .OrderByDescending(g => g.Count())
+            .ToList();
+        return (
+            groups.Select(g => g.Key).ToArray(),
+            groups.Select(g => g.Count()).ToArray()
+        );
+    }
+
+    // ── Filter helpers ───────────────────────────────────────────────────────
+
+    private string BudgetFilterLabel() => _budgetFilter switch
+    {
+        "lt100"    => "<100 ลบ.",
+        "100-999"  => "100–999 ลบ.",
+        "1000plus" => "1,000+ ลบ.",
+        _          => ""
+    };
+
+    private void ApplyFilter()
+    {
+        _chartsReady = false;
+        var q = _all.AsEnumerable();
+
+        if (!string.IsNullOrEmpty(_yearFilter) && int.TryParse(_yearFilter, out var yr))
+            q = q.Where(r => r.Year == yr);
+
+        if (!string.IsNullOrEmpty(_ministryFilter))
+            q = q.Where(r => r.Ministry == _ministryFilter);
+
+        if (!string.IsNullOrEmpty(_levelFilter))
+            q = q.Where(r => r.RiskLevel == _levelFilter);
+
+        if (!string.IsNullOrEmpty(_budgetFilter))
+        {
+            q = _budgetFilter switch
+            {
+                "lt100"    => q.Where(r => r.BudgetMillion < 100),
+                "100-999"  => q.Where(r => r.BudgetMillion >= 100 && r.BudgetMillion <= 999),
+                "1000plus" => q.Where(r => r.BudgetMillion >= 1000),
+                _          => q
+            };
+        }
+
+        _filtered = q.ToList();
+    }
+
+    private async Task OnApplyFilter()
+    {
+        ApplyFilter();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnResetFilter()
+    {
+        _yearFilter = _ministryFilter = _levelFilter = _budgetFilter = "";
+        ApplyFilter();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // ── Lifecycle ────────────────────────────────────────────────────────────
+
+    protected override Task OnInitializedAsync()
+    {
+        _all = PolicyRiskData.Records.ToList();
+        _ministries = _all.Select(r => r.Ministry).Distinct().OrderBy(x => x).ToList();
+        ApplyFilter();
+        return Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var theme = await JS.InvokeAsync<string?>("localStorage.getItem", "dashTheme");
+            _isDark = theme == "dark";
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("registerAnalyticsComponent", _dotNetRef);
+        }
+        if (_filtered.Count > 0 && !_chartsReady)
+        {
+            _chartsReady = true;
+            await RenderChartsAsync();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnThemeChangedAsync(bool isDark)
+    {
+        _isDark = isDark;
+        await RenderChartsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RenderChartsAsync()
+    {
+        await Task.Yield();
+
+        var (scoreLabels, scoreData, scoreColors) = ScoreChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "prChartScore", "bar",
+            scoreLabels, scoreData.Cast<object>().ToArray(), scoreColors, _isDark);
+
+        var (levelLabels, levelData, levelColors) = LevelChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "prChartLevel", "doughnut",
+            levelLabels, levelData.Cast<object>().ToArray(), levelColors, _isDark);
+
+        var (minLabels, minData) = MinistryChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "prChartMinistry", "bar",
+            minLabels, minData.Cast<object>().ToArray(),
+            new[] { "#6366f1" }, _isDark);
+    }
+
+    // ── Export / Print ───────────────────────────────────────────────────────
+
+    private async Task ExportCsvAsync()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("ProjectCode,ProjectName,Agency,Ministry,BudgetMillion,Year,RiskScore,RiskLevel,MainRiskFactor,Status");
+        foreach (var r in _filtered.OrderByDescending(r => r.RiskScore))
+        {
+            sb.AppendLine(string.Join(",",
+                r.ProjectCode,
+                $"\"{r.ProjectName}\"",
+                $"\"{r.Agency}\"",
+                $"\"{r.Ministry}\"",
+                r.BudgetMillion,
+                r.Year,
+                r.RiskScore,
+                r.RiskLevel,
+                $"\"{r.MainRiskFactor}\"",
+                $"\"{r.Status}\""));
+        }
+        await JS.InvokeVoidAsync("ecmis.downloadTextFile",
+            $"policy_risk_{DateTime.Now:yyyyMMdd}.csv", "text/csv;charset=utf-8;", sb.ToString(), true);
+    }
+
+    private async Task PrintReportAsync()
+    {
+        var title = $"<h2>รายงานสถิติประเมินความเสี่ยงเชิงนโยบาย TOR 12.12 | {DateTime.Now:dd/MM/yyyy}</h2>";
+        var table = await JS.InvokeAsync<string>("eval", "document.getElementById('exportTable').outerHTML");
+        await JS.InvokeVoidAsync("ecmis.printReport", "ประเมินความเสี่ยงเชิงนโยบาย", title + table);
+    }
+
+    public void Dispose()
+    {
+        _dotNetRef?.Dispose();
+    }
+}

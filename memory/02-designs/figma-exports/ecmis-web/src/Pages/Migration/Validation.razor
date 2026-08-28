@@ -1,0 +1,119 @@
+@page "/migration/validation"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+<div class="routing-page-wrap">
+    <div class="complaints-page-header">
+        <div>
+            <div class="complaints-title">
+                <i class="bi bi-shield-check" style="color:var(--orange)"></i>
+                <span>ศูนย์การตรวจสอบคุณภาพข้อมูล (Data Validation & Masking)</span>
+            </div>
+            <div class="complaints-subtitle">
+                ยืนยันความซ้ำซ้อนของข้อมูล (Deduplication) และตรวจสอบรายงานการปกปิดข้อมูลส่วนบุคคลตามมาตรฐาน PDPA
+            </div>
+        </div>
+        <div class="complaints-actions">
+             <button class="btn-outline-navy" @onclick='() => Nav.NavigateTo("/migration")'>
+                <i class="bi bi-arrow-left"></i> กลับไป Dashboard
+            </button>
+        </div>
+    </div>
+
+    @* --- Deduplication Section --- *@
+    <div class="detail-card mb-4">
+        <div class="detail-card-title">
+             <i class="bi bi-intersect"></i> การคัดกรองข้อมูลซ้ำซ้อน (Deduplication Required)
+        </div>
+        <p style="font-size:13px;color:var(--text-muted)">
+            ระบบพบรายการข้อมูลเก่าที่มีความน่าจะเป็นว่า "ซ้ำ" กับข้อมูลในระบบ PCMS กรุณาตัดสินใจว่าจะผสานข้อมูล (Merge) หรือทิ้งแฟ้มข้อมูลเก่า (Discard)
+        </p>
+        <div style="overflow-x:auto">
+            <table class="complaints-table mb-0">
+                <thead style="background:#f8fafc">
+                    <tr>
+                        <th>รหัสจากระบบต้นทาง</th>
+                        <th>ข้อมูลที่คาดว่าซ้ำกัน (ระบบใหม่)</th>
+                        <th>ชื่อผู้ถูกกล่าวหา</th>
+                        <th>พฤติการณ์ความผิด</th>
+                        <th style="min-width:140px">ความน่าจะเป็นตามชื่อ</th>
+                        <th>ตัดสินใจ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in MigrationData.ValidationIssues)
+                    {
+                        <tr>
+                            <td><span style="font-weight:700;color:var(--navy-deep);font-size:13px">@v.SourceRecordId</span></td>
+                            <td>
+                                @if(v.SuspectedDuplicateId == "-") {
+                                    <span style="color:#aaa">-</span>
+                                } else {
+                                    <span style="font-weight:700;color:var(--orange);font-size:13px;cursor:pointer;text-decoration:underline">@v.SuspectedDuplicateId</span>
+                                }
+                            </td>
+                            <td><div style="font-size:13px;font-weight:600">@v.AccusedName</div></td>
+                            <td>
+                                @if (v.IssueType == "duplicate")
+                                {
+                                    <span class="category-chip cat-general">ข้อมูลซ้ำซ้อน (Duplicate)</span>
+                                }
+                                else if (v.IssueType == "missing_mandatory")
+                                {
+                                    <span class="category-chip cat-urgent">พบฟิลด์บังคับว่าง</span>
+                                }
+                            </td>
+                            <td><span style="font-size:13px;font-weight:700;color:var(--red)">@v.ConfidenceScore</span></td>
+                            <td>
+                                @if (v.IssueType == "duplicate")
+                                {
+                                    <div style="display:flex;gap:5px">
+                                        <button class="btn btn-navy" style="font-size:11px;padding:4px 8px">ผสานข้อมูล</button>
+                                        <button class="btn btn-outline-navy" style="font-size:11px;padding:4px 8px;border-color:var(--red);color:var(--red)">ทิ้งข้อมูล</button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-navy" style="font-size:11px;padding:4px 8px">ปรับปรุงคู่มือ</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @* --- Data Masking Logs Section --- *@
+    <div class="row">
+        <div class="col-md-12">
+            <div class="detail-card mb-0">
+                <div class="detail-card-title">
+                     <i class="bi bi-incognito" style="color:var(--navy-deep)"></i> ประวัติการเข้ารหัสและปกปิดตัวตน (Data Masking Logs - PDPA)
+                </div>
+                <div style="background:#fff9e6;border:1px dashed #ffc107;border-radius:8px;padding:12px;margin-bottom:15px;font-size:12px;color:#856404">
+                    ชื่อนามสกุลผู้ร้องเรียนจากข้อมูลย้อนหลัง จะถูกเข้ารหัสเซ็นเซอร์อัตโนมัติหากมีการเรียกดูเพื่อประมวลผลทางสถิติเปิดเผย
+                </div>
+                <table class="complaints-table mb-0">
+                    <thead style="background:#f8fafc">
+                        <tr>
+                            <th>ชื่อต้นฉบับในฐานข้อมูล (Original)</th>
+                            <th>รูปแบบการเซ็นเซอร์กรณีการเรียกดูปกติ (Masked)</th>
+                            <th>สถานะการแปลงข้อมูล</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(var mask in MigrationData.MaskLogs)
+                        {
+                            <tr>
+                                <td><span style="font-size:12px;color:var(--text-muted)">@mask.OriginalName</span></td>
+                                <td><span style="font-weight:700;font-size:13px;color:var(--navy-mid)">@mask.MaskedName</span></td>
+                                <td><span style="color:var(--green);font-size:12px;font-weight:600"><i class="bi bi-check-circle-fill"></i> @mask.Status</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

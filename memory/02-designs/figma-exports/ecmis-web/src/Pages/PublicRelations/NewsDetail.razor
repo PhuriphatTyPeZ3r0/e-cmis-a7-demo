@@ -1,0 +1,100 @@
+@page "/public-relations/{Id:int}"
+@using EcmisWeb.Services
+@inject CentralSupportApiService CentralSupportApi
+@inject NavigationManager Nav
+
+<PageTitle>@(item?.Title ?? "ข่าวประชาสัมพันธ์") — E-CMIS</PageTitle>
+
+@if (loading)
+{
+    <div style="padding:60px;text-align:center;color:#94a3b8">กำลังโหลดข่าว...</div>
+}
+else if (!string.IsNullOrWhiteSpace(error))
+{
+    <div style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:8px;padding:16px;margin-bottom:16px;display:flex;gap:10px">
+        <i class="bi bi-exclamation-triangle-fill"></i>@error
+    </div>
+}
+else if (item is not null)
+{
+    <div style="max-width:780px;margin:0 auto;padding:8px 0">
+        <button class="btn-outline-navy" style="font-size:13px;margin-bottom:18px" @onclick='() => Nav.NavigateTo("/public-relations")'>
+            <i class="bi bi-arrow-left"></i> กลับหน้าข่าว
+        </button>
+
+        <article style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(15,23,42,.06)">
+            @if (!string.IsNullOrWhiteSpace(item.CoverImageUrl))
+            {
+                <div style="height:280px;overflow:hidden">
+                    <img src="@item.CoverImageUrl" alt="@item.Title"
+                         style="width:100%;height:100%;object-fit:cover" />
+                </div>
+            }
+            else
+            {
+                <div style="height:160px;background:linear-gradient(135deg,var(--navy-deep),var(--navy-mid));display:flex;align-items:center;justify-content:center">
+                    <i class="bi bi-newspaper" style="font-size:56px;color:rgba(255,255,255,.2)"></i>
+                </div>
+            }
+
+            <div style="padding:28px 32px">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+                    <span class="badge bg-primary" style="font-size:12px">@item.Category</span>
+                    @if (item.PublishedAt.HasValue)
+                    {
+                        <span style="font-size:12px;color:#64748b">
+                            <i class="bi bi-calendar3"></i>
+                            @item.PublishedAt.Value.ToLocalTime().ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("th-TH"))
+                        </span>
+                    }
+                </div>
+
+                <h1 style="color:var(--navy-deep);font-size:26px;font-weight:800;margin:0 0 16px;line-height:1.3">@item.Title</h1>
+
+                @if (!string.IsNullOrWhiteSpace(item.Summary))
+                {
+                    <div style="background:#f8fafc;border-left:4px solid var(--navy-mid);padding:14px 18px;border-radius:0 8px 8px 0;margin-bottom:20px;color:#475569;font-size:15px;line-height:1.6;font-style:italic">
+                        @item.Summary
+                    </div>
+                }
+
+                <div style="color:#374151;font-size:15px;line-height:1.7;white-space:pre-wrap">@item.Body</div>
+
+                @if (!string.IsNullOrWhiteSpace(item.AttachmentUrl))
+                {
+                    <div style="margin-top:24px;padding-top:18px;border-top:1px solid #f1f5f9">
+                        <a href="@item.AttachmentUrl" target="_blank"
+                           style="display:inline-flex;align-items:center;gap:8px;padding:10px 16px;background:var(--navy-deep);color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">
+                            <i class="bi bi-paperclip"></i> ดาวน์โหลดเอกสารแนบ
+                        </a>
+                    </div>
+                }
+            </div>
+        </article>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private PublicNewsDto? item;
+    private bool loading = true;
+    private string error = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        try
+        {
+            item = await CentralSupportApi.GetPublicNewsDetailAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}

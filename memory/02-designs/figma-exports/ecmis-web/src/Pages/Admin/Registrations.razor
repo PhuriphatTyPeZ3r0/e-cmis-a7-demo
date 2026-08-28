@@ -1,0 +1,310 @@
+@page "/admin/registrations"
+@inject EcmisWeb.Services.AdminApiService AdminApi
+@inject NavigationManager Nav
+@using EcmisWeb.Models
+
+<PageTitle>คำขอลงทะเบียน — E-CMIS Admin</PageTitle>
+
+<div class="alert alert-info d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3" style="border-radius:12px">
+    <span><i class="bi bi-info-circle me-2"></i>รวมอยู่ใน「อนุมัติคำขอ」แล้ว — ใช้แท็บคำขอลงทะเบียนเพื่อ workflow เดียวกัน</span>
+    <a href="/admin/approvals?tab=registration" class="btn btn-sm btn-primary">ไปที่อนุมัติคำขอ</a>
+</div>
+
+@* ═══ HERO BANNER ═══ *@
+<div style="background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 60%,#1e3575 100%);border-radius:18px;padding:28px 32px;margin-bottom:24px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-40px;right:-40px;width:220px;height:220px;border-radius:50%;background:rgba(201,168,76,.08);pointer-events:none"></div>
+    <div style="position:absolute;bottom:-30px;left:200px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.04);pointer-events:none"></div>
+
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">
+                    <i class="bi bi-person-lines-fill" style="color:var(--navy-deep)"></i>
+                </div>
+                <div>
+                    <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.2">คำขอลงทะเบียนผู้ใช้งาน</div>
+                    <div style="font-size:12px;color:rgba(255,255,255,.5)">Registration Request Management — E-CMIS</div>
+                </div>
+            </div>
+        </div>
+
+        @* Stat pills *@
+        <div class="d-flex gap-2 flex-wrap">
+            <div style="background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:12px 18px;min-width:100px">
+                <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">รออนุมัติ</div>
+                <div style="font-size:26px;font-weight:900;color:#fbbf24;line-height:1">@CountByStatus(RegistrationStatus.Pending)</div>
+            </div>
+            <div style="background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:12px 18px;min-width:100px">
+                <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">อนุมัติแล้ว</div>
+                <div style="font-size:26px;font-weight:900;color:#4ade80;line-height:1">@CountByStatus(RegistrationStatus.Approved)</div>
+            </div>
+            <div style="background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:12px 18px;min-width:100px">
+                <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">ปฏิเสธ</div>
+                <div style="font-size:26px;font-weight:900;color:#f87171;line-height:1">@CountByStatus(RegistrationStatus.Rejected)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ═══ FILTER + SEARCH BAR ═══ *@
+<div style="background:#fff;border-radius:16px;border:1px solid #eaecf2;padding:16px 20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(13,27,62,.05)">
+    <div class="d-flex gap-3 align-items-center flex-wrap">
+        @* Filter pills *@
+        <div class="d-flex gap-2 flex-wrap">
+            @foreach (var f in Filters)
+            {
+                <button class="@(activeFilter == f.Key ? "reg-filter-active" : "reg-filter-pill")"
+                        @onclick='() => activeFilter = f.Key'>
+                    <i class="bi @f.Icon"></i>
+                    @f.Label
+                    <span class="@(activeFilter == f.Key ? "reg-filter-count-active" : "reg-filter-count")">@f.Count</span>
+                </button>
+            }
+        </div>
+
+        @* Divider *@
+        <div style="width:1px;height:30px;background:#eaecf2;flex-shrink:0"></div>
+
+        @* Search *@
+        <div style="position:relative;flex:1;min-width:200px">
+            <i class="bi bi-search" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px"></i>
+            <input style="width:100%;border:1.5px solid #eaecf2;border-radius:10px;padding:9px 14px 9px 36px;font-size:13.5px;font-family:'Sarabun',sans-serif;outline:none;transition:border-color .2s;background:#fafbff"
+                   placeholder="ค้นหาชื่อ, อีเมล, หน่วยงาน, รหัสคำขอ..."
+                   @bind="search" @bind:event="oninput"
+                   @onfocus="@(e => {})" />
+        </div>
+    </div>
+</div>
+
+@* ═══ RESULTS COUNT ═══ *@
+<div style="font-size:12.5px;color:var(--text-muted);font-weight:600;margin-bottom:12px;padding-left:4px">
+    แสดง <strong style="color:var(--navy)">@FilteredList.Count()</strong> รายการ
+    @if (!string.IsNullOrWhiteSpace(search)) { <span> · ค้นหา "<strong>@search</strong>"</span> }
+</div>
+
+@* ═══ CARD LIST ═══ *@
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div style="background:#fef2f2;border-radius:16px;border:1px solid #fecaca;padding:20px 24px;text-align:center">
+        <div style="width:64px;height:64px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+            <i class="bi bi-exclamation-triangle" style="font-size:28px;color:#dc2626"></i>
+        </div>
+        <div style="font-size:15px;font-weight:700;color:#dc2626;margin-bottom:6px">เกิดข้อผิดพลาด</div>
+        <div style="font-size:13px;color:#991b1b">@errorMessage</div>
+    </div>
+}
+else if (!FilteredList.Any())
+{
+    <div style="background:#fff;border-radius:16px;border:1px solid #eaecf2;padding:56px 24px;text-align:center">
+        <div style="width:64px;height:64px;border-radius:50%;background:var(--off-white);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+            <i class="bi bi-inbox" style="font-size:28px;color:#c5cde0"></i>
+        </div>
+        <div style="font-size:15px;font-weight:700;color:var(--navy-deep);margin-bottom:6px">ไม่มีข้อมูลในหมวดนี้</div>
+        <div style="font-size:13px;color:var(--text-muted)">ลองเปลี่ยนตัวกรองหรือคำค้นหา</div>
+    </div>
+}
+else
+{
+    <div style="display:flex;flex-direction:column;gap:10px">
+        @foreach (var r in FilteredList)
+        {
+            <div style="background:#fff;border-radius:16px;border:1px solid #eaecf2;padding:18px 22px;box-shadow:0 2px 12px rgba(13,27,62,.04);transition:box-shadow .2s,transform .15s;cursor:default"
+                 @onmouseenter="@(e => {})"
+                 @onmouseleave="@(e => {})">
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+
+                    @* Avatar *@
+                    <div style="width:46px;height:46px;border-radius:14px;background:@AvatarBg(r.Department);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;flex-shrink:0;letter-spacing:.5px">
+                        @Initials(r.FirstName, r.LastName)
+                    </div>
+
+                    @* Main info *@
+                    <div style="flex:1;min-width:140px">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
+                            <span style="font-size:15px;font-weight:800;color:var(--navy-deep)">@r.FirstName @r.LastName</span>
+                            @if (r.ThaiDVerified)
+                            {
+                                <span style="display:inline-flex;align-items:center;gap:3px;background:#dcfce7;color:#166534;border-radius:20px;padding:2px 8px;font-size:10.5px;font-weight:700">
+                                    <i class="bi bi-shield-fill-check" style="font-size:10px"></i>ThaiD
+                                </span>
+                            }
+                        </div>
+                        <div style="font-size:12.5px;color:var(--text-muted)">
+                            <i class="bi bi-envelope me-1" style="font-size:11px"></i>@r.Email
+                            <span style="margin:0 6px;opacity:.4">·</span>
+                            <i class="bi bi-building me-1" style="font-size:11px"></i>@r.Department — @r.Position
+                        </div>
+                    </div>
+
+                    @* Tracking + date *@
+                    <div style="text-align:right;min-width:110px">
+                        <div style="font-family:monospace;font-size:12px;font-weight:700;color:var(--navy);background:var(--off-white);border-radius:8px;padding:3px 8px;display:inline-block;margin-bottom:4px">
+                            @r.TrackingId
+                        </div>
+                        <div style="font-size:11px;color:var(--text-muted)">
+                            <i class="bi bi-clock me-1"></i>@r.SubmittedAt.ToString("dd/MM/yy HH:mm")
+                        </div>
+                    </div>
+
+                    @* Status badge *@
+                    <div style="min-width:120px;display:flex;justify-content:center">
+                        <span class="@StatusPillCss(r.Status)" style="display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:20px;font-size:11.5px;font-weight:700;white-space:nowrap">
+                            <span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;flex-shrink:0"></span>
+                            @StatusLabel(r.Status)
+                        </span>
+                    </div>
+
+                    @* Action button *@
+                    <button style="background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;border:none;border-radius:10px;padding:9px 18px;font-size:12.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:opacity .2s;flex-shrink:0"
+                            @onclick='() => Nav.NavigateTo($"/admin/registrations/{r.Id}")'>
+                        <i class="bi bi-arrow-right-circle-fill" style="font-size:14px"></i>
+                        @ActionLabel(r.Status)
+                    </button>
+                </div>
+
+            </div>
+        }
+    </div>
+}
+
+<style>
+    .reg-filter-pill {
+        padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+        border: 1.5px solid #eaecf2; background: #fff; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 5px;
+        color: var(--text-muted); transition: all .2s; font-family: 'Sarabun', sans-serif;
+    }
+    .reg-filter-pill:hover { border-color: var(--navy-mid); color: var(--navy); background: #f5f7ff; }
+    .reg-filter-active {
+        padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+        border: 1.5px solid var(--navy); background: var(--navy); cursor: pointer;
+        display: inline-flex; align-items: center; gap: 5px;
+        color: #fff; transition: all .2s; font-family: 'Sarabun', sans-serif;
+    }
+    .reg-filter-count { background: #eaecf2; color: var(--text-muted); border-radius: 10px; padding: 1px 7px; font-size: 10.5px; font-weight: 700; }
+    .reg-filter-count-active { background: rgba(255,255,255,.25); border-radius: 10px; padding: 1px 7px; font-size: 10.5px; font-weight: 700; }
+</style>
+
+@code {
+    private string activeFilter = "all";
+    private string search = "";
+    private List<RegistrationRequest> allRegistrations = new();
+    private string? errorMessage = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRegistrationsAsync();
+    }
+
+    private async Task LoadRegistrationsAsync()
+    {
+        try
+        {
+            var apiRegistrations = await AdminApi.GetRegistrationsAsync();
+            allRegistrations = apiRegistrations.Select(r => new RegistrationRequest
+            {
+                Id = r.Id.ToString(),
+                TrackingIdOverride = r.TrackingId,
+                FirstName = r.FirstName,
+                LastName = r.LastName,
+                Email = r.Email,
+                Department = string.IsNullOrWhiteSpace(r.TargetOrgNameTh) ? "—" : r.TargetOrgNameTh,
+                Position = string.IsNullOrWhiteSpace(r.PositionName) ? "—" : r.PositionName,
+                Status = MapStatus(r.ApprovalStatus),
+                SubmittedAt = r.CreatedAt.LocalDateTime,
+                ThaiDVerified = false,
+                ReviewedAt = r.AdminApprovedAt?.LocalDateTime,
+                ReviewedBy = r.AdminApprovedBy,
+                RejectReason = r.RejectReason
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"ไม่สามารถโหลดข้อมูลคำขอลงทะเบียนได้: {ex.Message}";
+            allRegistrations = new();
+        }
+    }
+
+    private static RegistrationStatus MapStatus(string status) => status switch
+    {
+        "pending" or "pending_it_review" or "pending_admin_approval" or "requires_more_info" => RegistrationStatus.Pending,
+        "approved" => RegistrationStatus.Approved,
+        "rejected" => RegistrationStatus.Rejected,
+        _ => RegistrationStatus.Pending
+    };
+
+    private record FilterItem(string Key, string Label, string Icon, int Count);
+
+    private List<FilterItem> Filters => new()
+    {
+        new("all",      "ทั้งหมด",     "bi-list-ul",      allRegistrations.Count),
+        new("pending",  "รออนุมัติ",   "bi-clock",        CountByStatus(RegistrationStatus.Pending)),
+        new("approved", "อนุมัติแล้ว", "bi-check-circle", CountByStatus(RegistrationStatus.Approved)),
+        new("rejected", "ปฏิเสธ",      "bi-x-circle",     CountByStatus(RegistrationStatus.Rejected)),
+    };
+
+    private int CountByStatus(RegistrationStatus status) =>
+        allRegistrations.Count(r => r.Status == status);
+
+    private IEnumerable<RegistrationRequest> FilteredList
+    {
+        get
+        {
+            var list = activeFilter switch
+            {
+                "pending"  => GetByStatus(RegistrationStatus.Pending),
+                "approved" => GetByStatus(RegistrationStatus.Approved),
+                "rejected" => GetByStatus(RegistrationStatus.Rejected),
+                _        => allRegistrations
+            };
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var q = search.ToLower();
+                list = list.Where(r =>
+                    r.FirstName.ToLower().Contains(q) ||
+                    r.LastName.ToLower().Contains(q) ||
+                    r.Email.ToLower().Contains(q) ||
+                    r.Department.ToLower().Contains(q) ||
+                    r.TrackingId.ToLower().Contains(q)).ToList();
+            }
+            return list;
+        }
+    }
+
+    private List<RegistrationRequest> GetByStatus(RegistrationStatus status) =>
+        allRegistrations.Where(r => r.Status == status).ToList();
+
+    private string Initials(string first, string last) =>
+        (first.Length > 0 ? first[..1] : "") + (last.Length > 0 ? last[..1] : "");
+
+    private string AvatarBg(string dept) => dept switch
+    {
+        "กลุ่มงานกฎหมาย"   => "linear-gradient(135deg,#1B3178,#0B1940)",
+        "กลุ่มงานสืบสวน"   => "linear-gradient(135deg,#0E7C7B,#065f60)",
+        "กลุ่มงานตรวจสอบ"  => "linear-gradient(135deg,#d97706,#b45309)",
+        "กลุ่มงานบริหาร"   => "linear-gradient(135deg,#7c3aed,#5b21b6)",
+        _                   => "linear-gradient(135deg,#374151,#1f2937)"
+    };
+
+    private static string StatusPillCss(RegistrationStatus s) => s switch
+    {
+        RegistrationStatus.Pending  => "admin-status-pending",
+        RegistrationStatus.Approved => "admin-status-approved",
+        RegistrationStatus.Rejected => "admin-status-rejected",
+        _ => ""
+    };
+
+    private static string StatusLabel(RegistrationStatus s) => s switch
+    {
+        RegistrationStatus.Pending  => "รออนุมัติ",
+        RegistrationStatus.Approved => "อนุมัติแล้ว",
+        RegistrationStatus.Rejected => "ปฏิเสธ",
+        _ => ""
+    };
+
+    private static string ActionLabel(RegistrationStatus s) => s switch
+    {
+        RegistrationStatus.Pending => "พิจารณา",
+        _ => "ดูรายละเอียด"
+    };
+}

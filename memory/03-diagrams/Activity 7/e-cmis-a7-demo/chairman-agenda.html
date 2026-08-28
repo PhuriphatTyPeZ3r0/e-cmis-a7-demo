@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ศูนย์ลงนามคำสั่งและรายงาน — ประธานกรรมการ ป.ป.ท. | E-CMIS</title>
+    <link rel="icon" type="image/png" href="assets/pacc_logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="assets/ecmis-app.css" rel="stylesheet">
+    <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
+    <style>
+    .document-workspace {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.25fr) !important;
+        gap: 1.25rem !important;
+        align-items: start !important;
+    }
+    .ws-doc-pane {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .doc-paper.a4-paper {
+        max-width: 100% !important;
+        font-family: 'TH Sarabun IT9', 'Sarabun', serif !important;
+    }
+    .signing-queue-item {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all .15s ease-in-out;
+        background: #fff;
+    }
+    .signing-queue-item:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+        transform: translateY(-1px);
+    }
+    .signing-queue-item.active {
+        background: #eff6ff;
+        border-color: #3b82f6;
+        box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
+    }
+    .signing-badge-502 { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.72rem; }
+    .signing-badge-702 { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.72rem; }
+    .signing-badge-m28 { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; font-size: 0.72rem; }
+    @media (max-width: 1200px) {
+        .document-workspace {
+            grid-template-columns: minmax(0, 1fr) !important;
+        }
+    }
+    </style>
+</head>
+
+<body>
+
+    <main class="app-main">
+        <div class="page-head">
+            <div>
+                <div class="mb-1">
+                </div>
+                <h1><i class="fa-solid fa-signature me-2" style="color:#0F2A62"></i>ศูนย์ลงนามคำสั่งและรายงาน — ประธานกรรมการ ป.ป.ท.</h1>
+            </div>
+            <div class="ms-auto text-end">
+                <span class="flow-ref"><strong>จุดลงนามคำสั่งและรายงาน (G4 / S7)</strong></span>
+                <div class="mt-1" id="stBadge"></div>
+            </div>
+        </div>
+
+        <div class="ws-card mb-3">
+            <div class="card-body pb-1" id="stepper"></div>
+        </div>
+
+        <div class="document-workspace" id="docWorkspace">
+            <!-- Left Column: Signing Desk & Case Context -->
+            <div>
+                <!-- Card 1: Pending Signature Queue -->
+                <div class="ws-card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div><i class="fa-solid fa-list-check me-1"></i> รายการสำนวนรอประธานลงนาม (Signing Desk Queue)</div>
+                        <span class="badge bg-primary rounded-pill" id="queueCount">0</span>
+                    </div>
+                    <div class="card-body" style="max-height: 260px; overflow-y: auto;">
+                        <div id="signingQueueList"></div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Case Summary -->
+                <div class="ws-card mb-3">
+                    <div class="card-header"><i class="fa-solid fa-circle-info"></i> สรุปสำนวนสำหรับผู้พิจารณาลงนาม</div>
+                    <div class="card-body">
+                        <div class="row g-2 kv" id="summary"></div>
+                        <hr>
+                        <div class="mb-2"><span class="k text-muted">ข้อกล่าวหา / พฤติการณ์</span>
+                            <div class="v fw-medium" id="sAllegation"></div>
+                        </div>
+                        <div><span class="k text-muted">ผู้ถูกกล่าวหา / ผู้ถูกร้อง</span>
+                            <div class="v" id="sAccused"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Upstream Chain Timeline -->
+                <div class="ws-card mb-3">
+                    <div class="card-header"><i class="fa-solid fa-list-ol"></i> เส้นทางการเสนอความเห็นตามลำดับชั้น (ต้นทาง กว.5 → เลขาธิการฯ)</div>
+                    <div class="card-body">
+                        <ul class="tl mb-0" id="chain"></ul>
+                    </div>
+                </div>
+
+                <!-- Card 4: Chairman Note -->
+                <div class="ws-card mb-3">
+                    <div class="card-header"><i class="fa-solid fa-pen-fancy"></i> ข้อสั่งการหรือข้อสังเกตเพิ่มเติมของประธานกรรมการ ป.ป.ท.</div>
+                    <div class="card-body">
+                        <textarea class="form-control" id="chairNote" rows="2" placeholder="ระบุข้อสั่งการหรือข้อสังเกตเพิ่มเติม (ถ้ามี)"></textarea>
+                        <div class="small text-muted mt-1"><i class="fa-solid fa-circle-info me-1"></i>ข้อสั่งการนี้จะถูกบันทึกแนบไปกับประวัติสำนวนในระบบ E-CMIS</div>
+                    </div>
+                </div>
+
+                <!-- Card 5: Digital Signature Status -->
+                <div class="ws-card mb-3" id="sigCard">
+                    <div class="card-header"><i class="fa-solid fa-signature"></i> สถานะการลงนามดิจิทัล (Digital Signature)</div>
+                    <div class="card-body">
+                        <div id="sigBox" class="sig-box">
+                            <i class="fa-solid fa-file-signature fa-2x mb-2" style="color:#7C8CA3"></i>
+                            <div class="sig-name">ยังไม่ได้ลงนาม</div>
+                            <div class="sig-meta">กดปุ่ม "ลงนามดิจิทัลคำสั่ง" ที่แถบด้านล่างเพื่อดำเนินการ</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Live A4 Document Viewer -->
+            <aside class="ws-doc-pane" style="top:calc(var(--topbar-h) + 14px)">
+                <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
+                <div class="ws-doc-toolbar">
+                  <div class="d-flex flex-column w-100 gap-1">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="ws-doc-tabs" id="docTabs">
+                        <button class="ws-doc-tab active" data-doc="mainOrder" id="tabMainOrder"><i class="fa-solid fa-file-signature me-1"></i>เอกสารคำสั่ง / รายงานรอลงนาม</button>
+                        <button class="ws-doc-tab" data-doc="report213" id="tabReport213"><i class="fa-solid fa-file-contract me-1"></i>รายงาน ๒-๑๓ (เลขาฯ ลงนามแล้ว)</button>
+                      </div>
+                      <div class="d-flex gap-1 align-items-center">
+                        <button type="button" class="btn-doc-edit" id="btnDocEdit" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
+                          <i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnDocx" title="ส่งออกเป็นเอกสาร Microsoft Word (.docx)"><i class="fa-solid fa-file-word me-1"></i>ส่งออก DOCX</button>
+                        <button type="button" class="btn btn-sm btn-light border" onclick="window.print()" title="พิมพ์เอกสาร A4 1:1"><i class="fa-solid fa-print"></i> พิมพ์ A4</button>
+                        <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
+                      </div>
+                    </div>
+
+                    <!-- Symmetrical Pagination & Zoom Navigator Bar -->
+                    <div class="pagination-toolbar-symmetric" id="docPaginationBar">
+                      <!-- Left Group: View Mode & Page Jump Controls -->
+                      <div class="toolbar-group">
+                        <div class="btn-group btn-group-sm" role="group">
+                          <button type="button" class="btn btn-xs btn-primary btn-toolbar-nav" id="btnModeSingle" title="โหมดดูทีละหน้า (เร็ว ลื่น)">
+                            <i class="fa-solid fa-file me-1"></i>ดูทีละหน้า
+                          </button>
+                          <button type="button" class="btn btn-xs btn-outline-light btn-toolbar-nav" id="btnModeContinuous" title="โหมดดูทุกหน้าเรียงกัน">
+                            <i class="fa-solid fa-file-lines me-1"></i>ดูทุกหน้าต่อเนื่อง
+                          </button>
+                        </div>
+
+                        <div class="toolbar-divider"></div>
+
+                        <div class="btn-group btn-group-sm" role="group">
+                          <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnFirstPage" title="หน้าแรกสุด (หน้า 1)"><i class="fa-solid fa-backward-step"></i></button>
+                          <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnPrevPage" title="หน้าก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
+                        </div>
+                        
+                        <div class="d-flex align-items-center gap-1">
+                          <span class="small opacity-75">หน้า</span>
+                          <input type="number" class="page-input-num" id="pageNumberInput" min="1" value="1">
+                          <span class="small opacity-75" id="totalPagesText">/ 1 หน้า</span>
+                        </div>
+
+                        <div class="btn-group btn-group-sm" role="group">
+                          <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnNextPage" title="หน้าถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+                          <button type="button" class="btn btn-xs btn-secondary btn-toolbar-nav" id="btnLastPage" title="หน้าสุดท้าย"><i class="fa-solid fa-forward-step"></i></button>
+                        </div>
+                      </div>
+
+                      <!-- Right Group: Zoom Stepper Controls -->
+                      <div class="toolbar-group ms-auto">
+                        <div class="d-flex align-items-center bg-dark rounded px-1" style="background:#06182c !important; border:1px solid #1a3d66; height:26px;">
+                          <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomOut" title="ย่อขนาด"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                          <span style="font-size:0.75rem; width:34px; text-align:center; font-weight:600;" id="zoomLevelText">75%</span>
+                          <button type="button" class="btn btn-link btn-xs text-light p-1 text-decoration-none" id="btnZoomIn" title="ขยายขนาด"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="ws-paper-stage" id="docPaperStage">
+                  <div id="docPaper"></div>
+                </div>
+            </aside>
+        </div>
+
+        <div id="actionBarSlot"></div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pizzip@3/dist/pizzip.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/build/docxtemplater.js"></script>
+    <script src="assets/ecmis-app.js"></script>
+    <script src="assets/ecmis-model.js"></script>
+    <script>
+        ECMIS.renderShell('chairman.html');
+
+        const params = new URLSearchParams(location.search);
+        let currentCaseId = params.get('case') || '1547/2568';
+        let kase = ECMIS.requireCase(currentCaseId);
+        if (!kase) throw new Error('ECMIS_CASE_NOT_FOUND');
+        const role = ECMIS.currentRole();
+        let docTab = 'mainOrder';
+
+        const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+        const sb = (window.ECMIS && window.ECMIS.getSupabaseClient) ? window.ECMIS.getSupabaseClient(SUPABASE_URL, SUPABASE_KEY) : (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }) : null);
+        async function loadCaseFromSupabase(caseId) {
+            const { data, error } = await sb
+                .from('tbl_res_request')
+                .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+                .eq('tbl_cmp_case.tcc_no', caseId)
+                .eq('is_deleted', false)
+                .maybeSingle();
+            if (error) throw error;
+            return data ? ECMIS.supabaseRowToCase(data) : null;
+        }
+
+        let signed = false;
+        let pendingSigData = null;
+        const SIGNER_NAME = 'นายวิชัย ยุติธรรม';
+        const SIGNER_TITLE = 'ประธานกรรมการ ป.ป.ท.';
+        const SIGNER_CERT = 'PACC-CHAIRMAN-2569-001';
+
+        /* ---------- Initial Setup & Queue Rendering ---------- */
+        function isChairPending(c) {
+            return c.status === 'PENDING_CHAIRMAN' || 
+                   c.status === 'PENDING_CHAIRMAN_URGENT_72' || 
+                   c.status === 'PENDING_SIGN_RULING_72' ||
+                   (c.status === 'PENDING_URGENT' && c.urgent);
+        }
+
+        function renderQueue() {
+            const queueCases = ECMIS.CASES.filter(c => isChairPending(c) || c.id === kase.id);
+            const countEl = document.getElementById('queueCount');
+            if (countEl) countEl.textContent = queueCases.length;
+
+            const listEl = document.getElementById('signingQueueList');
+            if (!listEl) return;
+
+            listEl.innerHTML = queueCases.map(c => {
+                const isActive = (c.id === kase.id);
+                const is72 = ECMIS.isCase72(c);
+                let badgeHtml = '<span class="badge signing-badge-502"><i class="fa-solid fa-file-pen me-1"></i>ปปท. ๕-๐๒ (ม.๒๔)</span>';
+                if (is72 || c.status === 'PENDING_SIGN_RULING_72') {
+                    badgeHtml = '<span class="badge signing-badge-702"><i class="fa-solid fa-gavel me-1"></i>ปปท. ๗-๐๒ (ชี้มูล)</span>';
+                } else if (c.legalBase === 'ม.28') {
+                    badgeHtml = '<span class="badge signing-badge-m28"><i class="fa-solid fa-scale-balanced me-1"></i>คำสั่ง ม.๒๘</span>';
+                }
+
+                return `
+                <div class="signing-queue-item ${isActive ? 'active' : ''}" onclick="selectCase('${c.id}')">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong class="text-dark"><i class="fa-solid fa-folder me-1 text-primary"></i>${c.id}</strong>
+                        ${badgeHtml}
+                    </div>
+                    <div class="small text-truncate text-secondary mb-1" title="${c.subject}">${c.subject}</div>
+                    <div class="d-flex justify-content-between align-items-center" style="font-size:0.75rem">
+                        <span class="text-muted"><i class="fa-regular fa-building me-1"></i>${c.ownerOrg}</span>
+                        ${ECMIS.slaBadge(c)}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        window.selectCase = function(id) {
+            if (id === kase.id) return;
+            location.href = `chairman.html?case=${encodeURIComponent(id)}`;
+        };
+
+        function refreshCaseView() {
+            document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
+            document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status);
+
+            // Render Upstream Chain Timeline
+            const FULL_CHAIN = ECMIS.UPSTREAM_CHAIN.concat(['secgen', 'chairman']);
+            const opByRole = Object.fromEntries((kase.chainOpinions || []).map(o => [o.roleId, o]));
+            document.getElementById('chain').innerHTML = FULL_CHAIN.map(rid => {
+                const r = ECMIS.getRole(rid);
+                const op = opByRole[rid];
+                let cls = 'ok', note = '';
+                
+                if (rid === 'chairman') {
+                    cls = 'now';
+                    note = '<strong>อยู่ระหว่างประธานกรรมการ ป.ป.ท. พิจารณาลงนาม (คุณ)</strong>';
+                } else if (op) {
+                    cls = 'ok';
+                    note = `เห็นชอบแล้ว · <span class="text-success fw-medium"><i class="fa-solid fa-check me-1"></i>ลงนามเมื่อ ${ECMIS.thaiDate(op.date)}</span>`;
+                } else if (rid === 'secgen') {
+                    cls = 'ok';
+                    note = `เห็นชอบแล้ว · <span class="text-success fw-medium"><i class="fa-solid fa-signature me-1"></i>ลงนามดิจิทัลโดย นายอภิชาติ สุจริตกุล (เลขาธิการฯ)</span>`;
+                } else {
+                    cls = 'ok';
+                    note = 'เห็นชอบแล้วตามลำดับชั้น';
+                }
+
+                let opHtml = '';
+                if (op) {
+                    opHtml = `<div class="tl-m mt-1">
+                        <span class="st st-done" style="font-size:.68rem">${ECMIS.OPINION_TYPES[op.type]?.label || 'เห็นชอบ'}</span>
+                        <span class="text-muted ms-1" style="font-size:.75rem">${op.note}</span>
+                    </div>`;
+                } else if (rid === 'secgen') {
+                    opHtml = `<div class="tl-m mt-1">
+                        <span class="st st-done" style="font-size:.68rem">เห็นชอบ</span>
+                        <span class="text-muted ms-1" style="font-size:.75rem">เสนอประธานกรรมการ ป.ป.ท. พิจารณาลงนามและส่งบรรจุวาระ</span>
+                    </div>`;
+                }
+
+                return `<li class="${cls}"><span class="tl-dot"></span>
+                    <div class="tl-t">${r.title} ${rid === 'chairman' ? '<span class="chip ms-1">คุณ</span>' : ''}</div>
+                    <div class="tl-m">${r.name} · ${note}</div>${opHtml}
+                </li>`;
+            }).join('');
+
+            // Render Summary Card
+            document.getElementById('summary').innerHTML = [
+                ['เลขสำนวน', kase.id],
+                ['ฐานการรับเรื่อง', kase.legalBase || 'ม.18/4'],
+                ['เจ้าของสำนวน', kase.owner],
+                ['หน่วยงาน', kase.ownerOrg],
+                ['วันที่รับเรื่อง', ECMIS.thaiDate(kase.receivedDate)],
+                ['เลขาธิการฯ ลงนามเมื่อ', kase.secgenSignedAt || '04 ส.ค. 2569']
+            ].map(([k, v]) => `<div class="col-md-6"><span class="k">${k}:</span> <span class="v">${v}</span></div>`).join('');
+
+            document.getElementById('sAllegation').textContent = kase.allegation || kase.subject;
+            document.getElementById('sAccused').innerHTML = (kase.accused || []).map(a => `<div><strong>${a.no}. ${a.name}</strong> — ${a.pos} (${a.agency})</div>`).join('') || '—';
+
+            // Check if already signed
+            if (kase.signedByChair) {
+                signed = true;
+                updateSigBoxUI(true, { mode: 'cert' }, ECMIS.thaiDate(kase.chairSignedAt || new Date().toISOString()));
+            }
+
+            renderQueue();
+            renderDoc();
+            renderActionButtons();
+        }
+
+        /* ---------- Live A4 Document Rendering ---------- */
+        function renderDoc() {
+            const M = ECMIS.mergeField;
+            const is72 = ECMIS.isCase72(kase) || kase.status === 'PENDING_SIGN_RULING_72';
+            const docPaperEl = document.getElementById('docPaper');
+            if (!docPaperEl) return;
+
+            if (docTab === 'report213') {
+                const chainOpinionsHtml = (kase.chainOpinions || []).map(o => `
+                    <div class="mb-2 p-2 bg-light rounded border">
+                        <strong>${ECMIS.getRole(o.roleId)?.title || o.roleId}:</strong> ${o.note}
+                        <div class="small text-muted text-end">(${ECMIS.thaiDate(o.date)})</div>
+                    </div>
+                `).join('');
+
+                docPaperEl.innerHTML = `
+                    <div class="doc-paper a4-paper active-page" id="docPaperPage">
+                        <div class="doc-secret">${kase.urgent ? 'ลับ / ด่วนมาก' : 'ลับ'}</div>
+                        <div class="doc-title" style="font-size:18pt;font-weight:700;text-align:center;line-height:1.3;margin-top:10px;">
+                            รายงานการไต่สวนเบื้องต้น (แบบ ปปท. ๒-๑๓)<br>
+                            <span style="font-size:16pt;font-weight:400;">คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</span>
+                        </div>
+                        
+                        <div style="margin-top:16px; font-size:16pt; line-height:1.3;">
+                            <div class="doc-row"><span class="k">เรื่องที่:</span> ${M(kase.id)}</div>
+                            <div class="doc-row"><span class="k">เรื่องกล่าวหา:</span> ${M(kase.subject)}</div>
+                            <div class="doc-row"><span class="k">ผู้รับผิดชอบ:</span> ${M(kase.owner)}</div>
+                            <div class="doc-row"><span class="k">สังกัด:</span> ${M(kase.ownerOrg)}</div>
+                        </div>
+
+                        <div class="doc-h" style="font-size:16pt;font-weight:700;margin-top:14px;">ผู้ถูกร้อง / ผู้ถูกกล่าวหา</div>
+                        ${(kase.accused || []).map(a => `<div style="padding-left:1.5em;font-size:16pt;line-height:1.3;"><strong>${a.no}. ${M(a.name)}</strong> — ${M(a.pos)} (${M(a.agency)})</div>`).join('')}
+
+                        <div class="doc-h" style="font-size:16pt;font-weight:700;margin-top:14px;">๑. ข้อกล่าวหาและสรุปพฤติการณ์</div>
+                        <div class="doc-indent" style="font-size:16pt;line-height:1.3;text-indent:2.5em;">${M(kase.allegation || kase.subject)}</div>
+
+                        <div class="doc-h" style="font-size:16pt;font-weight:700;margin-top:14px;">๒. ความเห็นตามลำดับชั้น</div>
+                        <div style="padding-left:0.5em">${chainOpinionsHtml}</div>
+
+                        <div class="doc-h" style="font-size:16pt;font-weight:700;margin-top:14px;">๓. การลงนามเห็นชอบของเลขาธิการคณะกรรมการ ป.ป.ท.</div>
+                        <div class="p-3 bg-success bg-opacity-10 border border-success rounded text-center mt-3" style="font-size:15pt;">
+                            <div class="badge bg-success mb-1" style="font-size:0.85rem"><i class="fa-solid fa-signature me-1"></i>ลงนามดิจิทัลเรียบร้อยแล้ว</div>
+                            <div class="fw-bold text-dark h6 mb-0" style="margin-top:4px">นายอภิชาติ สุจริตกุล</div>
+                            <div class="small text-muted">เลขาธิการคณะกรรมการ ป.ป.ท.</div>
+                            <div class="small text-success mt-1"><i class="fa-solid fa-shield-check me-1"></i>Digital Certificate Verified · ${kase.secgenSignedAt || '04 ส.ค. 2569'}</div>
+                        </div>
+                    </div>`;
+            } else {
+                // Tab 1: Main Order / Ruling Report (ปปท. ๕-๐๒ หรือ ปปท. ๗-๐๒)
+                if (is72) {
+                    // Render ปปท. ๗-๐๒ (รายงานการไต่สวนเพื่อวินิจฉัยชี้มูล)
+                    docPaperEl.innerHTML = `
+                    <div class="doc-paper a4-paper active-page" id="docPaperPage">
+                        <div class="doc-secret">ลับ</div>
+                        <div class="doc-title" style="font-size:18pt;font-weight:700;text-align:center;line-height:1.3;margin-top:10px;">
+                            รายงานการไต่สวนเพื่อวินิจฉัยชี้มูล<br>
+                            <span style="font-size:16pt;font-weight:700;">คณะกรรมการ ป.ป.ท.</span>
+                        </div>
+                        
+                        <div class="doc-indent" style="margin-top:16px;font-size:16pt;line-height:1.3;text-indent:2.5em;">
+                            ในคราวการประชุมคณะกรรมการ ป.ป.ท. เพื่อพิจารณาและวินิจฉัยชี้มูลความผิด เรื่องที่ ${M(kase.id)} 
+                            ของคณะอนุกรรมการไต่สวน/คณะพนักงานไต่สวน ตามคำสั่งคณะกรรมการ ป.ป.ท./สำนักงาน ป.ป.ท. 
+                            กรณีกล่าวหา ${(kase.accused || []).map(a => `<strong>${a.name}</strong> ${a.pos}`).join(', ') || 'ผู้ถูกกล่าวหา'}
+                        </div>
+
+                        <div class="doc-h" style="font-size:16pt;font-weight:700;margin-top:14px;">ประเด็นการวินิจฉัยและข้อเท็จจริง</div>
+                        <div class="doc-indent" style="font-size:16pt;line-height:1.3;text-indent:2.5em;">
+                            ${M(kase.allegation || kase.subject)}
+                        </div>
+
+                        <div class="doc-h" style="font-size:16pt;font-weight:700;margin-top:14px;">มติการวินิจฉัยชี้มูลของคณะกรรมการ ป.ป.ท.</div>
+                        <div class="doc-indent" style="font-size:16pt;line-height:1.3;text-indent:2.5em;">
+                            คณะกรรมการ ป.ป.ท. ได้พิจารณาข้อเท็จจริงและพยานหลักฐานตามรายงานการไต่สวนแล้ว มีมติเป็นเอกฉันท์วินิจฉัยชี้มูลความผิดตามที่เสนอ
+                        </div>
+
+                        <!-- Signature Block for Board -->
+                        <div style="margin-top:24px; width:62%; margin-left:auto; text-align:left; font-size:16pt;">
+                            <div style="margin-top:12px; margin-bottom:12px; line-height:1.4;">
+                                <div>ลงชื่อ................................................ประธานกรรมการ ป.ป.ท.</div>
+                                <div style="text-align:center; width:220px; margin-top:2px;">(${SIGNER_NAME})</div>
+                                ${signed ? `<div style="text-align:center; width:220px; font-size:0.8rem; color:#16A34A;"><i class="fa-solid fa-certificate me-1"></i>ลงนามดิจิทัลเรียบร้อยแล้ว</div>` : ''}
+                            </div>
+                        </div>
+
+                        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:20px; font-size:13pt; font-weight:700; color:#334155;">
+                            <div>ปปท. ๗-๐๒</div>
+                        </div>
+                    </div>`;
+                } else {
+                    // Render ปปท. ๕-๐๒ (คำสั่งคณะกรรมการ ป.ป.ท. แต่งตั้งคณะอนุกรรมการไต่สวน ม.๒๔)
+                    docPaperEl.innerHTML = `
+                    <div class="doc-paper a4-paper active-page" id="docPaperPage">
+                        <div class="text-center mb-2">
+                            <img src="assets/doc_logo.jpg" alt="ตราครุฑ" style="width:70px; height:auto;">
+                        </div>
+                        <div class="doc-secret">ลับ</div>
+                        <div class="doc-title" style="font-size:18pt;font-weight:700;text-align:center;line-height:1.3;margin-top:6px;">
+                            คำสั่งคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ<br>
+                            <span style="font-size:16pt;font-weight:400;">ที่ ................. / ๒๕๖๙</span><br>
+                            <span style="font-size:16pt;font-weight:700;">เรื่อง แต่งตั้งคณะอนุกรรมการไต่สวนข้อเท็จจริง (แบบ ปปท. ๕-๐๒)</span>
+                        </div>
+
+                        <div class="doc-indent" style="margin-top:16px;font-size:16pt;line-height:1.3;text-indent:2.5em;">
+                            ด้วยคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ (คณะกรรมการ ป.ป.ท.) ได้รับเรื่องกล่าวหา 
+                            สำนวนเรื่องที่ <strong>${M(kase.id)}</strong> กรณีกล่าวหา ${(kase.accused || []).map(a => `<strong>${a.name}</strong> ตำแหน่ง ${a.pos} สังกัด ${a.agency}`).join(', ') || 'ผู้ถูกกล่าวหา'} 
+                            ว่ากระทำความผิด ${M(kase.allegation || kase.subject)}
+                        </div>
+
+                        <div class="doc-indent" style="margin-top:10px;font-size:16pt;line-height:1.3;text-indent:2.5em;">
+                            อาศัยอำนาจตามความในมาตรา ๑๗ มาตรา ๑๘ มาตรา ๑๙ และมาตรา ๒๔ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม 
+                            คณะกรรมการ ป.ป.ท. จึงมีคำสั่งแต่งตั้งคณะอนุกรรมการไต่สวนข้อเท็จจริงเพื่อดำเนินการไต่สวนข้อเท็จจริงตามระเบียบต่อไป
+                        </div>
+
+                        <div class="doc-indent" style="margin-top:10px;font-size:16pt;line-height:1.3;text-indent:2.5em;">
+                            ทั้งนี้ ตั้งแต่บัดนี้เป็นต้นไป
+                        </div>
+
+                        <div class="doc-indent" style="margin-top:10px;font-size:16pt;line-height:1.3;text-indent:2.5em;">
+                            สั่ง ณ วันที่ ................................................ พ.ศ. ๒๕๖๙
+                        </div>
+
+                        <!-- Chairman Signature Block -->
+                        <div style="margin-top:28px; width:60%; margin-left:auto; text-align:center; font-size:16pt; line-height:1.4;">
+                            ${signed && pendingSigData && pendingSigData.sig ? `<img class="doc-sig-img" src="${pendingSigData.sig}" alt="ลายมือชื่อ" style="max-height:56px;margin:0 auto 4px;"><br>` : ''}
+                            <div>(ลงชื่อ)...................................................................</div>
+                            <div style="margin-top:4px;">(${SIGNER_NAME})</div>
+                            <div style="font-weight:600;">${SIGNER_TITLE}</div>
+                            ${signed ? `<div style="font-size:0.8rem; color:#16A34A; margin-top:4px;"><i class="fa-solid fa-certificate me-1"></i>Digital Signature Verified (${pendingSigData?.certCode || SIGNER_CERT})</div>` : ''}
+                        </div>
+
+                        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:24px; font-size:13pt; font-weight:700; color:#334155;">
+                            <div>ปปท. ๕-๐๒</div>
+                        </div>
+                    </div>`;
+                }
+            }
+            updatePaginationUI();
+            applyZoom();
+        }
+
+        document.querySelectorAll('#docTabs [data-doc]').forEach(b => b.addEventListener('click', () => {
+            document.querySelectorAll('#docTabs .ws-doc-tab').forEach(x => x.classList.remove('active'));
+            b.classList.add('active'); docTab = b.dataset.doc; renderDoc();
+        }));
+
+        /* ---------- Signature UI & Action Handlers ---------- */
+        function updateSigBoxUI(isSigned, sigData, dateStr) {
+            const sigBoxEl = document.getElementById('sigBox');
+            if (!sigBoxEl) return;
+            if (isSigned) {
+                sigBoxEl.className = 'sig-box signed';
+                sigBoxEl.innerHTML = `
+                    ${sigData && sigData.sig ? `<img src="${sigData.sig}" style="max-height:60px; max-width:180px; margin-bottom:6px; object-fit:contain;" alt="ลายเซ็น"><br>` : `<i class="fa-solid fa-circle-check fa-2x mb-2" style="color:#16A34A"></i><br>`}
+                    <div class="sig-name">${SIGNER_NAME}</div>
+                    <div class="sig-meta">${SIGNER_TITLE}</div>
+                    <div class="sig-meta" style="color:#16A34A; margin-top:4px;"><i class="fa-solid fa-shield-halved me-1"></i>ลงนามดิจิทัลแล้วเมื่อ ${dateStr}</div>`;
+            } else {
+                sigBoxEl.className = 'sig-box';
+                sigBoxEl.innerHTML = `
+                    <i class="fa-solid fa-file-signature fa-2x mb-2" style="color:#7C8CA3"></i>
+                    <div class="sig-name">ยังไม่ได้ลงนาม</div>
+                    <div class="sig-meta">กดปุ่ม "ลงนามดิจิทัลคำสั่ง" ที่แถบด้านล่างเพื่อดำเนินการ</div>`;
+            }
+        }
+
+        function buildButtons() {
+            if (signed) {
+                return [
+                    { act: 'edit_sign', label: 'แก้ไข / ลงนามใหม่', icon: 'fa-pen-to-square', cls: 'btn-outline-warning' },
+                    { act: 'clear_sign', label: 'ลบลายเซ็น', icon: 'fa-trash-can', cls: 'btn-outline-danger' },
+                    { act: 'save_status', label: 'บันทึกคำสั่งและส่งบรรจุวาระ', icon: 'fa-paper-plane', cls: 'btn-success' }
+                ];
+            }
+            return [
+                { act: 'return', label: 'ตีกลับให้แก้ไข', icon: 'fa-arrow-left-long', cls: 'btn-outline-danger' },
+                { act: 'sign', label: 'ลงนามดิจิทัลคำสั่ง (2-Step)', icon: 'fa-signature', cls: 'btn-gold' }
+            ];
+        }
+
+        function renderActionButtons() {
+            document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons());
+            document.querySelectorAll('.action-bar [data-act]').forEach(b =>
+                b.addEventListener('click', () => handle(b.dataset.act)));
+        }
+
+        function handle(act) {
+            if (act === 'edit_sign') {
+                handle('sign');
+                return;
+            }
+            if (act === 'clear_sign') {
+                ECMIS.confirmAction({
+                    title: 'ยืนยันการลบลายเซ็น',
+                    html: '<p>คุณต้องการยกเลิกลายเซ็นคำสั่งนี้ใช่หรือไม่?</p>',
+                    confirmText: 'ยืนยันลบลายเซ็น',
+                    danger: true
+                }).then(r => {
+                    if (r.isConfirmed) {
+                        signed = false;
+                        pendingSigData = null;
+                        kase.signedByChair = false;
+                        updateSigBoxUI(false);
+                        renderDoc();
+                        renderActionButtons();
+                        ECMIS.toastOk('ลบลายเซ็นเรียบร้อยแล้ว');
+                    }
+                });
+                return;
+            }
+            if (act === 'return') {
+                ECMIS.confirmAction({
+                    title: 'ตีกลับให้แก้ไข', danger: true, icon: 'warning',
+                    html: `<label class="form-label">เหตุผลการตีกลับสำนวน <span style="color:#DB2626">*</span></label>
+                           <textarea id="swal-note" class="form-control" rows="3" placeholder="ระบุเหตุผลและข้อสั่งการให้ฝ่ายต้นทางหรือเลขาธิการฯ แก้ไข"></textarea>`,
+                    confirmText: 'ยืนยันตีกลับ'
+                }).then(r => {
+                    if (r.isConfirmed) {
+                        kase.status = 'RETURNED';
+                        ECMIS.saveCases();
+                        ECMIS.toastOk('ตีกลับสำนวนเรียบร้อยแล้ว');
+                        setTimeout(() => location.href = ECMIS.homeHref(role.id), 1200);
+                    }
+                });
+                return;
+            }
+            if (act === 'sign') {
+                const docTitle = ECMIS.isCase72(kase) ? 'รายงานการไต่สวนเพื่อวินิจฉัยชี้มูล (ปปท. ๗-๐๒)' : 'คำสั่งแต่งตั้งคณะอนุกรรมการไต่สวน (ปปท. ๕-๐๒)';
+                ECMIS.signDialog(`ลงนามคำสั่งประธานกรรมการ ป.ป.ท. — ${docTitle} (เรื่องที่ ${kase.id})`,
+                    `${SIGNER_NAME} — ${SIGNER_TITLE}`, SIGNER_CERT)
+                    .then(res => {
+                        if (!res.isConfirmed) return;
+                        signed = true;
+                        pendingSigData = res.value;
+                        const now = new Date();
+                        updateSigBoxUI(true, res.value, now.toLocaleString('th-TH'));
+                        renderDoc();
+                        renderActionButtons();
+                        ECMIS.toastOk('ลงนามเรียบร้อยแล้ว กรุณากดปุ่ม "บันทึกคำสั่งและส่งบรรจุวาระ"');
+                    });
+                return;
+            }
+            if (act === 'save_status') {
+                const is72 = ECMIS.isCase72(kase);
+                const nextStatus = is72 ? 'PENDING_INVITE_72' : 'AGENDA_SET';
+                const nextTarget = 'agenda-registry.html';
+                const docType = is72 ? 'รายงานการไต่สวนเพื่อวินิจฉัยชี้มูล (ปปท. ๗-๐๒)' : 'คำสั่งแต่งตั้งคณะอนุกรรมการไต่สวน (ปปท. ๕-๐๒)';
+                const fromStatus = kase.status;
+
+                kase.signedByChair = true;
+                kase.chairSignedAt = new Date().toISOString();
+                kase.chairNote = document.getElementById('chairNote')?.value?.trim() || '';
+
+                if (ECMIS.Model && ECMIS.Model.SignatureStore) {
+                    ECMIS.Model.SignatureStore.create({
+                        caseId: kase.id,
+                        docType,
+                        signerRole: 'chairman',
+                        signerName: `${SIGNER_NAME} — ${SIGNER_TITLE}`,
+                        method: pendingSigData?.mode || 'cert',
+                        signedAt: new Date().toISOString()
+                    });
+                }
+
+                /* ต้องรอเขียน Supabase ให้เสร็จก่อนค่อย redirect — ถ้า redirect ก่อน (เช่น sync ทันทีที่
+                   ผู้ใช้กด "ตกลง") request ที่ยังค้างอยู่จะถูกเบราว์เซอร์ตัดทิ้งกลางทาง ทำให้ดูเหมือน
+                   บันทึกสำเร็จ (Swal ขึ้นแล้ว) แต่จริงๆ ไม่ได้ persist ลง DB เลย */
+                (async () => {
+                    await ECMIS.updateCaseStatus(kase, nextStatus, sb);
+                    if (kase.trr_id && sb) {
+                        ECMIS.logRequestEvent(kase.trr_id, fromStatus, nextStatus, {
+                            type: 'SIGNED', actorRole: 'chairman',
+                            data: { docType, signerName: SIGNER_NAME, signerTitle: SIGNER_TITLE, method: pendingSigData?.mode || 'cert', note: kase.chairNote }
+                        });
+                    }
+
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'บันทึกคำสั่งและลงนามสำเร็จ',
+                        html: `<div class="text-start">
+                                  สำนวนเรื่องที่ <strong>${kase.id}</strong><br>
+                                  สถานะใหม่: <strong>${ECMIS.STATUS[nextStatus]?.label || nextStatus}</strong><br><br>
+                                  <span style="font-size:.9rem;color:#475569">
+                                      <i class="fa-solid fa-arrow-right me-1 text-primary"></i>ส่งสำนวนเข้าสู่ <strong>ทะเบียนวาระการประชุม (agenda-registry.html)</strong> เพื่อให้ฝ่ายเลขาฯ บรรจุวาระต่อไป
+                                  </span>
+                               </div>`,
+                        confirmButtonColor: '#0F2A62',
+                        confirmButtonText: 'ตกลง (ไปที่ทะเบียนวาระ)'
+                    });
+                    location.href = nextTarget;
+                })();
+            }
+        }
+
+        /* ---------- Document workspace: collapsible pane ---------- */
+        const docWorkspace = document.getElementById('docWorkspace');
+        const PANE_KEY = 'ecmis-chairman-desk-docpane-collapsed';
+        function setPaneCollapsed(collapsed) {
+            if (docWorkspace) docWorkspace.classList.toggle('pane-collapsed', collapsed);
+            localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
+        }
+        if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
+        const btnCollapse = document.getElementById('btnPaneCollapse');
+        const btnExpand = document.getElementById('btnPaneExpand');
+        if (btnCollapse) btnCollapse.addEventListener('click', () => setPaneCollapsed(true));
+        if (btnExpand) btnExpand.addEventListener('click', () => setPaneCollapsed(false));
+
+        /* ---------- Master Toolbar & Pagination Controls ---------- */
+        let docViewMode = 'SINGLE';
+        let docCurrentPage = 1;
+        let docTotalPages = 1;
+        let docZoomLevel = 0.75;
+
+        function updatePaginationUI() {
+            const docPaperEl = document.getElementById('docPaper');
+            if (!docPaperEl) return;
+            const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
+            docTotalPages = Math.max(1, pages.length);
+
+            if (docCurrentPage > docTotalPages) docCurrentPage = docTotalPages;
+            if (docCurrentPage < 1) docCurrentPage = 1;
+
+            $('#totalPagesText').text(`/ ${docTotalPages} หน้า`);
+            $('#pageNumberInput').attr('max', docTotalPages).val(docCurrentPage);
+
+            if (docViewMode === 'SINGLE') {
+                docPaperEl.classList.remove('mode-continuous');
+                docPaperEl.classList.add('mode-single');
+                pages.forEach((p, idx) => {
+                    if (idx + 1 === docCurrentPage) {
+                        p.classList.add('active-page');
+                        p.style.display = 'block';
+                    } else {
+                        p.classList.remove('active-page');
+                        p.style.display = 'none';
+                    }
+                });
+                $('#btnModeSingle').removeClass('btn-outline-light').addClass('btn-primary');
+                $('#btnModeContinuous').removeClass('btn-primary').addClass('btn-outline-light');
+                $('#btnFirstPage, #btnPrevPage').prop('disabled', docCurrentPage === 1);
+                $('#btnNextPage, #btnLastPage').prop('disabled', docCurrentPage === docTotalPages);
+                $('#pageNumberInput').prop('disabled', false);
+                const stage = document.getElementById('docPaperStage');
+                if (stage) stage.scrollTop = 0;
+            } else {
+                docPaperEl.classList.remove('mode-single');
+                docPaperEl.classList.add('mode-continuous');
+                pages.forEach(p => {
+                    p.classList.add('active-page');
+                    p.style.display = 'block';
+                });
+                $('#btnModeContinuous').removeClass('btn-outline-light').addClass('btn-primary');
+                $('#btnModeSingle').removeClass('btn-primary').addClass('btn-outline-light');
+                $('#btnFirstPage, #btnPrevPage, #btnNextPage, #btnLastPage, #pageNumberInput').prop('disabled', true);
+            }
+            applyZoom();
+        }
+
+        function applyZoom() {
+            const docPaperEl = document.getElementById('docPaper');
+            if (!docPaperEl) return;
+            docPaperEl.style.transform = `scale(${docZoomLevel})`;
+            docPaperEl.style.transformOrigin = 'top center';
+            $('#zoomLevelText').text(`${Math.round(docZoomLevel * 100)}%`);
+
+            const stage = document.getElementById('docPaperStage');
+            if (stage) {
+                const pages = docPaperEl.querySelectorAll('.doc-paper, .a4-paper');
+                if (pages.length > 0) {
+                    if (docViewMode === 'SINGLE') {
+                        const activeP = docPaperEl.querySelector('.doc-paper.active-page, .a4-paper.active-page') || pages[0];
+                        const h = activeP ? (activeP.offsetHeight || 1123) : 1123;
+                        docPaperEl.style.height = `${Math.round(h * docZoomLevel)}px`;
+                    } else {
+                        let totalH = 0;
+                        pages.forEach(p => { totalH += (p.offsetHeight || 1123) + 18; });
+                        docPaperEl.style.height = `${Math.round(totalH * docZoomLevel)}px`;
+                    }
+                }
+            }
+        }
+
+        $('#btnModeSingle').on('click', function () {
+            docViewMode = 'SINGLE';
+            updatePaginationUI();
+        });
+
+        $('#btnModeContinuous').on('click', function () {
+            docViewMode = 'CONTINUOUS';
+            updatePaginationUI();
+        });
+
+        $('#btnFirstPage').on('click', function () {
+            if (docCurrentPage > 1) {
+                docCurrentPage = 1;
+                updatePaginationUI();
+            }
+        });
+
+        $('#btnPrevPage').on('click', function () {
+            if (docCurrentPage > 1) {
+                docCurrentPage--;
+                updatePaginationUI();
+            }
+        });
+
+        $('#btnNextPage').on('click', function () {
+            if (docCurrentPage < docTotalPages) {
+                docCurrentPage++;
+                updatePaginationUI();
+            }
+        });
+
+        $('#btnLastPage').on('click', function () {
+            if (docCurrentPage < docTotalPages) {
+                docCurrentPage = docTotalPages;
+                updatePaginationUI();
+            }
+        });
+
+        $('#pageNumberInput').on('change', function () {
+            let val = parseInt($(this).val(), 10);
+            if (isNaN(val) || val < 1) val = 1;
+            if (val > docTotalPages) val = docTotalPages;
+            docCurrentPage = val;
+            updatePaginationUI();
+        });
+
+        $('#btnZoomIn').on('click', function () {
+            if (docZoomLevel < 1.5) {
+                docZoomLevel = Math.min(1.5, Math.round((docZoomLevel + 0.1) * 10) / 10);
+                applyZoom();
+            }
+        });
+
+        $('#btnZoomOut').on('click', function () {
+            if (docZoomLevel > 0.4) {
+                docZoomLevel = Math.max(0.4, Math.round((docZoomLevel - 0.1) * 10) / 10);
+                applyZoom();
+            }
+        });
+
+        $('#btnDocx').on('click', function () {
+            if (typeof ECMIS !== 'undefined' && typeof ECMIS.exportDocToDocx === 'function') {
+                const title = docTab === 'report213' ? 'รายงานแบบ_ปปท_2-13' : (ECMIS.isCase72(kase) ? 'รายงาน_ปปท_7-02' : 'คำสั่งแต่งตั้ง_ปปท_5-02');
+                ECMIS.exportDocToDocx('docPaper', `${title}_${kase.id.replace(/\//g, '-')}.docx`);
+            } else {
+                window.print();
+            }
+        });
+
+        try {
+            const mayEdit = (role.id === 'chairman' || role.id === 'admin');
+            ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: mayEdit });
+        } catch (e) { }
+
+        refreshCaseView();
+
+        /* โหลดข้อมูลจริงจาก Supabase แบบ background หลังเรนเดอร์ด้วย mock data ไปก่อนแล้ว (เหมือน
+           order.html) — ถ้าได้ข้อมูลจริงมา mutate kase object เดิม แล้ว re-render ทั้ง view */
+        (async function refreshFromSupabase() {
+            if (!sb) return;
+            let live;
+            try {
+                live = await loadCaseFromSupabase(currentCaseId);
+            } catch (err) {
+                console.warn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ ใช้ข้อมูลจำลองต่อไป:', err);
+                return;
+            }
+            if (!live) return;
+            Object.assign(kase, live);
+            refreshCaseView();
+        })();
+    </script>
+</body>
+
+</html>

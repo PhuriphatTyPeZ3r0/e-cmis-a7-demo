@@ -1,0 +1,84 @@
+    // ═══════════════════════════════════════════════════════════
+    // V5: NOC Crisis Center — State & Data Models
+    // ═══════════════════════════════════════════════════════════
+
+    private string _v5AlertFilter = "ALL";
+
+    private void SetV5AlertFilter(string filter)
+    {
+        _v5AlertFilter = filter;
+        StateHasChanged();
+    }
+
+    private List<AlertRow> V5FilteredAlerts => _v5AlertFilter switch
+    {
+        "CRITICAL" => _allAlerts.Where(a => a.Level == "red").ToList(),
+        "HIGH" => _allAlerts.Where(a => a.Level == "amber").ToList(),
+        "MEDIUM" => _allAlerts.Where(a => a.Level == "yellow").ToList(),
+        _ => _allAlerts.ToList()
+    };
+
+    private sealed record V5TimelineEvent(string Time, string Title, string Description, bool IsCritical);
+    private readonly IReadOnlyList<V5TimelineEvent> V5TimelineEvents =
+    [
+        new("10:15", "พบ TOR ล็อคสเปก", "โครงการก่อสร้างอาคารสำนักงานแห่งใหม่ กรมโยธาธิการฯ", true),
+        new("10:12", "เสนอราคาสูงกว่ากลาง 30%", "โครงการจัดซื้อครุภัณฑ์ทางการแพทย์ กระทรวงสาธารณสุข", true),
+        new("09:58", "อนุมัติใบอนุญาตเร็วผิดปกติ", "โรงงานผลิตพลาสติก จ.ระยอง", false),
+        new("09:45", "ผู้ชนะรายเดิมซ้ำ 5 ครั้ง", "อบต.หนองแสง จ.สระแก้ว", false),
+        new("09:30", "ได้รับเรื่องร้องเรียนตามพฤติการณ์", "โรงพยาบาลแห่งหนึ่ง จ.นครศรีธรรมราช", false),
+        new("08:50", "อนุมัติสิทธิ์ที่ดินทับซ้อน", "สำนักงานที่ดิน จ.ภูเก็ต", true),
+        new("08:15", "เจ้าหน้าที่ข่มขู่เรียกรับสินบน", "ด่านตรวจทางหลวง จ.ขอนแก่น", false),
+        new("07:30", "แจ้งเตือนงบประมาณเสี่ยง", "ตรวจพบการเบิกจ่ายเกินกรอบวงเงิน", false),
+        new("06:00", "ระบบตรวจพบสัญญาณผิดปกติ", "AI วิเคราะห์พบรูปแบบการทุจริตใหม่", true),
+        new("04:30", "อัปเดตดัชนีความเสี่ยง", "ภาคกลางความเสี่ยงพุ่งสูงขึ้น 12%", false),
+        new("02:00", "สแกนข้อมูลเสร็จสิ้น", "ตรวจสอบ e-GP รอบดึกเสร็จสมบูรณ์", false),
+        new("00:00", "เริ่มการตรวจสอบอัตโนมัติ", "Batch process วิเคราะห์ข้อมูล 24 ชม.", false)
+    ];
+
+    private sealed record V5EscalationLevel(string Label, int Count);
+    private readonly IReadOnlyList<V5EscalationLevel> V5EscalationLevels =
+    [
+        new("L1 รับเรื่อง", 45),
+        new("L2 ตรวจสอบ", 32),
+        new("L3 ชี้มูล", 18),
+        new("L4 ดำเนินคดี", 12)
+    ];
+
+    private sealed record V5ResourceTeam(string Name, int UsedDays, int MaxDays);
+    private readonly IReadOnlyList<V5ResourceTeam> V5ResourceTeams =
+    [
+        new("ทีม A — สอบสวนเชิงลึก", 6, 10),
+        new("ทีม B — ลงพื้นที่ด่วน", 4, 10),
+        new("ทีม C — ประสานหน่วยงาน", 8, 10),
+        new("ทีม D — วิเคราะห์เอกสาร", 3, 10)
+    ];
+
+    // Crisis-prioritized actions: red/amber first, then green
+    private List<ActionRow> V5CrisisActions => FilteredActions
+        .OrderBy(a => a.Level == "red" ? 0 : a.Level == "amber" ? 1 : 2)
+        .ThenBy(a => a.Deadline)
+        .ToList();
+
+    // ═══════════════════════════════════════════════════════════
+    // V5: Update RenderChartsAsync — replace existing V5 block
+    // ═══════════════════════════════════════════════════════════
+    /* Inside RenderChartsAsync(), replace the existing:
+     *
+     *   else if (SelectedVersion == 5)
+     *   {
+     *       await JS.InvokeVoidAsync("initAnalyticsChart", "chartSlaV5", "doughnut", ...);
+     *   }
+     *
+     * with:
+     */
+    // else if (SelectedVersion == 5)
+    // {
+    //     // V5: 3D Crisis Map with blinking pins
+    //     await JS.InvokeVoidAsync("initV5CrisisMap", "thailandRiskMapV5");
+    //
+    //     // V5: SLA Gauge (88/100)
+    //     await JS.InvokeVoidAsync("initV5SlaGauge", "chartSlaV5", 88, 100, _isDark);
+    //
+    //     // Optional: start alert auto-scroll ticker
+    //     // await JS.InvokeVoidAsync("startV5AlertAutoScroll", ".v5-alert-stream", 8000);
+    // }

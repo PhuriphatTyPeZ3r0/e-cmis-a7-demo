@@ -1,0 +1,97 @@
+@page "/committee"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+<div class="routing-page-wrap">
+    <div class="complaints-page-header">
+        <div>
+            <div class="complaints-title">
+                <i class="bi bi-people-fill"></i>
+                <span>มติคณะกรรมการ ป.ป.ท.</span>
+            </div>
+            <div class="complaints-subtitle">
+                Executive Dashboard & Meeting Management — บริหารจัดการวันนัดประชุม และดึงวาระอัตโนมัติ
+            </div>
+        </div>
+    </div>
+
+    @* — Real-Time Executive Dashboard — *@
+    <div class="routing-stat-grid" style="margin-bottom:14px">
+        <div class="routing-card border-navy">
+            <div class="rc-title"><i class="bi bi-file-earmark-bar-graph-fill" style="color:var(--navy)"></i> เข้าที่ประชุมแล้ว</div>
+            <div class="rc-count" style="color:var(--navy)">@totalCases</div>
+            <div class="rc-desc">สำนวนคดีในรอบปี</div>
+        </div>
+        <div class="routing-card border-green">
+            <div class="rc-title"><i class="bi bi-gavel" style="color:var(--green)"></i> ชี้มูลความผิด (อาญา/วินัย)</div>
+            <div class="rc-count" style="color:var(--green)">@guiltyCases (50%)</div>
+            <div class="rc-desc">เตรียมส่งให้ พนักงานอัยการ/ต้นสังกัด</div>
+        </div>
+        <div class="routing-card border-orange">
+            <div class="rc-title"><i class="bi bi-arrow-repeat" style="color:var(--orange)"></i> สั่งให้แสวงหา/ไต่สวนเพิ่ม</div>
+            <div class="rc-count" style="color:var(--orange)">@reinvestigateCases (30%)</div>
+            <div class="rc-desc">ส่งเรื่องกลับให้นักสืบสวนรวบรวมเพิ่ม</div>
+        </div>
+        <div class="routing-card border-navy">
+             <div class="rc-title"><i class="bi bi-slash-circle" style="color:#6c757d"></i> มติยุติเรื่อง/ยกฟ้อง</div>
+            <div class="rc-count" style="color:#6c757d">@dismissedCases (20%)</div>
+            <div class="rc-desc">สิ้นสุดกระบวนการ</div>
+        </div>
+    </div>
+
+    @* — Meeting List — *@
+    <div class="complaints-table-card">
+        <div class="complaints-table-head">
+            <div>
+                <div class="complaints-table-title">ระเบียบวาระการประชุม (Meetings)</div>
+                <div class="complaints-table-subtitle">เลือกการประชุมเพื่อเข้าจัดการวาระ และส่งแจ้งเตือนนักสืบ</div>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto">
+            <table class="complaints-table">
+                <thead>
+                    <tr>
+                        <th>ครั้งที่ประชุม</th>
+                        <th>วันที่ / เวลาประชุม</th>
+                        <th>จำนวนคดีในวาระ</th>
+                        <th>สถานะการประชุม</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var meeting in CommitteeData.Meetings)
+                    {
+                        <tr>
+                            <td><span style="font-weight:700;font-size:14px">@meeting.MeetingNo</span></td>
+                            <td>
+                                <div><i class="bi bi-calendar-event"></i> @meeting.Date</div>
+                                <div style="font-size:12px;color:var(--text-muted)"><i class="bi bi-clock"></i> @meeting.Time น.</div>
+                            </td>
+                            <td><span class="category-chip cat-misconduct">@meeting.TotalCases เรื่อง</span></td>
+                            <td>
+                                <span class="complaints-status-chip @CommitteeData.MeetingStatusClass(meeting.Status)">
+                                    @CommitteeData.MeetingStatusLabel(meeting.Status)
+                                </span>
+                            </td>
+                            <td>
+                                <button class="complaints-manage-btn"
+                                    @onclick='() => Nav.NavigateTo($"/committee/meeting/{meeting.Id}")'>
+                                    ดูวาระ / แจ้งเตือน
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Mock Statistics logically based on dashboard needs
+    private int totalCases = 200;
+    private int guiltyCases = 100;
+    private int reinvestigateCases = 60;
+    private int dismissedCases = 40;
+}

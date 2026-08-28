@@ -1,0 +1,198 @@
+@page "/witness-protect"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+<div class="routing-page-wrap">
+    <div class="complaints-page-header">
+        <div>
+            <div class="complaints-title">
+                <i class="bi bi-shield-lock-fill"></i>
+                <span>ระบบคุ้มครองพยาน</span>
+            </div>
+            <div class="complaints-subtitle">
+                บริหารจัดการคำร้องขอคุ้มครองพยาน — กำกับระยะเวลา (สูงสุด 3 เดือน/รอบ, รวมไม่เกิน 6 เดือน)
+            </div>
+        </div>
+        <button class="btn-gold" @onclick='() => Nav.NavigateTo("/witness-protect/request")'>
+            <i class="bi bi-plus-lg"></i> ยื่นคำร้องใหม่
+        </button>
+    </div>
+
+    @* — Stats — *@
+    <div class="routing-stat-grid">
+        <div class="routing-card border-orange">
+            <div class="rc-title"><i class="bi bi-hourglass-split" style="color:var(--orange)"></i> รอพิจารณา</div>
+            <div class="rc-count" style="color:var(--orange)">@pending.Count()</div>
+            <div class="rc-desc">รอ ผอ. หรือเลขาธิการอนุมัติ</div>
+        </div>
+        <div class="routing-card border-navy">
+            <div class="rc-title"><i class="bi bi-shield-check" style="color:var(--navy)"></i> กำลังคุ้มครอง</div>
+            <div class="rc-count" style="color:var(--navy)">@active.Count()</div>
+            <div class="rc-desc">อนุมัติและดำเนินการอยู่</div>
+        </div>
+        <div class="routing-card border-red">
+            <div class="rc-title"><i class="bi bi-exclamation-triangle" style="color:var(--red)"></i> ใกล้หมดอายุ</div>
+            <div class="rc-count" style="color:var(--red)">@nearExpiry.Count()</div>
+            <div class="rc-desc">เหลือไม่ถึง 15 วัน</div>
+        </div>
+        <div class="routing-card border-green">
+            <div class="rc-title"><i class="bi bi-lightning-charge" style="color:var(--green)"></i> เร่งด่วน</div>
+            <div class="rc-count" style="color:var(--green)">@urgent.Count()</div>
+            <div class="rc-desc">อนุมัติโดย ผอ. กรณีวิกฤต</div>
+        </div>
+    </div>
+
+    @* — SLA Warnings — *@
+    @if (nearExpiry.Any())
+    {
+        <div class="detail-card" style="margin-bottom:14px;border-left:4px solid var(--red)">
+            <div class="detail-card-title">
+                <div class="icon-box red"><i class="bi bi-alarm-fill"></i></div>
+                แจ้งเตือน — ใกล้หมดอายุคุ้มครอง
+            </div>
+            @foreach (var c in nearExpiry)
+            {
+                <div class="deadline-item">
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <i class="bi bi-shield-exclamation" style="font-size:18px;color:var(--red)"></i>
+                        <div>
+                            <div style="font-size:13px;font-weight:700">@c.RequestNo — @c.WitnessName (@c.WitnessRole)</div>
+                            <div style="font-size:11px;color:var(--text-muted)">สำนวน @c.LinkedCaseNo | รอบที่ @c.RoundNumber</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <span class="deadline-badge urgent">
+                            เหลือ @WitnessData.RoundDaysRemaining(c) วัน (รอบ) / @WitnessData.TotalDaysRemaining(c) วัน (รวม)
+                        </span>
+                        <button class="btn-outline-navy" style="font-size:11px;padding:4px 10px"
+                            @onclick='() => Nav.NavigateTo($"/witness-protect/{c.Id}")'>ดู</button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    @* — Table — *@
+    <div class="complaints-table-card">
+        <div class="complaints-table-head">
+            <div>
+                <div class="complaints-table-title">คำร้องคุ้มครองพยานทั้งหมด</div>
+                <div class="complaints-table-subtitle">รายการทั้งหมดในระบบ พร้อมสถานะและ SLA</div>
+            </div>
+            <div class="complaints-filter-group">
+                <select class="complaints-status-select" @bind="statusFilter">
+                    <option value="">ทุกสถานะ</option>
+                    <option value="pending">รอเสนอ</option>
+                    <option value="director_review">รอ ผอ.</option>
+                    <option value="secretary_review">รอเลขาธิการ</option>
+                    <option value="approved">อนุมัติ</option>
+                    <option value="urgent_approved">เร่งด่วน</option>
+                    <option value="rejected">ไม่อนุมัติ</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto">
+            <table class="complaints-table">
+                <thead>
+                    <tr>
+                        <th>เลขคำร้อง</th>
+                        <th>สำนวนเชื่อมโยง</th>
+                        <th>พยาน</th>
+                        <th>ประเภท</th>
+                        <th>SLA รอบ</th>
+                        <th>SLA รวม</th>
+                        <th>สถานะ</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in filtered)
+                    {
+                        <tr>
+                            <td><span class="complaints-case-no">@c.RequestNo</span></td>
+                            <td style="font-size:12px;color:var(--text-muted)">@c.LinkedCaseNo</td>
+                            <td>
+                                <div style="font-size:13px;font-weight:600">@c.WitnessName</div>
+                                <div style="font-size:11px;color:var(--text-muted)">@c.WitnessRole</div>
+                            </td>
+                            <td style="font-size:12px">
+                                @if (c.IsUrgent)
+                                {
+                                    <span class="deadline-badge urgent"><i class="bi bi-lightning-charge-fill"></i> เร่งด่วน</span>
+                                }
+                                else
+                                {
+                                    <span>@c.ProtectionType</span>
+                                }
+                            </td>
+                            <td style="min-width:110px">
+                                @if (c.Status is "approved" or "urgent_approved")
+                                {
+                                    <div class="sla-bar-wrap">
+                                        <div class="sla-bar">
+                                            <div class="sla-fill @WitnessData.SlaRoundClass(c)"
+                                                style="width:@((int)WitnessData.SlaRoundPercent(c))%"></div>
+                                        </div>
+                                        <span class="sla-text @WitnessData.SlaRoundClass(c)">
+                                            @c.CurrentRoundDays/@c.MaxRoundDays วัน
+                                        </span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="font-size:11px;color:var(--text-muted)">—</span>
+                                }
+                            </td>
+                            <td style="min-width:110px">
+                                @if (c.ProtectionDays > 0)
+                                {
+                                    <div class="sla-bar-wrap">
+                                        <div class="sla-bar">
+                                            <div class="sla-fill @(WitnessData.TotalDaysRemaining(c) <= 15 ? "sla-warning" : "sla-safe")"
+                                                style="width:@((int)WitnessData.SlaTotalPercent(c))%"></div>
+                                        </div>
+                                        <span class="sla-text @(WitnessData.TotalDaysRemaining(c) <= 15 ? "sla-warning" : "sla-safe")">
+                                            @c.ProtectionDays/@c.MaxTotalDays วัน
+                                        </span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="font-size:11px;color:var(--text-muted)">—</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="complaints-status-chip @WitnessData.StatusClass(c.Status)">
+                                    @WitnessData.StatusLabel(c.Status)
+                                </span>
+                            </td>
+                            <td>
+                                <button class="complaints-manage-btn"
+                                    @onclick='() => Nav.NavigateTo($"/witness-protect/{c.Id}")'>ดู</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string statusFilter = string.Empty;
+
+    private IEnumerable<WitnessCase> pending =>
+        WitnessData.Cases.Where(c => c.Status is "pending" or "director_review" or "secretary_review");
+    private IEnumerable<WitnessCase> active =>
+        WitnessData.Cases.Where(c => c.Status is "approved" or "urgent_approved");
+    private IEnumerable<WitnessCase> nearExpiry =>
+        active.Where(c => WitnessData.RoundDaysRemaining(c) <= 15 || WitnessData.TotalDaysRemaining(c) <= 30);
+    private IEnumerable<WitnessCase> urgent =>
+        WitnessData.Cases.Where(c => c.IsUrgent);
+
+    private IEnumerable<WitnessCase> filtered =>
+        string.IsNullOrEmpty(statusFilter)
+            ? WitnessData.Cases
+            : WitnessData.Cases.Where(c => c.Status == statusFilter);
+}

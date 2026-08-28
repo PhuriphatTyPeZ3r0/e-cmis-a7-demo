@@ -1,0 +1,320 @@
+<!-- VIEW 10.2: DISCLOSURE REQUESTS & APPEALS -->
+<div id="view-10-2-disclosure" class="app-view">
+    <!-- Nav Sub-tabs -->
+    <div class="sub-tabs-container">
+        <button class="sub-tab-btn active" id="tab-disclosure-requests" onclick="toggleDisclosureSubTab('requests')">คำร้องขอข้อมูลข่าวสาร (86)</button>
+        <button class="sub-tab-btn" id="tab-disclosure-appeals" onclick="toggleDisclosureSubTab('appeals')">คำอุทธรณ์คำสั่งไม่เปิดเผย (14)</button>
+    </div>
+
+    <!-- ROW 1: KPI Cards -->
+    <div class="row g-3 mb-4" id="kpi-cards-102">
+        <!-- Dynamic KPI cards render here -->
+    </div>
+
+    <!-- ROW 2: Filter Form (single row, auto-filter on change) -->
+    <div class="filter-container mb-4">
+        <div class="filter-row d-flex flex-wrap align-items-center gap-2">
+            <div class="position-relative filter-search" style="flex: 2 1 220px;">
+                <input type="text" class="form-control pe-5" id="filter-102-search" placeholder="เลขที่อุทธรณ์, เลขคำร้อง, ชื่อบุคคล…" oninput="applyFilters102()">
+                <i class="bi bi-search position-absolute" style="right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px;"></i>
+            </div>
+            <div style="flex: 1 1 160px;">
+                <select class="form-select" id="filter-102-status" onchange="applyFilters102()">
+                    <option value="">สถานะ: ทั้งหมด</option>
+                    <option value="รอเสนอ">รอเสนอผู้บริหาร</option>
+                    <option value="รอบอร์ด">รอบอร์ดพิจารณา</option>
+                    <option value="แจ้งผลแล้ว">แจ้งผลอุทธรณ์แล้ว</option>
+                    <option value="เกินกำหนด">เกินกำหนดพิจารณา</option>
+                </select>
+            </div>
+            <div style="flex: 1 1 180px;">
+                <select class="form-select" id="filter-102-result" onchange="applyFilters102()">
+                    <option value="">ผลการพิจารณา: ทั้งหมด</option>
+                    <option value="เปิดเผย">เปิดเผย / ยอมรับอุทธรณ์</option>
+                    <option value="ไม่เปิดเผย">ไม่เปิดเผย / ยกอุทธรณ์</option>
+                    <option value="ยืนตามสั่งเดิม">ยืนตามสั่งเดิม</option>
+                </select>
+            </div>
+            <div class="position-relative" style="flex: 0 0 230px;">
+                <input type="text" id="filter-102-date-range" class="form-control pe-5" style="background-color: #fff; cursor: pointer;" readonly>
+                <i class="bi bi-calendar3 position-absolute" style="right: 14px; top: 50%; transform: translateY(-50%); color: rgba(26, 47, 107, 0.4); font-size: 13px; pointer-events: none;"></i>
+            </div>
+            <button class="btn btn-grad-gold ms-auto" data-bs-toggle="modal" data-bs-target="#newAppealModal" id="btn-add-102">+ รับเรื่องอุทธรณ์ใหม่</button>
+        </div>
+    </div>
+
+    <!-- ROW 3: Data Table -->
+    <div class="table-container pb-3">
+        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+            <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle" style="width: 8px; height: 8px; background: var(--gold);"></div>
+                <span class="fw-bold" style="font-size: 14px; color: var(--primary-dark);" id="table-title-102">รายการคำอุทธรณ์</span>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-muted text-value fw-normal" style="font-size: 11px;">ไฟล์แนบทั้งหมดจัดเก็บภายใต้มาตรการความปลอดภัยและเก็บ Audit Trail</span>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-navy py-1 px-3 dropdown-toggle" style="font-size: 11px; height: 30px;" data-bs-toggle="dropdown">
+                        <i class="bi bi-download"></i> Export
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow" style="font-size:12px;">
+                        <li><a class="dropdown-item" href="#" onclick="exportData('102','excel'); return false;"><i class="bi bi-file-earmark-excel text-success me-2"></i>Excel (.xlsx)</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportData('102','word'); return false;"><i class="bi bi-file-earmark-word text-primary me-2"></i>Word (.docx)</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportData('102','pdf'); return false;"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>PDF (พิมพ์)</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table custom-table mb-0" id="table-102">
+                <thead id="disclosure-table-head">
+                    <!-- Dynamic Headers depending on Tab -->
+                </thead>
+                <tbody id="disclosure-table-body">
+                    <!-- Dynamic rows render here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- VIEW 10.2: DISCLOSURE DETAIL -->
+<div id="view-10-2-detail" class="app-view">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <button class="btn btn-outline-navy py-1" onclick="switchView('10.2')"><i class="bi bi-chevron-left"></i> ย้อนกลับ</button>
+        <div class="d-flex gap-2">
+            <div class="dropdown">
+                <button class="btn btn-outline-navy btn-sm text-value dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-download"></i> Export
+                </button>
+                <ul class="dropdown-menu shadow" style="font-size:12px;">
+                    <li><a class="dropdown-item" href="#" onclick="exportDisclosureDetailWord(); return false;"><i class="bi bi-file-earmark-word text-primary me-2"></i>Word (.docx)</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="exportDisclosureDetailPdf(); return false;"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>PDF (พิมพ์)</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="kpi-card mb-4 p-4 border border-primary" style="background: rgba(26, 47, 107, 0.02);">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h4 class="fw-bold mb-2 text-primary" id="detail-disc-no">สขร. 037/2569</h4>
+                <div class="d-flex gap-2 flex-wrap">
+                    <span class="status-badge status-teal" id="detail-disc-type">คำร้องขอข้อมูล</span>
+                    <span class="status-badge status-orange" id="detail-disc-status">รอบอร์ดพิจารณา</span>
+                    <span class="status-badge status-red" id="detail-disc-remaining">คงเหลือ 12 วัน</span>
+                </div>
+                <div class="mt-3 text-muted" style="font-size:12.5px;" id="detail-disc-parties">
+                    ผู้ร้อง/อุทธรณ์: นายวิรัช อุดมสิน · หน่วยงานเจ้าของข้อมูล: ปปท. เขต 7
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Stepper -->
+    <div class="table-container p-4 mb-4">
+        <h6 class="fw-bold text-primary mb-3">ขั้นตอนดำเนินการพิจารณาเผยแพร่ข้อมูลข่าวสาร</h6>
+        <div class="progress-stepper">
+            <div class="progress-line-fill" id="detail-disc-stepper-fill" style="width: 50%;"></div>
+            <div class="step-item" id="disc-step-1">
+                <div class="step-circle">1</div>
+                <div class="step-label">รับเรื่อง</div>
+            </div>
+            <div class="step-item" id="disc-step-2">
+                <div class="step-circle">2</div>
+                <div class="step-label">ตรวจสอบเบื้องต้น</div>
+            </div>
+            <div class="step-item" id="disc-step-3">
+                <div class="step-circle">3</div>
+                <div class="step-label">เสนอความเห็นนิติกร</div>
+            </div>
+            <div class="step-item" id="disc-step-4">
+                <div class="step-circle">4</div>
+                <div class="step-label">คณะอนุกรรมการฯ</div>
+            </div>
+            <div class="step-item" id="disc-step-5">
+                <div class="step-circle">5</div>
+                <div class="step-label">แจ้งผล/ปิดเรื่อง</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Left Column: Details -->
+        <div class="col-lg-8">
+            <!-- Metadata Card -->
+            <div class="table-container p-4 mb-4">
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-file-earmark-text"></i> ข้อมูลเรื่องร้องเรียน/คำอุทธรณ์ (LAW001.02)</h6>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="text-muted" style="font-size:11px;">ประเภทคำร้อง</div>
+                        <div class="fw-bold text-value text-dark" id="meta-disc-type">คำร้องขอข้อมูลข่าวสาร</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted" style="font-size:11px;">เลขสำนวนคำร้อง/อุทธรณ์</div>
+                        <div class="fw-bold text-value text-dark" id="meta-disc-no">สขร. 037/2569</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted" style="font-size:11px;">ผู้ยื่นคำร้อง/ผู้อุทธรณ์</div>
+                        <div class="fw-bold text-value text-dark" id="meta-disc-name">นายวิรัช อุดมสิน</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted" style="font-size:11px;">วันที่รับเรื่อง</div>
+                        <div class="fw-bold text-value text-dark" id="meta-disc-received">02/06/2026</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted" style="font-size:11px;">ครบกำหนดพิจารณา</div>
+                        <div class="fw-bold text-value text-danger" id="meta-disc-due">17/07/2026</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted" style="font-size:11px;">หน่วยงานเจ้าของเรื่อง</div>
+                        <div class="fw-bold text-value text-dark" id="meta-disc-division">ปปท. เขต 7</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted" style="font-size:11px;">ผลพิจารณาคณะอนุกรรมการกลั่นกรองฯ (10.2.3)</div>
+                        <div class="fw-bold text-value text-dark" id="meta-disc-subcommittee">—</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted" style="font-size:11px;">ผลพิจารณาเลขาธิการ / บอร์ด ป.ป.ท. (10.2.5)</div>
+                        <div class="fw-bold text-value text-dark" id="meta-disc-decision">เปิดเผย</div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="text-muted" style="font-size:11px;">รายละเอียดเอกสารที่ร้องขอ</div>
+                        <div class="fw-bold text-value text-dark">รายงานการสอบข้อเท็จจริงเบื้องต้นกรณีทุจริตจัดซื้อจัดจ้างโครงการก่อสร้าง</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents Card -->
+            <div class="table-container p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-primary mb-0"><i class="bi bi-paperclip"></i> รายการไฟล์แนบและพยานหลักฐาน (Audit Trail Enabled)</h6>
+                    <button class="btn btn-outline-navy btn-sm" onclick="alert('อัปโหลดไฟล์เสร็จสิ้น (จำลอง)')"><i class="bi bi-plus-lg"></i> แนบไฟล์เพิ่ม</button>
+                </div>
+                <div class="list-group" id="detail-disc-docs-list">
+                    <!-- Dynamic Document list will render here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Deadline Alert -->
+        <div class="col-lg-4">
+            <div class="table-container p-4">
+                <h6 class="fw-bold text-danger mb-3"><i class="bi bi-alarm"></i> กำหนดเวลา &amp; การแจ้งเตือน</h6>
+                <div class="d-flex align-items-baseline mb-2">
+                    <h1 class="fw-bold text-danger mb-0 me-2" id="disc-alarm-days">—</h1>
+                    <span class="text-muted" style="font-size: 12.5px;">วัน ก่อนครบกำหนดพิจารณา</span>
+                </div>
+                <div class="text-muted mb-3" style="font-size:12px;">กำหนดวัน: <span class="fw-bold text-dark" id="disc-alarm-date">—</span></div>
+                <div class="progress mb-3" style="height: 8px;">
+                    <div class="progress-bar bg-warning" id="disc-alarm-bar" role="progressbar" style="width: 50%;" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <p class="text-muted mb-0" style="font-size:11px; line-height: 1.5;"><i class="bi bi-info-circle"></i> ระบบจะส่งการแจ้งเตือนอัตโนมัติเมื่อใกล้ครบกำหนดพิจารณา 30 / 15 / 7 วัน</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Internal Notification Block (TOR 10.2.6) -->
+    <div class="table-container p-4 my-4 border-warning">
+        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-envelope-check"></i> แจ้งผลการพิจารณาให้หน่วยงานภายในทราบ (TOR 10.2.6)</h6>
+        <div class="row g-3 align-items-center mb-3">
+            <div class="col-md-8">
+                <div class="d-flex gap-3 flex-wrap">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="disc-notif-box-1" checked>
+                        <label class="form-check-label text-muted" style="font-size:12.5px;" for="disc-notif-box-1">หน่วยงานเจ้าของข้อมูล</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="disc-notif-box-2" checked>
+                        <label class="form-check-label text-muted" style="font-size:12.5px;" for="disc-notif-box-2">สำนักเลขาธิการ</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="disc-notif-box-3">
+                        <label class="form-check-label text-muted" style="font-size:12.5px;" for="disc-notif-box-3">กองกฎหมาย</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" id="disc-notif-template" style="height:36px; font-size:12px;">
+                    <option>Template: หนังสือแจ้งผลการพิจารณาเปิดเผยข้อมูลข่าวสาร</option>
+                    <option>Template: หนังสือแจ้งผลคำวินิจฉัยอุทธรณ์</option>
+                </select>
+            </div>
+        </div>
+        <div class="d-flex justify-content-end">
+            <button class="btn btn-grad-navy px-4" onclick="sendInternalNotification102()"><i class="bi bi-send"></i> ส่งแจ้งผล + บันทึกหลักฐาน</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- MODAL 4: NEW DISCLOSURE APPEAL REGISTRATION (10.2) -->
+<!-- ============================================== -->
+<div class="modal fade" id="newAppealModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-navy text-white" style="background: var(--primary-dark);">
+                <h6 class="modal-title fw-bold text-white"><i class="bi bi-file-earmark-medical"></i> ลงทะเบียนเรื่องคำร้อง/อุทธรณ์ใหม่ (พ.ร.บ. ข้อมูลข่าวสารฯ)</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="new-appeal-form" onsubmit="submitNewAppeal(event)">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted" style="font-size:12px;">เลขที่รับเรื่อง / อุทธรณ์ <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="form-102-no" placeholder="เช่น สขร. 040/2569" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted" style="font-size:12px;">ประเภทคำขอ <span class="text-danger">*</span></label>
+                            <select class="form-select" id="form-102-type" required>
+                                <option value="คำร้องขอข้อมูล">คำร้องขอข้อมูลข่าวสาร (สขร.)</option>
+                                <option value="คำอุทธรณ์">คำอุทธรณ์คำสั่งไม่เปิดเผย</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted" style="font-size:12px;">ชื่อผู้ยื่นคำร้อง / ผู้อุทธรณ์ <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="form-102-name" placeholder="ชื่อ-นามสกุล บุคคลหรือนิติบุคคล" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted" style="font-size:12px;">หน่วยงานที่เป็นเจ้าของข้อมูล <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="form-102-division" placeholder="เช่น กองคดี, ปปท. เขต 7" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-muted" style="font-size:12px;">รายละเอียดคำขอหรือหัวข้อเอกสารที่ร้องขอ <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="form-102-detail" rows="3" placeholder="ระบุรายละเอียดข้อมูลที่ร้องขอเปิดเผย" required></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted" style="font-size:12px;">นิติกรผู้รับผิดชอบ <span class="text-danger">*</span></label>
+                            <select class="form-select" id="form-102-responsible" required>
+                                <option value="นางสาว อรวรรณ ทูลมณี">นางสาว อรวรรณ ทูลมณี</option>
+                                <option value="นายอานนท์ ชนประชา">นายอานนท์ ชนประชา</option>
+                                <option value="นายปิติคุณ อู่ตะเภา">นายปิติคุณ อู่ตะเภา</option>
+                                <option value="นายชยุต ภควัตทิพากร">นายชยุต ภควัตทิพากร</option>
+                                <option value="นายณัฐพล บัวทุม">นายณัฐพล บัวทุม</option>
+                                <option value="นางสาวนิติพร มีไพฑูรย์">นางสาวนิติพร มีไพฑูรย์</option>
+                                <option value="นางสาววันวิสาข์ ไชยพันธ์">นางสาววันวิสาข์ ไชยพันธ์</option>
+                                <option value="นางสาวรัตนาภรณ์ เนตรหลง">นางสาวรัตนาภรณ์ เนตรหลง</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted" style="font-size:12px;">วันที่ได้รับคำร้อง <span class="text-danger">*</span></label>
+                            <div class="position-relative">
+                                <input type="text" class="form-control pe-5" id="form-102-received" placeholder="เลือกวันที่รับเรื่อง" style="background-color: #fff; cursor: pointer;" readonly required>
+                                <i class="bi bi-calendar3 position-absolute" style="right: 14px; top: 50%; transform: translateY(-50%); color: rgba(26, 47, 107, 0.4); font-size: 13px; pointer-events: none;"></i>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted" style="font-size:12px;">ระยะเวลาดำเนินการ (วัน) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="form-102-duration" value="30" min="1" max="365" required>
+                            <div class="text-muted" style="font-size:10.5px; margin-top:4px;">ครบกำหนดพิจารณา = วันที่รับเรื่อง + ระยะเวลาดำเนินการ</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer px-0 pb-0">
+                        <button type="button" class="btn btn-outline-navy" data-bs-dismiss="modal">ยกเลิก</button>
+                        <button type="submit" class="btn btn-grad-navy">บันทึกข้อมูล</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

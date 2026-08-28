@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E-CMIS · ก14 จัดการระบบ (G14 Admin Center — Light)</title>
+<style>
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:#edf2f7;color:#172943;font-family:"Kanit","Noto Sans Thai",Tahoma,sans-serif;font-size:13px;line-height:1.55}
+a{color:inherit}
+:root{--navy-deep:#0F1E4A;--navy:#10284b;--navy-mid:#1d3975;--gold:#c6a13d;--gold-light:#e4be52;--line:#d6e0ea;--muted:#62738a;--ok:#24714a;--warn:#8a6111;--bad:#ad3f3d;--soft:#f1f5f9}
+.app{display:grid;grid-template-columns:268px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;overflow:hidden;background:var(--navy-deep);color:#e9eff8;box-shadow:4px 0 18px rgba(13,27,62,.22)}
+.brand{display:flex;gap:12px;align-items:center;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.09)}
+.brand .logo{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#f4d56d;color:#0F1E4A;font-weight:800;border:2px solid #c99a2e;flex:0 0 44px}
+.brand strong{display:block;color:#fff;font-size:15px}
+.brand small{display:block;color:#e4be52;font-size:10px;letter-spacing:.06em}
+.nav{flex:1;overflow:auto;padding:10px 10px 14px}
+.nav-group{font-size:10px;letter-spacing:.06em;color:#91a2c3;padding:10px 8px 4px}
+.nav-link{width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid transparent;border-radius:8px;background:transparent;color:#cad5e9;font-size:12.5px;text-decoration:none;cursor:pointer;text-align:left}
+.nav-link i{width:16px;text-align:center;font-size:12px}
+.nav-link:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-link.active{background:rgba(201,154,46,.15);border-color:rgba(201,154,46,.35);color:#f0c75a;font-weight:700}
+.sub-nav{margin:2px 0 6px 18px;padding-left:10px;border-left:1px dashed rgba(255,255,255,.12);display:flex;flex-direction:column;gap:2px}
+.sub-link{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;color:#a9bddf;font-size:11.5px;text-decoration:none}
+.sub-link:hover{background:rgba(255,255,255,.06);color:#fff}
+.sub-link.active{background:rgba(201,154,46,.16);color:#f0c75a;font-weight:700}
+.side-foot{padding:10px 12px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:10px;align-items:center}
+.side-foot .av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:#1d3975;color:#fff;font-weight:800;font-size:12px}
+.top{height:52px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 14px;gap:10px;position:sticky;top:0;z-index:5}
+.badge{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
+.badge-ok{background:#d1e7dd;color:#0f5132}.badge-warn{background:#fff3cd;color:#664d03}.badge-bad{background:#f8d7da;color:#842029}.badge-info{background:#cfe2ff;color:#084298}.badge-muted{background:#e2e3e5;color:#41464b}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer}
+.btn-primary{background:var(--navy-deep);color:#fff;border-color:var(--navy-deep)}
+.btn-gold{background:var(--gold);color:#0F1E4A;border-color:var(--gold);font-weight:700}
+.content{padding:14px;min-width:0}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin:10px 0;box-shadow:0 2px 10px rgba(16,40,75,.04)}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi strong{font-size:22px;color:var(--navy-deep)}.kpi small{color:var(--muted)}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:7px 8px;border-bottom:1px solid #eef2f7;text-align:left;white-space:nowrap}
+th{background:#f8fafc;color:var(--muted);font-weight:700}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.toolbar input,.toolbar select{border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-height:32px;font-size:12px}
+.hero{background:linear-gradient(135deg,var(--navy-deep) 0%,#10284b 55%,#1e3575 100%);border-radius:16px;padding:20px 22px;color:#fff;position:relative;overflow:hidden;margin-bottom:14px}
+.hero::after{content:"";position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(201,154,46,.08)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.tabs button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;cursor:pointer}
+.tabs button.active{background:var(--navy-deep);color:#fff;border-color:var(--navy-deep)}
+.view{display:none}.view.active{display:block}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+@media(max-width:900px){.app{grid-template-columns:1fr}.side{position:relative;height:auto}.kpi-row{grid-template-columns:1fr 1fr}}
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+<div class="app">
+<aside class="side">
+  <div class="brand">
+    <div class="logo">ป.ป.ท.</div>
+    <div><strong>E-CMIS</strong><small>COMPLAINT MANAGEMENT · ก14</small><small style="color:#91a2c3">จัดการระบบ · Light 6 หน้า</small></div>
+  </div>
+  <nav class="nav">
+    <a class="nav-link" href="../index.html"><i class="fa-solid fa-house"></i><span>หน้าแรก</span></a>
+    <a class="nav-link" href="../intake-investigation/staff-workflow.html"><i class="fa-solid fa-inbox"></i><span>รับเรื่องร้องเรียน</span></a>
+    <a class="nav-link" href="../board-resolution/inbox.html"><i class="fa-solid fa-magnifying-glass"></i><span>แสวงหาข้อเท็จจริง</span></a>
+    <a class="nav-link" href="../witness-protection/index.html"><i class="fa-solid fa-shield-halved"></i><span>คุ้มครองพยาน</span></a>
+    <a class="nav-link" href="../arrest-warrant/index.html"><i class="fa-solid fa-gavel"></i><span>การดำเนินการตามหมายจับ</span></a>
+    <a class="nav-link" href="../legal-case/index.html"><i class="fa-solid fa-scale-balanced"></i><span>งานกฎหมายและคดีศาล</span></a>
+    <div class="nav-group">วิเคราะห์/รายงาน [12]</div>
+    <a class="nav-link" href="../analytics/index.html"><i class="fa-solid fa-chart-line"></i><span>วิเคราะห์/รายงาน</span><i class="fa-solid fa-chevron-right" style="margin-left:auto;font-size:10px;opacity:.6"></i></a>
+    <div class="sub-nav">
+      <a class="sub-link" href="../analytics/index.html#overview"><span>ภาพรวม War Room</span></a>
+      <a class="sub-link" href="../analytics/index.html#complaint"><span>สถิติรับเรื่องร้องเรียน</span></a>
+      <a class="sub-link" href="../analytics/index.html#person"><span>ตรวจประวัติบุคคล</span></a>
+      <a class="sub-link" href="../analytics/index.html#inquiry"><span>ไต่สวนเบื้องต้น</span></a>
+      <a class="sub-link" href="../analytics/index.html#legal"><span>กฎหมายและคดี</span></a>
+      <a class="sub-link" href="../analytics/index.html#warrant-witness"><span>หมายจับ+พยาน</span></a>
+      <a class="sub-link" href="../analytics/index.html#risk"><span>ประเมินความเสี่ยง</span></a>
+      <a class="sub-link" href="../analytics/index.html#policy-risk"><span>เสี่ยงเชิงนโยบาย</span></a>
+    </div>
+    <div class="nav-group">จัดการระบบ (G14)</div>
+    <button class="nav-link active" data-g14="dashboard" onclick="location.hash='#dashboard'"><i class="fa-solid fa-gauge-high"></i><span>ภาพรวมระบบ</span></button>
+    <button class="nav-link" data-g14="users" onclick="location.hash='#users'"><i class="fa-solid fa-users"></i><span>ผู้ใช้งาน & ลงทะเบียน</span><span class="badge badge-warn" style="margin-left:auto">7</span></button>
+    <button class="nav-link" data-g14="approvals" onclick="location.hash='#approvals'"><i class="fa-solid fa-clipboard-check"></i><span>อนุมัติคำขอ</span><span class="badge badge-warn" style="margin-left:auto">11</span></button>
+    <button class="nav-link" data-g14="master" onclick="location.hash='#master'"><i class="fa-solid fa-database"></i><span>องค์กร & ตำแหน่ง</span></button>
+    <button class="nav-link" data-g14="phones" onclick="location.hash='#phonebook'"><i class="fa-solid fa-address-book"></i><span>สมุดโทรศัพท์</span></button>
+    <button class="nav-link" data-g14="menus" onclick="location.hash='#menus'"><i class="fa-solid fa-list"></i><span>เมนูระบบ</span></button>
+    <button class="nav-link" data-g14="logs" onclick="location.hash='#logs'"><i class="fa-solid fa-clipboard-list"></i><span>บันทึกเหตุการณ์</span></button>
+  </nav>
+  <div class="side-foot">
+    <div class="av">ส</div>
+    <div style="flex:1"><strong style="color:#fff;font-size:12px">Super Admin</strong><small style="display:block;color:#bac7dd;font-size:10px">ส่วนกลาง · ดูได้ทุกหน่วย</small></div>
+    <button class="btn" style="padding:4px 8px;font-size:11px" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</button>
+  </div>
+</aside>
+<main style="min-width:0">
+  <div class="top">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge badge-info">MOCK</span><strong id="ttl">ภาพรวมระบบ</strong><small id="sub" style="color:var(--muted)">G14 · 6 หน้า · ข้อมูลจำลอง file:// ได้</small><span class="badge badge-ok" id="coverBadge">FR144</span></div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <select id="scopePick" style="border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:12px"><option>Super Admin (ทุกหน่วย)</option><option>Org Admin เขต 1</option><option>Org Admin เขต 2</option></select>
+      <button class="btn" onclick="doExport()"><i class="fa-solid fa-file-excel"></i> Export</button>
+      <button class="btn btn-primary" onclick="toast('รีเฟรชข้อมูลจำลอง')"><i class="fa-solid fa-rotate"></i> รีเฟรช</button>
+    </div>
+  </div>
+  <div class="content">
+
+<!-- ============ DASHBOARD ============ -->
+<section id="view-dashboard" class="view active">
+  <div class="hero">
+    <div style="position:relative;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+      <div style="display:flex;gap:14px;align-items:center">
+        <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:grid;place-items:center;color:var(--navy-deep);font-size:20px"><i class="fa-solid fa-gauge-high"></i></div>
+        <div><div style="font-size:18px;font-weight:800">ภาพรวมระบบ (SuperAdminDashboard)</div><div style="font-size:12px;opacity:.6">สรุปผู้ใช้งาน · งานรออนุมัติ · ทางลัดจัดการ · จาก SuperAdminDashboard.razor</div></div>
+      </div>
+      <div style="display:flex;gap:8px"><span class="badge badge-warn">รออนุมัติ 11</span><span class="badge badge-info">ผู้ใช้ 342</span></div>
+    </div>
+  </div>
+  <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.05em;margin:6px 0 6px 4px">ผู้ใช้งาน</div>
+  <div class="kpi-row">
+    <div class="kpi"><small>ผู้ใช้ทั้งหมด</small><br><strong>342</strong> <small>บัญชี</small><div style="font-size:11px;color:var(--muted);margin-top:4px"><span class="status-dot" style="background:#0F1E4A"></span> Index.razor · TotalUsers</div></div>
+    <div class="kpi"><small>ใช้งานอยู่</small><br><strong style="color:var(--ok)">298</strong> <small>active</small><div style="font-size:11px;color:var(--muted)">active · 87%</div></div>
+    <div class="kpi"><small>ถูกล็อก / ระงับ</small><br><strong style="color:#d97706">18</strong> / <strong style="color:#64748b">26</strong><div style="font-size:11px;color:var(--muted)">locked / inactive</div></div>
+    <div class="kpi"><small>บทบาทที่ใช้งาน</small><br><strong style="color:#7c3aed">6</strong> <small>roles</small><div style="font-size:11px;color:var(--muted)">super_admin / org_admin / officer / investigator / citizen …</div></div>
+  </div>
+  <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.05em;margin:10px 0 6px 4px">งานรอดำเนินการ</div>
+  <div class="kpi-row">
+    <div class="kpi" onclick="location.hash='#users'" style="cursor:pointer;border-color:#f59e0b"><small>อนุมัติลงทะเบียน</small><br><strong style="color:#d97706">7</strong> <small>รายการ</small><div style="font-size:11px;color:var(--muted)">Registrations.razor → #users</div></div>
+    <div class="kpi" onclick="location.hash='#approvals'" style="cursor:pointer;border-color:#2563eb"><small>คำขอเข้าระบบงาน</small><br><strong style="color:#2563eb">4</strong> <small>system-access</small></div>
+    <div class="kpi" onclick="location.hash='#approvals'" style="cursor:pointer;border-color:#0e7c7b"><small>คำขอแก้ไขหน่วยงาน</small><br><strong style="color:#0e7c7b">3</strong> <small>org-change</small></div>
+    <div class="kpi" onclick="location.hash='#approvals'" style="cursor:pointer;border-color:#9333ea"><small>คำขอเปลี่ยนสิทธิ์</small><br><strong style="color:#9333ea">2</strong> <small>role-change</small></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><strong><i class="fa-solid fa-bolt"></i> ทางลัด</strong></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="location.hash='#users'"><i class="fa-solid fa-users"></i> จัดการผู้ใช้งาน</button>
+      <button class="btn" onclick="location.hash='#approvals'"><i class="fa-solid fa-clipboard-check"></i> อนุมัติคำขอ</button>
+      <button class="btn" onclick="location.hash='#master'"><i class="fa-solid fa-building"></i> จัดการองค์กร</button>
+      <button class="btn" onclick="location.hash='#menus'"><i class="fa-solid fa-list"></i> เมนูระบบ</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ USERS + REGISTRATIONS ============ -->
+<section id="view-users" class="view">
+  <div class="hero">
+    <div style="display:flex;gap:14px;align-items:center;position:relative">
+      <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:grid;place-items:center;color:var(--navy-deep)"><i class="fa-solid fa-users"></i></div>
+      <div><div style="font-size:17px;font-weight:800">จัดการผู้ใช้งาน · คำขอลงทะเบียน</div><div style="font-size:12px;opacity:.6">Index.razor + Registrations.razor · ค้นหา · กรองสถานะ/บทบาท · อนุมัติ/ปฏิเสธ</div></div>
+      <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap"><span class="badge badge-warn">รออนุมัติ 7</span><span class="badge" style="background:rgba(255,255,255,.14);color:#fff">ผู้ใช้ 342</span></div>
+    </div>
+  </div>
+  <div class="tabs" id="usersTabs">
+    <button class="active" data-utab="list" onclick="setUTab('list')"><i class="fa-solid fa-table"></i> รายชื่อผู้ใช้ (342)</button>
+    <button data-utab="pending" onclick="setUTab('pending')"><i class="fa-solid fa-clock"></i> รออนุมัติ (7)</button>
+    <button data-utab="approved" onclick="setUTab('approved')"><i class="fa-solid fa-circle-check"></i> อนุมัติแล้ว</button>
+    <button data-utab="rejected" onclick="setUTab('rejected')"><i class="fa-solid fa-circle-xmark"></i> ปฏิเสธ</button>
+  </div>
+  <div class="toolbar">
+    <div style="position:relative;flex:1;min-width:220px"><i class="fa-solid fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#8A96A8"></i><input id="userSearch" placeholder="ค้นหาชื่อ, username, email, หน่วยงาน..." style="width:100%;padding-left:32px" oninput="renderUsers()"></div>
+    <select id="userStatus" onchange="renderUsers()"><option value="">ทุกสถานะ</option><option value="active">ใช้งานอยู่</option><option value="locked">ถูกล็อก</option><option value="inactive">ระงับ</option><option value="pending">รออนุมัติ</option></select>
+    <select id="userRole" onchange="renderUsers()"><option value="">ทุกบทบาท</option><option value="super_admin">Super Admin</option><option value="org_admin">Org Admin</option><option value="officer">Officer</option><option value="investigator">Investigator</option><option value="citizen">Citizen</option></select>
+    <button class="btn" onclick="toast('เพิ่มผู้ใช้ — ตัวอย่างเท่านั้น')"><i class="fa-solid fa-plus"></i> เพิ่มผู้ใช้</button>
+  </div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi" style="padding:10px"><small>ทั้งหมด</small><br><strong id="kpiUsersTotal">342</strong></div>
+    <div class="kpi" style="padding:10px"><small>ใช้งานอยู่</small><br><strong style="color:var(--ok)" id="kpiActive">298</strong></div>
+    <div class="kpi" style="padding:10px"><small>ถูกล็อก</small><br><strong style="color:#d97706" id="kpiLocked">18</strong></div>
+    <div class="kpi" style="padding:10px"><small>ระงับ</small><br><strong style="color:#64748b" id="kpiInactive">26</strong></div>
+  </div>
+  <div class="table-wrap"><table><thead><tr><th>ผู้ใช้</th><th>หน่วยงาน</th><th>บทบาท</th><th>สถานะ</th><th>อัปเดตล่าสุด</th><th>จัดการ</th></tr></thead><tbody id="usersBody"></tbody></table></div>
+  <div style="font-size:11px;color:var(--muted);margin-top:6px">แสดง <b id="usersCount">0</b> รายการ · จาก Index.razor (Users.Count + AccountStatusPresentation) + Registrations.razor (Pending/Approved/Rejected)</div>
+</section>
+
+<!-- ============ APPROVALS ============ -->
+<section id="view-approvals" class="view">
+  <div class="hero">
+    <div style="display:flex;gap:14px;align-items:center;position:relative">
+      <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:grid;place-items:center;color:var(--navy-deep)"><i class="fa-solid fa-clipboard-check"></i></div>
+      <div><div style="font-size:17px;font-weight:800">อนุมัติคำขอ</div><div style="font-size:12px;opacity:.6">Approvals.razor · 4 แท็บ: ลงทะเบียน / ระบบงาน / หน่วยงาน / สิทธิ์</div></div>
+      <button class="btn" style="margin-left:auto;background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.2)" onclick="toast('รีเฟรชคำขอ')"><i class="fa-solid fa-rotate"></i> รีเฟรช</button>
+    </div>
+  </div>
+  <div class="tabs" id="appTabs">
+    <button class="active" data-atab="registration" onclick="setATab('registration')"><i class="fa-solid fa-user-plus"></i> ลงทะเบียน <span class="badge badge-warn" style="margin-left:4px">7</span></button>
+    <button data-atab="system-access" onclick="setATab('system-access')"><i class="fa-solid fa-right-to-bracket"></i> ระบบงาน <span class="badge badge-info" style="margin-left:4px">4</span></button>
+    <button data-atab="org-change" onclick="setATab('org-change')"><i class="fa-solid fa-building"></i> หน่วยงาน <span class="badge" style="background:#0e7c7b;color:#fff;margin-left:4px">3</span></button>
+    <button data-atab="role-change" onclick="setATab('role-change')"><i class="fa-solid fa-shield-halved"></i> สิทธิ์ <span class="badge" style="background:#7c3aed;color:#fff;margin-left:4px">2</span></button>
+  </div>
+  <div id="approvalsWrap"></div>
+</section>
+
+<!-- ============ MASTER DATA ============ -->
+<section id="view-master" class="view">
+  <div class="hero">
+    <div style="display:flex;gap:14px;align-items:center;position:relative">
+      <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:grid;place-items:center;color:var(--navy-deep)"><i class="fa-solid fa-database"></i></div>
+      <div><div style="font-size:17px;font-weight:800">ข้อมูลกลาง · องค์กร · ตำแหน่ง</div><div style="font-size:12px;opacity:.6">MasterData.razor · Orgs / Positions / RefData — 3 แท็บ + ตาราง</div></div>
+      <button class="btn" style="margin-left:auto;background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.2)" onclick="openOrgModal()"><i class="fa-solid fa-plus"></i> เพิ่มหน่วยงาน</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="active" data-mtab="orgs" onclick="setMTab('orgs')"><i class="fa-solid fa-building"></i> หน่วยงาน (<span id="orgCount">0</span>)</button>
+    <button data-mtab="pos" onclick="setMTab('pos')"><i class="fa-solid fa-briefcase"></i> ตำแหน่ง (<span id="posCount">0</span>)</button>
+    <button data-mtab="ref" onclick="setMTab('ref')"><i class="fa-solid fa-tags"></i> ข้อมูลอ้างอิง (<span id="refCount">0</span>)</button>
+  </div>
+  <div id="masterOrgs" class="card" style="margin-top:8px">
+    <div class="card-head"><strong>หน่วยงาน</strong><small style="color:var(--muted)">MasterData Orgs</small></div>
+    <div class="table-wrap"><table><thead><tr><th>ชื่อหน่วยงาน</th><th>รายละเอียด</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody id="orgBody"></tbody></table></div>
+  </div>
+  <div id="masterPos" class="card" style="display:none">
+    <div class="card-head"><strong>ตำแหน่ง</strong></div>
+    <div class="table-wrap"><table><thead><tr><th>ตำแหน่ง</th><th>ระดับ</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody id="posBody"></tbody></table></div>
+  </div>
+  <div id="masterRef" class="card" style="display:none">
+    <div class="card-head"><strong>ข้อมูลอ้างอิง</strong><small style="color:var(--muted)">ประเภทเรื่อง · ช่องทาง · ผลการดำเนินการ</small></div>
+    <div class="table-wrap"><table><thead><tr><th>หมวด</th><th>รหัส</th><th>ชื่อ</th><th>สถานะ</th></tr></thead><tbody id="refBody"></tbody></table></div>
+  </div>
+</section>
+
+<!-- ============ PHONEBOOK ============ -->
+<section id="view-phonebook" class="view">
+  <div class="hero"><div style="display:flex;gap:14px;align-items:center;position:relative"><div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:grid;place-items:center;color:var(--navy-deep)"><i class="fa-solid fa-address-book"></i></div><div><div style="font-size:17px;font-weight:800">สมุดโทรศัพท์กลาง</div><div style="font-size:12px;opacity:.6">PhonebookRequests.razor · คำขอเพิ่ม/แก้ไขเบอร์ติดต่อหน่วยงาน</div></div></div></div>
+  <div class="toolbar"><input id="phoneSearch" placeholder="ค้นหาชื่อ / หน่วยงาน / เบอร์..." oninput="renderPhonebook()" style="flex:1;min-width:220px"><select id="phoneStatus" onchange="renderPhonebook()"><option value="">ทุกสถานะ</option><option value="pending">รออนุมัติ</option><option value="approved">อนุมัติแล้ว</option><option value="rejected">ปฏิเสธ</option></select><button class="btn btn-primary" onclick="toast('ส่งคำขอสมุดโทรศัพท์ — mock')"><i class="fa-solid fa-plus"></i> ขอเพิ่มข้อมูล</button></div>
+  <div class="table-wrap"><table><thead><tr><th>ชื่อผู้ติดต่อ</th><th>หน่วยงาน</th><th>เบอร์</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody id="phoneBody"></tbody></table></div>
+</section>
+
+<!-- ============ SYSTEM MENUS ============ -->
+<section id="view-menus" class="view">
+  <div class="hero"><div style="display:flex;gap:14px;align-items:center;position:relative"><div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:grid;place-items:center;color:var(--navy-deep)"><i class="fa-solid fa-list"></i></div><div><div style="font-size:17px;font-weight:800">เมนูระบบ (SystemMenus)</div><div style="font-size:12px;opacity:.6">SystemMenus.razor · โครงสร้างเมนู · Route · ไอคอน · เปิด/ปิด</div></div><button class="btn" style="margin-left:auto;background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.2)" onclick="openMenuModal()"><i class="fa-solid fa-plus"></i> เพิ่มเมนู</button></div></div>
+  <div class="card"><div class="card-head"><strong>รายการเมนู (tree)</strong><small style="color:var(--muted)" id="menuCount">0 เมนู</small></div>
+    <div class="table-wrap"><table><thead><tr><th>ชื่อฟังก์ชัน</th><th>Route</th><th style="text-align:center">สถานะ</th><th style="text-align:center">จัดการ</th></tr></thead><tbody id="menuBody"></tbody></table></div>
+  </div>
+  <div id="menuModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;align-items:center;justify-content:center;padding:16px"><div style="background:#fff;border-radius:12px;max-width:460px;width:100%;padding:18px"><div style="font-weight:800;margin-bottom:10px">เพิ่ม/แก้ไขเมนู</div><label style="font-size:12px">ชื่อฟังก์ชัน *<input id="mName" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 8px;margin-top:4px"></label><label style="font-size:12px;display:block;margin-top:10px">Route <input id="mRoute" placeholder="/admin/..." style="width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 8px;margin-top:4px"></label><label style="font-size:12px;display:block;margin-top:10px">ไอคอน <input id="mIcon" placeholder="fa-solid fa-..." style="width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 8px;margin-top:4px"></label><label style="font-size:12px;display:flex;gap:6px;align-items:center;margin-top:10px"><input type="checkbox" id="mActive" checked> เปิดใช้งาน</label><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn" onclick="closeMenuModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveMenu()">บันทึก</button></div></div></div>
+</section>
+
+<!-- ============ LOGS ============ -->
+<section id="view-logs" class="view">
+  <div class="hero"><div style="display:flex;gap:14px;align-items:center;position:relative"><div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:grid;place-items:center;color:var(--navy-deep)"><i class="fa-solid fa-clipboard-list"></i></div><div><div style="font-size:17px;font-weight:800">บันทึกเหตุการณ์ (Audit Log)</div><div style="font-size:12px;opacity:.6">LogCategories + SystemsManagement · หมวด Log / ระบบงาน / API Keys (สรุป)</div></div></div></div>
+  <div class="toolbar"><input id="logSearch" placeholder="ค้นหา action / ผู้ใช้ / ระบบ..." oninput="renderLogs()" style="flex:1;min-width:220px"><select id="logCat" onchange="renderLogs()"><option value="">ทุกหมวด</option><option value="AUTH">AUTH</option><option value="ADMIN">ADMIN</option><option value="CASE">CASE</option><option value="SYSTEM">SYSTEM</option></select><button class="btn" onclick="toast('Export CSV — mock')"><i class="fa-solid fa-download"></i> Export</button></div>
+  <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)"><div class="kpi"><small>เหตุการณ์วันนี้</small><br><strong>1,248</strong></div><div class="kpi"><small>ผิดพลาด</small><br><strong style="color:var(--bad)">7</strong></div><div class="kpi"><small>หมวดที่ใช้งาน</small><br><strong>8</strong> <small>AUTH/ADMIN/CASE/…</small></div></div>
+  <div class="table-wrap"><table><thead><tr><th>เวลา</th><th>หมวด</th><th>การกระทำ</th><th>ผู้ใช้</th><th>IP</th></tr></thead><tbody id="logBody"></tbody></table></div>
+</section>
+
+  </div>
+  <div style="padding:10px 14px;color:var(--muted);font-size:11px;border-top:1px solid var(--line);background:#fff">G14 Light · 6 หน้า (Index+Registrations / Approvals / MasterData / SuperAdminDashboard / SystemMenus / Phonebook+Logs) · ข้อมูลจำลอง · file:// ใช้งานได้ · #0F1E4A sidebar เดียวกับ Analytics</div>
+</main>
+</div>
+<div id="toast" style="position:fixed;bottom:16px;right:16px;background:#0F1E4A;color:#fff;padding:10px 14px;border-radius:10px;font-size:12px;display:none;z-index:99;box-shadow:0 8px 24px rgba(0,0,0,.25)"></div>
+<script>
+const USERS=[
+ {id:1,name:"สมชาย ใจดี",username:"somchai.j",email:"somchai@pacc.go.th",org:"สำนักงาน ป.ป.ท. ส่วนกลาง",role:"super_admin",status:"active",updated:"2026-08-17"},
+ {id:2,name:"สุนิสา แสงทอง",username:"sunisa.s",email:"sunisa@pacc.go.th",org:"ป.ป.ท. เขต 1",role:"org_admin",status:"active",updated:"2026-08-16"},
+ {id:3,name:"วิชัย มั่นคง",username:"wichai.m",email:"wichai@pacc.go.th",org:"ป.ป.ท. เขต 2",role:"investigator",status:"active",updated:"2026-08-15"},
+ {id:4,name:"อรทัย ศรีสุข",username:"orathai.s",email:"orathai@pacc.go.th",org:"ป.ป.ท. เขต 1",role:"officer",status:"locked",updated:"2026-08-14"},
+ {id:5,name:"ประสิทธิ์ นาคำ",username:"prasit.n",email:"prasit@pacc.go.th",org:"สำนักงาน ป.ป.ท. ส่วนกลาง",role:"officer",status:"inactive",updated:"2026-08-13"},
+ {id:6,name:"นภา รุ่งเรือง",username:"napa.r",email:"napa.r@pacc.go.th",org:"ป.ป.ท. เขต 3",role:"officer",status:"active",updated:"2026-08-12"},
+ {id:7,name:"กิตติ พงษ์ศิริ",username:"kitti.p",email:"kitti@pacc.go.th",org:"ป.ป.ท. เขต 2",role:"investigator",status:"active",updated:"2026-08-11"},
+ {id:8,name:"มานี มีสุข",username:"manee.m",email:"manee@pacc.go.th",org:"ป.ป.ท. เขต 4",role:"citizen",status:"pending",updated:"2026-08-10"},
+];
+for(let i=9;i<=18;i++) USERS.push({id:i,name:"ผู้ใช้ตัวอย่าง "+i,username:"user"+i,email:"user"+i+"@pacc.go.th",org:["ป.ป.ท. เขต 1","ป.ป.ท. เขต 2","ส่วนกลาง"][i%3],role:["officer","investigator","citizen"][i%3],status:["active","active","active","locked","inactive"][i%5],updated:"2026-08-0"+(9-(i%5))});
+const REG_PENDING=[
+ {id:"REG-2569-001",name:"มานี มีสุข",email:"manee@pacc.go.th",username:"manee.m",org:"ป.ป.ท. เขต 4",date:"2026-08-10",status:"pending"},
+ {id:"REG-2569-002",name:"เอกชัย กล้าหาญ",email:"ekkachai@pacc.go.th",username:"ekkachai.k",org:"ป.ป.ท. เขต 1",date:"2026-08-11",status:"pending"},
+ {id:"REG-2569-003",name:"ดารา สวยงาม",email:"dara@pacc.go.th",username:"dara.s",org:"ส่วนกลาง",date:"2026-08-12",status:"pending"},
+ {id:"REG-2569-004",name:"สมปอง ใจซื่อ",email:"sompong@pacc.go.th",username:"sompong.j",org:"ป.ป.ท. เขต 2",date:"2026-08-12",status:"pending"},
+ {id:"REG-2569-005",name:"วิไล พรหมมา",email:"wilai@pacc.go.th",username:"wilai.p",org:"ป.ป.ท. เขต 3",date:"2026-08-13",status:"pending"},
+ {id:"REG-2569-006",name:"ธนากร สุขใจ",email:"thanakorn@pacc.go.th",username:"thanakorn.s",org:"ป.ป.ท. เขต 1",date:"2026-08-13",status:"pending"},
+ {id:"REG-2569-007",name:"พิมพ์ชนก ใจเย็น",email:"pimchanok@pacc.go.th",username:"pimchanok.j",org:"ส่วนกลาง",date:"2026-08-14",status:"pending"},
+];
+const REG_APPROVED=[{id:"REG-2569-010",name:"อนุมัติ ตัวอย่าง",email:"ok@pacc.go.th",username:"ok1",org:"เขต 1",date:"2026-08-09",status:"approved"}];
+const REG_REJECTED=[{id:"REG-2569-011",name:"ปฏิเสธ ตัวอย่าง",email:"no@pacc.go.th",username:"no1",org:"เขต 2",date:"2026-08-08",status:"rejected"}];
+const SYS_ACCESS=[{id:"SA-001",name:"สุนิสา แสงทอง",system:"ระบบรับเรื่องร้องเรียน",right:"อ่าน/เขียน",date:"2026-08-12"},{id:"SA-002",name:"วิชัย มั่นคง",system:"ระบบไต่สวน",right:"อ่าน",date:"2026-08-13"},{id:"SA-003",name:"กิตติ พงษ์ศิริ",system:"ระบบพยาน",right:"อ่าน/เขียน",date:"2026-08-13"},{id:"SA-004",name:"นภา รุ่งเรือง",system:"ระบบหมายจับ",right:"อ่าน",date:"2026-08-14"}];
+const ORG_CHANGE=[{id:"OC-001",name:"วิชัย มั่นคง",from:"เขต 1",to:"เขต 2",date:"2026-08-12"},{id:"OC-002",name:"อรทัย ศรีสุข",from:"เขต 2",to:"ส่วนกลาง",date:"2026-08-13"},{id:"OC-003",name:"ประสิทธิ์ นาคำ",from:"เขต 3",to:"เขต 1",date:"2026-08-14"}];
+const ROLE_CHANGE=[{id:"RC-001",name:"สุนิสา แสงทอง",from:"officer",to:"org_admin",date:"2026-08-12"},{id:"RC-002",name:"กิตติ พงษ์ศิริ",from:"investigator",to:"officer",date:"2026-08-13"}];
+let ORGS=[
+ {id:1,name:"สำนักงาน ป.ป.ท. ส่วนกลาง",detail:"ส่วนกลาง",active:true},
+ {id:2,name:"สำนักงาน ป.ป.ท. เขต 1",detail:"กรุงเทพฯ",active:true},
+ {id:3,name:"สำนักงาน ป.ป.ท. เขต 2",detail:"เชียงใหม่",active:true},
+ {id:4,name:"สำนักงาน ป.ป.ท. เขต 3",detail:"ขอนแก่น",active:true},
+ {id:5,name:"สำนักงาน ป.ป.ท. เขต 4",detail:"อุบลราชธานี",active:true},
+ {id:6,name:"สำนักงาน ป.ป.ท. เขต 5",detail:"สงขลา",active:false},
+];
+let POSITIONS=[
+ {id:1,name:"เจ้าพนักงาน ป.ป.ท.",level:"ชำนาญการ",active:true},
+ {id:2,name:"นักสืบสวน",level:"ชำนาญการพิเศษ",active:true},
+ {id:3,name:"นิติกร",level:"ปฏิบัติการ",active:true},
+ {id:4,name:"เจ้าหน้าที่ธุรการ",level:"ปฏิบัติงาน",active:true},
+];
+let REFS=[
+ {cat:"ประเภทเรื่อง",code:"C01",name:"ทุจริตต่อหน้าที่",active:true},
+ {cat:"ประเภทเรื่อง",code:"C02",name:"ประพฤติมิชอบ",active:true},
+ {cat:"ช่องทาง",code:"CH01",name:"ร้องเรียนออนไลน์",active:true},
+ {cat:"ช่องทาง",code:"CH02",name:"หนังสือ",active:true},
+ {cat:"ผลการดำเนินการ",code:"R01",name:"รับไว้พิจารณา",active:true},
+];
+let MENUS=[
+ {id:1,name:"แดชบอร์ด",route:"/admin/dashboard",icon:"fa-gauge-high",active:true,depth:0},
+ {id:2,name:"จัดการผู้ใช้งาน",route:"/admin/users",icon:"fa-users",active:true,depth:0},
+ {id:3,name:"— รายชื่อผู้ใช้",route:"/admin/users",icon:"fa-list",active:true,depth:1},
+ {id:4,name:"— อนุมัติคำขอ",route:"/admin/approvals",icon:"fa-clipboard-check",active:true,depth:1},
+ {id:5,name:"ข้อมูลกลาง",route:"/admin/master-data",icon:"fa-database",active:true,depth:0},
+ {id:6,name:"— หน่วยงาน",route:"/admin/organizations",icon:"fa-building",active:true,depth:1},
+ {id:7,name:"— ตำแหน่ง",route:"/admin/positions",icon:"fa-briefcase",active:true,depth:1},
+ {id:8,name:"เมนูระบบ",route:"/super-admin/systems/1/menus",icon:"fa-list",active:true,depth:0},
+];
+let PHONES=[
+ {id:1,name:"ศูนย์รับเรื่อง ป.ป.ท.",org:"ส่วนกลาง",tel:"02-123-4567",status:"approved"},
+ {id:2,name:"เขต 1 งานธุรการ",org:"เขต 1",tel:"02-234-5678",status:"approved"},
+ {id:3,name:"เขต 2 สืบสวน",org:"เขต 2",tel:"053-123-456",status:"pending"},
+ {id:4,name:"เขต 3 ประชาสัมพันธ์",org:"เขต 3",tel:"043-222-333",status:"pending"},
+];
+let LOGS=[
+ {time:"2026-08-17 14:22",cat:"AUTH",action:"เข้าสู่ระบบสำเร็จ",user:"somchai.j",ip:"10.1.2.31"},
+ {time:"2026-08-17 14:18",cat:"ADMIN",action:"อนุมัติลงทะเบียน REG-2569-001",user:"sunisa.s",ip:"10.1.2.12"},
+ {time:"2026-08-17 13:55",cat:"SYSTEM",action:"แก้ไขเมนู /admin/users",user:"somchai.j",ip:"10.1.2.31"},
+ {time:"2026-08-17 11:02",cat:"CASE",action:"สร้างเรื่องร้องเรียน #0001/2569",user:"wichai.m",ip:"10.1.3.8"},
+ {time:"2026-08-17 10:40",cat:"AUTH",action:"รหัสผ่านผิดพลาด (ล็อก)",user:"orathai.s",ip:"10.1.2.44"},
+];
+
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',2400)}
+function doExport(){toast('Export Excel/PDF — ข้อมูลจำลอง (mock)')}
+function doLogout(){toast('ออกจากระบบ — กลับหน้า Login (mock)'); setTimeout(()=>location.href='/index.html',800)}
+function badgeForStatus(s){
+ if(s==='active') return '<span class="badge badge-ok">ใช้งานอยู่</span>';
+ if(s==='pending') return '<span class="badge badge-warn">รออนุมัติ</span>';
+ if(s==='locked') return '<span class="badge badge-warn">ถูกล็อก</span>';
+ if(s==='inactive') return '<span class="badge badge-muted">ระงับ</span>';
+ if(s==='approved') return '<span class="badge badge-ok">อนุมัติแล้ว</span>';
+ if(s==='rejected') return '<span class="badge badge-bad">ปฏิเสธ</span>';
+ return '<span class="badge badge-info">'+s+'</span>';
+}
+function roleLabel(r){
+ const m={super_admin:'Super Admin',org_admin:'Org Admin',officer:'Officer',investigator:'Investigator',citizen:'Citizen'};
+ return m[r]||r;
+}
+// ---- USERS ----
+let utab='list';
+function setUTab(t){utab=t;document.querySelectorAll('#usersTabs button').forEach(b=>b.classList.toggle('active',b.dataset.utab===t));renderUsers()}
+function renderUsers(){
+ const q=(document.getElementById('userSearch').value||'').toLowerCase();
+ const st=document.getElementById('userStatus').value;
+ const rl=document.getElementById('userRole').value;
+ let src=[];
+ if(utab==='list') src=USERS.slice();
+ else if(utab==='pending') src=USERS.filter(u=>u.status==='pending').concat(REG_PENDING.map(r=>({id:r.id,name:r.name,username:r.username,email:r.email,org:r.org,role:'citizen',status:'pending',updated:r.date})));
+ else if(utab==='approved') src=REG_APPROVED.map(r=>({id:r.id,name:r.name,username:r.username,email:r.email,org:r.org,role:'officer',status:'approved',updated:r.date}));
+ else if(utab==='rejected') src=REG_REJECTED.map(r=>({id:r.id,name:r.name,username:r.username,email:r.email,org:r.org,role:'officer',status:'rejected',updated:r.date}));
+ let filtered=src.filter(u=>{
+   if(q && ![u.name,u.username,u.email,u.org].join(' ').toLowerCase().includes(q)) return false;
+   if(st && u.status!==st) return false;
+   if(rl && u.role!==rl) return false;
+   return true;
+ });
+ document.getElementById('usersBody').innerHTML=filtered.map(u=>`<tr>
+  <td><div style="font-weight:700">${u.name}</div><div style="font-size:11px;color:var(--muted)">${u.username} · ${u.email}</div></td>
+  <td>${u.org}</td><td>${roleLabel(u.role)}</td><td>${badgeForStatus(u.status)}</td><td>${u.updated}</td>
+  <td><button class="btn" style="padding:4px 8px" onclick="toast('ดู ${u.name}')">ดู</button> ${u.status==='pending'?`<button class="btn btn-primary" style="padding:4px 8px" onclick="toast('อนุมัติ ${u.name}')">อนุมัติ</button>`:''}</td></tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:18px">ไม่พบข้อมูล</td></tr>`;
+ document.getElementById('usersCount').textContent=filtered.length;
+}
+// ---- APPROVALS ----
+let atab='registration';
+function setATab(t){atab=t;document.querySelectorAll('#appTabs button').forEach(b=>b.classList.toggle('active',b.dataset.atab===t));renderApprovals()}
+function renderApprovals(){
+ const wrap=document.getElementById('approvalsWrap');
+ if(atab==='registration'){
+   wrap.innerHTML=`<div class="card"><div class="card-head"><strong>คำขอลงทะเบียนใหม่ (7)</strong><small style="color:var(--muted)">Registrations.razor</small></div><div class="table-wrap"><table><thead><tr><th>ผู้สมัคร</th><th>สถานะ</th><th>ส่งเมื่อ</th><th>เลขติดตาม</th><th style="text-align:center">จัดการ</th></tr></thead><tbody>${REG_PENDING.map(r=>`<tr><td><div style="font-weight:700">${r.name}</div><div style="font-size:11px;color:var(--muted)">${r.email} · ${r.username}</div></td><td><span class="badge badge-warn">รออนุมัติ</span></td><td>${r.date}</td><td style="font-family:monospace">${r.id}</td><td style="text-align:center"><button class="btn btn-primary" style="padding:4px 8px" onclick="toast('อนุมัติ ${r.id}')">อนุมัติ</button> <button class="btn" style="padding:4px 8px" onclick="toast('ปฏิเสธ ${r.id}')">ปฏิเสธ</button></td></tr>`).join('')}</tbody></table></div></div>`;
+ } else if(atab==='system-access'){
+   wrap.innerHTML=`<div class="card"><div class="card-head"><strong>คำขอเข้าระบบงาน (4)</strong><small style="color:var(--muted)">Approvals — system-access</small></div><div class="table-wrap"><table><thead><tr><th>ผู้ขอ</th><th>ระบบ</th><th>สิทธิ์</th><th>วันที่ขอ</th><th style="text-align:center">จัดการ</th></tr></thead><tbody>${SYS_ACCESS.map(r=>`<tr><td>${r.name}</td><td>${r.system}</td><td>${r.right}</td><td>${r.date}</td><td style="text-align:center"><button class="btn btn-primary" style="padding:4px 8px" onclick="toast('อนุมัติ ${r.id}')">อนุมัติ</button> <button class="btn" style="padding:4px 8px" onclick="toast('ปฏิเสธ ${r.id}')">ปฏิเสธ</button></td></tr>`).join('')}</tbody></table></div></div>`;
+ } else if(atab==='org-change'){
+   wrap.innerHTML=`<div class="card"><div class="card-head"><strong>คำขอแก้ไขหน่วยงาน (3)</strong></div><div class="table-wrap"><table><thead><tr><th>ผู้ขอ</th><th>จาก</th><th>ไป</th><th>วันที่</th><th style="text-align:center">จัดการ</th></tr></thead><tbody>${ORG_CHANGE.map(r=>`<tr><td>${r.name}</td><td>${r.from}</td><td>${r.to}</td><td>${r.date}</td><td style="text-align:center"><button class="btn btn-primary" style="padding:4px 8px" onclick="toast('อนุมัติ ${r.id}')">อนุมัติ</button> <button class="btn" style="padding:4px 8px" onclick="toast('ปฏิเสธ ${r.id}')">ปฏิเสธ</button></td></tr>`).join('')}</tbody></table></div></div>`;
+ } else {
+   wrap.innerHTML=`<div class="card"><div class="card-head"><strong>คำขอเปลี่ยนสิทธิ์ (2)</strong></div><div class="table-wrap"><table><thead><tr><th>ผู้ขอ</th><th>จากบทบาท</th><th>เป็น</th><th>วันที่</th><th style="text-align:center">จัดการ</th></tr></thead><tbody>${ROLE_CHANGE.map(r=>`<tr><td>${r.name}</td><td>${roleLabel(r.from)}</td><td>${roleLabel(r.to)}</td><td>${r.date}</td><td style="text-align:center"><button class="btn btn-primary" style="padding:4px 8px" onclick="toast('อนุมัติ ${r.id}')">อนุมัติ</button> <button class="btn" style="padding:4px 8px" onclick="toast('ปฏิเสธ ${r.id}')">ปฏิเสธ</button></td></tr>`).join('')}</tbody></table></div></div>`;
+ }
+}
+// ---- MASTER ----
+let mtab='orgs';
+function setMTab(t){mtab=t;document.querySelectorAll('[data-mtab]').forEach(b=>b.classList.toggle('active',b.dataset.mtab===t));document.getElementById('masterOrgs').style.display=t==='orgs'?'block':'none';document.getElementById('masterPos').style.display=t==='pos'?'block':'none';document.getElementById('masterRef').style.display=t==='ref'?'block':'none';}
+function renderOrgs(){document.getElementById('orgBody').innerHTML=ORGS.map(o=>`<tr><td style="font-weight:700">${o.name}</td><td style="color:var(--muted)">${o.detail}</td><td>${o.active?'<span class="badge badge-ok">เปิด</span>':'<span class="badge badge-muted">ปิด</span>'}</td><td style="text-align:center"><button class="btn" style="padding:3px 8px" onclick="toast('แก้ไข ${o.name}')">แก้ไข</button> <button class="btn" style="padding:3px 8px" onclick="toggleOrg(${o.id})">${o.active?'ปิด':'เปิด'}</button></td></tr>`).join('');document.getElementById('orgCount').textContent=ORGS.length}
+function toggleOrg(id){const o=ORGS.find(x=>x.id===id);if(o){o.active=!o.active;renderOrgs();toast((o.active?'เปิด':'ปิด')+' '+o.name)}}
+function renderPos(){document.getElementById('posBody').innerHTML=POSITIONS.map(p=>`<tr><td style="font-weight:700">${p.name}</td><td>${p.level}</td><td>${p.active?'<span class="badge badge-ok">เปิด</span>':'<span class="badge badge-muted">ปิด</span>'}</td><td><button class="btn" style="padding:3px 8px" onclick="toast('แก้ไข ${p.name}')">แก้ไข</button></td></tr>`).join('');document.getElementById('posCount').textContent=POSITIONS.length}
+function renderRefs(){document.getElementById('refBody').innerHTML=REFS.map(r=>`<tr><td>${r.cat}</td><td style="font-family:monospace">${r.code}</td><td>${r.name}</td><td>${r.active?'<span class="badge badge-ok">เปิด</span>':'<span class="badge badge-muted">ปิด</span>'}</td></tr>`).join('');document.getElementById('refCount').textContent=REFS.length}
+function openOrgModal(){const n=prompt('ชื่อหน่วยงานใหม่:'); if(n){ORGS.push({id:Date.now(),name:n,detail:'-',active:true});renderOrgs();toast('เพิ่ม '+n)}}
+// ---- PHONEBOOK ----
+function renderPhonebook(){
+ const q=(document.getElementById('phoneSearch').value||'').toLowerCase();
+ const st=document.getElementById('phoneStatus').value;
+ const f=PHONES.filter(p=>{
+   if(q && ![p.name,p.org,p.tel].join(' ').toLowerCase().includes(q)) return false;
+   if(st && p.status!==st) return false;
+   return true;
+ });
+ document.getElementById('phoneBody').innerHTML=f.map(p=>`<tr><td>${p.name}</td><td>${p.org}</td><td style="font-family:monospace">${p.tel}</td><td>${p.status==='approved'?'<span class="badge badge-ok">อนุมัติแล้ว</span>':p.status==='pending'?'<span class="badge badge-warn">รออนุมัติ</span>':'<span class="badge badge-bad">ปฏิเสธ</span>'}</td><td><button class="btn" style="padding:3px 8px" onclick="toast('ดู ${p.name}')">ดู</button> ${p.status==='pending'?`<button class="btn btn-primary" style="padding:3px 8px" onclick="toast('อนุมัติ ${p.name}')">อนุมัติ</button>`:''}</td></tr>`).join('')||`<tr><td colspan="5" style="text-align:center;color:var(--muted)">ไม่พบข้อมูล</td></tr>`;
+}
+// ---- MENUS ----
+function renderMenus(){
+ document.getElementById('menuBody').innerHTML=MENUS.map(m=>`<tr><td><span style="margin-left:${m.depth*18}px"><i class="fa-solid ${m.icon}" style="color:var(--muted);margin-right:6px"></i>${m.name}</span></td><td style="font-family:monospace;font-size:11px">${m.route}</td><td style="text-align:center">${m.active?'<span class="badge badge-ok">เปิด</span>':'<span class="badge badge-muted">ปิด</span>'}</td><td style="text-align:center"><button class="btn" style="padding:3px 8px" onclick="editMenu(${m.id})">แก้ไข</button> <button class="btn" style="padding:3px 8px" onclick="delMenu(${m.id})">ลบ</button></td></tr>`).join('');
+ document.getElementById('menuCount').textContent=MENUS.length+' เมนู';
+}
+let editingMenu=null;
+function openMenuModal(){editingMenu=null;document.getElementById('mName').value='';document.getElementById('mRoute').value='';document.getElementById('mIcon').value='';document.getElementById('mActive').checked=true;document.getElementById('menuModal').style.display='flex';}
+function closeMenuModal(){document.getElementById('menuModal').style.display='none';}
+function editMenu(id){const m=MENUS.find(x=>x.id===id);if(!m) return;editingMenu=id;document.getElementById('mName').value=m.name.replace(/^—\s*/,'');document.getElementById('mRoute').value=m.route;document.getElementById('mIcon').value=m.icon;document.getElementById('mActive').checked=m.active;document.getElementById('menuModal').style.display='flex';}
+function saveMenu(){const name=document.getElementById('mName').value.trim();if(!name) return toast('กรอกชื่อเมนู');const route=document.getElementById('mRoute').value.trim()||'-';const icon=document.getElementById('mIcon').value.trim()||'fa-list';const active=document.getElementById('mActive').checked;if(editingMenu){const m=MENUS.find(x=>x.id===editingMenu);m.name=name;m.route=route;m.icon=icon;m.active=active;toast('บันทึก '+name);}else{MENUS.push({id:Date.now(),name,route,icon,active,depth:0});toast('เพิ่ม '+name);}renderMenus();closeMenuModal();}
+function delMenu(id){if(confirm('ลบเมนูนี้?')){MENUS=MENUS.filter(x=>x.id!==id);renderMenus();toast('ลบแล้ว');}}
+// ---- LOGS ----
+function renderLogs(){
+ const q=(document.getElementById('logSearch').value||'').toLowerCase();
+ const cat=document.getElementById('logCat').value;
+ const f=LOGS.filter(l=>{
+   if(cat && l.cat!==cat) return false;
+   if(q && ![l.action,l.user,l.cat].join(' ').toLowerCase().includes(q)) return false;
+   return true;
+ });
+ document.getElementById('logBody').innerHTML=f.map(l=>`<tr><td style="font-family:monospace">${l.time}</td><td><span class="badge badge-info">${l.cat}</span></td><td>${l.action}</td><td>${l.user}</td><td style="font-family:monospace">${l.ip}</td></tr>`).join('');
+}
+// ---- ROUTER ----
+const ROUTES={dashboard:'ภาพรวมระบบ',users:'ผู้ใช้งาน & ลงทะเบียน',approvals:'อนุมัติคำขอ',master:'องค์กร & ตำแหน่ง',phonebook:'สมุดโทรศัพท์',menus:'เมนูระบบ',logs:'บันทึกเหตุการณ์'};
+function navTo(hash){
+ const h=(hash||location.hash||'#dashboard').replace('#','')||'dashboard';
+ const key=ROUTES[h]?'': 'dashboard';
+ const target=ROUTES[h]?h:'dashboard';
+ document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+ const el=document.getElementById('view-'+target);
+ if(el) el.classList.add('active');
+ document.querySelectorAll('[data-g14]').forEach(b=>b.classList.toggle('active',b.getAttribute('data-g14')===target || (target==='users'&&b.getAttribute('data-g14')==='users') || (target==='dashboard'&&b.getAttribute('data-g14')==='dashboard')));
+ document.getElementById('ttl').textContent=ROUTES[target];
+ document.getElementById('sub').textContent='G14 · #'+target+' · '+({dashboard:'SuperAdminDashboard.razor',users:'Index + Registrations',approvals:'Approvals.razor',master:'MasterData.razor',phonebook:'PhonebookRequests',menus:'SystemMenus.razor',logs:'LogCategories'}[target]);
+}
+window.addEventListener('hashchange',()=>navTo(location.hash));
+document.addEventListener('DOMContentLoaded',()=>{
+ renderUsers();renderApprovals();renderOrgs();renderPos();renderRefs();renderPhonebook();renderMenus();renderLogs();
+ navTo(location.hash);
+ document.getElementById('menuModal').addEventListener('click',e=>{if(e.target.id==='menuModal') closeMenuModal()});
+});
+</script>
+</body>
+</html>

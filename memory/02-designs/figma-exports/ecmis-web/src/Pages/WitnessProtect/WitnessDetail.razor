@@ -1,0 +1,258 @@
+@page "/witness-protect/{Id:int}"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+@if (c is null)
+{
+    <div class="detail-page-wrap" style="text-align:center;padding:60px">
+        <i class="bi bi-exclamation-triangle" style="font-size:48px;color:var(--orange)"></i>
+        <div style="font-size:18px;font-weight:700;margin-top:12px">ไม่พบคำร้องคุ้มครองพยาน</div>
+        <button class="btn-navy" style="margin-top:16px" @onclick='() => Nav.NavigateTo("/witness-protect")'>กลับ</button>
+    </div>
+}
+else
+{
+    <div class="detail-page-wrap">
+        @* — Header — *@
+        <div class="detail-header">
+            <div>
+                <div class="detail-caseno">
+                    <i class="bi bi-shield-lock-fill" style="color:var(--navy-mid)"></i>
+                    @c.RequestNo
+                    @if (c.IsUrgent)
+                    {
+                        <span class="deadline-badge urgent" style="font-size:12px">
+                            <i class="bi bi-lightning-charge-fill"></i> เร่งด่วน
+                        </span>
+                    }
+                </div>
+                <div class="detail-meta-row">
+                    <span class="complaints-status-chip @WitnessData.StatusClass(c.Status)">
+                        @WitnessData.StatusLabel(c.Status)
+                    </span>
+                    <span style="font-size:12px;color:var(--text-muted)">
+                        <i class="bi bi-link-45deg"></i> สำนวน @c.LinkedCaseNo
+                    </span>
+                    <span style="font-size:12px;color:var(--text-muted)">
+                        <i class="bi bi-calendar3"></i> ยื่นเมื่อ @c.RequestDate
+                    </span>
+                    <span style="font-size:12px;color:var(--text-muted)">
+                        <i class="bi bi-arrow-clockwise"></i> รอบที่ @c.RoundNumber
+                    </span>
+                </div>
+            </div>
+            <div class="detail-actions">
+                <button class="btn-outline-navy" @onclick='() => Nav.NavigateTo("/witness-protect")'>
+                    <i class="bi bi-arrow-left"></i> กลับ
+                </button>
+                @if (c.Status is "approved" or "urgent_approved" && c.RoundNumber < 2)
+                {
+                    <button class="btn-gold" @onclick="() => extendOpen = true">
+                        <i class="bi bi-arrow-clockwise"></i> ขอต่ออายุ
+                    </button>
+                }
+            </div>
+        </div>
+
+        @* — SLA Panel — *@
+        @if (c.Status is "approved" or "urgent_approved")
+        {
+            <div class="detail-card" style="margin-bottom:14px">
+                <div class="detail-card-title">
+                    <div class="icon-box @(WitnessData.RoundDaysRemaining(c) <= 15 ? "red" : "navy")">
+                        <i class="bi bi-speedometer2"></i>
+                    </div>
+                    ระยะเวลาคุ้มครอง
+                </div>
+                <div class="detail-grid" style="margin-bottom:0">
+                    <div>
+                        <div style="font-size:12px;font-weight:700;color:var(--navy-deep);margin-bottom:8px">
+                            SLA รอบปัจจุบัน (สูงสุด 90 วัน)
+                        </div>
+                        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px">
+                            <span style="font-size:28px;font-weight:800;color:var(--navy-deep)">@c.CurrentRoundDays</span>
+                            <span style="font-size:13px;color:var(--text-muted)">/ @c.MaxRoundDays วัน</span>
+                        </div>
+                        <div class="sla-bar" style="height:10px;border-radius:5px">
+                            <div class="sla-fill @WitnessData.SlaRoundClass(c)"
+                                style="width:@((int)WitnessData.SlaRoundPercent(c))%;height:100%;border-radius:5px"></div>
+                        </div>
+                        <div class="sla-text @WitnessData.SlaRoundClass(c)" style="font-size:12px;margin-top:4px">
+                            เหลือ @WitnessData.RoundDaysRemaining(c) วัน
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size:12px;font-weight:700;color:var(--navy-deep);margin-bottom:8px">
+                            SLA รวมทั้งหมด (สูงสุด 180 วัน)
+                        </div>
+                        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px">
+                            <span style="font-size:28px;font-weight:800;color:var(--navy-deep)">@c.ProtectionDays</span>
+                            <span style="font-size:13px;color:var(--text-muted)">/ @c.MaxTotalDays วัน</span>
+                        </div>
+                        <div class="sla-bar" style="height:10px;border-radius:5px">
+                            <div class="sla-fill @(WitnessData.TotalDaysRemaining(c) <= 30 ? "sla-warning" : "sla-safe")"
+                                style="width:@((int)WitnessData.SlaTotalPercent(c))%;height:100%;border-radius:5px"></div>
+                        </div>
+                        <div class="sla-text @(WitnessData.TotalDaysRemaining(c) <= 30 ? "sla-warning" : "sla-safe")" style="font-size:12px;margin-top:4px">
+                            เหลือ @WitnessData.TotalDaysRemaining(c) วัน
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* — Info Grid — *@
+        <div class="detail-grid">
+            <div class="detail-card">
+                <div class="detail-card-title">
+                    <div class="icon-box navy"><i class="bi bi-person-fill-lock"></i></div>
+                    ข้อมูลพยาน
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">ชื่อ-สกุล</div>
+                    <div class="detail-value">@c.WitnessName</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">สถานะ</div>
+                    <div class="detail-value">@c.WitnessRole</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">ประเภทการคุ้มครอง</div>
+                    <div class="detail-value">@c.ProtectionType</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">รายละเอียด</div>
+                    <div class="detail-value" style="font-weight:500">@c.CaseDescription</div>
+                </div>
+            </div>
+
+            <div class="detail-card">
+                <div class="detail-card-title">
+                    <div class="icon-box green"><i class="bi bi-diagram-3-fill"></i></div>
+                    ขั้นตอนอนุมัติ (Approval Workflow)
+                </div>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-dot done"></div>
+                        <div class="timeline-title">นักสืบยื่นคำร้อง</div>
+                        <div class="timeline-desc">@c.RequestedBy (@c.Division) ยื่นเมื่อ @c.RequestDate</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot @(c.Status is not "pending" ? "done" : "active")"></div>
+                        <div class="timeline-title">ผอ.สำนัก/เขต พิจารณา</div>
+                        <div class="timeline-desc">
+                            @c.DirectorName
+                            @if (c.IsUrgent && c.Status is "urgent_approved")
+                            {
+                                <span style="color:var(--red);font-weight:700"> — อนุมัติเร่งด่วนทันที</span>
+                            }
+                        </div>
+                    </div>
+                    @if (!c.IsUrgent || c.Status is not "urgent_approved")
+                    {
+                        <div class="timeline-item">
+                            <div class="timeline-dot @(c.Status is "approved" or "rejected" or "fact_check" ? "done" : c.Status == "secretary_review" ? "active" : "")"></div>
+                            <div class="timeline-title">เลขาธิการ ป.ป.ท. อนุมัติ</div>
+                            <div class="timeline-desc">
+                                @if (c.Status == "approved") { <span style="color:var(--green);font-weight:700">อนุมัติ</span> }
+                                else if (c.Status == "rejected") { <span style="color:var(--red);font-weight:700">ไม่อนุมัติ</span> }
+                                else if (c.Status == "fact_check") { <span style="color:var(--orange);font-weight:700">สั่งตรวจสอบเพิ่มเติม</span> }
+                                else { <span>รอพิจารณา</span> }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="timeline-item">
+                            <div class="timeline-dot done"></div>
+                            <div class="timeline-title">รายงานเลขาธิการทราบ (ภายหลัง)</div>
+                            <div class="timeline-desc">รายงานเลขาธิการทราบกรณีอนุมัติเร่งด่วน</div>
+                        </div>
+                    }
+                    @if (c.Status is "approved" or "urgent_approved")
+                    {
+                        <div class="timeline-item">
+                            <div class="timeline-dot active"></div>
+                            <div class="timeline-title">กำลังคุ้มครอง</div>
+                            <div class="timeline-desc">@c.ProtectionType — ดำเนินการมาแล้ว @c.ProtectionDays วัน</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* — Audit Log — *@
+        <div class="detail-card" style="margin-bottom:14px">
+            <div class="detail-card-title">
+                <div class="icon-box red"><i class="bi bi-journal-text"></i></div>
+                Audit Log — บันทึกการเข้าถึง/แก้ไขข้อมูล
+            </div>
+            <div style="overflow-x:auto">
+                <table class="complaints-table" style="font-size:12px">
+                    <thead>
+                        <tr>
+                            <th>วันเวลา</th>
+                            <th>ผู้ดำเนินการ</th>
+                            <th>การกระทำ</th>
+                            <th>รายละเอียด</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in WitnessData.GetAuditLog(c.Id))
+                        {
+                            <tr>
+                                <td style="white-space:nowrap;color:var(--text-muted)">@entry.Timestamp</td>
+                                <td style="font-weight:600">@entry.User</td>
+                                <td>
+                                    <span class="category-chip cat-misconduct">@entry.Action</span>
+                                </td>
+                                <td>@entry.Detail</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @* — Extension — *@
+        @if (extendOpen)
+        {
+            <div class="detail-card" style="border-left:4px solid var(--gold)">
+                <div class="detail-card-title">
+                    <div class="icon-box orange"><i class="bi bi-arrow-clockwise"></i></div>
+                    ขอต่ออายุคุ้มครอง (รอบที่ @(c.RoundNumber + 1))
+                </div>
+                <p style="font-size:13px;color:var(--text-dark)">
+                    ต่ออายุได้อีก <strong>@(c.MaxRoundDays) วัน</strong> (ไม่เกิน 90 วัน/รอบ, รวมสูงสุด 180 วัน)
+                </p>
+                <textarea class="form-control-custom" rows="3" placeholder="เหตุผลในการขอต่ออายุคุ้มครอง..."></textarea>
+                <div class="d-flex gap-2 mt-2">
+                    <button class="btn-gold" @onclick="() => { extendOpen = false; extendDone = true; }">
+                        <i class="bi bi-check-lg"></i> ยื่นคำขอ
+                    </button>
+                    <button class="btn-outline-navy" @onclick="() => extendOpen = false">ยกเลิก</button>
+                </div>
+            </div>
+        }
+        @if (extendDone)
+        {
+            <div style="margin-top:14px;padding:12px 16px;border-radius:10px;background:#e6f4ed;color:#1b7a4a;font-size:13px;font-weight:700">
+                <i class="bi bi-check-circle-fill"></i> ส่งคำขอต่ออายุสำเร็จ (Mockup) — รอเลขาธิการอนุมัติ
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private WitnessCase? c;
+    private bool extendOpen;
+    private bool extendDone;
+
+    protected override void OnParametersSet()
+    {
+        c = WitnessData.GetById(Id);
+        extendOpen = false;
+        extendDone = false;
+    }
+}

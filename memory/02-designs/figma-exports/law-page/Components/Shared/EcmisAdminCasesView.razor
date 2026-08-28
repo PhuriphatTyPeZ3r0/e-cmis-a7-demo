@@ -1,0 +1,324 @@
+<!-- VIEW 10.3: ADMINISTRATIVE LITIGATION -->
+<div id="view-10-3-admin-cases" class="app-view">
+    <!-- ROW 1: KPI Cards -->
+    <div class="row g-3 mb-4" id="kpi-cards-103">
+        <!-- Dynamic KPI cards render here -->
+    </div>
+
+    <!-- ROW 2: Filter Form (single row, auto-filter on change) -->
+    <div class="filter-container mb-4">
+        <div class="filter-row d-flex flex-wrap align-items-center gap-2">
+            <div class="position-relative filter-search" style="flex: 2 1 220px;">
+                <input type="text" class="form-control pe-5" id="filter-103-search" placeholder="เลขคดีดำ/แดง, ผู้ฟ้อง, ชื่อบุคคล…" oninput="applyFilters103()">
+                <i class="bi bi-search position-absolute" style="right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px;"></i>
+            </div>
+            <div style="flex: 1 1 170px;">
+                <select class="form-select" id="filter-103-court" onchange="applyFilters103()">
+                    <option value="">ศาลปกครอง: ทั้งหมด</option>
+                    <option value="ศาลปกครองกลาง">ศาลปกครองกลาง</option>
+                    <option value="ศาลปกครองนครราชสีมา">ศาลปกครองนครราชสีมา</option>
+                    <option value="ศาลปกครองเชียงใหม่">ศาลปกครองเชียงใหม่</option>
+                    <option value="ศาลปกครองขอนแก่น">ศาลปกครองขอนแก่น</option>
+                </select>
+            </div>
+            <div style="flex: 1 1 150px;">
+                <select class="form-select" id="filter-103-type" onchange="applyFilters103()">
+                    <option value="">ประเภทคดี: ทั้งหมด</option>
+                    <option value="ชั้นต้น">ศาลปกครองชั้นต้น</option>
+                    <option value="สูงสุด">ศาลปกครองสูงสุด</option>
+                </select>
+            </div>
+            <div style="flex: 1 1 150px;">
+                <select class="form-select" id="filter-103-result" onchange="applyFilters103()">
+                    <option value="">ผลคดี: ทั้งหมด</option>
+                    <option value="ชนะคดี">ชนะคดี</option>
+                    <option value="แพ้คดี">แพ้คดี</option>
+                    <option value="จำหน่ายคดี">จำหน่ายคดี</option>
+                    <option value="ระหว่างพิจารณา">อยู่ระหว่างพิจารณา</option>
+                </select>
+            </div>
+            <div class="position-relative" style="flex: 0 0 230px;">
+                <input type="text" id="filter-103-date-range" class="form-control pe-5" style="background-color: #fff; cursor: pointer;" readonly>
+                <i class="bi bi-calendar3 position-absolute" style="right: 14px; top: 50%; transform: translateY(-50%); color: rgba(26, 47, 107, 0.4); font-size: 13px; pointer-events: none;"></i>
+            </div>
+            <button class="btn btn-grad-gold ms-auto" data-bs-toggle="modal" data-bs-target="#newAdminCaseModal">+ รับหมายเรียก/คำสั่งศาล</button>
+        </div>
+    </div>
+
+    <!-- ROW 3: Data Table -->
+    <div class="table-container pb-3">
+        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+            <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle" style="width: 8px; height: 8px; background: var(--gold);"></div>
+                <span class="fw-bold" style="font-size: 14px; color: var(--primary-dark);">รายการควบคุมคดีปกครอง</span>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-muted text-value fw-normal" style="font-size: 11px;">เชื่อมโยงข้อมูลมูลเหตุจากสารบบคดี ป.ป.ท. โดยตรง</span>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-navy py-1 px-3 dropdown-toggle" style="font-size: 11px; height: 30px;" data-bs-toggle="dropdown">
+                        <i class="bi bi-download"></i> Export
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow" style="font-size:12px;">
+                        <li><a class="dropdown-item" href="#" onclick="exportData('103','excel'); return false;"><i class="bi bi-file-earmark-excel text-success me-2"></i>Excel (.xlsx)</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportData('103','word'); return false;"><i class="bi bi-file-earmark-word text-primary me-2"></i>Word (.docx)</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportData('103','pdf'); return false;"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>PDF (พิมพ์)</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table custom-table mb-0" id="table-103">
+                <thead>
+                    <tr>
+                        <th><span class="case-no--black">คดีดำ</span> / <span class="case-no--red">คดีแดง</span></th>
+                        <th>ศาล</th>
+                        <th>ประเภท</th>
+                        <th>ผู้ฟ้อง / ผู้ถูกฟ้อง</th>
+                        <th>มูลเหตุคดี (ป.ป.ท.)</th>
+                        <th>นิติกรผู้รับผิดชอบ</th>
+                        <th>สถานะการดำเนินงาน</th>
+                        <th>ผลคดี</th>
+                        <th>นัดหมายถัดไป</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-cases-table-body">
+                    <!-- Dynamic rows render here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- VIEW 10.3: ADMIN CASE DETAIL -->
+<div id="view-10-3-detail" class="app-view">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <button class="btn btn-outline-navy py-1" onclick="switchView('10.3')"><i class="bi bi-chevron-left"></i> ย้อนกลับ</button>
+        <div class="dropdown">
+            <button class="btn btn-outline-navy btn-sm text-value dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="bi bi-download"></i> Export
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow" style="font-size:12px;">
+                <li><a class="dropdown-item" href="#" onclick="exportData('103','excel'); return false;"><i class="bi bi-file-earmark-excel text-success me-2"></i>Excel (.xlsx)</a></li>
+                <li><a class="dropdown-item" href="#" onclick="exportData('103','word'); return false;"><i class="bi bi-file-earmark-word text-primary me-2"></i>Word (.docx)</a></li>
+                <li><a class="dropdown-item" href="#" onclick="exportData('103','pdf'); return false;"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>PDF (พิมพ์)</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- HERO -->
+    <div class="kpi-card mb-4 p-4 border border-warning" style="background: rgba(213, 180, 91, 0.03);">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h4 class="fw-bold mb-2" id="detail-admin-nos"></h4>
+                <div class="d-flex gap-2 flex-wrap" id="detail-admin-chips"></div>
+                <div class="mt-3 text-muted" style="font-size:12.5px;" id="detail-admin-parties"></div>
+                <div class="text-muted" style="font-size:12.5px;" id="detail-admin-meta"></div>
+            </div>
+            <div class="col-md-4 border-start ps-4">
+                <div class="text-muted" style="font-size:11px;">นัดหมายถัดไป</div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <h1 class="fw-bold text-danger mb-0" id="detail-admin-days">—</h1>
+                    <span class="text-muted" style="font-size:12.5px;">วัน</span>
+                </div>
+                <div class="text-muted" style="font-size:12px;" id="detail-admin-nextdate">—</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEPPER (TOR 10.3.3) -->
+    <div class="table-container p-4 mb-4">
+        <h6 class="fw-bold text-primary mb-3">ขั้นตอนการดำเนินงาน (TOR 10.3.3)</h6>
+        <div class="progress-stepper">
+            <div class="progress-line-fill" id="admin-stepper-fill"></div>
+            <div class="step-item" id="admin-step-1"><div class="step-circle">1</div><div class="step-label">รับหมายเรียก</div></div>
+            <div class="step-item" id="admin-step-2"><div class="step-circle">2</div><div class="step-label">มอบหมายนิติกร</div></div>
+            <div class="step-item" id="admin-step-3"><div class="step-circle">3</div><div class="step-label">เสนอบอร์ดมอบอำนาจ</div></div>
+            <div class="step-item" id="admin-step-4"><div class="step-circle">4</div><div class="step-label">อยู่ระหว่างกลุ่มงานคดี</div></div>
+            <div class="step-item" id="admin-step-5"><div class="step-circle">5</div><div class="step-label">ส่งสำนวนให้อัยการ</div></div>
+            <div class="step-item" id="admin-step-6"><div class="step-circle">6</div><div class="step-label">คดีถึงที่สุด</div></div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <!-- COURT CASES: one-to-many -->
+            <div class="table-container p-4 mb-4 border border-warning">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold text-primary mb-0"><i class="bi bi-bank"></i> คดีในชั้นศาล (TOR 10.3.1 · 10.3.4)</h6>
+                </div>
+                <p class="text-muted mb-3" style="font-size:11px;">
+                    หนึ่งสำนวน ป.ป.ท. ผูกกับคดีศาลได้หลายใบ · แต่ละชั้นศาลออกเลขคดีดำของตัวเอง และได้เลขคดีแดงเมื่อศาลมีคำพิพากษา — เลขแดงว่าง = ยังพิจารณาอยู่
+                </p>
+                <div class="table-responsive">
+                    <table class="table mb-0 align-middle" style="font-size:12.5px;">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ชั้นศาล</th>
+                                <th><span class="case-no--black">เลขคดีดำ</span></th>
+                                <th><span class="case-no--red">เลขคดีแดง</span></th>
+                                <th>ผลคดี</th>
+                                <th>วันพิพากษา</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-admin-courtcases"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ACTIONS -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="table-container p-4 h-100 border border-warning">
+                        <h6 class="fw-bold text-primary mb-2"><i class="bi bi-pencil-square"></i> บันทึกสถานะงาน</h6>
+                        <p class="text-muted" style="font-size:11px;">TOR 10.3.3 — เปลี่ยนสถานะพร้อมแนบหนังสือส่งสำนวนให้อัยการ ทุกครั้งระบบบันทึกเวลาไว้ใช้คำนวณสถิติ</p>
+                        <button class="btn btn-grad-navy w-100" id="btn-admin-status">บันทึกสถานะงาน</button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="table-container p-4 h-100 border border-warning">
+                        <h6 class="fw-bold text-primary mb-2"><i class="bi bi-award"></i> บันทึกผลคำพิพากษา</h6>
+                        <p class="text-muted" style="font-size:11px;">TOR 10.3.4 — การบันทึกผลจะออกเลขคดีแดงให้ชั้นศาลนั้น และตั้งคดีเป็นถึงที่สุดเมื่อไม่มีชั้นศาลใดค้าง</p>
+                        <button class="btn btn-grad-navy w-100" id="btn-admin-result">บันทึกผล + แนบคำพิพากษา</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- METADATA -->
+            <div class="table-container p-4 mb-4">
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-file-earmark-text"></i> ข้อมูลหมายเรียกและคำสั่งศาล (TOR 10.3.1)</h6>
+                <div class="row g-3">
+                    <div class="col-md-3"><div class="text-muted" style="font-size:11px;">ศาลปกครอง</div><div class="fw-bold text-value text-dark" id="detail-admin-court">—</div></div>
+                    <div class="col-md-3"><div class="text-muted" style="font-size:11px;">ประเภทคดี</div><div class="fw-bold text-value text-dark" id="detail-admin-level">—</div></div>
+                    <div class="col-md-3"><div class="text-muted" style="font-size:11px;">วันที่รับหมายเรียก</div><div class="fw-bold text-value text-dark" id="detail-admin-received">—</div></div>
+                    <div class="col-md-3"><div class="text-muted" style="font-size:11px;">ปีงบประมาณที่รับเรื่อง</div><div class="fw-bold text-value text-dark" id="detail-admin-year">—</div></div>
+                    <div class="col-md-3"><div class="text-muted" style="font-size:11px;">ผู้ฟ้องคดี</div><div class="fw-bold text-value text-dark" id="detail-admin-plaintiff">—</div></div>
+                    <div class="col-md-3"><div class="text-muted" style="font-size:11px;">ผู้ถูกฟ้องคดี</div><div class="fw-bold text-value text-dark" id="detail-admin-defendant">—</div></div>
+                    <div class="col-md-3"><div class="text-muted" style="font-size:11px;">ผู้ร้องสอด</div><div class="fw-bold text-value text-dark" id="detail-admin-interpleader">—</div></div>
+                    <div class="col-md-3"><div class="text-muted" style="font-size:11px;">นิติกรผู้รับผิดชอบ</div><div class="fw-bold text-value text-dark" id="detail-admin-responsible">—</div></div>
+                </div>
+                <div class="mt-3 pt-3 border-top">
+                    <div class="text-muted" style="font-size:11px;">มูลเหตุข้อพิพาท / ข้อหาในคำฟ้อง</div>
+                    <div class="text-value" id="detail-admin-reason">—</div>
+                </div>
+            </div>
+
+            <!-- DOCS -->
+            <div class="table-container p-4">
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-paperclip"></i> เอกสารในสำนวน</h6>
+                <div class="list-group" id="detail-admin-docs"></div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- SOURCE CASE -->
+            <div class="table-container p-4 mb-4 border border-warning">
+                <h6 class="fw-bold text-primary mb-2"><i class="bi bi-diagram-3"></i> มูลเหตุคดีเดิม</h6>
+                <p class="text-muted mb-2" style="font-size:11px;">ป.ป.ท. ใช้เลขสำนวนของตนเป็นกุญแจหลัก แล้วโยงไปยังเลขคดีของศาล</p>
+                <div class="text-muted" style="font-size:11px;">สำนวนคดีต้นเรื่อง</div>
+                <div class="fw-bold text-value" id="detail-admin-source">—</div>
+            </div>
+
+            <!-- HISTORY -->
+            <div class="table-container p-4 border border-warning">
+                <h6 class="fw-bold text-primary mb-2"><i class="bi bi-clock-history"></i> ประวัติการดำเนินการ</h6>
+                <p class="text-muted mb-3" style="font-size:11px;">ทุกครั้งที่เปลี่ยนสถานะ ระบบบันทึกเวลา — สถิติระยะเวลาใน Dashboard (TOR 10.3.5) คำนวณจากรายการเหล่านี้</p>
+                <div class="audit-trail-list" id="detail-admin-history"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- MODAL 5: NEW ADMIN COURT CASE (10.3) -->
+<!-- ============================================== -->
+<div class="modal fade" id="newAdminCaseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-navy text-white" style="background: var(--primary-dark);">
+                <h6 class="modal-title fw-bold text-white"><i class="bi bi-scales"></i> ยื่นฟ้อง / รับคำรับคดีปกครองใหม่</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="new-admin-case-form" onsubmit="submitNewAdminCase(event)">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted" style="font-size:12px;">หมายเลขคดีดำ <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="form-103-black" placeholder="เช่น บ 50/2569" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted" style="font-size:12px;">หมายเลขคดีแดง (ถ้ามี)</label>
+                            <input type="text" class="form-control" id="form-103-red" placeholder="เช่น บ 99/2569">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted" style="font-size:12px;">ศาลที่ยื่นฟ้อง <span class="text-danger">*</span></label>
+                            <select class="form-select" id="form-103-court" required>
+                                <option value="ศาลปกครองกลาง">ศาลปกครองกลาง</option>
+                                <option value="ศาลปกครองสูงสุด">ศาลปกครองสูงสุด</option>
+                                <option value="ศาลปกครองภูมิภาค">ศาลปกครองภูมิภาค</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted" style="font-size:12px;">ประเภทระดับศาล <span class="text-danger">*</span></label>
+                            <select class="form-select" id="form-103-type" required>
+                                <option value="ชั้นต้น">ศาลปกครองชั้นต้น</option>
+                                <option value="สูงสุด">ศาลปกครองสูงสุด</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted" style="font-size:12px;">ผู้ฟ้องคดี <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="form-103-plaintiff" placeholder="ชื่อหน่วยงาน หรือบุคคลที่ยื่นฟ้อง" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted" style="font-size:12px;">ผู้ถูกฟ้องคดี (ป.ป.ท. / บอร์ด) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="form-103-defendant" value="สำนักงาน ป.ป.ท. และคณะกรรมการ ป.ป.ท." required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted" style="font-size:12px;">ผู้ร้องสอด (ถ้ามี)</label>
+                            <input type="text" class="form-control" id="form-103-interpleader" placeholder="ชื่อผู้ร้องสอด / ผู้มีส่วนได้เสีย">
+                        </div>
+                        <div class="col-md-6 position-relative">
+                            <label class="form-label text-muted" style="font-size:12px;">มูลเหตุคดีเดิม (สืบค้นจากสารบบ ป.ป.ท.)</label>
+                            <input type="text" class="form-control pe-5" id="form-103-source" list="source-case-list" placeholder="พิมพ์เลขสำนวนเดิม เช่น ปปท.87/67" autocomplete="off">
+                            <datalist id="source-case-list"></datalist>
+                            <i class="bi bi-search position-absolute" style="right: 26px; bottom: 11px; color: rgba(26, 47, 107, 0.4); font-size: 13px; pointer-events: none;"></i>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-muted" style="font-size:12px;">มูลเหตุข้อพิพาท / ข้อหาในคำฟ้อง <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="form-103-reason" rows="2" placeholder="เช่น ขอเพิกถอนมติชี้มูลความผิดวินัยร้ายแรง" required></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted" style="font-size:12px;">นิติกรผู้รับผิดชอบ <span class="text-danger">*</span></label>
+                            <select class="form-select" id="form-103-responsible" required>
+                                <option value="นางสาว อรวรรณ ทูลมณี">นางสาว อรวรรณ ทูลมณี</option>
+                                <option value="นายอานนท์ ชนประชา">นายอานนท์ ชนประชา</option>
+                                <option value="นายปิติคุณ อู่ตะเภา">นายปิติคุณ อู่ตะเภา</option>
+                                <option value="นายชยุต ภควัตทิพากร">นายชยุต ภควัตทิพากร</option>
+                                <option value="นายณัฐพล บัวทุม">นายณัฐพล บัวทุม</option>
+                                <option value="นางสาวนิติพร มีไพฑูรย์">นางสาวนิติพร มีไพฑูรย์</option>
+                                <option value="นางสาววันวิสาข์ ไชยพันธ์">นางสาววันวิสาข์ ไชยพันธ์</option>
+                                <option value="นางสาวรัตนาภรณ์ เนตรหลง">นางสาวรัตนาภรณ์ เนตรหลง</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted" style="font-size:12px;">ปีงบประมาณที่รับเรื่อง <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="form-103-year" value="2569" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted" style="font-size:12px;">วันนัดไต่สวน/ฟังคำสั่งนัดแรก</label>
+                            <div class="position-relative">
+                                <input type="text" class="form-control pe-5" id="form-103-date" placeholder="เลือกวันนัดไต่สวน" style="background-color: #fff; cursor: pointer;" readonly>
+                                <i class="bi bi-calendar3 position-absolute" style="right: 14px; top: 50%; transform: translateY(-50%); color: rgba(26, 47, 107, 0.4); font-size: 13px; pointer-events: none;"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer px-0 pb-0">
+                        <button type="button" class="btn btn-outline-navy" data-bs-dismiss="modal">ยกเลิก</button>
+                        <button type="submit" class="btn btn-grad-navy">บันทึกข้อมูลคดี</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

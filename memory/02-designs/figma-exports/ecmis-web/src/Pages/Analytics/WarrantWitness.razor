@@ -1,0 +1,661 @@
+@page "/analytics/warrant-witness"
+@layout MainLayout
+@implements IDisposable
+@using EcmisWeb.Data
+@inject IJSRuntime JS
+
+<div class="cs-shell">
+
+    <div class="cs-header">
+        <div class="cs-header-inner">
+            <div class="cs-bc">
+                <i class="bi bi-house-fill"></i>
+                <a href="/">หน้าหลัก</a>
+                <i class="bi bi-chevron-right"></i>
+                <span>วิเคราะห์และรายงานผล</span>
+                <i class="bi bi-chevron-right"></i>
+                <span>สถิติหมายจับและคุ้มครองพยาน</span>
+            </div>
+            <div class="cs-ph-row">
+                <div>
+                    <div class="cs-title">สถิติหมายจับและคุ้มครองพยาน | TOR 12.7</div>
+                    <div class="cs-sub">วิเคราะห์สถิติหมายจับ ผลการจับกุม และการคุ้มครองพยานในคดีทุจริต</div>
+                </div>
+                <div class="cs-actions" style="gap:8px;align-items:center">
+                    @* FR-053: Role selector *@
+                    <div class="fgrp" style="margin:0">
+                        <label class="flbl" style="font-size:10px">สิทธิ์ผู้ใช้ (จำลอง)</label>
+                        <select class="fsel" style="font-size:11px;padding:4px 8px" @bind="_userRole" @bind:after="OnRoleChanged">
+                            <option value="user">ผู้ใช้ทั่วไป (ปกติ)</option>
+                            <option value="officer">เจ้าหน้าที่ (ปกติ+ลับ)</option>
+                            <option value="admin">ผู้บริหาร (ทั้งหมด)</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn-ghost-d" @onclick="PrintReportAsync">
+                        <i class="bi bi-printer"></i> พิมพ์ PDF
+                    </button>
+                    <button type="button" class="btn-accent" @onclick="ExportCsvAsync">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cs-body">
+
+        @* ── FR-053: RBAC Banner ── *@
+        <div class="rbac-banner @RbacBannerClass">
+            <i class="bi @RbacIcon"></i>
+            <span>สิทธิ์ปัจจุบัน: <strong>@RbacRoleLabel</strong></span>
+            <span style="opacity:.7">·</span>
+            <span>เข้าถึงข้อมูลชั้น: @RbacAccessLabel</span>
+            <span style="opacity:.7">·</span>
+            <span>แสดงหมายจับ @AuthorizedWarrants.Count จาก @WarrantData.Warrants.Count รายการ</span>
+        </div>
+
+        @* ── KPI Row ── *@
+        <div class="cs-stats-row" style="grid-template-columns:repeat(4,1fr)">
+            <div class="sc sc-red">
+                <div class="sc-head">หมายจับคงค้าง (กำลังติดตาม)</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@KpiActive.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-down">@KpiActive หมาย</span>
+                        <span class="sc-hint">จาก @AuthorizedWarrants.Count ที่มีสิทธิ์ดู</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-green">
+                <div class="sc-head">อัตราจับกุม</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@ArrestRatePct</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-up">@KpiArrested จับกุมแล้ว</span>
+                        <span class="sc-hint">หมดอายุ @KpiExpired หมาย</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-blue">
+                <div class="sc-head">พยานที่คุ้มครองอยู่</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@KpiActiveWitnesses.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-up">approved/urgent</span>
+                        <span class="sc-hint">จาก @WitnessData.Cases.Count คดีทั้งหมด</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-orange">
+                <div class="sc-head">หมายใกล้หมดอายุ (≤365 วัน)</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@NearExpiryWarrants.Count.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-flat">@NearExpiryUrgent เร่งด่วน ≤90 วัน</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="table-card">
+
+            @* ── Charts (FR-049, 050, 051, 054) ── *@
+            <div class="cs-charts-wrap layout-fill">
+                <div class="cs-charts-top">
+                    <div class="cs-chart-card">
+                        <div class="cs-chart-title"><i class="bi bi-pie-chart-fill"></i> ผลการจับกุม</div>
+                        <div class="cs-chart-canvas"><canvas id="wwChartArrest"></canvas></div>
+                    </div>
+                    <div class="cs-chart-card">
+                        <div class="cs-chart-title"><i class="bi bi-bar-chart-fill"></i> หมายจับแยกตามเขต</div>
+                        <div class="cs-chart-canvas"><canvas id="wwChartRegion"></canvas></div>
+                    </div>
+                    <div class="cs-chart-card">
+                        <div class="cs-chart-title"><i class="bi bi-shield-check"></i> ประเภทการคุ้มครองพยาน</div>
+                        <div class="cs-chart-canvas"><canvas id="wwChartProtType"></canvas></div>
+                    </div>
+                </div>
+                <div class="cs-charts-bot">
+                    <div class="cs-chart-card" style="grid-column:span 2">
+                        <div class="cs-chart-title"><i class="bi bi-graph-up-arrow"></i> แนวโน้มหมายจับและผลการจับกุมรายปีงบประมาณ</div>
+                        <div class="cs-chart-canvas"><canvas id="wwChartTrend"></canvas></div>
+                    </div>
+                    <div class="cs-chart-card">
+                        <div class="cs-chart-title"><i class="bi bi-shield-fill-exclamation"></i> ระดับการคุ้มครองพยาน</div>
+                        <div class="cs-chart-canvas"><canvas id="wwChartProtLevel"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            @* ── FR-052: หมายจับใกล้หมดอายุ ── *@
+            <div class="tc-head" style="margin-top:1.5rem">
+                <div class="tc-row1">
+                    <div>
+                        <div class="tc-title">
+                            <i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b"></i>
+                            หมายจับที่ใกล้หมดอายุ (ภายใน 365 วัน)
+                        </div>
+                        <div class="tc-sub" style="font-size:11px;color:#94a3b8">
+                            เฉพาะสถานะ "กำลังติดตาม" ·
+                            <span class="ww-chip sec-topsecret">≤90 วัน = เร่งด่วน</span>
+                            <span class="ww-chip sec-secret" style="margin-left:4px">91-180 วัน = แจ้งเตือน</span>
+                        </div>
+                    </div>
+                    <div class="tc-meta"><span class="bdg-nv">@NearExpiryWarrants.Count รายการ</span></div>
+                </div>
+            </div>
+            @if (!NearExpiryWarrants.Any())
+            {
+                <div class="empty-state" style="margin-bottom:1rem">
+                    <i class="bi bi-check-circle-fill" style="color:#06d6a0"></i>
+                    <span>ไม่มีหมายจับที่ใกล้หมดอายุในขณะนี้</span>
+                </div>
+            }
+            else
+            {
+                <table class="cs-status-table" style="margin-bottom:1.5rem">
+                    <thead>
+                        <tr>
+                            <th>เลขที่หมาย</th>
+                            <th>ผู้ต้องสงสัย</th>
+                            <th>เขต</th>
+                            <th>วันออกหมาย</th>
+                            <th>วันหมดอายุ</th>
+                            <th>เหลือ (วัน)</th>
+                            <th>ระดับความลับ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var w in NearExpiryWarrants.OrderBy(w => WarrantData.DaysUntilExpiry(w.ExpiryDate)))
+                        {
+                            var days = WarrantData.DaysUntilExpiry(w.ExpiryDate);
+                            var daysStyle = days <= 90 ? "color:#ef4444;font-weight:700" : "color:#f59e0b;font-weight:700";
+                            <tr>
+                                <td style="font-weight:700">@w.WarrantNo</td>
+                                <td>@w.SuspectName</td>
+                                <td>@w.Region</td>
+                                <td>@w.IssueDate</td>
+                                <td style="@daysStyle">@w.ExpiryDate @(days <= 90 ? "⚠️" : "")</td>
+                                <td style="@daysStyle;text-align:right">@days</td>
+                                <td><span class="ww-chip @WarrantData.SecurityLevelClass(w.SecurityLevel)">@w.SecurityLevel</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+            @* ── Filter Row (FR-055) ── *@
+            <div class="tc-head" style="margin-top:0.5rem">
+                <div class="tc-row1">
+                    <div>
+                        <div class="tc-title"><i class="bi bi-table"></i> รายการข้อมูล</div>
+                        <div class="tc-sub">คัดกรองและสืบค้นตามประเภทหมาย สถานะ ระดับความลับ และช่วงเวลา</div>
+                    </div>
+                    <div class="tc-meta">
+                        <span class="bdg-nv">@DisplayCount รายการ</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-row">
+                <div class="fgrp">
+                    <label class="flbl" for="wwType">ประเภท</label>
+                    <select id="wwType" class="fsel" @bind="_filterType">
+                        <option value="warrant">หมายจับ</option>
+                        <option value="witness">คุ้มครองพยาน</option>
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="wwStatus">สถานะ</label>
+                    <select id="wwStatus" class="fsel" @bind="_filterStatus">
+                        <option value="">ทั้งหมด</option>
+                        @if (_filterType == "warrant")
+                        {
+                            <option value="active">กำลังติดตาม</option>
+                            <option value="closed">จับกุมแล้ว</option>
+                            <option value="expired">หมดอายุ</option>
+                        }
+                        else
+                        {
+                            <option value="pending">รอเสนอ</option>
+                            <option value="director_review">รอ ผอ. พิจารณา</option>
+                            <option value="secretary_review">รอเลขาธิการอนุมัติ</option>
+                            <option value="approved">อนุมัติแล้ว</option>
+                            <option value="urgent_approved">อนุมัติเร่งด่วน</option>
+                            <option value="rejected">ไม่อนุมัติ</option>
+                            <option value="fact_check">ตรวจสอบเพิ่มเติม</option>
+                        }
+                    </select>
+                </div>
+                @if (_filterType == "warrant")
+                {
+                    <div class="fgrp">
+                        <label class="flbl" for="wwSecLevel">ระดับความลับ</label>
+                        <select id="wwSecLevel" class="fsel" @bind="_filterSecLevel">
+                            <option value="">ทั้งหมด</option>
+                            <option value="ปกติ">ปกติ</option>
+                            @if (CanViewSecret)  { <option value="ลับ">ลับ</option> }
+                            @if (CanViewTopSecret) { <option value="ลับมาก">ลับมาก</option> }
+                        </select>
+                    </div>
+                }
+                <div class="fgrp">
+                    <label class="flbl" for="wwYear">ปีงบประมาณ</label>
+                    <select id="wwYear" class="fsel" @bind="_filterYear">
+                        <option value="0">ทั้งหมด</option>
+                        <option value="2566">2566</option>
+                        <option value="2567">2567</option>
+                        <option value="2568">2568</option>
+                        <option value="2569">2569</option>
+                    </select>
+                </div>
+                <button type="button" class="fbtn" @onclick="OnResetFilter">
+                    <i class="bi bi-x-lg"></i> ล้างค่า
+                </button>
+            </div>
+
+            @* ── Main Table ── *@
+            @if (_filterType == "warrant")
+            {
+                @if (!FilteredWarrants.Any())
+                {
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <span>ไม่พบข้อมูลตามเงื่อนไข หรือไม่มีสิทธิ์เข้าถึงข้อมูลชั้นความลับนี้</span>
+                    </div>
+                    <table class="cs-status-table" id="exportTable" style="display:none"><thead><tr><th></th></tr></thead><tbody></tbody></table>
+                }
+                else
+                {
+                    <table class="cs-status-table" id="exportTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>เลขที่หมาย</th>
+                                <th>ผู้ต้องสงสัย</th>
+                                <th>ข้อหา</th>
+                                <th>เขต</th>
+                                <th>วันออกหมาย</th>
+                                <th>วันหมดอายุ</th>
+                                <th>ผลการจับกุม</th>
+                                <th>ชั้นความลับ</th>
+                                <th>ปีงบ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ int seq = 0; }
+                            @foreach (var w in FilteredWarrants)
+                            {
+                                seq++;
+                                var days = WarrantData.DaysUntilExpiry(w.ExpiryDate);
+                                var expiryStyle = w.Status == "active" && days <= 90 ? "color:#ef4444;font-weight:700" :
+                                                  w.Status == "active" && days <= 365 ? "color:#f59e0b;font-weight:700" : "";
+                                <tr>
+                                    <td style="color:#94a3b8">@seq</td>
+                                    <td style="font-weight:700;white-space:nowrap">@w.WarrantNo</td>
+                                    <td>@w.SuspectName</td>
+                                    <td style="font-size:11px;max-width:200px">@TruncateCharge(w.Charge)</td>
+                                    <td>@w.Region</td>
+                                    <td style="white-space:nowrap">@w.IssueDate</td>
+                                    <td style="white-space:nowrap;@expiryStyle">@w.ExpiryDate</td>
+                                    <td><span class="badge-status status-@WarrantData.StatusClass(w.Status)">@WarrantData.StatusLabel(w.Status)</span></td>
+                                    <td><span class="ww-chip @WarrantData.SecurityLevelClass(w.SecurityLevel)">@w.SecurityLevel</span></td>
+                                    <td>@w.FiscalYear</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            }
+            else
+            {
+                @if (!FilteredWitnesses.Any())
+                {
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <span>ไม่พบข้อมูลตามเงื่อนไขที่เลือก</span>
+                    </div>
+                    <table class="cs-status-table" id="exportTable" style="display:none"><thead><tr><th></th></tr></thead><tbody></tbody></table>
+                }
+                else
+                {
+                    <table class="cs-status-table" id="exportTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>เลขคำร้อง</th>
+                                <th>ชื่อพยาน</th>
+                                <th>บทบาท</th>
+                                <th>สำนัก/เขต</th>
+                                <th>วันที่ยื่น</th>
+                                <th>ประเภทคุ้มครอง</th>
+                                <th>ระดับ</th>
+                                <th>วันที่คุ้มครอง</th>
+                                <th>สถานะ</th>
+                                <th>ปีงบ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ int seq2 = 0; }
+                            @foreach (var c in FilteredWitnesses)
+                            {
+                                seq2++;
+                                <tr>
+                                    <td style="color:#94a3b8">@seq2</td>
+                                    <td style="font-weight:700;white-space:nowrap">@c.RequestNo</td>
+                                    <td>@c.WitnessName</td>
+                                    <td>@c.WitnessRole</td>
+                                    <td style="font-size:11px">@c.Division</td>
+                                    <td style="white-space:nowrap">@c.RequestDate</td>
+                                    <td>@c.ProtectionType</td>
+                                    <td><span class="ww-chip @WitnessData.ProtectionLevelClass(c.ProtectionLevel)">@c.ProtectionLevel</span></td>
+                                    <td style="text-align:right">@(c.ProtectionDays > 0 ? $"{c.ProtectionDays} วัน" : "-")</td>
+                                    <td><span class="badge-status status-@WitnessData.StatusClass(c.Status)">@WitnessData.StatusLabel(c.Status)</span></td>
+                                    <td>@c.FiscalYear</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            }
+
+            @* ── Footer (FR-056) ── *@
+            <div class="cs-footer">
+                <span class="cs-footer-info">
+                    แสดงผล <strong>@DisplayCount รายการ</strong>
+                    @if (_filterType == "warrant" && _userRole != "admin")
+                    {
+                        <span style="color:#f59e0b;margin-left:8px">
+                            <i class="bi bi-lock-fill"></i> บางรายการถูกซ่อนตามสิทธิ์ (@RbacRoleLabel)
+                        </span>
+                    }
+                </span>
+                <div class="cs-footer-btns">
+                    <button type="button" class="btn-ghost-d" @onclick="PrintReportAsync">
+                        <i class="bi bi-printer"></i> พิมพ์ PDF
+                    </button>
+                    <button type="button" class="btn-accent" @onclick="ExportCsvAsync">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel (ตามสิทธิ์)
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+@code {
+    private DotNetObjectReference<WarrantWitness>? _dotNetRef;
+    private bool _chartsReady = false;
+    private bool _isDark      = true;
+
+    // ── Filter state ─────────────────────────────────────────────────────────
+    private string _filterType     = "warrant";
+    private string _filterStatus   = "";
+    private string _filterSecLevel = "";
+    private int    _filterYear     = 0;
+
+    // ── FR-053: RBAC ─────────────────────────────────────────────────────────
+    private string _userRole = "officer"; // user | officer | admin
+
+    private bool CanViewSecret    => _userRole != "user";
+    private bool CanViewTopSecret => _userRole == "admin";
+
+    private bool CanViewWarrant(WarrantRecord w) =>
+        w.SecurityLevel == "ปกติ" ||
+        (w.SecurityLevel == "ลับ"    && CanViewSecret)    ||
+        (w.SecurityLevel == "ลับมาก" && CanViewTopSecret);
+
+    private List<WarrantRecord> AuthorizedWarrants =>
+        WarrantData.Warrants.Where(CanViewWarrant).ToList();
+
+    private string RbacRoleLabel => _userRole switch
+    {
+        "user"    => "ผู้ใช้ทั่วไป",
+        "officer" => "เจ้าหน้าที่",
+        "admin"   => "ผู้บริหาร",
+        _         => _userRole
+    };
+
+    private string RbacAccessLabel => _userRole switch
+    {
+        "user"    => "ปกติ เท่านั้น",
+        "officer" => "ปกติ และ ลับ",
+        "admin"   => "ปกติ, ลับ และ ลับมาก",
+        _         => ""
+    };
+
+    private string RbacBannerClass => _userRole switch
+    {
+        "user"    => "rbac-user",
+        "officer" => "rbac-officer",
+        "admin"   => "rbac-admin",
+        _         => "rbac-officer"
+    };
+
+    private string RbacIcon => _userRole switch
+    {
+        "user"    => "bi-person-fill",
+        "officer" => "bi-shield-fill",
+        "admin"   => "bi-shield-fill-check",
+        _         => "bi-shield-fill"
+    };
+
+    // ── KPI ──────────────────────────────────────────────────────────────────
+    private int KpiActive         => AuthorizedWarrants.Count(w => w.Status == "active");
+    private int KpiArrested       => AuthorizedWarrants.Count(w => w.Status == "closed");
+    private int KpiExpired        => AuthorizedWarrants.Count(w => w.Status == "expired");
+    private string ArrestRatePct  => AuthorizedWarrants.Count == 0 ? "0%"
+        : $"{(int)Math.Round(KpiArrested * 100.0 / AuthorizedWarrants.Count)}%";
+    private int KpiActiveWitnesses => WitnessData.Cases.Count(c => c.Status is "approved" or "urgent_approved");
+
+    // FR-052: หมายจับใกล้หมดอายุ
+    private List<WarrantRecord> NearExpiryWarrants =>
+        AuthorizedWarrants
+            .Where(w => w.Status == "active")
+            .Where(w => { var d = WarrantData.DaysUntilExpiry(w.ExpiryDate); return d >= 0 && d <= 365; })
+            .ToList();
+
+    private int NearExpiryUrgent =>
+        NearExpiryWarrants.Count(w => WarrantData.DaysUntilExpiry(w.ExpiryDate) <= 90);
+
+    // ── Filtered tables (FR-055) ─────────────────────────────────────────────
+    private List<WarrantRecord> FilteredWarrants =>
+        AuthorizedWarrants
+            .Where(w => string.IsNullOrEmpty(_filterStatus)   || w.Status        == _filterStatus)
+            .Where(w => string.IsNullOrEmpty(_filterSecLevel) || w.SecurityLevel  == _filterSecLevel)
+            .Where(w => _filterYear == 0 || w.FiscalYear == _filterYear)
+            .OrderBy(w => w.Status == "active" ? 0 : w.Status == "closed" ? 1 : 2)
+            .ThenBy(w => WarrantData.DaysUntilExpiry(w.ExpiryDate))
+            .ToList();
+
+    private List<WitnessCase> FilteredWitnesses =>
+        WitnessData.Cases
+            .Where(c => string.IsNullOrEmpty(_filterStatus) || c.Status == _filterStatus)
+            .Where(c => _filterYear == 0 || c.FiscalYear == _filterYear)
+            .OrderByDescending(c => c.ProtectionDays)
+            .ToList();
+
+    private int DisplayCount => _filterType == "warrant" ? FilteredWarrants.Count : FilteredWitnesses.Count;
+
+    // ── Utilities ────────────────────────────────────────────────────────────
+    private static string TruncateCharge(string charge) =>
+        charge.Length <= 35 ? charge : charge[..35] + "…";
+
+    // ── Chart data builders ──────────────────────────────────────────────────
+
+    // FR-050: ผลการจับกุม
+    private (string[] Labels, int[] Data, string[] Colors) ArrestResultChartData()
+    {
+        var auth = AuthorizedWarrants;
+        return (
+            new[] { "จับกุมแล้ว", "กำลังติดตาม", "หมดอายุ" },
+            new[] { auth.Count(w => w.Status == "closed"), auth.Count(w => w.Status == "active"), auth.Count(w => w.Status == "expired") },
+            new[] { "#06d6a0", "#f87171", "#fbbf24" }
+        );
+    }
+
+    // FR-049: หมายแยกตามเขต
+    private (string[] Labels, int[] Data) RegionChartData()
+    {
+        var groups = AuthorizedWarrants.GroupBy(w => w.Region).OrderByDescending(g => g.Count()).ToList();
+        return (groups.Select(g => g.Key).ToArray(), groups.Select(g => g.Count()).ToArray());
+    }
+
+    // FR-051: ประเภทการคุ้มครองพยาน
+    private (string[] Labels, int[] Data, string[] Colors) ProtTypeChartData()
+    {
+        var types  = new[] { "ย้ายที่อยู่", "คุ้มกันส่วนตัว", "เปลี่ยนชื่อ", "อื่นๆ" };
+        var colors = new[] { "#6366f1", "#f77f00", "#06d6a0", "#a855f7" };
+        var data   = types.Select(t => WitnessData.Cases.Count(c => c.ProtectionType == t)).ToArray();
+        return (types, data, colors);
+    }
+
+    // FR-051: ระดับการคุ้มครอง
+    private (string[] Labels, int[] Data, string[] Colors) ProtLevelChartData()
+    {
+        var levels = new[] { "ระดับ 1", "ระดับ 2", "ระดับ 3" };
+        var labels = new[] { "ระดับ 1 — ปลอดภัยพื้นฐาน", "ระดับ 2 — คุ้มกันใกล้ชิด", "ระดับ 3 — คุ้มกันพิเศษ" };
+        var colors = new[] { "#6366f1", "#f77f00", "#f87171" };
+        var data   = levels.Select(l => WitnessData.Cases.Count(c => c.ProtectionLevel == l)).ToArray();
+        return (labels, data, colors);
+    }
+
+    // FR-054: แนวโน้มรายปีงบ (multi-series: หมายออก vs จับได้)
+    private object[] TrendDatasets()
+    {
+        var years = new[] { 2566, 2567, 2568, 2569 };
+        var auth  = AuthorizedWarrants;
+        return new object[]
+        {
+            new { label = "หมายจับที่ออก", color = "#6366f1",
+                  data = years.Select(y => (object)auth.Count(w => w.FiscalYear == y)).ToArray() },
+            new { label = "จับกุมได้",      color = "#06d6a0",
+                  data = years.Select(y => (object)auth.Count(w => w.FiscalYear == y && w.Status == "closed")).ToArray() },
+            new { label = "หมดอายุ",        color = "#fbbf24",
+                  data = years.Select(y => (object)auth.Count(w => w.FiscalYear == y && w.Status == "expired")).ToArray() },
+        };
+    }
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var theme = await JS.InvokeAsync<string?>("localStorage.getItem", "dashTheme");
+            _isDark    = theme == "dark";
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("registerAnalyticsComponent", _dotNetRef);
+        }
+        if (!_chartsReady)
+        {
+            _chartsReady = true;
+            await RenderChartsAsync();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnThemeChangedAsync(bool isDark)
+    {
+        _isDark = isDark;
+        await RenderChartsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnResetFilter()
+    {
+        _filterStatus   = "";
+        _filterSecLevel = "";
+        _filterYear     = 0;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnRoleChanged()
+    {
+        // reset sec level filter if role doesn't allow it
+        if (_filterSecLevel == "ลับ"    && !CanViewSecret)    _filterSecLevel = "";
+        if (_filterSecLevel == "ลับมาก" && !CanViewTopSecret) _filterSecLevel = "";
+        _chartsReady = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RenderChartsAsync()
+    {
+        await Task.Yield();
+
+        // FR-050: ผลการจับกุม doughnut
+        var (arrLabels, arrData, arrColors) = ArrestResultChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "wwChartArrest", "doughnut",
+            arrLabels, arrData.Cast<object>().ToArray(), arrColors, _isDark);
+
+        // FR-049: หมายแยกเขต bar-h
+        var (regLabels, regData) = RegionChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "wwChartRegion", "bar-h",
+            regLabels, regData.Cast<object>().ToArray(),
+            Enumerable.Repeat("#6366f1", regLabels.Length).ToArray(), _isDark);
+
+        // FR-051: ประเภทคุ้มครอง bar
+        var (ptLabels, ptData, ptColors) = ProtTypeChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "wwChartProtType", "bar",
+            ptLabels, ptData.Cast<object>().ToArray(), ptColors, _isDark);
+
+        // FR-054: แนวโน้มรายปี multi-series line
+        var yearLabels = new[] { "2566", "2567", "2568", "2569" };
+        await JS.InvokeVoidAsync("initMultiSeriesChart", "wwChartTrend", "line",
+            yearLabels, TrendDatasets(), _isDark);
+
+        // FR-051: ระดับคุ้มครอง doughnut
+        var (plLabels, plData, plColors) = ProtLevelChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "wwChartProtLevel", "doughnut",
+            plLabels, plData.Cast<object>().ToArray(), plColors, _isDark);
+    }
+
+    // ── Export / Print (FR-056) ──────────────────────────────────────────────
+    private async Task ExportCsvAsync()
+    {
+        var sb = new System.Text.StringBuilder();
+        if (_filterType == "warrant")
+        {
+            sb.AppendLine("เลขที่หมาย,ผู้ต้องสงสัย,ข้อหา,เขต,วันออกหมาย,วันหมดอายุ,ผลการจับกุม,ชั้นความลับ,ปีงบประมาณ");
+            foreach (var w in FilteredWarrants)
+            {
+                sb.AppendLine(string.Join(",",
+                    w.WarrantNo, w.SuspectName,
+                    $"\"{w.Charge.Replace("\"", "")}\"",
+                    w.Region, w.IssueDate, w.ExpiryDate,
+                    WarrantData.StatusLabel(w.Status),
+                    w.SecurityLevel, w.FiscalYear));
+            }
+            await JS.InvokeVoidAsync("ecmis.downloadTextFile",
+                $"warrant_stats_{DateTime.Now:yyyyMMdd}.csv", "text/csv;charset=utf-8;", sb.ToString(), true);
+        }
+        else
+        {
+            sb.AppendLine("เลขคำร้อง,ชื่อพยาน,บทบาท,สำนัก/เขต,วันที่ยื่น,ประเภทคุ้มครอง,ระดับ,วันที่คุ้มครอง,สถานะ,ปีงบ");
+            foreach (var c in FilteredWitnesses)
+            {
+                sb.AppendLine(string.Join(",",
+                    c.RequestNo, c.WitnessName, c.WitnessRole, c.Division,
+                    c.RequestDate, c.ProtectionType, c.ProtectionLevel,
+                    c.ProtectionDays > 0 ? c.ProtectionDays.ToString() : "",
+                    WitnessData.StatusLabel(c.Status), c.FiscalYear));
+            }
+            await JS.InvokeVoidAsync("ecmis.downloadTextFile",
+                $"witness_stats_{DateTime.Now:yyyyMMdd}.csv", "text/csv;charset=utf-8;", sb.ToString(), true);
+        }
+    }
+
+    private async Task PrintReportAsync()
+    {
+        var pageTitle = _filterType == "warrant"
+            ? "รายงานสถิติหมายจับ TOR 12.7 ป.ป.ท."
+            : "รายงานสถิติคุ้มครองพยาน TOR 12.7 ป.ป.ท.";
+        var title = $"<h2>{pageTitle} | {DateTime.Now:dd/MM/yyyy}</h2>";
+        var table = await JS.InvokeAsync<string>("eval", "document.getElementById('exportTable').outerHTML");
+        await JS.InvokeVoidAsync("ecmis.printReport", pageTitle, title + table);
+    }
+
+    public void Dispose()
+    {
+        _dotNetRef?.Dispose();
+    }
+}

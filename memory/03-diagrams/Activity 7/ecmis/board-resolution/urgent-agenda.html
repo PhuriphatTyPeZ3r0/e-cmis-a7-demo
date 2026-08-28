@@ -1,0 +1,317 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คำร้องขอบรรจุวาระด่วน | E-CMIS</title>
+  <link rel="icon" type="image/png" href="assets/pacc_logo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="assets/ecmis-app.css" rel="stylesheet">
+  <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <main class="app-main">
+    <div class="page-head">
+      <div>
+        <h1><i class="fa-solid fa-bolt me-2"></i>คำร้องขอบรรจุวาระด่วน</h1>
+      </div>
+      <div class="ms-auto text-end">
+        <span class="flow-ref">รับรองเหตุผลเร่งด่วนและเสนอประธานฯ บรรจุวาระด่วน</span>
+        <div class="mt-1" id="stBadge"></div>
+      </div>
+    </div>
+
+    <div class="ws-card mb-3">
+      <div class="card-body pb-1" id="stepper"></div>
+    </div>
+
+    <div class="document-workspace" id="docWorkspace">
+      <div>
+        <div class="ws-card mb-3">
+          <div class="card-header" id="stepCardHeader"><i class="fa-solid fa-bolt"></i> <span id="stepCardTitle"></span></div>
+          <div class="card-body" id="stepCardBody"></div>
+        </div>
+      </div>
+
+      <aside class="ws-doc-pane" style="top:calc(var(--topbar-h) + 14px)">
+        <button type="button" class="ws-doc-pane-rail" id="btnPaneExpand" title="ขยายแผงเอกสาร"><i class="fa-solid fa-angles-left"></i><span>เอกสาร</span></button>
+        <div class="ws-doc-toolbar">
+          <span class="name"><i class="fa-solid fa-file-word"></i> หนังสือขอบรรจุวาระการประชุมด่วน</span>
+          <button type="button" class="btn-doc-edit ms-auto me-1" id="btnDocEdit" title="เปิด/ปิดโหมดแก้ไขเอกสาร">
+            <i class="fa-solid fa-pen-to-square me-1"></i><span>แก้ไขเอกสาร</span>
+          </button>
+          <button class="btn btn-sm btn-light" onclick="window.print()" title="พิมพ์เอกสาร"><i class="fa-solid fa-print"></i></button>
+          <button type="button" class="ws-doc-pane-toggle" id="btnPaneCollapse" title="ย่อแผงเอกสาร"><i class="fa-solid fa-angles-right"></i></button>
+        </div>
+        <div class="doc-edit-bar" id="docEditBar">
+          <span class="doc-edit-bar-label"><i class="fa-solid fa-pen-to-square me-1"></i>แก้ไขเอกสาร</span>
+          <span class="doc-edit-bar-sep"></span>
+          <button type="button" data-format="bold" title="ตัวหนา"><b>B</b></button>
+          <button type="button" data-format="italic" title="ตัวเอียง"><i>I</i></button>
+          <button type="button" data-format="underline" title="ขีดเส้นใต้"><u>U</u></button>
+          <span class="doc-edit-bar-sep"></span>
+          <button type="button" data-format="justifyLeft" title="ชิดซ้าย"><i class="fa-solid fa-align-left"></i></button>
+          <button type="button" data-format="justifyCenter" title="กึ่งกลาง"><i class="fa-solid fa-align-center"></i></button>
+          <button type="button" data-format="justifyRight" title="ชิดขวา"><i class="fa-solid fa-align-right"></i></button>
+          <span class="doc-edit-bar-sep"></span>
+          <button type="button" data-format="undo" title="เลิกทำ"><i class="fa-solid fa-rotate-left"></i></button>
+          <button type="button" data-format="redo" title="ทำซ้ำ"><i class="fa-solid fa-rotate-right"></i></button>
+          <span class="doc-edit-bar-sep"></span>
+          <button type="button" class="btn btn-sm btn-gold" id="btnSaveDocEdit" style="width:auto;padding:0 .6rem">บันทึกการแก้ไข</button>
+        </div>
+        <div class="ws-paper-stage">
+          <div class="doc-paper doc-resolution a4-paper" id="docPaper"></div>
+        </div>
+      </aside>
+    </div>
+
+    <div id="actionBarSlot"></div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../shared-assets/auth.js"></script>
+<script src="../cases.js"></script>
+  <script src="assets/ecmis-app.js"></script>
+  <script src="assets/ecmis-model.js"></script>
+  <script>
+    ECMIS.renderShell('urgent-agenda.html');
+
+    const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';
+    const sb = (window.ECMIS && window.ECMIS.getSupabaseClient) ? window.ECMIS.getSupabaseClient(SUPABASE_URL, SUPABASE_KEY) : (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }) : null);
+
+    async function loadCaseFromSupabase(caseId) {
+      const { data, error } = await sb
+        .from('tbl_res_request')
+        .select('*, tbl_cmp_case!inner(*, tbl_cmp_case_accused(*))')
+        .eq('tbl_cmp_case.tcc_no', caseId)
+        .eq('is_deleted', false)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? ECMIS.supabaseRowToCase(data) : null;
+    }
+
+    /* urgentReason/urgentCertifiedDate72/agendaUrgentSignedDate72 ไม่มีคอลัมน์ใน Supabase จึงคง
+       set บน kase ในหน่วยความจำไว้เหมือนเดิม เพียงแต่ไม่ถูกบันทึกข้ามหน้า/ข้ามอุปกรณ์ — ตามรูปแบบ
+       เดียวกับ persistCase ใน support-subcommittee.html / resolution.html */
+    async function persistCase(kase, patch) {
+      const dbPatch = {};
+      if ('status' in patch) {
+        const code = ECMIS.STATUS_CODE[patch.status];
+        if (code) dbPatch.trr_status = code;
+      }
+      if (kase.trr_id && Object.keys(dbPatch).length) {
+        try {
+          const { error } = await sb.from('tbl_res_request').update(dbPatch).eq('trr_id', kase.trr_id);
+          if (error) console.warn('Supabase update warning:', error);
+        } catch (e) {
+          console.warn('Supabase update failed:', e);
+        }
+      }
+      Object.assign(kase, patch);
+      const memCase = ECMIS.CASES.find(x => x.id === kase.id);
+      if (memCase) Object.assign(memCase, patch);
+      ECMIS.saveCases();
+    }
+
+    const params = new URLSearchParams(location.search);
+    const role = ECMIS.currentRole();
+    let kase = null, dirCase, chairman, isCertifyStep, isSignStep;
+
+    (async function main() {
+      const caseParam = params.get('case') || '2015/2569';
+      try {
+        kase = await loadCaseFromSupabase(caseParam);
+      } catch (err) {
+        console.warn('โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ:', err);
+      }
+      if (!kase) {
+        kase = ECMIS.requireCase(caseParam);
+      }
+      if (!kase) return;
+
+      renderPage();
+    })();
+
+    function renderPage() {
+    document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status) + ' ' + ECMIS.slaBadge(kase);
+    document.getElementById('stepper').innerHTML = ECMIS.stepperHtml(kase.status, ECMIS.FLOW_STEPS_72, ECMIS.STATUS_STEP_72);
+
+    dirCase = ECMIS.getRole('dir_case');
+    chairman = ECMIS.getRole('chairman');
+    isCertifyStep = kase.status === 'PENDING_URGENT_72';
+    isSignStep = kase.status === 'PENDING_CHAIRMAN_URGENT_72';
+
+    function renderStepCard() {
+      if (isCertifyStep) {
+        document.getElementById('stepCardTitle').textContent = 'รับรองเหตุผลเร่งด่วน (ผอ.กบค.)';
+        document.getElementById('stepCardBody').innerHTML = `
+      <label class="form-label field-req">เหตุผลความเร่งด่วน</label>
+      <textarea class="form-control" id="urgentReason" rows="5"
+        placeholder="ระบุเหตุผลความจำเป็นเร่งด่วน เช่น ใกล้ครบกำหนดอายุความ / มีความเสี่ยงต่อพยานหลักฐาน...">${kase.urgentReason ? kase.urgentReason : ''}</textarea>
+      <div class="val-msg val-err" data-for="urgentReason">กรุณาระบุเหตุผลความเร่งด่วนก่อนรับรอง</div>`;
+      } else if (isSignStep) {
+        document.getElementById('stepCardTitle').textContent = 'ลงนามมอบหมาย/บรรจุวาระด่วน (ประธานฯ)';
+        document.getElementById('stepCardBody').innerHTML = `
+      <label class="form-label">เหตุผลความเร่งด่วนที่ ${dirCase.title} รับรองไว้</label>
+      <textarea class="form-control" rows="5" readonly>${kase.urgentReason || ''}</textarea>`;
+      } else {
+        document.getElementById('stepCardTitle').textContent = 'ไม่อยู่ในขั้นตอนคำร้องขอบรรจุวาระด่วน';
+        document.getElementById('stepCardBody').innerHTML = `
+      <div class="no-permission">
+        <i class="fa-solid fa-circle-info me-1"></i>
+        สำนวน <strong>${kase.id}</strong> อยู่ในสถานะ <strong>${ECMIS.STATUS[kase.status] ? ECMIS.STATUS[kase.status].label : kase.status}</strong>
+        ซึ่งไม่ใช่ขั้นตอนคำร้องขอบรรจุวาระด่วน — เปิดหน้านี้ได้เฉพาะสถานะรอ ผอ.กบค. รับรอง
+        หรือรอประธานฯ ลงนามมอบหมาย/บรรจุวาระด่วนเท่านั้น
+      </div>`;
+      }
+    }
+
+    function renderDoc() {
+      const M = ECMIS.mergeField;
+      const reasonNow = isCertifyStep
+        ? (document.getElementById('urgentReason') ? document.getElementById('urgentReason').value.trim() : '')
+        : (kase.urgentReason || '');
+      const certifierShown = kase.urgentCertifiedDate72 ? `${dirCase.name} — ${dirCase.title}` : '';
+      const signerShown = kase.agendaUrgentSignedDate72 ? `${chairman.name} — ${chairman.title}` : '';
+
+      document.getElementById('docPaper').innerHTML = `
+    <div class="doc-secret">ลับ</div>
+    <div class="doc-title">
+      <div class="doc-title-l1">หนังสือขอบรรจุวาระการประชุมด่วน</div>
+      <div class="doc-title-l2">คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ</div>
+    </div>
+    <div class="doc-sub">เรื่องที่ ${M(kase.id)}</div>
+
+    <div class="doc-row"><span class="k">เรื่อง</span> ${M(kase.subject)}</div>
+    <div class="doc-row"><span class="k">ผู้รับผิดชอบสำนวน</span> ${M(kase.owner)}</div>
+    <div class="doc-row"><span class="k">สังกัด</span> ${M(kase.ownerOrg)}</div>
+
+    <div class="doc-body-indent">
+      <div class="doc-h">เหตุผลความเร่งด่วน</div>
+      <div class="doc-indent">${M(reasonNow, '……………………………………………………………………………………')}</div>
+
+      <div class="doc-h">ผู้รับรองเหตุผลเร่งด่วน</div>
+      <div class="doc-indent">${M(certifierShown)}</div>
+
+      <div class="doc-h">ผู้ลงนามมอบหมาย/บรรจุวาระด่วน</div>
+      <div class="doc-indent">${M(signerShown)}</div>
+    </div>
+
+    <div class="doc-secret-foot">ลับ</div>`;
+    }
+
+    /* ---------- Document workspace: collapsible pane ---------- */
+    const docWorkspace = document.getElementById('docWorkspace');
+    const PANE_KEY = 'ecmis-urgent-agenda-docpane-collapsed';
+    function setPaneCollapsed(collapsed) {
+      docWorkspace.classList.toggle('pane-collapsed', collapsed);
+      localStorage.setItem(PANE_KEY, collapsed ? '1' : '0');
+    }
+    if (localStorage.getItem(PANE_KEY) === '1') setPaneCollapsed(true);
+    document.getElementById('btnPaneCollapse').addEventListener('click', () => setPaneCollapsed(true));
+    document.getElementById('btnPaneExpand').addEventListener('click', () => setPaneCollapsed(false));
+
+    renderStepCard();
+    renderDoc();
+    ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: true });
+    if (isCertifyStep) {
+      document.getElementById('urgentReason').addEventListener('input', renderDoc);
+    }
+
+    function buildButtons() {
+      if (isCertifyStep) {
+        return [{ act: 'certify', label: 'รับรองและส่งประธานฯ', icon: 'fa-check', cls: 'btn-navy' }];
+      }
+      if (isSignStep) {
+        return [{ act: 'sign', label: 'ลงนามมอบหมาย/บรรจุวาระด่วน', icon: 'fa-signature', cls: 'btn-gold' }];
+      }
+      return [];
+    }
+    document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons());
+    document.querySelectorAll('.action-bar [data-act]').forEach(b =>
+      b.addEventListener('click', () => handle(b.dataset.act)));
+
+    async function handle(act) {
+      if (act === 'certify') {
+        const ta = document.getElementById('urgentReason');
+        if (!ta.value.trim()) {
+          ta.classList.add('is-invalid-ecmis');
+          document.querySelector('.val-msg[data-for="urgentReason"]').classList.add('show');
+          ECMIS.toastWarn('กรุณาระบุเหตุผลความเร่งด่วนก่อนรับรอง');
+          return;
+        }
+        ta.classList.remove('is-invalid-ecmis');
+        document.querySelector('.val-msg[data-for="urgentReason"]').classList.remove('show');
+
+        ECMIS.confirmAction({
+          title: 'รับรองเหตุผลเร่งด่วน',
+          html: `<p>สำนวน <strong>${kase.id}</strong> — รับรองโดย ${dirCase.title}</p>`,
+          confirmText: 'ยืนยันรับรอง'
+        }).then(async res => {
+          if (!res.isConfirmed) return;
+          try {
+            await persistCase(kase, {
+              urgentReason: ta.value.trim(),
+              urgentCertifiedDate72: new Date().toISOString().slice(0, 10),
+              status: 'PENDING_CHAIRMAN_URGENT_72'
+            });
+          } catch (err) {
+            console.error('รับรองเหตุผลเร่งด่วนไม่สำเร็จ:', err);
+            ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+            return;
+          }
+          ECMIS.toastOk('รับรองเหตุผลเร่งด่วนเรียบร้อย ส่งต่อประธานฯ แล้ว');
+          setTimeout(() => location.reload(), 1400);
+        });
+        return;
+      }
+
+      if (act === 'sign') {
+        ECMIS.signDialog(`หนังสือขอบรรจุวาระการประชุมด่วน — เรื่องที่ ${kase.id}`, `${chairman.name} — ${chairman.title}`)
+          .then(async res => {
+            if (!res.isConfirmed) return;
+            if (res.value && res.value.sig) {
+              const sigEl = document.querySelector('#docPaper .doc-secret-foot');
+              if (sigEl) sigEl.insertAdjacentHTML('beforebegin', `<div class="doc-sign"><img class="doc-sig-img" src="${res.value.sig}" alt="ลายมือชื่อ"><br>(${chairman.name})<br>${chairman.title}</div>`);
+            }
+            ECMIS.Model.SignatureStore.create({
+              caseId: kase.id, docType: `หนังสือขอบรรจุวาระการประชุมด่วน`,
+              signerRole: 'chairman', signerName: `${chairman.name} — ${chairman.title}`,
+              method: res.value.mode, signedAt: new Date().toISOString()
+            });
+            try {
+              await persistCase(kase, {
+                agendaUrgentSignedDate72: new Date().toISOString().slice(0, 10),
+                status: 'PENDING_INVITE_72'
+              });
+            } catch (err) {
+              console.error('ลงนามมอบหมาย/บรรจุวาระด่วนไม่สำเร็จ:', err);
+              ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
+              return;
+            }
+            ECMIS.toastOk('ลงนามมอบหมาย/บรรจุวาระด่วนเรียบร้อย');
+            setTimeout(() => location.href = 'agenda.html?case=' + encodeURIComponent(kase.id), 1400);
+          });
+      }
+    }
+    }
+  </script>
+<script src="../shared-assets/handoff.js"></script>
+<script src="../shared-assets/case-bar.js"></script>
+<script src="../shared-assets/pipe-buttons.js"></script>
+<script src="../shared-assets/case-inbox.js"></script>
+</body>
+
+</html>

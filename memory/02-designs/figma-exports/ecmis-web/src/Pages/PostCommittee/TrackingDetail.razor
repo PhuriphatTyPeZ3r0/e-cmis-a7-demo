@@ -1,0 +1,271 @@
+@page "/post-committee/case/{Id:int}"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+@if (c is null)
+{
+    <div class="detail-page-wrap" style="text-align:center;padding:60px">
+        <i class="bi bi-exclamation-triangle" style="font-size:48px;color:var(--orange)"></i>
+        <div style="font-size:18px;font-weight:700;margin-top:12px">ไม่พบข้อมูลการติดตาม</div>
+        <button class="btn-navy" style="margin-top:16px" @onclick='() => Nav.NavigateTo("/post-committee")'>กลับ</button>
+    </div>
+}
+else
+{
+    <div class="detail-page-wrap">
+        @* — Header — *@
+        <div class="detail-header">
+            <div>
+                <div class="detail-caseno">
+                    <i class="bi bi-geo-alt-fill" style="color:var(--navy-mid)"></i>
+                    ติดตามการบังคับใช้กฎหมาย: เรื่องที่ @c.CaseNo
+                </div>
+                <div class="detail-meta-row mt-2">
+                    <span class="category-chip @(c.CaseType == "both" ? "cat-general" : "cat-discipline")">
+                        @PostCommitteeData.TypeLabel(c.CaseType)
+                    </span>
+                    <span style="font-size:12px;color:var(--text-muted)">
+                        <i class="bi bi-person-fill-exclamation"></i> ผู้ถูกชี้มูล: @c.Accused (@c.AccusedAgency)
+                    </span>
+                    <span style="font-size:12px;color:var(--text-muted)">
+                        <i class="bi bi-calendar-check"></i> วันที่มติบอร์ด: @c.ResolutionDate
+                    </span>
+                </div>
+            </div>
+            <div class="detail-actions">
+                <button class="btn-outline-navy" @onclick='() => Nav.NavigateTo("/post-committee")'>
+                    <i class="bi bi-arrow-left"></i> กลับตารางรวม
+                </button>
+            </div>
+        </div>
+
+        <div class="detail-grid">
+            
+            @* — อาญา Track (Criminal) — *@
+            @if (c.CaseType == "criminal" || c.CaseType == "both")
+            {
+                <div class="detail-card">
+                    <div class="detail-card-title">
+                        <div class="icon-box navy"><i class="bi bi-bank2"></i></div>
+                        กำหนดการส่งคดีอาญา ถึงพนักงานอัยการ
+                    </div>
+
+                    @if(c.CriminalStatus != "sent_to_prosecutor" && c.CriminalStatus != "closed")
+                    {
+                        <div class="detail-grid" style="grid-template-columns:1fr;margin-bottom:14px;background:#f8f9fa;padding:12px;border-radius:10px">
+                            <div style="font-size:13px;font-weight:700;color:var(--navy-deep);margin-bottom:8px">
+                                <i class="bi bi-alarm"></i> กรอบเวลากฎหมาย: 60 วัน นับแต่วันลงมติ
+                            </div>
+                            <div class="sla-bar" style="height:12px;border-radius:6px">
+                                @{
+                                    var percent = Math.Min(100, (c.DaysPassedSinceResolution * 100) / 60);
+                                    var barClass = c.DaysPassedSinceResolution > 60 ? "sla-expired" : (c.DaysPassedSinceResolution > 45 ? "sla-warning" : "sla-safe");
+                                }
+                                <div class="sla-fill @barClass" style="width:@percent%;height:100%;border-radius:6px"></div>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:6px">
+                                <span>เวลาผ่านไป: @c.DaysPassedSinceResolution วัน</span>
+                                @if(c.DaysPassedSinceResolution > 60) {
+                                    <span style="color:var(--red);font-weight:700">เลยกำหนดมาแล้ว @(c.DaysPassedSinceResolution - 60) วัน!</span>
+                                } else {
+                                    <span>เหลือเวลา: @PostCommitteeData.SlaDaysRemaining(c.DaysPassedSinceResolution) วัน</span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label-custom">เลขที่หนังสือจัดส่งอัยการ <span style="color:var(--red)">*</span></label>
+                            <input class="form-control-custom" placeholder="ตัวอย่าง: ปท 0012/1234" @bind="CriminalDocNo" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label-custom">วันที่จัดส่ง <span style="color:var(--red)">*</span></label>
+                            <input type="date" class="form-control-custom" @bind="CriminalSentDate" />
+                        </div>
+                        <button class="btn-navy" style="width:100%" @onclick="MarkAsSentToProsecutor">
+                            <i class="bi bi-floppy2-fill"></i> บันทึกการส่งสำนวนให้อัยการ
+                        </button>
+                    }
+                    else
+                    {
+                        <div style="padding:20px;text-align:center;background:#e6f4ed;border-radius:10px;border:1px solid #c3e6cb">
+                            <i class="bi bi-check-circle-fill" style="font-size:32px;color:var(--green);margin-bottom:10px;display:inline-block"></i>
+                            <div style="font-size:16px;font-weight:700;color:var(--green)">จัดส่งสำนวนถึงอัยการเรียบร้อยแล้ว</div>
+                            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">สมบูรณ์กระบวนการทางอาญาของ ป.ป.ท.</div>
+                        </div>
+                    }
+                </div>
+            }
+
+            @* — วินัย Track (Discipline) — *@
+            @if (c.CaseType == "discipline" || c.CaseType == "both")
+            {
+                <div class="detail-card">
+                    <div class="detail-card-title">
+                        <div class="icon-box orange"><i class="bi bi-building"></i></div>
+                        ติดตามผลการพิจารณาทางวินัย (จากต้นสังกัด)
+                    </div>
+
+                    <div class="timeline" style="margin-bottom:14px">
+                        <div class="timeline-item">
+                            <div class="timeline-dot done"></div>
+                            <div class="timeline-title">แจ้งมติชี้มูลไปยังต้นสังกัด</div>
+                            <div class="timeline-desc">หนังสือจัดส่งเรียบร้อยเมื่อ @c.ResolutionDate</div>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-dot @((c.DisciplineStatus == "follow_up_1" || c.DisciplineStatus == "follow_up_2" || c.DisciplineStatus == "Agency_responded" || c.DisciplineStatus == "closed") ? "done" : "active")"></div>
+                            <div class="timeline-title">
+                                รอผลจากหน่วยงาน
+                                @if (c.DisciplineStatus == "awaiting_agency" && c.DaysPassedSinceResolution > 30)
+                                {
+                                    <span style="color:var(--red);font-size:11px;margin-left:6px">(ล่าช้าเกิน 30 วัน ขอแนะนำให้ทวงถาม)</span>
+                                }
+                            </div>
+                            <div class="timeline-desc">
+                                @if (c.DisciplineStatus == "awaiting_agency")
+                                {
+                                    <button class="btn-outline-navy mt-2" style="font-size:11px;padding:4px 10px" @onclick="SendFollowUp1">
+                                        <i class="bi bi-envelope-exclamation-fill"></i> สร้างหนังสือทวงถามครั้งที่ 1 (อัตโนมัติ)
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                        
+                        @if (c.DisciplineStatus == "follow_up_1" || c.DisciplineStatus == "follow_up_2" || followUp1Sent)
+                        {
+                            <div class="timeline-item">
+                                <div class="timeline-dot @((c.DisciplineStatus == "follow_up_2" || c.DisciplineStatus == "Agency_responded" || c.DisciplineStatus == "closed") ? "done" : "active")"></div>
+                                <div class="timeline-title">
+                                    หนังสือทวงถามครั้งที่ 1
+                                    <span style="color:var(--orange);font-size:11px;margin-left:6px">(จัดส่งแล้ว)</span>
+                                </div>
+                                <div class="timeline-desc">
+                                    @if(c.DisciplineStatus == "follow_up_1")
+                                    {
+                                        <button class="btn-outline-navy mt-2" style="font-size:11px;padding:4px 10px" @onclick="SendFollowUp2">
+                                            <i class="bi bi-envelope-exclamation-fill text-danger"></i> สร้างหนังสือทวงถามครั้งที่ 2 (เตือนเด็ดขาด)
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (c.DisciplineStatus == "follow_up_2" || followUp2Sent)
+                        {
+                            <div class="timeline-item">
+                                <div class="timeline-dot @((c.DisciplineStatus == "Agency_responded" || c.DisciplineStatus == "closed") ? "done" : "active")"></div>
+                                <div class="timeline-title">
+                                    หนังสือทวงถามครั้งที่ 2
+                                    <span style="color:var(--red);font-size:11px;margin-left:6px">(จัดส่งแจ้งเตือนเด็ดขาดแล้ว)</span>
+                                </div>
+                            </div>
+                        }
+
+                        @if(c.DisciplineStatus == "Agency_responded" || c.DisciplineStatus == "closed")
+                        {
+                            <div class="timeline-item">
+                                <div class="timeline-dot @(c.DisciplineStatus == "closed" ? "done" : "active")"></div>
+                                <div class="timeline-title">ตรวจสอบผลสัมฤทธิ์จากต้นสังกัด</div>
+                                <div class="timeline-desc" style="font-weight:700;color:var(--green)">
+                                    ต้นสังกัดส่งผลการลงโทษ (ไล่ออก/ปลดออก) เรียบร้อย
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    @* Result input form for agency response mock *@
+                    @if(c.DisciplineStatus != "closed" && c.DisciplineStatus != "Agency_responded")
+                    {
+                        <div style="border-top:1px dashed #ccc;padding-top:14px;margin-top:14px">
+                            <label class="form-label-custom">บันทึกรับแจ้งผลจากต้นสังกัด (กรณีได้รับตอบกลับตีกลับมา)</label>
+                            <button class="btn-outline-navy" style="width:100%" @onclick="ReceiveAgencyResponse">
+                                <i class="bi bi-inbox-fill"></i> บันทึกผลหนังสือตอบกลับจากต้นสังกัด
+                            </button>
+                        </div>
+                    }
+
+                    @if(c.DisciplineStatus == "Agency_responded")
+                    {
+                        <div style="border-top:1px dashed #ccc;padding-top:14px;margin-top:14px">
+                            <button class="btn-navy" style="width:100%;background:#1b7a4a;border:none" @onclick="CloseDisciplineCase">
+                                <i class="bi bi-flag-fill"></i> รับทราบผลสัมฤทธิ์ และยุติการติดตามคดี
+                            </button>
+                        </div>
+                    }
+
+                    @if(c.DisciplineStatus == "closed")
+                    {
+                        <div style="padding:20px;text-align:center;background:#e6f4ed;border-radius:10px;border:1px solid #c3e6cb;margin-top:20px">
+                             <div style="font-size:16px;font-weight:700;color:var(--green)"><i class="bi bi-shield-check"></i> คดีวินัยยุติการติดตามแล้ว</div>
+                        </div>
+                    }
+
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    
+    private PostCase? c;
+    private string CriminalDocNo = "";
+    private DateTime CriminalSentDate = DateTime.Today;
+
+    private bool followUp1Sent = false;
+    private bool followUp2Sent = false;
+
+    protected override void OnParametersSet()
+    {
+        c = PostCommitteeData.GetById(Id);
+    }
+
+    private void MarkAsSentToProsecutor()
+    {
+        // Mockup status change
+        if(c != null)
+        {
+            var newCase = c with { CriminalStatus = "sent_to_prosecutor" };
+            c = newCase;
+        }
+    }
+
+    private void SendFollowUp1()
+    {
+        if(c != null)
+        {
+            var newCase = c with { DisciplineStatus = "follow_up_1" };
+            c = newCase;
+            followUp1Sent = true;
+        }
+    }
+
+    private void SendFollowUp2()
+    {
+        if(c != null)
+        {
+            var newCase = c with { DisciplineStatus = "follow_up_2" };
+            c = newCase;
+            followUp2Sent = true;
+        }
+    }
+
+    private void ReceiveAgencyResponse()
+    {
+         if(c != null)
+        {
+            var newCase = c with { DisciplineStatus = "Agency_responded" };
+            c = newCase;
+        }
+    }
+
+    private void CloseDisciplineCase()
+    {
+         if(c != null)
+        {
+            var newCase = c with { DisciplineStatus = "closed" };
+            c = newCase;
+        }
+    }
+}

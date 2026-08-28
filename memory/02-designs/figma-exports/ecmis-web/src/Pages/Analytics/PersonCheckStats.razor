@@ -1,0 +1,505 @@
+@page "/analytics/person-check-stats"
+@layout MainLayout
+@implements IDisposable
+@using EcmisWeb.Data
+@inject IJSRuntime JS
+
+<div class="cs-shell pc-room v6-active @(_isDark ? "" : "app-light")">
+    <div class="wr-topbar">
+        <div class="wr-logo-area" title="สถิติตรวจสอบประวัติบุคคล · TOR 12.3">
+            <div class="wr-logo-seal">
+                <i class="bi bi-person-vcard-fill" style="font-size: 20px; color: #0b0f1e;"></i>
+            </div>
+            <div class="wr-logo-text-block">
+                <div class="wr-logo-title">สถิติตรวจสอบประวัติบุคคล</div>
+                <div class="wr-logo-sub">ตรวจสอบประวัติ · กระทรวง · กรม · ผลการตรวจ</div>
+                <div class="wr-logo-en">PERSON CHECK ANALYTICS</div>
+            </div>
+        </div>
+
+        <div class="wr-topbar-tabs">
+            <div class="v6-inline-controls">
+                <div class="v6-toggle-buttons">
+                    <button type="button" class="v6-toggle-btn @(_yearMode == "ปีงบ" ? "active" : "")" @onclick='() => { _yearMode = "ปีงบ"; _yearValue = ""; }'>ปีงบ</button>
+                    <button type="button" class="v6-toggle-btn @(_yearMode == "ปีพ.ศ." ? "active" : "")" @onclick='() => { _yearMode = "ปีพ.ศ."; _yearValue = ""; }'>ปี พ.ศ.</button>
+                </div>
+                <select class="v6-select" @bind="_yearValue" title="@_yearMode">
+                    <option value="">ทุกปี</option>
+                    @foreach (var y in YearOptions)
+                    { <option value="@y">@y</option> }
+                </select>
+                <select class="v6-select v6-wide-select" @bind="_ministry" title="กระทรวง">
+                    <option value="">ทุกกระทรวง</option>
+                    @foreach (var m in _ministryOptions)
+                    { <option value="@m">@m</option> }
+                </select>
+                <select class="v6-select v6-wide-select" @bind="_department" title="กรม/สำนัก">
+                    <option value="">ทุกกรม</option>
+                    @foreach (var d in _deptOptions)
+                    { <option value="@d">@d</option> }
+                </select>
+                <select class="v6-select" @bind="_passFilter" title="ผลการตรวจ">
+                    <option value="">ทุกผล</option>
+                    <option value="ผ่าน">ผ่าน</option>
+                    <option value="ไม่ผ่าน">ไม่ผ่าน</option>
+                    <option value="รอผล">รอผล</option>
+                </select>
+                <button type="button" class="wr-export-btn wr-btn-gold" @onclick="OnApplyFilter" title="แสดงผล"><i class="bi bi-search"></i></button>
+                <button type="button" class="wr-export-btn" @onclick="OnResetFilter" title="ล้างตัวกรอง"><i class="bi bi-x-circle"></i></button>
+            </div>
+        </div>
+
+        <div class="wr-topbar-right">
+            <select class="v6-select v6-wide-select" @bind="_offenseType" title="ประเภทความผิด">
+                <option value="">ทุกความผิด</option>
+                @foreach (var o in PersonCheckData.OffenseTypes)
+                { <option value="@o">@o</option> }
+            </select>
+            <select class="v6-select" @bind="_personType" title="ประเภทบุคคล">
+                <option value="">ทุกบุคคล</option>
+                <option value="ข้าราชการ">ข้าราชการ</option>
+                <option value="พนักงาน">พนักงาน</option>
+                <option value="ลูกจ้าง">ลูกจ้าง</option>
+                <option value="ผู้บริหาร">ผู้บริหาร</option>
+            </select>
+            <select class="v6-select" @bind="_durationFilter" title="ระยะเวลาดำเนินการ">
+                <option value="">ทุกระยะเวลา</option>
+                <option value="0-7">0-7 วัน</option>
+                <option value="8-14">8-14 วัน</option>
+                <option value="15-30">15-30 วัน</option>
+                <option value="31+">มากกว่า 30 วัน</option>
+            </select>
+            <button type="button" class="wr-export-btn" @onclick="PrintReportAsync" title="พิมพ์ PDF"><i class="bi bi-printer"></i></button>
+            <button type="button" class="wr-export-btn wr-btn-gold" @onclick="ExportCsvAsync" title="Export Excel"><i class="bi bi-file-earmark-spreadsheet"></i><span>Excel</span></button>
+        </div>
+    </div>
+
+    <div class="an-body">
+        <div class="v6-layout font-sarabun">
+            @if (_noData)
+            {
+                <div class="table-card pc-empty panel-glow">
+                    <i class="bi bi-inbox"></i>
+                    <span>ไม่พบข้อมูลตามเงื่อนไขที่เลือก</span>
+                    <button type="button" class="wr-export-btn wr-btn-gold" @onclick="OnResetFilter">ล้างตัวกรอง</button>
+                </div>
+            }
+            else
+            {
+                <div class="v6-main-layout">
+                    <div class="v6-main-right">
+                        <div class="v6-law-hud-row">
+                            <div class="v6-sec-card border-cyan">
+                                <div class="v6-sec-header"><span class="v6-sec-title">ตรวจสอบทั้งหมด</span><span class="v6-sec-subtitle">ตามเงื่อนไข</span></div>
+                                <div class="v6-sec-value text-cyan">@_filtered.Count.ToString("N0") <small>รายการ</small></div>
+                            </div>
+                            <div class="v6-sec-card border-emerald">
+                                <div class="v6-sec-header"><span class="v6-sec-title">ผ่าน</span><span class="v6-sec-subtitle">ไม่พบประวัติ</span></div>
+                                <div class="v6-sec-value text-emerald">@KpiPass.ToString("N0") <small>รายการ</small></div>
+                            </div>
+                            <div class="v6-sec-card border-red">
+                                <div class="v6-sec-header"><span class="v6-sec-title">ไม่ผ่าน</span><span class="v6-sec-subtitle">พบประวัติ</span></div>
+                                <div class="v6-sec-value text-red">@KpiFail.ToString("N0") <small>รายการ</small></div>
+                            </div>
+                            <div class="v6-sec-card border-yellow">
+                                <div class="v6-sec-header"><span class="v6-sec-title">รอผล</span><span class="v6-sec-subtitle">ยังไม่ปิดผล</span></div>
+                                <div class="v6-sec-value text-yellow">@KpiPending.ToString("N0") <small>รายการ</small></div>
+                            </div>
+                            <div class="v6-sec-card border-purple">
+                                <div class="v6-sec-header"><span class="v6-sec-title">เฉลี่ยดำเนินการ</span><span class="v6-sec-subtitle">เฉพาะเสร็จแล้ว</span></div>
+                                <div class="v6-sec-value text-purple">@KpiAvgDays <small>วัน</small></div>
+                            </div>
+                            <div class="v6-sec-card border-red">
+                                <div class="v6-sec-header"><span class="v6-sec-title">อัตราพบประวัติ</span><span class="v6-sec-subtitle">จากที่ตัดสินแล้ว</span></div>
+                                <div class="v6-sec-value text-red">@FailRate<small>%</small></div>
+                            </div>
+                        </div>
+
+                        <div class="v6-alerts-container">
+                            <div class="table-card an-flex-card panel-glow">
+                                <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-bar-chart-fill text-cyan"></i> รายเดือน (ปีงบประมาณ)</div></div></div>
+                                <div class="v6-chart-box pc-chart-large"><canvas id="pcChartTrend"></canvas></div>
+                            </div>
+                            <div class="table-card an-flex-card panel-glow">
+                                <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-pie-chart-fill text-purple"></i> ผ่าน / ไม่ผ่าน / รอผล</div></div></div>
+                                <div class="v6-chart-box pc-chart-donut"><canvas id="pcChartResult"></canvas></div>
+                            </div>
+                        </div>
+
+                        <div class="v6-bottom-grid">
+                            <div class="table-card an-flex-card panel-glow" style="grid-column: span 4;">
+                                <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-person-badge-fill text-cyan"></i> ประเภทบุคคล</div></div></div>
+                                <div class="v6-chart-box pc-chart-small"><canvas id="pcChartPersonType"></canvas></div>
+                            </div>
+                            <div class="table-card an-flex-card panel-glow" style="grid-column: span 4;">
+                                <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-exclamation-triangle-fill text-red"></i> ประเภทความผิด</div></div></div>
+                                <div class="v6-chart-box pc-chart-small"><canvas id="pcChartOffense"></canvas></div>
+                            </div>
+                            <div class="table-card an-flex-card panel-glow" style="grid-column: span 4;">
+                                <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-clock-history text-yellow"></i> ระยะเวลาดำเนินการ</div></div></div>
+                                <div class="v6-chart-box pc-chart-small"><canvas id="pcChartDuration"></canvas></div>
+                            </div>
+                        </div>
+
+                        <div class="v6-bottom-grid pc-data-grid">
+                            <div class="table-card an-flex-card panel-glow" style="grid-column: span 5;">
+                                <div class="tc-head">
+                                    <div class="tc-row1">
+                                        <div class="tc-title"><i class="bi bi-building-fill text-emerald"></i> กระทรวง → กรม/สำนัก</div>
+                                        <span class="bdg-nv">@_ministryRows.Count รายการ</span>
+                                    </div>
+                                </div>
+                                <div class="pc-table-wrap an-scroll">
+                                    <table class="cs-status-table">
+                                        <thead>
+                                            <tr>
+                                                <th>กระทรวง</th>
+                                                <th>กรม/สำนัก</th>
+                                                <th style="text-align:right">รวม</th>
+                                                <th style="text-align:right">ผ่าน</th>
+                                                <th style="text-align:right">ไม่ผ่าน</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var row in _ministryRows.Take(_showAllMinistry ? 50 : 8))
+                                            {
+                                                <tr>
+                                                    <td>@row.Ministry</td>
+                                                    <td>@(string.IsNullOrEmpty(row.Department) ? "-" : row.Department)</td>
+                                                    <td style="text-align:right;font-weight:800">@row.Total</td>
+                                                    <td style="text-align:right"><span class="badge-status status-closed">@row.Pass</span></td>
+                                                    <td style="text-align:right"><span class="badge-status status-danger">@row.Fail</span></td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                @if (_ministryRows.Count > 8)
+                                {
+                                    <button type="button" class="pc-more-btn" @onclick="() => _showAllMinistry = !_showAllMinistry">@(_showAllMinistry ? "แสดงน้อยลง" : $"ดูทั้งหมด {_ministryRows.Count} รายการ")</button>
+                                }
+                            </div>
+
+                            <div class="table-card an-flex-card panel-glow" style="grid-column: span 4;">
+                                <div class="tc-head"><div class="tc-row1"><div class="tc-title"><i class="bi bi-building text-cyan"></i> กรม/สำนัก Top 15</div></div></div>
+                                <div class="v6-chart-box pc-chart-dept"><canvas id="pcChartDept"></canvas></div>
+                            </div>
+
+                            <div class="table-card an-flex-card panel-glow" style="grid-column: span 3;">
+                                <div class="tc-head">
+                                    <div class="tc-row1">
+                                        <div class="tc-title"><i class="bi bi-trophy-fill text-yellow"></i> ความเสี่ยงสูง</div>
+                                        <span class="bdg-nv">@_rankingRows.Count รายการ</span>
+                                    </div>
+                                </div>
+                                <div class="pc-risk-list an-scroll">
+                                    @{ var r2 = 0; }
+                                    @foreach (var row in (_showAllRanking ? _rankingRows : _rankingRows.Take(8)))
+                                    {
+                                        r2++;
+                                        <div class="pc-risk-row">
+                                            <span class="pc-rank">@r2</span>
+                                            <div>
+                                                <div class="pc-name">@PersonCheckData.MaskName(row)</div>
+                                                <div class="pc-meta">@PersonCheckData.PassLabel(row.Result) · @(string.IsNullOrEmpty(row.OffenseType) ? row.TargetType : row.OffenseType)</div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                                @if (_rankingRows.Count > 8)
+                                {
+                                    <button type="button" class="pc-more-btn" @onclick="() => _showAllRanking = !_showAllRanking">@(_showAllRanking ? "แสดงน้อยลง" : $"ดูทั้งหมด {_rankingRows.Count} รายการ")</button>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="table-card an-flex-card panel-glow pc-export-card">
+                            <div class="tc-head">
+                                <div class="tc-row1">
+                                    <div class="tc-title"><i class="bi bi-shield-lock-fill text-purple"></i> รายการตรวจสอบสำหรับส่งออก</div>
+                                    <span class="bdg-nv">ปิดบังนามสกุลตาม PDPA</span>
+                                </div>
+                            </div>
+                            <div class="pc-table-wrap an-scroll">
+                                <table class="cs-status-table" id="exportTable">
+                                    <thead>
+                                        <tr>
+                                            <th>เลขคำขอ</th>
+                                            <th>ชื่อเป้าหมาย</th>
+                                            <th>ประเภท</th>
+                                            <th>กระทรวง</th>
+                                            <th>กรม/สำนัก</th>
+                                            <th>ความผิด</th>
+                                            <th>ผล</th>
+                                            <th>วันรับ</th>
+                                            <th>ระยะเวลา</th>
+                                            <th>ผู้ขอ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var rec in TableRows())
+                                        {
+                                            <tr>
+                                                <td>@rec.CheckId</td>
+                                                <td>@PersonCheckData.MaskName(rec)</td>
+                                                <td><span class="badge-status status-review">@(string.IsNullOrEmpty(rec.PersonType) ? rec.TargetType : rec.PersonType)</span></td>
+                                                <td>@(string.IsNullOrEmpty(rec.Ministry) ? "-" : rec.Ministry)</td>
+                                                <td>@(string.IsNullOrEmpty(rec.Department) ? "-" : rec.Department)</td>
+                                                <td>@(string.IsNullOrEmpty(rec.OffenseType) ? "-" : rec.OffenseType)</td>
+                                                <td><span class="badge-status status-@PersonCheckData.ResultClass(rec.Result)">@PersonCheckData.PassLabel(rec.Result)</span></td>
+                                                <td>@rec.ReceivedDate</td>
+                                                <td>@(rec.DaysUsed > 0 ? rec.DaysUsed + " วัน" : "-")</td>
+                                                <td>@rec.RequestedBy</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<PersonCheckRecord> _all      = new();
+    private List<PersonCheckRecord> _filtered = new();
+    private DotNetObjectReference<PersonCheckStats>? _dotNetRef;
+
+    private string _yearMode       = "ปีงบ";
+    private string _yearValue      = "";
+    private string _ministry       = "";
+    private string _department     = "";
+    private string _offenseType    = "";
+    private string _personType     = "";
+    private string _passFilter     = "";
+    private string _requestedBy    = "";
+    private string _durationFilter = "";
+
+    private bool _noData          = false;
+    private bool _chartsReady     = false;
+    private bool _isDark          = true;
+    private bool _showAllMinistry = false;
+    private bool _showAllRanking  = false;
+
+    private List<MinistryDeptRow>    _ministryRows = new();
+    private List<PersonCheckRecord>  _rankingRows  = new();
+
+    private List<string> _ministryOptions  = new();
+    private List<string> _deptOptions      = new();
+    private List<string> _requestorOptions = new();
+    private List<string> _fiscalYears      = new();
+    private List<string> _calendarYears    = new();
+
+    private List<string> YearOptions => _yearMode == "ปีงบ" ? _fiscalYears : _calendarYears;
+
+    private int KpiPass    => _filtered.Count(r => r.Result == "ไม่พบประวัติ");
+    private int KpiFail    => _filtered.Count(r => r.Result == "พบประวัติ");
+    private int KpiPending => _filtered.Count(r => r.Result == "รอผล");
+    private string PassRate { get { var d = KpiPass + KpiFail; return d == 0 ? "0" : $"{(int)Math.Round((double)KpiPass*100/d)}"; } }
+    private string FailRate { get { var d = KpiPass + KpiFail; return d == 0 ? "0" : $"{(int)Math.Round((double)KpiFail*100/d)}"; } }
+    private string KpiAvgDays { get { var done = _filtered.Where(r => r.DaysUsed > 0).ToList(); return done.Count == 0 ? "—" : $"{done.Average(r => r.DaysUsed):F1}"; } }
+
+    private static DateTime? ParseDate(string s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return null;
+        return DateTime.TryParseExact(s, "dd/MM/yyyy",
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var d) ? d : null;
+    }
+    private static int FiscalYear(DateTime d) { int t = d.Year + 543; return d.Month >= 10 ? t + 1 : t; }
+    private static int CalendarYearThai(DateTime d) => d.Year + 543;
+
+    private void ApplyFilter()
+    {
+        _chartsReady = false;
+        var q = _all.AsEnumerable();
+
+        if (!string.IsNullOrEmpty(_yearValue) && int.TryParse(_yearValue, out int yr))
+            q = _yearMode == "ปีงบ"
+                ? q.Where(r => { var d = ParseDate(r.ReceivedDate); return d.HasValue && FiscalYear(d.Value) == yr; })
+                : q.Where(r => { var d = ParseDate(r.ReceivedDate); return d.HasValue && CalendarYearThai(d.Value) == yr; });
+
+        if (!string.IsNullOrEmpty(_ministry))    q = q.Where(r => r.Ministry == _ministry);
+        if (!string.IsNullOrEmpty(_department))  q = q.Where(r => r.Department == _department);
+        if (!string.IsNullOrEmpty(_offenseType)) q = q.Where(r => r.OffenseType == _offenseType);
+        if (!string.IsNullOrEmpty(_personType))  q = q.Where(r => r.PersonType == _personType);
+        if (!string.IsNullOrEmpty(_requestedBy)) q = q.Where(r => r.RequestedBy == _requestedBy);
+
+        if (!string.IsNullOrEmpty(_passFilter))
+        {
+            var target = _passFilter switch { "ผ่าน" => "ไม่พบประวัติ", "ไม่ผ่าน" => "พบประวัติ", _ => _passFilter };
+            q = q.Where(r => r.Result == target);
+        }
+        if (!string.IsNullOrEmpty(_durationFilter))
+            q = _durationFilter switch
+            {
+                "0-7"   => q.Where(r => r.DaysUsed > 0 && r.DaysUsed <= 7),
+                "8-14"  => q.Where(r => r.DaysUsed is >= 8 and <= 14),
+                "15-30" => q.Where(r => r.DaysUsed is >= 15 and <= 30),
+                "31+"   => q.Where(r => r.DaysUsed > 30),
+                _       => q
+            };
+
+        _filtered         = q.ToList();
+        _noData           = _filtered.Count == 0;
+        _showAllMinistry  = false;
+        _showAllRanking   = false;
+        _ministryRows     = MinistryDeptRows().ToList();
+        _rankingRows      = RankingRows().ToList();
+    }
+
+    private async Task OnApplyFilter() { ApplyFilter(); await InvokeAsync(StateHasChanged); }
+    private async Task OnResetFilter()
+    {
+        _yearMode = "ปีงบ"; _yearValue = "";
+        _ministry = _department = _offenseType = _personType = _passFilter = _requestedBy = _durationFilter = "";
+        ApplyFilter(); await InvokeAsync(StateHasChanged);
+    }
+
+    private static readonly string[] ThaiMonths = { "ต.ค.","พ.ย.","ธ.ค.","ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย." };
+    private static readonly int[] FiscalMonthOrder = { 10,11,12,1,2,3,4,5,6,7,8,9 };
+
+    private (string[] L, int[] D) TrendData() => (ThaiMonths,
+        FiscalMonthOrder.Select(m => _filtered.Count(r => { var d = ParseDate(r.ReceivedDate); return d.HasValue && d.Value.Month == m; })).ToArray());
+
+    private (string[] L, int[] D, string[] C) ResultData() => (
+        new[] { "ผ่าน", "ไม่ผ่าน", "รอผล" },
+        new[] { KpiPass, KpiFail, KpiPending },
+        new[] { "#06d6a0","#f87171","#fbbf24" });
+
+    private (string[] L, int[] D, string[] C) OffenseData()
+    {
+        var cols = new[] { "#6366f1","#f59e0b","#f87171","#06d6a0","#0ea5e9","#a78bfa" };
+        var g = _filtered.Where(r => !string.IsNullOrEmpty(r.OffenseType))
+                         .GroupBy(r => r.OffenseType).OrderByDescending(x => x.Count()).ToList();
+        return (g.Select(x => x.Key).ToArray(), g.Select(x => x.Count()).ToArray(), cols.Take(g.Count).ToArray());
+    }
+
+    private (string[] L, int[] D) DurationData()
+    {
+        var done = _filtered.Where(r => r.DaysUsed > 0).ToList();
+        return (new[] { "0–7 วัน","8–14 วัน","15–30 วัน",">30 วัน" },
+                new[] { done.Count(r => r.DaysUsed <= 7), done.Count(r => r.DaysUsed is >= 8 and <= 14),
+                        done.Count(r => r.DaysUsed is >= 15 and <= 30), done.Count(r => r.DaysUsed > 30) });
+    }
+
+    private (string[] L, int[] D) DeptData()
+    {
+        var g = _filtered.Where(r => !string.IsNullOrEmpty(r.Department))
+                         .GroupBy(r => r.Department).OrderByDescending(x => x.Count()).Take(15).ToList();
+        return (g.Select(x => x.Key).ToArray(), g.Select(x => x.Count()).ToArray());
+    }
+
+    private record MinistryDeptRow(string Ministry, string Department, int Total, int Pass, int Fail, int Pending);
+
+    private IEnumerable<MinistryDeptRow> MinistryDeptRows() =>
+        _filtered.Where(r => !string.IsNullOrEmpty(r.Ministry))
+                 .GroupBy(r => (r.Ministry, r.Department))
+                 .OrderByDescending(g => g.Count())
+                 .Select(g => new MinistryDeptRow(g.Key.Ministry, g.Key.Department, g.Count(),
+                     g.Count(r => r.Result == "ไม่พบประวัติ"), g.Count(r => r.Result == "พบประวัติ"),
+                     g.Count(r => r.Result == "รอผล")));
+
+    private IEnumerable<PersonCheckRecord> RankingRows() =>
+        _filtered.OrderByDescending(r => r.Result == "พบประวัติ" ? 2 : r.Result == "รอผล" ? 1 : 0)
+                 .ThenBy(r => ParseDate(r.ReceivedDate) ?? DateTime.MaxValue).Take(20);
+
+    private IEnumerable<PersonCheckRecord> TableRows() =>
+        _filtered.OrderByDescending(r => ParseDate(r.ReceivedDate) ?? DateTime.MinValue).Take(50);
+
+    protected override Task OnInitializedAsync()
+    {
+        _all = PersonCheckData.Records.ToList();
+        _fiscalYears   = _all.Select(r => ParseDate(r.ReceivedDate)).Where(d => d.HasValue)
+            .Select(d => FiscalYear(d!.Value)).Distinct().OrderByDescending(y => y).Select(y => y.ToString()).ToList();
+        _calendarYears = _all.Select(r => ParseDate(r.ReceivedDate)).Where(d => d.HasValue)
+            .Select(d => CalendarYearThai(d!.Value)).Distinct().OrderByDescending(y => y).Select(y => y.ToString()).ToList();
+        _ministryOptions  = _all.Select(r => r.Ministry).Where(m => !string.IsNullOrEmpty(m)).Distinct().OrderBy(m => m).ToList();
+        _deptOptions      = _all.Select(r => r.Department).Where(d => !string.IsNullOrEmpty(d)).Distinct().OrderBy(d => d).ToList();
+        _requestorOptions = _all.Select(r => r.RequestedBy).Distinct().OrderBy(d => d).ToList();
+        ApplyFilter();
+        return Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var theme = await JS.InvokeAsync<string?>("localStorage.getItem", "dashTheme");
+            _isDark    = theme == "dark";
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("registerAnalyticsComponent", _dotNetRef);
+        }
+        if (!_noData && !_chartsReady)
+        {
+            _chartsReady = true;
+            await RenderChartsAsync();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnThemeChangedAsync(bool isDark)
+    {
+        _isDark = isDark;
+        await RenderChartsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RenderChartsAsync()
+    {
+        await Task.Yield();
+
+        var (tL, tD) = TrendData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "pcChartTrend", "bar",
+            tL, tD.Cast<object>().ToArray(), (object?)null, _isDark);
+
+        var (rL, rD, rC) = ResultData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "pcChartResult", "doughnut",
+            rL, rD.Cast<object>().ToArray(), rC, _isDark);
+
+        var ptL = new[] { "ข้าราชการ","พนักงาน","ลูกจ้าง","ผู้บริหาร" };
+        var ptC = new[] { "#6366f1","#06d6a0","#fbbf24","#f43f5e" };
+        var ptD = ptL.Select(l => (object)_filtered.Count(r => r.PersonType == l)).ToArray();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "pcChartPersonType", "doughnut", ptL, ptD, ptC, _isDark);
+
+        var (oL, oD, oC) = OffenseData();
+        if (oL.Length > 0)
+            await JS.InvokeVoidAsync("initAnalyticsChart", "pcChartOffense", "doughnut",
+                oL, oD.Cast<object>().ToArray(), oC, _isDark);
+
+        var (durL, durD) = DurationData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "pcChartDuration", "bar",
+            durL, durD.Cast<object>().ToArray(), new[] { "#0ea5e9","#6366f1","#8b5cf6","#f59e0b" }, _isDark);
+
+        var (dL, dD) = DeptData();
+        if (dL.Length > 0)
+            await JS.InvokeVoidAsync("initAnalyticsChart", "pcChartDept", "bar-h",
+                dL, dD.Cast<object>().ToArray(), new[] { "#6366f1" }, _isDark);
+    }
+
+    private async Task ExportCsvAsync()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("CheckId,TargetName,TargetType,PersonType,Ministry,Department,OffenseType,Result,PassFail,RequestedBy,ReceivedDate,CompletedDate,DaysUsed");
+        foreach (var rec in _filtered)
+            sb.AppendLine(string.Join(",", rec.CheckId, $"\"{PersonCheckData.MaskName(rec)}\"",
+                rec.TargetType, rec.PersonType, rec.Ministry, rec.Department, rec.OffenseType,
+                rec.Result, PersonCheckData.PassLabel(rec.Result), rec.RequestedBy,
+                rec.ReceivedDate, string.IsNullOrEmpty(rec.CompletedDate) ? "" : rec.CompletedDate,
+                rec.DaysUsed > 0 ? rec.DaysUsed.ToString() : ""));
+        await JS.InvokeVoidAsync("ecmis.downloadTextFile",
+            $"person_check_{DateTime.Now:yyyyMMdd}.csv", "text/csv;charset=utf-8;", sb.ToString(), true);
+    }
+
+    private async Task PrintReportAsync()
+    {
+        var title = $"<h2>รายงานสถิติการตรวจสอบประวัติบุคคล TOR 12.3 | {DateTime.Now:dd/MM/yyyy}</h2>";
+        var table = await JS.InvokeAsync<string>("eval", "document.getElementById('exportTable').outerHTML");
+        await JS.InvokeVoidAsync("ecmis.printReport", "สถิติตรวจสอบประวัติบุคคล", title + table);
+    }
+
+    public void Dispose() => _dotNetRef?.Dispose();
+}

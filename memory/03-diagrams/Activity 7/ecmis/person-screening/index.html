@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E-CMIS ระบบตรวจสอบประวัติบุคคล กิจกรรมที่ 8 — CHK001 5 ขั้น</title>
+<link rel="stylesheet" href="./assets/fontawesome/css/all.min.css">
+<link rel="stylesheet" href="./assets/sweetalert2/sweetalert2.min.css">
+<link rel="stylesheet" href="./assets/mockup.css">
+<style>
+@font-face{font-family:"Kanit";font-style:normal;font-weight:400;src:url("./assets/fonts/Kanit-Regular.ttf") format("truetype")}
+:root{--navy:#10284b;--navy2:#1d3975;--gold:#c6a13d;--ink:#172943;--muted:#62738a;--line:#d6e0ea;--soft:#f1f5f9}
+.badge{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.badge-pending{background:#fff3cd;color:#664d03}.badge-review{background:#cfe2ff;color:#084298}
+.badge-approved{background:#d1e7dd;color:#0f5132}.badge-returned{background:#f8d7da;color:#842029}.badge-closed{background:#e2e3e5;color:#41464b}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}
+.kpi strong{font-size:22px;color:var(--navy)}.kpi small{color:var(--muted)}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.toolbar input,.toolbar select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:36px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:600}
+.btn-primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn-danger{background:#dc2626;color:#fff;border-color:#dc2626}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:9px 10px;border-bottom:1px solid #eef2f7;text-align:left;white-space:nowrap}
+th{background:#f8fafc;color:var(--muted);font-weight:700}
+tr:hover{background:#f8fafc}
+.detail-card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;margin:12px 0}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.detail-grid dt{color:var(--muted);font-size:12px}.detail-grid dd{margin:0;font-weight:600}
+.stepper{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.stepper span{padding:6px 10px;border-radius:999px;border:1px solid var(--line);font-size:12px;background:#fff;cursor:pointer}
+.stepper span.active{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:800}
+.stepper span.done{background:#d1e7dd;color:#0f5132;border-color:#badbcc}
+.hash-note{font-size:11px;color:var(--muted)}
+@media(max-width:860px){.kpi-row{grid-template-columns:1fr 1fr}.detail-grid{grid-template-columns:1fr}}
+/* wizard */
+.wizard-overlay{position:fixed;inset:0;z-index:60;background:rgba(16,40,75,.42);display:none;overflow:auto;padding:18px}
+.wizard-panel{max-width:1120px;margin:0 auto;background:#f1f5f9;border-radius:14px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.18)}
+.wz-hero{display:flex;justify-content:space-between;gap:14px;padding:18px 18px 14px;background:linear-gradient(135deg,#0d1b3e 0%,#1d3975 60%,#16558f 100%);color:#fff}
+.wz-hero h2{margin:4px 0 4px;font-size:20px}
+.wz-hero p{margin:0;opacity:.82;font-size:12px}
+.wz-kicker{color:#e4be52;font-size:10px;letter-spacing:.08em;font-weight:800}
+.wz-code{font-size:11px;opacity:.7}
+.wz-stepper{display:flex;gap:8px;padding:12px 16px;background:#fff;border-bottom:1px solid #e2e8f0;overflow:auto}
+.wz-step{display:flex;align-items:center;gap:10px;min-width:160px;flex:1;border:1px solid #d6e0ea;border-radius:10px;padding:10px 12px;background:#fff;cursor:pointer;text-align:left}
+.wz-step.active{border-color:#10284b;background:linear-gradient(180deg,#fff 0%,#f3f8ff 100%);box-shadow:0 6px 16px rgba(16,40,75,.08)}
+.wz-step.done{border-color:#b8ebd8;background:#f3fff9}
+.wz-step:disabled{opacity:.5;cursor:not-allowed}
+.wz-step span.no{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:#edf4ff;color:#10284b;font-weight:800;flex:0 0 28px}
+.wz-step.active span.no{background:#10284b;color:#fff}
+.wz-step.done span.no{background:#1fc989;color:#fff}
+.wz-step strong{font-size:12px;color:#10284b}
+.wz-step small{font-size:10px;color:#62738a}
+.wz-body{padding:16px;background:#eaf2fb;min-height:520px}
+.wz-card{background:#fff;border:1px solid #d7e2f1;border-radius:10px;padding:16px;box-shadow:0 1px 2px rgba(13,27,62,.04)}
+.wz-card-head{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #e8eef7;padding-bottom:12px;margin-bottom:14px}
+.wz-card-head h3{margin:0;font-size:16px;color:#0b2b63}
+.wz-card-head p{margin:4px 0 0;color:#6e82a3;font-size:12px;font-weight:600}
+.wz-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.wz-form-grid .span-2{grid-column:1 / -1}
+.wz-form-grid label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#0b2b63}
+.wz-form-grid input,.wz-form-grid select,.wz-form-grid textarea{border:1px solid #d7e2f1;border-radius:8px;padding:8px 10px;font-size:13px;font-weight:600;color:#0b2b63;outline:none;background:#fff}
+.wz-form-grid textarea{resize:vertical;min-height:64px}
+.wz-form-grid input.invalid,.wz-form-grid select.invalid{border-color:#ef4444}
+.wz-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;background:#fff;border-top:1px solid #e2e8f0}
+.wz-report-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.wz-report-grid article{background:#fff;border:1px solid #d7e2f1;border-radius:10px;padding:12px;text-align:center}
+.wz-report-grid span{font-size:11px;color:#6e82a3;font-weight:700}
+.wz-report-grid strong{font-size:22px;color:#0b2b63;display:block;margin:4px 0}
+.wz-import-card,.wz-action-panel,.wz-preview-box{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border:1px solid #d9e8f8;border-radius:10px;background:#f8fbff;margin-bottom:12px;flex-wrap:wrap}
+.wz-table-wrap{overflow:auto;border:1px solid #e1ebf8;border-radius:10px;background:#fff}
+.wz-table{width:100%;border-collapse:collapse;min-width:760px}
+.wz-table th{background:#e8f1fb;color:#0b2b63;padding:10px 12px;font-size:12px}
+.wz-table td{padding:8px 10px;border-bottom:1px solid #e8eef7;font-size:12px}
+.wz-step5-split{display:grid;grid-template-columns:minmax(0,44%) minmax(0,56%);gap:16px}
+@media(max-width:900px){.wz-step5-split{grid-template-columns:1fr}.wz-report-grid{grid-template-columns:1fr 1fr}.wz-form-grid{grid-template-columns:1fr}}
+.letter-paper{background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:22px 20px;min-height:480px;box-shadow:0 2px 10px rgba(0,0,0,.04);font-family:"TH Sarabun New",Sarabun,serif}
+.letter-paper h4{text-align:center;margin:6px 0}
+.chip{padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.chip-blue{background:#e8f1fa;color:#16558f}.chip-green{background:#d1e7dd;color:#0f5132}.chip-orange{background:#fff3cd;color:#664d03}.chip-red{background:#f8d7da;color:#842029}
+.sig-box{border:1px solid #cbd5e1;border-radius:10px;padding:12px;background:#f8fafc}
+</style>
+</head>
+<body>
+<div class="app" style="display:grid;grid-template-columns:268px 1fr;min-height:100vh">
+<aside class="side" style="background:#0d1b3e;color:#cbd5e1;padding:0;display:flex;flex-direction:column">
+  <div class="brand" style="padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;gap:12px;align-items:center">
+    <img src="./assets/images/pacc-logo.webp" alt="" style="width:48px;height:48px;border-radius:50%;border:2px solid #c99a2e;background:#f4d56d;object-fit:cover">
+    <div><strong style="color:#fff">E-CMIS</strong><small style="display:block;color:#e4be52;font-size:11px">กิจกรรมที่ 8 · ตรวจสอบประวัติ</small></div>
+  </div>
+  <nav class="nav" style="padding:14px 10px;flex:1;overflow:auto">
+    <div style="font-size:11px;letter-spacing:.06em;color:#91a2c3;padding:8px 8px 4px">เมนูระบบ</div>
+    <button class="nav-link" data-hash="#/chk001" style="width:100%;text-align:left;padding:10px 12px;border-radius:8px;border:1px solid transparent;background:transparent;color:#cbd5e1;display:flex;gap:10px;align-items:center"><i class="fa-solid fa-id-card"></i> 8.1 ตรวจสอบประวัติ (CHK001)</button>
+    <button class="nav-link" data-hash="#/chk002" style="width:100%;text-align:left;padding:10px 12px;border-radius:8px;border:1px solid transparent;background:transparent;color:#cbd5e1;display:flex;gap:10px;align-items:center"><i class="fa-solid fa-clipboard-list"></i> 8.2 ติดตามหลังมติ (CHK002)</button>
+    <button class="nav-link" data-hash="#/chk003" style="width:100%;text-align:left;padding:10px 12px;border-radius:8px;border:1px solid transparent;background:transparent;color:#cbd5e1;display:flex;gap:10px;align-items:center"><i class="fa-solid fa-scale-balanced"></i> 8.3 กำกับวินัย (CHK003)</button></nav>
+  <div style="padding:12px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <div style="width:34px;height:34px;border-radius:50%;background:#1d3975;display:grid;place-items:center;color:#fff;font-weight:700">ส</div>
+    <div style="flex:1;min-width:0"><strong style="color:#fff;font-size:13px">จนท. กบด.</strong><small style="display:block;color:#bac7dd;font-size:11px">OFFICER · ศร</small></div>
+    <button type="button" id="g8LogoutBtn" style="width:100%;margin-top:8px;padding:7px 10px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(255,255,255,.06);color:#d6e4f5;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center"><i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</button>
+  </div>
+<script>
+(function(){
+  var b=document.getElementById('g8LogoutBtn');
+  if(b) b.addEventListener('click', function(){
+    try{ localStorage.removeItem('ecmis-transform-auth-v1'); sessionStorage.clear(); }catch(e){}
+    location.href='/index.html';
+  });
+})();
+</script>
+</aside>
+<main style="background:#f1f5f9;min-width:0">
+  <div class="top" style="height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 16px">
+    <div style="display:flex;gap:8px;align-items:center"><span class="badge" style="background:#e8f1fa;color:#16558f">MOCK</span><strong id="pageTitle">8.1 ตรวจสอบประวัติ</strong><small id="pageSub" style="color:var(--muted)">CHK001 · หนังสือจากหน่วยงานภายนอก → ตรวจสอบประวัติบุคคล 5 ขั้น</small></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="rolePick" style="border:1px solid var(--line);border-radius:8px;padding:6px 8px">
+        <option value="OFFICER">OFFICER</option><option value="DIV_DIRECTOR">DIV_DIRECTOR</option><option value="BUREAU_DIRECTOR">BUREAU_DIRECTOR</option>
+      </select>
+      <button class="btn" onclick="resetMock()"><i class="fa-solid fa-rotate"></i> รีเซ็ต mock</button>
+    </div>
+  </div>
+  
+<div class="content" style="padding:16px">
+    <section id="view-chk001">
+      <div class="kpi-row">
+        <div class="kpi"><small>Case ทั้งหมด (CHK001)</small><br><strong id="kpi-chk001-total">0</strong><br><small>หนังสือขอตรวจจากภายนอก</small></div>
+        <div class="kpi"><small>รอตรวจ</small><br><strong id="kpi-chk001-pending">0</strong></div>
+        <div class="kpi"><small>พบประวัติ</small><br><strong id="kpi-chk001-found">0</strong></div>
+        <div class="kpi"><small>ไม่พบ</small><br><strong id="kpi-chk001-notfound">0</strong></div>
+      </div>
+      <div class="toolbar">
+        <label style="display:flex;gap:6px;align-items:center;flex:1;min-width:220px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px"><i class="fa-solid fa-magnifying-glass" style="color:#62738a"></i><input id="q001" placeholder="ค้นหาเลข Case / หน่วยงานผู้ขอ / เลขหนังสือ" style="border:0;outline:0;flex:1"></label>
+        <select id="f001-type"><option value="">ประเภทตรวจ ทั้งหมด</option><option>ขอเครื่องราชฯ</option><option>แต่งตั้ง/โยกย้าย</option><option>คุณสมบัติ</option></select>
+        <select id="f001-status"><option value="">สถานะ ทั้งหมด</option><option>รอตรวจ</option><option>พบประวัติ</option><option>ไม่พบ</option><option>รอ ผอ.กลุ่มอนุมัติ</option><option>รอ ผอ.กองอนุมัติ</option><option>อนุมัติแล้ว</option></select>
+        <button class="btn btn-primary" onclick="openWizard()"><i class="fa-solid fa-plus"></i> เพิ่ม Case CHK001 (wizard 5 ขั้น)</button>
+      </div>
+      <div class="table-wrap"><table id="tbl001"><thead><tr><th>เลข Case</th><th>หน่วยงานผู้ขอ</th><th>ประเภท</th><th>จำนวนรายชื่อ</th><th>ผลตรวจ</th><th>สถานะ</th><th></th></tr></thead><tbody></tbody></table></div>
+      <div id="detail001" class="detail-card" style="display:none"></div>
+    </section>
+    <section id="view-chk002" style="display:none">
+      <div class="kpi-row">
+        <div class="kpi"><small>Batch มติ (CHK002 · 8.2)</small><br><strong id="kpi002-total">0</strong><br><small>Workflow 01-12 + ตีกลับ 13-19</small></div>
+        <div class="kpi"><small>รอทำบันทึกแจ้งเวียน</small><br><strong id="kpi002-01">0</strong></div>
+        <div class="kpi"><small>รอหน่วยงานอัปเดต</small><br><strong id="kpi002-04">0</strong></div>
+        <div class="kpi"><small>ปิดงานแล้ว</small><br><strong id="kpi002-12">0</strong></div>
+      </div>
+      <div class="toolbar">
+        <input id="q002" placeholder="ค้นหา Batch / เลขหนังสือเวียน / สำนวน" style="flex:1;min-width:220px">
+        <select id="f002-status"><option value="">สถานะ ทั้งหมด</option><option value="01">01 รอทำบันทึก</option><option value="02">02 รอ ผอ.กลุ่ม</option><option value="03">03 รอ ผอ.กอง</option><option value="04">04 รอหน่วยงาน</option><option value="12">12 ปิดงาน</option></select>
+        <button class="btn" onclick="Swal.fire('Mock','สร้าง Batch จากมติ ก7 — เชื่อม caseId 0001/2569','info')"><i class="fa-solid fa-link"></i> ดึงมติ ก7</button>
+      </div>
+      <div class="table-wrap"><table id="tbl002"><thead><tr><th>Batch</th><th>เลขหนังสือเวียน</th><th>วันประชุม</th><th>จำนวนสำนวน</th><th>สถานะ</th><th>เหลือเวลา (SLA 15 วัน)</th><th></th></tr></thead><tbody></tbody></table></div>
+      <div id="detail002" class="detail-card" style="display:none"></div>
+    </section>
+    <section id="view-chk003" style="display:none">
+      <div class="kpi-row">
+        <div class="kpi"><small>สำนวนวินัย (CHK003 · 8.3)</small><br><strong id="kpi003-total">0</strong><br><small>มาตรา 38 → ตว. → มาตรา 41</small></div>
+        <div class="kpi"><small>Compliant</small><br><strong id="kpi003-comp">0</strong></div>
+        <div class="kpi"><small>ค้าง ตว.1-2</small><br><strong id="kpi003-tow">0</strong></div>
+        <div class="kpi"><small>เข้ามาตรา 41</small><br><strong id="kpi003-41">0</strong></div>
+      </div>
+      <div class="toolbar">
+        <input id="q003" placeholder="ค้นหา CaseId / ชื่อผู้ถูกกล่าวหา / หน่วยงาน" style="flex:1;min-width:220px">
+        <select id="f003-result"><option value="">ผลที่ได้รับ ทั้งหมด</option><option>Compliant</option><option>InProgress</option><option>NonCompliant</option><option>Section41NoAction</option><option>Section41SendNacc</option></select>
+        <button class="btn" onclick="Swal.fire('Mock','บันทึกผลวินัยจากหนังสือตอบของต้นสังกัด (EMS)','info')"><i class="fa-solid fa-envelope"></i> บันทึกผลตอบกลับ</button>
+      </div>
+      <div class="table-wrap"><table id="tbl003"><thead><tr><th>CaseId</th><th>ผู้ถูกกล่าวหา</th><th>หน่วยงาน</th><th>มติวินัยที่เสนอ</th><th>ผลที่ได้รับ</th><th>โทษ</th><th></th></tr></thead><tbody></tbody></table></div>
+      <div id="detail003" class="detail-card" style="display:none"></div>
+    </section>
+    <div class="hash-note" style="margin-top:10px">Route: <code>#/chk001</code> · <code>#/chk002</code> · <code>#/chk003</code> · ข้อมูลจาก <code>BoardCaseStateStore.cs</code> + <code>DisciplinaryTrackStateStore.cs</code> แปลงเป็น JS mock · wizard 5 ขั้น: PersonScreenCaseCreatePage (3861 บรรทัด) + Step1-4 + Letter</div>
+  </div>
+</main>
+</div>
+
+<!-- WIZARD OVERLAY -->
+<div id="wizardOverlay" class="wizard-overlay">
+  <div class="wizard-panel">
+    <div class="wz-hero">
+      <div>
+        <div class="wz-kicker">ACTIVITY 8 / CHK001 — CHK001 wizard 5 ขั้น</div>
+        <h2>เพิ่มข้อมูล Case — ตรวจสอบประวัติบุคคล</h2>
+        <p>บันทึกทีละ Step ใช้เลข Case เดียวกัน : สร้าง Case → เพิ่มรายชื่อ → ตรวจสอบ → พิมพ์รายงาน → สร้างหนังสือแจ้งผล</p>
+      </div>
+      <div style="text-align:right">
+        <div class="wz-code" id="wzCaseCode">sys-chk-003 · 5989/2569</div>
+        <button class="btn" style="margin-top:8px" onclick="closeWizard()"><i class="fa-solid fa-xmark"></i> ปิด wizard</button>
+      </div>
+    </div>
+    <div class="wz-stepper" id="wzStepper">
+      <button class="wz-step" data-step="1" onclick="goStep(1)"><span class="no">1</span><div><strong>Step 1: ข้อมูล Case</strong><small>สร้าง Case ID</small></div></button>
+      <button class="wz-step" data-step="2" onclick="goStep(2)"><span class="no">2</span><div><strong>Step 2: เพิ่มรายชื่อ</strong><small>อัปเดตรายชื่อใน Case</small></div></button>
+      <button class="wz-step" data-step="3" onclick="goStep(3)"><span class="no">3</span><div><strong>Step 3: ตรวจสอบประวัติ</strong><small>ตรวจประวัติและเลือกผล</small></div></button>
+      <button class="wz-step" data-step="4" onclick="goStep(4)"><span class="no">4</span><div><strong>Step 4: พิมพ์รายงาน</strong><small>บันทึกรายงานผล</small></div></button>
+      <button class="wz-step" data-step="5" onclick="goStep(5)"><span class="no">5</span><div><strong>Step 5: หนังสือแจ้งผล</strong><small>บันทึกหนังสือแจ้งผล</small></div></button>
+    </div>
+    <div class="wz-body">
+      <!-- STEP 1 -->
+      <div id="wz-s1" class="wz-card">
+        <div class="wz-card-head"><div><h3>Step 1 : ข้อมูล Case</h3><p>บันทึกข้อมูล Case 11 ฟิลด์ตามต้นฉบับ PersonScreenCaseCreatePage + EditStep1</p></div><span class="chip chip-blue" id="wzCaseIdBadge">5989</span></div>
+        <div class="wz-form-grid">
+          <label class="span-2">ชื่อเคส/งาน* <input id="f-caseName" placeholder="เช่น ตรวจสอบคุณสมบัติบุคคลตามหนังสือขอความร่วมมือ"></label>
+          <label>ประเภทการตรวจสอบ* <select id="f-requestType"><option value="">เลือก</option><option>การขอรับพระราชทานเครื่องราชฯ</option><option>ตรวจสอบคุณสมบัติ เพื่อดำรงตำแหน่ง/ครองตำแหน่ง</option><option>คำสั่งพิทักษ์ฯศาล</option><option>การเลือกตั้งท้องถิ่น</option><option>ตรวจประวัติอาชญากรรม/การกระทำความผิด</option><option>ตรวจสอบประวัติรับราชการเกษียณ</option></select></label>
+          <label>ประเภทงาน* <select id="f-workType"><option value="">เลือก</option><option>งานตรวจสอบประวัติบุคคล</option><option>งานจัดทำหนังสือแจ้งผล</option><option>งานติดตาม/ประสานหน่วยงาน</option></select></label>
+          <label class="span-2">ชื่อหน่วยงาน/สังกัด <input id="f-agencyName" placeholder="กรมส่งเสริมการปกครองท้องถิ่น"></label>
+          <label>กรม* <input id="f-department" placeholder="กรมส่งเสริมการปกครองท้องถิ่น"></label>
+          <label>กระทรวง* <input id="f-ministry" placeholder="กระทรวงมหาดไทย"></label>
+          <label>เลขหนังสือ (หน่วยงาน)* <input id="f-letterNo" placeholder="มท 0808/2569"></label>
+          <label>ลว (หน่วยงาน)* <input id="f-letterDate" placeholder="2026-08-10 หรือ 10/08/2569"></label>
+          <label>ไฟล์รายชื่อที่หน่วยงานส่งมาตรวจ <input type="file" id="f-file1" accept=".pdf,.xlsx,.xls,.docx"></label>
+          <label>ไฟล์หนังสือหน่วย (ถ้ามี) <input type="file" id="f-file2" accept=".pdf,.jpg,.png"></label>
+          <label class="span-2">ที่อยู่หน่วยงานพร้อมรหัสไปรษณีย์-สำหรับปริ้นซอง(ถ้ามี) <textarea id="f-address" rows="2" placeholder="ถนนนครราชสีมา แขวงดุสิต เขตดุสิต กรุงเทพมหานคร 10300"></textarea></label>
+          <label class="span-2">หมายเหตุ/รายละเอียด <textarea id="f-remark" rows="2" placeholder="ขอให้ตรวจสอบประวัติเพื่อประกอบการพิจารณาคุณสมบัติ"></textarea></label>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:#62738a">* จำเป็นสำหรับบันทึก Step 1 · ไฟล์ 2 ตัวเก็บชื่อไฟล์ใน localStorage (mock) · วันที่รองรับ yyyy-mm-dd และ dd/mm/yyyy</div>
+      </div>
+      <!-- STEP 2 -->
+      <div id="wz-s2" class="wz-card" style="display:none">
+        <div class="wz-card-head"><div><h3>Step 2 : เพิ่มรายชื่อ Case <span id="wz-s2-case">5989</span></h3><p>เพิ่มรายชื่อภายใต้ Case เดียวกัน แล้วบันทึกรายชื่อเพื่อส่งต่อให้ Step ตรวจสอบประวัติ</p></div><span class="chip chip-orange" id="wz-s2-count">0 รายชื่อ</span></div>
+        <div class="wz-import-card">
+          <div style="display:flex;gap:10px;align-items:center"><i class="fa-solid fa-file-excel" style="color:#1d3975;font-size:18px"></i><div><strong>นำเข้ารายชื่อจาก Excel</strong><br><small style="color:#62738a">ดาวน์โหลด Template ไปกรอก แล้วเลือกไฟล์เพื่อนำเข้า</small></div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="downloadTemplate()"><i class="fa-solid fa-download"></i> ดาวน์โหลด Template Excel</button><label class="btn btn-primary" style="cursor:pointer"><i class="fa-solid fa-upload"></i> เลือกไฟล์ Excel <input type="file" id="excelInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="importExcel(event)"></label></div>
+        </div>
+        <div class="wz-action-panel">
+          <div><strong>เพิ่มรายชื่อเอง</strong> <small style="color:#62738a">กรอกทีละรายชื่อ หรือใช้ปุ่มเพิ่มแถวสำหรับหลายรายการ</small></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="addPersonRow()"><i class="fa-solid fa-plus"></i> เพิ่มแถวรายชื่อ</button><button class="btn btn-danger" id="btnRemoveSelected" onclick="removeSelected()" disabled><i class="fa-solid fa-trash"></i> ลบที่เลือก</button><button class="btn" style="border-color:#fca5a5;color:#b91c1c" id="btnClearAll" onclick="clearAllPeople()" disabled><i class="fa-solid fa-xmark"></i> ลบทั้งหมด</button></div>
+        </div>
+        <div class="wz-table-wrap"><table class="wz-table"><thead><tr><th style="width:40px;text-align:center"><input type="checkbox" id="chkAll" onchange="toggleAll(this.checked)"></th><th>ลำดับ</th><th>คำนำหน้า*</th><th>ชื่อ*</th><th>สกุล*</th><th>เลขบัตรประชาชน* (13 หลัก)</th><th>จัดการ</th></tr></thead><tbody id="peopleBody"></tbody></table></div>
+        <div id="s2msg" style="margin-top:8px;font-size:12px;color:#1d3975"></div>
+      </div>
+      <!-- STEP 3 -->
+      <div id="wz-s3" class="wz-card" style="display:none">
+        <div class="wz-card-head"><div><h3>Step 3 : ตรวจสอบประวัติ Case <span id="wz-s3-case">5989</span></h3><p>ตรวจสอบรายชื่อกับฐาน E-CMIS (กิจกรรม 4/5) แล้วเลือกผล ผ่าน/ไม่ผ่าน รายบุคคลก่อนบันทึก</p></div></div>
+        <div class="wz-report-grid">
+          <article><span>จำนวนรายชื่อทั้งหมด</span><strong id="r3-total">0</strong><small>รายชื่อ</small></article>
+          <article><span>พบประวัติในระบบ</span><strong id="r3-found">0</strong><small>รายชื่อ</small></article>
+          <article><span>ผ่าน</span><strong id="r3-pass">0</strong><small>รายชื่อ</small></article>
+          <article><span>ไม่ผ่าน</span><strong id="r3-fail">0</strong><small>รายชื่อ</small></article>
+        </div>
+        <div class="wz-action-panel">
+          <div><strong>ตรวจสอบรายชื่อทั้งหมด</strong><br><small style="color:#62738a">ระบบจะตรวจสอบกับข้อมูลภายในและแสดงสถานะรายบุคคล</small></div>
+          <button class="btn btn-primary" onclick="runVerification()"><i class="fa-solid fa-shield-halved"></i> ตรวจสอบทั้งหมด</button>
+        </div>
+        <div class="wz-table-wrap"><table class="wz-table" style="min-width:980px"><thead><tr><th>ลำดับ</th><th>คำนำหน้า</th><th>ชื่อ-สกุล</th><th>เลขบัตร</th><th>status ประวัติ</th><th>status ผลตรวจ</th><th>ผลโดยเจ้าหน้าที่*</th><th>รายละเอียด</th></tr></thead><tbody id="verifyBody"></tbody></table></div>
+        <div id="s3msg" style="margin-top:8px;font-size:12px;color:#1d3975"></div>
+      </div>
+      <!-- STEP 4 -->
+      <div id="wz-s4" class="wz-card" style="display:none">
+        <div class="wz-card-head"><div><h3>Step 4 : พิมพ์รายงานผลการตรวจสอบ Case <span id="wz-s4-case">5989</span></h3><p>สรุปผลตรวจสอบเพื่อจัดทำรายงานแนบหนังสือแจ้งผล</p></div></div>
+        <div class="wz-report-grid">
+          <article><span>จำนวนรายชื่อทั้งหมด</span><strong id="r4-total">0</strong></article>
+          <article><span>พบประวัติในระบบ</span><strong id="r4-found">0</strong></article>
+          <article><span>ผ่าน</span><strong id="r4-pass">0</strong></article>
+          <article><span>ไม่ผ่าน</span><strong id="r4-fail">0</strong></article>
+        </div>
+        <div class="wz-form-grid" style="grid-template-columns:1fr 1fr">
+          <label>เลขที่รายงาน <input id="rptNo" disabled></label>
+          <label>วันที่พิมพ์รายงาน <input id="rptDate" disabled></label>
+          <label>ชื่อเคส/งาน <input id="rptCaseName" disabled></label>
+          <label>ผู้จัดทำรายงาน <input id="rptBy" value="จนท. กบด."></label>
+        </div>
+        <div class="wz-preview-box">
+          <div><strong>Preview รายงาน</strong> <small style="color:#62738a">รายงานใช้ข้อมูลจาก Case และผลตรวจสอบล่าสุด</small></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" style="background:#dc2626;color:#fff" onclick="printReport('pdf')"><i class="fa-solid fa-file-pdf"></i> พิมพ์ PDF</button><button class="btn" style="background:#1d4ed8;color:#fff" onclick="printReport('word')"><i class="fa-solid fa-file-word"></i> พิมพ์ Word</button><button class="btn" style="background:#16a34a;color:#fff" onclick="printReport('excel')"><i class="fa-solid fa-file-excel"></i> พิมพ์ Excel</button></div>
+        </div>
+        <div id="s4msg" style="margin-top:8px;font-size:12px;color:#1d3975"></div>
+        <div id="reportPreview" style="margin-top:10px;background:#fff;border:1px solid #d7e2f1;border-radius:8px;padding:12px;font-size:12px;display:none"></div>
+      </div>
+      <!-- STEP 5 -->
+      <div id="wz-s5" class="wz-card" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;padding-bottom:10px;margin-bottom:14px">
+          <div style="display:flex;gap:8px;align-items:center"><span style="width:10px;height:10px;border-radius:50%;background:#2563eb"></span><h3 style="margin:0">จัดทำหนังสือแจ้งผลการตรวจสอบประวัติ</h3></div>
+          <span id="sigStatus" class="chip chip-orange">รอการลงนาม</span>
+        </div>
+        <div class="wz-step5-split">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px">
+              <strong style="font-size:13px">1. ข้อมูลอ้างอิงสำนวน (ดึงอัตโนมัติ)</strong>
+              <div style="display:grid;grid-template-columns:120px 1fr;gap:6px;margin-top:8px;font-size:12px">
+                <span style="color:#62738a">เลข Case:</span><strong id="s5-case">5989</strong>
+                <span style="color:#62738a">ชื่อเคส/งาน:</span><strong id="s5-caseName">-</strong>
+                <span style="color:#62738a">ประเภทการตรวจสอบ:</span><strong id="s5-reqType">-</strong>
+                <span style="color:#62738a">หน่วยงาน/สังกัด:</span><strong id="s5-agency">-</strong>
+                <span style="color:#62738a">จำนวนรายชื่อ:</span><strong id="s5-count">0 รายชื่อ</strong>
+              </div>
+            </div>
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px">
+              <strong style="font-size:13px">2. เลือกแม่แบบหนังสือราชการ (Template)</strong>
+              <label style="font-size:12px;font-weight:700">แม่แบบหนังสือแจ้งผลตรวจประวัติ *<select id="s5-template" style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px"><option>ตรวจประวัติ-เครื่องราช</option><option>ตรวจประวัติ-เลือกตั้ง</option></select></label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <label style="font-size:12px;font-weight:700">เลขที่หนังสือ ป.ป.ท. แจ้งผล <input id="s5-letterNo" style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px" placeholder="ปป 0004/"></label>
+                <label style="font-size:12px;font-weight:700">ลว (หนังสือ ป.ป.ท.) <input id="s5-letterDate" type="date" style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px"></label>
+              </div>
+              <label style="font-size:12px;font-weight:700">เรียน <input id="s5-recipient" style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px" placeholder="อธิบดีกรม..."></label>
+              <label style="font-size:12px;font-weight:700">อ้างถึง <input id="s5-reference" style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px" placeholder="หนังสือที่อ้างถึง"></label>
+              <label style="font-size:12px;font-weight:700">หมายเหตุเพิ่มเติม <textarea id="s5-remark" rows="2" style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px" placeholder="ข้อความเพิ่มเติมในหนังสือ"></textarea></label>
+            </div>
+            <div class="sig-box">
+              <div style="display:flex;justify-content:space-between;align-items:center"><div><small style="color:#62738a">การลงนามเอกสารอิเล็กทรอนิกส์</small><br><strong>ผู้อำนวยการกองบริหารคดี</strong></div><span id="sigBadge" class="chip chip-orange">รอการลงนาม</span></div>
+              <div id="sigPending" style="margin-top:10px"><small style="color:#62738a">ผู้มีหน้าที่ลงนาม: ผู้อำนวยการกองบริหารคดี ปฏิบัติราชการแทน เลขาธิการฯ</small><br><button class="btn btn-primary" style="margin-top:8px" onclick="openSignature()"><i class="fa-solid fa-pen"></i> บันทึกและลงนามเอกสาร</button></div>
+              <div id="sigDone" style="display:none;margin-top:10px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px"><div style="color:#16a34a;font-weight:700"><i class="fa-solid fa-circle-check"></i> ลงนามดิจิทัลเรียบร้อย</div><div id="sigMeta" style="font-size:11px;color:#334155;margin-top:4px"></div></div>
+              <div id="sigError" style="color:#dc2626;font-size:11px;margin-top:6px"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong style="font-size:13px">3. ตัวอย่างเอกสารจริงก่อนเสนอลงนาม</strong><span style="font-size:11px;color:#16a34a"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a"></span> <span id="paperStatus">พร้อมเสนอลงนาม</span></span></div>
+            <div style="background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:12px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:#475569;margin-bottom:8px"><span id="paperTemplate">Template: ตรวจประวัติ-เครื่องราช</span><div id="paperTabs" style="display:none;gap:6px"><button class="btn" style="padding:4px 8px;font-size:11px" id="tabPass" onclick="switchPreview('pass')">ฉบับผ่าน</button><button class="btn btn-primary" style="padding:4px 8px;font-size:11px" id="tabFail" onclick="switchPreview('fail')">ฉบับไม่ผ่าน</button></div></div>
+              <div class="letter-paper" id="letterPreview">
+                <div style="text-align:center"><img src="./assets/images/pacc-logo.webp" alt="" style="width:46px;height:46px;border-radius:50%;border:1px solid #c99a2e;background:#f4d56d;object-fit:cover"><div style="font-size:11px;font-weight:700" id="paperHeader">ที่ ปป 0004/ &nbsp;&nbsp;&nbsp; สำนักงาน ป.ป.ท.</div></div>
+                <h4 id="paperSubject">เรื่อง แจ้งผลการตรวจสอบประวัติบุคคล</h4>
+                <div style="font-size:12px;margin:6px 0">เรียน <span id="paperRecipient">อธิบดีกรมส่งเสริมการปกครองท้องถิ่น</span></div>
+                <div style="font-size:12px;margin:6px 0">อ้างถึง <span id="paperRef">หนังสือที่อ้างถึง</span></div>
+                <p style="font-size:12px;line-height:1.6;text-align:justify;text-indent:18px" id="paperBody">ตามหนังสือที่อ้างถึง สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ ได้ดำเนินการตรวจสอบประวัติบุคคลตามรายชื่อที่หน่วยงานส่งมา จำนวน <span id="paperCount">0</span> ราย ผลปรากฏว่า ผ่าน <span id="paperPass">0</span> ราย ไม่ผ่าน <span id="paperFail">0</span> ราย รายละเอียดปรากฏตามรายงานแนบ</p>
+                <div id="paperRemarkBox" style="background:#f0f9ff;border-left:3px solid #0284c7;padding:8px 10px;border-radius:6px;font-size:11px;display:none"></div>
+                <div style="text-align:right;margin-top:18px;font-size:12px">
+                  <div>ขอแสดงความนับถือ</div>
+                  <div id="paperSigArea" style="margin-top:10px"><button class="btn btn-primary" onclick="openSignature()" style="padding:6px 10px;font-size:11px"><i class="fa-solid fa-pen"></i> ลงนาม Digital Signature (ผู้จัดทำ)</button><div style="font-size:10px;color:#dc2626;margin-top:4px">* ต้องลงนามก่อนจึงจะบันทึกเสนอพิจารณาได้</div></div>
+                  <div id="paperSigDone" style="display:none;margin-top:8px"><div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;display:inline-block;padding:6px 10px;font-size:11px;text-align:left"><div style="color:#16a34a;font-weight:700"><i class="fa-solid fa-check"></i> ลงนามแล้ว</div><div id="paperSigName">ผู้อำนวยการกองบริหารคดี</div><div id="paperSigTime" style="color:#64748a;font-size:10px"></div></div></div>
+                  <div style="margin-top:6px;color:#475569;font-size:11px">( ผู้อำนวยการกองบริหารคดี )</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wz-footer">
+      <button class="btn" onclick="prevStep()" id="btnPrev">ก่อนหน้า</button>
+      <div style="display:flex;gap:8px;align-items:center"><span id="wzMsg" style="font-size:12px;color:#16a34a;font-weight:700"></span>
+        <button class="btn btn-primary" onclick="saveAndNext()" id="btnNext"><i class="fa-solid fa-floppy-disk"></i> <span id="btnNextText">บันทึกสร้าง Case และไป Step 2</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/sweetalert2/sweetalert2.all.min.js"></script>
+<script>
+// ===== seed CHK002/CHK003 (ย่อจาก 2 StateStore คงไว้) =====
+const CHK001_CASES = [
+  {id:"CHK-69-0001", agency:"กรมศิลปากร", type:"ขอเครื่องราชฯ", names:3, result:"รอตรวจ", status:"รอตรวจ", letterNo:"ศธ 0401/ว123", date:"2026-08-10"},
+  {id:"CHK-69-0002", agency:"เทศบาลตำบลบ้านโป่ง", type:"แต่งตั้ง/โยกย้าย", names:5, result:"พบประวัติ 1 ราย", status:"รอ ผอ.กลุ่มอนุมัติ", letterNo:"มท 0809/ว45", date:"2026-08-11"},
+  {id:"CHK-69-0003", agency:"องค์การบริหารส่วนตำบลบางเลน", type:"คุณสมบัติ", names:2, result:"ไม่พบ", status:"รอ ผอ.กองอนุมัติ", letterNo:"อบต. 123/2569", date:"2026-08-09"},
+  {id:"CHK-69-0004", agency:"กรมป่าไม้", type:"ขอเครื่องราชฯ", names:8, result:"พบประวัติ 2 ราย", status:"อนุมัติแล้ว", letterNo:"ทส 0901/ว88", date:"2026-08-07"},
+  {id:"CHK-69-0005", agency:"สำนักงานเขตพื้นที่การศึกษานครปฐม เขต 1", type:"ขอเครื่องราชฯ", names:12, result:"รอตรวจ", status:"รอตรวจ", letterNo:"ศธ 0421/ว201", date:"2026-08-12"},
+  {id:"CHK-69-0006", agency:"กรมโยธาธิการฯ", type:"คุณสมบัติ", names:4, result:"พบประวัติ 1 ราย", status:"รอ ผอ.กลุ่มอนุมัติ", letterNo:"มท 0523/ว77", date:"2026-08-09"},
+  {id:"CHK-69-0007", agency:"เทศบาลนครนนทบุรี", type:"แต่งตั้ง/โยกย้าย", names:2, result:"ไม่พบ", status:"รอ ผอ.กองอนุมัติ", letterNo:"ทน.นน 002/ว14", date:"2026-08-13"},
+  {id:"CHK-69-0008", agency:"องค์การบริหารส่วนตำบลบางเลน", type:"ขอเครื่องราชฯ", names:6, result:"พบประวัติ 3 ราย", status:"อนุมัติแล้ว", letterNo:"อบต.บางเลน 045/2569", date:"2026-08-05"},
+  {id:"CHK-69-0009", agency:"กรมส่งเสริมการปกครองท้องถิ่น", type:"คุณสมบัติ", names:1, result:"รอตรวจ", status:"รอตรวจ", letterNo:"มท 0816/ว301", date:"2026-08-14"},
+  {id:"CHK-69-0010", agency:"สำนักงานที่ดินจังหวัดนครปฐม", type:"ขอเครื่องราชฯ", names:9, result:"พบประวัติ 2 ราย", status:"รอ ผอ.กองอนุมัติ", letterNo:"มท 0510/ว198", date:"2026-08-11"},
+];
+const BOARD_BATCHES = [
+  {batchId:"B-2026-07-001", refNo:"ปช 0040(ติดตาม)/ว112", meeting:"2026-07-20", circularNo:"ปปท 0040/ว112", statusCode:"04", statusName:"ผอ.กองบริหารคดีอนุมัติแล้ว รอหน่วยงานอัปเดตสถานะ", sla:"เหลือ 7 วัน", cases:[
+    {caseId:"ปปท. 0012/2569", accused:"นายสมชาย ใจซื่อ", agency:"องค์การบริหารส่วนตำบลบางเลน", category:"คดีมีมูล", size:"เล็ก"},
+    {caseId:"ปปท. 0013/2569", accused:"นางแก้ว นามสมมติ", agency:"เทศบาลตำบลบ้านโป่ง", category:"คดีไม่มีมูล/ยุติเรื่อง", size:"กลาง"},
+    {caseId:"ปปท. 0014/2569", accused:"นายวิชัย ยอดทอง", agency:"กรมป่าไม้", category:"ส่ง ป.ป.ช.", size:"ใหญ่"},
+  ]},
+  {batchId:"B-2026-07-002", refNo:"ปช 0040(ติดตาม)/ว113", meeting:"2026-07-21", circularNo:"ร่าง ปปท 0040/ว113", statusCode:"02", statusName:"ทำบันทึกแจ้งเวียนแล้ว รอ ผอ.กลุ่มอนุมัติ", sla:"—", cases:[
+    {caseId:"ปปท. 0021/2569", accused:"นายอาทิตย์ ส่องแสง", agency:"การไฟฟ้าส่วนภูมิภาค", category:"คดีมีมูล", size:"กลาง"},
+    {caseId:"ปปท. 0022/2569", accused:"นางวิมล เพ็ญจันทร์", agency:"กรมพัฒนาฝีมือแรงงาน", category:"ส่ง ป.ป.ช.", size:"เล็ก"},
+  ]},
+  {batchId:"B-2026-07-003", refNo:"ปช 0040(ติดตาม)/ว204", meeting:"2026-07-22", circularNo:"ร่าง ปปท 0040/ว204", statusCode:"03", statusName:"ผอ.กลุ่มอนุมัติแล้ว รอ ผอ.กองบริหารคดีอนุมัติ", sla:"—", cases:[
+    {caseId:"ปปท. 0031/2569", accused:"นายชูชาติ ชนะศึก", agency:"กรมทรัพยากรธรณี", category:"ส่งพนักงานสอบสวน", size:"ใหญ่"},
+  ]},
+];
+const DISC_CASES = [
+  {caseId:"ปปท. 0014/2569", accused:"นายวิชัย ยอดทอง", position:"นายช่างโยธา", agency:"กรมป่าไม้", sanction:"ตัดเงินเดือน", result:"Compliant", details:"ดำเนินการทางวินัยแล้ว ตัดเงินเดือน 5% 3 เดือน"},
+  {caseId:"ปปท. 0016/2569", accused:"นายประเสริฐ ดีเยี่ยม", position:"ผอ.กองช่าง", agency:"กรมชลประทาน", sanction:"อยู่ระหว่างดำเนินการ", result:"InProgress", details:"อยู่ระหว่างตั้งกรรมการสอบวินัย"},
+  {caseId:"ปปท. 0121/2569", accused:"นายอนันต์ เที่ยงธรรม", position:"ปลัด อบต.", agency:"กรมส่งเสริมการปกครองท้องถิ่น", sanction:"ยังไม่ได้รับแจ้งผล", result:"Section41NoAction", details:"ไม่แจ้งผล แม้แจ้ง ตว. ไป 2 ครั้ง → เข้ามาตรา 41"},
+  {caseId:"ปปท. 0201/2569", accused:"นางสมควร ดีพร้อม", position:"นักวิชาการ", agency:"สำนักงานสถิติแห่งชาติ", sanction:"ไล่ออก", result:"NonCompliant", details:"ดำเนินการไม่เป็นไปตามมติ ป.ป.ท. → ส่ง ป.ป.ช. (มาตรา 41)"},
+];
+let LS_KEY='ecmis-transform-activity8-v1';
+// ===== wizard state =====
+let wizardActive=false;
+let wizardStep=1, maxSavedStep=0;
+let wizardCaseId='5989';
+let caseForm={caseName:'',requestType:'',workType:'',agencyName:'',department:'',ministry:'',letterNo:'',letterDate:'',file1:'',file2:'',address:'',remark:''};
+let people=[{rowNo:1,prefix:'',firstName:'',lastName:'',citizenId:'',selected:false,historyChecked:false,hasHistory:false,historyStatus:'รอตรวจสอบ',historyTone:'chip-orange',historyCaseNo:'',historyModule:'',decision:'',checkStatusCode:1}];
+let report={reportNo:'5989',reportDate:new Date().toISOString().slice(0,10),preparedBy:'จนท. กบด.'};
+let letter={templateType:'ตรวจประวัติ-เครื่องราช',internalLetterNo:'ปป 0004/',internalLetterDate:new Date().toISOString().slice(0,10),recipient:'อธิบดีกรมส่งเสริมการปกครองท้องถิ่น',referenceText:'',remark:''};
+let isSigned=false,signedAt=null,signatureDataUrl='',previewTab='fail';
+function persist(){
+  try{localStorage.setItem(LS_KEY, JSON.stringify({chk001:CHK001_CASES, wizard:{wizardCaseId,caseForm,people,wizardStep,maxSavedStep,report,letter,isSigned,signedAt,signatureDataUrl,previewTab}}));}catch(e){}
+}
+function restore(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(LS_KEY)||'null');
+    if(saved && saved.chk001 && Array.isArray(saved.chk001)){CHK001_CASES.length=0; saved.chk001.forEach(x=>CHK001_CASES.push(x));}
+    if(saved && saved.wizard){
+      const w=saved.wizard;
+      if(w.caseForm) caseForm=w.caseForm;
+      if(Array.isArray(w.people) && w.people.length) people=w.people;
+      if(w.wizardCaseId) wizardCaseId=w.wizardCaseId;
+      if(w.report) report=w.report;
+      if(w.letter) letter=w.letter;
+      isSigned=!!w.isSigned; signedAt=w.signedAt||null; signatureDataUrl=w.signatureDataUrl||'';
+      previewTab=w.previewTab||'fail';
+      maxSavedStep=w.maxSavedStep||0;
+      wizardStep=w.wizardStep||1;
+    }
+  }catch(e){}
+}
+function badgeForStatus(s){
+  if(s.includes("รอตรวจ")||s==="01") return "badge-pending";
+  if(s.includes("รอ ผอ")||s==="02"||s==="03") return "badge-review";
+  if(s.includes("อนุมัติ")||s==="04") return "badge-approved";
+  if(s.includes("ตีกลับ")) return "badge-returned";
+  if(s==="12"||s.includes("ปิดงาน")) return "badge-closed";
+  return "badge-pending";
+}
+function render001(){
+  const q=(document.getElementById('q001').value||"").toLowerCase();
+  const t=document.getElementById('f001-type').value, s=document.getElementById('f001-status').value;
+  const rows=CHK001_CASES.filter(r=>(!q||`${r.id} ${r.agency} ${r.letterNo}`.toLowerCase().includes(q))&&(!t||r.type===t)&&(!s||r.status===s));
+  document.getElementById('kpi-chk001-total').textContent=CHK001_CASES.length;
+  document.getElementById('kpi-chk001-pending').textContent=CHK001_CASES.filter(x=>x.status==="รอตรวจ").length;
+  document.getElementById('kpi-chk001-found').textContent=CHK001_CASES.filter(x=>x.result.includes("พบประวัติ")).length;
+  document.getElementById('kpi-chk001-notfound').textContent=CHK001_CASES.filter(x=>x.result==="ไม่พบ").length;
+  document.querySelector('#tbl001 tbody').innerHTML=rows.map(r=>`<tr><td><strong>${r.id}</strong><br><small style="color:#62738a">${r.letterNo} · ${r.date}</small></td><td>${r.agency}</td><td>${r.type}</td><td>${r.names} ราย</td><td>${r.result}</td><td><span class="badge ${badgeForStatus(r.status)}">${r.status}</span></td><td><button class="btn" onclick="show001('${r.id}')"><i class="fa-solid fa-eye"></i> ดู</button> <button class="btn btn-primary" onclick="openWizard('${r.id}')"><i class="fa-solid fa-pen-to-square"></i> เปิด wizard</button></td></tr>`).join('')||`<tr><td colspan="7" style="text-align:center;color:#62738a;padding:18px">ไม่พบข้อมูล</td></tr>`;
+}
+function show001(id){
+  const r=CHK001_CASES.find(x=>x.id===id);
+  const el=document.getElementById('detail001');
+  el.style.display='block';
+  el.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><strong>รายละเอียด ${r.id}</strong><button class="btn" onclick="document.getElementById('detail001').style.display='none'">ปิด</button></div>
+  <dl class="detail-grid" style="margin-top:10px"><dt>หน่วยงานผู้ขอ</dt><dd>${r.agency}</dd><dt>เลขหนังสือ</dt><dd>${r.letterNo}</dd><dt>ประเภท</dt><dd>${r.type}</dd><dt>ผลตรวจ</dt><dd>${r.result}</dd><dt>สถานะ</dt><dd><span class="badge ${badgeForStatus(r.status)}">${r.status}</span></dd><dt>วัยเชื่อม</dt><dd>Risk: มี ✓ วินัยเชื่อมได้</dd></dl>
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="openWizard('${r.id}')"><i class="fa-solid fa-wand-magic-sparkles"></i> เปิด wizard 5 ขั้น (Step 1-5)</button><button class="btn" onclick="Swal.fire('Mock','ตรวจฐานคดี ก4/5 — ค้น citizenId 13 หลัก ผ่าน DOPA (ก13)','info')">ค้นฐานคดี</button></div>`;
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function render002(){
+  const q=(document.getElementById('q002').value||"").toLowerCase();
+  const s=document.getElementById('f002-status').value;
+  const rows=BOARD_BATCHES.filter(b=>(!q||`${b.batchId} ${b.refNo} ${b.circularNo}`.toLowerCase().includes(q))&&(!s||b.statusCode===s));
+  document.getElementById('kpi002-total').textContent=BOARD_BATCHES.length;
+  document.getElementById('kpi002-01').textContent=BOARD_BATCHES.filter(b=>b.statusCode==="01").length;
+  document.getElementById('kpi002-04').textContent=BOARD_BATCHES.filter(b=>b.statusCode==="04").length;
+  document.getElementById('kpi002-12').textContent=BOARD_BATCHES.filter(b=>b.statusCode==="12").length;
+  document.querySelector('#tbl002 tbody').innerHTML=rows.map(b=>`<tr><td><strong>${b.batchId}</strong><br><small style="color:#62738a">${b.refNo}</small></td><td>${b.circularNo}</td><td>${b.meeting}</td><td>${b.cases.length} สำนวน</td><td><span class="badge ${badgeForStatus(b.statusCode)}">${b.statusCode} ${b.statusName.slice(0,32)}…</span></td><td>${b.sla}</td><td><button class="btn" onclick="show002('${b.batchId}')"><i class="fa-solid fa-eye"></i> ดู</button></td></tr>`).join('')||`<tr><td colspan="7" style="text-align:center;color:#62738a;padding:18px">ไม่พบข้อมูล</td></tr>`;
+}
+function show002(batchId){
+  const b=BOARD_BATCHES.find(x=>x.batchId===batchId);
+  const el=document.getElementById('detail002');
+  el.style.display='block';
+  el.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><strong>${b.batchId} · ${b.refNo}</strong><button class="btn" onclick="document.getElementById('detail002').style.display='none'">ปิด</button></div>
+  <div style="margin-top:8px;color:#62738a;font-size:12px">หนังสือเวียน ${b.circularNo} · สถานะ ${b.statusCode} ${b.statusName}</div>
+  <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>สำนวน</th><th>ผู้ถูกกล่าวหา</th><th>หน่วยงาน</th><th>ประเภทมติ</th><th>ขนาด</th></tr></thead><tbody>${b.cases.map(c=>`<tr><td>${c.caseId}</td><td>${c.accused}</td><td>${c.agency}</td><td>${c.category}</td><td>${c.size}</td></tr>`).join('')}</tbody></table></div>
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="Swal.fire('Mock','ทำบันทึกแจ้งเวียน หนังสือเวียน 4 ขั้น: Officer → ผอ.กลุ่ม → ผอ.กอง → แจ้งหน่วยงาน (Activity 8.2)','info')">ทำบันทึกแจ้งเวียน</button><button class="btn" onclick="Swal.fire('Mock','ติดตามผลหน่วยงาน — บันทึกผลตอบกลับ + ทำรายงาน ตว.','info')">ติดตามผล</button></div>`;
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function render003(){
+  const q=(document.getElementById('q003').value||"").toLowerCase();
+  const f=document.getElementById('f003-result').value;
+  const rows=DISC_CASES.filter(r=>(!q||`${r.caseId} ${r.accused} ${r.agency}`.toLowerCase().includes(q))&&(!f||r.result===f));
+  document.getElementById('kpi003-total').textContent=DISC_CASES.length;
+  document.getElementById('kpi003-comp').textContent=DISC_CASES.filter(x=>x.result==="Compliant").length;
+  document.getElementById('kpi003-tow').textContent=DISC_CASES.filter(x=>x.result==="InProgress").length;
+  document.getElementById('kpi003-41').textContent=DISC_CASES.filter(x=>x.result.includes("Section41")).length;
+  document.querySelector('#tbl003 tbody').innerHTML=rows.map(r=>`<tr><td>${r.caseId}</td><td>${r.accused}<br><small style="color:#62738a">${r.position}</small></td><td>${r.agency}</td><td>${r.sanction}</td><td><span class="badge ${r.result==="Compliant"?"badge-approved":r.result==="InProgress"?"badge-pending":"badge-returned"}">${r.result}</span></td><td>${r.sanction}</td><td><button class="btn" onclick="show003('${r.caseId}')"><i class="fa-solid fa-eye"></i> ดู</button></td></tr>`).join('')||`<tr><td colspan="7" style="text-align:center;color:#62738a;padding:18px">ไม่พบข้อมูล</td></tr>`;
+}
+function show003(caseId){
+  const r=DISC_CASES.find(x=>x.caseId===caseId);
+  const el=document.getElementById('detail003');
+  el.style.display='block';
+  el.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><strong>${r.caseId} · ${r.accused}</strong><button class="btn" onclick="document.getElementById('detail003').style.display='none'">ปิด</button></div>
+  <dl class="detail-grid" style="margin-top:10px"><dt>ตำแหน่ง</dt><dd>${r.position}</dd><dt>หน่วยงาน</dt><dd>${r.agency}</dd><dt>ผลที่ได้รับ</dt><dd><span class="badge ${r.result==="Compliant"?"badge-approved":"badge-returned"}">${r.result}</span></dd><dt>รายละเอียด</dt><dd>${r.details}</dd><dt>มาตรา</dt><dd>${r.result.includes("Section41")?"มาตรา 41 — หน่วยงานไม่ดำเนินการทางวินัย":r.result==="InProgress"?"มาตรา 38 — อยู่ระหว่างดำเนินการ":"มาตรา 38 — ดำเนินการแล้ว"}</dd></dl>
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="Swal.fire('Mock','บันทึกระดับโทษ: ${r.sanction} · AnalysisGroups 5 กลุ่ม','info')">บันทึกผลวินัย</button><button class="btn" onclick="Swal.fire('Mock','ออกหนังสือ ตว.1-2 และหนังสือแจ้งประธาน ป.ป.ท. → ส่ง ป.ป.ช. (เมื่อเข้ามาตรา 41)','info')">ออกหนังสือ ตว.</button></div>`;
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function route(){
+  const h=location.hash||"#/chk001";
+  document.querySelectorAll('.nav-link').forEach(b=>{const active=h.startsWith(b.dataset.hash); b.style.background=active?'rgba(255,255,255,.09)':'transparent'; b.style.color=active?'#fff':'#cbd5e1'; b.style.borderColor=active?'rgba(201,154,46,.35)':'transparent'});
+  document.getElementById('view-chk001').style.display=h.startsWith("#/chk001")?"block":"none";
+  document.getElementById('view-chk002').style.display=h.startsWith("#/chk002")?"block":"none";
+  document.getElementById('view-chk003').style.display=h.startsWith("#/chk003")?"block":"none";
+  const map={"#/chk001":["8.1 ตรวจสอบประวัติ","CHK001 · หนังสือจากหน่วยงานภายนอก → wizard 5 ขั้น"], "#/chk002":["8.2 ติดตามหลังมติ","CHK002 · มติ ก7 → บันทึกแจ้งเวียน → ติดตามหน่วยงาน (SLA 15 วัน)"] , "#/chk003":["8.3 กำกับวินัย","CHK003 · วินัยต้นสังกัด มาตรา 38/41 — ตว.1-2 → ส่ง ป.ป.ช."]};
+  const k=Object.keys(map).find(k=>h.startsWith(k))||"#/chk001";
+  document.getElementById('pageTitle').textContent=map[k][0];
+  document.getElementById('pageSub').textContent=map[k][1];
+}
+function resetMock(){ localStorage.removeItem(LS_KEY); location.reload(); }
+// ===== wizard helpers =====
+function openWizard(caseId){
+  if(caseId){
+    const c=CHK001_CASES.find(x=>x.id===caseId);
+    if(c){ wizardCaseId=c.id; caseForm.agencyName=c.agency; caseForm.letterNo=c.letterNo; caseForm.letterDate=c.date; }
+    else wizardCaseId=caseId;
+  } else {
+    wizardCaseId='CHK-69-'+String(CHK001_CASES.length+1).padStart(4,'0');
+  }
+  wizardActive=true;
+  document.getElementById('wizardOverlay').style.display='block';
+  syncFormToUI();
+  renderWizard();
+  document.body.style.overflow='hidden';
+}
+function closeWizard(){
+  wizardActive=false;
+  document.getElementById('wizardOverlay').style.display='none';
+  document.body.style.overflow='';
+  persist();
+}
+function syncFormToUI(){
+  document.getElementById('f-caseName').value=caseForm.caseName||'';
+  document.getElementById('f-requestType').value=caseForm.requestType||'';
+  document.getElementById('f-workType').value=caseForm.workType||'';
+  document.getElementById('f-agencyName').value=caseForm.agencyName||'';
+  document.getElementById('f-department').value=caseForm.department||'';
+  document.getElementById('f-ministry').value=caseForm.ministry||'';
+  document.getElementById('f-letterNo').value=caseForm.letterNo||'';
+  document.getElementById('f-letterDate').value=caseForm.letterDate||'';
+  document.getElementById('f-address').value=caseForm.address||'';
+  document.getElementById('f-remark').value=caseForm.remark||'';
+  if(document.getElementById('f-file1')) document.getElementById('f-file1').value='';
+  if(document.getElementById('f-file2')) document.getElementById('f-file2').value='';
+  document.getElementById('wzCaseCode').textContent='sys-chk-003 · '+wizardCaseId;
+  document.getElementById('wzCaseIdBadge').textContent=wizardCaseId;
+  ['wz-s2-case','wz-s3-case','wz-s4-case','s5-case'].forEach(id=>{const el=document.getElementById(id); if(el) el.textContent=wizardCaseId});
+  document.getElementById('s5-caseName').textContent=caseForm.caseName||'-';
+  document.getElementById('s5-reqType').textContent=caseForm.requestType||'-';
+  document.getElementById('s5-agency').textContent=caseForm.agencyName||'-';
+  document.getElementById('s5-count').textContent=people.length+' รายชื่อ (ผ่าน '+passCount()+' / ไม่ผ่าน '+failCount()+')';
+  document.getElementById('rptNo').value=wizardCaseId;
+  document.getElementById('rptDate').value=report.reportDate||new Date().toISOString().slice(0,10);
+  document.getElementById('rptCaseName').value=caseForm.caseName||'';
+  document.getElementById('rptBy').value=report.preparedBy||'จนท. กบด.';
+  document.getElementById('s5-template').value=letter.templateType||'ตรวจประวัติ-เครื่องราช';
+  document.getElementById('s5-letterNo').value=letter.internalLetterNo||'ปป 0004/';
+  document.getElementById('s5-letterDate').value=letter.internalLetterDate||new Date().toISOString().slice(0,10);
+  document.getElementById('s5-recipient').value=letter.recipient||'';
+  document.getElementById('s5-reference').value=letter.referenceText||'';
+  document.getElementById('s5-remark').value=letter.remark||'';
+}
+function pullFormFromUI(){
+  caseForm.caseName=document.getElementById('f-caseName').value.trim();
+  caseForm.requestType=document.getElementById('f-requestType').value;
+  caseForm.workType=document.getElementById('f-workType').value;
+  caseForm.agencyName=document.getElementById('f-agencyName').value.trim();
+  caseForm.department=document.getElementById('f-department').value.trim();
+  caseForm.ministry=document.getElementById('f-ministry').value.trim();
+  caseForm.letterNo=document.getElementById('f-letterNo').value.trim();
+  caseForm.letterDate=document.getElementById('f-letterDate').value.trim();
+  const ff1=document.getElementById('f-file1'); if(ff1 && ff1.files && ff1.files[0]) caseForm.file1=ff1.files[0].name;
+  const ff2=document.getElementById('f-file2'); if(ff2 && ff2.files && ff2.files[0]) caseForm.file2=ff2.files[0].name;
+  caseForm.address=document.getElementById('f-address').value.trim();
+  caseForm.remark=document.getElementById('f-remark').value.trim();
+  report.preparedBy=document.getElementById('rptBy').value.trim()||'จนท. กบด.';
+  letter.templateType=document.getElementById('s5-template').value;
+  letter.internalLetterNo=document.getElementById('s5-letterNo').value.trim();
+  letter.internalLetterDate=document.getElementById('s5-letterDate').value;
+  letter.recipient=document.getElementById('s5-recipient').value.trim();
+  letter.referenceText=document.getElementById('s5-reference').value.trim();
+  letter.remark=document.getElementById('s5-remark').value.trim();
+}
+function foundCount(){ return people.filter(p=>p.historyChecked && p.hasHistory).length; }
+function passCount(){ return people.filter(p=>p.checkStatusCode===2).length; }
+function failCount(){ return people.filter(p=>p.checkStatusCode===3).length; }
+function isStep1Valid(){ pullFormFromUI(); return caseForm.caseName && caseForm.requestType && caseForm.workType && caseForm.department && caseForm.ministry && caseForm.letterNo && caseForm.letterDate; }
+function isStep2Valid(){ return people.length>0 && people.every(p=> p.prefix && ['นาย','นาง','นางสาว'].includes(p.prefix) && p.firstName.trim() && p.lastName.trim() && /^\d{13}$/.test(p.citizenId)); }
+function isStep3Ready(){ return people.length>0 && people.every(p=>p.historyChecked); }
+function maxAllowed(){ return Math.min(5, maxSavedStep+1); }
+function goStep(n){
+  if(n>maxAllowed()) return;
+  pullFormFromUI();
+  wizardStep=n;
+  renderWizard();
+  persist();
+}
+function prevStep(){ if(wizardStep>1) goStep(wizardStep-1); }
+function saveAndNext(){
+  pullFormFromUI();
+  const msgEl=document.getElementById('wzMsg');
+  msgEl.textContent='';
+  if(wizardStep===1){
+    if(!isStep1Valid()){ Swal.fire({icon:'warning',title:'กรอกไม่ครบ',text:'กรุณากรอกฟิลด์ * ให้ครบ 11 ฟิลด์ (ชื่อเคส,ประเภทตรวจ,ประเภทงาน,กรม,กระทรวง,เลขหนังสือ,ลว)'}); return; }
+    // create case id if new
+    if(!CHK001_CASES.find(x=>x.id===wizardCaseId)){
+      CHK001_CASES.unshift({id:wizardCaseId, agency:caseForm.agencyName||'-', type:(caseForm.requestType.includes('เครื่องราช')?'ขอเครื่องราชฯ': caseForm.requestType.includes('เลือกตั้ง')?'คุณสมบัติ':'แต่งตั้ง/โยกย้าย'), names:people.length, result:'รอตรวจ', status:'รอตรวจ', letterNo:caseForm.letterNo, date:caseForm.letterDate});
+      render001();
+    } else {
+      const c=CHK001_CASES.find(x=>x.id===wizardCaseId); if(c){ c.agency=caseForm.agencyName||c.agency; c.letterNo=caseForm.letterNo; c.date=caseForm.letterDate; render001();}
+    }
+    maxSavedStep=Math.max(maxSavedStep,1);
+    wizardStep=2;
+    msgEl.textContent='บันทึก Step 1 สำเร็จ — สร้าง Case '+wizardCaseId;
+  } else if(wizardStep===2){
+    if(!isStep2Valid()){ Swal.fire({icon:'warning',title:'รายชื่อไม่ถูกต้อง',text:'ทุกแถวต้องมี คำนำหน้า/ชื่อ/สกุล และเลขบัตร 13 หลักเป็นตัวเลขเท่านั้น'}); return; }
+    // reset verification when save names
+    people.forEach(p=>{ p.historyChecked=false; p.hasHistory=false; p.historyStatus='รอตรวจสอบ'; p.historyTone='chip-orange'; p.decision=''; p.checkStatusCode=1; });
+    const c=CHK001_CASES.find(x=>x.id===wizardCaseId); if(c){ c.names=people.length; c.result='รอตรวจ'; render001();}
+    maxSavedStep=Math.max(maxSavedStep,2);
+    wizardStep=3;
+    msgEl.textContent='บันทึกรายชื่อ '+people.length+' ราย เข้า '+wizardCaseId+' แล้ว';
+  } else if(wizardStep===3){
+    if(!isStep3Ready()){ msgEl.textContent='กรุณากดตรวจสอบทั้งหมดก่อนบันทึก'; Swal.fire({icon:'warning',title:'ยังไม่ได้ตรวจสอบ',text:'กดปุ่ม “ตรวจสอบทั้งหมด” ก่อน'}); return; }
+    // decisions must be chosen for history rows? auto
+    maxSavedStep=Math.max(maxSavedStep,3);
+    wizardStep=4;
+    const c=CHK001_CASES.find(x=>x.id===wizardCaseId); if(c){ const f=foundCount(); c.result= f? 'พบประวัติ '+f+' ราย' : 'ไม่พบ'; c.status='รอ ผอ.กลุ่มอนุมัติ'; render001();}
+    msgEl.textContent='บันทึกผลตรวจประวัติ ผ่าน '+passCount()+' / ไม่ผ่าน '+failCount();
+  } else if(wizardStep===4){
+    report.reportNo=wizardCaseId;
+    report.reportDate=document.getElementById('rptDate').value||new Date().toISOString().slice(0,10);
+    maxSavedStep=Math.max(maxSavedStep,4);
+    wizardStep=5;
+    msgEl.textContent='บันทึกรายงาน '+wizardCaseId+' แล้ว';
+  } else if(wizardStep===5){
+    if(!isSigned){ Swal.fire({icon:'warning',title:'ยังไม่ได้ลงนาม',text:'กรุณากด “บันทึกและลงนามเอกสาร” ก่อน'}); document.getElementById('sigError').textContent='ต้องลงนาม Digital Signature ก่อน'; return; }
+    maxSavedStep=5;
+    const c=CHK001_CASES.find(x=>x.id===wizardCaseId); if(c){ c.status='อนุมัติแล้ว'; c.result= failCount()? 'พบประวัติ '+foundCount()+' ราย (ไม่ผ่าน '+failCount()+')' : 'ไม่พบ'; render001();}
+    Swal.fire({icon:'success',title:'เสร็จงาน Step 1-5 แล้ว',text:'บันทึกหนังสือแจ้งผลและปิด Case '+wizardCaseId+' เรียบร้อย'});
+    persist();
+    closeWizard();
+    return;
+  }
+  renderWizard();
+  persist();
+}
+function renderWizard(){
+  document.querySelectorAll('.wz-step').forEach(b=>{
+    const n=parseInt(b.dataset.step,10);
+    b.classList.remove('active','done');
+    b.disabled = n>maxAllowed();
+    if(n===wizardStep) b.classList.add('active');
+    else if(n<=maxSavedStep) b.classList.add('done');
+  });
+  for(let i=1;i<=5;i++){ const el=document.getElementById('wz-s'+i); if(el) el.style.display = (i===wizardStep?'block':'none'); }
+  // footer buttons
+  document.getElementById('btnPrev').style.display = wizardStep===1 ? 'none' : 'inline-block';
+  const nextText={1:'บันทึกสร้าง Case และไป Step 2',2:'บันทึกรายชื่อ และไป Step 3',3:'บันทึกผลตรวจประวัติ และไป Step 4',4:'บันทึกรายงาน และไป Step 5',5:'บันทึกหนังสือแจ้งผลและปิด Case'};
+  document.getElementById('btnNextText').textContent=nextText[wizardStep]||'บันทึก';
+  // counters
+  document.getElementById('r3-total').textContent=people.length;
+  document.getElementById('r3-found').textContent=foundCount();
+  document.getElementById('r3-pass').textContent=passCount();
+  document.getElementById('r3-fail').textContent=failCount();
+  document.getElementById('r4-total').textContent=people.length;
+  document.getElementById('r4-found').textContent=foundCount();
+  document.getElementById('r4-pass').textContent=passCount();
+  document.getElementById('r4-fail').textContent=failCount();
+  document.getElementById('wz-s2-count').textContent=people.length+' รายชื่อ';
+  renderPeopleTable();
+  renderVerifyTable();
+  renderReportPreviewInline();
+  renderLetterPreview();
+  updateSigUI();
+  // update stepper enable
+  document.getElementById('btnNext').disabled = (wizardStep===2 && !isStep2Valid() && maxSavedStep<2) ? false : false; // allow click to show validation
+  document.getElementById('wzMsg').textContent = '';
+  // reflect letter fields count
+  document.getElementById('s5-count').textContent=people.length+' รายชื่อ (ผ่าน '+passCount()+' / ไม่ผ่าน '+failCount()+')';
+}
+function renderPeopleTable(){
+  const tb=document.getElementById('peopleBody');
+  tb.innerHTML=people.map(p=>`
+    <tr>
+      <td style="text-align:center"><input type="checkbox" ${p.selected?'checked':''} onchange="toggleSel(${p.rowNo},this.checked)"></td>
+      <td>${p.rowNo}</td>
+      <td><select onchange="setPrefix(${p.rowNo},this.value)" style="width:100%;border:1px solid ${(!p.prefix||!['นาย','นาง','นางสาว'].includes(p.prefix))?'#ef4444':'#d7e2f1'};border-radius:6px;padding:4px"><option value="">เลือก</option><option value="นาย" ${p.prefix==='นาย'?'selected':''}>นาย</option><option value="นาง" ${p.prefix==='นาง'?'selected':''}>นาง</option><option value="นางสาว" ${p.prefix==='นางสาว'?'selected':''}>นางสาว</option></select></td>
+      <td><input value="${esc(p.firstName)}" oninput="setField(${p.rowNo},'firstName',this.value)" style="width:100%;border:1px solid ${!p.firstName.trim()?'#ef4444':'#d7e2f1'};border-radius:6px;padding:4px"></td>
+      <td><input value="${esc(p.lastName)}" oninput="setField(${p.rowNo},'lastName',this.value)" style="width:100%;border:1px solid ${!p.lastName.trim()?'#ef4444':'#d7e2f1'};border-radius:6px;padding:4px"></td>
+      <td><input value="${esc(p.citizenId)}" maxlength="13" oninput="setField(${p.rowNo},'citizenId',this.value)" placeholder="13 หลัก" style="width:100%;border:1px solid ${!/^\d{13}$/.test(p.citizenId)?'#ef4444':'#d7e2f1'};border-radius:6px;padding:4px"></td>
+      <td><button class="btn" onclick="removePerson(${p.rowNo})"><i class="fa-solid fa-trash"></i></button></td>
+    </tr>`).join('');
+  const any=people.some(p=>p.selected);
+  document.getElementById('btnRemoveSelected').disabled=!any;
+  document.getElementById('btnClearAll').disabled=people.length===0;
+  const all=document.getElementById('chkAll'); if(all) all.checked = people.length>0 && people.every(p=>p.selected);
+}
+function renderVerifyTable(){
+  const tb=document.getElementById('verifyBody');
+  tb.innerHTML=people.map(p=>{
+    const histChip=`<span class="chip ${p.historyChecked?(p.hasHistory?'chip-orange':'chip-green'):'chip-orange'}">${p.historyChecked?p.historyStatus:'รอตรวจสอบ'}</span>`;
+    const checkText = p.checkStatusCode===2?'<span class="chip chip-green"><i class="fa-solid fa-circle-check"></i> ผ่าน</span>' : p.checkStatusCode===3?'<span class="chip chip-red"><i class="fa-solid fa-circle-xmark"></i> ไม่ผ่าน</span>' : '<span class="chip chip-orange"><i class="fa-solid fa-hourglass-half"></i> รอเลือกผล</span>';
+    const sel = `<select ${!p.historyChecked?'disabled':''} onchange="setDecision(${p.rowNo},this.value)" style="border:1px solid #cbd5e1;border-radius:999px;padding:6px 10px"><option value="">เลือกผล</option><option value="ผ่าน" ${p.decision==='ผ่าน'?'selected':''}>ผ่าน</option><option value="ไม่ผ่าน" ${p.decision==='ไม่ผ่าน'?'selected':''}>ไม่ผ่าน</option></select>`;
+    const detail = p.hasHistory? `<button class="btn" onclick="openHistory(${p.rowNo})"><i class="fa-solid fa-list"></i> รายละเอียด</button>` : '-';
+    return `<tr><td>${p.rowNo}</td><td>${esc(p.prefix)}</td><td><strong>${esc(p.firstName)} ${esc(p.lastName)}</strong><br><small style="color:#62738a">${wizardCaseId}</small></td><td>${esc(p.citizenId)}</td><td>${histChip}</td><td>${checkText}</td><td>${sel}</td><td>${detail}</td></tr>`;
+  }).join('');
+}
+function renderReportPreviewInline(){
+  const el=document.getElementById('reportPreview');
+  if(wizardStep!==4){ el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML=`<strong>รายงานผลการตรวจสอบประวัติ — ${wizardCaseId}</strong><br>ชื่อเคส: ${esc(caseForm.caseName||'-')} · หน่วยงาน: ${esc(caseForm.agencyName||'-')}<br>จำนวน ${people.length} ราย · พบประวัติ ${foundCount()} · ผ่าน ${passCount()} · ไม่ผ่าน ${failCount()}<br><small style="color:#62738a">เลขที่รายงาน ${wizardCaseId} · วันที่ ${report.reportDate} · ผู้จัดทำ ${esc(report.preparedBy)}</small>`;
+}
+function renderLetterPreview(){
+  document.getElementById('paperHeader').textContent='ที่ '+ (letter.internalLetterNo||'ปป 0004/') +'    สำนักงาน ป.ป.ท.';
+  document.getElementById('paperRecipient').textContent=letter.recipient||'อธิบดีกรมส่งเสริมการปกครองท้องถิ่น';
+  document.getElementById('paperRef').textContent=letter.referenceText|| (caseForm.letterNo? 'อ้างถึง '+caseForm.letterNo+' ลงวันที่ '+caseForm.letterDate : 'หนังสือที่อ้างถึง');
+  document.getElementById('paperCount').textContent=people.length;
+  document.getElementById('paperPass').textContent=passCount();
+  document.getElementById('paperFail').textContent=failCount();
+  document.getElementById('paperSubject').textContent = letter.templateType==='ตรวจประวัติ-เลือกตั้ง' ? 'เรื่อง แจ้งผลการตรวจสอบประวัติบุคคล (การเลือกตั้งท้องถิ่น)' : 'เรื่อง แจ้งผลการตรวจสอบประวัติบุคคล (การขอรับพระราชทานเครื่องราชฯ)';
+  document.getElementById('paperTemplate').textContent='Template: '+letter.templateType;
+  const remarkBox=document.getElementById('paperRemarkBox');
+  if(letter.remark){ remarkBox.style.display='block'; remarkBox.innerHTML='<strong>หมายเหตุเพิ่มเติม:</strong> '+esc(letter.remark); } else remarkBox.style.display='none';
+  const hasPass=passCount()>0, hasFail=failCount()>0;
+  const tabs=document.getElementById('paperTabs');
+  if(hasPass && hasFail){ tabs.style.display='flex'; } else tabs.style.display='none';
+  // tab highlight
+  document.getElementById('tabPass').style.background = previewTab==='pass' ? '#10284b' : '#fff';
+  document.getElementById('tabPass').style.color = previewTab==='pass' ? '#fff' : '#10284b';
+  document.getElementById('tabFail').style.background = previewTab==='fail' ? '#10284b' : '#fff';
+  document.getElementById('tabFail').style.color = previewTab==='fail' ? '#fff' : '#10284b';
+  if(hasPass && hasFail){
+    document.getElementById('paperBody').innerHTML = previewTab==='pass'
+      ? `ตามหนังสือที่อ้างถึง สำนักงาน ป.ป.ท. ได้ตรวจสอบประวัติบุคคล จำนวน ${people.length} ราย ผลปรากฏว่า <strong style="color:#16a34a">ผ่าน ${passCount()} ราย</strong> รายละเอียดตามบัญชีรายชื่อแนบท้าย (ฉบับผ่าน)`
+      : `ตามหนังสือที่อ้างถึง สำนักงาน ป.ป.ท. ได้ตรวจสอบประวัติบุคคล จำนวน ${people.length} ราย ผลปรากฏว่า <strong style="color:#dc2626">ไม่ผ่าน ${failCount()} ราย</strong> เนื่องจากพบประวัติในระบบฐานคดี ก4/5 รายละเอียดตามบัญชีรายชื่อแนบท้าย (ฉบับไม่ผ่าน)`;
+  }
+}
+function switchPreview(t){ previewTab=t; renderLetterPreview(); persist(); }
+function updateSigUI(){
+  const badge=document.getElementById('sigBadge'), status=document.getElementById('sigStatus'), pending=document.getElementById('sigPending'), done=document.getElementById('sigDone'), paperStatus=document.getElementById('paperStatus'), paperArea=document.getElementById('paperSigArea'), paperDone=document.getElementById('paperSigDone');
+  if(isSigned){
+    if(badge){ badge.textContent='ลงนามแล้ว'; badge.className='chip chip-green'; }
+    if(status){ status.textContent='ลงนามดิจิทัลเรียบร้อย'; status.className='chip chip-green'; }
+    if(pending) pending.style.display='none';
+    if(done){ done.style.display='block'; document.getElementById('sigMeta').textContent='ลงนามด้วย Digital Signature · '+(signedAt||new Date().toLocaleString('th-TH')); }
+    if(paperStatus) paperStatus.textContent='ลงนามดิจิทัลเรียบร้อย';
+    if(paperArea) paperArea.style.display='none';
+    if(paperDone){ paperDone.style.display='block'; document.getElementById('paperSigTime').textContent=signedAt||''; }
+  } else {
+    if(badge){ badge.textContent='รอการลงนาม'; badge.className='chip chip-orange'; }
+    if(status){ status.textContent='รอการลงนาม'; status.className='chip chip-orange'; }
+    if(pending) pending.style.display='block';
+    if(done) done.style.display='none';
+    if(paperStatus) paperStatus.textContent='พร้อมเสนอลงนาม';
+    if(paperArea) paperArea.style.display='block';
+    if(paperDone) paperDone.style.display='none';
+  }
+}
+function esc(s){ return String(s||'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+// people actions
+function addPersonRow(){
+  const next= people.length? Math.max(...people.map(p=>p.rowNo))+1 : 1;
+  people.push({rowNo:next,prefix:'',firstName:'',lastName:'',citizenId:'',selected:false,historyChecked:false,hasHistory:false,historyStatus:'รอตรวจสอบ',historyTone:'chip-orange',historyCaseNo:'',historyModule:'',decision:'',checkStatusCode:1});
+  renderWizard(); persist();
+}
+function removePerson(no){ people=people.filter(p=>p.rowNo!==no); people.forEach((p,i)=>p.rowNo=i+1); renderWizard(); persist();}
+function setField(no,field,val){ const p=people.find(x=>x.rowNo===no); if(!p) return; p[field]=val; renderWizard(); persist();}
+function setPrefix(no,val){ const p=people.find(x=>x.rowNo===no); if(p) p.prefix=val; renderWizard(); persist();}
+function toggleSel(no,checked){ const p=people.find(x=>x.rowNo===no); if(p) p.selected=checked; renderPeopleTable(); persist();}
+function toggleAll(checked){ people.forEach(p=>p.selected=checked); renderPeopleTable(); persist();}
+function removeSelected(){ people=people.filter(p=>!p.selected); people.forEach((p,i)=>p.rowNo=i+1); renderWizard(); persist();}
+function clearAllPeople(){ if(!people.length) return; Swal.fire({title:'ลบทั้งหมด?',text:'ลบรายชื่อทั้งหมด '+people.length+' ราย',icon:'warning',showCancelButton:true,confirmButtonText:'ลบ'}).then(r=>{ if(r.isConfirmed){ people=[]; renderWizard(); persist(); }});}
+function setDecision(no,val){
+  const p=people.find(x=>x.rowNo===no); if(!p) return; p.decision=val;
+  if(val==='ผ่าน') p.checkStatusCode=2;
+  else if(val==='ไม่ผ่าน') p.checkStatusCode=3;
+  else p.checkStatusCode=1;
+  renderWizard(); persist();
+}
+function runVerification(){
+  if(!people.length){ Swal.fire('ไม่มีรายชื่อ','เพิ่มรายชื่อก่อน','warning'); return; }
+  people.forEach((p,i)=>{
+    p.historyChecked=true;
+    p.decision='';
+    p.checkStatusCode=1;
+    if(i===1){
+      p.hasHistory=true; p.historyStatus='มีชื่อถูกแจ้งในกิจกรรม 4'; p.historyTone='chip-orange'; p.historyCaseNo='ACT4-2568-0441'; p.historyModule='กิจกรรมที่ 4';
+    } else if(i===2){
+      p.hasHistory=true; p.historyStatus='ไต่สวนเบื้องต้น'; p.historyTone='chip-red'; p.historyCaseNo='ACT5-2568-0188'; p.historyModule='กิจกรรมที่ 5';
+    } else {
+      p.hasHistory=false; p.historyStatus='ไม่พบประวัติในระบบ'; p.historyTone='chip-green'; p.historyCaseNo=''; p.historyModule=''; p.decision='ผ่าน'; p.checkStatusCode=2;
+    }
+  });
+  document.getElementById('s3msg').textContent='ตรวจสอบรายชื่อกับข้อมูลกิจกรรม 4 และ 5 แล้ว — รายชื่อที่ไม่พบประวัติถูกเลือกผ่านอัตโนมัติ';
+  renderWizard(); persist();
+}
+function openHistory(no){
+  const p=people.find(x=>x.rowNo===no); if(!p||!p.hasHistory) return;
+  Swal.fire({title:'รายละเอียดประวัติ '+p.firstName+' '+p.lastName, html:`<div style="text-align:left;font-size:13px"><div><strong>เลขสำนวน:</strong> ${p.historyCaseNo}</div><div><strong>โมดูล:</strong> ${p.historyModule}</div><div><strong>สถานะ:</strong> ${p.historyStatus}</div><div style="margin-top:8px;color:#62738a">เชื่อมจากฐานคดีกิจกรรม 4/5 ผ่าน citizenId ${p.citizenId}</div></div>`, icon:'info'});
+}
+function downloadTemplate(){
+  const csv = "คำนำหน้า,ชื่อ,สกุล,เลขบัตรประชาชน\nนาย,สมชาย,ใจดี,1101700000001\nนาง,สมหญิง,ทดสอบ,1101700000002\n";
+  const blob=new Blob(["\uFEFF"+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='person-screen-name-template.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function importExcel(e){
+  const file=e.target.files && e.target.files[0];
+  if(!file) return;
+  // mock: add 2 rows regardless of content
+  const base= people.length? Math.max(...people.map(p=>p.rowNo))+1 : 1;
+  people.push({rowNo:base,prefix:'นาง',firstName:'มาลี',lastName:'แก้วใส',citizenId:'1101700000004',selected:false,historyChecked:false,hasHistory:false,historyStatus:'รอตรวจสอบ',historyTone:'chip-orange',historyCaseNo:'',historyModule:'',decision:'',checkStatusCode:1});
+  people.push({rowNo:base+1,prefix:'นาย',firstName:'อนุชา',lastName:'เมืองทอง',citizenId:'1101700000005',selected:false,historyChecked:false,hasHistory:false,historyStatus:'รอตรวจสอบ',historyTone:'chip-orange',historyCaseNo:'',historyModule:'',decision:'',checkStatusCode:1});
+  document.getElementById('s2msg').textContent='นำเข้ารายชื่อจากไฟล์ '+file.name+' แล้ว 2 รายการ';
+  e.target.value='';
+  renderWizard(); persist();
+}
+function printReport(type){
+  report.reportNo=wizardCaseId;
+  const fname=wizardCaseId+'.'+(type==='pdf'?'pdf':type==='word'?'docx':'xlsx');
+  const mime= type==='pdf'?'application/pdf': type==='word'?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  // minimal content
+  let content = `รายงานผลตรวจสอบ ${wizardCaseId} — จำนวน ${people.length} ราย พบประวัติ ${foundCount()} ผ่าน ${passCount()} ไม่ผ่าน ${failCount()}\n`;
+  people.forEach(p=>{ content+= `${p.rowNo},${p.prefix},${p.firstName} ${p.lastName},${p.citizenId},${p.decision|| (p.checkStatusCode===2?'ผ่าน':p.checkStatusCode===3?'ไม่ผ่าน':'รอ')}\n`; });
+  const blob=new Blob([content],{type:mime});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+  document.getElementById('s4msg').textContent='สั่งพิมพ์รายงาน '+wizardCaseId+' เป็น .'+(type==='pdf'?'pdf':type==='word'?'docx':'xlsx')+' แล้ว';
+}
+function openSignature(){
+  Swal.fire({
+    title:'ลงนามหนังสือแจ้งผลการตรวจสอบประวัติ', html:'<div style="text-align:left;font-size:13px"><div style="background:#e8f1fa;border-radius:8px;padding:10px;margin-bottom:8px"><i class="fa-solid fa-user-check"></i> ลงนามในฐานะผู้อำนวยการกองบริหารคดี ปฏิบัติราชการแทนเลขาธิการฯ</div><label>วิธีลงนาม<select id="sw-sign-method" class="swal2-input" style="margin:6px 0"><option>วาดลายเซ็น</option><option>อัปโหลดรูป</option><option>พิมพ์ชื่อ</option></select></label><label>รหัสผ่าน (ถ้ามี)<input id="sw-sign-pw" class="swal2-input" type="password" placeholder="ไม่บังคับ"></label></div>',
+    showCancelButton:true, confirmButtonText:'ลงนาม', focusConfirm:false,
+    preConfirm:()=>{
+      const m=document.getElementById('sw-sign-method').value;
+      return {method:m};
+    }
+  }).then(r=>{
+    if(r.isConfirmed){
+      isSigned=true;
+      signedAt=new Date().toLocaleString('th-TH',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})+' น.';
+      signatureDataUrl='signed:'+r.value.method;
+      document.getElementById('sigError').textContent='';
+      document.getElementById('wzMsg').textContent='ลงนามเรียบร้อย — กด “บันทึกหนังสือแจ้งผลและปิด Case” เพื่อจบงาน';
+      renderWizard(); persist();
+      Swal.fire({icon:'success',title:'ลงนามเรียบร้อย',text:'ลงนามด้วย '+r.value.method+' — '+signedAt});
+    }
+  });
+}
+// init
+restore();
+document.querySelectorAll('.nav-link').forEach(b=>b.addEventListener('click',()=>{location.hash=b.dataset.hash}));
+window.addEventListener('hashchange',route);
+['q001','f001-type','f001-status'].forEach(id=>{const el=document.getElementById(id); if(el) el.addEventListener('input',render001)});
+['q002','f002-status'].forEach(id=>{const el=document.getElementById(id); if(el) el.addEventListener('input',render002)});
+['q003','f003-result'].forEach(id=>{const el=document.getElementById(id); if(el) el.addEventListener('input',render003)});
+document.getElementById('rolePick').addEventListener('change',e=>{ Swal.fire({icon:'info',title:'สลับบทบาท (Mock)',text:'บทบาท: '+e.target.value+' — OFFICER เห็นทั้งหมด, DIV/BUREAU เห็นเฉพาะอนุมัติ'});});
+// live sync for wizard fields
+['f-caseName','f-requestType','f-workType','f-agencyName','f-department','f-ministry','f-letterNo','f-letterDate','f-address','f-remark','s5-template','s5-letterNo','s5-letterDate','s5-recipient','s5-reference','s5-remark','rptBy'].forEach(id=>{const el=document.getElementById(id); if(el) el.addEventListener('input',()=>{pullFormFromUI(); renderLetterPreview(); renderWizard(); persist();}); if(el && el.tagName==='SELECT') el.addEventListener('change',()=>{pullFormFromUI(); renderLetterPreview(); persist();});});
+document.getElementById('wizardOverlay').addEventListener('click',e=>{ if(e.target===document.getElementById('wizardOverlay')) closeWizard(); });
+route(); render001(); render002(); render003(); renderWizard();
+</script>
+<script>
+// Auth guard — require login, else redirect to login.html
+(function(){
+  try{
+    const needLogin = !localStorage.getItem('ecmis-transform-auth-v1');
+    if(needLogin){
+      const next = encodeURIComponent(location.pathname + location.search);
+      // from activity subfolder, login is at ../login.html
+      location.replace('../login.html?next=' + next);
+    }
+  }catch(e){}
+})();
+</script>
+
+</body>
+</html>

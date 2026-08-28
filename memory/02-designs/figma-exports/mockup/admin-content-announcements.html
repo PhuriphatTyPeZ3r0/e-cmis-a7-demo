@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-CMIS — จัดการเนื้อหา (ประกาศและ FAQ)</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://ecmis-web-ta31.vercel.app/css/ecmis.css?v=20260603-dd-global" rel="stylesheet">
+<style>
+/* หน้านี้ใช้ Master Layout จริงจาก ecmis.css (sidebar/topbar/card/table) — แปลงจาก Figma dev-mode code (จัดการเนื้อหา) มาเป็น component จริงของโปรเจค */
+.ac-tabs{display:inline-flex;background:#eef1f5;border-radius:10px;padding:4px;gap:4px;margin-bottom:18px;}
+.ac-tab{padding:0 22px;height:40px;line-height:40px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;color:#5f6f86;text-align:center;white-space:nowrap;transition:background .15s,color .15s;}
+.ac-tab.active{background:var(--navy-deep);color:#fff;}
+.ac-panel{display:none;}
+.ac-panel.active{display:block;}
+.ac-form-row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media (max-width:900px){.ac-form-row2{grid-template-columns:1fr}}
+.ac-list-item{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid #eef1f5;}
+.ac-list-item:last-child{border-bottom:none;}
+.ac-list-tag{font-size:10px;font-weight:700;padding:3px 10px;border-radius:6px;background:#eef2fd;color:var(--navy);white-space:nowrap;}
+.ac-list-status{font-size:10px;font-weight:700;padding:3px 10px;border-radius:6px;background:var(--green);color:#fff;white-space:nowrap;}
+.ac-list-status.draft{background:#e6edf6;color:var(--text-muted);}
+.ac-list-title{font-weight:700;font-size:13.5px;color:var(--text-dark);}
+.ac-list-meta{font-size:11.5px;color:var(--text-muted);margin-top:2px;}
+.ac-icon-btn{width:36px;height:32px;border-radius:8px;border:1px solid rgba(13,27,62,.18);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--navy-deep);cursor:pointer;}
+.ac-icon-btn.danger{border-color:#fca5a5;color:#dc2626;}
+</style>
+</head>
+<body>
+<div class="layout-container app-light">
+<aside class="sidebar open" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-logo-mark">ป.ป.ท.</div>
+    <div class="brand-text"><div class="brand-title">E-CMIS</div><div class="brand-sub">COMPLAINT MANAGEMENT</div></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-inbox-fill"></i><span>รับเรื่องร้องเรียน</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/complaints"><i class="bi bi-inbox-fill"></i> รายการทั้งหมด</a><a class="nav-sublink" href="/complaints/create"><i class="bi bi-inbox-fill"></i> รับเรื่องใหม่</a></div></div>
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-search"></i><span>แสวงหาข้อเท็จจริง</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/assign"><i class="bi bi-search"></i> มอบหมายงาน</a><a class="nav-sublink" href="/cases"><i class="bi bi-search"></i> รายการคดี/งาน</a></div></div>
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-clipboard2-check-fill"></i><span>วินิจฉัย/สรุปผล</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/witness-protect"><i class="bi bi-clipboard2-check-fill"></i> คุ้มครองพยาน</a></div></div>
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-people-fill"></i><span>มติคณะกรรมการ ป.ป.ท.</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/committee"><i class="bi bi-people-fill"></i> กำหนดการวาระ</a></div></div>
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-arrow-repeat"></i><span>ติดตามภายหลังมติ</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/post-committee"><i class="bi bi-arrow-repeat"></i> ติดตามผล</a></div></div>
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-file-earmark-person"></i><span>การดำเนินการตามหมายจับ</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/arrest-warrant"><i class="bi bi-file-earmark-person"></i> แดชบอร์ดหมายจับ</a></div></div>
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-bank2"></i><span>งานกฎหมายและคดีศาล</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items">
+        <a class="nav-sublink" href="/legal"><i class="bi bi-bank2"></i> แดชบอร์ดคดีศาล</a>
+        <a class="nav-sublink" href="/legal/court"><i class="bi bi-bank2"></i> ติดตามการพิจารณา</a>
+        <a class="nav-sublink" href="/legal/admin-case"><i class="bi bi-bank2"></i> ทะเบียนคดีปกครอง</a>
+        <a class="nav-sublink" href="/legal/info-request"><i class="bi bi-bank2"></i> บริการข้อมูลข่าวสาร</a>
+      </div></div>
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-bar-chart-line-fill"></i><span>วิเคราะห์/รายงาน</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/analytics/legal-stats"><i class="bi bi-bank2"></i> สถิติกระบวนการกฎหมายคดี</a><a class="nav-sublink" href="/analytics/warrant-witness"><i class="bi bi-shield-lock-fill"></i> สถิติหมายจับและคุ้มครองพยาน</a></div></div>
+
+    <div class="nav-group"><div class="nav-group-toggle open"><div class="nav-group-label"><i class="bi bi-gear-fill"></i><span>จัดการระบบ</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items open">
+        <a class="nav-sublink" href="/admin/overview"><i class="bi bi-speedometer2"></i> ภาพรวมระบบ</a>
+        <a class="nav-sublink" href="/admin/users"><i class="bi bi-people"></i> จัดการผู้ใช้งาน</a>
+        <a class="nav-sublink" href="/admin/approvals"><i class="bi bi-check2-square"></i> อนุมัติคำขอ</a>
+        <a class="nav-sublink" href="/admin/menu-permissions"><i class="bi bi-sliders"></i> ตั้งค่าเมนูและสิทธิ์</a>
+        <a class="nav-sublink" href="/admin/master-data"><i class="bi bi-database"></i> Master Data (หน่วยงาน...)</a>
+        <a class="nav-sublink" href="/admin/audit-report"><i class="bi bi-file-earmark-text"></i> รายงาน Audit</a>
+        <a class="nav-sublink" href="/admin/transfer-request"><i class="bi bi-arrow-left-right"></i> คำขอย้ายหน่วยงาน (legacy)</a>
+        <a class="nav-sublink" href="/admin/it-support"><i class="bi bi-headset"></i> IT Support Tickets</a>
+        <a class="nav-sublink" href="/admin/phonebook-request"><i class="bi bi-telephone"></i> คำขออัปเดตสมุดโทรศัพท์</a>
+        <a class="nav-sublink active" href="/admin/content"><i class="bi bi-megaphone-fill"></i> จัดการข่าวประชาสัมพันธ์</a>
+        <a class="nav-sublink" href="/admin/api-publishing"><i class="bi bi-cloud-arrow-up"></i> API Data Publishing</a>
+      </div></div>
+
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-person-badge"></i><span>บทบาทของฉัน</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/my-roles"><i class="bi bi-person-badge"></i> สิทธิ์และบทบาท</a></div></div>
+    <div class="nav-group"><div class="nav-group-toggle"><div class="nav-group-label"><i class="bi bi-briefcase-fill"></i><span>บริหารกลางและสนับสนุน</span></div><i class="bi bi-chevron-down nav-group-arrow"></i></div>
+      <div class="nav-group-items"><a class="nav-sublink" href="/central-support"><i class="bi bi-briefcase-fill"></i> งานสนับสนุนกลาง</a></div></div>
+  </nav>
+  <div class="sidebar-footer"><div class="user-card"><div class="user-avatar">T</div><div><div class="user-name">thanthita</div><div class="user-role">Super Admin</div></div></div></div>
+</aside>
+
+<header class="topbar">
+  <button class="hamburger-btn" title="เมนู"><i class="bi bi-list"></i></button>
+  <div class="topbar-search"><i class="bi bi-search"></i><input type="text" placeholder="ค้นหาเลขเรื่อง ผู้ถูกร้อง หน่วยงาน..."></div>
+  <div class="topbar-actions">
+    <div class="icon-btn" title="แจ้งเตือน"><i class="bi bi-bell-fill"></i><span class="notif-dot"></span></div>
+    <div class="icon-btn" title="คู่มือ"><i class="bi bi-journal-bookmark-fill"></i></div>
+    <div class="icon-btn" title="สมุดโทรศัพท์"><i class="bi bi-telephone-fill"></i></div>
+    <div class="icon-btn" title="โหมดสี"><i class="bi bi-circle-half"></i></div>
+    <div class="topbar-divider"></div>
+    <div class="user-menu-wrap"><button type="button" class="user-pill"><div class="user-pill-avatar">T</div><div class="user-pill-text"><div class="user-pill-name">thanthita</div><div class="user-pill-role">Super Admin</div></div><i class="bi bi-chevron-down user-pill-chevron"></i></button></div>
+  </div>
+</header>
+
+<main class="main-content">
+<div class="page-body">
+
+  <div class="breadcrumb-custom" style="margin-bottom:8px;">จัดการระบบ <i class="bi bi-chevron-right" style="font-size:9px"></i> <span>จัดการเนื้อหา</span></div>
+  <div class="page-header" style="background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 100%);border-radius:16px;padding:24px 28px;color:#fff;margin-bottom:20px;">
+    <div>
+      <div class="page-title" style="color:#fff;display:flex;align-items:center;gap:10px;"><i class="bi bi-megaphone-fill" style="color:var(--gold);"></i> จัดการเนื้อหา</div>
+      <div class="page-subtitle" style="color:rgba(255,255,255,.75);">Announcements & FAQ — Central Support (Admin)</div>
+    </div>
+  </div>
+
+  <div class="ac-tabs">
+    <div class="ac-tab active" onclick="acShowTab('news')">ประกาศ / คู่มือ</div>
+    <div class="ac-tab" onclick="acShowTab('faq')">FAQ</div>
+  </div>
+
+  <!-- ===== PANEL: ประกาศ / คู่มือ ===== -->
+  <div class="ac-panel active" id="ac-panel-news">
+
+    <div class="ecmis-card" style="margin-bottom:20px;">
+      <div class="ecmis-card-header"><div class="ecmis-card-title">เพิ่มประกาศใหม่</div></div>
+      <div class="ecmis-card-body">
+        <div class="ac-form-row2" style="margin-bottom:14px;">
+          <select class="form-control-custom"><option>ประกาศ</option><option>คู่มือ</option></select>
+          <input class="form-control-custom" placeholder="หัวข้อ">
+        </div>
+        <textarea class="form-control-custom" rows="3" placeholder="เนื้อหา" style="margin-bottom:14px;"></textarea>
+        <div class="ac-form-row2" style="margin-bottom:14px;">
+          <input class="form-control-custom" placeholder="URL เอกสารแนบ (ถ้ามี)">
+          <input class="form-control-custom" placeholder="Video embed URL (YouTube embed หรือ iframe src)">
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dark);"><input type="checkbox"> เผยแพร่ทันที</label>
+          <button class="btn-navy"><i class="bi bi-plus-lg"></i> เพิ่ม</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ecmis-card">
+      <div class="ecmis-card-header"><div class="ecmis-card-title">รายการประกาศ/คู่มือ</div></div>
+      <div class="ac-list-item">
+        <span class="ac-list-tag">announcement</span>
+        <span class="ac-list-status">เผยแพร่</span>
+        <div style="flex:1;"><div class="ac-list-title">ประกาศ 001</div><div class="ac-list-meta">30/06/2026 14:42</div></div>
+        <button class="ac-icon-btn" title="แก้ไข"><i class="bi bi-pencil-fill"></i></button>
+        <button class="ac-icon-btn danger" title="ลบ"><i class="bi bi-trash-fill"></i></button>
+      </div>
+      <div class="ac-list-item">
+        <span class="ac-list-tag" style="background:#e8f7f0;color:#136036;">guide</span>
+        <span class="ac-list-status">เผยแพร่</span>
+        <div style="flex:1;"><div class="ac-list-title">คู่มือ 001</div><div class="ac-list-meta">30/06/2026 14:40</div></div>
+        <button class="ac-icon-btn" title="แก้ไข"><i class="bi bi-pencil-fill"></i></button>
+        <button class="ac-icon-btn danger" title="ลบ"><i class="bi bi-trash-fill"></i></button>
+      </div>
+      <div class="ac-list-item">
+        <span class="ac-list-tag">announcement</span>
+        <span class="ac-list-status draft">ฉบับร่าง</span>
+        <div style="flex:1;"><div class="ac-list-title">ประกาศ 002 — ปิดปรับปรุงระบบวันที่ 15 ก.ค. 69</div><div class="ac-list-meta">28/06/2026 09:15</div></div>
+        <button class="ac-icon-btn" title="แก้ไข"><i class="bi bi-pencil-fill"></i></button>
+        <button class="ac-icon-btn danger" title="ลบ"><i class="bi bi-trash-fill"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PANEL: FAQ ===== -->
+  <div class="ac-panel" id="ac-panel-faq">
+    <div class="ecmis-card" style="margin-bottom:20px;">
+      <div class="ecmis-card-header"><div class="ecmis-card-title">เพิ่มคำถามที่พบบ่อย</div></div>
+      <div class="ecmis-card-body">
+        <input class="form-control-custom" placeholder="คำถาม" style="margin-bottom:14px;">
+        <textarea class="form-control-custom" rows="3" placeholder="คำตอบ" style="margin-bottom:14px;"></textarea>
+        <div style="display:flex;justify-content:flex-end;"><button class="btn-navy"><i class="bi bi-plus-lg"></i> เพิ่ม FAQ</button></div>
+      </div>
+    </div>
+    <div class="ecmis-card">
+      <div class="ecmis-card-header"><div class="ecmis-card-title">รายการ FAQ</div></div>
+      <div class="ac-list-item">
+        <span class="ac-list-status">เผยแพร่</span>
+        <div style="flex:1;"><div class="ac-list-title">ลืมรหัสผ่านต้องทำอย่างไร?</div><div class="ac-list-meta">อัปเดตล่าสุด 20/06/2026</div></div>
+        <button class="ac-icon-btn" title="แก้ไข"><i class="bi bi-pencil-fill"></i></button>
+        <button class="ac-icon-btn danger" title="ลบ"><i class="bi bi-trash-fill"></i></button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</main>
+<script>
+function acShowTab(name){
+  document.querySelectorAll('.ac-tab').forEach(function(t,i){ t.classList.toggle('active', (name==='news'&&i===0)||(name==='faq'&&i===1)); });
+  document.getElementById('ac-panel-news').classList.toggle('active', name==='news');
+  document.getElementById('ac-panel-faq').classList.toggle('active', name==='faq');
+}
+</script>
+</div>
+</body>
+</html>

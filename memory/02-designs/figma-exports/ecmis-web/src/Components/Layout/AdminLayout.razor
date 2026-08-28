@@ -1,0 +1,72 @@
+@inherits LayoutComponentBase
+@layout MainLayout
+@inject NavigationManager Nav
+@inject EcmisWeb.Services.CurrentUserService CurrentUserSvc
+
+<div class="admin-hub">
+    <nav class="admin-hub-nav" aria-label="เมนูจัดการระบบ">
+        @foreach (var navSection in Sections)
+        {
+            <div class="admin-hub-group">
+                <div class="admin-hub-group-title">@navSection.Title</div>
+                @foreach (var link in navSection.Links)
+                {
+                    if (link.SuperOnly && !IsSuperAdmin && !CanAccessSystemsHub)
+                        continue;
+                    <NavLink class="admin-hub-link" href="@link.Href" Match="NavLinkMatch.Prefix">
+                        <i class="bi @link.Icon"></i>
+                        <span>@link.Label</span>
+                    </NavLink>
+                }
+            </div>
+        }
+    </nav>
+    <div class="admin-hub-body">
+        @Body
+    </div>
+</div>
+
+@code {
+    private bool IsSuperAdmin;
+    private bool CanAccessSystemsHub;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await CurrentUserSvc.GetCurrentUserAsync();
+        IsSuperAdmin = user?.Roles?.Any(r =>
+            string.Equals(r, "super_admin", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(r, "SUPER_ADMIN", StringComparison.OrdinalIgnoreCase)) == true;
+        CanAccessSystemsHub = IsSuperAdmin
+            || user?.Roles?.Any(r => string.Equals(r, "org_admin", StringComparison.OrdinalIgnoreCase)) == true
+            || user?.Roles?.Any(r => string.Equals(r, "super_admin", StringComparison.OrdinalIgnoreCase)) == true;
+    }
+
+    private sealed record AdminNavLink(string Href, string Label, string Icon, bool SuperOnly = false);
+    private sealed record AdminNavSection(string Title, AdminNavLink[] Links);
+
+    private static readonly AdminNavSection[] Sections =
+    [
+        new("ภาพรวม", [
+            new("/admin/dashboard", "ภาพรวมระบบ", "bi-speedometer2")
+        ]),
+        new("ผู้ใช้และสิทธิ์", [
+            new("/admin/users", "จัดการผู้ใช้งาน", "bi-people-fill"),
+            new("/admin/transfers", "คำขอย้ายหน่วยงาน", "bi-arrow-left-right")
+        ]),
+        new("คำขอและอนุมัติ", [
+            new("/admin/approvals", "อนุมัติคำขอ", "bi-clipboard-check-fill"),
+            new("/admin/registrations", "คำขอลงทะเบียน", "bi-person-plus-fill")
+        ]),
+        new("เนื้อหาและสนับสนุน", [
+            new("/admin/support-tickets", "คำร้อง IT", "bi-headset"),
+            new("/admin/news", "ข่าวประชาสัมพันธ์", "bi-newspaper"),
+            new("/admin/content", "ประกาศและ FAQ", "bi-megaphone-fill")
+        ]),
+        new("ตั้งค่าระบบ", [
+            new("/super-admin/systems", "ตั้งค่าเมนูและสิทธิ์", "bi-grid-3x3-gap-fill", SuperOnly: true),
+            new("/admin/master-data", "ข้อมูลหลัก", "bi-database-fill", SuperOnly: true),
+            new("/admin/reports", "รายงานกิจกรรม", "bi-journal-text", SuperOnly: true),
+            new("/admin/api-keys", "API Keys", "bi-key-fill", SuperOnly: true)
+        ])
+    ];
+}

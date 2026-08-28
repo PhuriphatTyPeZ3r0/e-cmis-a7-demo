@@ -1,0 +1,328 @@
+@page "/complaints"
+@using EcmisWeb.Data
+@using EcmisWeb.Services
+@inject NavigationManager Nav
+@inject ComplaintApiService ComplaintApi
+
+<div class="complaint-list-shell">
+
+    <div class="cl-header">
+        <div class="cl-header-inner">
+            <div class="cl-bc">
+                <i class="bi bi-house-fill"></i>
+                <a href="/">หน้าหลัก</a>
+                <i class="bi bi-chevron-right"></i>
+                <span>เรื่องร้องทุกข์</span>
+            </div>
+            <div class="cl-ph-row">
+                <div>
+                    <div class="cl-title">รายการเรื่องร้องทุกข์</div>
+                    <div class="cl-sub">บริหารจัดการเรื่องร้องทุกข์ที่เข้าสู่ระบบจากทุกช่องทาง</div>
+                </div>
+                <div class="cl-actions">
+                    <button type="button" class="btn-ghost-d">
+                        <i class="bi bi-download"></i>
+                        ส่งออก
+                    </button>
+                    <button type="button" class="btn-gold" @onclick='() => Nav.NavigateTo("/complaints/create")'>
+                        <i class="bi bi-plus-lg"></i>
+                        รับเรื่องใหม่
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cl-body">
+
+        <div class="stats-row">
+            <div class="sc sc-1">
+                <div class="sc-head">รอดำเนินการ</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@rows.Count(r => r.Status == "pending")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-up"><i class="bi bi-arrow-up-short"></i> 2.6%</span>
+                        <span class="sc-hint">กว่าสัปดาห์ที่แล้ว</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sc sc-2">
+                <div class="sc-head">ประพฤติมิชอบ (ม.18/4)</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@rows.Count(r => r.Category == "ม.18/4")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-flat"><i class="bi bi-dash"></i> คงที่</span>
+                        <span class="sc-hint">กว่าสัปดาห์ที่แล้ว</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sc sc-3">
+                <div class="sc-head">ความเดือดร้อน (ม.58/2)</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@rows.Count(r => r.Category == "ม.58/2")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-up"><i class="bi bi-arrow-up-short"></i> 1.2%</span>
+                        <span class="sc-hint">กว่าสัปดาห์ที่แล้ว</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sc sc-4">
+                <div class="sc-head">ดำเนินการแล้ว</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@rows.Count(r => r.Status is "active" or "closed")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-up"><i class="bi bi-arrow-up-short"></i> 2.8%</span>
+                        <span class="sc-hint">กว่าสัปดาห์ที่แล้ว</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (isLoading)
+        {
+            <div class="list-alert list-alert-warn">
+                <i class="bi bi-arrow-repeat"></i>
+                <span>กำลังโหลดข้อมูลจาก Complaint API...</span>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(loadError))
+        {
+            <div class="list-alert list-alert-error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>@loadError</span>
+            </div>
+        }
+
+        <section class="table-card">
+            <div class="tc-head">
+                <div class="tc-row1">
+                    <div>
+                        <div class="tc-title">รายการเรื่องร้องทุกข์ทั้งหมด</div>
+                        <div class="tc-sub">ค้นหาจากเลขที่เรื่อง ผู้ถูกร้อง หน่วยงาน หรือช่องทาง</div>
+                    </div>
+                    <div class="tc-meta">
+                        <span class="bdg-nv">ทั้งหมด @rows.Count</span>
+                        <span class="bdg-gd">แสดง @FilteredRows.Count()</span>
+                    </div>
+                </div>
+                <div class="status-tabs">
+                    <button type="button" class="stab @(string.IsNullOrWhiteSpace(statusFilter) ? "on" : "")" @onclick='() => statusFilter = string.Empty'>
+                        ทั้งหมด <span class="stn">@rows.Count</span>
+                    </button>
+                    <button type="button" class="stab @(statusFilter == "pending" ? "on" : "")" @onclick='() => statusFilter = "pending"'>
+                        รอดำเนินการ <span class="stn">@rows.Count(r => r.Status == "pending")</span>
+                    </button>
+                    <button type="button" class="stab @(statusFilter == "active" ? "on" : "")" @onclick='() => statusFilter = "active"'>
+                        กำลังดำเนินการ <span class="stn">@rows.Count(r => r.Status == "active")</span>
+                    </button>
+                    <button type="button" class="stab @(statusFilter == "closed" ? "on" : "")" @onclick='() => statusFilter = "closed"'>
+                        ดำเนินการแล้ว <span class="stn">@rows.Count(r => r.Status == "closed")</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="filter-row">
+                <div class="sbox">
+                    <i class="bi bi-search"></i>
+                    <input placeholder="ค้นหาเลขที่เรื่อง ผู้ถูกร้อง หน่วยงาน..."
+                           @bind="searchText" @bind:event="oninput" />
+                </div>
+                <select class="fsel" @bind="statusFilter">
+                    <option value="">สถานะทั้งหมด</option>
+                    <option value="pending">รอดำเนินการ</option>
+                    <option value="active">กำลังไต่สวน</option>
+                    <option value="review">รอพิจารณา</option>
+                    <option value="transfer">ส่งคืน ป.ป.ช.</option>
+                    <option value="discipline">ส่ง สพท. วินัย</option>
+                    <option value="expired_warning">อายุความใกล้หมด</option>
+                    <option value="closed">ดำเนินการแล้ว</option>
+                </select>
+                <select class="fsel" @bind="channelFilter">
+                    <option value="">ช่องทางทั้งหมด</option>
+                    @foreach (var ch in channels)
+                    {
+                        <option value="@ch">@ch</option>
+                    }
+                </select>
+                <button type="button" class="fbtn" @onclick="ResetFilters">
+                    <i class="bi bi-x-lg"></i>
+                    ล้างตัวกรอง
+                </button>
+            </div>
+
+            <div class="table-scroll">
+                <table class="complaint-table-v22">
+                    <thead>
+                        <tr>
+                            <th>เลขที่เรื่อง</th>
+                            <th>วันที่รับ</th>
+                            <th>ช่องทาง</th>
+                            <th>ผู้ถูกร้อง</th>
+                            <th>หน่วยงาน</th>
+                            <th>ประเภท</th>
+                            <th>สถานะ</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (FilteredRows.Any())
+                        {
+                            @foreach (var row in FilteredRows)
+                            {
+                                <tr class="@(row.Status == "expired_warning" || row.Priority == "high" ? "urgent" : "")">
+                                    <td>
+                                        <div class="cno">@row.CaseNo</div>
+                                        <div class="cbar"></div>
+                                        <div class="ctno">@row.TrackNo</div>
+                                    </td>
+                                    <td><div class="dt">@ToShortDate(row.ReceivedAt)</div></td>
+                                    <td>
+                                        <span class="cch">
+                                            <i class="bi bi-broadcast-pin"></i>
+                                            @row.Channel
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="an">@row.Accused</div>
+                                        <div class="al-l">@row.Province</div>
+                                    </td>
+                                    <td><div class="ag">@row.AccusedAgency</div></td>
+                                    <td>
+                                        <span class="cat @GetCategoryChipClass(row.Category)">@row.Category</span>
+                                    </td>
+                                    <td>
+                                        <span class="st @GetStatusChipClass(row.Status)">
+                                            <i class="bi @GetStatusIcon(row.Status)"></i>
+                                            @GetStatusLabel(row.Status)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn-mgr" @onclick='() => Nav.NavigateTo($"/complaints/{row.Id}")'>
+                                            จัดการ
+                                            <i class="bi bi-arrow-right-short"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="empty-state">
+                                    <i class="bi bi-inbox"></i>
+                                    <span>ไม่พบข้อมูลตามเงื่อนไขที่ค้นหา กรุณาลองปรับคำค้นหรือสถานะใหม่</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pag">
+                <span class="pag-info">แสดง @FilteredRows.Count() จากทั้งหมด @rows.Count รายการ</span>
+                <div class="pag-btns">
+                    <button type="button" class="pb"><i class="bi bi-chevron-double-left"></i></button>
+                    <button type="button" class="pb"><i class="bi bi-chevron-left"></i></button>
+                    <button type="button" class="pb on">1</button>
+                    <button type="button" class="pb"><i class="bi bi-chevron-right"></i></button>
+                    <button type="button" class="pb"><i class="bi bi-chevron-double-right"></i></button>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+@code {
+    private string searchText = string.Empty;
+    private string statusFilter = string.Empty;
+    private string channelFilter = string.Empty;
+
+    private IReadOnlyList<ComplaintRow> rows = [];
+    private bool isLoading = true;
+    private string loadError = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadComplaints();
+    }
+
+    private async Task LoadComplaints()
+    {
+        isLoading = true;
+        loadError = string.Empty;
+
+        try
+        {
+            rows = SortNewestFirst(await ComplaintApi.GetComplaintsAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            loadError = $"โหลดข้อมูลจริงจาก API ไม่สำเร็จ: {ex.Message}";
+            rows = [];
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private IEnumerable<string> channels =>
+        rows.Select(r => r.Channel).Distinct().OrderBy(c => c);
+
+    private IEnumerable<ComplaintRow> FilteredRows => rows.Where(r =>
+        (string.IsNullOrWhiteSpace(searchText)
+            || r.CaseNo.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || r.TrackNo.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || r.Accused.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || r.AccusedAgency.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || r.Unit.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || r.Channel.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+        && (string.IsNullOrWhiteSpace(statusFilter) || r.Status.Equals(statusFilter, StringComparison.OrdinalIgnoreCase))
+        && (string.IsNullOrWhiteSpace(channelFilter) || r.Channel.Equals(channelFilter, StringComparison.OrdinalIgnoreCase)));
+
+    private static IEnumerable<ComplaintRow> SortNewestFirst(IEnumerable<ComplaintRow> source) =>
+        source
+            .OrderByDescending(r => ComplaintData.ParseDate(r.ReceivedAt) ?? DateTime.MinValue)
+            .ThenByDescending(r => r.Id);
+
+    private void ResetFilters()
+    {
+        searchText = string.Empty;
+        statusFilter = string.Empty;
+        channelFilter = string.Empty;
+    }
+
+    private static string ToShortDate(string receivedAt) => ComplaintData.ToThaiShortDate(receivedAt);
+    private static string GetStatusLabel(string status) => ComplaintData.StatusLabel(status);
+    private static string GetStatusIcon(string status) => ComplaintData.StatusIcon(status);
+
+    private static string GetStatusChipClass(string status) => status switch
+    {
+        "pending"          => "pub-chip-pending",
+        "active"           => "pub-chip-active",
+        "review"           => "pub-chip-review",
+        "transfer"         => "pub-chip-transfer",
+        "discipline"       => "pub-chip-discipline",
+        "closed"           => "pub-chip-closed",
+        "expired_warning"  => "pub-chip-expired",
+        _                  => "pub-chip-closed"
+    };
+
+    private static string GetCategoryChipClass(string category) => category switch
+    {
+        "ม.18/4" => "pub-chip-m18",
+        "ม.58/2" => "pub-chip-m58",
+        _        => "pub-chip-other"
+    };
+
+    private static string PriorityStyle(string priority) => priority switch
+    {
+        "high"   => "background:#f87171;box-shadow:0 0 0 3px rgba(248,113,113,.25)",
+        "medium" => "background:#fb923c",
+        "low"    => "background:#4ade80",
+        _        => "background:rgba(255,255,255,.2)"
+    };
+}

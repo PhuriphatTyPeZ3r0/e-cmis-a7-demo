@@ -1,0 +1,51 @@
+<div class="table-card an-flex-card panel-glow wr-chart-panel @ExtraClass">
+    <div class="tc-head">
+        <div class="tc-row1">
+            <div class="tc-title"><i class="bi @IconClass wr-chart-head-icon"></i> @Title</div>
+            @if (HeadMeta is not null)
+            {
+                <div class="tc-meta">@HeadMeta</div>
+            }
+        </div>
+        @if (!string.IsNullOrEmpty(Subtitle))
+        {
+            <div class="tc-sub">@Subtitle</div>
+        }
+    </div>
+    <div class="wr-chart-panel-body">
+        @if (Layout == WarRoomChartLayout.StackedLeft)
+        {
+            <div class="wr-charts-stacked">
+                @foreach (var chart in Charts)
+                {
+                    <div class="wr-sub-chart wr-sub-chart-stacked">
+                        <div class="wr-sub-chart-title">@chart.Title</div>
+                        <div class="wr-sub-chart-canvas"><canvas id="@chart.CanvasId"></canvas></div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="wr-triple-charts">
+                @foreach (var chart in Charts)
+                {
+                    <div class="wr-sub-chart">
+                        <div class="wr-sub-chart-title">@chart.Title</div>
+                        <div class="wr-sub-chart-canvas"><canvas id="@chart.CanvasId"></canvas></div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "สถิติข้อมูลภาพรวม";
+    [Parameter] public string IconClass { get; set; } = "bi-bar-chart-line-fill";
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public RenderFragment? HeadMeta { get; set; }
+    [Parameter] public IReadOnlyList<WarRoomChartSlot> Charts { get; set; } = [];
+    [Parameter] public WarRoomChartLayout Layout { get; set; } = WarRoomChartLayout.TripleEqual;
+    [Parameter] public string? ExtraClass { get; set; }
+}

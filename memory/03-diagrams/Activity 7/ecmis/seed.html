@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Seed ข้อมูลจำลอง E-CMIS — ครบทุกกิจกรรม</title>
+<link rel="stylesheet" href="shared-assets/auth.css">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:'Prompt','Sarabun',sans-serif;background:#f4f6f8;color:#172943}
+.shell{max-width:920px;margin:0 auto;padding:28px 20px}
+.hero{background:linear-gradient(135deg,#0a2647,#123b63);color:#fff;border-radius:16px;padding:28px 24px}
+.hero h1{margin:0 0 6px;font-size:1.35rem}.hero p{margin:0;opacity:.82;font-size:.9rem;line-height:1.6}
+.card{background:#fff;border-radius:14px;padding:20px 22px;margin-top:16px;box-shadow:0 8px 24px rgba(10,38,71,.07)}
+.card h2{margin:0 0 10px;font-size:1rem;color:#0a2647}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.kpi{background:#f8fafc;border:1px solid #dbe3ea;border-radius:10px;padding:12px 14px}
+.kpi strong{display:block;font-size:1.05rem;color:#0a2647}
+.kpi span{font-size:.8rem;color:#62738a}
+.btn{border:1px solid #c9d6e7;background:#fff;border-radius:10px;padding:10px 14px;cursor:pointer;font:600 .9rem 'Prompt',sans-serif}
+.btn.primary{background:#0a2647;color:#fff;border-color:#0a2647}
+.btn.danger{border-color:#d6a3a3;color:#a5322a}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.log{white-space:pre-wrap;background:#0a2647;color:#cfe2ff;border-radius:10px;padding:14px 16px;font:12px/1.6 ui-monospace,monospace;max-height:320px;overflow:auto;margin-top:12px}
+.tbl{width:100%;border-collapse:collapse;font-size:.86rem;margin-top:10px}
+.tbl th,.tbl td{border:1px solid #dbe3ea;padding:8px 10px;text-align:left}
+.tbl th{background:#f1f5f9}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.72rem;font-weight:700}
+.b-wait{background:#fef3c7;color:#92400e}.b-warn{background:#fee2e2;color:#991b1b}.b-ok{background:#dcfce7;color:#166534}.b-info{background:#dbeafe;color:#1e40af}
+a.link{color:#0a2647;font-weight:600}
+</style>
+<script src="shared-assets/auth.js"></script>
+<script src="cases.js"></script>
+<script src="seed-data.js"></script>
+</head>
+<body>
+<div class="shell">
+  <div class="hero">
+    <h1>Seed ข้อมูลจำลอง E-CMIS — ครบทุกกิจกรรมเหมือนข้อมูลจริง</h1>
+    <p>เติมสำนวนให้ทุกกิจกรรมมีของให้ทดลองกดได้จริง ทุกจุด ทุกสถานะ — ใช้ <code>cases.js</code> เป็นทะเบียนกลาง + <code>localStorage</code> เดียวกันทุกกิจกรรม<br>
+    บัญชีทดสอบทุกกิจกรรม รหัส <code>1234</code> · ดูทั้งหมด <code>demo / demo</code></p>
+  </div>
+
+  <div class="card">
+    <h2>สำนวนทั้งหมดในระบบตอนนี้</h2>
+    <div id="kpis" class="grid"></div>
+    <table class="tbl" id="tbl"><thead><tr><th>เลขสำนวน</th><th>เรื่อง</th><th>กิจกรรม</th><th>สถานะ</th><th>ผู้ถือ</th><th>เปิด</th></tr></thead><tbody></tbody></table>
+  </div>
+
+  <div class="card">
+    <h2>เครื่องมือ</h2>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn primary" id="btnApply">เติม seed ให้ครบทุกกิจกรรม</button>
+      <button class="btn" id="btnRefresh">รีเฟรชตาราง</button>
+      <button class="btn danger" id="btnReset">ล้างทั้งหมดแล้วเติมใหม่</button>
+    </div>
+    <div class="log" id="log">พร้อม</div>
+    <p style="font-size:.82rem;color:#62738a;margin-top:10px">ทิป: ล็อกอินด้วย <code>demo / demo</code> จะเห็นทุกกิจกรรม · แต่ละกิจกรรมล็อกอินด้วยบัญชีของตัวเองก็ได้ (ดู <a class="link" href="login.html">หน้า login</a>)</p>
+  </div>
+
+  <div class="card">
+    <h2>ทางลัดไปแต่ละกิจกรรม</h2>
+    <div id="acts" class="grid"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const KEY="ecmis-transform-cases-v1";
+  const VER_KEY=KEY+"-seed";
+  const logEl=document.getElementById("log");
+
+  function log(msg){
+    logEl.textContent = "["+new Date().toLocaleTimeString("th-TH")+"] "+msg+"\n"+logEl.textContent;
+  }
+  function readCases(){
+    try{
+      const raw=localStorage.getItem(KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    if(window.ECMISHub && ECMISHub.getAllCases) return ECMISHub.getAllCases();
+    return [];
+  }
+  const ACT_LABEL={
+    "intake-investigation":"ก4+5 รับเรื่อง/ไต่สวน",
+    "board-resolution":"ก7 มติ ป.ป.ท.",
+    "person-screening":"ก8 ตรวจประวัติ",
+    "arrest-warrant":"ก9 หมายจับ",
+    "legal-case":"ก10 กฎหมาย",
+    "witness-protection":"ก6 คุ้มครองพยาน",
+    "analytics":"ก12 วิเคราะห์",
+    "integration-gateway":"ก13 เชื่อมโยง",
+    "data-migration":"ก11 นำเข้าข้อมูล",
+    "admin-center":"ก14 บริหารกลาง"
+  };
+  function badgeFor(c){
+    const s=String(c.status||"");
+    if(/เกินกำหนด|ตีกลับ|เกิน/.test(s)) return "b-warn";
+    if(/อนุมัติ|รับไว้|พร้อม|ปกติ|คุ้มครอง/.test(s)) return "b-ok";
+    if(/รอ/.test(s)) return "b-wait";
+    return "b-info";
+  }
+  function render(){
+    const cases=readCases();
+    // KPIs
+    const byAt={}; cases.forEach(c=>{ const k=c.at||"—"; byAt[k]=(byAt[k]||0)+1; });
+    const kpis=document.getElementById("kpis");
+    kpis.innerHTML = Object.entries(byAt).sort().map(([k,v])=>`<div class="kpi"><strong>${v} สำนวน</strong><span>${ACT_LABEL[k]||k}</span></div>`).join("")
+      + `<div class="kpi"><strong>${cases.length} รวม</strong><span>SEED ${localStorage.getItem(VER_KEY)||"—"}</span></div>`;
+
+    const tb=document.querySelector("#tbl tbody");
+    tb.innerHTML = cases.map(c=>{
+      const at=ACT_LABEL[c.at]||c.at||"—";
+      const link = c.at ? `<a class="link" href="${c.at}/index.html?case=${encodeURIComponent(c.id)}">เปิด</a>` : `<a class="link" href="my-work.html?case=${encodeURIComponent(c.id)}">เปิด</a>`;
+      return `<tr><td><code>${c.id}</code><br><small style="color:#62738a">${c.trackingNo||""} PIN ${c.pin||""}</small></td><td>${c.subject||c.title||""}<br><small style="color:#62738a">${c.agency||""}</small></td><td>${at}</td><td><span class="badge ${badgeFor(c)}">${c.status||""}</span>${c.urgent? ' <span class="badge b-warn">เร่งด่วน</span>':''}${c.returned? ' <span class="badge b-warn">ตีกลับ</span>':''}</td><td>${c.owner||""}<br><small style="color:#62738a">${c.ownerLogin||""}</small></td><td>${link}</td></tr>`;
+    }).join("");
+
+    const acts=[["intake-investigation","ก4+5 รับเรื่อง/ไต่สวน","staff-workflow.html","intake.officer"],["board-resolution","ก7 มติ ป.ป.ท.","inbox.html","Thanakrit.B"],["person-screening","ก8 ตรวจประวัติ","index.html","chk.officer"],["arrest-warrant","ก9 หมายจับ","index.html","warrant.officer"],["legal-case","ก10 กฎหมาย","index.html","legal.officer"],["witness-protection","ก6 คุ้มครองพยาน","index.html","wp.officer"],["analytics","ก12 วิเคราะห์","index.html","report.analyst"],["integration-gateway","ก13 เชื่อมโยง","index.html","gateway.officer"],["admin-center","ก14 บริหารกลาง","index.html","somsak.p"]];
+    actsEl.innerHTML = acts.map(([act,label,entry,login])=>`<div class="kpi"><strong>${label}</strong><span>บัญชี ${login} / 1234</span><br><a class="link" href="${act}/${entry}">เปิดกิจกรรม →</a></div>`).join("");
+  }
+
+  document.getElementById("btnApply").addEventListener("click", ()=>{
+    try{
+      localStorage.removeItem(KEY+"-seed");
+      // ให้ cases.js ทำ seed ใหม่เมื่อโหลดหน้าใหม่ — แต่เราทำ inline ด้วย
+      if(window.SeedData && SeedData.apply){ const r=SeedData.apply(); log("SeedData.apply: "+JSON.stringify(r)); }
+      // fallback: บังคับ reload ให้ cases.js seed อีกรอบ
+      setTimeout(()=>{ log("เติม seed แล้ว — รีเฟรชตาราง"); render(); }, 600);
+      log("สั่งเติม seed แล้ว");
+    }catch(e){ log("ผิดพลาด: "+e.message); }
+  });
+  document.getElementById("btnRefresh").addEventListener("click", ()=>{ render(); log("รีเฟรชแล้ว"); });
+  document.getElementById("btnReset").addEventListener("click", ()=>{
+    if(!confirm("ล้างข้อมูลจำลองทั้งหมดแล้วเติมใหม่? งานที่ทำไว้ในเครื่องจะหาย")) return;
+    try{
+      localStorage.removeItem(KEY); localStorage.removeItem(KEY+"-seed");
+      localStorage.removeItem("ecmis-transform-events-v1");
+      localStorage.removeItem("ecmis-a4-workspace-v3");
+      if(window.SeedData && SeedData.resetAll) SeedData.resetAll();
+      else location.reload();
+    }catch(e){ log("ผิดพลาด: "+e.message); }
+  });
+
+  render();
+  log("โหลดแล้ว — สำนวน "+readCases().length+" รายการ");
+})();
+</script>
+</body>
+</html>

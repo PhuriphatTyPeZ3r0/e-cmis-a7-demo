@@ -1,0 +1,290 @@
+/* ==========================================================================
+   E-CMIS Back-Office Shell — กิจกรรมที่ 7.1 การไต่สวนเบื้องต้น
+   สืบทอด Design Token จาก index.html / complaint-form.html (เว็บสาธารณะ)
+   ========================================================================== */
+:root{
+  --ecmis-navy:#0a2647;
+  --ecmis-navy-2:#123b63;
+  --ecmis-navy-dark:#051425;
+  --ecmis-gold:#c9a227;
+  --ecmis-gold-light:#e6c765;
+  --ecmis-red:#a5322a;
+  --ecmis-bg:#f7f6f2;
+  --ecmis-ink:#20262e;
+  --serif:'Noto Serif Thai','Prompt',serif;
+
+  /* เพิ่มสำหรับ back-office */
+  --ecmis-line:#dfdbd0;
+  --ecmis-muted:#6b7280;
+  --ecmis-ok:#1b7f5a;
+  --ecmis-warn:#b4690e;
+  --ecmis-info:#1d5fa8;
+  --sidebar-w:264px;
+  --topbar-h:60px;
+}
+
+body{
+  font-family:'Prompt',sans-serif;
+  background:var(--ecmis-bg);
+  color:var(--ecmis-ink);
+  letter-spacing:.1px;
+  font-size:14.5px;
+}
+h1,h2,h3,h4,h5,h6{ font-family:var(--serif); }
+
+/* ---------------- Top bar ---------------- */
+.app-topbar{
+  height:var(--topbar-h);
+  background:linear-gradient(90deg,var(--ecmis-navy) 0%,var(--ecmis-navy-2) 100%);
+  color:#fff;
+  position:fixed; top:0; left:0; right:0; z-index:1040;
+  display:flex; align-items:center; gap:14px; padding:0 16px;
+  border-bottom:3px solid var(--ecmis-gold);
+}
+.app-topbar .brand{ display:flex; align-items:center; gap:10px; font-family:var(--serif); font-weight:700; }
+.app-topbar .brand img{ height:34px; width:auto; }
+.app-topbar .brand small{ display:block; font-family:'Prompt',sans-serif; font-weight:400; font-size:.68rem; opacity:.8; letter-spacing:.2px; }
+
+/* Role switcher — ตัวจำลองบทบาท (prototype ยังไม่มี RBAC จริง) */
+.role-switcher .btn{
+  background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.3);
+  font-size:.85rem; padding:.35rem .75rem;
+}
+.role-switcher .btn:hover{ background:rgba(255,255,255,.22); color:#fff; }
+.role-switcher .dropdown-menu{ min-width:320px; font-size:.86rem; }
+.role-switcher .dropdown-item.active,
+.role-switcher .dropdown-item:active{ background:var(--ecmis-navy); }
+.role-switcher .dropdown-item small{ display:block; color:var(--ecmis-muted); font-size:.74rem; }
+.role-switcher .dropdown-item.active small{ color:rgba(255,255,255,.75); }
+.role-badge-demo{
+  background:var(--ecmis-gold); color:#1a1204; font-weight:600;
+  font-size:.66rem; padding:.1rem .4rem; border-radius:3px; margin-left:6px;
+}
+
+/* ---------------- Sidebar ---------------- */
+.app-sidebar{
+  position:fixed; top:var(--topbar-h); bottom:0; left:0; width:var(--sidebar-w);
+  background:#fff; border-right:1px solid var(--ecmis-line);
+  overflow-y:auto; z-index:1030; padding:14px 0 40px;
+}
+.app-sidebar .nav-section{
+  font-size:.7rem; font-weight:600; letter-spacing:.6px; text-transform:uppercase;
+  color:var(--ecmis-muted); padding:14px 18px 6px;
+}
+.app-sidebar .nav-link{
+  color:var(--ecmis-ink); border-radius:0; padding:.55rem 18px;
+  display:flex; align-items:center; gap:10px; font-size:.88rem;
+  border-left:3px solid transparent;
+}
+.app-sidebar .nav-link i{ width:18px; text-align:center; color:var(--ecmis-muted); }
+.app-sidebar .nav-link:hover{ background:#f2f0ea; }
+.app-sidebar .nav-link.active{
+  background:#eef3f9; color:var(--ecmis-navy); font-weight:600;
+  border-left-color:var(--ecmis-gold);
+}
+.app-sidebar .nav-link.active i{ color:var(--ecmis-navy); }
+.app-sidebar .nav-link .badge{ margin-left:auto; font-size:.68rem; }
+.app-sidebar .step-no{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:20px; height:20px; border-radius:50%; background:#e8e5db;
+  font-size:.68rem; font-weight:600; color:var(--ecmis-navy); flex:0 0 auto;
+}
+.app-sidebar .nav-link.active .step-no{ background:var(--ecmis-navy); color:#fff; }
+
+/* ---------------- Main ---------------- */
+.app-main{ margin-left:var(--sidebar-w); padding:calc(var(--topbar-h) + 18px) 22px 60px; }
+.page-head{ display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+.page-head h1{ font-size:1.42rem; margin:0; color:var(--ecmis-navy); }
+.page-head .sub{ color:var(--ecmis-muted); font-size:.85rem; margin-top:3px; }
+.flow-ref{
+  background:#eef3f9; border:1px solid #cfdcea; color:var(--ecmis-navy);
+  font-size:.72rem; padding:.16rem .5rem; border-radius:4px; font-weight:600;
+}
+
+.card-ecmis{ background:#fff; border:1px solid var(--ecmis-line); border-radius:8px; }
+.card-ecmis > .card-header{
+  background:#fbfaf7; border-bottom:1px solid var(--ecmis-line);
+  font-family:var(--serif); font-weight:700; color:var(--ecmis-navy);
+  display:flex; align-items:center; gap:8px; font-size:.98rem;
+}
+
+/* ---------------- Status badges (State Machine 7.1) ---------------- */
+.st{ font-size:.72rem; font-weight:600; padding:.22rem .55rem; border-radius:20px; white-space:nowrap; display:inline-block; }
+.st-draft   { background:#eceae3; color:#4b5563; }
+.st-pending { background:#fdf3e2; color:var(--ecmis-warn); }
+.st-review  { background:#e7f0fb; color:var(--ecmis-info); }
+.st-urgent  { background:#fae8e6; color:var(--ecmis-red); }
+.st-agenda  { background:#efe7f8; color:#6b3fa0; }
+.st-done    { background:#e4f4ec; color:var(--ecmis-ok); }
+.st-returned{ background:#fae8e6; color:var(--ecmis-red); }
+.st-closed  { background:#e5e7eb; color:#374151; }
+
+/* SLA pill */
+.sla{ font-size:.72rem; font-weight:600; padding:.18rem .5rem; border-radius:4px; white-space:nowrap; }
+.sla-ok  { background:#e4f4ec; color:var(--ecmis-ok); }
+.sla-warn{ background:#fdf3e2; color:var(--ecmis-warn); }
+.sla-late{ background:#fae8e6; color:var(--ecmis-red); }
+
+/* ---------------- Progress stepper (แนวนอน) ---------------- */
+.flow-stepper{ display:flex; overflow-x:auto; gap:0; padding:4px 0 10px; }
+.flow-stepper .fstep{
+  flex:1 0 auto; min-width:118px; text-align:center; position:relative; padding:0 4px;
+}
+.flow-stepper .fstep::before{
+  content:''; position:absolute; top:15px; left:-50%; width:100%; height:2px; background:#ded9cd; z-index:0;
+}
+.flow-stepper .fstep:first-child::before{ display:none; }
+.flow-stepper .fstep.done::before,
+.flow-stepper .fstep.active::before{ background:var(--ecmis-gold); }
+.flow-stepper .dot{
+  width:30px; height:30px; border-radius:50%; background:#fff; border:2px solid #ded9cd;
+  display:flex; align-items:center; justify-content:center; margin:0 auto 6px;
+  font-size:.76rem; font-weight:600; color:var(--ecmis-muted); position:relative; z-index:1;
+}
+.flow-stepper .fstep.done .dot{ background:var(--ecmis-ok); border-color:var(--ecmis-ok); color:#fff; }
+.flow-stepper .fstep.active .dot{ background:var(--ecmis-navy); border-color:var(--ecmis-gold); color:#fff; box-shadow:0 0 0 4px rgba(201,162,39,.22); }
+.flow-stepper .lbl{ font-size:.72rem; line-height:1.25; color:var(--ecmis-muted); }
+.flow-stepper .fstep.active .lbl{ color:var(--ecmis-navy); font-weight:600; }
+.flow-stepper .fstep.done .lbl{ color:var(--ecmis-ink); }
+
+/* ---------------- Action bar (ปุ่มเปลี่ยนตามบทบาท) ---------------- */
+.action-bar{
+  position:sticky; bottom:0; background:#fff; border-top:2px solid var(--ecmis-gold);
+  padding:12px 16px; margin:22px -22px -60px; display:flex; align-items:center;
+  gap:10px; flex-wrap:wrap; box-shadow:0 -4px 14px rgba(10,38,71,.07); z-index:1020;
+}
+.action-bar .role-hint{ font-size:.8rem; color:var(--ecmis-muted); margin-right:auto; }
+.btn-navy{ background:var(--ecmis-navy); color:#fff; border:1px solid var(--ecmis-navy); }
+.btn-navy:hover{ background:var(--ecmis-navy-2); color:#fff; }
+.btn-gold{ background:var(--ecmis-gold); color:#231a05; border:1px solid #b18f1f; font-weight:600; }
+.btn-gold:hover{ background:var(--ecmis-gold-light); color:#231a05; }
+.no-permission{
+  background:#f6f4ee; border:1px dashed #cfc9b8; color:var(--ecmis-muted);
+  padding:.65rem .9rem; border-radius:6px; font-size:.85rem; width:100%;
+}
+
+/* ---------------- Validation ---------------- */
+.field-req::after{ content:' *'; color:var(--ecmis-red); font-weight:700; }
+.form-label{ font-size:.85rem; font-weight:500; margin-bottom:.25rem; }
+.form-control, .form-select{ font-size:.88rem; }
+.form-control:focus, .form-select:focus{ border-color:var(--ecmis-gold); box-shadow:0 0 0 .18rem rgba(201,162,39,.2); }
+.val-msg{ font-size:.76rem; margin-top:.25rem; display:none; }
+.val-msg.show{ display:block; }
+.val-err{ color:var(--ecmis-red); }
+.val-ok{ color:var(--ecmis-ok); }
+.is-invalid-ecmis{ border-color:var(--ecmis-red) !important; background:#fffafa; }
+.is-valid-ecmis{ border-color:var(--ecmis-ok) !important; }
+
+.rule-panel{ background:#f4f8f4; border:1px solid #cfe3d4; border-radius:8px; padding:12px 14px; font-size:.82rem; }
+.rule-panel .rule{ display:flex; gap:8px; align-items:flex-start; padding:.22rem 0; }
+.rule-panel .rule i{ margin-top:2px; }
+.rule.pass i{ color:var(--ecmis-ok); }
+.rule.fail i{ color:var(--ecmis-red); }
+.rule.fail{ color:var(--ecmis-red); }
+
+/* ---------------- Auto-fill highlight ---------------- */
+.autofilled{ background:#eef7ef !important; border-color:#a9d3b3 !important; }
+.autofill-tag{
+  font-size:.66rem; background:#e4f4ec; color:var(--ecmis-ok);
+  padding:.06rem .34rem; border-radius:3px; margin-left:5px; font-weight:600;
+}
+.src-tag{
+  font-size:.66rem; background:#efe7f8; color:#6b3fa0;
+  padding:.06rem .34rem; border-radius:3px; margin-left:5px; font-weight:600;
+}
+
+/* ---------------- Document preview (กระดาษ A4) ---------------- */
+.doc-pane{ background:#5c6470; border-radius:8px; padding:16px; max-height:78vh; overflow-y:auto; }
+.doc-paper{
+  background:#fff; width:100%; max-width:794px; margin:0 auto;
+  padding:52px 62px; box-shadow:0 3px 18px rgba(0,0,0,.32);
+  font-family:'Noto Serif Thai',serif; font-size:13.4px; line-height:1.95; color:#000;
+}
+.doc-paper .doc-secret{ text-align:right; font-weight:700; color:var(--ecmis-red); letter-spacing:2px; }
+.doc-paper .doc-title{ text-align:center; font-weight:700; font-size:16px; line-height:1.7; margin:14px 0 4px; }
+.doc-paper .doc-sub{ text-align:center; font-size:13.4px; margin-bottom:16px; }
+.doc-paper .doc-row{ display:flex; gap:8px; margin-bottom:3px; }
+.doc-paper .doc-row .k{ flex:0 0 auto; font-weight:600; }
+.doc-paper .doc-h{ font-weight:700; margin:14px 0 2px; }
+.doc-paper .doc-indent{ text-indent:2.5em; text-align:justify; }
+.doc-paper .doc-sign{ margin-top:34px; text-align:center; line-height:1.8; }
+.doc-paper .doc-dots{ border-bottom:1px dotted #333; display:inline-block; min-width:120px; }
+.mergefield{ background:#fff8dd; border-bottom:1px solid #d8bf5e; padding:0 2px; }
+.mergefield.filled{ background:#e9f6ec; border-bottom-color:#7cb98d; }
+.mergefield.empty{ background:#fdeceb; border-bottom-color:#d99; color:#a5322a; }
+
+.doc-toolbar{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  background:#3c434d; border-radius:8px 8px 0 0; padding:8px 12px; margin:-16px -16px 14px;
+}
+.doc-toolbar .name{ color:#fff; font-size:.82rem; margin-right:auto; display:flex; align-items:center; gap:7px; }
+.doc-toolbar .badge-tpl{ background:var(--ecmis-gold); color:#231a05; font-size:.66rem; font-weight:600; padding:.12rem .4rem; border-radius:3px; }
+
+/* ---------------- Signature block ---------------- */
+.sig-box{
+  border:2px dashed #c3bda9; border-radius:8px; padding:16px; text-align:center;
+  background:#fdfcf8;
+}
+.sig-box.signed{ border:2px solid var(--ecmis-ok); background:#f2fbf5; border-style:solid; }
+.sig-box .sig-name{ font-family:var(--serif); font-size:1.05rem; color:var(--ecmis-navy); }
+.sig-box .sig-meta{ font-size:.74rem; color:var(--ecmis-muted); }
+.sig-cert{ font-size:.72rem; background:#e4f4ec; color:var(--ecmis-ok); padding:.3rem .6rem; border-radius:4px; display:inline-block; }
+
+/* ---------------- Timeline ---------------- */
+.tl{ list-style:none; padding-left:0; margin:0; }
+.tl li{ position:relative; padding:0 0 16px 26px; border-left:2px solid #e3ded1; }
+.tl li:last-child{ border-left-color:transparent; padding-bottom:0; }
+.tl li .tl-dot{
+  position:absolute; left:-7px; top:2px; width:12px; height:12px; border-radius:50%;
+  background:#fff; border:2px solid var(--ecmis-muted);
+}
+.tl li.ok .tl-dot{ background:var(--ecmis-ok); border-color:var(--ecmis-ok); }
+.tl li.now .tl-dot{ background:var(--ecmis-navy); border-color:var(--ecmis-gold); box-shadow:0 0 0 3px rgba(201,162,39,.25); }
+.tl li.rej .tl-dot{ background:var(--ecmis-red); border-color:var(--ecmis-red); }
+.tl .tl-t{ font-weight:600; font-size:.86rem; }
+.tl .tl-m{ font-size:.78rem; color:var(--ecmis-muted); }
+
+/* ---------------- Table ---------------- */
+table.tbl-ecmis{ font-size:.85rem; width:100%; }
+table.tbl-ecmis thead th{
+  background:var(--ecmis-navy); color:#fff; font-family:var(--serif); font-weight:600;
+  font-size:.8rem; vertical-align:middle; border:0; white-space:nowrap;
+}
+table.tbl-ecmis tbody td{ vertical-align:middle; border-color:#eeebe2; }
+table.tbl-ecmis tbody tr:hover{ background:#fbf9f3; }
+.case-no{ font-weight:600; color:var(--ecmis-navy); }
+
+/* ---------------- Misc ---------------- */
+.integration-note{
+  background:#f4f0fa; border-left:4px solid #9673a6; padding:.6rem .85rem;
+  font-size:.8rem; border-radius:0 6px 6px 0;
+}
+.law-note{
+  background:#fdf7e8; border-left:4px solid var(--ecmis-gold); padding:.6rem .85rem;
+  font-size:.8rem; border-radius:0 6px 6px 0;
+}
+.warn-note{
+  background:#fdecea; border-left:4px solid var(--ecmis-red); padding:.6rem .85rem;
+  font-size:.8rem; border-radius:0 6px 6px 0;
+}
+.kv{ font-size:.85rem; }
+.kv .k{ color:var(--ecmis-muted); }
+.kv .v{ font-weight:500; }
+.chip{
+  display:inline-flex; align-items:center; gap:5px; background:#f0ede4;
+  border:1px solid var(--ecmis-line); border-radius:20px; padding:.18rem .6rem; font-size:.78rem;
+}
+
+@media (max-width:991.98px){
+  .app-sidebar{ transform:translateX(-100%); transition:transform .2s; }
+  .app-sidebar.open{ transform:none; }
+  .app-main{ margin-left:0; }
+  .action-bar{ margin:22px -22px -60px; }
+}
+
+@media print{
+  .app-topbar,.app-sidebar,.action-bar,.doc-toolbar,.no-print{ display:none !important; }
+  .app-main{ margin:0; padding:0; }
+  .doc-pane{ background:#fff; padding:0; max-height:none; }
+  .doc-paper{ box-shadow:none; padding:0; }
+}

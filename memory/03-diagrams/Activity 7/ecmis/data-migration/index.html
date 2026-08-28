@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E-CMIS | กิจกรรมที่ 11 นำเข้าและถ่ายโอนข้อมูล</title>
+<link rel="stylesheet" href="./assets/fontawesome/css/all.min.css">
+<link rel="stylesheet" href="./assets/sweetalert2/sweetalert2.min.css">
+<link rel="stylesheet" href="./assets/mockup.css">
+<style>
+  .src-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+  .src-tile{display:grid;grid-template-columns:44px 1fr;gap:11px;align-items:start;border:1px solid var(--line);
+    border-radius:9px;background:#fbfdff;padding:13px;text-align:left;cursor:pointer;color:var(--ink)}
+  .src-tile:hover{border-color:#5c8fba;background:#f4f9fe}
+  .src-tile.active{border-color:#1f5a91;background:#e8f1fa;box-shadow:0 0 0 2px rgba(31,90,145,.15)}
+  .src-ico{display:grid;height:40px;place-items:center;border-radius:8px;background:#e8f1fa;color:#16558f;font-size:15px}
+  .src-tile strong{display:block;font-size:13px}
+  .src-tile small{display:block;margin-top:3px;color:#6f7f93;line-height:1.5}
+  .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:0 0 16px}
+  .steps span{border-radius:7px;background:#e6ecf3;padding:9px 6px;text-align:center;font-size:11.5px;color:#5b6d84}
+  .steps span.done{background:#e9f6ee;color:#24714a;font-weight:600}
+  .steps span.active{background:#dcebf8;color:#14558e;font-weight:600;box-shadow:inset 0 0 0 1px #9dc4e4}
+  .map-row{display:grid;grid-template-columns:1fr 28px 1fr auto;gap:10px;align-items:center;
+    padding:9px 0;border-top:1px solid #e5eaf0}
+  .map-row:first-of-type{border-top:0}
+  .map-row code{background:#f1f5f9;border-radius:5px;padding:3px 8px;font-size:12px;color:#334}
+  .map-arrow{text-align:center;color:#9aa8bb}
+  .log{max-height:280px;overflow:auto;background:#0d1b3e;color:#cfe0f5;border-radius:9px;padding:13px 15px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.85}
+  .log .ok{color:#7ee2a8}.log .warn{color:#f0c75a}.log .err{color:#ff9b93}.log .dim{opacity:.55}
+  .split{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:18px}
+  @media(max-width:1100px){.split{grid-template-columns:1fr}.steps{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <img class="seal" src="./assets/images/pacc-logo.webp" alt="">
+      <div><strong>E-CMIS</strong><small>สำนักงาน ป.ป.ท.</small></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-module-label"><i class="fa-solid fa-database icon"></i><span>กิจกรรมที่ 11</span></div>
+      <div class="nav-section-label">นำเข้าและถ่ายโอนข้อมูล</div>
+      <button class="nav-link active" data-go="import"><i class="fa-solid fa-file-import icon"></i><span>นำเข้าจากระบบเดิม</span></button>
+      <button class="nav-link" data-go="history"><i class="fa-solid fa-clock-rotate-left icon"></i><span>ประวัติการนำเข้า</span></button>
+      <button class="nav-link" data-go="reject"><i class="fa-solid fa-triangle-exclamation icon"></i><span>รายการที่ไม่ผ่าน</span></button>
+      <button class="nav-link" data-go="scope"><i class="fa-solid fa-circle-info icon"></i><span>ขอบเขต ก11 vs ก13</span></button>
+    </nav>
+  <div style="padding:10px;border-top:1px solid rgba(255,255,255,.08)">
+    <button type="button" id="dmLogoutBtn" style="width:100%;padding:7px 10px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(255,255,255,.06);color:#d6e4f5;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center"><i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</button>
+  </div>
+<script>
+(function(){
+  var b=document.getElementById('dmLogoutBtn');
+  if(b) b.addEventListener('click', function(){
+    try{ localStorage.removeItem('ecmis-transform-auth-v1'); sessionStorage.clear(); }catch(e){}
+    location.href='/index.html';
+  });
+})();
+</script>
+    <div class="profile">
+      <div class="avatar">ป</div>
+      <div><strong>ผู้ดูแลข้อมูล</strong><small>Data Migration</small></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="top">
+      <button class="collapse" aria-label="เมนู"><i class="fa-solid fa-bars"></i></button>
+      <div class="global-search"><i class="fa-solid fa-magnifying-glass"></i> ค้นหาชุดข้อมูล / batch / เลขสำนวนเดิม</div>
+      <div class="top-right">
+        <button class="icon-btn" aria-label="แจ้งเตือน"><i class="fa-regular fa-bell"></i><span class="notification-dot"></span></button>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="breadcrumb"><i class="fa-solid fa-house"></i> หน้าแรก <span>/</span> กิจกรรมที่ 11 <span>/</span> <span id="crumb">นำเข้าจากระบบเดิม</span></div>
+
+      <!-- ============ นำเข้า ============ -->
+      <section id="view-import">
+        <div class="page-head">
+          <div>
+            <h1>นำเข้าข้อมูลจากระบบเดิม</h1>
+            <p>ย้ายสำนวน/เรื่องร้องเรียนจากระบบที่ใช้อยู่เดิมเข้าสู่ E-CMIS แล้วส่งต่อให้กิจกรรมเจ้าของกระบวนงาน (ก4+5)</p>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><span>ชุดข้อมูลรอนำเข้า</span><strong id="kpi-pending">4</strong><small>batch</small></div>
+          <div class="stat success"><span>นำเข้าสำเร็จสะสม</span><strong id="kpi-ok">12,480</strong><small>ระเบียน</small></div>
+          <div class="stat warning"><span>ต้องตรวจสอบ</span><strong id="kpi-warn">214</strong><small>ระเบียน</small></div>
+          <div class="stat danger"><span>ไม่ผ่านเกณฑ์</span><strong id="kpi-err">37</strong><small>ระเบียน</small></div>
+          <div class="stat"><span>ซ้ำกับที่มีอยู่</span><strong id="kpi-dup">96</strong><small>ระเบียน</small></div>
+          <div class="stat"><span>รอบล่าสุด</span><strong style="font-size:18px">MIG-69-004</strong><small>17 ส.ค. 2569</small></div>
+        </div>
+
+        <div class="steps" id="steps">
+          <span class="active" data-step="1">1. เลือกแหล่งข้อมูล</span>
+          <span data-step="2">2. จับคู่ฟิลด์</span>
+          <span data-step="3">3. ตรวจความถูกต้อง</span>
+          <span data-step="4">4. ทดลองนำเข้า</span>
+          <span data-step="5">5. ยืนยัน + ส่งต่อ ก4+5</span>
+        </div>
+
+        <div class="split">
+          <div class="stack">
+            <div class="card">
+              <div class="card-head"><div><h2>1. เลือกแหล่งข้อมูลต้นทาง</h2><p>ระบบเดิมที่ต้องถ่ายโอนเข้ามา</p></div></div>
+              <div style="padding:15px 19px">
+                <div class="src-grid" id="srcGrid"></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><div><h2>2. จับคู่ฟิลด์ (Field Mapping)</h2><p>ฟิลด์ระบบเดิม → ฟิลด์ E-CMIS</p></div>
+                <span class="badge" id="mapBadge">รอเลือกแหล่งข้อมูล</span></div>
+              <div style="padding:13px 19px" id="mapBox">
+                <p class="empty" style="padding:26px">เลือกแหล่งข้อมูลด้านบนก่อน</p>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><div><h2>3–4. ตรวจความถูกต้อง + ทดลองนำเข้า</h2><p>Dry-run ไม่เขียนข้อมูลจริง</p></div></div>
+              <div style="padding:15px 19px">
+                <div class="actions" style="margin-bottom:12px">
+                  <button class="btn secondary" id="btnValidate" disabled><i class="fa-solid fa-list-check"></i> ตรวจความถูกต้อง</button>
+                  <button class="btn secondary" id="btnDry" disabled><i class="fa-solid fa-vial"></i> ทดลองนำเข้า (dry-run)</button>
+                  <button class="btn" id="btnCommit" disabled><i class="fa-solid fa-database"></i> ยืนยันนำเข้าจริง</button>
+                </div>
+                <div class="log" id="log"><span class="log-ph dim">— ยังไม่เริ่ม —</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stack">
+            <div class="card">
+              <div class="card-head"><div><h2>5. ส่งต่อกิจกรรมเจ้าของกระบวนงาน</h2><p>ตาม matrix: ก11 กระจายข้อมูลเข้า ก4–5</p></div></div>
+              <div class="checklist" id="handoffList">
+                <div class="check wait"><i class="fa-regular fa-circle"></i><span>นำเข้าสำเร็จ</span><small>รอ</small></div>
+                <div class="check wait"><i class="fa-regular fa-circle"></i><span>ออกเลขสำนวนใหม่</span><small>รอ</small></div>
+                <div class="check wait"><i class="fa-regular fa-circle"></i><span>ส่งเข้า ก4+5</span><small>รอ</small></div>
+              </div>
+              <div class="notice-box">
+                ระเบียนที่นำเข้าจะถูกส่งเข้ากิจกรรมที่ 4+5 เพื่อกลั่นกรองและมอบหมายตามปกติ
+                <strong>ไม่ข้ามขั้นตอน</strong> — ก11 ไม่ตัดสินเนื้อหาคดี ทำหน้าที่ย้ายข้อมูลอย่างเดียว
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><div><h2>ขอบเขตงาน</h2><p>กันงานซ้ำกับ ก13</p></div></div>
+              <div style="padding:14px 19px;font-size:12.5px;line-height:1.75;color:#52657c">
+                <p style="margin:0 0 9px"><span class="badge success">ก11 = ตัวนี้</span> ย้ายข้อมูลครั้งใหญ่/เป็นชุด (batch, migration, import/export) ทำเป็นรอบ มีขั้นตรวจก่อนเขียนจริง</p>
+                <p style="margin:0"><span class="badge">ก13 = Gateway</span> เรียกข้อมูลรายครั้งแบบทันที (real-time API) เช่น ตรวจทะเบียนราษฎร์ DOPA หรือดึงโครงการ e-GP ระหว่างทำสำนวน</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ ประวัติ ============ -->
+      <section id="view-history" hidden>
+        <div class="page-head"><div><h1>ประวัติการนำเข้า</h1><p>ทุกรอบที่เคยรัน พร้อมผลลัพธ์และผู้ดำเนินการ</p></div></div>
+        <div class="card"><div class="table-wrap"><table>
+          <thead><tr><th>รอบ</th><th>แหล่งข้อมูล</th><th>วันที่</th><th>ทั้งหมด</th><th>สำเร็จ</th><th>ไม่ผ่าน</th><th>ซ้ำ</th><th>สถานะ</th></tr></thead>
+          <tbody id="tblHistory"></tbody>
+        </table></div></div>
+      </section>
+
+      <!-- ============ ไม่ผ่าน ============ -->
+      <section id="view-reject" hidden>
+        <div class="page-head"><div><h1>รายการที่ไม่ผ่านเกณฑ์</h1><p>ต้องแก้ที่ระบบต้นทางแล้วนำเข้าใหม่ หรือแก้มือแล้วยืนยัน</p></div></div>
+        <div class="card"><div class="table-wrap"><table>
+          <thead><tr><th>เลขเดิม</th><th>เรื่อง</th><th>ปัญหาที่พบ</th><th>ฟิลด์</th><th>แนวทางแก้</th></tr></thead>
+          <tbody id="tblReject"></tbody>
+        </table></div></div>
+      </section>
+
+      <!-- ============ ขอบเขต ============ -->
+      <section id="view-scope" hidden>
+        <div class="page-head"><div><h1>ขอบเขต ก11 เทียบ ก13</h1><p>สองกิจกรรมนี้เคยทับกัน จึงล็อกสัญญาไว้ชัดเจน</p></div></div>
+        <div class="card"><div class="table-wrap"><table>
+          <thead><tr><th>หัวข้อ</th><th>ก11 นำเข้าและถ่ายโอนข้อมูล</th><th>ก13 เชื่อมโยงข้อมูล</th></tr></thead>
+          <tbody>
+            <tr><td><strong>ลักษณะงาน</strong></td><td>Migration / Import / Export เป็นชุด</td><td>Operational API รายครั้ง</td></tr>
+            <tr><td><strong>จังหวะ</strong></td><td>เป็นรอบ (ตั้งเวลา/สั่งรัน)</td><td>ทันทีตอนผู้ใช้ร้องขอ</td></tr>
+            <tr><td><strong>ปริมาณ</strong></td><td>หลักพัน–หมื่นระเบียนต่อรอบ</td><td>1 ระเบียนต่อครั้ง</td></tr>
+            <tr><td><strong>มีขั้นตรวจก่อนเขียน</strong></td><td>มี — validate + dry-run</td><td>ไม่มี — ตอบกลับทันที</td></tr>
+            <tr><td><strong>ตัวอย่าง</strong></td><td>ย้ายสำนวนเก่าจาก PCMS ทั้งระบบ</td><td>ตรวจทะเบียนราษฎร์ DOPA ระหว่างทำหมายจับ</td></tr>
+            <tr><td><strong>ปลายทาง</strong></td><td>ก4+5 (เข้ากระบวนการปกติ)</td><td>กิจกรรมที่เรียกใช้</td></tr>
+          </tbody>
+        </table></div></div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script src="./assets/sweetalert2/sweetalert2.all.min.js"></script>
+<script>
+/* ---------- ข้อมูลจำลอง ---------- */
+const SOURCES = [
+  {id:"pcms", name:"PCMS (ระบบสำนวนเดิม)", ico:"fa-server", rows:8420,
+   desc:"ฐานสำนวนคดีเดิมของสำนักงาน ป.ป.ท. ตั้งแต่ปี 2558",
+   map:[["case_no","เลขสำนวน"],["subject_th","เรื่องที่ร้องเรียน"],["complainant","ผู้ร้องเรียน"],
+        ["accused_name","ผู้ถูกกล่าวหา"],["org_name","หน่วยงานที่ถูกร้อง"],["recv_date","วันที่รับเรื่อง"],
+        ["status_code","สถานะ"],["officer_id","เจ้าของสำนวน"]]},
+  {id:"inquiry", name:"ระบบไต่สวนเดิม", ico:"fa-folder-open", rows:3110,
+   desc:"บันทึกการไต่สวน รายงาน 213/644 ที่ทำไว้ในระบบเก่า",
+   map:[["inq_id","เลขสำนวน"],["report_type","ประเภทรายงาน"],["finding","ผลการไต่สวน"],
+        ["inq_officer","พนักงานไต่สวน"],["closed_at","วันที่แล้วเสร็จ"]]},
+  {id:"traffy", name:"Traffy Fondue", ico:"fa-comment-dots", rows:640,
+   desc:"เรื่องร้องเรียนจากช่องทางประชาชน นำเข้าเป็นรอบรายสัปดาห์",
+   map:[["ticket_id","เลขติดตาม"],["detail","รายละเอียด"],["reporter","ผู้แจ้ง"],
+        ["district","พื้นที่"],["photo_url","ไฟล์แนบ"]]},
+  {id:"excel", name:"ไฟล์ Excel / CSV", ico:"fa-file-excel", rows:310,
+   desc:"ข้อมูลที่หน่วยงานส่งมาเป็นไฟล์ ต้องจับคู่ฟิลด์เอง",
+   map:[["คอลัมน์ A","เลขสำนวน"],["คอลัมน์ B","เรื่องที่ร้องเรียน"],["คอลัมน์ C","หน่วยงาน"],["คอลัมน์ D","วันที่รับเรื่อง"]]},
+];
+
+const HISTORY = [
+  {id:"MIG-69-004", src:"PCMS (ระบบสำนวนเดิม)", date:"2569-08-17", total:2100, ok:2043, err:12, dup:45, st:"success", stName:"สำเร็จ"},
+  {id:"MIG-69-003", src:"ระบบไต่สวนเดิม",        date:"2569-08-14", total:1560, ok:1498, err:19, dup:43, st:"success", stName:"สำเร็จ"},
+  {id:"MIG-69-002", src:"Traffy Fondue",         date:"2569-08-11", total:640,  ok:634,  err:6,  dup:0,  st:"success", stName:"สำเร็จ"},
+  {id:"MIG-69-001", src:"ไฟล์ Excel / CSV",      date:"2569-08-04", total:310,  ok:0,    err:310,dup:0,  st:"danger",  stName:"ยกเลิก — mapping ไม่ผ่าน"},
+];
+
+const REJECTS = [
+  {old:"ปปท 5521/2561", subj:"จัดซื้อครุภัณฑ์สำนักงานราคาสูงผิดปกติ", issue:"ไม่มีวันที่รับเรื่อง",       field:"recv_date",     fix:"เติมวันที่ที่ระบบต้นทางแล้วนำเข้าใหม่"},
+  {old:"ปปท 4980/2560", subj:"เรียกรับเงินเพื่อออกใบอนุญาต",          issue:"เลขสำนวนซ้ำกับที่มีอยู่แล้ว", field:"case_no",       fix:"ตรวจว่าเป็นเรื่องเดียวกันหรือไม่ ถ้าใช่ให้ข้าม"},
+  {old:"ปปท 6102/2562", subj:"ทุจริตโครงการอาหารกลางวัน",             issue:"ไม่พบรหัสหน่วยงานในฐานกลาง",  field:"org_name",      fix:"เพิ่มหน่วยงานที่ ก14 ฐานข้อมูลกลางก่อน"},
+  {old:"ปปท 3877/2559", subj:"ปลอมเอกสารเบิกจ่าย",                    issue:"สถานะเดิมไม่มีคู่เทียบ",      field:"status_code",   fix:"เพิ่มกติกาแปลงสถานะในตารางจับคู่"},
+  {old:"ปปท 7233/2563", subj:"ฮั้วประมูลงานก่อสร้าง",                 issue:"ชื่อผู้ถูกกล่าวหาว่าง",       field:"accused_name",  fix:"ตรวจที่ต้นทาง หรือทำเครื่องหมายว่าไม่ระบุตัวตน"},
+];
+
+/* ---------- state ---------- */
+let picked = null, step = 1, validated = false, dryRun = false;
+const $ = s => document.querySelector(s);
+const logEl = () => $("#log");
+
+function setStep(n){
+  step = n;
+  document.querySelectorAll("#steps span").forEach(el=>{
+    const k = +el.dataset.step;
+    el.classList.toggle("done", k < n);
+    el.classList.toggle("active", k === n);
+  });
+}
+/* placeholder ต้องมีคลาสเฉพาะของตัวเอง — เดิมเช็ก ".dim" ซึ่งบรรทัด log ปกติก็ใช้คลาสนี้
+   ทำให้ log ถูกล้างทิ้งกลางคันทุกครั้งที่มีบรรทัด dim อยู่ก่อนหน้า (บรรทัดแรก ๆ หายหมด) */
+function log(html, cls){
+  const l = logEl();
+  const ph = l.querySelector(".log-ph");
+  if(ph) l.innerHTML = "";
+  l.innerHTML += `<div${cls?` class="${cls}"`:""}>${html}</div>`;
+  l.scrollTop = l.scrollHeight;
+}
+function placeholder(text){ logEl().innerHTML = `<span class="log-ph dim">${text}</span>`; }
+
+/* ---------- แหล่งข้อมูล ---------- */
+function renderSources(){
+  $("#srcGrid").innerHTML = SOURCES.map(s=>`
+    <button class="src-tile" data-src="${s.id}">
+      <span class="src-ico"><i class="fa-solid ${s.ico}"></i></span>
+      <span><strong>${s.name}</strong><small>${s.desc}</small>
+      <small style="color:#16558f;margin-top:5px"><i class="fa-solid fa-layer-group"></i> ${s.rows.toLocaleString("th-TH")} ระเบียน</small></span>
+    </button>`).join("");
+}
+function pickSource(id){
+  picked = SOURCES.find(s=>s.id===id);
+  document.querySelectorAll(".src-tile").forEach(t=>t.classList.toggle("active", t.dataset.src===id));
+  $("#mapBadge").textContent = picked.map.length + " ฟิลด์";
+  $("#mapBox").innerHTML = picked.map.map(([a,b])=>`
+    <div class="map-row"><code>${a}</code><span class="map-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+    <code>${b}</code><span class="badge success"><i class="fa-solid fa-check"></i> จับคู่แล้ว</span></div>`).join("");
+  $("#btnValidate").disabled = false;
+  $("#btnDry").disabled = true; $("#btnCommit").disabled = true;
+  validated = dryRun = false;
+  placeholder('— เลือก ' + picked.name + ' แล้ว กด "ตรวจความถูกต้อง" เพื่อเริ่ม —');
+  setStep(2);
+}
+
+/* ---------- ตรวจ / dry-run / commit ---------- */
+function validate(){
+  setStep(3);
+  log(`<span class="dim">[${new Date().toLocaleTimeString("th-TH")}]</span> เริ่มตรวจความถูกต้อง — ${picked.name}`);
+  const total = picked.rows, err = Math.round(total*0.006), dup = Math.round(total*0.011), warn = Math.round(total*0.025);
+  setTimeout(()=>log(`อ่านได้ <b>${total.toLocaleString("th-TH")}</b> ระเบียน`),200);
+  setTimeout(()=>log(`ตรวจฟิลด์บังคับครบ · ตรวจรูปแบบวันที่ · ตรวจรหัสหน่วยงานกับฐานกลาง (ก14)`,"dim"),450);
+  setTimeout(()=>log(`<span class="warn">ต้องตรวจสอบ ${warn.toLocaleString("th-TH")} ระเบียน</span> (ข้อมูลไม่ครบแต่พอนำเข้าได้)`,""),750);
+  setTimeout(()=>log(`<span class="warn">ซ้ำกับที่มีอยู่ ${dup} ระเบียน</span> — จะข้ามอัตโนมัติ`,""),950);
+  setTimeout(()=>log(`<span class="err">ไม่ผ่านเกณฑ์ ${err} ระเบียน</span> — ดูที่เมนู "รายการที่ไม่ผ่าน"`,""),1150);
+  setTimeout(()=>{
+    log(`<span class="ok">ตรวจเสร็จ — พร้อมทดลองนำเข้า ${(total-err-dup).toLocaleString("th-TH")} ระเบียน</span>`);
+    validated = true; $("#btnDry").disabled = false; setStep(4);
+  },1400);
+}
+function dry(){
+  log(`<span class="dim">— ทดลองนำเข้า (dry-run) ไม่เขียนข้อมูลจริง —</span>`);
+  const n = picked.rows - Math.round(picked.rows*0.017);
+  setTimeout(()=>log(`จำลองเขียน <b>${n.toLocaleString("th-TH")}</b> ระเบียนเข้าตารางสำนวน`),300);
+  setTimeout(()=>log(`จำลองออกเลขสำนวนใหม่ตามรูปแบบ <code>NNNN/2569</code>`,"dim"),600);
+  setTimeout(()=>log(`จำลองผูกไฟล์แนบ · จำลองสร้าง audit log`,"dim"),850);
+  setTimeout(()=>{
+    log(`<span class="ok">dry-run ผ่าน ไม่พบข้อขัดข้อง — กด "ยืนยันนำเข้าจริง" ได้</span>`);
+    dryRun = true; $("#btnCommit").disabled = false; setStep(5);
+  },1150);
+}
+function commit(){
+  const n = picked.rows - Math.round(picked.rows*0.017);
+  Swal.fire({
+    icon:"warning", title:"ยืนยันนำเข้าจริง?",
+    html:`จะเขียน <b>${n.toLocaleString("th-TH")}</b> ระเบียนจาก <b>${picked.name}</b> เข้าฐาน E-CMIS<br>
+          <small style="color:#8a6111">ขั้นนี้ย้อนกลับได้ด้วยการ rollback รอบนำเข้าเท่านั้น</small>`,
+    showCancelButton:true, confirmButtonText:"ยืนยันนำเข้า", cancelButtonText:"ยกเลิก",
+    confirmButtonColor:"#0d1b3e", customClass:{popup:"ecmis-swal"}
+  }).then(r=>{
+    if(!r.isConfirmed) return;
+    log(`<span class="ok">เริ่มนำเข้าจริง…</span>`);
+    setTimeout(()=>log(`เขียน ${n.toLocaleString("th-TH")} ระเบียนสำเร็จ`,"ok"),500);
+    setTimeout(()=>{
+      log(`ส่งต่อเข้ากิจกรรมที่ 4+5 เพื่อกลั่นกรองและมอบหมาย`,"ok");
+      markHandoff();
+      // ลงบันทึกเส้นทางเคสกลางด้วย ให้เห็นว่า ก11 เป็นต้นทางได้จริง
+      try{
+        if(window.ECMISHub){
+          ECMISHub.addEvent(ECMISHub.activeCaseId(), {
+            action:"นำเข้าข้อมูลจากระบบเดิม", from:"data-migration", to:"intake-investigation",
+            trigger:"รอบถ่ายโอนข้อมูล " + picked.name,
+            docs:["ชุดข้อมูล "+n.toLocaleString("th-TH")+" ระเบียน","รายงานผลการตรวจ","รายการที่ไม่ผ่าน"],
+            statusAfter:"รอกลั่นกรองที่ ก4", by:"ก11 นำเข้าและถ่ายโอนข้อมูล",
+            note:"ก11 ไม่ตัดสินเนื้อหาคดี — ส่งเข้ากระบวนการปกติของ ก4+5"
+          });
+        }
+      }catch(e){}
+      Swal.fire({icon:"success", title:"นำเข้าสำเร็จ",
+        html:`${n.toLocaleString("th-TH")} ระเบียนถูกส่งเข้ากิจกรรมที่ 4+5 แล้ว<br><small>ดูได้ที่ "เส้นทาง" บนแถบเคส</small>`,
+        confirmButtonColor:"#0d1b3e", customClass:{popup:"ecmis-swal"}});
+    },1000);
+  });
+}
+function markHandoff(){
+  const items = [["นำเข้าสำเร็จ","เสร็จ"],["ออกเลขสำนวนใหม่","เสร็จ"],["ส่งเข้า ก4+5","เสร็จ"]];
+  $("#handoffList").innerHTML = items.map(([t,s])=>
+    `<div class="check"><i class="fa-solid fa-circle-check"></i><span>${t}</span><small>${s}</small></div>`).join("");
+}
+
+/* ---------- ตารางอื่น ---------- */
+function renderHistory(){
+  $("#tblHistory").innerHTML = HISTORY.map(h=>`<tr>
+    <td><strong>${h.id}</strong></td><td>${h.src}</td><td>${h.date}</td>
+    <td>${h.total.toLocaleString("th-TH")}</td><td>${h.ok.toLocaleString("th-TH")}</td>
+    <td>${h.err}</td><td>${h.dup}</td>
+    <td><span class="badge ${h.st}">${h.stName}</span></td></tr>`).join("");
+}
+function renderReject(){
+  $("#tblReject").innerHTML = REJECTS.map(r=>`<tr>
+    <td><strong>${r.old}</strong></td><td>${r.subj}</td>
+    <td><span class="badge danger">${r.issue}</span></td>
+    <td><code style="background:#f1f5f9;padding:2px 6px;border-radius:5px">${r.field}</code></td>
+    <td><small>${r.fix}</small></td></tr>`).join("");
+}
+
+/* ---------- router ---------- */
+const VIEWS = {import:"นำเข้าจากระบบเดิม", history:"ประวัติการนำเข้า", reject:"รายการที่ไม่ผ่าน", scope:"ขอบเขต ก11 vs ก13"};
+function go(v){
+  if(!VIEWS[v]) v = "import";
+  Object.keys(VIEWS).forEach(k => $("#view-"+k).hidden = (k !== v));
+  document.querySelectorAll(".nav-link").forEach(b => b.classList.toggle("active", b.dataset.go === v));
+  $("#crumb").textContent = VIEWS[v];
+  if(location.hash !== "#/"+v) location.hash = "#/"+v;
+}
+addEventListener("hashchange", ()=> go((location.hash||"").replace(/^#\/?/,"")));
+
+/* ---------- init ---------- */
+renderSources(); renderHistory(); renderReject();
+document.addEventListener("click", e=>{
+  const t = e.target.closest("[data-src]");   if(t) return pickSource(t.dataset.src);
+  const n = e.target.closest("[data-go]");    if(n) return go(n.dataset.go);
+});
+$("#btnValidate").addEventListener("click", validate);
+$("#btnDry").addEventListener("click", dry);
+$("#btnCommit").addEventListener("click", commit);
+go((location.hash||"").replace(/^#\/?/,"") || "import");
+</script>
+</body>
+</html>

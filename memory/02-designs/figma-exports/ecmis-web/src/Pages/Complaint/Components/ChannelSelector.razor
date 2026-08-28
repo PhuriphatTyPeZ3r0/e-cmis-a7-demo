@@ -1,0 +1,37 @@
+@* ChannelSelector — เลือกช่องทางรับเรื่องร้องเรียน *@
+
+<div class="channel-grid">
+    @foreach (var ch in channels)
+    {
+        <div class="channel-card @(Selected == ch.Value ? "selected" : "")"
+             @onclick="() => OnSelect(ch.Value)">
+            <i class="@ch.Icon"></i>
+            <span>@ch.Value</span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Selected { get; set; } = "";
+    [Parameter] public EventCallback<string> SelectedChanged { get; set; }
+
+    private record ChannelItem(string Icon, string Value);
+
+    private List<ChannelItem> channels = new()
+    {
+        new("bi bi-globe",           "เว็บไซต์ pacc.go.th"),
+        new("bi bi-telephone-fill",  "สายด่วน 1206"),
+        new("bi bi-envelope-fill",   "อีเมล mail@pacc.go.th"),
+        new("bi bi-person-walking",  "ยื่นด้วยตนเอง"),
+        new("bi bi-chat-dots-fill",  "Line OA ป.ป.ท."),
+        new("bi bi-facebook",        "Facebook PACC"),
+        new("bi bi-mailbox-flag",    "ไปรษณีย์"),
+        new("bi bi-buildings-fill",  "หน่วยงานอื่น"),
+    };
+
+    private async Task OnSelect(string value)
+    {
+        Selected = value;
+        await SelectedChanged.InvokeAsync(value);
+    }
+}

@@ -1,0 +1,130 @@
+// ═══════════════════════════════════════════════════════════════
+// V5: NOC Crisis Center — JavaScript Helpers
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Initialize the V5 Crisis Map with 3D Thailand map and optional blinking pins overlay.
+ * This wraps initThailandRiskMap3D and adds periodic blinking hotspot animations.
+ */
+window.initV5CrisisMap = function (canvasId) {
+    // Initialize the base 3D map
+    window.initThailandRiskMap3D(canvasId);
+
+    // Add blinking pins overlay via CSS if not already present
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    var parent = canvas.parentElement;
+    if (!parent) return;
+
+    // Ensure the parent has position relative for absolute children
+    if (getComputedStyle(parent).position === 'static') {
+        parent.style.position = 'relative';
+    }
+
+    // Remove old pin container if re-initializing
+    var oldPins = parent.querySelector('.v5-blink-pins');
+    if (oldPins) oldPins.remove();
+
+    var pins = document.createElement('div');
+    pins.className = 'v5-blink-pins';
+    pins.style.cssText = 'position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden;';
+
+    // Hotspot positions (relative % to match map regions)
+    var hotspots = [
+        { left: '48%', top: '24%', color: '#ef4444', label: 'วิกฤติ' },   // North
+        { left: '43%', top: '48%', color: '#f59e0b', label: 'สูง' },       // Central
+        { left: '72%', top: '35%', color: '#ef4444', label: 'วิกฤติ' },   // East
+        { left: '44%', top: '72%', color: '#f97316', label: 'สูง' }        // South
+    ];
+
+    hotspots.forEach(function (h) {
+        var pin = document.createElement('div');
+        pin.style.cssText =
+            'position:absolute;' +
+            'left:' + h.left + ';' +
+            'top:' + h.top + ';' +
+            'transform:translate(-50%,-50%);' +
+            'display:flex;flex-direction:column;align-items:center;gap:3px;';
+
+        var dot = document.createElement('div');
+        dot.style.cssText =
+            'width:10px;height:10px;border-radius:50%;' +
+            'background:' + h.color + ';' +
+            'box-shadow:0 0 10px ' + h.color + ',0 0 20px ' + h.color + ';' +
+            'animation:v5-pin-pulse 1.4s ease-in-out infinite;';
+
+        var lbl = document.createElement('span');
+        lbl.textContent = h.label;
+        lbl.style.cssText =
+            'font-size:9px;font-weight:800;color:' + h.color + ';' +
+            'background:rgba(15,23,42,.82);padding:1px 5px;border-radius:4px;' +
+            'border:1px solid ' + h.color + ';white-space:nowrap;';
+
+        pin.appendChild(dot);
+        pin.appendChild(lbl);
+        pins.appendChild(pin);
+    });
+
+    parent.appendChild(pins);
+};
+
+/**
+ * Initialize the V5 SLA Gauge using the existing gauge chart helper.
+ */
+window.initV5SlaGauge = function (canvasId, value, max, isDark) {
+    if (typeof window.initGaugeChart === 'function') {
+        window.initGaugeChart(canvasId, value, max, isDark);
+    }
+};
+
+/**
+ * Auto-scroll an alert stream container to the top periodically
+ * to create a "live ticker" feel. Call once after render.
+ */
+window.startV5AlertAutoScroll = function (containerSelector, intervalMs) {
+    intervalMs = intervalMs || 8000;
+    var container = document.querySelector(containerSelector);
+    if (!container) return;
+
+    // Stop any existing timer
+    if (container._v5scrollTimer) {
+        clearInterval(container._v5scrollTimer);
+    }
+
+    container._v5scrollTimer = setInterval(function () {
+        if (!document.body.contains(container)) {
+            clearInterval(container._v5scrollTimer);
+            return;
+        }
+        // Smooth scroll to top then back to bottom for "newest" feel,
+        // or simply scroll to top to show latest alerts.
+        container.scrollTo({ top: 0, behavior: 'smooth' });
+    }, intervalMs);
+};
+
+/**
+ * Stop the V5 alert auto-scroll timer.
+ */
+window.stopV5AlertAutoScroll = function (containerSelector) {
+    var container = document.querySelector(containerSelector);
+    if (container && container._v5scrollTimer) {
+        clearInterval(container._v5scrollTimer);
+        container._v5scrollTimer = null;
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// CSS-in-JS for V5 pin pulse (injected once)
+// ═══════════════════════════════════════════════════════════════
+(function () {
+    var styleId = 'v5-crisis-styles';
+    if (document.getElementById(styleId)) return;
+    var style = document.createElement('style');
+    style.id = styleId;
+    style.textContent =
+        '@keyframes v5-pin-pulse { ' +
+        '  0%, 100% { opacity: 1; transform: scale(1); } ' +
+        '  50% { opacity: 0.5; transform: scale(0.7); } ' +
+        '}';
+    document.head.appendChild(style);
+})();

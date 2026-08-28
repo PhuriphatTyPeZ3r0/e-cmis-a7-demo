@@ -1,0 +1,678 @@
+@page "/digital-signature"
+@using Microsoft.AspNetCore.Components.Forms
+@inject CentralSupportApiService CentralSupportApi
+
+<div class="dsig-page">
+    <div class="dsig-head">
+        <div>
+            <div class="dsig-kicker">Central Support</div>
+            <h1>Digital Signature</h1>
+            <p>จัดการ Certificate รายบุคคล ตรวจชื่อเจ้าของ บังคับ 1 User = 1 Active Certificate และเก็บ Audit Trail</p>
+        </div>
+        <button class="btn-navy" @onclick="Load" disabled="@loading">
+            <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+        </button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="dsig-alert error"><i class="bi bi-exclamation-triangle-fill"></i>@error</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(success))
+    {
+        <div class="dsig-alert success"><i class="bi bi-check-circle-fill"></i>@success</div>
+    }
+
+    <div class="dsig-summary">
+        <div class="dsig-stat">
+            <span>Active Certificate</span>
+            <strong>@certificates.Count(x => x.Status == "active")</strong>
+        </div>
+        <div class="dsig-stat warn">
+            <span>ใกล้หมดอายุ</span>
+            <strong>@certificates.Count(x => x.DisplayStatus == "expiring")</strong>
+        </div>
+        <div class="dsig-stat muted">
+            <span>History / Replaced</span>
+            <strong>@certificates.Count(x => x.Status == "replaced")</strong>
+        </div>
+        <div class="dsig-policy">
+            <i class="bi bi-shield-lock-fill"></i>
+            <div>
+                <strong>ผู้ลงนามไม่ต้องเลือก Cert</strong>
+                <span>ระบบเลือก Active Certificate จากบัญชีผู้ใช้งานเอง ไม่กำหนดสิทธิ์เอกสารในหน้านี้</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="dsig-tabs">
+        <button class="@(tab == "list" ? "active" : "")" @onclick='() => tab = "list"'>
+            <i class="bi bi-card-checklist"></i> รายการ Certificate
+        </button>
+        <button class="@(tab == "import" ? "active" : "")" @onclick='() => tab = "import"'>
+            <i class="bi bi-cloud-arrow-up-fill"></i> นำเข้า / Replace
+        </button>
+        <button class="@(tab == "sign" ? "active" : "")" @onclick='() => tab = "sign"'>
+            <i class="bi bi-pen-fill"></i> ลงนามเอกสาร
+        </button>
+        <button class="@(tab == "detail" ? "active" : "")" @onclick='() => tab = "detail"' disabled="@(detail is null)">
+            <i class="bi bi-clock-history"></i> รายละเอียด & Audit
+        </button>
+    </div>
+
+    @if (tab == "list")
+    {
+        <section class="dsig-panel">
+            <div class="dsig-toolbar">
+                <input @bind="query" @bind:event="oninput" placeholder="ค้นหาเจ้าของ, CN, Serial, Cert Code" />
+                <select @bind="status">
+                    <option value="">ทุกสถานะ</option>
+                    <option value="active">Active</option>
+                    <option value="expiring">ใกล้หมดอายุ</option>
+                    <option value="expired">หมดอายุ</option>
+                    <option value="replaced">Replaced</option>
+                    <option value="disabled">Disabled</option>
+                </select>
+                <button class="btn-outline-navy" @onclick="Load" disabled="@loading">
+                    <i class="bi bi-search"></i> ค้นหา
+                </button>
+            </div>
+
+            @if (loading)
+            {
+                <div class="dsig-empty">กำลังโหลด Certificate...</div>
+            }
+            else if (certificates.Count == 0)
+            {
+                <div class="dsig-empty">ยังไม่มี Certificate ในระบบ</div>
+            }
+            else
+            {
+                <div class="dsig-table-wrap">
+                    <table class="ecmis-table dsig-table">
+                        <thead>
+                            <tr>
+                                <th>เจ้าของ</th>
+                                <th>Certificate</th>
+                                <th>Issuer</th>
+                                <th>วันหมดอายุ</th>
+                                <th>สถานะ</th>
+                                <th>จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var cert in certificates)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@cert.OwnerName</strong>
+                                        <span>@(string.IsNullOrWhiteSpace(cert.OrgName) ? "-" : cert.OrgName)</span>
+                                    </td>
+                                    <td>
+                                        <strong>@cert.CertCode</strong>
+                                        <span>CN: @cert.SubjectCn</span>
+                                        <code>@ShortThumbprint(cert.ThumbprintSha256)</code>
+                                    </td>
+                                    <td>
+                                        <strong>@cert.IssuerCn</strong>
+                                        <span>Serial: @cert.SerialNumber</span>
+                                    </td>
+                                    <td>
+                                        <strong>@cert.ValidTo.ToLocalTime().ToString("dd/MM/yyyy")</strong>
+                                        <span>@DaysLeftText(cert.ValidTo)</span>
+                                    </td>
+                                    <td><span class="@StatusClass(cert.DisplayStatus)">@StatusText(cert.DisplayStatus)</span></td>
+                                    <td>
+                                        <div class="dsig-actions">
+                                            <button class="mini-btn" @onclick="() => OpenDetail(cert.Id)">ดู</button>
+                                            @if (cert.Status == "active")
+                                            {
+                                                <button class="mini-btn danger" @onclick="() => PrepareDisable(cert)">ปิดใช้</button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        @if (disableTarget is not null)
+        {
+            <section class="dsig-panel compact">
+                <div class="dsig-section-head">
+                    <div>
+                        <h2>ปิดใช้งาน @disableTarget.CertCode</h2>
+                        <p>ใช้เมื่อ Cert ถูกยกเลิก หมดอายุผิดปกติ หรือไม่ควรใช้ต่อ</p>
+                    </div>
+                    <button class="mini-btn" @onclick="() => disableTarget = null">ยกเลิก</button>
+                </div>
+                <textarea @bind="disableReason" rows="2" placeholder="เหตุผลที่ปิดใช้งาน"></textarea>
+                <div class="dsig-form-actions">
+                    <button class="btn-outline-navy" @onclick="() => disableTarget = null">ยกเลิก</button>
+                    <button class="btn-danger" @onclick="DisableSelected" disabled="@submitting">ปิดใช้งาน Certificate</button>
+                </div>
+            </section>
+        }
+    }
+    else if (tab == "import")
+    {
+        <section class="dsig-import-grid">
+            <div class="dsig-panel">
+                <div class="dsig-section-head">
+                    <div>
+                        <h2>นำเข้า Certificate</h2>
+                        <p>รองรับ .p12 / .pfx / .pem / .cer อ่าน metadata และตรวจ CN กับเจ้าของก่อนบันทึก</p>
+                    </div>
+                </div>
+
+                <label>ไฟล์ Certificate</label>
+                <InputFile OnChange="OnFileSelected" />
+                @if (selectedFile is not null)
+                {
+                    <div class="dsig-file"><i class="bi bi-file-earmark-lock-fill"></i>@selectedFile.Name (@(selectedFile.Size / 1024) KB)</div>
+                }
+
+                <label>เจ้าของ Certificate</label>
+                <div class="dsig-user-search">
+                    <input @bind="userQuery" @bind:event="oninput" placeholder="ค้นหาชื่อหรืออีเมล" />
+                    <button class="btn-outline-navy" @onclick="SearchUsers" disabled="@submitting">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+                <select @bind="ownerUserIdText">
+                    <option value="">เลือกเจ้าของ</option>
+                    @foreach (var user in users)
+                    {
+                        <option value="@user.Id">@user.DisplayName — @(string.IsNullOrWhiteSpace(user.OrgName) ? user.Email : user.OrgName)</option>
+                    }
+                </select>
+
+                <label>รหัสผ่าน P12/PFX</label>
+                <input type="password" @bind="password" placeholder="ใช้เฉพาะตอนอ่านไฟล์ ไม่บันทึกลงระบบ" />
+
+                <label>หมายเหตุ</label>
+                <textarea @bind="note" rows="3" placeholder="เช่น นำเข้า Cert ใบใหม่ตามการต่ออายุ"></textarea>
+
+                <div class="dsig-form-actions">
+                    <button class="btn-outline-navy" @onclick="ValidateSelected" disabled="@(!CanValidate)">
+                        <i class="bi bi-shield-check"></i> ตรวจสอบ
+                    </button>
+                    <button class="btn-navy" @onclick="ImportSelected" disabled="@(!CanImport)">
+                        <i class="bi bi-check2-circle"></i> บันทึกเป็น Active
+                    </button>
+                </div>
+            </div>
+
+            <div class="dsig-panel">
+                <div class="dsig-section-head">
+                    <div>
+                        <h2>ผลตรวจสอบ</h2>
+                        <p>ต้องผ่านก่อนนำเข้า ถ้าเจ้าของมี Active เดิม ระบบจะ Replace และเก็บประวัติ</p>
+                    </div>
+                </div>
+
+                @if (validation is null)
+                {
+                    <div class="dsig-empty">ยังไม่ได้ตรวจสอบ Certificate</div>
+                }
+                else
+                {
+                    <div class="dsig-checks">
+                        <div class="check @CheckClass(validation.Metadata.IsCurrentlyValid)">
+                            <i class="bi @(validation.Metadata.IsCurrentlyValid ? "bi-check-circle-fill" : "bi-x-circle-fill")"></i>
+                            <span>ช่วงวันใช้งาน</span>
+                            <strong>@validation.Metadata.ValidFrom.ToLocalTime().ToString("dd/MM/yyyy") - @validation.Metadata.ValidTo.ToLocalTime().ToString("dd/MM/yyyy")</strong>
+                        </div>
+                        <div class="check @CheckClass(validation.OwnerMatch != "mismatch")">
+                            <i class="bi @(validation.OwnerMatch == "mismatch" ? "bi-x-circle-fill" : "bi-check-circle-fill")"></i>
+                            <span>ชื่อ Cert กับเจ้าของ</span>
+                            <strong>@OwnerMatchText(validation.OwnerMatch)</strong>
+                        </div>
+                        <div class="check @CheckClass(string.IsNullOrWhiteSpace(validation.DuplicateCertCode))">
+                            <i class="bi @(string.IsNullOrWhiteSpace(validation.DuplicateCertCode) ? "bi-check-circle-fill" : "bi-x-circle-fill")"></i>
+                            <span>ซ้ำในระบบ</span>
+                            <strong>@(string.IsNullOrWhiteSpace(validation.DuplicateCertCode) ? "ไม่ซ้ำ" : validation.DuplicateCertCode)</strong>
+                        </div>
+                        <div class="check neutral">
+                            <i class="bi bi-key-fill"></i>
+                            <span>Private Key</span>
+                            <strong>@(validation.Metadata.PrivateKeyPresent ? "พบในไฟล์" : "ไม่พบ / public cert")</strong>
+                        </div>
+                    </div>
+
+                    <div class="dsig-meta">
+                        <div><span>Subject CN</span><strong>@validation.Metadata.SubjectCn</strong></div>
+                        <div><span>Issuer</span><strong>@validation.Metadata.IssuerCn</strong></div>
+                        <div><span>Serial</span><strong>@validation.Metadata.SerialNumber</strong></div>
+                        <div><span>SHA-256</span><strong>@ShortThumbprint(validation.Metadata.ThumbprintSha256)</strong></div>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+    else if (tab == "sign")
+    {
+        <section class="dsig-panel compact">
+            <div class="dsig-section-head">
+                <div>
+                    <h2>ลงนามในกระบวนงาน</h2>
+                    <p>ระบบเลือก Active Certificate ของบัญชีผู้ใช้ปัจจุบันและบันทึก Audit Trail</p>
+                </div>
+            </div>
+
+            <label>เลขอ้างอิงเอกสาร / คำขอ</label>
+            <input @bind="signDocumentRef" placeholder="เช่น PCMS-2026-0001 หรือ DOC-001" />
+
+            <label>ชื่อเอกสาร</label>
+            <input @bind="signDocumentName" placeholder="เช่น รายงานสรุปสำนวน" />
+
+            <label>รหัสกระบวนงาน</label>
+            <input @bind="signWorkflowCode" placeholder="เช่น PCMS, INVESTIGATION, WARRANT" />
+
+            <label>หมายเหตุ</label>
+            <textarea @bind="signNote" rows="3" placeholder="เหตุผลหรือบริบทของการลงนาม"></textarea>
+
+            <div class="dsig-form-actions">
+                <button class="btn-navy" @onclick="SignDocument" disabled="@(!CanSignDocument)">
+                    <i class="bi bi-pen-fill"></i> ลงนาม
+                </button>
+            </div>
+
+            @if (signResult is not null)
+            {
+                <div class="dsig-meta" style="margin-top:14px">
+                    <div><span>Signature ID</span><strong>@signResult.Id</strong></div>
+                    <div><span>Certificate</span><strong>@signResult.CertCode</strong></div>
+                    <div><span>Document</span><strong>@signResult.DocumentName</strong></div>
+                    <div><span>Signed At</span><strong>@signResult.SignedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong></div>
+                </div>
+            }
+        </section>
+    }
+    else if (tab == "detail" && detail is not null)
+    {
+        <section class="dsig-detail-grid">
+            <div class="dsig-panel">
+                <div class="dsig-section-head">
+                    <div>
+                        <h2>@detail.Certificate.CertCode</h2>
+                        <p>@detail.Certificate.OwnerName — @detail.Certificate.OrgName</p>
+                    </div>
+                    <span class="@StatusClass(detail.Certificate.DisplayStatus)">@StatusText(detail.Certificate.DisplayStatus)</span>
+                </div>
+                <div class="dsig-meta">
+                    <div><span>Subject CN</span><strong>@detail.Certificate.SubjectCn</strong></div>
+                    <div><span>Issuer</span><strong>@detail.Certificate.IssuerCn</strong></div>
+                    <div><span>Serial</span><strong>@detail.Certificate.SerialNumber</strong></div>
+                    <div><span>SHA-256</span><strong>@detail.Certificate.ThumbprintSha256</strong></div>
+                    <div><span>Valid From</span><strong>@detail.Certificate.ValidFrom.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong></div>
+                    <div><span>Valid To</span><strong>@detail.Certificate.ValidTo.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong></div>
+                    <div><span>Private Key</span><strong>@(detail.Certificate.PrivateKeyPresent ? "พบตอนนำเข้า" : "ไม่พบ")</strong></div>
+                    <div><span>Storage</span><strong>@detail.Certificate.PrivateKeyStorageStatus</strong></div>
+                </div>
+            </div>
+
+            <div class="dsig-panel">
+                <div class="dsig-section-head">
+                    <div>
+                        <h2>Audit Trail</h2>
+                        <p>เหตุการณ์นำเข้า Replace และปิดใช้งาน Certificate</p>
+                    </div>
+                </div>
+                @if (detail.Logs.Count == 0)
+                {
+                    <div class="dsig-empty">ยังไม่มี Audit</div>
+                }
+                else
+                {
+                    <div class="dsig-timeline">
+                        @foreach (var log in detail.Logs)
+                        {
+                            <div class="tl-item">
+                                <div class="tl-dot"></div>
+                                <strong>@EventText(log.EventType)</strong>
+                                <span>@log.Message</span>
+                                <small>@log.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") โดย @(string.IsNullOrWhiteSpace(log.ActorName) ? "-" : log.ActorName)</small>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </section>
+    }
+</div>
+
+@code {
+    private List<DigitalSignatureCertificateDto> certificates = new();
+    private List<DigitalSignatureUserDto> users = new();
+    private DigitalSignatureValidationResultDto? validation;
+    private DigitalSignatureCertificateDetailDto? detail;
+    private DigitalSignatureSignResultDto? signResult;
+    private DigitalSignatureCertificateDto? disableTarget;
+    private IBrowserFile? selectedFile;
+    private string tab = "list";
+    private string query = "";
+    private string status = "";
+    private string userQuery = "";
+    private string ownerUserIdText = "";
+    private string password = "";
+    private string note = "";
+    private string disableReason = "";
+    private string signDocumentRef = "";
+    private string signDocumentName = "";
+    private string signWorkflowCode = "";
+    private string signNote = "";
+    private string error = "";
+    private string success = "";
+    private bool loading = true;
+    private bool submitting;
+
+    private bool CanValidate => selectedFile is not null && !submitting;
+    private bool CanImport => selectedFile is not null && validation?.CanImport == true && int.TryParse(ownerUserIdText, out _) && !submitting;
+    private bool CanSignDocument => !submitting && !string.IsNullOrWhiteSpace(signDocumentRef) && !string.IsNullOrWhiteSpace(signDocumentName);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+        await SearchUsers();
+    }
+
+    private async Task Load()
+    {
+        loading = true;
+        error = "";
+        try
+        {
+            certificates = await CentralSupportApi.GetDigitalSignatureCertificatesAsync(query, status);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task SearchUsers()
+    {
+        submitting = true;
+        error = "";
+        try
+        {
+            users = await CentralSupportApi.SearchDigitalSignatureUsersAsync(userQuery);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        validation = null;
+        success = "";
+        error = "";
+    }
+
+    private async Task ValidateSelected()
+    {
+        if (selectedFile is null)
+            return;
+
+        submitting = true;
+        error = "";
+        success = "";
+        try
+        {
+            int? ownerId = int.TryParse(ownerUserIdText, out var parsed) ? parsed : null;
+            validation = await CentralSupportApi.ValidateDigitalSignatureCertificateAsync(selectedFile, ownerId, password);
+            success = validation.CanImport ? "Certificate พร้อมนำเข้า" : "ตรวจสอบแล้ว แต่ยังมีเงื่อนไขที่ต้องแก้ก่อนนำเข้า";
+        }
+        catch (Exception ex)
+        {
+            validation = null;
+            error = ex.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private async Task ImportSelected()
+    {
+        if (selectedFile is null || !int.TryParse(ownerUserIdText, out var ownerId))
+            return;
+
+        submitting = true;
+        error = "";
+        success = "";
+        try
+        {
+            var result = await CentralSupportApi.ImportDigitalSignatureCertificateAsync(selectedFile, ownerId, password, note);
+            success = string.IsNullOrWhiteSpace(result.ReplacedCertificateId?.ToString())
+                ? $"นำเข้า {result.CertCode} แล้ว"
+                : $"นำเข้า {result.CertCode} และ Replace ใบเดิมแล้ว";
+            selectedFile = null;
+            validation = null;
+            password = "";
+            note = "";
+            tab = "list";
+            await Load();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private async Task OpenDetail(int id)
+    {
+        error = "";
+        try
+        {
+            detail = await CentralSupportApi.GetDigitalSignatureCertificateAsync(id);
+            tab = "detail";
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private void PrepareDisable(DigitalSignatureCertificateDto cert)
+    {
+        disableTarget = cert;
+        disableReason = "";
+    }
+
+    private async Task DisableSelected()
+    {
+        if (disableTarget is null)
+            return;
+
+        submitting = true;
+        error = "";
+        success = "";
+        try
+        {
+            await CentralSupportApi.DisableDigitalSignatureCertificateAsync(disableTarget.Id, disableReason);
+            success = $"ปิดใช้งาน {disableTarget.CertCode} แล้ว";
+            disableTarget = null;
+            await Load();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private async Task SignDocument()
+    {
+        if (!CanSignDocument)
+            return;
+
+        submitting = true;
+        error = "";
+        success = "";
+        try
+        {
+            signResult = await CentralSupportApi.SignDigitalDocumentAsync(signDocumentRef, signDocumentName, signWorkflowCode, signNote);
+            success = $"ลงนาม {signResult.DocumentName} ด้วย {signResult.CertCode} แล้ว";
+            signDocumentRef = "";
+            signDocumentName = "";
+            signWorkflowCode = "";
+            signNote = "";
+        }
+        catch (Exception ex)
+        {
+            signResult = null;
+            error = ex.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private static string ShortThumbprint(string value) =>
+        string.IsNullOrWhiteSpace(value) || value.Length <= 16 ? value : $"{value[..8]}...{value[^8..]}";
+
+    private static string DaysLeftText(DateTimeOffset validTo)
+    {
+        var days = (validTo.ToUniversalTime() - DateTimeOffset.UtcNow).TotalDays;
+        if (days < 0) return "หมดอายุแล้ว";
+        if (days < 1) return "หมดอายุวันนี้";
+        return $"เหลือ {Math.Floor(days)} วัน";
+    }
+
+    private static string StatusClass(string status) => status switch
+    {
+        "active" => "dsig-badge active",
+        "expiring" => "dsig-badge expiring",
+        "expired" => "dsig-badge expired",
+        "replaced" => "dsig-badge muted",
+        "disabled" => "dsig-badge disabled",
+        _ => "dsig-badge muted"
+    };
+
+    private static string StatusText(string status) => status switch
+    {
+        "active" => "Active",
+        "expiring" => "ใกล้หมดอายุ",
+        "expired" => "หมดอายุ",
+        "replaced" => "Replaced",
+        "disabled" => "Disabled",
+        _ => status
+    };
+
+    private static string CheckClass(bool ok) => ok ? "ok" : "bad";
+
+    private static string OwnerMatchText(string ownerMatch) => ownerMatch switch
+    {
+        "matched" => "ตรงกับเจ้าของ",
+        "mismatch" => "ไม่ตรงกับเจ้าของ",
+        _ => "ยังไม่ได้เลือกเจ้าของ"
+    };
+
+    private static string EventText(string eventType) => eventType switch
+    {
+        "import_certificate" => "นำเข้า Certificate",
+        "replace_certificate" => "Replace Certificate",
+        "disable_certificate" => "ปิดใช้งาน Certificate",
+        "sign_document" => "ลงนามเอกสาร",
+        _ => eventType
+    };
+}
+
+<style>
+.dsig-page { padding:6px; }
+.dsig-head { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:18px; }
+.dsig-kicker { color:var(--gold); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
+.dsig-head h1 { margin:0 0 4px; color:var(--navy-deep); font-size:34px; font-weight:800; }
+.dsig-head p { margin:0; color:#64748b; }
+.dsig-alert { display:flex; gap:10px; align-items:center; padding:12px 14px; border-radius:8px; margin-bottom:14px; font-weight:800; }
+.dsig-alert.error { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
+.dsig-alert.success { background:#ecfdf5; color:#065f46; border:1px solid #bbf7d0; }
+.dsig-summary { display:grid; grid-template-columns:repeat(3, minmax(150px, 1fr)) minmax(260px, 1.4fr); gap:12px; margin-bottom:14px; }
+.dsig-stat, .dsig-policy, .dsig-panel { background:#fff; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 8px 20px rgba(15,23,42,.05); }
+.dsig-stat { padding:14px; border-left:4px solid var(--green); }
+.dsig-stat.warn { border-left-color:var(--orange); }
+.dsig-stat.muted { border-left-color:#64748b; }
+.dsig-stat span, .dsig-policy span, .dsig-meta span, .dsig-table td span { display:block; color:#64748b; font-size:12px; }
+.dsig-stat strong { display:block; color:var(--navy-deep); font-size:28px; line-height:1; margin-top:6px; }
+.dsig-policy { display:flex; gap:12px; padding:14px; align-items:center; }
+.dsig-policy i { color:var(--gold); font-size:24px; }
+.dsig-policy strong { display:block; color:var(--navy-deep); }
+.dsig-tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+.dsig-tabs button { border:1px solid #d7dde8; background:#fff; border-radius:8px; padding:9px 12px; color:var(--navy-deep); font-weight:800; }
+.dsig-tabs button.active { background:var(--navy-deep); color:#fff; }
+.dsig-tabs button:disabled { opacity:.45; cursor:not-allowed; }
+.dsig-panel { padding:16px; margin-bottom:14px; }
+.dsig-panel.compact { max-width:760px; }
+.dsig-toolbar, .dsig-form-actions, .dsig-user-search, .dsig-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.dsig-toolbar { margin-bottom:12px; }
+.dsig-toolbar input, .dsig-toolbar select, .dsig-panel input, .dsig-panel select, .dsig-panel textarea { border:1px solid #d7dde8; border-radius:8px; padding:10px 12px; outline:none; width:100%; }
+.dsig-toolbar input { flex:1; min-width:260px; }
+.dsig-toolbar select { width:180px; }
+.dsig-panel label { display:block; margin:12px 0 6px; color:var(--navy-deep); font-weight:800; font-size:13px; }
+.dsig-table-wrap { overflow:auto; }
+.dsig-table td { vertical-align:top; }
+.dsig-table code { display:inline-block; margin-top:4px; color:#475569; font-size:11px; }
+.dsig-empty { padding:22px; color:#64748b; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; }
+.dsig-import-grid, .dsig-detail-grid { display:grid; grid-template-columns:minmax(0, 1fr) minmax(360px, .9fr); gap:14px; align-items:start; }
+.dsig-section-head { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:10px; }
+.dsig-section-head h2 { margin:0 0 4px; color:var(--navy-deep); font-size:19px; font-weight:800; }
+.dsig-section-head p { margin:0; color:#64748b; }
+.dsig-file { margin-top:8px; display:inline-flex; gap:8px; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px; color:#334155; }
+.dsig-user-search input { flex:1; }
+.dsig-badge { display:inline-flex; align-items:center; border-radius:999px; padding:4px 9px; font-size:12px; font-weight:800; border:1px solid; white-space:nowrap; }
+.dsig-badge.active { color:#166534; background:#dcfce7; border-color:#bbf7d0; }
+.dsig-badge.expiring { color:#9a3412; background:#ffedd5; border-color:#fed7aa; }
+.dsig-badge.expired { color:#991b1b; background:#fee2e2; border-color:#fecaca; }
+.dsig-badge.muted, .dsig-badge.disabled { color:#475569; background:#f1f5f9; border-color:#e2e8f0; }
+.dsig-checks { display:grid; gap:8px; margin-bottom:14px; }
+.check { display:grid; grid-template-columns:22px 1fr; gap:4px 8px; padding:10px; border-radius:8px; border:1px solid #e2e8f0; background:#f8fafc; }
+.check i { grid-row:1 / span 2; margin-top:2px; }
+.check span { color:#64748b; font-size:12px; }
+.check strong { color:var(--navy-deep); }
+.check.ok i { color:var(--green); }
+.check.bad i { color:var(--red); }
+.check.neutral i { color:var(--navy-mid); }
+.dsig-meta { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
+.dsig-meta div { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; min-width:0; }
+.dsig-meta strong { display:block; color:var(--navy-deep); overflow-wrap:anywhere; }
+.dsig-timeline { display:grid; gap:12px; }
+.tl-item { position:relative; padding-left:22px; display:grid; gap:3px; }
+.tl-item:before { content:""; position:absolute; left:6px; top:18px; bottom:-14px; width:2px; background:#e2e8f0; }
+.tl-item:last-child:before { display:none; }
+.tl-dot { position:absolute; left:0; top:4px; width:14px; height:14px; background:#fff; border:3px solid var(--gold); border-radius:50%; }
+.tl-item strong { color:var(--navy-deep); }
+.tl-item span, .tl-item small { color:#64748b; }
+.mini-btn, .btn-danger { border:1px solid #d7dde8; background:#fff; border-radius:8px; padding:7px 10px; color:var(--navy-deep); font-weight:800; }
+.mini-btn.danger, .btn-danger { color:#991b1b; border-color:#fecaca; background:#fff5f5; }
+@@media (max-width: 1000px) {
+    .dsig-head { display:block; }
+    .dsig-head .btn-navy { margin-top:10px; }
+    .dsig-summary, .dsig-import-grid, .dsig-detail-grid { grid-template-columns:1fr; }
+    .dsig-meta { grid-template-columns:1fr; }
+}
+</style>

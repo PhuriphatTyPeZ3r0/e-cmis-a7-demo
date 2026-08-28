@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Work Inbox | E-CMIS 7.1 ไต่สวนเบื้องต้น</title>
+<link rel="icon" type="image/png" href="pacc_logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<link href="assets/ecmis-app.css" rel="stylesheet">
+</head>
+<body>
+
+<main class="app-main">
+
+  <div class="page-head">
+    <div>
+      <h1><i class="fa-solid fa-inbox me-2"></i>Work Inbox — งานที่รอฉันดำเนินการ</h1>
+      <div class="sub">รายการงานถูกกรองตามบทบาทที่กำลังสวมอยู่ โดยอ้างอิงจากสถานะสำนวนใน State Machine ของกระบวนงาน 7.1</div>
+    </div>
+    <span class="flow-ref ms-auto">ผัง: TO-BE ไต่สวนเบื้องต้น — ทุก Lane</span>
+  </div>
+
+  <div id="scopeBanner"></div>
+
+  <!-- KPI -->
+  <div class="row g-3 mb-3" id="kpiRow"></div>
+
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card card-ecmis">
+        <div class="card-header">
+          <i class="fa-solid fa-list-check"></i> คิวงานของฉันในกิจกรรมที่ 7
+          <span class="badge bg-danger rounded-pill ms-2" id="myCount">0</span>
+          <span class="ms-auto small text-muted" id="myRoleLabel"></span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover tbl-ecmis mb-0">
+              <thead>
+                <tr>
+                  <th>เลขเรื่อง</th>
+                  <th>เรื่องกล่าวหา</th>
+                  <th>สถานะ</th>
+                  <th>SLA</th>
+                  <th class="text-end">ดำเนินการ</th>
+                </tr>
+              </thead>
+              <tbody id="myQueue"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-ecmis mt-3">
+        <div class="card-header"><i class="fa-solid fa-eye"></i> สำนวนที่ติดตามได้ (อ่านอย่างเดียว)</div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover tbl-ecmis mb-0">
+              <thead><tr><th>เลขเรื่อง</th><th>เรื่องกล่าวหา</th><th>ค้างอยู่ที่</th><th>SLA</th><th class="text-end"></th></tr></thead>
+              <tbody id="watchQueue"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card card-ecmis mb-3">
+        <div class="card-header"><i class="fa-solid fa-triangle-exclamation"></i> การแจ้งเตือน SLA</div>
+        <div class="card-body" id="alertBox"></div>
+      </div>
+
+      <div class="card card-ecmis mb-3">
+        <div class="card-header"><i class="fa-solid fa-diagram-project"></i> ตำแหน่งของฉันในผัง</div>
+        <div class="card-body" id="laneBox"></div>
+      </div>
+
+      <div class="law-note">
+        <strong><i class="fa-solid fa-scale-balanced me-1"></i>ฐานเวลาตามกฎหมาย</strong><br>
+        • <strong>ม.23</strong> เริ่มไต่สวนภายใน 60 วันนับแต่รับเรื่อง และไต่สวน-วินิจฉัยให้เสร็จภายใน 2 ปี (ขยายได้ไม่เกิน 3 ปี โดยมติบอร์ด)<br>
+        • <strong>ม.28</strong> เลขาธิการฯ สั่งรับ/ไม่รับเบื้องต้น รายงานบอร์ดทุก 15 วัน — หากบอร์ดไม่มีมติเป็นอย่างอื่นภายใน 15 วัน ถือว่าบอร์ดมีมติตามคำสั่งเลขาธิการฯ
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="assets/ecmis-app.js"></script>
+<script>
+ECMIS.renderShell('01-work-inbox.html');
+
+const role  = ECMIS.currentRole();
+const all   = ECMIS.CASES;
+/* คิวงานจริงของ กจ.7 = ต้องเป็นสำนวนที่เข้าขอบเขตแล้วเท่านั้น */
+const mine  = ECMIS.inboxFor(role.id).filter(c => !ECMIS.isUpstreamCase(c));
+/* สำนวนที่บทบาทต้นทางถืออยู่ — แสดงเพื่อติดตาม แต่ไม่ใช่งานของ กจ.7 */
+const upstreamMine = ECMIS.inboxFor(role.id).filter(c => ECMIS.isUpstreamCase(c));
+
+document.getElementById('myRoleLabel').textContent = `บทบาท: ${role.title}`;
+document.getElementById('myCount').textContent = mine.length;
+
+if(ECMIS.isUpstreamRole(role.id)){
+  document.getElementById('scopeBanner').innerHTML = `
+    <div class="warn-note mb-3">
+      <strong><i class="fa-solid fa-circle-info me-1"></i>บทบาทนี้อยู่นอกขอบเขตกิจกรรมที่ 7</strong><br>
+      <strong>${role.title}</strong> เป็นส่วนหนึ่งของ<strong>การเสนอตามลำดับชั้นภายในกอง / สำนักงาน ป.ป.ท. เขต</strong>
+      ซึ่งเป็นกระบวนงานของ <strong>กิจกรรมที่ 5 (ไต่สวนข้อเท็จจริง)</strong> ไม่ใช่กิจกรรมที่ 7
+      <br><small>กิจกรรมที่ 7 เริ่มนับเมื่อรายงาน 213 มาถึง <strong>เลขาธิการคณะกรรมการ ป.ป.ท.</strong>
+      — บทบาทนี้จึงมีเพียงสิทธิ์ <strong>ติดตามสถานะ</strong> สำนวนของตนเองในโมดูลนี้</small>
+    </div>`;
+}
+
+/* ---------- KPI ---------- */
+const late  = all.filter(c => c.slaDays > c.slaLimit).length;
+const urgent= all.filter(c => c.urgent).length;
+const kpis = [
+  { n: mine.length, l:'งานรอฉันดำเนินการ', i:'fa-inbox',   c:'#0a2647' },
+  { n: all.filter(c => !ECMIS.isUpstreamCase(c)).length, l:'สำนวนที่อยู่ในขอบเขต กจ.7', i:'fa-folder-open', c:'#1d5fa8' },
+  { n: late,        l:'เกินกำหนด SLA',      i:'fa-clock',   c:'#a5322a' },
+  { n: all.filter(c => ECMIS.isUpstreamCase(c)).length, l:'ยังไม่เข้า กจ.7 (อยู่ต้นทาง กจ.5)', i:'fa-arrow-right-to-bracket', c:'#6b7280' }
+];
+document.getElementById('kpiRow').innerHTML = kpis.map(k => `
+  <div class="col-6 col-lg-3">
+    <div class="card card-ecmis h-100">
+      <div class="card-body d-flex align-items-center gap-3 py-3">
+        <i class="fa-solid ${k.i} fa-xl" style="color:${k.c}"></i>
+        <div>
+          <div style="font-size:1.5rem;font-weight:700;font-family:var(--serif);color:${k.c};line-height:1">${k.n}</div>
+          <div class="text-muted" style="font-size:.78rem">${k.l}</div>
+        </div>
+      </div>
+    </div>
+  </div>`).join('');
+
+/* ---------- ปลายทางของแต่ละบทบาท ---------- */
+const PAGE_FOR = {
+  owner:'03-report-213.html', section_head:'03-report-213.html',
+  director:'03-report-213.html', deputy:'03-report-213.html',
+  secgen:'04-approval-review.html', support_sub:'04-approval-review.html',
+  dir_case:'05-urgent-memo.html', chair_office:'06-chairman-agenda.html',
+  chairman:'06-chairman-agenda.html', subcommittee:'07-subcommittee-screening.html',
+  board_sec:'08-board-resolution.html', board:'08-board-resolution.html'
+};
+
+function row(c, actionable){
+  const target = `${PAGE_FOR[role.id] || '02-case-register.html'}?case=${encodeURIComponent(c.id)}`;
+  const holder = ECMIS.STATUS[c.status] ? ECMIS.getRole(ECMIS.STATUS[c.status].owner) : null;
+  return `<tr>
+    <td class="case-no">${c.id}${c.urgent?' <span class="st st-urgent">ด่วน</span>':''}</td>
+    <td style="max-width:340px"><div class="text-truncate" title="${c.subject}">${c.subject}</div>
+        <small class="text-muted">${c.ownerOrg}</small></td>
+    <td>${actionable ? ECMIS.statusBadge(c.status) : (holder ? holder.title : '—')}</td>
+    <td>${ECMIS.slaBadge(c)}</td>
+    <td class="text-end">
+      <a href="${target}" class="btn btn-sm ${actionable?'btn-navy':'btn-outline-secondary'}">
+        ${actionable ? '<i class="fa-solid fa-pen-to-square me-1"></i>ดำเนินการ' : '<i class="fa-regular fa-eye me-1"></i>ติดตาม'}
+      </a>
+    </td>
+  </tr>`;
+}
+
+document.getElementById('myQueue').innerHTML = mine.length
+  ? mine.map(c => row(c, true)).join('')
+  : `<tr><td colspan="5" class="text-center text-muted py-4">
+       <i class="fa-regular fa-face-smile fa-lg mb-2 d-block"></i>
+       ไม่มีงานค้างในบทบาท <strong>${role.title}</strong><br>
+       <small>ลองสลับบทบาทที่มุมขวาบนเพื่อดูคิวงานของผู้ใช้รายอื่น</small></td></tr>`;
+
+/* สำนวนที่บทบาทนี้เป็นเจ้าของเรื่องแต่ค้างที่ชั้นอื่น (สิทธิ์อ่านอย่างเดียว) */
+const watch = upstreamMine.concat(
+  all.filter(c => !ECMIS.canAct(c, role.id) && !ECMIS.isUpstreamCase(c) &&
+    ['owner','board_sec','dir_case'].includes(role.id)));
+document.getElementById('watchQueue').innerHTML = watch.length
+  ? watch.map(c => row(c, false)).join('')
+  : `<tr><td colspan="5" class="text-center text-muted py-3">— ไม่มีรายการ —</td></tr>`;
+
+/* ---------- SLA alerts ---------- */
+const alerts = all.filter(c => c.slaDays >= c.slaLimit - 2)
+  .sort((a,b) => (b.slaDays-b.slaLimit) - (a.slaDays-a.slaLimit));
+document.getElementById('alertBox').innerHTML = alerts.length ? alerts.map(c => {
+  const over = c.slaDays > c.slaLimit;
+  return `<div class="d-flex gap-2 align-items-start mb-2 pb-2 border-bottom">
+    <i class="fa-solid ${over?'fa-circle-exclamation':'fa-triangle-exclamation'} mt-1"
+       style="color:${over?'#a5322a':'#b4690e'}"></i>
+    <div style="font-size:.82rem">
+      <strong>${c.id}</strong> ${ECMIS.slaLabel(c.slaDays, c.slaLimit)}<br>
+      <span class="text-muted">ค้างที่: ${ECMIS.STATUS[c.status].label}</span>
+      ${over?'<br><span style="color:#a5322a;font-size:.75rem">Escalate ขึ้นผู้บังคับบัญชา 1 ระดับแล้ว</span>':''}
+    </div>
+  </div>`;
+}).join('') : '<div class="text-muted small">ไม่มีรายการใกล้ครบกำหนด</div>';
+
+/* ---------- Lane box ---------- */
+document.getElementById('laneBox').innerHTML = `
+  <div class="kv mb-2"><span class="k">ผู้ใช้:</span> <span class="v">${role.name}</span></div>
+  <div class="kv mb-2"><span class="k">ตำแหน่ง:</span> <span class="v">${role.title}</span></div>
+  <div class="kv mb-2"><span class="k">หน่วยงาน:</span> <span class="v">${role.org}</span></div>
+  <div class="kv mb-2"><span class="k">ขอบเขต:</span> <span class="v">${ECMIS.isUpstreamRole(role.id) ? '<span class=\"st st-draft\">นอกขอบเขต กจ.7 (อยู่ใน กจ.5)</span>' : '<span class=\"st st-done\">ในขอบเขตกิจกรรมที่ 7</span>'}</span></div>
+  <div class="kv mb-2"><span class="k">Swimlane:</span> <span class="chip">${role.lane}</span></div>
+  <div class="kv"><span class="k">ขั้นตอนในผัง:</span> <span class="chip">${role.flow}</span></div>
+  <hr>
+  <div class="integration-note">
+    <strong>Integration</strong> — สำนวนทั้งหมดถูก Auto Sync จาก
+    <strong>กิจกรรมที่ 5</strong> (รายงาน 213) และทุกมติจะยิงกลับ กจ.5 อัตโนมัติ
+  </div>`;
+</script>
+</body>
+</html>

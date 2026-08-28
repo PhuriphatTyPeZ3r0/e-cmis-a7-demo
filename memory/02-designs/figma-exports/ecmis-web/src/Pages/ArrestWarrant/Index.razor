@@ -1,0 +1,156 @@
+@page "/arrest-warrant"
+@using EcmisWeb.Data
+@inject NavigationManager Nav
+
+<div class="routing-page-wrap">
+    <div class="complaints-page-header">
+        <div>
+            <div class="complaints-title">
+                <i class="bi bi-file-earmark-person-fill"></i>
+                <span>ระบบติดตามหมายจับ (Warrant Database)</span>
+            </div>
+            <div class="complaints-subtitle">
+                กิจกรรมที่ 9: หน้าแบบฟอร์มตรวจสอบอายุความหมายจับ และเชื่อมโยงฐานข้อมูลภายนอกแบบเรียลไทม์
+            </div>
+        </div>
+        <div class="complaints-actions">
+            <button class="btn-outline-navy" @onclick="ShowImportModal">
+                <i class="bi bi-cloud-arrow-up-fill"></i> หมอัปโหลดข้อมูลหมายเดิม
+            </button>
+        </div>
+    </div>
+
+    @* — Alert Status Cards — *@
+    <div class="routing-stat-grid" style="margin-bottom:14px">
+        <div class="routing-card border-navy">
+            <div class="rc-title"><i class="bi bi-broadcast"></i> เชื่อมต่อ API (RTP)</div>
+            <div class="rc-count" style="color:var(--navy);font-size:24px">ออนไลน์</div>
+            <div class="rc-desc">MOU Service กับ สนง.ตำรวจฯ</div>
+        </div>
+        <div class="routing-card border-red" style="background:#fff3f3;border-width:2px;border-color:var(--red)">
+            <div class="rc-title"><i class="bi bi-exclamation-triangle-fill" style="color:var(--red)"></i> วิกฤต: ใกล้สิ้นอายุความ!</div>
+            <div class="rc-count" style="color:var(--red)">@criticalCount</div>
+            <div class="rc-desc" style="color:var(--red)">เหลือเวลาน้อยกว่า 1 ปี</div>
+        </div>
+        <div class="routing-card border-orange">
+             <div class="rc-title"><i class="bi bi-file-earmark-check" style="color:var(--orange)"></i> รอ กบค. รับตรวจสอบ</div>
+            <div class="rc-count" style="color:var(--orange)">@pendingVerifyCount</div>
+            <div class="rc-desc">ข้อมูลหมายจับใหม่จากเขต</div>
+        </div>
+        <div class="routing-card border-green">
+             <div class="rc-title"><i class="bi bi-person-check-fill" style="color:var(--green)"></i> จับกุมแล้ว (Closed)</div>
+            <div class="rc-count" style="color:var(--green)">@closedCount</div>
+            <div class="rc-desc">ปิดดหมายจับเรียบร้อยแล้ว</div>
+        </div>
+    </div>
+
+    @* — Table Header Controls — *@
+    <div class="complaints-table-card">
+        <div class="complaints-table-head" style="flex-wrap:wrap;gap:12px">
+            <div>
+                <div class="complaints-table-title">สรุปรายการหมายจับ (Warrant Index)</div>
+                <div class="complaints-table-subtitle">คลิกที่รายละเอียดเพื่อพิจารณาหรือดึงข้อมูล API ล่าสุด</div>
+            </div>
+            <div style="display:flex;gap:10px">
+                <select class="form-select-custom" @bind="filterStatus" style="width:200px">
+                    <option value="all">สถานะหมายจับ: ทั้งหมด</option>
+                    <option value="active">Active (กำลังติดตาม)</option>
+                    <option value="closed">Closed (จับได้แล้ว)</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto">
+            <table class="complaints-table">
+                <thead>
+                    <tr>
+                        <th style="min-width:100px">เลขหมายจับ</th>
+                        <th style="min-width:140px">รายชื่อผู้ต้องหา</th>
+                        <th style="min-width:120px">หมดอายุความ</th>
+                        <th style="min-width:90px">ภูมิลำเนา</th>
+                        <th style="min-width:120px">สถานะหมาย</th>
+                        <th style="min-width:130px">ผลการตรวจสอบ</th>
+                        <th style="text-align:right">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var w in filteredWarrants)
+                    {
+                        var isCritical = w.Status == "active" && WarrantData.DaysUntilExpiry(w.ExpiryDate) <= 365;
+                        <tr style="@(isCritical ? "background:#fff5f5" : "")">
+                            <td>
+                                <span style="font-weight:700;font-size:14px;color:var(--navy)">@w.WarrantNo</span>
+                                <div style="font-size:11px;color:var(--text-muted)">คดี: @w.LinkedCaseNo</div>
+                            </td>
+                            <td>
+                                <div style="font-size:13px;font-weight:600">@w.SuspectName</div>
+                                <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px" title="@w.Charge">@w.Charge</div>
+                            </td>
+                            <td>
+                                <div style="font-size:12px">@w.ExpiryDate</div>
+                                @if(w.Status == "active")
+                                {
+                                    <div style="font-size:11px;font-weight:700;color:@(isCritical ? "var(--red)" : "var(--blue)")">
+                                        @(isCritical ? "วิกฤต! " : "")เหลือ: @WarrantData.DaysUntilExpiry(w.ExpiryDate) วัน
+                                    </div>
+                                }
+                            </td>
+                            <td><span style="font-size:12px">@w.Region</span></td>
+                            <td>
+                                <span class="complaints-status-chip @WarrantData.StatusClass(w.Status)">
+                                    @WarrantData.StatusLabel(w.Status)
+                                </span>
+                            </td>
+                            <td>
+                                <span class="complaints-status-chip @WarrantData.VerficationClass(w.VerificationStatus)" style="background:transparent;border:1px solid currentColor">
+                                    @WarrantData.VerficationLabel(w.VerificationStatus)
+                                </span>
+                            </td>
+                            <td style="text-align:right">
+                                <button class="btn @(w.VerificationStatus == "pending_verify" ? "btn-navy" : "btn-outline-navy")" style="padding:4px 10px;font-size:12px"
+                                        @onclick='() => Nav.NavigateTo($"/arrest-warrant/{w.Id}")'>
+                                    @(w.VerificationStatus == "pending_verify" ? "รับตรวจ" : "รายละเอียด")
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@if (showImportModal)
+{
+    // Mockup Import Modal
+    <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;justify-content:center;align-items:center;z-index:999">
+        <div style="background:#fff;padding:24px;border-radius:12px;width:100%;max-width:400px">
+            <h5 style="margin-top:0;margin-bottom:16px;color:var(--navy-deep)"><i class="bi bi-file-earmark-arrow-up"></i> Data Migration</h5>
+            <p style="font-size:13px;color:#555">จำลองการ Upload ข้อมูลหมายจับย้อนหลังเข้าระบบ (Excel/CSV)</p>
+            <div style="border:2px dashed #ccc;border-radius:8px;padding:20px;text-align:center;color:#666;margin-bottom:16px;cursor:pointer">
+                ลากไฟล์มาวางที่นี่ หรือคลิกเพื่อค้นหา...
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn-outline-navy" @onclick="() => showImportModal = false">ยกเลิก</button>
+                <button class="btn-navy" @onclick="() => showImportModal = false">บันทึก</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string filterStatus = "all";
+    private bool showImportModal = false;
+
+    private IEnumerable<WarrantRecord> filteredWarrants => 
+        filterStatus == "all" ? WarrantData.Warrants : WarrantData.Warrants.Where(w => w.Status == filterStatus);
+
+    private int criticalCount => WarrantData.Warrants.Count(w => w.Status == "active" && WarrantData.DaysUntilExpiry(w.ExpiryDate) <= 365);
+    private int pendingVerifyCount => WarrantData.Warrants.Count(w => w.VerificationStatus == "pending_verify");
+    private int closedCount => WarrantData.Warrants.Count(w => w.Status == "closed");
+
+    private void ShowImportModal()
+    {
+        showImportModal = true;
+    }
+}

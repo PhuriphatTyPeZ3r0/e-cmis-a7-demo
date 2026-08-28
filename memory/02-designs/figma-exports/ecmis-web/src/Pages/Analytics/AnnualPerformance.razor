@@ -1,0 +1,451 @@
+@page "/analytics/annual-performance"
+@layout MainLayout
+@implements IDisposable
+@using EcmisWeb.Data
+@inject IJSRuntime JS
+
+<div class="cs-shell">
+
+    <div class="cs-header">
+        <div class="cs-header-inner">
+            <div class="cs-bc">
+                <i class="bi bi-house-fill"></i>
+                <a href="/">หน้าหลัก</a>
+                <i class="bi bi-chevron-right"></i>
+                <span>วิเคราะห์และรายงานผล</span>
+                <i class="bi bi-chevron-right"></i>
+                <span>ประเมินผลการปฏิบัติงาน</span>
+            </div>
+            <div class="cs-ph-row">
+                <div>
+                    <div class="cs-title">วิเคราะห์ผลการปฏิบัติงานประจำปี</div>
+                    <div class="cs-sub">TOR 12.10 · วิเคราะห์และรายงานผลการประเมินการปฏิบัติงานของบุคลากร ป.ป.ท.</div>
+                </div>
+                <div class="cs-actions">
+                    <button type="button" class="btn-ghost-d" @onclick="PrintReportAsync">
+                        <i class="bi bi-printer"></i>
+                        พิมพ์ PDF
+                    </button>
+                    <button type="button" class="btn-accent" @onclick="ExportCsvAsync">
+                        <i class="bi bi-file-earmark-spreadsheet"></i>
+                        Export Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cs-body">
+
+        @* ── KPI Cards ── *@
+        <div class="cs-stats-row">
+            <div class="sc sc-blue">
+                <div class="sc-head">พนักงานทั้งหมด</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@_filtered.Count.ToString("N0")</div>
+                    <div class="sc-bottom">
+                        <span class="sc-hint">ช่วงที่เลือก</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-green">
+                <div class="sc-head">ได้ ดีเด่น/ดี</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@GoodPct()</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-up">@GoodCount() คน</span>
+                        <span class="sc-hint">ของทั้งหมด</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-red">
+                <div class="sc-head">ต้องปรับปรุง</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@NeedsPct()</div>
+                    <div class="sc-bottom">
+                        <span class="sc-badge sc-badge-down">@NeedsCount() คน</span>
+                        <span class="sc-hint">ของทั้งหมด</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sc sc-orange">
+                <div class="sc-head">คะแนนเฉลี่ยองค์กร</div>
+                <div class="sc-body-area">
+                    <div class="sc-num">@OrgAvgScore()</div>
+                    <div class="sc-bottom">
+                        <span class="sc-hint">คะแนนเต็ม 100</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ── Filter + Charts card ── *@
+        <section class="table-card">
+            <div class="tc-head">
+                <div class="tc-row1">
+                    <div>
+                        <div class="tc-title">วิเคราะห์ผลการประเมิน</div>
+                        <div class="tc-sub">กรองปีประเมิน หน่วยงาน หรือระดับตำแหน่ง แล้วกด แสดงผล</div>
+                    </div>
+                    <div class="tc-meta">
+                        <span class="bdg-nv">ทั้งหมด @_all.Count</span>
+                        <span class="bdg-gd">แสดง @_filtered.Count</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-row">
+                <div class="fgrp">
+                    <label class="flbl" for="apYear">ปีประเมิน</label>
+                    <select id="apYear" class="fsel" @bind="_year">
+                        <option value="">ทุกปี</option>
+                        @foreach (var y in _years)
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="apDept">หน่วยงาน</label>
+                    <select id="apDept" class="fsel" @bind="_dept">
+                        <option value="">ทุกหน่วยงาน</option>
+                        @foreach (var d in _depts)
+                        {
+                            <option value="@d">@d</option>
+                        }
+                    </select>
+                </div>
+                <div class="fgrp">
+                    <label class="flbl" for="apLevel">ระดับตำแหน่ง</label>
+                    <select id="apLevel" class="fsel" @bind="_level">
+                        <option value="">ทุกระดับ</option>
+                        <option value="ผอ.สำนัก">ผอ.สำนัก</option>
+                        <option value="ผอ.กลุ่ม">ผอ.กลุ่ม</option>
+                        <option value="ชำนาญการ">ชำนาญการ</option>
+                        <option value="ปฏิบัติการ">ปฏิบัติการ</option>
+                    </select>
+                </div>
+                <button type="button" class="btn-accent btn-sm-f" @onclick="OnApplyFilter">
+                    <i class="bi bi-search"></i> แสดงผล
+                </button>
+                <button type="button" class="fbtn" @onclick="OnResetFilter">
+                    <i class="bi bi-x-lg"></i> ล้างค่า
+                </button>
+            </div>
+
+            @if (_filtered.Count == 0)
+            {
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <span>ไม่พบข้อมูลตามเงื่อนไขที่เลือก กรุณาเปลี่ยนตัวกรอง</span>
+                </div>
+            }
+            else
+            {
+                <div class="cs-charts-wrap layout-fill">
+                    <div class="cs-charts-top cols-2">
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-bar-chart-fill"></i> การกระจายผลการประเมิน</div>
+                            <div class="cs-chart-canvas"><canvas id="apChartRating"></canvas></div>
+                        </div>
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-bar-chart-steps"></i> คะแนนเฉลี่ยรายหน่วยงาน (Top 10)</div>
+                            <div class="cs-chart-canvas"><canvas id="apChartDept"></canvas></div>
+                        </div>
+                    </div>
+
+                    @* ── Bottom row: Trend ── *@
+                    <div class="cs-charts-bot">
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-graph-up"></i> แนวโน้มคะแนนเฉลี่ยรายปี (องค์กร vs หน่วยงานสูงสุด)</div>
+                            <div class="cs-chart-canvas"><canvas id="apChartTrend"></canvas></div>
+                        </div>
+                        <div class="cs-chart-card">
+                            <div class="cs-chart-title"><i class="bi bi-table"></i> ผลการประเมินรายหน่วยงาน</div>
+                            <table class="cs-status-table" id="exportTable">
+                                <thead>
+                                    <tr>
+                                        <th>หน่วยงาน</th>
+                                        <th>จำนวนพนักงาน</th>
+                                        <th>คะแนนเฉลี่ย</th>
+                                        <th>ดีเด่น</th>
+                                        <th>ดี</th>
+                                        <th>พอใช้</th>
+                                        <th>ต้องปรับปรุง</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var row in DeptTableRows())
+                                    {
+                                        <tr>
+                                            <td>@row.Department</td>
+                                            <td>@row.Count</td>
+                                            <td>@row.AvgScore.ToString("F2")</td>
+                                            <td>@row.Excellent</td>
+                                            <td>@row.Good</td>
+                                            <td>@row.Fair</td>
+                                            <td>@row.NeedsImprovement</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                @* ── Export footer ── *@
+                <div class="cs-footer">
+                    <span class="cs-footer-info">
+                        แสดงผล <strong>@_filtered.Count.ToString("N0") คน</strong>
+                        @if (!string.IsNullOrEmpty(_year)) { <span> · ปี @_year</span> }
+                        @if (!string.IsNullOrEmpty(_dept)) { <span> · @_dept</span> }
+                        @if (!string.IsNullOrEmpty(_level)) { <span> · @_level</span> }
+                    </span>
+                    <div class="cs-footer-btns">
+                        <button type="button" class="btn-ghost-d" @onclick="PrintReportAsync">
+                            <i class="bi bi-printer"></i> พิมพ์ PDF
+                        </button>
+                        <button type="button" class="btn-accent" @onclick="ExportCsvAsync">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+            }
+        </section>
+    </div>
+</div>
+
+@code {
+    private List<PerformanceRecord> _all = new();
+    private List<PerformanceRecord> _filtered = new();
+    private DotNetObjectReference<AnnualPerformance>? _dotNetRef;
+
+    private string _year  = "";
+    private string _dept  = "";
+    private string _level = "";
+
+    private bool _chartsReady = false;
+    private bool _isDark = true;
+
+    private List<int>    _years = new();
+    private List<string> _depts = new();
+
+    // ── KPI helpers ──────────────────────────────────────────────────────────
+
+    private int GoodCount() =>
+        _filtered.Count(r => r.Rating is "ดีเด่น" or "ดี");
+
+    private string GoodPct() =>
+        _filtered.Count == 0 ? "0%" :
+        $"{(int)Math.Round((double)GoodCount() * 100 / _filtered.Count)}%";
+
+    private int NeedsCount() =>
+        _filtered.Count(r => r.Rating == "ต้องปรับปรุง");
+
+    private string NeedsPct() =>
+        _filtered.Count == 0 ? "0%" :
+        $"{(int)Math.Round((double)NeedsCount() * 100 / _filtered.Count)}%";
+
+    private string OrgAvgScore() =>
+        _filtered.Count == 0 ? "0.00" :
+        _filtered.Average(r => r.Score).ToString("F2");
+
+    // ── Chart data helpers ────────────────────────────────────────────────────
+
+    private (string[] Labels, int[] Data, string[] Colors) RatingChartData()
+    {
+        var (excellent, good, fair, needs) = PerformanceData.RatingCounts(_filtered);
+        return (
+            new[] { "ดีเด่น", "ดี", "พอใช้", "ต้องปรับปรุง" },
+            new[] { excellent, good, fair, needs },
+            new[] { "#06d6a0", "#6366f1", "#fbbf24", "#f87171" }
+        );
+    }
+
+    private (string[] Labels, double[] Data) DeptChartData()
+    {
+        var rows = _filtered
+            .GroupBy(r => r.Department)
+            .Select(g => (Dept: g.Key, Avg: g.Average(r => r.Score)))
+            .OrderByDescending(x => x.Avg)
+            .Take(10)
+            .ToList();
+        return (
+            rows.Select(x => x.Dept).ToArray(),
+            rows.Select(x => Math.Round(x.Avg, 2)).ToArray()
+        );
+    }
+
+    private (string[] Labels, double[] OrgAvg, double[] TopDeptAvg) TrendChartData()
+    {
+        var allYears = new[] { 2563, 2564, 2565, 2566, 2567 };
+        var allRecords = PerformanceData.Records;
+
+        var orgAvgs = allYears
+            .Select(y =>
+            {
+                var yr = allRecords.Where(r => r.Year == y).ToList();
+                return yr.Count == 0 ? 0.0 : Math.Round(yr.Average(r => r.Score), 2);
+            })
+            .ToArray();
+
+        var topDeptAvgs = allYears
+            .Select(y =>
+            {
+                var yr = allRecords.Where(r => r.Year == y).ToList();
+                if (yr.Count == 0) return 0.0;
+                var bestAvg = yr
+                    .GroupBy(r => r.Department)
+                    .Select(g => g.Average(r => r.Score))
+                    .OrderByDescending(a => a)
+                    .FirstOrDefault();
+                return Math.Round(bestAvg, 2);
+            })
+            .ToArray();
+
+        var labels = allYears.Select(y => y.ToString()).ToArray();
+        return (labels, orgAvgs, topDeptAvgs);
+    }
+
+    // ── Table rows ────────────────────────────────────────────────────────────
+
+    private record DeptRow(string Department, int Count, double AvgScore,
+        int Excellent, int Good, int Fair, int NeedsImprovement);
+
+    private IEnumerable<DeptRow> DeptTableRows()
+    {
+        return _filtered
+            .GroupBy(r => r.Department)
+            .Select(g =>
+            {
+                var (ex, gd, fa, nd) = PerformanceData.RatingCounts(g);
+                return new DeptRow(
+                    Department: g.Key,
+                    Count: g.Count(),
+                    AvgScore: Math.Round(g.Average(r => r.Score), 2),
+                    Excellent: ex,
+                    Good: gd,
+                    Fair: fa,
+                    NeedsImprovement: nd
+                );
+            })
+            .OrderByDescending(r => r.AvgScore);
+    }
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
+
+    protected override Task OnInitializedAsync()
+    {
+        _all    = PerformanceData.Records.ToList();
+        _years  = _all.Select(r => r.Year).Distinct().OrderBy(y => y).ToList();
+        _depts  = _all.Select(r => r.Department).Distinct().OrderBy(d => d).ToList();
+        ApplyFilter();
+        return Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var theme = await JS.InvokeAsync<string?>("localStorage.getItem", "dashTheme");
+            _isDark = theme == "dark";
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("registerAnalyticsComponent", _dotNetRef);
+        }
+        if (_filtered.Count > 0 && !_chartsReady)
+        {
+            _chartsReady = true;
+            await RenderChartsAsync();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnThemeChangedAsync(bool isDark)
+    {
+        _isDark = isDark;
+        await RenderChartsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ApplyFilter()
+    {
+        _chartsReady = false;
+        var q = _all.AsEnumerable();
+        if (!string.IsNullOrEmpty(_year) && int.TryParse(_year, out var yr))
+            q = q.Where(r => r.Year == yr);
+        if (!string.IsNullOrEmpty(_dept))
+            q = q.Where(r => r.Department == _dept);
+        if (!string.IsNullOrEmpty(_level))
+            q = q.Where(r => r.Level == _level);
+        _filtered = q.ToList();
+    }
+
+    private async Task OnApplyFilter()
+    {
+        ApplyFilter();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnResetFilter()
+    {
+        _year = _dept = _level = "";
+        ApplyFilter();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RenderChartsAsync()
+    {
+        await Task.Yield();
+
+        var (rLabels, rData, rColors) = RatingChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "apChartRating", "bar",
+            rLabels, rData.Cast<object>().ToArray(), rColors, _isDark);
+
+        var (dLabels, dData) = DeptChartData();
+        await JS.InvokeVoidAsync("initAnalyticsChart", "apChartDept", "bar-h",
+            dLabels, dData.Cast<object>().ToArray(), new[] { "#6366f1" }, _isDark);
+
+        var (tLabels, tOrgAvg, tTopAvg) = TrendChartData();
+        await JS.InvokeVoidAsync("initTrendChart", "apChartTrend",
+            tLabels,
+            tOrgAvg.Cast<object>().ToArray(),
+            tTopAvg.Cast<object>().ToArray(),
+            _isDark);
+    }
+
+    // ── Export / Print ────────────────────────────────────────────────────────
+
+    private async Task ExportCsvAsync()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Department,EmployeeCount,AvgScore,Excellent,Good,Fair,NeedsImprovement");
+        foreach (var row in DeptTableRows())
+        {
+            sb.AppendLine(string.Join(",",
+                row.Department,
+                row.Count,
+                row.AvgScore.ToString("F2"),
+                row.Excellent,
+                row.Good,
+                row.Fair,
+                row.NeedsImprovement));
+        }
+        await JS.InvokeVoidAsync("ecmis.downloadTextFile",
+            $"annual_performance_{DateTime.Now:yyyyMMdd}.csv",
+            "text/csv;charset=utf-8;",
+            sb.ToString(),
+            true);
+    }
+
+    private async Task PrintReportAsync()
+    {
+        var title = $"<h2>รายงานผลการปฏิบัติงานประจำปี TOR 12.10 ป.ป.ท. | {DateTime.Now:dd/MM/yyyy}</h2>";
+        var table = await JS.InvokeAsync<string>("eval", "document.getElementById('exportTable').outerHTML");
+        await JS.InvokeVoidAsync("ecmis.printReport", "วิเคราะห์ผลการปฏิบัติงานประจำปี", title + table);
+    }
+
+    public void Dispose()
+    {
+        _dotNetRef?.Dispose();
+    }
+}

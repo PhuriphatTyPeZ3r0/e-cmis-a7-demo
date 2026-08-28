@@ -1,0 +1,100 @@
+// ═══════════════════════════════════════════════════════════
+// V3: Geographic Risk Intelligence — NEW JS Functions
+// Add these to ecmis-web/src/wwwroot/js/analytics.js
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * initRadarChartV3 — Radar/Spider chart for regional risk comparison
+ * @param {string} canvasId
+ * @param {string[]} labels — dimension labels
+ * @param {Object[]} datasets — array of { label, data[], borderColor, backgroundColor }
+ * @param {boolean} isDark
+ */
+window.initRadarChartV3 = function (canvasId, labels, datasets, isDark) {
+    if (window._analyticsCharts[canvasId]) {
+        window._analyticsCharts[canvasId].destroy();
+        delete window._analyticsCharts[canvasId];
+    }
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    isDark = isDark !== false;
+    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(13,27,62,0.1)';
+    const tickColor = isDark ? 'rgba(255,255,255,0.5)'  : 'rgba(13,27,62,0.6)';
+    const tooltipBg = isDark ? 'rgba(8,12,28,0.95)'     : 'rgba(255,255,255,0.97)';
+    const tooltipTxt = isDark ? '#fff'                   : '#1a3575';
+
+    const chartDatasets = datasets.map(ds => ({
+        label: ds.label,
+        data: ds.data,
+        borderColor: ds.borderColor,
+        backgroundColor: ds.backgroundColor || (ds.borderColor + '33'),
+        borderWidth: 2,
+        pointBackgroundColor: ds.borderColor,
+        pointBorderColor: isDark ? '#0f1117' : '#fff',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        fill: true,
+        tension: 0.15
+    }));
+
+    window._analyticsCharts[canvasId] = new Chart(canvas.getContext('2d'), {
+        type: 'radar',
+        data: {
+            labels: labels,
+            datasets: chartDatasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false // Custom legend built in Razor markup
+                },
+                tooltip: {
+                    backgroundColor: tooltipBg,
+                    titleColor: tooltipTxt,
+                    bodyColor: tooltipTxt,
+                    borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(13,27,62,0.12)',
+                    borderWidth: 1,
+                    padding: 10,
+                    callbacks: {
+                        label: function(ctx) {
+                            return ctx.dataset.label + ': ' + ctx.raw + '%';
+                        }
+                    }
+                }
+            },
+            scales: {
+                r: {
+                    angleLines: {
+                        color: gridColor
+                    },
+                    grid: {
+                        color: gridColor
+                    },
+                    pointLabels: {
+                        color: tickColor,
+                        font: { family: 'Sarabun', size: 11, weight: '700' }
+                    },
+                    ticks: {
+                        color: tickColor,
+                        backdropColor: 'transparent',
+                        font: { family: 'Sarabun', size: 9 },
+                        stepSize: 20,
+                        max: 100,
+                        min: 0
+                    },
+                    suggestedMin: 0,
+                    suggestedMax: 100
+                }
+            }
+        }
+    });
+};
+
+// ── Optional: Helper to re-render V3 charts when province selection changes ──
+// If you want real-time comparison updates without full chart re-init,
+// call a Blazor StateHasChanged + RenderChartsAsync after toggling provinces.
+// The existing RenderChartsAsync pattern (called from SwitchVersion/SwitchTab)
+// already handles this correctly.

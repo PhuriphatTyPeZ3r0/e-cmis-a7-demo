@@ -1,0 +1,1087 @@
+@page "/complaints/create"
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Forms
+@using EcmisWeb.Services
+@inject NavigationManager Nav
+@inject ComplaintApiService ComplaintApi
+
+<div class="create-shell">
+
+    <div class="cc-header">
+        <div class="cc-header-inner">
+
+            <div class="cc-bc">
+                <i class="bi bi-house-fill"></i>
+                <a href="/">หน้าหลัก</a>
+                <i class="bi bi-chevron-right"></i>
+                <a href="/complaints">เรื่องร้องทุกข์</a>
+                <i class="bi bi-chevron-right"></i>
+                <span>รับเรื่องใหม่</span>
+            </div>
+
+            <div class="cc-title-row">
+                <div>
+                    <div class="cc-caseno">
+                        <i class="bi bi-plus-circle-fill cc-caseno-ico"></i>
+                        รับเรื่องร้องทุกข์ใหม่
+                    </div>
+                    <div class="cc-title-sub">กรอกข้อมูลจุดเดียว — ระบบจะไหลข้อมูลไปยังชั้นไต่สวนอัตโนมัติ</div>
+                </div>
+                <div class="cc-actions">
+                    <button type="button" class="btn-ghost-d" @onclick='() => Nav.NavigateTo("/complaints")'>
+                        <i class="bi bi-arrow-left"></i> กลับหน้ารายการ
+                    </button>
+                    <button type="button" class="btn-ghost-d" @onclick="FillSampleData">
+                        <i class="bi bi-pencil-square"></i> ข้อมูลตัวอย่าง
+                    </button>
+                    <button type="button" class="btn-gold" @onclick="GenerateTrackNo">
+                        <i class="bi bi-magic"></i> สร้างเลขติดตาม
+                    </button>
+                </div>
+            </div>
+
+            <div class="cc-sla">
+                <div class="cc-sla-left">
+                    <i class="bi bi-clock-history cc-sla-ico"></i>
+                    <div>
+                        <div class="cc-sla-title">วันที่ ป.ป.ท. รับเรื่องครั้งแรก (SLA Start Date)</div>
+                        <div class="cc-sla-sub">นับอายุความตั้งแต่วันนี้ ไม่ใช่วันที่คีย์ข้อมูล</div>
+                    </div>
+                </div>
+                <div class="cc-sla-right">
+                    <label class="cc-sla-lbl">วันที่รับเรื่องครั้งแรก <span class="req">*</span></label>
+                    <input type="date" class="cc-sla-date"
+                           value="@form.FirstReceivedDate.ToString("yyyy-MM-dd")"
+                           @onchange="e => { if (DateTime.TryParse(e.Value?.ToString(), out var d)) form.FirstReceivedDate = d; }" />
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="cc-body">
+    <EditForm EditContext="@editContext" OnValidSubmit="OpenConfirmModal">
+        <DataAnnotationsValidator />
+
+        @if (!string.IsNullOrWhiteSpace(fileError))
+        {
+            <div class="pub-alert pub-a-err mb-3">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>@fileError</span>
+            </div>
+        }
+
+        <div class="row g-3">
+
+            @* ── MAIN COLUMN ── *@
+            <div class="col-xl-6">
+
+                @* Card 1: ช่องทางรับเรื่อง *@
+                <div class="pub-card">
+                    <div class="pub-card-head" style="display:flex;align-items:center;gap:12px">
+                        <i class="bi bi-send-check-fill" style="color:var(--pub-gold);font-size:18px;flex-shrink:0"></i>
+                        <div class="pub-card-title" style="font-size:16px;margin-bottom:0">
+                            ช่องทางรับเรื่อง
+                        </div>
+                    </div>
+                    <div class="pub-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="pub-lbl-f">ช่องทางการร้องเรียน <span class="pub-req">*</span></label>
+                                <InputSelect class="pub-sel no-ico" @bind-Value="form.Channel" @bind-Value:after="OnChannelChanged">
+                                    <optgroup label="ดิจิทัล">
+                                        <option>แอปทางรัฐ</option>
+                                        <option>เว็บไซต์</option>
+                                        <option>อีเมล</option>
+                                        <option>Line Official</option>
+                                        <option>Facebook</option>
+                                        <option>Telegram</option>
+                                        <option>WhatsApp</option>
+                                    </optgroup>
+                                    <optgroup label="โทรศัพท์">
+                                        <option>สายด่วน 1206</option>
+                                        <option>สปน. 1111</option>
+                                    </optgroup>
+                                    <optgroup label="เอกสาร/ยื่นตรง">
+                                        <option>จดหมาย</option>
+                                        <option>ยื่นด้วยตนเอง</option>
+                                        <option>หนังสือหน่วยงาน</option>
+                                    </optgroup>
+                                    <optgroup label="อื่นๆ">
+                                        <option>อื่นๆ</option>
+                                    </optgroup>
+                                </InputSelect>
+                                <ValidationMessage For="@(() => form.Channel)" class="pub-err-msg" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="pub-lbl-f">
+                                    @SourceLabel @if (IsSourceRequired){ <span class="pub-req">*</span> }
+                                </label>
+                                <InputText class="pub-inp no-ico" @bind-Value="form.SourceDetail"
+                                           type="@SourceInputType" placeholder="@SourcePlaceholder" />
+                                <ValidationMessage For="@(() => form.SourceDetail)" class="pub-err-msg" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* Card 2: ข้อมูลผู้ร้องเรียน *@
+                <div class="pub-card mt-3">
+                    <div class="pub-card-head" style="display:flex;align-items:center;gap:12px">
+                        <i class="bi bi-person-vcard-fill" style="color:var(--pub-gold);font-size:18px;flex-shrink:0"></i>
+                        <div class="pub-card-title" style="font-size:16px;margin-bottom:0;flex:1">ข้อมูลผู้ร้องเรียน</div>
+                        <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:10px;background:rgba(200,169,110,.1);border:1px solid rgba(200,169,110,.2);font-size:11px;font-weight:700;color:var(--pub-gold);flex-shrink:0">
+                            <i class="bi bi-lightning-charge-fill"></i> ThaiID API
+                        </span>
+                    </div>
+                    <div class="pub-card-body">
+                        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:20px;font-size:13px;color:rgba(255,255,255,.7)">
+                            <input type="checkbox" @bind="form.Anonymous" @bind:after="OnAnonymousChanged"
+                                   style="width:16px;height:16px;accent-color:var(--pub-gold)" />
+                            ขอปกปิดชื่อและไม่ประสงค์จะเปิดเผยตัวตน
+                        </label>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="pub-lbl-f">หมายเลขบัตรประชาชน 13 หลัก</label>
+                                <div style="display:flex;gap:8px">
+                                    <InputText class="pub-inp no-ico" style="flex:1" @bind-Value="form.CitizenId"
+                                               disabled="@form.Anonymous" placeholder="1-xxxx-xxxxx-xx-x" />
+                                    <button type="button" class="pub-btn pub-btn-blue"
+                                            style="padding:10px 14px;font-size:13px;flex-shrink:0"
+                                            disabled="@(form.Anonymous || form.CitizenId.Length < 13)"
+                                            @onclick="LookupThaiId" title="ค้นหาข้อมูลจาก ThaiID API">
+                                        @if (thaiIdLoading)
+                                        {
+                                            <span class="spinner-border spinner-border-sm"></span>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-search"></i>
+                                        }
+                                        ดึงข้อมูล
+                                    </button>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(thaiIdMessage))
+                                {
+                                    <div class="pub-alert @(thaiIdSuccess ? "pub-a-ok" : "pub-a-err") mt-2"
+                                         style="margin-bottom:0;padding:9px 12px;font-size:12px">
+                                        <i class="bi @(thaiIdSuccess ? "bi-check-circle-fill" : "bi-x-circle-fill")"></i>
+                                        @thaiIdMessage
+                                    </div>
+                                }
+                                <ValidationMessage For="@(() => form.CitizenId)" class="pub-err-msg" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="pub-lbl-f">เลขที่ติดตามเรื่อง <span class="pub-req">*</span></label>
+                                <InputText class="pub-inp no-ico" @bind-Value="form.TrackNo" />
+                                <ValidationMessage For="@(() => form.TrackNo)" class="pub-err-msg" />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="pub-lbl-f">คำนำหน้า</label>
+                                <InputSelect class="pub-sel no-ico" @bind-Value="form.Prefix" disabled="@form.Anonymous">
+                                    <option value="">กรุณาเลือก</option>
+                                    <option>นาย</option>
+                                    <option>นาง</option>
+                                    <option>น.ส.</option>
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="pub-lbl-f">ชื่อ</label>
+                                <InputText class="pub-inp no-ico" @bind-Value="form.FirstName" disabled="@form.Anonymous" />
+                                <ValidationMessage For="@(() => form.FirstName)" class="pub-err-msg" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="pub-lbl-f">นามสกุล</label>
+                                <InputText class="pub-inp no-ico" @bind-Value="form.LastName" disabled="@form.Anonymous" />
+                                <ValidationMessage For="@(() => form.LastName)" class="pub-err-msg" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="pub-lbl-f">เครือข่ายสำนักงาน ป.ป.ท. <span class="pub-req">*</span></label>
+                                <InputSelect class="pub-sel no-ico" @bind-Value="form.Network">
+                                    <option value="ไม่ได้เป็นเครือข่าย">ไม่ได้เป็นเครือข่าย</option>
+                                    <option value="เป็นเครือข่าย">เป็นเครือข่าย</option>
+                                </InputSelect>
+                                <ValidationMessage For="@(() => form.Network)" class="pub-err-msg" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="pub-lbl-f">อีเมล</label>
+                                <InputText class="pub-inp no-ico" @bind-Value="form.Email" disabled="@form.Anonymous" />
+                                <ValidationMessage For="@(() => form.Email)" class="pub-err-msg" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="pub-lbl-f">หมายเลขโทรศัพท์ที่ติดต่อได้</label>
+                                <InputText class="pub-inp no-ico" @bind-Value="form.Phone" disabled="@form.Anonymous" />
+                                <ValidationMessage For="@(() => form.Phone)" class="pub-err-msg" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* Card 3: ข้อมูลผู้ถูกกล่าวหา *@
+                <div class="pub-card mt-3">
+                    <div class="pub-card-head" style="display:flex;align-items:center;gap:12px">
+                        <i class="bi bi-person-workspace" style="color:var(--pub-gold);font-size:18px;flex-shrink:0"></i>
+                        <div class="pub-card-title" style="font-size:16px;margin-bottom:0">ข้อมูลผู้ถูกกล่าวหา</div>
+                    </div>
+                    <div class="pub-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="pub-lbl-f">คำนำหน้า</label>
+                                <InputSelect class="pub-sel no-ico" @bind-Value="form.AccusedPrefix">
+                                    <option value="">กรุณาเลือก</option>
+                                    <option>นาย</option>
+                                    <option>นาง</option>
+                                    <option>น.ส.</option>
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="pub-lbl-f">ชื่อ</label>
+                                <InputText class="pub-inp no-ico" @bind-Value="form.AccusedFirst" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="pub-lbl-f">นามสกุล</label>
+                                <InputText class="pub-inp no-ico" @bind-Value="form.AccusedLast" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="pub-lbl-f">ชื่อหน่วยงาน</label>
+                                <InputText class="pub-inp no-ico" @bind-Value="form.AccusedAgency" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="pub-lbl-f">ตำแหน่ง</label>
+                                <InputText class="pub-inp no-ico" @bind-Value="form.AccusedPosition" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* Card 4: รายละเอียดเหตุการณ์ *@
+                <div class="pub-card mt-3">
+                    <div class="pub-card-head" style="display:flex;align-items:center;gap:12px">
+                        <i class="bi bi-file-earmark-text-fill" style="color:var(--pub-gold);font-size:18px;flex-shrink:0"></i>
+                        <div class="pub-card-title" style="font-size:16px;margin-bottom:0">รายละเอียดเหตุการณ์</div>
+                    </div>
+                    <div class="pub-card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="pub-lbl-f">รายละเอียดการร้องเรียน <span class="pub-req">*</span></label>
+                                <InputTextArea class="pub-textarea" rows="5"
+                                              @bind-Value="form.Description" @bind-Value:after="OnDescriptionChanged" />
+                                <div style="font-size:12px;color:var(--pub-muted);margin-top:5px">
+                                    ขั้นต่ำ 20 ตัวอักษร • ปัจจุบัน @form.Description.Length ตัวอักษร
+                                </div>
+                                <ValidationMessage For="@(() => form.Description)" class="pub-err-msg" />
+                            </div>
+
+                            @* AI Case Type Suggestion *@
+                            @if (aiSuggestionVisible)
+                            {
+                                <div class="col-12">
+                                    <div class="pub-card" style="border-color:rgba(200,169,110,.3);animation:none">
+                                        <div class="pub-card-head" style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px">
+                                            <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--pub-gold)">
+                                                <i class="bi bi-cpu-fill"></i>
+                                                <span>AI แนะนำประเภทคดี (Beta)</span>
+                                            </div>
+                                            <button type="button"
+                                                    style="background:none;border:none;cursor:pointer;color:var(--pub-muted);font-size:18px;padding:0;line-height:1"
+                                                    @onclick="() => aiSuggestionVisible = false">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                        <div class="pub-card-body" style="padding:14px 20px 18px">
+                                            <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+                                                <span style="display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;border:1px solid;transition:all .2s;@(aiSuggestedCategory=="ม.18/4" ? "background:rgba(200,169,110,.15);border-color:rgba(200,169,110,.4);color:var(--pub-gold-hi)" : "background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.5)")"
+                                                      @onclick='() => form.AiCategory = "ม.18/4"'>
+                                                    <i class="bi bi-shield-check"></i> ม.18/4 ประพฤติมิชอบ
+                                                    @if (aiSuggestedCategory == "ม.18/4")
+                                                    {
+                                                        <span style="background:rgba(200,169,110,.25);border-radius:6px;padding:2px 7px;font-size:11px;font-weight:800">@aiConfidence%</span>
+                                                    }
+                                                </span>
+                                                <span style="display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;border:1px solid;transition:all .2s;@(aiSuggestedCategory=="ม.58/2" ? "background:rgba(200,169,110,.15);border-color:rgba(200,169,110,.4);color:var(--pub-gold-hi)" : "background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.5)")"
+                                                      @onclick='() => form.AiCategory = "ม.58/2"'>
+                                                    <i class="bi bi-people-fill"></i> ม.58/2 ความเดือดร้อน
+                                                    @if (aiSuggestedCategory == "ม.58/2")
+                                                    {
+                                                        <span style="background:rgba(200,169,110,.25);border-radius:6px;padding:2px 7px;font-size:11px;font-weight:800">@aiConfidence%</span>
+                                                    }
+                                                </span>
+                                            </div>
+                                            <div style="font-size:12px;color:var(--pub-muted)">@aiReason</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            <div class="col-md-6">
+                                <label class="pub-lbl-f">วันที่เกิดเหตุ</label>
+                                <InputDate class="pub-inp no-ico" @bind-Value="form.IncidentDate" />
+                                <ValidationMessage For="@(() => form.IncidentDate)" class="pub-err-msg" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="pub-lbl-f">เวลาโดยประมาณ</label>
+                                <InputText class="pub-inp no-ico" @bind-Value="form.IncidentTime" placeholder="เช่น 14:30 น." />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="pub-lbl-f">จังหวัด <span class="pub-req">*</span></label>
+                                <InputSelect class="pub-sel no-ico" @bind-Value="form.Province">
+                                    <option>กรุงเทพมหานคร</option>
+                                    <option>นนทบุรี</option>
+                                    <option>ปทุมธานี</option>
+                                    <option>เชียงใหม่</option>
+                                    <option>ชลบุรี</option>
+                                    <option>ขอนแก่น</option>
+                                    <option>ราชบุรี</option>
+                                    <option>สงขลา</option>
+                                    <option>สระบุรี</option>
+                                    <option>สมุทรปราการ</option>
+                                    <option>เชียงราย</option>
+                                    <option>นครราชสีมา</option>
+                                    <option>อุบลราชธานี</option>
+                                    <option>อุดรธานี</option>
+                                    <option>พิษณุโลก</option>
+                                </InputSelect>
+                                <ValidationMessage For="@(() => form.Province)" class="pub-err-msg" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="pub-lbl-f">อำเภอ</label>
+                                <InputText class="pub-inp no-ico" @bind-Value="form.District" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="pub-lbl-f">ตำบล</label>
+                                <InputText class="pub-inp no-ico" @bind-Value="form.SubDistrict" />
+                            </div>
+
+                            <div class="col-12">
+                                <label class="pub-lbl-f">สถานที่เกิดเหตุ</label>
+                                <InputText class="pub-inp no-ico" @bind-Value="form.Location" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            @* ── SIDEBAR ── *@
+            <div class="col-xl-6">
+
+                @* Attachment Card *@
+                <div class="pub-card sticky-top" style="top:80px">
+                    <div class="pub-card-head" style="display:flex;align-items:center;gap:12px">
+                        <i class="bi bi-paperclip" style="color:var(--pub-gold);font-size:18px;flex-shrink:0"></i>
+                        <div class="pub-card-title" style="font-size:16px;margin-bottom:0;flex:1">เอกสารแนบ</div>
+                        <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:10px;background:rgba(200,169,110,.1);border:1px solid rgba(200,169,110,.2);font-size:11px;font-weight:700;color:var(--pub-gold);flex-shrink:0">
+                            <i class="bi bi-scissors"></i> Split File
+                        </span>
+                    </div>
+                    <div class="pub-card-body">
+
+                        <label class="pub-upload" style="position:relative;display:block">
+                            <div class="pub-upload-ico"><i class="bi bi-cloud-upload-fill"></i></div>
+                            <div class="pub-upload-title">ลากและวาง หรือคลิกเพื่อเลือกไฟล์</div>
+                            <div class="pub-upload-sub">ไม่เกิน 10 ไฟล์ และไฟล์ละไม่เกิน 50MB</div>
+                            <InputFile OnChange="OnFilesSelected" multiple
+                                       style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%" />
+                        </label>
+
+                        @* Split File Logic Panel *@
+                        <div class="pub-info mt-3" style="flex-direction:column;gap:10px">
+                            <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--pub-gold)">
+                                <i class="bi bi-file-earmark-break-fill"></i>
+                                <span>Split File Logic — ไฟล์สแกนขนาดใหญ่</span>
+                            </div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                                <label style="font-size:11px;color:var(--pub-muted)">ขนาดชุด (แผ่น/ชุด)</label>
+                                <select class="pub-sel no-ico" style="width:110px;padding:6px 10px;font-size:12px"
+                                        @bind="splitChunkSize">
+                                    <option value="100">100 แผ่น</option>
+                                    <option value="200">200 แผ่น</option>
+                                    <option value="300">300 แผ่น</option>
+                                    <option value="500">500 แผ่น</option>
+                                </select>
+                            </div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                                <label style="font-size:11px;color:var(--pub-muted)">จำนวนแผ่นทั้งหมด (ถ้าทราบ)</label>
+                                <input type="number" class="pub-inp no-ico"
+                                       style="width:110px;padding:6px 10px;font-size:12px"
+                                       min="0" @bind="largeScanPages" placeholder="0" />
+                            </div>
+                            @if (largeScanPages > 0)
+                            {
+                                var chunks = (int)Math.Ceiling((double)largeScanPages / splitChunkSize);
+                                <div style="font-size:12px;color:rgba(255,255,255,.65);display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                                    <i class="bi bi-info-circle-fill" style="color:var(--pub-gold)"></i>
+                                    @largeScanPages แผ่น จะแบ่งเป็น <strong style="color:var(--page-text)">@chunks ชุด</strong>
+                                    (ชุดละ @splitChunkSize แผ่น)
+                                </div>
+                            }
+                        </div>
+
+                        @if (uploadedFiles.Count > 0)
+                        {
+                            <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px">
+                                @for (int i = 0; i < uploadedFiles.Count; i++)
+                                {
+                                    var file = uploadedFiles[i];
+                                    var idx = i;
+                                    <div class="file-item">
+                                        <div style="min-width:0">
+                                            <div class="file-item-name">@file.Name</div>
+                                            <div class="file-item-size">@FormatSize(file.Size)</div>
+                                        </div>
+                                        <button type="button" class="file-item-del" @onclick="() => RemoveFile(idx)">ลบ</button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @* Summary Card *@
+                <div class="pub-card mt-3 sticky-top" style="top:80px">
+                    <div class="pub-card-head" style="display:flex;align-items:center;gap:12px">
+                        <i class="bi bi-list-check" style="color:var(--pub-gold);font-size:18px;flex-shrink:0"></i>
+                        <div class="pub-card-title" style="font-size:16px;margin-bottom:0">สรุปก่อนบันทึก</div>
+                    </div>
+                    <div class="pub-card-body">
+                        <div class="pub-sum mb-3">
+                            <div class="pub-sum-row">
+                                <span class="pub-sum-k">ช่องทางรับเรื่อง</span>
+                                <span class="pub-sum-v">@form.Channel</span>
+                            </div>
+                            <div class="pub-sum-row">
+                                <span class="pub-sum-k">@SourceLabel</span>
+                                <span class="pub-sum-v">@(string.IsNullOrWhiteSpace(form.SourceDetail) ? "-" : form.SourceDetail)</span>
+                            </div>
+                            <div class="pub-sum-row">
+                                <span class="pub-sum-k">เลขที่ติดตาม</span>
+                                <span class="pub-sum-v">@(string.IsNullOrWhiteSpace(form.TrackNo) ? "-" : form.TrackNo)</span>
+                            </div>
+                            <div class="pub-sum-row">
+                                <span class="pub-sum-k">ผู้ร้องเรียน</span>
+                                <span class="pub-sum-v">@ComplainantDisplay</span>
+                            </div>
+                            <div class="pub-sum-row">
+                                <span class="pub-sum-k">SLA เริ่มนับ</span>
+                                <span class="pub-sum-v">@form.FirstReceivedDate.ToString("dd/MM/yy")</span>
+                            </div>
+                            <div class="pub-sum-row">
+                                <span class="pub-sum-k">AI แนะนำ</span>
+                                <span class="pub-sum-v">@(string.IsNullOrWhiteSpace(form.AiCategory) ? "-" : form.AiCategory)</span>
+                            </div>
+                            <div class="pub-sum-row">
+                                <span class="pub-sum-k">พื้นที่เกิดเหตุ</span>
+                                <span class="pub-sum-v">@($"{form.Province} {form.District}".Trim())</span>
+                            </div>
+                            <div class="pub-sum-row">
+                                <span class="pub-sum-k">ไฟล์แนบ</span>
+                                <span class="pub-sum-v">@uploadedFiles.Count ไฟล์</span>
+                            </div>
+                        </div>
+                        <button class="pub-btn pub-btn-gold pub-btn-full mb-2" type="submit">
+                            <i class="bi bi-save2-fill"></i>บันทึกข้อมูล
+                        </button>
+                        <button class="pub-btn pub-btn-secondary pub-btn-full" type="button" @onclick="ResetForm">
+                            รีเซ็ตแบบฟอร์ม
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </EditForm>
+    </div>
+</div>
+
+@* ── Confirm Modal ── *@
+@if (confirmOpen)
+{
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(4px)"
+         @onclick="() => confirmOpen = false">
+        <div class="pub-card" style="width:90%;max-width:480px;animation:none" @onclick:stopPropagation="true">
+            <div class="pub-card-head">
+                <div class="pub-card-title">ยืนยันการบันทึกข้อมูล</div>
+                <div class="pub-card-sub">กรุณาตรวจสอบข้อมูลสำคัญก่อนยืนยัน</div>
+            </div>
+            <div class="pub-card-body">
+                <div class="pub-sum mb-3">
+                    <div class="pub-sum-row"><span class="pub-sum-k">เลขที่ติดตาม</span><span class="pub-sum-v">@form.TrackNo</span></div>
+                    <div class="pub-sum-row"><span class="pub-sum-k">ช่องทางรับเรื่อง</span><span class="pub-sum-v">@form.Channel</span></div>
+                    <div class="pub-sum-row"><span class="pub-sum-k">@SourceLabel</span><span class="pub-sum-v">@form.SourceDetail</span></div>
+                    <div class="pub-sum-row"><span class="pub-sum-k">ผู้ร้องเรียน</span><span class="pub-sum-v">@ComplainantDisplay</span></div>
+                    <div class="pub-sum-row"><span class="pub-sum-k">ไฟล์แนบ</span><span class="pub-sum-v">@uploadedFiles.Count ไฟล์</span></div>
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <button class="pub-btn pub-btn-secondary" @onclick="() => confirmOpen = false">ยกเลิก</button>
+                    <button class="pub-btn pub-btn-gold" disabled="@saving" @onclick="SaveConfirmed">
+                        @if (saving)
+                        {
+                            <span class="spinner-border spinner-border-sm"></span>
+                        }
+                        ยืนยันบันทึก
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Error Modal ── *@
+@if (!string.IsNullOrWhiteSpace(saveError))
+{
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(4px)"
+         @onclick="() => saveError = string.Empty">
+        <div class="pub-card" style="width:90%;max-width:420px;animation:none" @onclick:stopPropagation="true">
+            <div class="pub-card-head">
+                <div class="pub-card-title" style="color:#f87171">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>บันทึกไม่สำเร็จ
+                </div>
+                <div class="pub-card-sub">@saveError</div>
+            </div>
+            <div class="pub-card-body">
+                <div class="d-flex justify-content-end">
+                    <button class="pub-btn pub-btn-gold" @onclick="() => saveError = string.Empty">ปิด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Success Modal ── *@
+@if (successOpen)
+{
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(4px)">
+        <div class="pub-card" style="width:90%;max-width:420px;animation:none">
+            <div class="pub-card-head" style="text-align:center;padding-top:32px">
+                <div style="display:flex;justify-content:center;margin-bottom:16px">
+                    <div class="pub-success-ico"><i class="bi bi-check-lg"></i></div>
+                </div>
+                <div class="pub-card-title">บันทึกสำเร็จ</div>
+                <div class="pub-card-sub">ระบบได้บันทึกเรื่องร้องเรียนเรียบร้อยแล้ว</div>
+            </div>
+            <div class="pub-card-body">
+                <div class="d-flex justify-content-end">
+                    <button class="pub-btn pub-btn-gold" @onclick="GoToCreatedComplaint">เปิดเรื่องที่บันทึก</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private FormData form = new();
+    private EditContext editContext = default!;
+    private bool confirmOpen;
+    private bool successOpen;
+    private bool saving;
+    private string fileError = string.Empty;
+    private string saveError = string.Empty;
+    private int? createdComplaintId;
+
+    // ThaiID API state
+    private bool thaiIdLoading;
+    private bool thaiIdSuccess;
+    private string thaiIdMessage = string.Empty;
+
+    // AI suggestion state
+    private bool aiSuggestionVisible;
+    private string aiSuggestedCategory = string.Empty;
+    private int aiConfidence;
+    private string aiReason = string.Empty;
+
+    // Split file state
+    private int splitChunkSize = 100;
+    private int largeScanPages;
+
+    private readonly List<UploadedFile> uploadedFiles = [];
+
+    private const int MaxFiles = 10;
+    private const long MaxFileSize = 50L * 1024 * 1024;
+
+    protected override void OnInitialized()
+    {
+        form.SourceDetail = GetDefaultSourceDetail(form.Channel);
+        form.Network = "ไม่ได้เป็นเครือข่าย";
+        editContext = new EditContext(form);
+    }
+
+    private string SourceLabel => form.Channel switch
+    {
+        "เว็บไซต์" => "เว็บไซต์/URL ต้นทาง",
+        "สายด่วน 1206" => "หมายเลขอ้างอิงจากสายด่วน",
+        "สปน. 1111" => "หมายเลขอ้างอิงจาก สปน.",
+        "อีเมล" => "อีเมลต้นทาง",
+        "จดหมาย" => "เลขรับหนังสือ/ข้อมูลต้นทาง",
+        "ยื่นด้วยตนเอง" => "จุดรับคำร้อง",
+        "แอปทางรัฐ" => "รหัสอ้างอิงจากแอปทางรัฐ",
+        "Line Official" => "Line Message ID",
+        "Facebook" => "Facebook Post/Message URL",
+        "Telegram" => "Telegram Message ID",
+        "WhatsApp" => "WhatsApp Message ID",
+        _ => "แหล่งที่มา"
+    };
+
+    private bool IsSourceRequired => form.Channel is "เว็บไซต์" or "สายด่วน 1206" or "อีเมล" or "แอปทางรัฐ";
+
+    private string SourceInputType => form.Channel switch
+    {
+        "เว็บไซต์" => "url",
+        "Facebook" => "url",
+        "อีเมล" => "email",
+        _ => "text"
+    };
+
+    private string SourcePlaceholder => form.Channel switch
+    {
+        "เว็บไซต์" => "เช่น https://www.example.go.th/complaint",
+        "อีเมล" => "เช่น complaint@agency.go.th",
+        "สายด่วน 1206" => "เช่น CALL-1206-000123",
+        "สปน. 1111" => "เช่น SPN-1111-000123",
+        "แอปทางรัฐ" => "เช่น TANG-RAT-000123",
+        "จดหมาย" => "เช่น เลขหนังสือรับ 123/2569",
+        "ยื่นด้วยตนเอง" => "เช่น ศูนย์บริการประชาชน ป.ป.ท.",
+        "Facebook" => "เช่น https://www.facebook.com/...",
+        "Telegram" => "เช่น TG-000123",
+        "WhatsApp" => "เช่น WA-000123",
+        _ => "ระบุข้อมูลต้นทาง"
+    };
+
+    private string ComplainantDisplay =>
+        form.Anonymous
+            ? "ไม่เปิดเผยตัวตน"
+            : string.IsNullOrWhiteSpace(string.Join(' ', new[] { form.Prefix, form.FirstName, form.LastName }.Where(x => !string.IsNullOrWhiteSpace(x))))
+                ? "-"
+                : string.Join(' ', new[] { form.Prefix, form.FirstName, form.LastName }.Where(x => !string.IsNullOrWhiteSpace(x)));
+
+    private void FillSampleData()
+    {
+        form.Channel = "แอปทางรัฐ";
+        form.SourceDetail = "TANG-RAT-002567";
+        form.Anonymous = false;
+        form.CitizenId = "1234567890123";
+        form.Prefix = "นาย";
+        form.FirstName = "สมชาย";
+        form.LastName = "มุ่งมั่นไทย";
+        form.Email = "somchai.m@example.com";
+        form.Phone = "0812345678";
+        form.Network = "เป็นเครือข่าย";
+        form.FirstReceivedDate = DateTime.Today.AddDays(-3);
+
+        form.AccusedPrefix = "นาย";
+        form.AccusedFirst = "วิชิต";
+        form.AccusedLast = "มาตรา";
+        form.AccusedAgency = "องค์การบริหารส่วนตำบลดอนเมือง";
+        form.AccusedPosition = "นายช่างโยธา";
+
+        form.Description = "เจ้าหน้าที่เรียกรับเงินในการอนุมัติใบอนุญาตก่อสร้างอาคาร โดยมีการเรียกเก็บค่าธรรมเนียมแฝงนอกระบบคนละ 5,000 บาท และหากไม่จ่ายจะทำการประวิงเวลาการเซ็นเอกสารออกไปอย่างไม่มีกำหนด";
+        form.IncidentDate = DateTime.Today.AddDays(-2);
+        form.IncidentTime = "10:30 น.";
+        form.Province = "นนทบุรี";
+        form.District = "ปากเกร็ด";
+        form.SubDistrict = "คลองเกลือ";
+        form.Location = "กองช่าง ชั้น 2";
+
+        GenerateTrackNo();
+        RunAiSuggestion();
+        editContext.NotifyValidationStateChanged();
+    }
+
+    private void OnAnonymousChanged()
+    {
+        if (!form.Anonymous)
+        {
+            return;
+        }
+
+        form.CitizenId = string.Empty;
+        form.Prefix = string.Empty;
+        form.FirstName = string.Empty;
+        form.LastName = string.Empty;
+        form.Email = string.Empty;
+        form.Phone = string.Empty;
+        form.Network = "ไม่ได้เป็นเครือข่าย";
+        editContext.NotifyValidationStateChanged();
+    }
+
+    private void GenerateTrackNo()
+    {
+        var suffix = Random.Shared.Next(1000, 9999);
+        form.TrackNo = $"PCMS-{DateTime.Now:yyMMdd}-{suffix}";
+        editContext.NotifyFieldChanged(FieldIdentifier.Create(() => form.TrackNo));
+    }
+
+    private void OnChannelChanged()
+    {
+        form.SourceDetail = GetDefaultSourceDetail(form.Channel);
+        editContext.NotifyFieldChanged(FieldIdentifier.Create(() => form.SourceDetail));
+    }
+
+    private static string GetDefaultSourceDetail(string channel) => string.Empty;
+
+    private void OnDescriptionChanged()
+    {
+        if (form.Description.Length >= 20)
+        {
+            RunAiSuggestion();
+        }
+        else
+        {
+            aiSuggestionVisible = false;
+        }
+    }
+
+    private void RunAiSuggestion()
+    {
+        var desc = form.Description.ToLowerInvariant();
+        var misconduct = new[] { "ทุจริต", "รับสินบน", "เรียกรับ", "ยักยอก", "ฉ้อโกง", "ประพฤติมิชอบ", "ร่ำรวยผิดปกติ", "ใช้ตำแหน่ง", "ปฏิบัติหน้าที่โดยมิชอบ" };
+        var distress = new[] { "เดือดร้อน", "ไม่ได้รับความเป็นธรรม", "ออกใบอนุญาต", "ประวิงเวลา", "ล่าช้า", "ไม่ดำเนินการ", "เสียหาย", "ที่ดิน", "สิทธิ์" };
+
+        var misconductScore = misconduct.Count(kw => desc.Contains(kw));
+        var distressScore = distress.Count(kw => desc.Contains(kw));
+
+        if (misconductScore == 0 && distressScore == 0)
+        {
+            aiSuggestionVisible = false;
+            return;
+        }
+
+        if (misconductScore >= distressScore)
+        {
+            aiSuggestedCategory = "ม.18/4";
+            form.AiCategory = "ม.18/4";
+            aiConfidence = Math.Min(95, 60 + misconductScore * 8);
+            aiReason = "พบคำที่บ่งชี้การประพฤติมิชอบของเจ้าหน้าที่รัฐ เข้าข่ายอำนาจหน้าที่ ป.ป.ท. ตาม ม.18/4";
+        }
+        else
+        {
+            aiSuggestedCategory = "ม.58/2";
+            form.AiCategory = "ม.58/2";
+            aiConfidence = Math.Min(95, 60 + distressScore * 8);
+            aiReason = "พบคำที่บ่งชี้ความเดือดร้อนของประชาชนจากการปฏิบัติหน้าที่ เข้าข่าย ม.58/2";
+        }
+
+        aiSuggestionVisible = true;
+    }
+
+    private async Task LookupThaiId()
+    {
+        if (form.CitizenId.Length < 13)
+        {
+            return;
+        }
+
+        thaiIdLoading = true;
+        thaiIdMessage = string.Empty;
+        thaiIdSuccess = false;
+
+        // Simulate API delay (mockup — real integration would call ThaiID API)
+        await Task.Delay(800);
+
+        // Mock response based on test citizen ID
+        if (form.CitizenId == "1234567890123")
+        {
+            form.Prefix = "นาย";
+            form.FirstName = "สมชาย";
+            form.LastName = "มุ่งมั่นไทย";
+            thaiIdMessage = "ดึงข้อมูลสำเร็จ (ThaiID API Mockup)";
+            thaiIdSuccess = true;
+        }
+        else
+        {
+            thaiIdMessage = "ไม่พบข้อมูลจาก ThaiID API (ทดสอบใช้: 1234567890123)";
+            thaiIdSuccess = false;
+        }
+
+        thaiIdLoading = false;
+    }
+
+    private async Task OnFilesSelected(InputFileChangeEventArgs e)
+    {
+        fileError = string.Empty;
+
+        if (uploadedFiles.Count + e.FileCount > MaxFiles)
+        {
+            fileError = $"แนบไฟล์ได้สูงสุด {MaxFiles} ไฟล์";
+            return;
+        }
+
+        foreach (var file in e.GetMultipleFiles(MaxFiles))
+        {
+            if (file.Size > MaxFileSize)
+            {
+                fileError = $"ไฟล์ {file.Name} มีขนาดเกิน 50MB";
+                continue;
+            }
+
+            uploadedFiles.Add(new UploadedFile(file));
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void RemoveFile(int index)
+    {
+        if (index < 0 || index >= uploadedFiles.Count)
+        {
+            return;
+        }
+
+        uploadedFiles.RemoveAt(index);
+    }
+
+    private void OpenConfirmModal()
+    {
+        fileError = string.Empty;
+        confirmOpen = true;
+    }
+
+    private async Task SaveConfirmed()
+    {
+        saving = true;
+        saveError = string.Empty;
+
+        try
+        {
+            var created = await ComplaintApi.CreateComplaintAsync(new CreateComplaintRequest
+            {
+                Channel = form.Channel,
+                SourceDetail = form.SourceDetail,
+                Anonymous = form.Anonymous,
+                CitizenId = form.CitizenId,
+                ComplainantPrefix = form.Prefix,
+                ComplainantFirstName = form.FirstName,
+                ComplainantLastName = form.LastName,
+                ComplainantEmail = form.Email,
+                ComplainantPhone = form.Phone,
+                ComplainantNetwork = form.Network,
+                AccusedPrefix = form.AccusedPrefix,
+                AccusedFirstName = form.AccusedFirst,
+                AccusedLastName = form.AccusedLast,
+                AccusedAgency = form.AccusedAgency,
+                AccusedPosition = form.AccusedPosition,
+                Description = form.Description,
+                IncidentDate = form.IncidentDate,
+                IncidentTime = form.IncidentTime,
+                Province = form.Province,
+                District = form.District,
+                SubDistrict = form.SubDistrict,
+                Location = form.Location,
+                FirstReceivedDate = form.FirstReceivedDate
+            });
+
+            if (uploadedFiles.Count > 0)
+            {
+                await ComplaintApi.UploadComplaintDocumentsAsync(created.Id, uploadedFiles.Select(file => file.File));
+            }
+
+            createdComplaintId = created.Id;
+            confirmOpen = false;
+            successOpen = true;
+        }
+        catch (Exception ex)
+        {
+            confirmOpen = false;
+            saveError = ex.Message;
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private void ResetForm()
+    {
+        form = new FormData();
+        uploadedFiles.Clear();
+        fileError = string.Empty;
+        confirmOpen = false;
+        successOpen = false;
+        saveError = string.Empty;
+        createdComplaintId = null;
+        thaiIdMessage = string.Empty;
+        thaiIdLoading = false;
+        aiSuggestionVisible = false;
+        largeScanPages = 0;
+        editContext = new EditContext(form);
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        const double kb = 1024.0;
+        const double mb = kb * 1024.0;
+        return bytes >= mb ? $"{bytes / mb:0.##} MB" : $"{bytes / kb:0.##} KB";
+    }
+
+    private void GoToCreatedComplaint()
+    {
+        if (createdComplaintId.HasValue)
+        {
+            Nav.NavigateTo($"/complaints/{createdComplaintId.Value}");
+            return;
+        }
+
+        Nav.NavigateTo("/complaints");
+    }
+
+    private sealed class UploadedFile(IBrowserFile file)
+    {
+        public IBrowserFile File { get; } = file;
+        public string Name => File.Name;
+        public long Size => File.Size;
+    }
+
+    private sealed class FormData : IValidatableObject
+    {
+        [Required(ErrorMessage = "กรุณาเลือกช่องทางการร้องเรียน")]
+        public string Channel { get; set; } = "เว็บไซต์";
+
+        public string SourceDetail { get; set; } = "";
+
+        public bool Anonymous { get; set; }
+
+        [RegularExpression(@"^\d{0,13}$", ErrorMessage = "เลขบัตรประชาชนต้องเป็นตัวเลขเท่านั้น")]
+        public string CitizenId
+        {
+            get => citizenId;
+            set => citizenId = NormalizeDigits(value, 13);
+        }
+
+        [Required(ErrorMessage = "กรุณาระบุเลขที่ติดตามเรื่อง")]
+        [RegularExpression(@"^[A-Za-z0-9\-_/|]{4,30}$", ErrorMessage = "รูปแบบเลขติดตามไม่ถูกต้อง")]
+        public string TrackNo { get; set; } = "";
+
+        public string Prefix { get; set; } = string.Empty;
+
+        public string FirstName { get; set; } = string.Empty;
+
+        public string LastName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "กรุณาระบุสถานะเครือข่าย")]
+        public string Network { get; set; } = "ไม่ได้เป็นเครือข่าย";
+
+        public string Email { get; set; } = string.Empty;
+
+        [RegularExpression(@"^\d{0,10}$", ErrorMessage = "เบอร์โทรศัพท์ต้องเป็นตัวเลขไม่เกิน 10 หลัก")]
+        public string Phone
+        {
+            get => phone;
+            set => phone = NormalizeDigits(value, 10);
+        }
+
+        public string AccusedPrefix { get; set; } = string.Empty;
+        public string AccusedFirst { get; set; } = string.Empty;
+        public string AccusedLast { get; set; } = string.Empty;
+        public string AccusedAgency { get; set; } = string.Empty;
+        public string AccusedPosition { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "กรุณากรอกรายละเอียดการร้องเรียน")]
+        [MinLength(20, ErrorMessage = "รายละเอียดการร้องเรียนต้องมีอย่างน้อย 20 ตัวอักษร")]
+        [MaxLength(4000, ErrorMessage = "รายละเอียดการร้องเรียนยาวเกินกำหนด")]
+        public string Description { get; set; } = string.Empty;
+
+        public DateTime IncidentDate { get; set; } = DateTime.Today;
+        public string IncidentTime { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "กรุณาเลือกจังหวัด")]
+        public string Province { get; set; } = "";
+
+        public string District { get; set; } = string.Empty;
+        public string SubDistrict { get; set; } = string.Empty;
+        public string Location { get; set; } = string.Empty;
+
+        // SLA Start Date — date case was FIRST received by ป.ป.ท. (not the data-entry date)
+        public DateTime FirstReceivedDate { get; set; } = DateTime.Today;
+
+        // AI recommended case category
+        public string AiCategory { get; set; } = string.Empty;
+
+        private string citizenId = string.Empty;
+        private string phone = string.Empty;
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if ((Channel is "เว็บไซต์" or "สายด่วน 1206" or "อีเมล") && string.IsNullOrWhiteSpace(SourceDetail))
+            {
+                yield return new ValidationResult(
+                    "กรุณาระบุข้อมูลแหล่งที่มาของเรื่องร้องเรียน",
+                    [nameof(SourceDetail)]);
+            }
+
+            if (!string.IsNullOrWhiteSpace(SourceDetail))
+            {
+                if (Channel == "เว็บไซต์" && !Uri.TryCreate(SourceDetail, UriKind.Absolute, out _))
+                {
+                    yield return new ValidationResult(
+                        "กรุณาระบุเว็บไซต์ให้เป็น URL ที่ถูกต้อง",
+                        [nameof(SourceDetail)]);
+                }
+
+                if (Channel == "อีเมล" && !new EmailAddressAttribute().IsValid(SourceDetail))
+                {
+                    yield return new ValidationResult(
+                        "กรุณาระบุอีเมลต้นทางให้ถูกต้อง",
+                        [nameof(SourceDetail)]);
+                }
+
+                if (Channel == "สายด่วน 1206")
+                {
+                    var hasInvalidChar = SourceDetail.Any(ch => !char.IsLetterOrDigit(ch) && ch is not '-' and not '_' and not '/' and not ' ');
+                    if (hasInvalidChar)
+                    {
+                        yield return new ValidationResult(
+                            "หมายเลขอ้างอิงสายด่วนสามารถใช้เฉพาะตัวอักษร ตัวเลข และ - _ /",
+                            [nameof(SourceDetail)]);
+                    }
+                }
+            }
+
+            if (!Anonymous)
+            {
+                if (string.IsNullOrWhiteSpace(FirstName) || string.IsNullOrWhiteSpace(LastName))
+                {
+                    yield return new ValidationResult(
+                        "กรุณากรอกชื่อ-นามสกุลผู้ร้องเรียน หรือเลือกปกปิดตัวตน",
+                        [nameof(FirstName), nameof(LastName)]);
+                }
+
+                if (string.IsNullOrWhiteSpace(Email) && string.IsNullOrWhiteSpace(Phone))
+                {
+                    yield return new ValidationResult(
+                        "กรุณาระบุอีเมลหรือหมายเลขโทรศัพท์อย่างน้อย 1 รายการ",
+                        [nameof(Email), nameof(Phone)]);
+                }
+
+                if (!string.IsNullOrWhiteSpace(Email) && !new EmailAddressAttribute().IsValid(Email))
+                {
+                    yield return new ValidationResult(
+                        "รูปแบบอีเมลไม่ถูกต้อง",
+                        [nameof(Email)]);
+                }
+
+                if (!string.IsNullOrWhiteSpace(CitizenId) && CitizenId.Length != 13)
+                {
+                    yield return new ValidationResult(
+                        "เลขบัตรประชาชนต้องมี 13 หลัก",
+                        [nameof(CitizenId)]);
+                }
+            }
+
+            if (IncidentDate.Date > DateTime.Today)
+            {
+                yield return new ValidationResult(
+                    "วันที่เกิดเหตุไม่สามารถเป็นวันในอนาคตได้",
+                    [nameof(IncidentDate)]);
+            }
+        }
+
+        private static string NormalizeDigits(string value, int maxLength)
+        {
+            var digits = new string((value ?? string.Empty).Where(char.IsDigit).ToArray());
+            return digits.Length > maxLength ? digits[..maxLength] : digits;
+        }
+    }
+}
