@@ -34,7 +34,6 @@
     </div>
 
     <div id="editGate"></div>
-    <div id="resolutionStageBox"></div>
 
     <div class="document-workspace" id="docWorkspace">
       <div id="formCol">
@@ -166,18 +165,6 @@
             <div class="mt-3">
               <label class="form-label">ตำแหน่งผู้ลงนาม</label>
               <input class="form-control" id="signerTitle">
-            </div>
-          </div>
-        </div>
-
-        <!-- Card: Digital Signature -->
-        <div class="ws-card mb-3" id="sigCard">
-          <div class="card-header"><i class="fa-solid fa-signature"></i> ลายมือชื่อดิจิทัลรับรองมติที่ประชุม</div>
-          <div class="card-body">
-            <div id="sigBox" class="sig-box">
-              <i class="fa-solid fa-file-signature fa-2x mb-2" style="color:#7C8CA3"></i>
-              <div class="sig-name">ยังไม่ได้ลงนาม</div>
-              <div class="sig-meta">กดปุ่ม "ลงนามดิจิทัลรับรองมติ" ที่แถบด้านล่าง</div>
             </div>
           </div>
         </div>
@@ -399,66 +386,6 @@
     /* ---------- Q: สิทธิ์แก้ไขมติ (ชีตแถว 15) ---------- */
     const mayEdit = ECMIS.canEditMaster(role.id) || ECMIS.can('record.minutes', role.id);
     const mayView = ECMIS.canViewCase(kase, role.id);
-    /* เดิมปุ่ม "บันทึกมติและล็อก PDF" ไม่เคยเปลี่ยน kase.status/บันทึกข้อมูลจริงเลย (แค่ toast
-       แล้ว redirect) ทำให้กดบันทึกกี่ครั้งก็ไม่มีอะไรเปลี่ยนจริง และเอกสารฝั่งขวาก็ไม่มีทาง
-       "ดูย้อนหลัง" มติที่บันทึกไปแล้วได้ (renderDoc() สร้างจากค่าฟอร์มปัจจุบันเสมอ ไม่ใช่ค่าที่
-       บันทึกไว้จริง) — isLocked คือสำนวนที่บันทึกมติไปแล้วจริง (ผ่าน handle('lock') ด้านล่าง
-       ซึ่งตอนนี้ set kase.status/kase.resolution/kase.recordedDocHtml + ECMIS.saveCases() แล้ว)
-       renderDoc() จะโชว์ recordedDocHtml ที่บันทึกไว้ตรงๆ แทนการ generate ใหม่จากฟอร์ม
-       (ค่าฟอร์มที่โหลดใหม่จะไม่ตรงกับตอนบันทึกจริงอีกต่อไป) และซ่อนปุ่มบันทึกไม่ให้กดซ้ำ */
-    const isLocked = kase.status === 'RESOLVED' || kase.status === 'RESOLVED_PENDING';
-    if (mayView && isLocked) {
-      document.getElementById('editGate').innerHTML += `
-    <div class="mb-3" style="background:#EAF7EE;border:1px solid #16A34A;border-radius:8px;padding:.75rem 1rem">
-      <strong><i class="fa-solid fa-lock me-1" style="color:#16A34A"></i>มติสำนวนนี้ถูกบันทึกและล็อกแล้ว</strong><br>
-      บันทึกเมื่อ ${kase.resolvedAt ? ECMIS.toThaiDigits(kase.resolvedAt) : '—'} — เอกสารด้านขวาเป็น
-      <strong>preview ของมติที่บันทึกจริง</strong> ไม่ใช่ค่าที่สร้างจากฟอร์มปัจจุบัน
-      <small class="d-block mt-1 text-muted">แก้ไขมติที่ล็อกแล้วต้องผ่านกระบวนการแก้ไขพิเศษ ไม่ใช่กดบันทึกซ้ำจากหน้านี้</small>
-    </div>`;
-    }
-
-    /* ---------- สถานะการจัดทำมติ (6 ขั้นตอน) — เชื่อมกับหน้าติดตามสถานะอัตโนมัติผ่าน getAct7Status() ---------- */
-    function renderResolutionStageBox() {
-      const box = document.getElementById('resolutionStageBox');
-      if (!isLocked) { box.innerHTML = ''; return; }
-      if (!kase.resolutionStage) kase.resolutionStage = 1;
-      const stage = kase.resolutionStage;
-
-      const stepsHtml = ECMIS.RESOLUTION_STAGES.map(s => {
-        const done = s.n < stage, active = s.n === stage;
-        const cls = done ? 'text-success' : (active ? 'fw-bold text-navy' : 'text-muted');
-        const icon = done ? 'fa-circle-check' : (active ? 'fa-circle-dot' : 'fa-circle');
-        return `<div class="${cls}" style="font-size:.82rem"><i class="fa-solid ${icon} me-1" style="font-size:.7rem"></i>${s.n}. ${s.label}</div>`;
-      }).join('');
-
-      const controlsHtml = mayEdit ? `
-        <div class="d-flex align-items-center gap-2 mt-2">
-          <select class="form-select form-select-sm" id="resStageSelect" style="max-width:420px">
-            ${ECMIS.RESOLUTION_STAGES.map(s => `<option value="${s.n}" ${s.n === stage ? 'selected' : ''}>${s.n}. ${s.label}</option>`).join('')}
-          </select>
-          <button type="button" class="ws-button primary" style="min-height:32px;padding:.4rem .8rem" id="btnSaveResStage"><i class="fa-solid fa-floppy-disk me-1"></i>บันทึกสถานะ</button>
-        </div>` : '';
-
-      box.innerHTML = `
-    <div class="ws-card mb-3">
-      <div class="card-header"><i class="fa-solid fa-list-check me-1"></i>สถานะการจัดทำมติ (6 ขั้นตอน)</div>
-      <div class="card-body">
-        <div class="mb-2">${stepsHtml}</div>
-        ${controlsHtml}
-      </div>
-    </div>`;
-
-      const btn = document.getElementById('btnSaveResStage');
-      if (btn) {
-        btn.addEventListener('click', () => {
-          const val = parseInt(document.getElementById('resStageSelect').value, 10);
-          ECMIS.Model.CaseStore.update(kase.id, { resolutionStage: val });
-          ECMIS.toastOk('บันทึกสถานะการจัดทำมติเรียบร้อย');
-          renderResolutionStageBox();
-        });
-      }
-    }
-    renderResolutionStageBox();
 
     if (!mayView) {
       document.getElementById('editGate').innerHTML = `
@@ -492,44 +419,65 @@
       { n: 'นายสุรพงษ์ อินทรถาวร', r: 'กรรมการ ป.ป.ท.' }
     ];
     const TOTAL = BOARD.length;
+    const savedAtt = kase.boardAttendance || (kase.boardAttendance72) || {};
+    const savedVote = kase.boardVotes || {};
 
-    document.getElementById('boardTb').innerHTML = BOARD.map((b, i) => `
+    document.getElementById('boardTb').innerHTML = BOARD.map((b, i) => {
+      const att = savedAtt[b.n] || 'present';
+      const vt = savedVote[b.n] || 'for';
+      const isPresent = att === 'present';
+      return `
   <tr data-i="${i}">
     <td><strong>${b.n}</strong><br><small class="text-muted">${b.r}</small></td>
     <td>
       <select class="form-select form-select-sm attend">
-        <option value="present" selected>เข้าประชุม</option>
-        <option value="recused">ถอนตัว</option>
+        <option value="present" ${att === 'present' ? 'selected' : ''}>เข้าประชุม</option>
+        <option value="leave" ${att === 'leave' ? 'selected' : ''}>ลาประชุม</option>
+        <option value="recused" ${att === 'recused' ? 'selected' : ''}>ขอถอนตัว</option>
+        <option value="duty" ${att === 'duty' ? 'selected' : ''}>ติดราชการ</option>
       </select>
     </td>
     <td>
-      <select class="form-select form-select-sm vote">
-        <option value="for" selected>เห็นด้วย</option>
-        <option value="against">ไม่เห็นด้วย</option>
-        <option value="abstain">งดออกเสียง</option>
+      <select class="form-select form-select-sm vote" ${!isPresent ? 'disabled' : ''}>
+        <option value="for" ${isPresent && vt === 'for' ? 'selected' : ''}>เห็นด้วย</option>
+        <option value="against" ${isPresent && vt === 'against' ? 'selected' : ''}>ไม่เห็นด้วย</option>
+        <option value="abstain" ${isPresent && vt === 'abstain' ? 'selected' : ''}>งดออกเสียง</option>
+        <option value="none" ${!isPresent ? 'selected' : ''}>- (ไม่ร่วมลงคะแนน)</option>
       </select>
     </td>
-  </tr>`).join('');
+  </tr>`;
+    }).join('');
 
     function tally() {
-      let present = 0, recused = 0, forV = 0, againstV = 0, abstainV = 0;
+      let present = 0, recused = 0, leave = 0, duty = 0, forV = 0, againstV = 0, abstainV = 0;
+      const attendanceMap = {};
+      const votesMap = {};
       document.querySelectorAll('#boardTb tr').forEach(tr => {
+        const i = parseInt(tr.dataset.i, 10);
+        const b = BOARD[i];
         const a = tr.querySelector('.attend').value;
         const v = tr.querySelector('.vote');
-        if (a === 'recused') {
-          recused++;
-          v.value = 'abstain';
+        attendanceMap[b.n] = a;
+
+        if (a !== 'present') {
+          v.value = 'none';
           v.disabled = true;
-          abstainV++;
+          if (a === 'recused') recused++;
+          else if (a === 'leave') leave++;
+          else if (a === 'duty') duty++;
         } else {
           v.disabled = false;
+          if (v.value === 'none') v.value = 'for';
           present++;
+          votesMap[b.n] = v.value;
           if (v.value === 'for') forV++;
           else if (v.value === 'against') againstV++;
           else if (v.value === 'abstain') abstainV++;
         }
       });
-      return { present, recused, forV, againstV, abstainV };
+      kase.boardAttendance = attendanceMap;
+      kase.boardVotes = votesMap;
+      return { present, recused, leave, duty, forV, againstV, abstainV, attendanceMap, votesMap };
     }
 
     function renderQuorum() {
@@ -750,13 +698,6 @@
 
     /* ---------- document (มติการประชุม ไต่สวนเบื้องต้น) ---------- */
     function renderDoc() {
-      /* สำนวนที่บันทึกมติล็อกแล้ว — โชว์ HTML ที่บันทึกไว้จริงตอนกดล็อก (preview) แทนการ
-         generate จากค่าฟอร์มปัจจุบัน ซึ่งไม่ตรงกับตอนบันทึกจริงอีกต่อไป (ผู้ใช้คนอื่น/โหลด
-         หน้าใหม่ ฟอร์มจะกลับไปเป็นค่าเริ่มต้น ไม่ใช่ค่าที่บันทึกไว้) */
-      if (isLocked && kase.recordedDocHtml) {
-        document.getElementById('docPaper').innerHTML = kase.recordedDocHtml;
-        return;
-      }
       const M = ECMIS.mergeField;
       const meetNo = document.getElementById('meetNo').value.trim();
       const meetDateValue = normalizeDateInputValue(document.getElementById('meetDate').value.trim());
@@ -775,12 +716,13 @@
         const attVal = tr.querySelector('.attend').value;
         return {
           ...BOARD[i],
-          attend: attVal,
-          recused: attVal === 'recused'
+          attend: attVal
         };
       });
       const attendees = allBoardRows.filter(b => b.attend === 'present');
-      const recusedList = allBoardRows.filter(b => b.recused);
+      const recusedList = allBoardRows.filter(b => b.attend === 'recused');
+      const leaveList = allBoardRows.filter(b => b.attend === 'leave');
+      const dutyList = allBoardRows.filter(b => b.attend === 'duty');
 
       const resText = computeResolutionText();
 
@@ -817,10 +759,9 @@
 
       const signBlock = `
     <div class="doc-sign">
-      ${signed && pendingSigData && pendingSigData.sig ? `<img class="doc-sig-img" src="${pendingSigData.sig}" alt="ลายมือชื่อ"><br>` : (signed ? `<span style="display:inline-block;padding:4px 8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:4px;color:#065f46;font-size:0.8rem;margin-bottom:6px"><i class="fa-solid fa-certificate me-1"></i>Digital Signature Verified (${pendingSigData?.certCode || SIGNER_CERT})</span><br>` : '<span class="doc-dots"></span><br>')}
+      <span class="doc-dots"></span><br>
       (${M(signerName)})<br>
       ${M(signerTitle)}
-      ${signed ? `<br><span style="font-size:0.75rem;color:#16A34A"><i class="fa-solid fa-circle-check"></i> ลงนามดิจิทัลเมื่อ ${new Date().toLocaleString('th-TH')}</span>` : ''}
     </div>`;
 
       const bi = html => `<div class="doc-body-indent">${html}</div>`;
@@ -839,7 +780,7 @@
         ...(t.againstV > 0 ? [bi(`<div style="padding-left:1.5em;color:#DB2626">
       (มีกรรมการเห็นแย้ง ${t.againstV} ท่าน — บันทึกความเห็นแย้งพร้อมเหตุผลไว้ในรายงานการประชุมตาม ม.๑๖)</div>`)] : []),
         ...(t.recused > 0 ? [bi(`<div style="padding-left:1.5em;color:#6b3fa0">
-      (กรรมการที่ถูกกันออกจากการพิจารณาวาระนี้ตาม ม.๒๐ จำนวน ${t.recused} ท่าน)</div>`)] : []),
+      (กรรมการที่ขอถอนตัวจากการพิจารณาวาระนี้ตาม ม.๒๐ จำนวน ${t.recused} ท่าน)</div>`)] : []),
         bi(`<div style="margin-top:3px">๒. รับรองมติการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)}
       วันที่ ${M(meetDate)} วาระที่ ${M(agendaNo)}</div>`)
       ] : [
@@ -874,6 +815,16 @@
           กรรมการ ป.ป.ท. ที่ถอนตัวจากการพิจารณาวาระนี้ตามมาตรา ๒๐ จำนวน ${recusedList.length} คน คือ</div>`),
           bi(`<div class="doc-indent">${recusedList.map((b, i) => `${i + 1}. ${M(b.n)}`).join('<br>')}</div>`)
         ] : []),
+        ...(leaveList.length ? [
+          bi(`<div class="doc-indent" style="margin-top:3px">
+          กรรมการ ป.ป.ท. ที่ลาประชุม จำนวน ${leaveList.length} คน คือ</div>`),
+          bi(`<div class="doc-indent">${leaveList.map((b, i) => `${i + 1}. ${M(b.n)}`).join('<br>')}</div>`)
+        ] : []),
+        ...(dutyList.length ? [
+          bi(`<div class="doc-indent" style="margin-top:3px">
+          กรรมการ ป.ป.ท. ที่ติดราชการ จำนวน ${dutyList.length} คน คือ</div>`),
+          bi(`<div class="doc-indent">${dutyList.map((b, i) => `${i + 1}. ${M(b.n)}`).join('<br>')}</div>`)
+        ] : []),
         bi(`<div class="doc-h">ความเห็นที่ประชุม</div>
       <div class="doc-indent">คณะกรรมการ ป.ป.ท. พิจารณาแล้วเห็นว่า
         ${M(opinion, '………………………………………………………………………………………………')}</div>`),
@@ -887,7 +838,7 @@
         ...(t.againstV > 0 ? [bi(`<div style="padding-left:1.5em;color:#DB2626">
       (มีกรรมการเห็นแย้ง ${t.againstV} ท่าน — บันทึกความเห็นแย้งพร้อมเหตุผลไว้ในรายงานการประชุมตาม ม.๑๖)</div>`)] : []),
         ...(t.recused > 0 ? [bi(`<div style="padding-left:1.5em;color:#6b3fa0">
-      (กรรมการที่ถูกกันออกจากการพิจารณาวาระนี้ตาม ม.๒๐ จำนวน ${t.recused} ท่าน)</div>`)] : []),
+      (กรรมการที่ขอถอนตัวจากการพิจารณาวาระนี้ตาม ม.๒๐ จำนวน ${t.recused} ท่าน)</div>`)] : []),
         ...(s65 ? [bi(s65)] : []),
         bi(`<div style="margin-top:3px">${lastNo}. รับรองมติการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ ${M(meetNo)}
       วันที่ ${M(meetDate)} วาระที่ ${M(agendaNo)}</div>`)
@@ -1022,18 +973,15 @@
     }
 
     function buildButtons() {
-      if (!mayEdit) return [];
-      if (isLocked) return [];
-      if (signed) {
+      if (!mayEdit) {
         return [
-          { act: 'edit_sign', label: 'แก้ไข / ลงนามใหม่', icon: 'fa-pen-to-square', cls: 'btn-outline-warning' },
-          { act: 'clear_sign', label: 'ลบลายเซ็น', icon: 'fa-trash-can', cls: 'btn-outline-danger' },
-          { act: 'lock', label: 'บันทึกมติและล็อก PDF', icon: 'fa-lock', cls: 'btn-success' }
+          { act: 'back_inbox', label: 'กลับไปกล่องงาน', icon: 'fa-arrow-left', cls: 'btn-outline-secondary' }
         ];
       }
       return [
-        { act: 'save', label: 'บันทึกร่างมติ', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' },
-        { act: 'sign', label: 'ลงนามดิจิทัลรับรองมติ', icon: 'fa-signature', cls: 'btn-gold' }
+        { act: 'back_inbox', label: 'กลับไปกล่องงาน', icon: 'fa-arrow-left', cls: 'btn-outline-secondary' },
+        { act: 'save', label: 'บันทึกร่างมติ', icon: 'fa-floppy-disk', cls: 'btn-outline-primary' },
+        { act: 'save_resolution', label: 'บันทึกมติที่ประชุม', icon: 'fa-check', cls: 'btn-gold' }
       ];
     }
 
@@ -1108,69 +1056,37 @@
     }
 
     function handle(act) {
-      if (act === 'save') { ECMIS.toastOk('บันทึกร่างมติเรียบร้อย'); return; }
-
-      if (act === 'edit_sign') {
-        handle('sign');
+      if (act === 'back_inbox') {
+        location.href = 'inbox.html';
         return;
       }
 
-      if (act === 'clear_sign') {
-        ECMIS.confirmAction({
-          title: 'ยืนยันการลบลายเซ็น',
-          html: '<p>คุณต้องการยกเลิกลายเซ็นรับรองมตินี้ใช่หรือไม่?</p>',
-          confirmText: 'ยืนยันลบลายเซ็น',
-          danger: true
-        }).then(r => {
-          if (r.isConfirmed) {
-            signed = false;
-            pendingSigData = null;
-            updateSigBoxUI(false);
-            renderDoc();
-            renderActionButtons();
-            ECMIS.toastOk('ลบลายเซ็นเรียบร้อยแล้ว');
-          }
+      if (act === 'save') {
+        const t = tally();
+        ECMIS.Model.CaseStore.update(kase.id, {
+          boardAttendance: t.attendanceMap,
+          boardVotes: t.votesMap
         });
+        ECMIS.toastOk('บันทึกร่างมติเรียบร้อย');
         return;
       }
 
-      if (act === 'sign') {
-        if (!validateResolutionForm()) return;
-        const signerName = document.getElementById('signerName')?.value || 'นางสาวณพัสตร์ ศรีสมเกียรติ';
-        const signerTitle = document.getElementById('signerTitle')?.value || 'ผู้อำนวยการกองบริหารคดี';
-
-        ECMIS.signDialog(`มติที่ประชุมคณะกรรมการ ป.ป.ท. (เรื่องที่ ${kase.id})`,
-          `${signerName} — ${signerTitle}`, SIGNER_CERT)
-          .then(res => {
-            if (!res.isConfirmed) return;
-            signed = true;
-            pendingSigData = res.value;
-            const now = new Date();
-            updateSigBoxUI(true, res.value, now.toLocaleString('th-TH'));
-            renderDoc();
-            renderActionButtons();
-            ECMIS.toastOk('ลงนามรับรองมติเรียบร้อยแล้ว กรุณากดปุ่ม "บันทึกมติและล็อก PDF"');
-          });
-        return;
-      }
-
-      if (act === 'lock') {
+      if (act === 'save_resolution') {
         if (!validateResolutionForm()) return;
         const r = selectedRes();
-        const signerName = document.getElementById('signerName')?.value || 'นางสาวณพัสตร์ ศรีสมเกียรติ';
-        const signerTitle = document.getElementById('signerTitle')?.value || 'ผู้อำนวยการกองบริหารคดี';
+        const signerName = document.getElementById('signerName')?.value || 'นายวิชัย ยุติธรรม';
+        const signerTitle = document.getElementById('signerTitle')?.value || 'ประธานกรรมการ ป.ป.ท.';
 
         ECMIS.confirmAction({
-          title: 'บันทึกมติและล็อกไฟล์ PDF',
+          title: 'ยืนยันบันทึกมติที่ประชุม',
           html: `<div class="text-start">
         <p class="mb-2">สำนวน <strong>${kase.id}</strong> — มติ: <strong>${r.label}</strong></p>
         <div style="background:#fdf7e8;border-left:4px solid #D0A830;padding:.6rem .8rem;border-radius:0 6px 6px 0;font-size:.83rem">
           เมื่อบันทึกแล้วระบบจะ:<br>
-          • ล็อกเอกสารมติเป็น PDF (แก้ไขได้เฉพาะ 6 เจ้าหน้าที่กลุ่มงานกิจการฯ + ผอ.กบค.)<br>
-          • บันทึกลายมือชื่อดิจิทัลรับรองมติ (${signerName})<br>
-          • สร้าง <strong>${r.doc}</strong> จาก Template อัตโนมัติ<br>
-          • ยิงมติกลับ <strong>กิจกรรมที่ 5</strong> และเริ่มนับกำหนดเวลาปลายทาง<br>
-          • Auto-compile รายงานการประชุมรวมทุกเรื่องในวันประชุมเดียวกัน
+          • บันทึกมติที่ประชุมเข้าสู่ระบบ<br>
+          • ปรับปรุงสถานะสำนวนเป็น <strong>จัดทำมติแล้วเสร็จ</strong><br>
+          • สร้างเอกสาร <strong>${r.doc}</strong> จาก Template อัตโนมัติ<br>
+          • ส่งผลมติกลับไปยังกล่องงาน (Inbox) เพื่อดำเนินการตามขั้นตอนถัดไป
         </div></div>`,
           confirmText: 'ยืนยันบันทึกมติ'
         }).then(async res => {
@@ -1189,6 +1105,7 @@
 
           const fromStatus = kase.status;
           const recordedDocHtml = document.getElementById('docPaper').innerHTML;
+          const t = tally();
 
           ECMIS.Model.CaseStore.update(kase.id, {
             status: 'RESOLVED',
@@ -1197,20 +1114,9 @@
             resolvedAtIso: new Date().toISOString(),
             recordedDocHtml,
             resolutionStage: 1,
-            signedByBoardSec: true,
-            boardSecSignedAt: new Date().toISOString()
+            boardAttendance: t.attendanceMap,
+            boardVotes: t.votesMap
           });
-
-          if (ECMIS.Model && ECMIS.Model.SignatureStore) {
-            ECMIS.Model.SignatureStore.create({
-              caseId: kase.id,
-              docType: `มติที่ประชุมคณะกรรมการ ป.ป.ท. — ${r.label}`,
-              signerRole: 'dir_case',
-              signerName: `${signerName} — ${signerTitle}`,
-              method: pendingSigData?.mode || 'cert',
-              signedAt: new Date().toISOString()
-            });
-          }
 
           /* เขียนมติจริงลง Supabase ก่อน redirect เสมอ (ต้อง await ให้เสร็จก่อน) — ไม่งั้น
              ถ้า redirect ไปก่อน request ที่ยังค้างอยู่จะถูกเบราว์เซอร์ตัดทิ้งกลางทาง */
@@ -1219,7 +1125,18 @@
               trr_status: ECMIS.STATUS_CODE['RESOLVED'],
               trr_resolution_stage: 1,
               trr_recorded_doc_html: recordedDocHtml,
-              trr_resolution_data: { code: r.code, label: r.label }
+              trr_resolution_data: {
+                code: r.code,
+                label: r.label,
+                orderNo: document.getElementById('meetNo')?.value || '',
+                meetingNo: document.getElementById('meetNo')?.value || '',
+                agendaNo: document.getElementById('agendaNo')?.value || '',
+                meetingDate: document.getElementById('meetDate')?.value || '',
+                boardOpinion: document.getElementById('boardOpinion')?.value || '',
+                boardAttendance: t.attendanceMap,
+                boardVotes: t.votesMap,
+                resolvedAtIso: new Date().toISOString()
+              }
             }).eq('trr_id', kase.trr_id);
             if (!error) {
               ECMIS.logRequestEvent(kase.trr_id, fromStatus, 'RESOLVED', {
@@ -1231,12 +1148,23 @@
             }
           }
 
-          ECMIS.toastOk('บันทึกมติและล็อก PDF เรียบร้อย');
-          const next = (r.code === 'ACCEPT_S24P1' || r.code === 'ACCEPT_S24P3')
-            ? 'order.html?case=' + encodeURIComponent(kase.id) + '&res=' + r.code
-            : ECMIS.homeHref(role.id);
-          setTimeout(() => location.href = next, 1400);
+          /* Seam Hook: ส่งผลมติกลับ Activity 5 (intake-investigation) หากรันใน ECMIS Monorepo */
+          if (window.ECMISIntakeAggregate && typeof window.ECMISIntakeAggregate.publishBoardResult === 'function') {
+            try {
+              window.ECMISIntakeAggregate.publishBoardResult(kase, {
+                text: r.label,
+                reference: `มติ ${document.getElementById('meetNo')?.value || '38/2569'} วาระ ${kase.agendaNo || '5.12'}`,
+                by: signerName
+              });
+            } catch (e) {
+              console.warn('publishBoardResult warning:', e);
+            }
+          }
+
+          ECMIS.toastOk('บันทึกมติที่ประชุมเรียบร้อย');
+          setTimeout(() => location.href = 'inbox.html', 1200);
         });
+        return;
       }
     }
 
