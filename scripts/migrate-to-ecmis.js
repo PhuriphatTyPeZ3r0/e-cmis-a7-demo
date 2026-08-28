@@ -33,9 +33,11 @@ function copyRecursiveSync(src, dest) {
   if (isDirectory) {
     if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
     fs.readdirSync(src).forEach(childItemName => {
+      if (childItemName.includes('google-sheet')) return;
       copyRecursiveSync(path.join(src, childItemName), path.join(dest, childItemName));
     });
   } else {
+    if (path.basename(src).includes('google-sheet')) return;
     fs.copyFileSync(src, dest);
   }
 }
