@@ -75,6 +75,11 @@
             <div id="resListSection">
               <label class="form-label field-req">เลือกประเภทผลมติ</label>
               <div class="list-group mb-3" id="resList"></div>
+              <div class="mb-3 d-none" id="otherResBox">
+                <label class="form-label field-req">รายละเอียดผลมติอื่นๆ</label>
+                <textarea class="form-control" id="otherResText" rows="3" placeholder="ระบุรายละเอียดผลมติที่ประชุม..."></textarea>
+                <small class="form-text text-muted">ข้อความนี้จะถูกนำไปแสดงต่อท้ายคำว่า "มีมติ" ในเอกสารพรีวิวและไฟล์ .docx</small>
+              </div>
             </div>
             <div id="resFreeTextNote" class="alert alert-secondary py-2 px-3 mb-3 d-none" style="font-size:.85rem">
               <i class="fa-solid fa-circle-info me-1"></i>เอกสารมติประเภท "เรื่องทั่วไป" ไม่มีตัวเลือกมติตายตัวในแม่แบบต้นฉบับ
@@ -512,12 +517,17 @@
       document.getElementById('resListSection').classList.add('d-none');
       document.getElementById('resFreeTextNote').classList.remove('d-none');
     } else {
+      const selectedCode = kase.resolution || activeResolutions[0].code;
       document.getElementById('resList').innerHTML = activeResolutions.map((r, i) => `
   <label class="list-group-item d-flex gap-2 align-items-start">
-    <input class="form-check-input mt-1" type="radio" name="res" value="${r.code}" ${i === 0 ? 'checked' : ''}>
+    <input class="form-check-input mt-1" type="radio" name="res" value="${r.code}" ${r.code === selectedCode ? 'checked' : ''}>
     <span><strong>${r.label}</strong>
       <br><small class="text-muted">เอกสารที่ต้องออก: ${r.doc}${r.signer !== '—' ? ` · ผู้ลงนาม: ${r.signer}` : ''}</small></span>
   </label>`).join('');
+
+      if (kase.otherResolutionText && document.getElementById('otherResText')) {
+        document.getElementById('otherResText').value = kase.otherResolutionText;
+      }
     }
 
     function selectedRes() {
@@ -564,6 +574,9 @@
       } else if (r.code === 'MORE_INVESTIGATE') {
         const task = document.getElementById('moreTask').value.trim();
         return `ให้ผู้รับผิดชอบสำนวนไต่สวนเบื้องต้นเพิ่มเติม ดังนี้ ${task || '……………………………………'}`;
+      } else if (r.code === 'OTHER') {
+        const other = (document.getElementById('otherResText')?.value || '').trim();
+        return other || '……………………………………';
       } else {
         const fwd = ECMIS.forwardTarget(fwdSel.value);
         const fwdLabel = fwd?.code === 'OTHER'
@@ -622,6 +635,8 @@
       document.getElementById('noGroundBox').classList.toggle('d-none', code !== 'NO_GROUND');
       document.getElementById('moreBox').classList.toggle('d-none', code !== 'MORE_INVESTIGATE');
       document.getElementById('forwardBox').classList.toggle('d-none', code !== 'FORWARD');
+      const otherBox = document.getElementById('otherResBox');
+      if (otherBox) otherBox.classList.toggle('d-none', code !== 'OTHER');
     }
 
     function renderOutcome() {
@@ -675,6 +690,12 @@
             'และกรณีส่ง ป.ป.ช. ต้องคัดสำเนาสำนวนเก็บรักษาไว้เป็นหลักฐานตาม ม.18/1'],
           ['กำหนดส่งตามกฎหมาย', 'กรณีส่ง ป.ป.ช. — 15 วันตาม ม.18/1 (ก)(3)/(ข)(1)/(ข)(3) · เส้นตาย ขยายไม่ได้'],
           ['กรอบกำกับติดตาม', 'กรณีส่ง ป.ป.ช. — 30 วันตามเล่ม 6 กิจกรรมที่ 8 CHK011 นับแต่วันที่ได้รับมติ (มิใช่กำหนดส่ง)']
+        ],
+
+        OTHER: [
+          ['เอกสารที่ระบบสร้าง', 'บันทึกมติที่ประชุม'],
+          ['ข้อความมติ', (document.getElementById('otherResText')?.value || '').trim() || 'ตามที่ระบุในแบบฟอร์ม'],
+          ['ปลายทาง', 'บันทึกผลมติตามที่ระบุเข้าสู่ระบบ เพื่อดำเนินการตามขั้นตอนถัดไป']
         ],
 
         KKM_NO_APPEAL: [
@@ -851,10 +872,11 @@
     }
 
     document.getElementById('resList').addEventListener('change', () => { toggleBoxes(); renderOutcome(); renderDoc(); });
-    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'ownerOrgField', 'presenter', 'presenterNote', 'signerName', 'signerTitle', 'rejectLaw', 'moreTask', 'moreOwner', 'moreDue', 'forwardTo', 'forwardToOther']
+    ['meetNo', 'meetDate', 'agendaNo', 'boardOpinion', 'ownerOrgField', 'presenter', 'presenterNote', 'signerName', 'signerTitle', 'rejectLaw', 'moreTask', 'moreOwner', 'moreDue', 'forwardTo', 'forwardToOther', 'otherResText']
       .forEach(id => {
         const el = document.getElementById(id); if (el) {
-          el.addEventListener('input', renderDoc); el.addEventListener('change', renderDoc);
+          el.addEventListener('input', () => { renderOutcome(); renderDoc(); });
+          el.addEventListener('change', () => { renderOutcome(); renderDoc(); });
         }
       });
     /* ---------- สร้างไฟล์ .docx จริงจาก template ต้นฉบับ (assets/templates/order-preliminary.docx)
@@ -1052,6 +1074,18 @@
           document.querySelector('.val-msg[data-for="forwardToOther"]').classList.remove('show');
         }
       }
+
+      if (r.code === 'OTHER') {
+        const otherEl = document.getElementById('otherResText');
+        if (!otherEl || !otherEl.value.trim()) {
+          if (otherEl) otherEl.classList.add('is-invalid-ecmis');
+          ECMIS.toastWarn('กรุณาระบุรายละเอียดผลมติอื่นๆ');
+          if (otherEl) otherEl.focus();
+          return false;
+        } else {
+          otherEl.classList.remove('is-invalid-ecmis');
+        }
+      }
       return true;
     }
 
@@ -1063,9 +1097,11 @@
 
       if (act === 'save') {
         const t = tally();
+        const otherText = (document.getElementById('otherResText')?.value || '').trim();
         ECMIS.Model.CaseStore.update(kase.id, {
           boardAttendance: t.attendanceMap,
-          boardVotes: t.votesMap
+          boardVotes: t.votesMap,
+          otherResolutionText: otherText
         });
         ECMIS.toastOk('บันทึกร่างมติเรียบร้อย');
         return;
@@ -1106,6 +1142,7 @@
           const fromStatus = kase.status;
           const recordedDocHtml = document.getElementById('docPaper').innerHTML;
           const t = tally();
+          const otherText = (document.getElementById('otherResText')?.value || '').trim();
 
           ECMIS.Model.CaseStore.update(kase.id, {
             status: 'RESOLVED',
@@ -1115,7 +1152,8 @@
             recordedDocHtml,
             resolutionStage: 1,
             boardAttendance: t.attendanceMap,
-            boardVotes: t.votesMap
+            boardVotes: t.votesMap,
+            otherResolutionText: otherText
           });
 
           /* เขียนมติจริงลง Supabase ก่อน redirect เสมอ (ต้อง await ให้เสร็จก่อน) — ไม่งั้น
@@ -1127,7 +1165,8 @@
               trr_recorded_doc_html: recordedDocHtml,
               trr_resolution_data: {
                 code: r.code,
-                label: r.label,
+                label: r.code === 'OTHER' ? `อื่นๆ: ${otherText}` : r.label,
+                otherResolutionText: otherText,
                 orderNo: document.getElementById('meetNo')?.value || '',
                 meetingNo: document.getElementById('meetNo')?.value || '',
                 agendaNo: document.getElementById('agendaNo')?.value || '',

@@ -1883,7 +1883,11 @@ const RESOLUTIONS = [
 
   { code:'FORWARD', group:'มติอื่น ๆ',
     label:'ส่งเรื่องให้หน่วยงาน / คณะอนุกลั่นกรองฯ พิจารณา',
-    doc:'หนังสือนำส่งเรื่อง', signer:'—', needsDestination:true }
+    doc:'หนังสือนำส่งเรื่อง', signer:'—', needsDestination:true },
+
+  { code:'OTHER', group:'มติอื่น ๆ',
+    label:'อื่น ๆ (ระบุรายละเอียด)',
+    doc:'บันทึกมติที่ประชุม', signer:'—', isCustomText:true }
 ];
 
 function resolutionOf(code){ return RESOLUTIONS.find(r => r.code === code) || null; }
