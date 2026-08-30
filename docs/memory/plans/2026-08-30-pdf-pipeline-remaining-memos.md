@@ -3,10 +3,23 @@
 > **Plan ID:** `2026-08-30-pdf-pipeline-remaining-memos`
 > **Date:** 2026-08-30
 > **Author / Agent:** Claude Code
-> **Status:** 🟢 ทำครบทั้ง 4 ไฟล์ (1, 3, 4, 7) wire เป็น "ร่าง" แล้ว · รอฝ่ายเลขานุการตรวจถ้อยคำกฎหมาย
+> **Status:** 🟢 ทำครบทั้ง 4 ไฟล์ (1, 3, 4, 7) wire เข้า order.html แล้ว
 > **Branch / PR:** `main`
 
 ---
+
+## 🔄 อัปเดต 2026-08-30 (รอบ 3): revert Case สาธิต + ถอด "ร่าง"
+
+- ผู้ใช้สั่ง: (1) `git revert` เคสสาธิต `111674/2560` (ไม่ต้องการ Case ใหม่) (2) ถอดป้าย "(ร่าง)" + แบนเนอร์แดง ออกจาก 4 แม่แบบ ให้เป็น `{field}` template ปกติเหมือน 2/5/6
+- **commit `28a3335`** `git revert fd2026c` — ลบ CASES `111674/2560` + `memoDocs` ออกจาก `assets/ecmis-app.js`
+- **commit ถัดไป** — `assets/order-memo-docs.js` + `tools/pdf-template-pipeline/pipeline/build.py` (`ORDER_DOC_META`):
+  - ถอด " (ร่าง)" จาก `label` + `runningTitle` ของ notify_discipline / submit_inquiry / ruling_report / timebar_secgen
+  - ลบ `<div>` แบนเนอร์แดง (`#b91c1c` "ร่าง — แม่แบบนี้ยังไม่ผ่านการตรวจ…") block แรกใน bodyHtml ทั้ง 4
+  - re-anonymise: `(ปุระเชษฐ์ฯ)` → `(เจ้าหน้าที่ผู้ประสานงาน)` ใน submit_inquiry + timebar_secgen · แก้ hint ที่มีชื่อจริง (นเรศวร → "มหาวิทยาลัย…", พวงชมภู → "คำนำหน้า + ชื่อ-สกุล")
+  - คงคอมเมนต์ในโค้ดว่าถ้อยคำ 4 แม่แบบเป็น **AI ร่างจาก PDF ต้นฉบับ ยังไม่ผ่านการตรวจถ้อยคำโดยฝ่ายเลขานุการ กก.ป.ป.ท.** (ไม่มีใน UI)
+- **ไม่แตะ** 3 แม่แบบเดิม (notify_zone/transmit_kbc/timebar_report) รวม `(ปุระเชษฐ์ฯ)` ที่ฝังใน bodyHtml เดิม (มาจาก commit ก่อนหน้า session นี้ เป็นคำย่อป้ายติดต่อ)
+- verify: `order.html?case=<เคสใดก็ได้>&mode=memo` → 8 แท็บ, 4 แท็บใหม่ไม่มี "(ร่าง)"/แบนเนอร์, pagination ปกติ, ไม่มีชื่อบุคคลจริงใน 4 แม่แบบ; `npm test` 5/5
+- **ผลสุทธิ:** ไม่มี Case สาธิต · 4 แม่แบบเป็น `{field}` template ปกติ (prefill เมื่อเปิดกับสำนวนที่มี `memoDocs` — ตอนนี้ยังไม่มีสำนวนไหนมี)
 
 ## 🎯 1. Problem Statement & Business Objective
 - `tools/pdf-template-pipeline/` แปลง PDF สารบรรณ → form-template → memo pane ของ `order.html`
