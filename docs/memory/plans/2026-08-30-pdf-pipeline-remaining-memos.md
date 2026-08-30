@@ -3,7 +3,7 @@
 > **Plan ID:** `2026-08-30-pdf-pipeline-remaining-memos`
 > **Date:** 2026-08-30
 > **Author / Agent:** Claude Code
-> **Status:** 🟡 In Progress — ไฟล์ 4 (notify_discipline) wire เป็น "ร่าง" แล้ว · ไฟล์ 1/3/7 ยังไม่ทำ
+> **Status:** 🟢 ทำครบทั้ง 4 ไฟล์ (1, 3, 4, 7) wire เป็น "ร่าง" แล้ว · รอฝ่ายเลขานุการตรวจถ้อยคำกฎหมาย
 > **Branch / PR:** `main`
 
 ---
@@ -69,10 +69,22 @@
 
 ---
 
-## 7. ค้าง / งานถัดไป
-- **ไฟล์ 1, 3, 7** — narrative report ~10 หน้า ยังไม่ทำ ใช้สูตรเดียวกับไฟล์ 4:
-  extract → เขียน schema เอง → hand-author bodyHtml จาก PDF/reference.docx → wire → verify
-  (ดู [[pdf-pipeline-narrative-blocked]])
+## 7b. ไฟล์ 1, 3, 7 — ทำครบแล้ว (2026-08-30 รอบสอง)
+
+ใช้สูตรเดียวกับไฟล์ 4 (extract → เขียน schema เอง → hand-author bodyHtml จาก PDF จริง → wire):
+
+| ไฟล์ | doc id | label แท็บ | fields | prefill | โครง bodyHtml |
+|---|---|---|---|---|---|
+| 1 | `submit_inquiry` | เสนอไต่สวน (ร่าง) | 16 | 6 | บันทึกข้อความ เสนอ กก.ป.ป.ท. (ผ่าน ผอ.กบค): 1.เรื่องเดิม (มติ+`{inquiry_orders}`+`{resolution_summary}`+`{discipline_finding}`) · 2.ข้อเท็จจริง `{assign_facts}` · 3.ข้อพิจารณา · บล็อกลงนาม นิติกร→กลั่นกรอง ผอ.กลุ่มงาน→ผอ.กบค · `{board_opinion}` เป็น optional (แทน red drafter note ใน PDF) |
+| 3 | `ruling_report` | รายงานวินิจฉัยชี้มูล (ร่าง) | 19 | 5 | section-skeleton: หัวเรื่อง+`{case_no}`+`{ruling_date}` · ผู้ถูกกล่าวหา · กรรมการมา/ไม่มาประชุม · 4 ประเด็น (การไต่สวน/สถานะ/อำนาจหน้าที่/การกระทำผิด) เป็น `<div class="doc-h">` + textarea · ความเห็น · มติอาญา/วินัย · ลงนามประธาน |
+| 7 | `timebar_secgen` | ขาดอายุความ (เลขาฯ) (ร่าง) | 23 | 6 | คู่แฝดของ `timebar_report` แต่ → เลขาธิการ ป.ป.ท.: อ้างมติมอบหมาย `{prior_meeting_*}` · report sections (`{accused_summary}`/`{case_facts}`/`{resolution_summary}`) · `{lapsed_offences}` · บล็อกตรวจ ผอ.กบค/ผอ.กลุ่มงาน/ผู้จัดทำ |
+
+**wire:** `ORDER_DOC_META["1"|"3"|"7"]` (build.py) + `DOCS`/`ORDER`/`PREFILL` (bundle.py) + append 3 block ใน `assets/order-memo-docs.js` (`OrderMemoDocOrder` เป็น 7 รายการ) + copy 3 docx (`memo-7x-submit-inquiry|ruling-report|timebar-secgen.docx`)
+
+**verify (browser, order.html?case=1547/2568&mode=memo):** แท็บทั้ง 8 (base + 7) ขึ้นครบ (grid 4 คอลัมน์ = 2 แถว); 3 แท็บใหม่ render 2 หน้า/แท็บ, banner ร่างหน้า 1, running title "...(ร่าง) (ต่อ)" หน้า 2, prefill 8/6/7 ค่า, textarea field กรอกแล้ว preview อัปเดตสด, ไม่มี `{token}` ค้าง, ไม่มี console error; `npm test` 5/5
+
+## 7c. ค้าง / งานถัดไป
+- **ตรวจถ้อยคำกฎหมาย** ทั้ง 4 แม่แบบ (1/3/4/7) โดยฝ่ายเลขานุการ กก.ป.ป.ท. / `board_sec` — ผ่านแล้วถอด "(ร่าง)" + แบนเนอร์ ออกจากแต่ละ doc (label, runningTitle, block แรก bodyHtml)
 - **ตรวจถ้อยคำกฎหมาย** ไฟล์ 4 โดยฝ่ายเลขานุการ กก.ป.ป.ท. / `board_sec` — เมื่อผ่านแล้วให้ถอด
   "(ร่าง)" / แบนเนอร์ออกจาก `notify_discipline` (label, runningTitle, block แรกใน bodyHtml)
 - **`pipeline.bundle` เต็มรูป** ต้อง regenerate `output-template/` ของไฟล์ 2/5/6 ด้วย ถึงจะรัน bundle

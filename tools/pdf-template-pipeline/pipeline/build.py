@@ -631,6 +631,15 @@ ORDER_DOC_META = {
     "4": {"id": "notify_discipline", "label": "แจ้งโทษวินัย (ร่าง)",
           "runningTitle": "หนังสือแจ้งให้พิจารณาโทษทางวินัย (ร่าง)",
           "docxTemplate": "assets/templates/memo-7x-notify-discipline.docx"},
+    "7": {"id": "timebar_secgen", "label": "ขาดอายุความ (เลขาฯ) (ร่าง)",
+          "runningTitle": "รายงานคดีขาดอายุความ (ถึงเลขาธิการ) (ร่าง)",
+          "docxTemplate": "assets/templates/memo-7x-timebar-secgen.docx"},
+    "1": {"id": "submit_inquiry", "label": "เสนอไต่สวน (ร่าง)",
+          "runningTitle": "บันทึกเสนอรายงานการไต่สวนเบื้องต้น (ร่าง)",
+          "docxTemplate": "assets/templates/memo-7x-submit-inquiry.docx"},
+    "3": {"id": "ruling_report", "label": "รายงานวินิจฉัยชี้มูล (ร่าง)",
+          "runningTitle": "รายงานการไต่สวนเพื่อวินิจฉัยชี้มูลของคณะกรรมการ ป.ป.ท. (ร่าง)",
+          "docxTemplate": "assets/templates/memo-7x-ruling-report.docx"},
 }
 
 

@@ -30,8 +30,15 @@ DOCS = {
                        "memo-7x-timebar.docx"),
     "notify_discipline": ("4.ร่างหนังสือแจ้งให้พิจารณาโทษทางวินัย",
                           "memo-7x-notify-discipline.docx"),
+    "submit_inquiry": ("1.แบบบันทึกเสนอรายงานไต่สวนฯ",
+                       "memo-7x-submit-inquiry.docx"),
+    "ruling_report": ("3.รายงานวินิจฉัยชี้มูลของคณะกรรมการ ปปท",
+                      "memo-7x-ruling-report.docx"),
+    "timebar_secgen": ("7.รายงานคดีขาดอายุความ ถึง เลขาฯ",
+                       "memo-7x-timebar-secgen.docx"),
 }
-ORDER = ["notify_zone", "transmit_kbc", "timebar_report", "notify_discipline"]
+ORDER = ["notify_zone", "transmit_kbc", "timebar_report", "notify_discipline",
+         "submit_inquiry", "ruling_report", "timebar_secgen"]
 
 # schema field id -> key in order.html's prefill sources object. Hand-maintained.
 PREFILL = {
@@ -54,6 +61,21 @@ PREFILL = {
         "case_no": "caseId", "pacc_region": "paccRegion",
         "meeting_no": "meetingNo", "meeting_date": "meetingDateISO",
         "agenda_item": "agendaNo", "case_officer": "ownerName",
+    },
+    "submit_inquiry": {
+        "case_no": "caseId", "pacc_region": "paccRegion",
+        "meeting_no": "meetingNo", "meeting_date": "meetingDateISO",
+        "agenda_item": "agendaNo", "prepared_by_name": "ownerName",
+    },
+    "ruling_report": {
+        "case_no": "caseId", "pacc_region": "paccRegion",
+        "meeting_no": "meetingNo", "meeting_date": "meetingDateISO",
+        "agenda_item": "agendaNo",
+    },
+    "timebar_secgen": {
+        "case_no": "caseId", "pacc_region": "paccRegion",
+        "meeting_no": "meetingNo", "meeting_date": "meetingDateISO",
+        "agenda_item": "agendaNo", "case_officer_name": "ownerName",
     },
 }
 
