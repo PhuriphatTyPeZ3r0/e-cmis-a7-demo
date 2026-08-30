@@ -628,6 +628,9 @@ ORDER_DOC_META = {
     "6": {"id": "timebar_report", "label": "ขาดอายุความ",
           "runningTitle": "รายงานคดีขาดอายุความ",
           "docxTemplate": "assets/templates/memo-7x-timebar.docx"},
+    "4": {"id": "notify_discipline", "label": "แจ้งโทษวินัย (ร่าง)",
+          "runningTitle": "หนังสือแจ้งให้พิจารณาโทษทางวินัย (ร่าง)",
+          "docxTemplate": "assets/templates/memo-7x-notify-discipline.docx"},
 }
 
 

@@ -28,8 +28,10 @@ DOCS = {
                      "memo-7x-transmit-kbc.docx"),
     "timebar_report": ("6.รายงานคดีขาดอายุความ ถึง ผอ.กบค^",
                        "memo-7x-timebar.docx"),
+    "notify_discipline": ("4.ร่างหนังสือแจ้งให้พิจารณาโทษทางวินัย",
+                          "memo-7x-notify-discipline.docx"),
 }
-ORDER = ["notify_zone", "transmit_kbc", "timebar_report"]
+ORDER = ["notify_zone", "transmit_kbc", "timebar_report", "notify_discipline"]
 
 # schema field id -> key in order.html's prefill sources object. Hand-maintained.
 PREFILL = {
@@ -47,6 +49,11 @@ PREFILL = {
         "case_no": "caseId", "pacc_region": "paccRegion",
         "meeting_no": "meetingNo", "meeting_date": "meetingDateISO",
         "agenda_item": "agendaNo",
+    },
+    "notify_discipline": {
+        "case_no": "caseId", "pacc_region": "paccRegion",
+        "meeting_no": "meetingNo", "meeting_date": "meetingDateISO",
+        "agenda_item": "agendaNo", "case_officer": "ownerName",
     },
 }
 
