@@ -2609,9 +2609,8 @@ const PAGE_PERMISSIONS = {
   'support-subcommittee-inbox.html': ['support_sub', 'sup_chair', 'sup_sec', 'sup_asst'],
   'subcommittee-inbox.html': ['subcommittee', 'affairs', 'chairman', 'secgen', 'board_sec', 'board', 'board_ex'],
   'board-inbox.html': ['board', 'board_ex'],
-  'resolution-inbox.html': ['board_sec', 'affairs'],
+  'resolution-inbox.html': ['board_sec'], // หน้านี้เฉพาะ board_sec เท่านั้น — บังคับซ้ำในตัวหน้าเองด้วย (ดูคอมเมนต์ resolution-inbox.html)
   'meeting-report.html': ['board_sec', 'affairs'],
-  'board-room.html': ['board', 'board_ex', 'board_sec', 'secgen'],
   'dashboard.html': ['secgen', 'chairman', 'board_sec', 'board', 'board_ex', 'affairs'],
   'followup-dashboard.html': ['secgen', 'chairman', 'board_sec', 'board', 'board_ex', 'affairs'],
   'case-register.html': null, // public/all roles
