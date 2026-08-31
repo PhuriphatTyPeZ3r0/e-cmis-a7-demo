@@ -36,7 +36,7 @@
         <div class="document-workspace" id="docWorkspace">
             <div>
 
-                <div class="ws-card mb-3">
+                <div class="ws-card mb-3" id="assignRoutingCard">
                     <div class="card-header"><i class="fa-solid fa-shuffle"></i> การกระจายสำนวนเข้าคณะ (Auto Routing)</div>
                     <div class="card-body">
                         <div class="row g-2 mb-3" id="quotaGrid"></div>
@@ -213,6 +213,13 @@
         const kase = ECMIS.requireCase(params.get('case') || '1547/2568');
         if (!kase) throw new Error('ECMIS_CASE_NOT_FOUND');
         const role = ECMIS.currentRole();
+
+        /* อนุกลั่นกรองฯ เห็นเฉพาะส่วนที่ตนทำได้ — การกระจายสำนวนเข้าคณะเป็นงานของ ผอ.กบค. เท่านั้น
+           ซ่อนด้วย d-none แทนการลบ DOM เพราะ initScreening71/72 ยังเขียนลง #quotaGrid/#assignedTeam/
+           #manualTeam ภายในการ์ดนี้อยู่ (ใช้คำนวณคณะที่ได้รับมอบหมายสำหรับ renderDoc/sig ด้วย) */
+        if (role.id === 'subcommittee') {
+            document.getElementById('assignRoutingCard')?.classList.add('d-none');
+        }
 
         const docType = ECMIS.DOC_TYPES[kase.docType];
         const isRuling = docType.code === 'RULING';

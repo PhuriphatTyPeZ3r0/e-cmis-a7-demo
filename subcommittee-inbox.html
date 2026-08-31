@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รายการสำนวนรอกลั่นกรอง | คณะอนุกรรมการกลั่นกรองฯ | E-CMIS</title>
+  <link rel="icon" type="image/png" href="assets/pacc_logo.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="assets/ecmis-app.css" rel="stylesheet">
+  <link href="assets/a4-ecmis-workspace.css" rel="stylesheet">
+  <style>
+    .kpi-card {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(15, 42, 98, 0.12);
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="app-main">
+
+    <div class="page-head d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+      <div>
+        <h1><i class="fa-solid fa-users-viewfinder me-2" style="color:#0F2A62"></i><span>รายการสำนวนรอกลั่นกรอง</span></h1>
+      </div>
+      <div class="d-flex align-items-center gap-3 ms-auto">
+        <span class="flow-ref">คณะอนุกรรมการกลั่นกรองฯ พิจารณาสำนวน 7.1/7.2 ตามคณะที่ได้รับมอบหมาย</span>
+      </div>
+    </div>
+
+    <!-- KPI Cards Row -->
+    <div class="row g-3 mb-4" id="kpiRow"></div>
+
+    <!-- Filter Bar -->
+    <div class="card card-ecmis mb-4">
+      <div class="card-body p-3">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold text-dark small mb-1">ค้นหางาน แฟ้ม หรือผู้ถูกกล่าวหา</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+              <input type="text" id="searchInput" class="form-control"
+                placeholder="เลขสำนวน, เรื่อง, ผู้ถูกกล่าวหา, ผู้รับผิดชอบ">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold text-dark small mb-1"><i
+                class="fa-solid fa-pen-to-square me-1 text-muted"></i>ประเภทสำนวน</label>
+            <select id="typeFilter" class="form-select form-select-sm">
+              <option value="ALL">ทั้งหมด (7.1 + 7.2)</option>
+              <option value="7.1">7.1 ไต่สวนเบื้องต้น</option>
+              <option value="7.2">7.2 วินิจฉัยชี้มูล</option>
+            </select>
+          </div>
+          <div class="col-md-2 text-end">
+            <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 w-100" id="btnClearFilter">
+              <i class="fa-solid fa-rotate-left me-1"></i>ล้างตัวกรอง
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Queue List -->
+    <div class="row g-3 align-items-start">
+      <div class="col-12">
+
+        <div class="card card-ecmis mb-4">
+          <div class="card-header d-flex align-items-center flex-wrap gap-2">
+            <i class="fa-solid fa-list-check text-primary"></i>
+            <span class="fw-bold">รายการสำนวนในคิวกลั่นกรอง</span>
+            <span class="ms-auto small text-muted" id="myRoleLabel">บทบาท: คณะอนุกรรมการกลั่นกรองฯ</span>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover tbl-ecmis mb-0 align-middle">
+                <colgroup>
+                  <col style="width:140px">
+                  <col>
+                  <col style="width:110px">
+                  <col style="width:160px">
+                  <col style="width:160px">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th class="sortable-header" data-sort="id" style="cursor:pointer">เรื่องที่ <i
+                        class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
+                    <th>เรื่องกล่าวหา</th>
+                    <th>ประเภท</th>
+                    <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i
+                        class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
+                    <th class="text-end">ดำเนินการ</th>
+                  </tr>
+                </thead>
+                <tbody id="myQueue"></tbody>
+              </table>
+            </div>
+
+            <div class="px-3 py-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div class="small text-muted ms-auto" id="tableSummaryText">แสดง 0 ถึง 0 จาก 0 รายการ</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="assets/ecmis-app.js"></script>
+  <script>
+    ECMIS.renderShell('subcommittee-inbox.html');
+
+    const role = ECMIS.currentRole();
+    const selectedTeam = ECMIS.currentSubTeam();
+    $('#myRoleLabel').text(`บทบาท: คณะอนุกรรมการกลั่นกรองฯ — ${selectedTeam}`);
+
+    let sortField = 'id';
+    let sortOrder = 'asc';
+
+    /* คิวของคณะที่เลือก: สำนวนที่อยู่ระหว่างอนุกลั่นกรองพิจารณา (7.1 IN_SCREENING / 7.2 IN_SCREENING_72)
+       ที่ subCommittee ตรงกับคณะที่กำลังดูอยู่เท่านั้น — role นี้เห็นเฉพาะคิวของคณะตน */
+    const teamCases = ECMIS.CASES.filter(c =>
+      (c.status === 'IN_SCREENING' || c.status === 'IN_SCREENING_72') && c.subCommittee === selectedTeam
+    ).map(c => ({
+      id: c.id,
+      subject: c.subject,
+      allegation: c.allegation,
+      procType: ECMIS.isCase72(c) ? '7.2' : '7.1',
+      owner: c.owner,
+      ownerOrg: c.ownerOrg,
+      slaDays: c.slaDays,
+      slaLimit: c.slaLimit,
+      accused: c.accused || []
+    }));
+
+    function renderKPI() {
+      const total = teamCases.length;
+      const p71 = teamCases.filter(c => c.procType === '7.1').length;
+      const p72 = teamCases.filter(c => c.procType === '7.2').length;
+
+      const kpis = [
+        { n: total, l: 'สำนวนทั้งหมดในคิว', i: 'fa-folder-open', c: '#0F2A62' },
+        { n: p71, l: '7.1 ไต่สวนเบื้องต้น', i: 'fa-file-circle-question', c: '#D0A830' },
+        { n: p72, l: '7.2 วินิจฉัยชี้มูล', i: 'fa-scale-balanced', c: '#0284C7' }
+      ];
+
+      document.getElementById('kpiRow').innerHTML = kpis.map(k => `
+        <div class="col">
+          <div class="card card-ecmis kpi-card h-100">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+              <div>
+                <div class="text-muted small mb-1">${k.l}</div>
+                <div class="h3 fw-bold mb-0" style="color:${k.c}">${k.n}</div>
+              </div>
+              <div class="rounded-circle p-3 d-flex align-items-center justify-content-center"
+                   style="background: ${k.c}15; width:48px; height:48px;">
+                <i class="fa-solid ${k.i} fs-5" style="color:${k.c}"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderQueue() {
+      const q = ($('#searchInput').val() || '').trim().toLowerCase();
+      const type = $('#typeFilter').val() || 'ALL';
+
+      let filtered = teamCases.filter(c => {
+        if (type !== 'ALL' && c.procType !== type) return false;
+        if (!q) return true;
+        const matchSubject = c.subject && c.subject.toLowerCase().includes(q);
+        const matchId = c.id && c.id.toLowerCase().includes(q);
+        const matchOwner = c.owner && c.owner.toLowerCase().includes(q);
+        const matchAccused = c.accused && c.accused.some(a => a.name && a.name.toLowerCase().includes(q));
+        return matchSubject || matchId || matchOwner || matchAccused;
+      });
+
+      filtered.sort((a, b) => {
+        let valA = a[sortField], valB = b[sortField];
+        if (typeof valA === 'string') {
+          return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        }
+        return sortOrder === 'asc' ? (valA - valB) : (valB - valA);
+      });
+
+      $('#tableSummaryText').text(`แสดง 1 ถึง ${filtered.length} จาก ${filtered.length} รายการ`);
+
+      if (filtered.length === 0) {
+        $('#myQueue').html(`
+          <tr>
+            <td colspan="5" class="text-center py-4 text-muted">
+              <i class="fa-solid fa-folder-open fa-2x mb-2 d-block text-secondary"></i>
+              ไม่พบสำนวนในคิวของ ${selectedTeam} ตามเงื่อนไขที่เลือก
+            </td>
+          </tr>
+        `);
+        return;
+      }
+
+      const html = filtered.map(c => {
+        const typeBadge = c.procType === '7.2'
+          ? `<span class="meet-badge meet-review"><i class="fa-solid fa-scale-balanced me-1" style="font-size:0.65rem"></i>7.2 วินิจฉัยชี้มูล</span>`
+          : `<span class="meet-badge meet-pending"><i class="fa-solid fa-file-circle-question me-1" style="font-size:0.65rem"></i>7.1 ไต่สวนเบื้องต้น</span>`;
+
+        const slaBadge = c.slaDays >= 10
+          ? `<span class="sla sla-warn"><i class="fa-solid fa-clock me-1"></i>ใช้ไป ${c.slaDays}/${c.slaLimit} วัน</span>`
+          : `<span class="sla sla-ok"><i class="fa-solid fa-clock me-1"></i>ใช้ไป ${c.slaDays}/${c.slaLimit} วัน</span>`;
+
+        const page = c.procType === '7.2' ? 'subcommittee-screening.html' : 'subcommittee-screening.html';
+
+        return `
+          <tr>
+            <td class="case-no">${c.id}</td>
+            <td style="max-width:360px">
+              <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
+              <small class="text-muted d-block text-truncate" style="font-size:0.75rem">${c.ownerOrg || ''}</small>
+            </td>
+            <td>${typeBadge}</td>
+            <td>${slaBadge}</td>
+            <td class="text-end">
+              <a href="${page}?case=${encodeURIComponent(c.id)}" class="btn btn-sm btn-navy px-3">
+                <i class="fa-solid fa-pen-to-square me-1"></i>ดำเนินการ
+              </a>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      $('#myQueue').html(html);
+    }
+
+    $(document).ready(function () {
+      renderKPI();
+      renderQueue();
+
+      $('#searchInput').on('input', renderQueue);
+      $('#typeFilter').on('change', renderQueue);
+      $('#btnClearFilter').on('click', function () {
+        $('#searchInput').val('');
+        $('#typeFilter').val('ALL');
+        renderQueue();
+      });
+
+      $('.sortable-header').on('click', function () {
+        const field = $(this).data('sort');
+        if (sortField === field) {
+          sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortField = field;
+          sortOrder = 'asc';
+        }
+        $('.sortable-header i').attr('class', 'fa-solid fa-sort ms-1');
+        $(this).find('i').attr('class', `fa-solid fa-sort-${sortOrder === 'asc' ? 'up' : 'down'} ms-1`);
+        renderQueue();
+      });
+    });
+  </script>
+</body>
+
+</html>

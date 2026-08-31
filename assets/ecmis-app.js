@@ -12,6 +12,10 @@ const ROLES = [
     name:'นางสาวจิราพร นิติกิจ', org:'คณะอนุกรรมการสนับสนุนเลขาธิการฯ', lane:'L2', flow:'S2 / G2', act:'7.1, 7.2',
     perms:['view.assigned','download','support.opinion','support.certify','request.moreinfo'], defaultGroup:'group1' },
 
+  { id:'subcommittee', login:'Sumet.N', row:3, group:'คณะอนุกรรมการกลั่นกรองฯ 1-8', title:'อนุกรรมการและเลขานุการ คณะอนุกรรมการกลั่นกรองฯ',
+    name:'นายสุเมธ นิติธรรม', org:'คณะอนุกรรมการกลั่นกรองฯ', lane:'L4', flow:'S5 / G3', act:'7.1, 7.2',
+    perms:['view.assigned','download','support.opinion','support.certify'], defaultTeam:'คณะที่ 1' },
+
   { id:'chairman', login:'Wichai.Y', row:3, group:'ประธานกรรมการ ป.ป.ท.', title:'ประธานกรรมการ ป.ป.ท.',
     name:'นายวิชัย ยุติธรรม', org:'คณะกรรมการ ป.ป.ท.', lane:'L5', flow:'G4 / S7', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','order.agenda','sign.agenda','sign.order24p3','sign.ruling','vote','bypass.approve','return'] },
@@ -399,6 +403,7 @@ function homeHref(roleId){
   const r = roleId || currentRoleId();
   if (r === 'board_sec') return resolvePage('agenda-registry.html');
   if (r === 'support_sub' || r === 'sup_chair' || r === 'sup_sec' || r === 'sup_asst') return resolvePage('support-subcommittee-inbox.html');
+  if (r === 'subcommittee') return resolvePage('subcommittee-inbox.html');
   if (r === 'board' || r === 'board_ex') return resolvePage('board-inbox.html');
   return resolvePage('inbox.html');
 }
@@ -2396,6 +2401,7 @@ function getRole(id){
 const LOGIN_ALLOWED_ROLE_IDS = [
   'secgen',
   'support_sub',
+  'subcommittee',
   'chairman',
   'board_sec',
   'board',
@@ -2414,6 +2420,7 @@ const PAGE_PERMISSIONS = {
   // Main Inbox Screens
   'inbox.html': ['secgen', 'chairman', 'affairs', 'owner', 'director', 'deputy', 'section_head', 'legal', 'admin'],
   'support-subcommittee-inbox.html': ['support_sub', 'sup_chair', 'sup_sec', 'sup_asst'],
+  'subcommittee-inbox.html': ['subcommittee', 'affairs', 'chairman', 'secgen', 'board_sec', 'board', 'board_ex'],
   'board-inbox.html': ['board', 'board_ex'],
   'resolution-inbox.html': ['board_sec', 'affairs'],
   'meeting-report.html': ['board_sec', 'affairs'],
@@ -2434,8 +2441,8 @@ const PAGE_PERMISSIONS = {
   'support-subcommittee.html': ['support_sub', 'sup_chair', 'sup_sec', 'sup_asst', 'affairs', 'secgen', 'board_sec', 'chairman', 'board', 'board_ex'],
   'chairman-agenda.html': ['chairman', 'affairs', 'board_sec', 'secgen', 'board', 'board_ex'],
   'chairman.html': ['chairman', 'affairs', 'board_sec', 'secgen', 'board', 'board_ex'],
-  'subcommittee-screening.html': ['subcommittee', 'subcom_1', 'subcom_2', 'subcom_3', 'subcom_4', 'subcom_5', 'subcom_6', 'subcom_7', 'subcom_8', 'affairs', 'chairman', 'secgen', 'board_sec', 'board', 'board_ex'],
-  'screening.html': ['subcommittee', 'subcom_1', 'subcom_2', 'subcom_3', 'subcom_4', 'subcom_5', 'subcom_6', 'subcom_7', 'subcom_8', 'affairs', 'chairman', 'secgen', 'board_sec', 'board', 'board_ex'],
+  'subcommittee-screening.html': ['subcommittee', 'affairs', 'chairman', 'secgen', 'board_sec', 'board', 'board_ex'],
+  'screening.html': ['subcommittee', 'affairs', 'chairman', 'secgen', 'board_sec', 'board', 'board_ex'],
   'order-m24.html': ['secgen', 'chairman', 'affairs', 'board_sec', 'board', 'board_ex', 'owner', 'director', 'deputy', 'section_head'],
   'order.html': ['secgen', 'chairman', 'affairs', 'board_sec', 'board', 'board_ex', 'owner', 'director', 'deputy', 'section_head'],
   'board-resolution.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen'],
@@ -2474,6 +2481,20 @@ function setRole(id){
   location.reload();
 }
 function currentRole(){ return getRole(currentRoleId()); }
+
+/* คณะที่ role 'subcommittee' กำลังดูอยู่ — role เดียวสลับดูได้ทั้ง 8 คณะ (เก็บใน sessionStorage
+   แยกจาก ecmis_role เพราะไม่ใช่ identity เปลี่ยนแค่ scope ข้อมูลที่มองเห็น) */
+const SUBCOMMITTEE_TEAMS = ['คณะที่ 1','คณะที่ 2','คณะที่ 3','คณะที่ 4','คณะที่ 5','คณะที่ 6','คณะที่ 7','คณะที่ 8'];
+function currentSubTeam(){
+  return sessionStorage.getItem('ecmis_subcommittee_team')
+    || (getRole('subcommittee') || {}).defaultTeam
+    || SUBCOMMITTEE_TEAMS[0];
+}
+function setSubTeam(team){
+  if (!SUBCOMMITTEE_TEAMS.includes(team)) return;
+  sessionStorage.setItem('ecmis_subcommittee_team', team);
+  location.reload();
+}
 
 function isAuthed(){ return sessionStorage.getItem('ecmis_authed') === '1'; }
 function currentUsername(){ return sessionStorage.getItem('ecmis_username') || ''; }
@@ -2604,6 +2625,7 @@ const NAV = [
       if (role.id === 'board' || role.id === 'board_ex') return 'รอบการประชุมและอ่านวาระล่วงหน้า';
       if (role.id === 'affairs') return 'รายการเรื่องที่ต้องจัดทำ';
       if (role.id === 'support_sub' || role.id === 'sup_chair') return 'รายการสำนวนรอกลั่นกรอง';
+      if (role.id === 'subcommittee') return 'รายการสำนวนรอกลั่นกรอง (คณะของฉัน)';
       if (isUpstreamRole(role.id)) return 'รายการติดตามสถานะสำนวน';
       return 'รายการพิจารณา/ลงนาม';
     },
@@ -2719,6 +2741,10 @@ function renderShell(activeHref){
       roles: ['support_sub']
     },
     {
+      group: 'คณะอนุกรรมการกลั่นกรองฯ 1-8',
+      roles: ['subcommittee']
+    },
+    {
       group: 'คณะกรรมการ ป.ป.ท.',
       roles: ['chairman', 'board']
     },
@@ -2775,6 +2801,17 @@ function renderShell(activeHref){
       <button id="colorModeToggle" class="btn btn-sm btn-light border rounded-pill px-3 py-1 text-secondary d-inline-flex align-items-center gap-1" onclick="ECMIS.toggleColorMode()" title="ปรับสี" style="font-size:0.8rem">
         <i class="fa-solid fa-circle-half-stroke"></i> <span>ปรับสี</span>
       </button>
+
+      ${role.id === 'subcommittee' ? `
+      <!-- Team Switcher: role เดียวของอนุกลั่นกรองฯ สลับดูได้ทั้ง 8 คณะ -->
+      <div class="d-flex align-items-center bg-white px-2 py-1 border rounded-pill shadow-sm ms-1">
+        <label for="subTeamSwitcher" class="form-label mb-0 fw-semibold text-dark small me-1 text-nowrap" style="font-size:0.78rem">
+          <i class="fa-solid fa-users-viewfinder text-primary me-1"></i>คณะที่:
+        </label>
+        <select id="subTeamSwitcher" class="form-select form-select-sm border-0 fw-semibold text-navy py-0" style="min-width:100px; background-color:transparent; cursor:pointer; font-size:0.8rem" onchange="ECMIS.setSubTeam(this.value)">
+          ${SUBCOMMITTEE_TEAMS.map(t => `<option value="${t}" ${t === currentSubTeam() ? 'selected' : ''}>${t}</option>`).join('')}
+        </select>
+      </div>` : ''}
 
       <!-- Notification Bell -->
       <div class="dropdown">
@@ -6188,6 +6225,7 @@ if (typeof localStorage !== 'undefined') {
   thaiDate, thaiDayName, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, requireCase, cacheLiveCases, getRole, roleIdForLogin, LOGIN_ALLOWED_ROLE_IDS,
   addBusinessDays, businessDaysBetween, resolutionSlaInfo, SUBCOMMITTEE_ROSTER,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
+  SUBCOMMITTEE_TEAMS, currentSubTeam, setSubTeam,
   isAuthed, currentUsername, logout,
   renderShell, stepperHtml, statusBadge, typeBadge, slaBadge, actionBar,
   mergeField, escapeHtml, fakeTodayIso, daysUntilFakeIso, paginateDoc, paginateResolutionDoc, exportDocToDocx, exportDocToPdf, printDoc, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
