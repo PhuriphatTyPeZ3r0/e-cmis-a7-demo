@@ -1255,21 +1255,64 @@
 
       const doc = MEMO_DOCS[memoDocTab];
       if (!doc) { card.innerHTML = ''; return; }
-      const rows = doc.fields.map(f => {
+
+      const fieldById = {};
+      (doc.fields || []).forEach(f => { fieldById[f.id] = f; });
+
+      const renderControl = (f, colClass) => {
         const val = String(pipelineFieldValue(doc, f) || '');
         const inputType = f.type === 'date' ? 'date' : (f.type === 'number' ? 'number' : 'text');
         const control = f.type === 'textarea'
-          ? `<textarea class="form-control form-control-sm" data-pf="${f.id}" rows="3" placeholder="${f.hint || ''}">${ECMIS.escapeHtml ? ECMIS.escapeHtml(val) : val}</textarea>`
-          : `<input class="form-control form-control-sm" type="${inputType}" data-pf="${f.id}" value="${(ECMIS.escapeHtml ? ECMIS.escapeHtml(val) : val)}" placeholder="${f.hint || ''}">`;
-        return `<div class="col-md-6 mb-2"><label class="form-label mb-1">${f.label || f.id}</label>${control}</div>`;
-      }).join('');
-      card.innerHTML = `
-        <div class="ws-card mb-3">
-          <div class="card-header"><i class="fa-solid fa-file-lines"></i> ${doc.label} — กรอกข้อมูลเอกสาร</div>
-          <div class="card-body"><div class="row g-2">${rows}</div>
-            <p class="small text-muted mt-2 mb-0">ช่องที่ระบบทราบอยู่แล้ว (ครั้งที่ประชุม/วันที่/เขต ฯลฯ) เติมให้อัตโนมัติ แก้ไขทับได้</p>
-          </div>
+          ? `<textarea class="form-control" data-pf="${f.id}" rows="3" placeholder="${f.hint || ''}">${ECMIS.escapeHtml ? ECMIS.escapeHtml(val) : val}</textarea>`
+          : `<input class="form-control" type="${inputType}" data-pf="${f.id}" value="${(ECMIS.escapeHtml ? ECMIS.escapeHtml(val) : val)}" placeholder="${f.hint || ''}">`;
+        return `<div class="${colClass} mb-2"><label class="form-label mb-1">${f.label || f.id}</label>${control}</div>`;
+      };
+
+      // Top Notice Banner
+      let html = `
+        <div class="alert alert-info py-2 px-3 small mb-3">
+          <i class="fa-solid fa-circle-info me-1"></i> ช่องที่ระบบทราบอยู่แล้ว (ครั้งที่ประชุม/วันที่/เขต ฯลฯ) เติมให้อัตโนมัติ สามารถแก้ไขทับได้
         </div>`;
+
+      if (doc.groups && doc.groups.length > 0) {
+        doc.groups.forEach(g => {
+          const groupFields = (g.fieldIds || []).map(id => fieldById[id]).filter(Boolean);
+          if (groupFields.length === 0) return;
+
+          // Check if fields are compact meeting trio
+          const isCompactTrio = groupFields.length === 3 && groupFields.every(f => f.type !== 'textarea');
+
+          const fieldsHtml = groupFields.map(f => {
+            let colClass = 'col-md-6';
+            if (f.type === 'textarea') {
+              colClass = 'col-12';
+            } else if (isCompactTrio) {
+              colClass = 'col-md-4';
+            }
+            return renderControl(f, colClass);
+          }).join('');
+
+          html += `
+            <div class="ws-card mb-3">
+              <div class="card-header"><i class="fa-solid ${g.icon || 'fa-folder-open'}"></i> ${g.title}</div>
+              <div class="card-body">
+                <div class="row g-2">${fieldsHtml}</div>
+              </div>
+            </div>`;
+        });
+      } else {
+        const rows = doc.fields.map(f => {
+          const colClass = f.type === 'textarea' ? 'col-12' : 'col-md-6';
+          return renderControl(f, colClass);
+        }).join('');
+        html += `
+          <div class="ws-card mb-3">
+            <div class="card-header"><i class="fa-solid fa-file-lines"></i> ${doc.label} — กรอกข้อมูลเอกสาร</div>
+            <div class="card-body"><div class="row g-2">${rows}</div></div>
+          </div>`;
+      }
+
+      card.innerHTML = html;
       card.querySelectorAll('[data-pf]').forEach(el => {
         const save = () => {
           pipelineMemoValues[doc.id] = pipelineMemoValues[doc.id] || {};
