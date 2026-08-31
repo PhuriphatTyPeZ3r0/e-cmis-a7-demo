@@ -89,7 +89,6 @@
             <div class="table-responsive">
               <table class="table table-hover tbl-ecmis mb-0 align-middle">
                 <colgroup>
-                  <col style="width:40px">
                   <col style="width:140px">
                   <col>
                   <col style="width:200px">
@@ -98,7 +97,6 @@
                 </colgroup>
                 <thead>
                   <tr>
-                    <th class="text-center"><input type="checkbox" id="chkAll" class="form-check-input"></th>
                     <th class="sortable-header" data-sort="id" style="cursor:pointer">เรื่องที่ <i
                         class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
                     <th>เรื่องกล่าวหา</th>
@@ -114,14 +112,6 @@
 
             <div class="px-3 py-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-2"
               id="queueFooter">
-              <div id="bulkActionsBox" class="d-none align-items-center gap-2">
-                <span class="small text-muted me-1" id="bulkSelectCount">เลือกแล้ว 0 รายการ</span>
-                <button type="button" class="btn btn-xs btn-navy py-1 px-2" style="font-size:0.78rem"
-                  id="btnBulkApprove">
-                  <i class="fa-solid fa-check-double me-1"></i><span id="bulkBtnText">บันทึกผลกลั่นกรองรายการที่เลือก
-                    (Bulk Action)</span>
-                </button>
-              </div>
               <div class="small text-muted ms-auto me-3" id="tableSummaryText">แสดง 0 ถึง 0 จาก 0 รายการ</div>
               <nav aria-label="Queue navigation">
                 <ul class="pagination pagination-sm m-0" id="queuePagination"></ul>
@@ -535,7 +525,7 @@
       if (filtered.length === 0) {
         $('#myQueue').html(`
           <tr>
-            <td colspan="6" class="text-center py-4 text-muted">
+            <td colspan="5" class="text-center py-4 text-muted">
               <i class="fa-solid fa-folder-open fa-2x mb-2 d-block text-secondary"></i>
               ไม่พบรายการสำนวนตามเงื่อนไขที่เลือก
             </td>
@@ -585,20 +575,8 @@
                <i class="fa-solid fa-pen-to-square me-1"></i>ดำเนินการ
              </a>`;
 
-        // Checkbox: ถ้าเสร็จแล้ว / ส่งคืนแล้ว / รอข้อมูลเพิ่ม ให้ล็อก (Lock icon)
-        let chkTooltip = 'กลั่นกรองแล้วเสร็จ (ล็อกข้อมูล)';
-        if (isReturned) chkTooltip = 'ส่งคืนสายงานต้นทางแล้ว (ล็อกข้อมูล)';
-        if (isMoreInfo) chkTooltip = 'อยู่ระหว่างรอข้อมูลเพิ่มเติม (ล็อกข้อมูล)';
-
-        const chkCell = isReadOnlyItem
-          ? `<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="${chkTooltip}"></i>`
-          : `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">`;
-
         return `
           <tr>
-            <td class="text-center">
-              ${chkCell}
-            </td>
             <td class="case-no">${c.id}</td>
             <td style="max-width:320px">
               <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
@@ -614,35 +592,12 @@
       }).join('');
 
       $('#myQueue').html(html);
-      updateBulkUI();
-    }
-
-    function updateBulkUI() {
-      const checked = $('.case-chk:checked').length;
-      if (checked > 0) {
-        $('#bulkActionsBox').removeClass('d-none').addClass('d-flex');
-        $('#bulkSelectCount').text(`เลือกแล้ว ${checked} รายการ`);
-      } else {
-        $('#bulkActionsBox').addClass('d-none').removeClass('d-flex');
-      }
     }
 
     $(document).ready(function () {
       // ตั้งค่า Scope เริ่มต้น
       updateScopeGroup(selectedGroup);
       refreshFromSupabase();
-
-      $('#chkAll').on('change', function () {
-        $('.case-chk').prop('checked', this.checked);
-        updateBulkUI();
-      });
-
-      $(document).on('change', '.case-chk', function () {
-        const totalCheckable = $('.case-chk').length;
-        const allChecked = totalCheckable > 0 && $('.case-chk:checked').length === totalCheckable;
-        $('#chkAll').prop('checked', allChecked);
-        updateBulkUI();
-      });
 
       $('#searchInput').on('input', function () {
         renderQueue();
@@ -675,45 +630,6 @@
         renderQueue();
       });
 
-      $('#btnBulkApprove').on('click', async function () {
-        const checkedIds = $('.case-chk:checked').map(function () { return $(this).data('id'); }).get();
-        if (checkedIds.length === 0) return;
-        const res = await Swal.fire({
-          title: 'ยืนยันดำเนินการกลั่นกรองแบบกลุ่ม',
-          text: `คุณต้องการบันทึกผลการกลั่นกรองสำหรับ ${checkedIds.length} สำนวนที่เลือกใช่หรือไม่?`,
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonText: 'ยืนยันดำเนินการ',
-          cancelButtonText: 'ยกเลิก',
-          confirmButtonColor: '#0F2A62'
-        });
-        if (!res.isConfirmed) return;
-
-        if (sb) {
-          try {
-            const trrIds = allCases.filter(c => checkedIds.includes(c.id) && c.trr_id).map(c => c.trr_id);
-            if (trrIds.length > 0) {
-              await sb.from('tbl_res_request').update({ trr_status: '009' }).in('trr_id', trrIds);
-            }
-          } catch (e) {
-            console.error('Bulk update to Supabase failed:', e);
-          }
-        }
-
-        allCases.forEach(c => {
-          if (checkedIds.includes(c.id)) {
-            c.status = 'PENDING_CHAIRMAN';
-            c.statusCat = 'DONE';
-            c.statusText = 'กลั่นกรองแล้วเสร็จ';
-          }
-        });
-
-        ECMIS.toastOk(`บันทึกผลการกลั่นกรอง ${checkedIds.length} รายการเรียบร้อยแล้ว`);
-        $('.case-chk').prop('checked', false);
-        $('#chkAll').prop('checked', false);
-        updateBulkUI();
-        updateScopeGroup(selectedGroup, false);
-      });
     });
   </script>
 </body>

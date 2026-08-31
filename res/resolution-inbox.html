@@ -140,7 +140,6 @@
           <div class="table-responsive">
             <table class="table table-hover tbl-ecmis mb-0 align-middle">
               <colgroup>
-                <col style="width:40px">
                 <col style="width:130px">
                 <col style="width:135px">
                 <col>
@@ -150,7 +149,6 @@
               </colgroup>
               <thead>
                 <tr>
-                  <th class="text-center"><input type="checkbox" id="chkAll" class="form-check-input"></th>
                   <th class="sortable-header" data-sort="id" style="cursor:pointer">เรื่องที่ <i class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
                   <th>ประเภทเรื่อง</th>
                   <th>เรื่องที่กล่าวหา / ผู้รับผิดชอบ</th>
@@ -164,12 +162,6 @@
           </div>
 
           <div class="px-3 py-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-2 bg-light" id="queueFooter">
-            <div id="bulkActionsBox" class="d-none align-items-center gap-2">
-              <span class="small text-muted me-1" id="bulkSelectCount">เลือกแล้ว 0 รายการ</span>
-              <button type="button" class="btn btn-xs btn-navy py-1 px-2" style="font-size:0.78rem" id="btnBulkApprove">
-                <i class="fa-solid fa-check-double me-1"></i>บันทึกมติรายการที่เลือก
-              </button>
-            </div>
             <nav aria-label="Queue navigation" class="ms-auto">
               <ul class="pagination pagination-sm m-0" id="queuePagination"></ul>
             </nav>
@@ -401,9 +393,6 @@ function row(c){
   const statusBadgeHtml = getActionBadge(c);
 
   return `<tr>
-    <td class="text-center">
-      ${isActionable ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="ส่งต่อไปยังกลุ่มงานที่เกี่ยวข้องแล้ว"></i>'}
-    </td>
     <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
     <td>${typeBadge(c, is72)}</td>
     <td style="max-width:320px">
@@ -438,7 +427,6 @@ function renderMyQueue(loading = false) {
     for(let i=0; i<Math.min(pageSize, filteredCombined.length || 3); i++) {
       skeletons += `
         <tr class="skeleton-row">
-          <td><div class="skeleton-box" style="width:20px"></div></td>
           <td><div class="skeleton-box" style="width:80px"></div></td>
           <td><div class="skeleton-box" style="width:100px"></div></td>
           <td><div class="skeleton-box" style="width:200px"></div></td>
@@ -448,10 +436,6 @@ function renderMyQueue(loading = false) {
         </tr>`;
     }
     tbodyPrimary.innerHTML = skeletons;
-
-    document.getElementById('bulkActionsBox').className = 'd-none';
-    const chkAll = document.getElementById('chkAll');
-    if (chkAll) chkAll.checked = false;
 
     setTimeout(() => {
       renderMyQueue(false);
@@ -482,7 +466,7 @@ function renderMyQueue(loading = false) {
 
   tbodyPrimary.innerHTML = paginatedCases.length
     ? paginatedCases.map(c => row(c)).join('')
-    : `<tr><td colspan="7" class="text-center text-muted py-4">
+    : `<tr><td colspan="6" class="text-center text-muted py-4">
          <i class="fa-solid fa-folder-open fa-2x mb-2 d-block text-primary"></i>
          ไม่มีรายการสำนวนในมุมมองนี้ตามเงื่อนไขที่ค้นหา<br>
          <small>ลองเลือกแท็บมุมมองอื่น หรือเลือกตัวกรองสถานะเป็น "ทั้งหมด"</small></td></tr>`;
@@ -504,8 +488,6 @@ function renderMyQueue(loading = false) {
       <a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">»</a>
     </li>`;
   paginUl.innerHTML = paginHtml;
-
-  initCheckboxHandlers();
 }
 
 function changePage(p) {
@@ -530,71 +512,6 @@ document.querySelectorAll('.sortable-header').forEach(header => {
     if (activeIcon) activeIcon.className = `fa-solid fa-sort-${sortOrder === 'asc' ? 'up' : 'down'}`;
 
     renderMyQueue(true);
-  });
-});
-
-function initCheckboxHandlers() {
-  const chkAll = document.getElementById('chkAll');
-  const chks = document.querySelectorAll('.case-chk');
-
-  if (!chkAll) return;
-  chkAll.addEventListener('change', () => {
-    chks.forEach(chk => chk.checked = chkAll.checked);
-    updateBulkActionsState();
-  });
-
-  chks.forEach(chk => {
-    chk.addEventListener('change', () => {
-      chkAll.checked = Array.from(chks).every(c => c.checked);
-      updateBulkActionsState();
-    });
-  });
-}
-
-function updateBulkActionsState() {
-  const chks = document.querySelectorAll('.case-chk:checked');
-  const bulkBox = document.getElementById('bulkActionsBox');
-  const bulkCount = document.getElementById('bulkSelectCount');
-
-  if (!bulkBox) return;
-  if (chks.length > 0) {
-    bulkBox.className = 'd-flex align-items-center gap-2';
-    if (bulkCount) bulkCount.textContent = `เลือกแล้ว ${chks.length} รายการ`;
-  } else {
-    bulkBox.className = 'd-none';
-  }
-}
-
-document.getElementById('btnBulkApprove')?.addEventListener('click', () => {
-  const chks = document.querySelectorAll('.case-chk:checked');
-  if (!chks.length) return;
-
-  ECMIS.confirmAction({
-    title: `ยืนยันบันทึกมติกลุ่มจำนวน ${chks.length} รายการ`,
-    html: `<p>ระบบจะบันทึกมติเห็นชอบตามที่เสนอและส่งต่อไปยังกลุ่มงานกิจการคณะกรรมการเพื่อดำเนินการต่อไป</p>`,
-    confirmText: 'ยืนยันบันทึกมติกลุ่ม'
-  }).then(async res => {
-    if (!res.isConfirmed) return;
-    try {
-      for (const chk of chks) {
-        const id = chk.dataset.id;
-        const c = CASES.find(x => x.id === id);
-        if (c) {
-          c.status = 'RESOLVED';
-          c.resolution = 'ACCEPT_S24P1';
-          c.resolutionStage = 3;
-          c.resolvedAt = new Date().toLocaleString('th-TH');
-          c.resolvedAtIso = new Date().toISOString();
-        }
-      }
-      ECMIS.saveCases();
-    } catch (err) {
-      console.error('สั่งการกลุ่มไม่สำเร็จ:', err);
-      ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
-      return;
-    }
-    ECMIS.toastOk(`บันทึกมติกลุ่มสำเร็จจำนวน ${chks.length} รายการ และส่งต่อกลุ่มกิจการฯ แล้ว`);
-    setTimeout(() => location.reload(), 1200);
   });
 });
 

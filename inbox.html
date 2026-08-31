@@ -126,7 +126,6 @@
           <div class="table-responsive">
             <table class="table table-hover tbl-ecmis mb-0 align-middle">
               <colgroup>
-                <col style="width:40px">
                 <col style="width:130px">
                 <col style="width:130px">
                 <col>
@@ -136,7 +135,6 @@
               </colgroup>
               <thead>
                 <tr>
-                  <th class="text-center"><input type="checkbox" id="chkAll" class="form-check-input"></th>
                   <th class="sortable-header" data-sort="id" style="cursor:pointer">เรื่องที่ <i class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
                   <th>ประเภทเรื่อง</th>
                   <th>เรื่องกล่าวหา</th>
@@ -150,12 +148,6 @@
           </div>
 
           <div class="px-3 py-2 border-top d-flex align-items-center justify-content-between flex-wrap gap-2" id="queueFooter">
-            <div id="bulkActionsBox" class="d-none align-items-center gap-2">
-              <span class="small text-muted me-1" id="bulkSelectCount">เลือกแล้ว 0 รายการ</span>
-              <button type="button" class="btn btn-xs btn-navy py-1 px-2" style="font-size:0.78rem" id="btnBulkApprove">
-                <i class="fa-solid fa-check-double me-1"></i><span id="bulkBtnText">อนุมัติรายการที่เลือก (Bulk Action)</span>
-              </button>
-            </div>
             <nav aria-label="Queue navigation" class="ms-auto">
               <ul class="pagination pagination-sm m-0" id="queuePagination"></ul>
             </nav>
@@ -230,16 +222,6 @@ async function loadCasesFromSupabase() {
       kase.status = ECMIS.CODE_STATUS[row.trr_status] || row.trr_status;
       return kase;
     });
-}
-
-async function updateCaseStatus(kase, newStatus) {
-  const code = ECMIS.STATUS_CODE[newStatus];
-  if (!code) throw new Error(`ไม่พบรหัสสถานะสำหรับ ${newStatus}`);
-  const fromStatus = kase.status;
-  const { error } = await sb.from('tbl_res_request').update({ trr_status: code }).eq('trr_id', kase.trr_id);
-  if (error) throw error;
-  ECMIS.logRequestEvent(kase.trr_id, fromStatus, newStatus);
-  kase.status = newStatus;
 }
 
 function isChairActionable(c) {
@@ -324,10 +306,7 @@ const DEFAULT_COPY = {
   card1Title: 'รายการสำนวนพิจารณา/ลงนาม',
   colStatusHeader: 'สถานะเสนอ/ลงนาม',
   kpiPending: 'รอเลขาพิจารณาลงนาม', kpiDone: 'ลงนามแล้ว', kpiReturned: 'ไม่ลงนาม / ตีกลับ',
-  stPending:  'รอเลขาพิจารณาลงนาม', stDone:  'ลงนามแล้ว', stReturned:  'ไม่ลงนาม / ตีกลับ',
-  bulkBtn:    'อนุมัติรายการที่เลือก (Bulk Action)',
-  bulkTitle:  n => `ยืนยันดำเนินการกลุ่มจำนวน ${n} รายการ`,
-  bulkBody:   'ระบบจะอนุมัติและเสนอสำนวนที่เลือกทั้งหมดตามบทบาทปัจจุบันของคุณ'
+  stPending:  'รอเลขาพิจารณาลงนาม', stDone:  'ลงนามแล้ว', stReturned:  'ไม่ลงนาม / ตีกลับ'
 };
 
 const UPSTREAM_COPY = {
@@ -337,10 +316,7 @@ const UPSTREAM_COPY = {
   card1Title: 'รายการสำนวนของหน่วยงาน และสถานะการพิจารณา',
   colStatusHeader: 'สถานะการพิจารณา',
   kpiPending: 'อยู่ระหว่างพิจารณา', kpiDone: 'ลงนามแล้ว', kpiReturned: 'ตีกลับ / ส่งคืน',
-  stPending:  'อยู่ระหว่างพิจารณา', stDone:  'ลงนามแล้ว', stReturned:  'ตีกลับ / ส่งคืน',
-  bulkBtn:    'ดำเนินการรายการที่เลือก',
-  bulkTitle:  n => `ยืนยันดำเนินการกลุ่มจำนวน ${n} รายการ`,
-  bulkBody:   'ระบบจะดำเนินการสำนวนที่เลือกทั้งหมดตามสิทธิ์ของบทบาทปัจจุบันของคุณ'
+  stPending:  'อยู่ระหว่างพิจารณา', stDone:  'ลงนามแล้ว', stReturned:  'ตีกลับ / ส่งคืน'
 };
 
 const CHAIRMAN_COPY = {
@@ -350,10 +326,7 @@ const CHAIRMAN_COPY = {
   card1Title: 'รายการสำนวนในคิวพิจารณาและสั่งการของประธานกรรมการ ป.ป.ท.',
   colStatusHeader: 'สถานะสั่งการ/บรรจุวาระ',
   kpiPending: 'รอสั่งการวาระปกติ', kpiDone: 'สั่งการแล้ว (รอบรรจุวาระ)', kpiReturned: 'ตีกลับให้แก้ไข',
-  stPending:  'รอประธานสั่งการ', stDone:  'สั่งการแล้ว', stReturned:  'ตีกลับให้แก้ไข',
-  bulkBtn:    'สั่งการรายการที่เลือก (Bulk Action)',
-  bulkTitle:  n => `ยืนยันสั่งการกลุ่มจำนวน ${n} รายการ`,
-  bulkBody:   'ระบบจะสั่งการและบรรจุวาระสำนวนที่เลือกทั้งหมดตามคำสั่งของประธานฯ'
+  stPending:  'รอประธานสั่งการ', stDone:  'สั่งการแล้ว', stReturned:  'ตีกลับให้แก้ไข'
 };
 
 const AFFAIRS_COPY = {
@@ -363,10 +336,7 @@ const AFFAIRS_COPY = {
   card1Title: 'รายการสำนวนที่ต้องจัดทำ',
   colStatusHeader: 'สถานะจัดทำ',
   kpiPending: 'รอจัดทำ', kpiDone: 'จัดทำแล้ว', kpiReturned: 'เลื่อน/ถอนวาระ',
-  stPending:  'รอจัดทำ', stDone:  'จัดทำแล้ว', stReturned:  'เลื่อน/ถอนวาระ',
-  bulkBtn:    'ดำเนินการรายการที่เลือก',
-  bulkTitle:  n => `ยืนยันดำเนินการกลุ่มจำนวน ${n} รายการ`,
-  bulkBody:   'ระบบจะดำเนินการสำนวนที่เลือกทั้งหมดตามสิทธิ์ของบทบาทปัจจุบันของคุณ'
+  stPending:  'รอจัดทำ', stDone:  'จัดทำแล้ว', stReturned:  'เลื่อน/ถอนวาระ'
 };
 
 const ROLE_COPY = {
@@ -388,14 +358,6 @@ document.getElementById('colStatusHeader').textContent = copy.colStatusHeader;
 document.getElementById('stOptPending').textContent = copy.stPending;
 document.getElementById('stOptSigned').textContent = copy.stDone;
 document.getElementById('stOptReturned').textContent = copy.stReturned;
-document.getElementById('bulkBtnText').textContent = copy.bulkBtn;
-
-/* ประธานฯ ไม่มีสิทธิ์สั่งการกลุ่ม (ดูคอมเมนต์ใน row()) — ซ่อน master checkbox ของหัวตารางไปด้วย
-   เพราะไม่มี checkbox ย่อยในแถวให้ติ๊กแล้ว ปุ่ม Bulk Action จะไม่ถูกใช้งานเลยสำหรับบทบาทนี้ */
-if (role.id === 'chairman') {
-  const chkAllEl = document.getElementById('chkAll');
-  if (chkAllEl) chkAllEl.style.visibility = 'hidden';
-}
 
 document.getElementById('myRoleLabel').textContent = `บทบาท: ${role.title}`;
 
@@ -681,14 +643,7 @@ function row(c){
 
     const typeTag = typeBadge(c, is72);
 
-    /* ประธานฯ ต้องพิจารณาสั่งการ/ลงนามทีละสำนวนโดยเปิดจากหน้ารายการเข้าไปยังหน้าเอกสารเฉพาะเรื่องเสมอ
-       (chairman-agenda.html / order.html / ruling-report.html / urgent-agenda.html) — ไม่แสดง checkbox
-       เพื่อไม่ให้มีทางลัด Bulk Action ที่ข้ามการอ่านเอกสารและลงนามดิจิทัลรายสำนวน (เดิม bulk เปลี่ยน
-       สถานะตรงไป IN_SCREENING ซึ่งข้ามหน้าลงนามไปเลยและสถานะปลายทางไม่ตรงกับที่หน้าลงนามจริงใช้) */
     return `<tr>
-      <td class="text-center">
-        <i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="ต้องพิจารณาสั่งการทีละรายการจากหน้ารายการ ไม่มีสิทธิ์สั่งการกลุ่ม"></i>
-      </td>
       <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
       <td>${typeTag}</td>
       <td style="max-width:300px">
@@ -714,14 +669,8 @@ function row(c){
   const isPendingAction = isMyPending(c);
   const statusBadgeHtml = getActionBadge(c);
   const typeTag = typeBadge(c, is72);
-  /* งานของ affairs (บรรจุวาระใหม่ / ร่างรายงานวินิจฉัยชี้มูล / ส่งดำเนินคดี) เป็นงานจัดทำที่ต้องพิจารณา
-     ทีละเรื่อง ไม่ใช่การอนุมัติแบบ bulk — ไม่แสดง checkbox เพื่อไม่ให้เข้าใจผิดว่าสั่งการกลุ่มได้ */
-  const showCheckbox = isPendingAction && role.id !== 'affairs';
 
   return `<tr>
-    <td class="text-center">
-      ${showCheckbox ? `<input type="checkbox" class="case-chk form-check-input" data-id="${c.id}">` : '<i class="fa-solid fa-lock text-muted" style="font-size:0.75rem" title="ไม่มีสิทธิ์สั่งการกลุ่ม"></i>'}
-    </td>
     <td class="case-no">${c.id}${(c.urgent || c.urgent72)?' <span class="st st-urgent ms-1">ด่วน</span>':''}</td>
     <td>${typeTag}</td>
     <td style="max-width:300px">
@@ -754,7 +703,6 @@ function renderMyQueue(loading = false) {
     for(let i=0; i<Math.min(pageSize, filteredCombined.length || 3); i++) {
       skeletons += `
         <tr class="skeleton-row">
-          <td><div class="skeleton-box" style="width:20px"></div></td>
           <td><div class="skeleton-box" style="width:80px"></div></td>
           <td><div class="skeleton-box" style="width:90px"></div></td>
           <td><div class="skeleton-box" style="width:200px"></div></td>
@@ -764,10 +712,6 @@ function renderMyQueue(loading = false) {
         </tr>`;
     }
     tbodyPrimary.innerHTML = skeletons;
-
-    document.getElementById('bulkActionsBox').className = 'd-none';
-    const chkAll = document.getElementById('chkAll');
-    if (chkAll) chkAll.checked = false;
 
     setTimeout(() => {
       renderMyQueue(false);
@@ -805,7 +749,7 @@ function renderMyQueue(loading = false) {
 
   tbodyPrimary.innerHTML = paginatedCases.length
     ? paginatedCases.map(c => row(c)).join('')
-    : `<tr><td colspan="7" class="text-center text-muted py-4">
+    : `<tr><td colspan="6" class="text-center text-muted py-4">
          <i class="fa-solid fa-face-smile fa-lg mb-2 d-block"></i>
          ไม่มีรายการสำนวนตามเงื่อนไขการค้นหา<br>
          <small>ลองเปลี่ยนข้อความค้นหาหรือตัวกรองสถานะ</small></td></tr>`;
@@ -827,8 +771,6 @@ function renderMyQueue(loading = false) {
       <a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">»</a>
     </li>`;
   paginUl.innerHTML = paginHtml;
-
-  initCheckboxHandlers();
 }
 
 function changePage(p) {
@@ -853,75 +795,6 @@ document.querySelectorAll('.sortable-header').forEach(header => {
     if (activeIcon) activeIcon.className = `fa-solid fa-sort-${sortOrder === 'asc' ? 'up' : 'down'}`;
 
     renderMyQueue(true);
-  });
-});
-
-function initCheckboxHandlers() {
-  const chkAll = document.getElementById('chkAll');
-  const chks = document.querySelectorAll('.case-chk');
-
-  if (!chkAll) return;
-  chkAll.addEventListener('change', () => {
-    chks.forEach(chk => chk.checked = chkAll.checked);
-    updateBulkActionsState();
-  });
-
-  chks.forEach(chk => {
-    chk.addEventListener('change', () => {
-      chkAll.checked = Array.from(chks).every(c => c.checked);
-      updateBulkActionsState();
-    });
-  });
-}
-
-function updateBulkActionsState() {
-  const chks = document.querySelectorAll('.case-chk:checked');
-  const bulkBox = document.getElementById('bulkActionsBox');
-  const bulkCount = document.getElementById('bulkSelectCount');
-
-  if (!bulkBox) return;
-  if (chks.length > 0) {
-    bulkBox.className = 'd-flex align-items-center gap-2';
-    if (bulkCount) bulkCount.textContent = `เลือกแล้ว ${chks.length} รายการ`;
-  } else {
-    bulkBox.className = 'd-none';
-  }
-}
-
-document.getElementById('btnBulkApprove')?.addEventListener('click', () => {
-  const chks = document.querySelectorAll('.case-chk:checked');
-  if (!chks.length) return;
-
-  ECMIS.confirmAction({
-    title: copy.bulkTitle(chks.length),
-    html: `<p>${copy.bulkBody}</p>`,
-    confirmText: 'ยืนยันสั่งการกลุ่ม'
-  }).then(async res => {
-    if (!res.isConfirmed) return;
-    const transitionMap = {
-      'PENDING_SECGEN': c => c.urgent ? 'PENDING_CHAIRMAN' : 'IN_SCREENING',
-      'IN_SCREENING': () => 'AGENDA_SET',
-      'AGENDA_SET': () => 'IN_MEETING',
-      'IN_MEETING': () => 'RESOLVED_PENDING',
-      'RESOLVED_PENDING': () => 'RESOLVED',
-      'RESOLVED': () => 'DISPATCHING',
-      'DISPATCHING': () => 'CLOSED'
-    };
-    try {
-      for (const chk of chks) {
-        const id = chk.dataset.id;
-        const c = CASES.find(x => x.id === id);
-        if (c && transitionMap[c.status]) {
-          await updateCaseStatus(c, transitionMap[c.status](c));
-        }
-      }
-    } catch (err) {
-      console.error('สั่งการกลุ่มไม่สำเร็จ:', err);
-      ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
-      return;
-    }
-    ECMIS.toastOk(`สั่งการกลุ่มสำเร็จจำนวน ${chks.length} รายการแล้ว`);
-    setTimeout(() => location.reload(), 1200);
   });
 });
 
