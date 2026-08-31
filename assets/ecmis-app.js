@@ -2496,6 +2496,21 @@ function setSubTeam(team){
   location.reload();
 }
 
+/* กลุ่มงานที่ role 'support_sub' (และ alias sup_chair/sup_sec/sup_asst) กำลังดูอยู่ — มิเรอร์
+   currentSubTeam/setSubTeam ของ 'subcommittee' ทุกประการ (sessionStorage-only + reload) */
+const SUPPORT_GROUPS = ['group1', 'group2'];
+const SUPPORT_GROUP_LABELS = { group1: 'กลุ่มงานสนับสนุนฯ 1', group2: 'กลุ่มงานสนับสนุนฯ 2' };
+function currentSupportGroup(){
+  return sessionStorage.getItem('ecmis_support_sub_group')
+    || (getRole('support_sub') || {}).defaultGroup
+    || SUPPORT_GROUPS[0];
+}
+function setSupportGroup(group){
+  if (!SUPPORT_GROUPS.includes(group)) return;
+  sessionStorage.setItem('ecmis_support_sub_group', group);
+  location.reload();
+}
+
 function isAuthed(){ return sessionStorage.getItem('ecmis_authed') === '1'; }
 function currentUsername(){ return sessionStorage.getItem('ecmis_username') || ''; }
 function logout(){
@@ -2810,6 +2825,17 @@ function renderShell(activeHref){
         </label>
         <select id="subTeamSwitcher" class="form-select form-select-sm border-0 fw-semibold text-navy py-0" style="min-width:100px; background-color:transparent; cursor:pointer; font-size:0.8rem" onchange="ECMIS.setSubTeam(this.value)">
           ${SUBCOMMITTEE_TEAMS.map(t => `<option value="${t}" ${t === currentSubTeam() ? 'selected' : ''}>${t}</option>`).join('')}
+        </select>
+      </div>` : ''}
+
+      ${role.id === 'support_sub' ? `
+      <!-- Group Switcher: role ของอนุกรรมการสนับสนุนเลขาธิการฯ สลับดูได้ทั้ง 2 กลุ่มงาน -->
+      <div class="d-flex align-items-center bg-white px-2 py-1 border rounded-pill shadow-sm ms-1">
+        <label for="supportGroupSwitcher" class="form-label mb-0 fw-semibold text-dark small me-1 text-nowrap" style="font-size:0.78rem">
+          <i class="fa-solid fa-layer-group text-primary me-1"></i>กลุ่มงานที่:
+        </label>
+        <select id="supportGroupSwitcher" class="form-select form-select-sm border-0 fw-semibold text-navy py-0" style="min-width:170px; background-color:transparent; cursor:pointer; font-size:0.8rem" onchange="ECMIS.setSupportGroup(this.value)">
+          ${SUPPORT_GROUPS.map(g => `<option value="${g}" ${g === currentSupportGroup() ? 'selected' : ''}>${SUPPORT_GROUP_LABELS[g]}</option>`).join('')}
         </select>
       </div>` : ''}
 
@@ -6226,6 +6252,7 @@ if (typeof localStorage !== 'undefined') {
   addBusinessDays, businessDaysBetween, resolutionSlaInfo, SUBCOMMITTEE_ROSTER,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   SUBCOMMITTEE_TEAMS, currentSubTeam, setSubTeam,
+  SUPPORT_GROUPS, SUPPORT_GROUP_LABELS, currentSupportGroup, setSupportGroup,
   isAuthed, currentUsername, logout,
   renderShell, stepperHtml, statusBadge, typeBadge, slaBadge, actionBar,
   mergeField, escapeHtml, fakeTodayIso, daysUntilFakeIso, paginateDoc, paginateResolutionDoc, exportDocToDocx, exportDocToPdf, printDoc, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,

@@ -36,15 +36,6 @@
         <h1><i class="fa-solid fa-users-gear me-2" style="color:#0F2A62"></i><span>รายการสำนวนรอกลั่นกรอง</span></h1>
       </div>
       <div class="d-flex align-items-center gap-3 ms-auto">
-        <div class="d-flex align-items-center bg-white px-3 py-1 border rounded shadow-sm">
-          <label for="scopeGroupSelect" class="form-label mb-0 fw-semibold text-dark small me-2 text-nowrap">
-            <i class="fa-solid fa-layer-group text-primary me-1"></i>กลุ่มงานที่รับผิดชอบ:
-          </label>
-          <select id="scopeGroupSelect" class="form-select form-select-sm border-0 fw-semibold text-navy py-0" style="min-width: 185px; background-color: transparent; cursor: pointer;">
-            <option value="group1">กลุ่มงานสนับสนุนฯ 1</option>
-            <option value="group2">กลุ่มงานสนับสนุนฯ 2</option>
-          </select>
-        </div>
         <span class="flow-ref">กลั่นกรองสำนวนยุ่งยากซับซ้อน / ความเห็นแย้งในสายงาน</span>
       </div>
     </div>
@@ -349,35 +340,23 @@
 
     let allCases = [...SUPPORT_CASES];
 
-    // Scope selection persistence (URL query > sessionStorage > localStorage > role default)
-    const urlParams = new URLSearchParams(window.location.search);
-    const groupFromUrl = urlParams.get('group');
-    const savedGroup = sessionStorage.getItem('ecmis_support_sub_group') || localStorage.getItem('ecmis_support_sub_group');
-    let selectedGroup = groupFromUrl || savedGroup || (role && role.defaultGroup) || 'group1';
+    // การเลือกกลุ่มงานอยู่ที่ dropdown บน topbar ของระบบแล้ว (ECMIS.currentSupportGroup/setSupportGroup)
+    let selectedGroup = ECMIS.currentSupportGroup();
 
     let currentCases = [];
     let activeKpi = 'ALL';
     let sortField = 'id';
     let sortOrder = 'desc';
 
-    function updateScopeGroup(group, updateUrl = true) {
+    function updateScopeGroup(group) {
       selectedGroup = group;
-      sessionStorage.setItem('ecmis_support_sub_group', selectedGroup);
-      localStorage.setItem('ecmis_support_sub_group', selectedGroup);
-      $('#scopeGroupSelect').val(selectedGroup);
 
-      if (updateUrl && window.history && window.history.replaceState) {
-        const u = new URL(window.location);
-        u.searchParams.set('group', selectedGroup);
-        window.history.replaceState(null, '', u.toString());
-      }
-      
-      const groupLabel = (selectedGroup === 'group1') ? 'กลุ่มงานสนับสนุนฯ 1' : 'กลุ่มงานสนับสนุนฯ 2';
+      const groupLabel = ECMIS.SUPPORT_GROUP_LABELS[selectedGroup] || selectedGroup;
       $('#myRoleLabel').text(`บทบาท: คณะอนุกรรมการสนับสนุนเลขาธิการฯ — ${groupLabel}`);
 
       // Filter cases mapped to the selected group
       currentCases = allCases.filter(c => c.assignedGroup === selectedGroup);
-      
+
       renderKPI();
       renderQueue();
     }
@@ -458,7 +437,7 @@
           const liveIds = new Set(liveCases.map(c => c.id));
           const preservedMocks = SUPPORT_CASES.filter(c => !liveIds.has(c.id));
           allCases = [...liveCases, ...preservedMocks];
-          updateScopeGroup(selectedGroup, false);
+          updateScopeGroup(selectedGroup);
         }
       } catch (err) {
         console.warn('โหลดข้อมูลจาก Supabase ไม่สำเร็จ:', err);
@@ -599,10 +578,10 @@
 
         // Action Button: ถ้าเสร็จแล้ว / ส่งคืนแล้ว / รอข้อมูลเพิ่ม เป็น "ดูรายละเอียด"
         const actionBtn = isReadOnlyItem
-          ? `<a href="support-subcommittee.html?case=${encodeURIComponent(c.id)}&readonly=true&group=${encodeURIComponent(selectedGroup)}" class="btn btn-sm btn-outline-secondary px-3">
+          ? `<a href="support-subcommittee.html?case=${encodeURIComponent(c.id)}&readonly=true" class="btn btn-sm btn-outline-secondary px-3">
                <i class="fa-solid fa-eye me-1"></i>ดูรายละเอียด
              </a>`
-          : `<a href="support-subcommittee.html?case=${encodeURIComponent(c.id)}&group=${encodeURIComponent(selectedGroup)}" class="btn btn-sm btn-navy px-3">
+          : `<a href="support-subcommittee.html?case=${encodeURIComponent(c.id)}" class="btn btn-sm btn-navy px-3">
                <i class="fa-solid fa-pen-to-square me-1"></i>ดำเนินการ
              </a>`;
 
@@ -648,23 +627,10 @@
       }
     }
 
-    // Handle browser back-forward navigation cache
-    window.addEventListener('pageshow', function (e) {
-      const uParams = new URLSearchParams(window.location.search);
-      const latestGroup = uParams.get('group') || sessionStorage.getItem('ecmis_support_sub_group') || localStorage.getItem('ecmis_support_sub_group');
-      if (latestGroup && latestGroup !== selectedGroup) {
-        updateScopeGroup(latestGroup, false);
-      }
-    });
-
     $(document).ready(function () {
       // ตั้งค่า Scope เริ่มต้น
       updateScopeGroup(selectedGroup);
       refreshFromSupabase();
-
-      $('#scopeGroupSelect').on('change', function () {
-        updateScopeGroup($(this).val());
-      });
 
       $('#chkAll').on('change', function () {
         $('.case-chk').prop('checked', this.checked);
