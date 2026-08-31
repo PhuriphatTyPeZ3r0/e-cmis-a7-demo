@@ -3417,7 +3417,7 @@ function escapeHtml(str){
 
 function mergeField(value, placeholder){
   if(value === undefined || value === null || String(value).trim() === ''){
-    return `<span class="mergefield empty" title="ยังไม่มีข้อมูล — ต้องกรอกในฟอร์มด้านซ้าย">${escapeHtml(placeholder||'……………')}</span>`;
+    return `<span class="mergefield empty" title="ยังไม่มีข้อมูล — ต้องกรอกในฟอร์มด้านซ้าย"></span>`;
   }
   return `<span class="mergefield filled" title="Auto-fill จากฟอร์ม/ฐานข้อมูลกลาง E-CMIS">${escapeHtml(toThaiDigits(value))}</span>`;
 }
