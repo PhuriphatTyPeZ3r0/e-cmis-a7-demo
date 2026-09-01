@@ -1015,11 +1015,32 @@ window.ECMIS.OrderMemoDocs["ruling_report"] = {
       "placeholder": "ประเด็นการกระทำความผิดของผู้ถูกกล่าวหา (พฤติการณ์)"
     },
     {
-      "id": "board_opinion",
-      "label": "ความเห็นของคณะกรรมการ ป.ป.ท.",
+      "id": "issue_damage",
+      "label": "ประเด็นเกี่ยวกับความเสียหาย",
       "type": "textarea",
-      "hint": "",
-      "placeholder": "ความเห็นของคณะกรรมการ ป.ป.ท."
+      "hint": "จำนวนความเสียหาย/ค่าสินไหมทดแทนที่ต้องชดใช้ (ถ้ามี)",
+      "placeholder": "ประเด็นเกี่ยวกับความเสียหาย"
+    },
+    {
+      "id": "incident_datetime",
+      "label": "วัน เวลา สถานที่เกิดเหตุ",
+      "type": "textarea",
+      "hint": "แยกตามรายข้อ/ฎีกา ถ้ามีหลายกรรม",
+      "placeholder": "วัน เวลา สถานที่เกิดเหตุ"
+    },
+    {
+      "id": "limitation_period",
+      "label": "อายุความ",
+      "type": "textarea",
+      "hint": "แยกตามฐานความผิด/มาตรา ระบุช่วงวันที่ขาดอายุความของตัวการและผู้สนับสนุน",
+      "placeholder": "อายุความ"
+    },
+    {
+      "id": "board_opinion",
+      "label": "ความเห็นที่ประชุม (ใส่เฉพาะกรณีที่ประชุมมีความเห็น)",
+      "type": "textarea",
+      "hint": "ดึงจากมติการประชุม ส่วน 'ความเห็นที่ประชุม' — เว้นว่างได้ถ้าไม่มี",
+      "placeholder": "ความเห็นที่ประชุม (ใส่เฉพาะกรณีที่ประชุมมีความเห็น)"
     },
     {
       "id": "resolution_criminal",
@@ -1057,7 +1078,7 @@ window.ECMIS.OrderMemoDocs["ruling_report"] = {
     "agenda_item": "agendaNo",
     "pacc_region": "paccRegion"
   },
-  "bodyHtml": "<div class=\"doc-title\" style=\"font-size:22px\"><div style=\"text-align:center;margin-bottom:4px\"><img src=\"assets/doc_logo.jpg\" alt=\"ตราครุฑ\" style=\"height:52px\"></div>\nรายงานการไต่สวนเพื่อวินิจฉัยชี้มูลของคณะกรรมการ ป.ป.ท.</div>\n<div class=\"doc-title\">เรื่องที่ {case_no}</div>\n<div class=\"doc-title\">วันที่ {ruling_date}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">ในคราวการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ {meeting_no} เมื่อวันที่ {meeting_date} วาระที่ {agenda_item} เพื่อพิจารณาและวินิจฉัยชี้มูลความผิด เรื่องที่ {case_no} ของคณะพนักงานไต่สวน ตาม{inquiry_orders} ซึ่งเป็นสำนวนคดีของสำนักงานป้องกันและปราบปรามการทุจริตในภาครัฐ เขต {pacc_region}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">ผู้ถูกกล่าวหา</div>\n<div class=\"doc-indent\">{accused_summary}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">กรรมการ ป.ป.ท. ที่มาประชุม</div>\n<div class=\"doc-indent\">{board_present}</div>\n<div class=\"doc-h\" style=\"font-weight:700\">กรรมการ ป.ป.ท. ที่ไม่มาประชุม</div>\n<div class=\"doc-indent\">{board_absent}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">คณะกรรมการ ป.ป.ท. ได้พิจารณาข้อเท็จจริงและพยานหลักฐานตามรายงานการไต่สวนเพื่อวินิจฉัยชี้มูลของคณะพนักงานไต่สวนแล้วฟังได้ว่า</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">ประเด็นเกี่ยวกับการดำเนินการไต่สวนของคณะพนักงานไต่สวน</div>\n<div class=\"doc-indent\">{issue_procedure}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">ประเด็นเกี่ยวกับสถานะของผู้ถูกกล่าวหา</div>\n<div class=\"doc-indent\">{issue_status}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">ประเด็นเกี่ยวกับอำนาจหน้าที่ของผู้ถูกกล่าวหา</div>\n<div class=\"doc-indent\">{issue_authority}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">ประเด็นเกี่ยวกับการกระทำความผิดของผู้ถูกกล่าวหา</div>\n<div class=\"doc-indent\">{issue_conduct}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">ความเห็นของคณะกรรมการ ป.ป.ท.</div>\n<div class=\"doc-indent\">{board_opinion}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">มติที่ประชุม — ความผิดทางอาญา</div>\n<div class=\"doc-indent\">{resolution_criminal}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">มติที่ประชุม — ความผิดทางวินัย</div>\n<div class=\"doc-indent\">{resolution_discipline}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-sign\" style=\"margin-top:14px\">({chair_name})</div>\n<div class=\"doc-sign\">ประธานในที่ประชุมคณะกรรมการ ป.ป.ท.</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">{recorder_note}</div>\n<div class=\"doc-gap\">&nbsp;</div>",
+  "bodyHtml": "<div class=\"doc-title\" style=\"font-size:22px\"><div style=\"text-align:center;margin-bottom:4px\"><img src=\"assets/doc_logo.jpg\" alt=\"ตราครุฑ\" style=\"height:52px\"></div>\nรายงานการไต่สวนเพื่อวินิจฉัยชี้มูลของคณะกรรมการ ป.ป.ท.</div>\n<div class=\"doc-title\">เรื่องที่ {case_no}</div>\n<div class=\"doc-title\">วันที่ {ruling_date}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">ในคราวการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ {meeting_no} เมื่อวันที่ {meeting_date} วาระที่ {agenda_item} เพื่อพิจารณาและวินิจฉัยชี้มูลความผิด เรื่องที่ {case_no} ของคณะพนักงานไต่สวน ตาม{inquiry_orders} กรณีกล่าวหา {accused_summary}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">กรรมการ ป.ป.ท. ที่มาประชุม</div>\n<div class=\"doc-indent\">{board_present}</div>\n<div class=\"doc-h\" style=\"font-weight:700\">กรรมการ ป.ป.ท. ที่ไม่มาประชุม</div>\n<div class=\"doc-indent\">{board_absent}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">คณะกรรมการ ป.ป.ท. ได้พิจารณาข้อเท็จจริงและพยานหลักฐานตามรายงานการไต่สวนเพื่อวินิจฉัยชี้มูลของคณะพนักงานไต่สวนแล้วฟังได้ว่า</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">ประเด็นเกี่ยวกับการดำเนินการไต่สวนของคณะพนักงานไต่สวน</div>\n<div class=\"doc-indent\">{issue_procedure}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">ประเด็นเกี่ยวกับสถานะของผู้ถูกกล่าวหา</div>\n<div class=\"doc-indent\">{issue_status}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">ประเด็นเกี่ยวกับอำนาจหน้าที่ของผู้ถูกกล่าวหา</div>\n<div class=\"doc-indent\">{issue_authority}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">ประเด็นเกี่ยวกับการกระทำความผิดของผู้ถูกกล่าวหา</div>\n<div class=\"doc-indent\">{issue_conduct}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\" data-cond-field=\"issue_damage\">ประเด็นเกี่ยวกับความเสียหาย</div>\n<div class=\"doc-indent\" data-cond-field=\"issue_damage\">{issue_damage}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">วัน เวลา สถานที่เกิดเหตุ</div>\n<div class=\"doc-indent\">{incident_datetime}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">อายุความ</div>\n<div class=\"doc-indent\">{limitation_period}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">ความเห็นที่ประชุม</div>\n<div class=\"doc-indent\" data-cond-field=\"board_opinion\">คณะกรรมการ ป.ป.ท. พิจารณาแล้วเห็นว่า {board_opinion}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">คณะกรรมการ ป.ป.ท. มีมติเป็นเอกฉันท์วินิจฉัยชี้มูลความผิด ดังนี้</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">ความผิดทางอาญา</div>\n<div class=\"doc-indent\">{resolution_criminal}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-h\" style=\"font-weight:700\">ความผิดทางวินัย</div>\n<div class=\"doc-indent\">{resolution_discipline}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-sign\" style=\"margin-top:14px\">({chair_name})</div>\n<div class=\"doc-sign\">ประธานในที่ประชุมคณะกรรมการ ป.ป.ท.</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">{recorder_note}</div>\n<div class=\"doc-gap\">&nbsp;</div>",
   "groups": [
     {
       "title": "๑. ข้อมูลสำนวนและการประชุม",
@@ -1089,6 +1110,9 @@ window.ECMIS.OrderMemoDocs["ruling_report"] = {
         "issue_status",
         "issue_authority",
         "issue_conduct",
+        "issue_damage",
+        "incident_datetime",
+        "limitation_period",
         "board_opinion"
       ]
     },
