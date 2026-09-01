@@ -2872,6 +2872,42 @@ function visibleNavFor(role){
   });
 }
 
+/* ข้อ 46 (ชีตติดตามงาน): Read Receipt สำหรับการแจ้งเตือน — เก็บ id + timestamp ที่อ่านแล้วใน
+   localStorage (mock, ไม่มี backend จริง) ต่อเบราว์เซอร์ ไม่ผูกกับ role เพราะ role สลับกันได้จาก
+   dropdown เดียวกันในเบราว์เซอร์เดียว การอ่านจึงถือเป็นการอ่านของ "ผู้ใช้เครื่องนี้" โดยรวม */
+const MOCK_NOTIFICATIONS = [
+  { id: 'demo-1', title: 'เสนอเรื่องใหม่', body: 'สำนวน 1547/2568 รอเลขาธิการฯ พิจารณา/ลงนาม', time: '10 นาทีที่แล้ว', icon: 'fa-user-check', cls: 'bg-primary text-white' },
+  { id: 'demo-2', title: 'มติบอร์ดเสร็จสิ้น', body: 'บันทึกมติที่ประชุมบอร์ด สำนวน 1119/2565 แล้ว', time: '1 ชม. ที่แล้ว', icon: 'fa-scale-balanced', cls: 'bg-success text-white' },
+  { id: 'demo-3', title: 'คำร้องขอใบด่วน', body: 'ผอ.กบค. ส่งใบด่วนขอวาระด่วน สำนวน 1396/2564', time: '2 ชม. ที่แล้ว', icon: 'fa-bolt', cls: 'bg-warning text-dark' }
+];
+const NOTIF_READ_KEY = 'ecmis.readNotifIds';
+function getReadNotifIds(){
+  try {
+    const saved = JSON.parse(localStorage.getItem(NOTIF_READ_KEY) || 'null');
+    return (saved && typeof saved === 'object') ? saved : {};
+  } catch (e) { return {}; }
+}
+function markNotifRead(id){
+  const map = getReadNotifIds();
+  if (map[id]) return; // อ่านแล้ว ไม่ต้องบันทึกซ้ำ (คง timestamp เดิมไว้เป็นหลักฐาน)
+  map[id] = new Date().toISOString();
+  localStorage.setItem(NOTIF_READ_KEY, JSON.stringify(map));
+
+  const li = document.querySelector(`.notif-item[data-notif-id="${CSS.escape(id)}"]`);
+  if (li) {
+    const dot = li.querySelector('.notif-unread-dot');
+    const tag = li.querySelector('.notif-read-tag');
+    if (dot) dot.classList.add('d-none');
+    if (tag) tag.classList.remove('d-none');
+  }
+  const badge = document.getElementById('notifBadge');
+  if (badge) {
+    const remaining = Math.max(0, (parseInt(badge.textContent, 10) || 0) - 1);
+    badge.textContent = remaining;
+    badge.classList.toggle('d-none', remaining === 0);
+  }
+}
+
 function renderShell(activeHref){
   if(!isAuthed()){
     location.href = resolvePage('login.html');
@@ -2892,45 +2928,40 @@ function renderShell(activeHref){
 
   const inboxCount = inboxFor(role.id).length;
 
-  const notifications = [
-    { title: 'เสนอเรื่องใหม่', body: 'สำนวน 1547/2568 รอเลขาธิการฯ พิจารณา/ลงนาม', time: '10 นาทีที่แล้ว', icon: 'fa-user-check', cls: 'bg-primary text-white' },
-    { title: 'มติบอร์ดเสร็จสิ้น', body: 'บันทึกมติที่ประชุมบอร์ด สำนวน 1119/2565 แล้ว', time: '1 ชม. ที่แล้ว', icon: 'fa-scale-balanced', cls: 'bg-success text-white' },
-    { title: 'คำร้องขอใบด่วน', body: 'ผอ.กบค. ส่งใบด่วนขอวาระด่วน สำนวน 1396/2564', time: '2 ชม. ที่แล้ว', icon: 'fa-bolt', cls: 'bg-warning text-dark' }
-  ];
+  const notifications = MOCK_NOTIFICATIONS;
+  /* ข้อ 46 (ชีตติดตามงาน): Read Receipt + Badge ค้าง — mock ด้วย localStorage ต่อ browser/role
+     (ไม่มี backend จริง) บันทึก timestamp ตอนอ่าน ("อ่านแล้ว") และเลข badge นับเฉพาะที่ยังไม่อ่าน
+     ไม่เคลียร์เองอัตโนมัติ ต้องกดเปิดรายการนั้นๆ ถึงจะนับว่าอ่านแล้ว (ดู ECMIS.markNotifRead) */
+  const readNotifIds = getReadNotifIds();
+  const notifDotHtml = id => readNotifIds[id]
+    ? `<span class="notif-unread-dot rounded-circle bg-primary d-none" style="width:7px;height:7px;flex:0 0 auto"></span>
+       <small class="notif-read-tag text-muted" style="font-size:0.64rem"><i class="fa-solid fa-check"></i> อ่านแล้ว</small>`
+    : `<span class="notif-unread-dot rounded-circle bg-primary" style="width:7px;height:7px;flex:0 0 auto"></span>
+       <small class="notif-read-tag text-muted d-none" style="font-size:0.64rem"><i class="fa-solid fa-check"></i> อ่านแล้ว</small>`;
   const notifItems = notifications.map(n => `
-    <li class="p-2 border-bottom" style="font-size:0.78rem">
+    <li class="p-2 border-bottom notif-item" data-notif-id="${n.id}" style="font-size:0.78rem;cursor:pointer" onclick="ECMIS.markNotifRead('${n.id}')">
       <div class="d-flex gap-2">
         <span class="rounded-circle d-flex align-items-center justify-content-center ${n.cls}" style="width:28px;height:28px;flex:0 0 auto">
           <i class="fa-solid ${n.icon}" style="font-size:0.75rem"></i>
         </span>
-        <div>
-          <strong class="d-block text-dark dark-text-light" style="font-size:0.8rem">${n.title}</strong>
+        <div class="flex-grow-1">
+          <div class="d-flex align-items-center justify-content-between">
+            <strong class="d-block text-dark dark-text-light" style="font-size:0.8rem">${n.title}</strong>
+            ${notifDotHtml(n.id)}
+          </div>
           <span class="text-muted d-block" style="font-size:0.74rem">${n.body}</span>
           <small class="text-muted" style="font-size:0.66rem">${n.time}</small>
         </div>
       </div>
     </li>`).join('');
 
-  /* แจ้งเตือนล่วงหน้า 15 วันก่อนครบกำหนด 60 วัน/2 ปี — เฉพาะสำนวนที่ role นี้เข้าถึงได้ */
+  /* แจ้งเตือนล่วงหน้า 15 วันก่อนครบกำหนด 60 วัน/2 ปี — เฉพาะสำนวนที่ role นี้เข้าถึงได้
+     (ใช้ buildDeadlineNotifItems ร่วมกับ refreshDeadlineNotificationsFromSupabase เพื่อไม่ให้
+     markup ของข้อ 46 หลุดตกไปเวอร์ชันเก่าตอนรีเฟรชด้วยข้อมูลจริงทีหลัง) */
   const deadlineAlerts = upcomingDeadlines(CASES.filter(c => canViewCase(c, role.id)));
-  const DEADLINE_LABEL = { deadline60: 'ครบกำหนด 60 วัน', deadline2y: 'ครบกำหนด 2 ปี' };
-  const deadlineNotifItems = deadlineAlerts.map(a => {
-    const href = pageForCase(a.kase, role.id) + '?case=' + encodeURIComponent(a.kase.id);
-    const urgentCls = a.daysLeft <= 3 ? 'bg-danger text-white' : 'bg-warning text-dark';
-    return `
-    <li class="p-2 border-bottom" style="font-size:0.78rem">
-      <a href="${href}" class="d-flex gap-2 text-decoration-none">
-        <span class="rounded-circle d-flex align-items-center justify-content-center ${urgentCls}" style="width:28px;height:28px;flex:0 0 auto">
-          <i class="fa-solid fa-clock" style="font-size:0.75rem"></i>
-        </span>
-        <div>
-          <strong class="d-block text-dark dark-text-light" style="font-size:0.8rem">${DEADLINE_LABEL[a.deadlineType]}</strong>
-          <span class="text-muted d-block" style="font-size:0.74rem">สำนวน ${a.kase.id} — เหลือ ${a.daysLeft} วัน</span>
-        </div>
-      </a>
-    </li>`;
-  }).join('');
-  const totalNotifCount = notifications.length + deadlineAlerts.length;
+  const deadlineNotifItems = buildDeadlineNotifItems(deadlineAlerts, role);
+  const allNotifIds = [...notifications.map(n => n.id), ...deadlineAlerts.map(a => `deadline-${a.kase.id}-${a.deadlineType}`)];
+  const unreadNotifCount = allNotifIds.filter(id => !readNotifIds[id]).length;
 
   const ROLE_SWITCHER_GROUPS = [
     {
@@ -3029,7 +3060,7 @@ function renderShell(activeHref){
       <div class="dropdown">
         <button class="btn btn-sm btn-light border-0 rounded-circle position-relative p-2 ms-1" data-bs-toggle="dropdown" aria-expanded="false" title="การแจ้งเตือน" style="width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center">
           <i class="fa-solid fa-bell text-secondary"></i>
-          <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-circle bg-danger ${totalNotifCount ? '' : 'd-none'}" style="font-size:.58rem; width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; padding:0">${totalNotifCount}</span>
+          <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-circle bg-danger ${unreadNotifCount ? '' : 'd-none'}" style="font-size:.58rem; width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; padding:0">${unreadNotifCount}</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end p-0" style="width:290px; max-height:360px; overflow-y:auto">
           <li id="notifDeadlineSection">${deadlineAlerts.length ? `<h6 class="dropdown-header border-bottom p-2 text-danger" style="font-size: 0.82rem"><i class="fa-solid fa-clock me-1"></i>ใกล้ครบกำหนด (ภายใน 15 วัน)</h6><ul class="list-unstyled m-0">${deadlineNotifItems}</ul>` : ''}</li>
@@ -3213,6 +3244,54 @@ function renderShell(activeHref){
    เพราะ renderShell ทำงานแบบ synchronous บนทุกหน้า — ฟังก์ชันนี้ fire-and-forget รีเฟรชด้วยข้อมูล
    จริงจาก Supabase ทีหลัง (ไม่ block การ render เริ่มต้น) หน้าที่ยังไม่ได้โหลด supabase-js CDN
    script (ยัง migrate ไม่ครบทุกหน้า) จะข้ามส่วนนี้ไปเงียบๆ ไม่กระทบการทำงานอื่น */
+/* ใช้ร่วมกันทั้ง refreshDeadlineNotificationsFromSupabase (สำเร็จ/fallback) กับ renderShell เดิม
+   เพื่อไม่ให้ markup ของ "อ่านแล้ว/badge" (ข้อ 46) หลุดตกไปเวอร์ชันเก่าเวลารีเฟรชด้วยข้อมูลจริง */
+function buildDeadlineNotifItems(alerts, role) {
+  const DEADLINE_LABEL = { deadline60: 'ครบกำหนด 60 วัน', deadline2y: 'ครบกำหนด 2 ปี' };
+  const readNotifIds = getReadNotifIds();
+  return alerts.map(a => {
+    const notifId = `deadline-${a.kase.id}-${a.deadlineType}`;
+    const href = pageForCase(a.kase, role.id) + '?case=' + encodeURIComponent(a.kase.id);
+    const urgentCls = a.daysLeft <= 3 ? 'bg-danger text-white' : 'bg-warning text-dark';
+    const isRead = !!readNotifIds[notifId];
+    return `
+      <li class="p-2 border-bottom notif-item" data-notif-id="${notifId}" style="font-size:0.78rem">
+        <a href="${href}" class="d-flex gap-2 text-decoration-none" onclick="ECMIS.markNotifRead('${notifId}')">
+          <span class="rounded-circle d-flex align-items-center justify-content-center ${urgentCls}" style="width:28px;height:28px;flex:0 0 auto">
+            <i class="fa-solid fa-clock" style="font-size:0.75rem"></i>
+          </span>
+          <div class="flex-grow-1">
+            <div class="d-flex align-items-center justify-content-between">
+              <strong class="d-block text-dark dark-text-light" style="font-size:0.8rem">${DEADLINE_LABEL[a.deadlineType]}</strong>
+              <span class="notif-unread-dot rounded-circle bg-primary${isRead ? ' d-none' : ''}" style="width:7px;height:7px;flex:0 0 auto"></span>
+              <small class="notif-read-tag text-muted${isRead ? '' : ' d-none'}" style="font-size:0.64rem"><i class="fa-solid fa-check"></i> อ่านแล้ว</small>
+            </div>
+            <span class="text-muted d-block" style="font-size:0.74rem">สำนวน ${escapeHtml(a.kase.id)} — เหลือ ${a.daysLeft} วัน</span>
+          </div>
+        </a>
+      </li>`;
+  }).join('');
+}
+
+function applyDeadlineNotifRefresh(alerts, role) {
+  const itemsHtml = buildDeadlineNotifItems(alerts, role);
+  const section = document.getElementById('notifDeadlineSection');
+  if (section) {
+    section.innerHTML = alerts.length
+      ? `<h6 class="dropdown-header border-bottom p-2 text-danger" style="font-size: 0.82rem"><i class="fa-solid fa-clock me-1"></i>ใกล้ครบกำหนด (ภายใน 15 วัน)</h6><ul class="list-unstyled m-0">${itemsHtml}</ul>`
+      : '';
+  }
+  const badge = document.getElementById('notifBadge');
+  if (badge) {
+    const readNotifIds = getReadNotifIds();
+    const demoUnread = MOCK_NOTIFICATIONS.filter(n => !readNotifIds[n.id]).length;
+    const deadlineUnread = alerts.filter(a => !readNotifIds[`deadline-${a.kase.id}-${a.deadlineType}`]).length;
+    const total = demoUnread + deadlineUnread;
+    badge.textContent = total;
+    badge.classList.toggle('d-none', total === 0);
+  }
+}
+
 async function refreshDeadlineNotificationsFromSupabase(role) {
   if (typeof window.supabase === 'undefined') return;
   try {
@@ -3225,69 +3304,12 @@ async function refreshDeadlineNotificationsFromSupabase(role) {
     if (error) throw error;
     const cases = (data || []).map(supabaseRowToCase).filter(Boolean);
     const alerts = upcomingDeadlines(cases.filter(c => canViewCase(c, role.id)));
-
-    const DEADLINE_LABEL = { deadline60: 'ครบกำหนด 60 วัน', deadline2y: 'ครบกำหนด 2 ปี' };
-    const itemsHtml = alerts.map(a => {
-      const href = pageForCase(a.kase, role.id) + '?case=' + encodeURIComponent(a.kase.id);
-      const urgentCls = a.daysLeft <= 3 ? 'bg-danger text-white' : 'bg-warning text-dark';
-      return `
-      <li class="p-2 border-bottom" style="font-size:0.78rem">
-        <a href="${href}" class="d-flex gap-2 text-decoration-none">
-          <span class="rounded-circle d-flex align-items-center justify-content-center ${urgentCls}" style="width:28px;height:28px;flex:0 0 auto">
-            <i class="fa-solid fa-clock" style="font-size:0.75rem"></i>
-          </span>
-          <div>
-            <strong class="d-block text-dark dark-text-light" style="font-size:0.8rem">${DEADLINE_LABEL[a.deadlineType]}</strong>
-            <span class="text-muted d-block" style="font-size:0.74rem">สำนวน ${escapeHtml(a.kase.id)} — เหลือ ${a.daysLeft} วัน</span>
-          </div>
-        </a>
-      </li>`;
-    }).join('');
-
-    const section = document.getElementById('notifDeadlineSection');
-    if (section) {
-      section.innerHTML = alerts.length
-        ? `<h6 class="dropdown-header border-bottom p-2 text-danger" style="font-size: 0.82rem"><i class="fa-solid fa-clock me-1"></i>ใกล้ครบกำหนด (ภายใน 15 วัน)</h6><ul class="list-unstyled m-0">${itemsHtml}</ul>`
-        : '';
-    }
-    const badge = document.getElementById('notifBadge');
-    if (badge) {
-      const MOCK_NOTIF_COUNT = 3; // จำนวนคงที่ของ "การแจ้งเตือนล่าสุด" (ข้อมูลตัวอย่าง ไม่ได้มาจากฐานข้อมูลจริง)
-      const total = MOCK_NOTIF_COUNT + alerts.length;
-      badge.textContent = total;
-      badge.classList.toggle('d-none', total === 0);
-    }
+    applyDeadlineNotifRefresh(alerts, role);
   } catch (err) {
     console.warn('โหลดแจ้งเตือนใกล้ครบกำหนดจาก Supabase ไม่สำเร็จ ใช้รายการสำนวนจำลอง:', err);
     try {
       const fallbackAlerts = upcomingDeadlines(CASES.filter(c => canViewCase(c, role.id)));
-      const DEADLINE_LABEL = { deadline60: 'ครบกำหนด 60 วัน', deadline2y: 'ครบกำหนด 2 ปี' };
-      const itemsHtml = fallbackAlerts.map(a => {
-        const href = pageForCase(a.kase, role.id) + '?case=' + encodeURIComponent(a.kase.id);
-        const urgentCls = a.daysLeft <= 3 ? 'bg-danger text-white' : 'bg-warning text-dark';
-        return `
-        <li class="p-2 border-bottom" style="font-size:0.78rem">
-          <a href="${href}" class="d-flex gap-2 text-decoration-none">
-            <span class="rounded-circle d-flex align-items-center justify-content-center ${urgentCls}" style="width:28px;height:28px;flex:0 0 auto">
-              <i class="fa-solid fa-clock" style="font-size:0.75rem"></i>
-            </span>
-            <div>
-              <strong class="d-block text-dark dark-text-light" style="font-size:0.8rem">${DEADLINE_LABEL[a.deadlineType]}</strong>
-              <span class="text-muted d-block" style="font-size:0.74rem">สำนวน ${escapeHtml(a.kase.id)} — เหลือ ${a.daysLeft} วัน</span>
-            </div>
-          </a>
-        </li>`;
-      }).join('');
-      const section = document.getElementById('notifDeadlineSection');
-      if (section && fallbackAlerts.length) {
-        section.innerHTML = `<h6 class="dropdown-header border-bottom p-2 text-danger" style="font-size: 0.82rem"><i class="fa-solid fa-clock me-1"></i>ใกล้ครบกำหนด (ภายใน 15 วัน)</h6><ul class="list-unstyled m-0">${itemsHtml}</ul>`;
-      }
-      const badge = document.getElementById('notifBadge');
-      if (badge) {
-        const total = 3 + fallbackAlerts.length;
-        badge.textContent = total;
-        badge.classList.toggle('d-none', total === 0);
-      }
+      applyDeadlineNotifRefresh(fallbackAlerts, role);
     } catch (e) { /* ignore fallback error */ }
   }
 }
@@ -6511,6 +6533,7 @@ if (typeof localStorage !== 'undefined') {
   SUPPORT_GROUPS, SUPPORT_GROUP_LABELS, currentSupportGroup, setSupportGroup,
   isAuthed, currentUsername, logout,
   renderShell, stepperHtml, statusBadge, typeBadge, slaBadge, actionBar,
+  markNotifRead, getReadNotifIds,
   mergeField, escapeHtml, fakeTodayIso, daysUntilFakeIso, paginateDoc, paginateResolutionDoc, exportDocToDocx, exportDocToPdf, printDoc, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
 
   ACT7_SECTIONS, ACT7_STATUSES, getAct7Status, act7Badge,
