@@ -1335,7 +1335,15 @@
     function renderPipelineMemoDoc(doc) {
       const fieldById = {};
       doc.fields.forEach(f => { fieldById[f.id] = f; });
-      const html = doc.bodyHtml.replace(/\{(\w+)\}/g, (m, id) => {
+      /* data-cond-field="xxx" — ทั้ง <div> ถูกซ่อนไปเลยถ้าฟิลด์นั้นยังว่างอยู่ (ไม่ใช่แค่เว้นค่าง)
+         ตรงกับข้อความจริงของลูกค้าที่มีวรรค "ความเห็นที่ประชุม" เป็นทางเลือก ใส่เฉพาะบางครั้ง */
+      let html = doc.bodyHtml.replace(/<div([^>]*)\sdata-cond-field="(\w+)"([^>]*)>([\s\S]*?)<\/div>/g,
+        (m, pre, id, post, inner) => {
+          const f = fieldById[id];
+          const raw = f ? pipelineFieldValue(doc, f) : '';
+          return (raw && String(raw).trim()) ? `<div${pre}${post}>${inner}</div>` : '';
+        });
+      html = html.replace(/\{(\w+)\}/g, (m, id) => {
         const f = fieldById[id];
         if (!f) return m;
         return M(pipelineDisplayValue(f, pipelineFieldValue(doc, f)), f.placeholder || f.label || '……………');
