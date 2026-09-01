@@ -3867,7 +3867,7 @@ ${target.outerHTML || target.innerHTML}
 
 // Global Lifecycle Listeners for Browser Print (Ctrl+P and window.print())
 window.addEventListener('beforeprint', function () {
-  const scaledElements = document.querySelectorAll('#modalDocPaperContainer, #docPaperContainer, .ws-paper-stage > div, .ws-paper-stage, .doc-paper-wrap');
+  const scaledElements = document.querySelectorAll('#docPaper, #modalDocPaperContainer, #docPaperContainer, .ws-paper-stage > div, .ws-paper-stage, .doc-paper-wrap');
   scaledElements.forEach(el => {
     el.setAttribute('data-print-prev-transform', el.style.transform || '');
     el.setAttribute('data-print-prev-height', el.style.height || '');
