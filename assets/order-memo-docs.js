@@ -1267,48 +1267,6 @@ window.ECMIS.OrderMemoDocs["timebar_secgen"] = {
       "type": "text",
       "hint": "เช่น ผู้อำนวยการกองบริหารคดี ปฏิบัติหน้าที่เลขานุการคณะกรรมการ ป.ป.ท.",
       "placeholder": "ตำแหน่งผู้ลงนาม"
-    },
-    {
-      "id": "kbc_director_sign",
-      "label": "ผอ.กบค. — ผู้ตรวจ",
-      "type": "text",
-      "hint": "",
-      "placeholder": "ผอ.กบค. — ผู้ตรวจ"
-    },
-    {
-      "id": "kbc_director_date",
-      "label": "ผอ.กบค. — วันที่ตรวจ",
-      "type": "date",
-      "hint": "",
-      "placeholder": "ผอ.กบค. — วันที่ตรวจ"
-    },
-    {
-      "id": "group_director_sign",
-      "label": "ผอ.กลุ่มงาน — ผู้ตรวจ",
-      "type": "text",
-      "hint": "",
-      "placeholder": "ผอ.กลุ่มงาน — ผู้ตรวจ"
-    },
-    {
-      "id": "group_director_date",
-      "label": "ผอ.กลุ่มงาน — วันที่ตรวจ",
-      "type": "date",
-      "hint": "",
-      "placeholder": "ผอ.กลุ่มงาน — วันที่ตรวจ"
-    },
-    {
-      "id": "typist_name",
-      "label": "ผู้จัดทำ/ผู้พิมพ์",
-      "type": "text",
-      "hint": "",
-      "placeholder": "ผู้จัดทำ/ผู้พิมพ์"
-    },
-    {
-      "id": "typist_date",
-      "label": "ผู้จัดทำ — วันที่",
-      "type": "date",
-      "hint": "",
-      "placeholder": "ผู้จัดทำ — วันที่"
     }
   ],
   "prefill": {
@@ -1319,7 +1277,7 @@ window.ECMIS.OrderMemoDocs["timebar_secgen"] = {
     "pacc_region": "paccRegion",
     "case_officer_name": "ownerName"
   },
-  "bodyHtml": "<div style=\"position:relative;min-height:52px\"><img src=\"assets/doc_logo.jpg\" alt=\"ตราครุฑ\" style=\"position:absolute;top:0;left:0;height:52px\"><div class=\"doc-title\" style=\"font-size:22px;margin-top:0\">บันทึกข้อความ</div></div>\n<div class=\"doc-memo-hdr\">ส่วนราชการ  กองบริหารคดี   โทร. 4318 (เจ้าหน้าที่ผู้ประสานงาน)</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-memo-hdr\">ที่  ปป 0004/ {doc_ref_no} วันที่ {doc_date}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-memo-hdr\">เรื่อง   ขอให้พิจารณาดำเนินการตามอำนาจหน้าที่</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-memo-hdr\">เรียน   เลขาธิการคณะกรรมการ ป.ป.ท.</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">ตามที่คณะกรรมการ ป.ป.ท. ได้มีมติในคราวประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ {prior_meeting_no} เมื่อวันที่ {prior_meeting_date} วาระที่ 6.1 มีมติมอบหมายให้ฝ่ายเลขานุการฯ ทำหนังสือแจ้งเรื่องที่ขาดอายุความ ทั้งขาดอายุความทั้งเรื่อง บางข้อหา บางกรรม บางคน ให้เลขาธิการคณะกรรมการ ป.ป.ท. ในฐานะหัวหน้าหน่วยงานทราบ และดำเนินการในส่วนที่เกี่ยวข้องตามอำนาจหน้าที่ต่อไป โดยให้เริ่มตั้งแต่เรื่องที่มีการประชุมตั้งแต่เดือนเมษายน ๒๕๖๗ เป็นต้นไป นั้น</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">ในการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ {meeting_no} เมื่อวันที่ {meeting_date} ได้พิจารณาวาระที่ {agenda_item} เรื่องที่ {case_no} ซึ่งเป็นสำนวนคดีของสำนักงานป้องกันและปราบปรามการทุจริตในภาครัฐ เขต {pacc_region} มีรายละเอียดโดยย่อ ดังนี้</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\"><b>ผู้ถูกกล่าวหาหรือร้องเรียน</b></div>\n<div class=\"doc-indent\">{accused_summary}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\"><b>พฤติการณ์ในคดี</b></div>\n<div class=\"doc-indent\">{case_facts}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\"><b>มติคณะกรรมการ ป.ป.ท.</b></div>\n<div class=\"doc-indent\">{resolution_summary}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">จากการพิจารณาปรากฏว่า การกระทำของผู้ถูกกล่าวหาบางกรรมและบางฐานความผิดขาดอายุความ อันเป็นเหตุให้ไม่สามารถดำเนินคดีกับผู้ถูกกล่าวหาในฐานความผิดตาม{lapsed_offences} รายละเอียดปรากฏตามมติคณะกรรมการ ป.ป.ท. ที่แนบ</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">ซึ่งกรณีดังกล่าว เป็นสำนวนที่อยู่ในความรับผิดชอบของ {case_officer_name} {case_officer_position} สำนักงานป้องกันและปราบปรามการทุจริตในภาครัฐ เขต {pacc_region} ดังนั้น เพื่อให้เป็นไปตามมติการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ {prior_meeting_no} เมื่อวันที่ {prior_meeting_date} วาระที่ 6.1 ฝ่ายเลขานุการการประชุมคณะกรรมการ ป.ป.ท. จึงขออนุญาตส่งเรื่องดังกล่าวให้สำนักงานฯ ดำเนินการต่อไป</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">จึงเรียนมาเพื่อโปรดพิจารณา</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-sign\" style=\"margin-top:14px\">({signatory_name})</div>\n<div class=\"doc-sign\">{signatory_position}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-sign\" style=\"margin-top:14px\">ผอ.กบค.</div>\n<div class=\"doc-indent\">{kbc_director_sign}  วันที่ {kbc_director_date}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">ผอ.กลุ่มงาน   {group_director_sign}  วันที่  {group_director_date}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">ผู้จัดทำ   {typist_name}   วันที่  {typist_date}</div>\n<div class=\"doc-gap\">&nbsp;</div>",
+  "bodyHtml": "<div style=\"position:relative;min-height:52px\"><img src=\"assets/doc_logo.jpg\" alt=\"ตราครุฑ\" style=\"position:absolute;top:0;left:0;height:52px\"><div class=\"doc-title\" style=\"font-size:22px;margin-top:0\">บันทึกข้อความ</div></div>\n<div class=\"doc-memo-hdr\">ส่วนราชการ  กองบริหารคดี   โทร. 4318 (เจ้าหน้าที่ผู้ประสานงาน)</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-memo-hdr\">ที่  ปป 0004/ {doc_ref_no} วันที่ {doc_date}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-memo-hdr\">เรื่อง   ขอให้พิจารณาดำเนินการตามอำนาจหน้าที่</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-memo-hdr\">เรียน   เลขาธิการคณะกรรมการ ป.ป.ท.</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">ตามที่คณะกรรมการ ป.ป.ท. ได้มีมติในคราวประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ {prior_meeting_no} เมื่อวันที่ {prior_meeting_date} วาระที่ 6.1 มีมติมอบหมายให้ฝ่ายเลขานุการฯ ทำหนังสือแจ้งเรื่องที่ขาดอายุความ ทั้งขาดอายุความทั้งเรื่อง บางข้อหา บางกรรม บางคน ให้เลขาธิการคณะกรรมการ ป.ป.ท. ในฐานะหัวหน้าหน่วยงานทราบ และดำเนินการในส่วนที่เกี่ยวข้องตามอำนาจหน้าที่ต่อไป โดยให้เริ่มตั้งแต่เรื่องที่มีการประชุมตั้งแต่เดือนเมษายน ๒๕๖๗ เป็นต้นไป นั้น</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">ในการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ {meeting_no} เมื่อวันที่ {meeting_date} ได้พิจารณาวาระที่ {agenda_item} เรื่องที่ {case_no} ซึ่งเป็นสำนวนคดีของสำนักงานป้องกันและปราบปรามการทุจริตในภาครัฐ เขต {pacc_region} มีรายละเอียดโดยย่อ ดังนี้</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\"><b>ผู้ถูกกล่าวหาหรือร้องเรียน</b></div>\n<div class=\"doc-indent\">{accused_summary}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\"><b>พฤติการณ์ในคดี</b></div>\n<div class=\"doc-indent\">{case_facts}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\"><b>มติคณะกรรมการ ป.ป.ท.</b></div>\n<div class=\"doc-indent\">{resolution_summary}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">จากการพิจารณาปรากฏว่า การกระทำของผู้ถูกกล่าวหาบางกรรมและบางฐานความผิดขาดอายุความ อันเป็นเหตุให้ไม่สามารถดำเนินคดีกับผู้ถูกกล่าวหาในฐานความผิดตาม{lapsed_offences} รายละเอียดปรากฏตามมติคณะกรรมการ ป.ป.ท. ที่แนบ</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">ซึ่งกรณีดังกล่าว เป็นสำนวนที่อยู่ในความรับผิดชอบของ {case_officer_name} {case_officer_position} สำนักงานป้องกันและปราบปรามการทุจริตในภาครัฐ เขต {pacc_region} ดังนั้น เพื่อให้เป็นไปตามมติการประชุมคณะกรรมการ ป.ป.ท. ครั้งที่ {prior_meeting_no} เมื่อวันที่ {prior_meeting_date} วาระที่ 6.1 ฝ่ายเลขานุการการประชุมคณะกรรมการ ป.ป.ท. จึงขออนุญาตส่งเรื่องดังกล่าวให้สำนักงานฯ ดำเนินการต่อไป</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">จึงเรียนมาเพื่อโปรดพิจารณา</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-sign\" style=\"margin-top:14px\">({signatory_name})</div>\n<div class=\"doc-sign\">{signatory_position}</div>\n<div class=\"doc-gap\">&nbsp;</div>",
   "groups": [
     {
       "title": "๑. ข้อมูลและเลขที่หนังสือ",
@@ -1360,18 +1318,6 @@ window.ECMIS.OrderMemoDocs["timebar_secgen"] = {
         "case_officer_position",
         "signatory_name",
         "signatory_position"
-      ]
-    },
-    {
-      "title": "๕. ผู้จัดทำและผู้ตรวจบันทึก",
-      "icon": "fa-signature",
-      "fieldIds": [
-        "kbc_director_sign",
-        "kbc_director_date",
-        "group_director_sign",
-        "group_director_date",
-        "typist_name",
-        "typist_date"
       ]
     }
   ]
