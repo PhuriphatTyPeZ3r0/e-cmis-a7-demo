@@ -519,7 +519,28 @@
       return `${maxNo + 1}/${buddhistYear}`;
     }
 
+    /* ข้อ 49 (ชีตติดตามงาน): ล็อกรายชื่อกรรมการ ป.ป.ท. ไว้ใช้ซ้ำทุกครั้งประชุมโดยอัตโนมัติ แทนที่ต้อง
+       เลือกใหม่ทุกครั้ง — mock ด้วย localStorage (ไม่มี backend จริง) ปลดล็อกแล้วแก้ไขเฉพาะครั้งประชุม
+       นั้นได้ตามปกติที่หน้าบันทึกมติ (resolution.html #boardTb อ่านค่านี้เป็นค่าเริ่มต้นเมื่อยังไม่มี
+       kase.boardAttendance ของสำนวนนั้นๆ โดยเฉพาะ) ต้องตรงกับรายชื่อใน resolution.html BOARD ทุกประการ */
+    const LOCKED_ROSTER_KEY = 'ecmis.lockedBoardRoster';
+    const BOARD_NAMES = [
+      'นายวิชัย ยุติธรรม', 'พลเอก จิระ โกมุทพงศ์', 'พันตำรวจโท วันนพ สมจินตนากุล',
+      'นายวิเชียร จันทรโณทัย', 'นายพรเทพ อัมพรกลิ่นแก้ว', 'นายกมล สกลเดชา', 'นายสุรพงษ์ อินทรถาวร'
+    ];
+    function getLockedRoster() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(LOCKED_ROSTER_KEY) || 'null');
+        if (saved && Array.isArray(saved.present)) return saved;
+      } catch (e) { /* ค่าเสีย ใช้ default แทน */ }
+      return { locked: false, present: BOARD_NAMES.slice() };
+    }
+    function saveLockedRoster(locked, presentNames) {
+      localStorage.setItem(LOCKED_ROSTER_KEY, JSON.stringify({ locked, present: presentNames }));
+    }
+
     document.getElementById('btnAddMeeting').addEventListener('click', () => {
+      const roster = getLockedRoster();
       Swal.fire({
         title: 'เพิ่มการประชุมใหม่',
         html: `
@@ -533,12 +554,27 @@
             <div class="col-6"><label class="form-label">เวลาสิ้นสุดประชุม</label>
               <input type="time" id="swMeetEndTime" class="form-control"></div>
           </div>
-          <div><label class="form-label">สถานะ</label>
+          <div class="mb-2"><label class="form-label">สถานะ</label>
             <select id="swMeetStatus" class="form-select">
               <option value="0" selected>กำหนดการแล้ว — รอประชุม</option>
               <option value="1">ประชุมแล้ว</option>
               <option value="2">ยกเลิก/เลื่อน</option>
-            </select></div>`,
+            </select></div>
+          <hr>
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" id="swLockRoster"${roster.locked ? ' checked' : ''}>
+            <label class="form-check-label" for="swLockRoster">
+              <i class="fa-solid fa-lock me-1"></i>ล็อกรายชื่อกรรมการ ป.ป.ท. — ใช้ชุดนี้เป็นค่าเริ่มต้นให้ทุกวาระ
+              ของครั้งประชุมนี้อัตโนมัติ (ยังปลดล็อกแก้ไขเฉพาะวาระได้ที่หน้าบันทึกมติ)
+            </label>
+          </div>
+          <div class="text-start small" style="max-height:160px;overflow-y:auto;border:1px solid #E2E8F0;border-radius:6px;padding:.5rem .75rem">
+            ${BOARD_NAMES.map((n, i) => `
+              <div class="form-check">
+                <input class="form-check-input swRosterMember" type="checkbox" id="swRosterM${i}" value="${ECMIS.escapeHtml(n)}"${roster.present.includes(n) ? ' checked' : ''}>
+                <label class="form-check-label" for="swRosterM${i}">${ECMIS.escapeHtml(n)}</label>
+              </div>`).join('')}
+          </div>`,
         focusConfirm: false,
         showCancelButton: true,
         confirmButtonText: 'บันทึก',
@@ -549,6 +585,9 @@
           const dateInput = document.getElementById('swMeetDate').value;
           if (!name || !dateInput) { Swal.showValidationMessage('กรุณากรอกครั้งที่ประชุมและวันที่ประชุมให้ครบถ้วน'); return false; }
           if (AR.MEETINGS.some(m => m.trc_name === name)) { Swal.showValidationMessage('มีครั้งที่ประชุมนี้อยู่แล้วในทะเบียน'); return false; }
+          const locked = document.getElementById('swLockRoster').checked;
+          const presentNames = Array.from(document.querySelectorAll('.swRosterMember:checked')).map(el => el.value);
+          saveLockedRoster(locked, presentNames);
           /* <input type="date"> คืนค่าปี ค.ศ. จริงเสมอ ซึ่งตรงกับคอลัมน์ trc_date (type DATE)
              ใน Supabase พอดี — ไม่ต้อง +543 อีกต่อไป (AgendaRegistry แปลงเป็น พ.ศ. ให้เองตอนอ่าน) */
           return {

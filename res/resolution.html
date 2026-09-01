@@ -424,7 +424,20 @@
       { n: 'นายสุรพงษ์ อินทรถาวร', r: 'กรรมการ ป.ป.ท.' }
     ];
     const TOTAL = BOARD.length;
-    const savedAtt = kase.boardAttendance || (kase.boardAttendance72) || {};
+    /* ข้อ 49 (ชีตติดตามงาน): ถ้าสำนวนนี้ยังไม่มี boardAttendance ของตัวเอง (ยังไม่เคยแก้ไขเฉพาะวาระ)
+       ให้ใช้รายชื่อกรรมการที่ล็อกไว้จากหน้าทะเบียนวาระ (agenda-registry.html) เป็นค่าเริ่มต้นแทน
+       ปกติที่ให้ทุกคน "เข้าประชุม" หมด — แก้ไขในตารางนี้ยังคงเป็นการปลดล็อกเฉพาะวาระตามปกติ ไม่กระทบ
+       ชุดที่ล็อกไว้ */
+    function getLockedRosterDefault() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('ecmis.lockedBoardRoster') || 'null');
+        if (!saved || !saved.locked || !Array.isArray(saved.present)) return null;
+        const map = {};
+        BOARD.forEach(b => { map[b.n] = saved.present.includes(b.n) ? 'present' : 'duty'; });
+        return map;
+      } catch (e) { return null; }
+    }
+    const savedAtt = kase.boardAttendance || kase.boardAttendance72 || getLockedRosterDefault() || {};
     const savedVote = kase.boardVotes || {};
 
     document.getElementById('boardTb').innerHTML = BOARD.map((b, i) => {
