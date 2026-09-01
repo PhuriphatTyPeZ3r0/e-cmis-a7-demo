@@ -145,18 +145,23 @@
       }).map(c => Object.assign({}, c));
     }
 
+    /* ข้อ 47 (ชีตติดตามงาน): เพิ่มหมวด "เรื่องที่ส่งมาจากคณะอนุกรรมการกลั่นกรอง" — ใช้ kase.subCommittee
+       เป็นตัวบ่งชี้ (ผ่านการพิจารณาของคณะอนุกลั่นกรองคณะใดคณะหนึ่งมาแล้ว) ลำดับความสำคัญของป้ายเดียว
+       ต่อ 1 เรื่อง: เร่งด่วนสำคัญที่สุด > จากอนุกลั่นกรอง > กลับมาอีก > เรื่องใหม่ */
     function getQueueCaseCategory(c) {
       if (c.urgent || c.urgent72) return 'URGENT';
+      if (c.subCommittee) return 'SCREENING';
       if (QUEUE_BUCKET.return.includes(c.status)) return 'RETURN';
       return 'NEW';
     }
 
     function renderCategoryChips() {
-      const counts = { URGENT: 0, RETURN: 0, NEW: 0 };
+      const counts = { URGENT: 0, SCREENING: 0, RETURN: 0, NEW: 0 };
       queueCases.forEach(c => { const cat = getQueueCaseCategory(c); if (counts[cat] !== undefined) counts[cat]++; });
       const chips = [
         { id: 'ALL', l: 'ทั้งหมด', i: 'fa-list', c: '#0F2A62', n: queueCases.length },
         { id: 'NEW', l: 'เรื่องใหม่', i: 'fa-file-circle-plus', c: '#0F2A62', n: counts.NEW },
+        { id: 'SCREENING', l: 'จากอนุกรรมการกลั่นกรอง', i: 'fa-filter', c: '#0d9488', n: counts.SCREENING },
         { id: 'RETURN', l: 'กลับมาอีก (เลื่อน/ถอนวาระเดิม)', i: 'fa-arrows-rotate', c: '#6b3fa0', n: counts.RETURN },
         { id: 'URGENT', l: 'เรื่องเร่งด่วน', i: 'fa-bolt', c: '#DB2626', n: counts.URGENT }
       ];
@@ -182,6 +187,7 @@
       tbody.innerHTML = filtered.map(c => {
         const cat = getQueueCaseCategory(c);
         const catBadge = cat === 'URGENT' ? '<span class="badge bg-danger ms-1">เร่งด่วน</span>'
+          : cat === 'SCREENING' ? `<span class="badge text-white ms-1" style="background:#0d9488">จากอนุกลั่นกรอง ${ECMIS.escapeHtml(c.subCommittee)}</span>`
           : cat === 'RETURN' ? '<span class="badge bg-purple text-white ms-1" style="background:#6b3fa0">กลับมาอีก</span>'
           : '<span class="badge bg-primary ms-1">เรื่องใหม่</span>';
 
