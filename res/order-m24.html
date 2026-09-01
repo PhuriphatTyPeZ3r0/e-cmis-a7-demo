@@ -889,12 +889,16 @@
       const etAl = kase.accused && kase.accused.length > 1 ? ' กับพวก' : '';
       const isNaccM62 = caseOriginCode() === 'NACC_M62';
       const code = FORM_CODES[isSub ? 'sub' : 'base'][caseOriginCode()];
+      // กรณีเรื่องประพฤติมิชอบ (legalBase ขึ้นต้นด้วย "ม.18") ให้มีหัวกระดาษกำกับ — มาตรา 62 หรือมาตราอื่นไม่ต้องมี
+      const misconductHeader = String(kase.legalBase || '').startsWith('ม.18')
+        ? '<div class="doc-sub" style="font-weight:700">(ประพฤติมิชอบ)</div>' : '';
 
       const appointHtml = `
     <div style="text-align:center;margin-bottom:8px"><img src="../assets/doc_logo.jpg" alt="ตราครุฑ" style="height:76px"></div>
     <div class="doc-title" style="font-size:20pt">
       คำสั่ง${isSub ? 'คณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ' : 'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ'}
     </div>
+    ${misconductHeader}
     <div class="doc-sub">
       ที่ ${M(no, '………/………')}
     </div>
@@ -1361,6 +1365,7 @@
       const amendHtml = `
     <div style="text-align:center;margin-bottom:8px"><img src="../assets/doc_logo.jpg" alt="ตราครุฑ" style="height:76px"></div>
     <div class="doc-title" style="font-size:20pt">คำสั่ง${orgFullName}</div>
+    ${String(kase.legalBase || '').startsWith('ม.18') ? '<div class="doc-sub" style="font-weight:700">(ประพฤติมิชอบ)</div>' : ''}
     <div class="doc-sub">ที่ ${M(no, '………/………')}</div>
     <div class="doc-sub">เรื่อง ${meta.subject}</div>
     <div style="width:140px;margin:6px auto 14px;border-bottom:1px solid #333"></div>
