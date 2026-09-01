@@ -3431,9 +3431,15 @@ function mergeField(value, placeholder){
 
    opts:
      introBlock   — HTML คงที่ที่อยู่หัวหน้า 1 เท่านั้น ไม่ไหลข้ามหน้า (หัวเรื่อง/ข้อมูลอ้างอิงสั้นๆ)
-     flowBlocks   — array ของ HTML แต่ละชิ้น เป็นหน่วยเล็กสุดที่ตัดขึ้นหน้าใหม่ระหว่างกลางไม่ได้
+     flowBlocks   — array ของ HTML แต่ละชิ้น ปกติเป็นหน่วยเล็กสุดที่ตัดขึ้นหน้าใหม่ระหว่างกลางไม่ได้
      signBlock    — HTML คงที่ที่อยู่ท้ายหน้าสุดท้ายเท่านั้น (ลายเซ็น + ลับท้ายกระดาษ)
-     runningHeaderHtml(pageNo) — คืน HTML หัวกระดาษวิ่งของหน้านั้น (ไม่ใช้กับหน้า 1) */
+     runningHeaderHtml(pageNo) — คืน HTML หัวกระดาษวิ่งของหน้านั้น (ไม่ใช้กับหน้า 1)
+     allowMidSplit — (opt-in, ค่าเริ่มต้น false) เมื่อเปิด และ flowBlock ยาวเกิน 1 หน้า จะพยายาม
+       แบ่งระหว่างลูกอิลิเมนต์ระดับบนสุดก่อน (เช่น รายการข้อย่อยที่มีเลขกำกับ) — ยังไม่ตัดกลางประโยค
+       ภายในอิลิเมนต์เดียวกัน (ถ้าอิลิเมนต์เดียวยาวเกิน 1 หน้าเอง จะยกทั้งก้อนไปหน้าถัดไปเหมือนเดิม)
+     pageCatchword — (opt-in, ค่าเริ่มต้น false) เมื่อเปิด จะแสดง "คำเชื่อมหน้า" ที่มุมขวาล่างของทุกหน้า
+       ยกเว้นหน้าสุดท้าย เป็นคำ ~15 คำแรกของเนื้อหาที่จะขึ้นต้นหน้าถัดไปจริง (อ้างอิงจาก wording ของ
+       หน้าถัดไป ไม่ใช่การตัดข้อความของหน้าปัจจุบัน) ตามแบบฟอร์มราชการ — ปิดอยู่โดย default */
 function paginateDoc(containerEl, opts){
   const { introBlock, flowBlocks, signBlock, runningHeaderHtml, docClass } = opts;
   const pageClass = `doc-paper${docClass ? ' ' + docClass : ''} a4-paper`;
@@ -3474,17 +3480,78 @@ function paginateDoc(containerEl, opts){
   }
   function prefixFor(estPageNo){ return isFirst ? '' : runningHeaderHtml(estPageNo); }
 
-  (flowBlocks || []).forEach(block => {
+  function topLevelChildren(html){
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return Array.from(tmp.children);
+  }
+
+  function processBlock(block){
     if (!block) return;
-    const isFirstBlock = pageBlocks.length === (isFirst ? 1 : 0);
-    const candidate = prefixFor(pages.length + (isFirst ? 1 : 2)) + pageBlocks.join('') + block;
-    if(isFirstBlock || measure(candidate) <= PAGE_BUDGET){
+    const prefix = prefixFor(pages.length + (isFirst ? 1 : 2));
+    const existing = pageBlocks.join('');
+    const candidate = prefix + existing + block;
+    if (existing === '' || measure(candidate) <= PAGE_BUDGET) {
       pageBlocks.push(block);
-    } else {
+      return;
+    }
+    if (!opts.allowMidSplit) {
       pushPage();
       pageBlocks.push(block);
+      return;
     }
-  });
+
+    // พยายามแบ่งระหว่างลูกอิลิเมนต์ระดับบนสุดก่อน (เช่น รายการข้อย่อย) — ไม่ตัดกลางประโยค
+    const children = topLevelChildren(block);
+    if (children.length > 1) {
+      let head = '';
+      let idx = 0;
+      for (; idx < children.length; idx++) {
+        const candHead = head + children[idx].outerHTML;
+        if (measure(prefix + existing + candHead) <= PAGE_BUDGET) {
+          head = candHead;
+        } else {
+          break;
+        }
+      }
+      if (head) pageBlocks.push(head);
+      if (idx < children.length) {
+        pushPage();
+        processBlock(children.slice(idx).map(c => c.outerHTML).join(''));
+      }
+      return;
+    }
+
+    // แบ่งเป็นข้อย่อยไม่ได้ (อิลิเมนต์เดียว/ไม่มีลูก) — ยกทั้งก้อนไปหน้าใหม่
+    pushPage();
+    pageBlocks.push(block);
+  }
+
+  // คืนคำ ~15 คำแรกของเนื้อหา HTML ที่ส่งเข้ามา (ตัดที่จุดเว้นวรรค ไม่ใช่ tokenizer ภาษาไทยจริง)
+  // ใช้สำหรับ "คำเชื่อมหน้า" มุมขวาล่าง ซึ่งอ้างอิง wording ของหน้าถัดไป
+  function firstWordsOf(html, wordCount){
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    const text = (tmp.textContent || '').replace(/\s+/g, ' ').trim();
+    const tokens = text.split(' ').filter(w => w !== '');
+    // ภาษาไทยไม่เว้นวรรคระหว่างคำจริง มีแต่เว้นวรรคตามวรรคตอน/ประโยคย่อย ซึ่งอาจยาวมาก
+    // จึงต้องคุมความยาวตัวอักษรไว้ด้วย ไม่ใช่นับแค่จำนวน token ที่คั่นด้วยช่องว่าง
+    const CHAR_CAP = wordCount * 4;
+    let acc = '';
+    let count = 0;
+    for (const tok of tokens) {
+      if (count >= wordCount) break;
+      const next = acc ? `${acc} ${tok}` : tok;
+      if (acc && next.length > CHAR_CAP) break;
+      acc = next;
+      count++;
+      if (acc.length > CHAR_CAP) break;
+    }
+    if (acc.length > CHAR_CAP) acc = `${acc.slice(0, CHAR_CAP).trim()}...`;
+    return acc;
+  }
+
+  (flowBlocks || []).forEach(processBlock);
 
   if (signBlock) {
     const withSign = prefixFor(pages.length + (isFirst ? 1 : 2)) + pageBlocks.join('') + signBlock;
@@ -3505,7 +3572,10 @@ function paginateDoc(containerEl, opts){
     const pageNo = i + 1;
     const header = p.isFirst ? '' : runningHeaderHtml(pageNo);
     const footSecret = (opts.secret !== false) ? '<div class="doc-secret-foot">ลับ</div>' : '';
-    return `<div class="${pageClass}" data-page-no="${pageNo}" style="height:297mm; max-height:297mm; overflow:hidden; box-sizing:border-box;">${header}${p.blocks.join('')}${footSecret}</div>`;
+    const hasNextPage = i < pages.length - 1;
+    const catchwordText = (opts.pageCatchword && hasNextPage) ? firstWordsOf(pages[i + 1].blocks.join(''), 15) : '';
+    const catchword = catchwordText ? `<div class="doc-catchword">${escapeHtml(catchwordText)}</div>` : '';
+    return `<div class="${pageClass}" data-page-no="${pageNo}" style="height:297mm; max-height:297mm; overflow:hidden; box-sizing:border-box;">${header}${p.blocks.join('')}${footSecret}${catchword}</div>`;
   }).join('');
 
   if (typeof updateDocPaginationUI === 'function') {
