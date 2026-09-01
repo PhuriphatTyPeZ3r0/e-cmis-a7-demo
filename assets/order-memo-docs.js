@@ -626,11 +626,18 @@ window.ECMIS.OrderMemoDocs["notify_discipline"] = {
       "placeholder": "สรุปการกระทำ/ฐานความผิดที่ชี้มูล (รายข้อ)"
     },
     {
-      "id": "criminal_code_section",
-      "label": "มาตราประมวลกฎหมายอาญาที่เกี่ยวข้อง",
+      "id": "attach1_pages",
+      "label": "สิ่งที่ส่งมาด้วย ๑ — จำนวนแผ่น",
       "type": "text",
-      "hint": "เช่น มาตรา 147 มาตรา 157 มาตรา 161",
-      "placeholder": "มาตราประมวลกฎหมายอาญาที่เกี่ยวข้อง"
+      "hint": "จำนวนแผ่นของสำเนารายงานการไต่สวนฯ ที่แนบ",
+      "placeholder": "จำนวนแผ่น"
+    },
+    {
+      "id": "attach2_pages",
+      "label": "สิ่งที่ส่งมาด้วย ๒ — จำนวนแผ่น",
+      "type": "text",
+      "hint": "จำนวนแผ่นของสำเนามติคณะกรรมการ ป.ป.ท. ที่แนบ",
+      "placeholder": "จำนวนแผ่น"
     },
     {
       "id": "univ_regulation",
@@ -668,6 +675,13 @@ window.ECMIS.OrderMemoDocs["notify_discipline"] = {
       "placeholder": "โทรศัพท์ผู้ประสานงาน"
     },
     {
+      "id": "contact_fax",
+      "label": "โทรสาร",
+      "type": "text",
+      "hint": "",
+      "placeholder": "โทรสาร"
+    },
+    {
       "id": "case_officer",
       "label": "พนักงาน ป.ป.ท. เจ้าของสำนวน",
       "type": "text",
@@ -683,7 +697,7 @@ window.ECMIS.OrderMemoDocs["notify_discipline"] = {
     "pacc_region": "paccRegion",
     "case_officer": "ownerName"
   },
-  "bodyHtml": "<div class=\"doc-memo-hdr\"><div style=\"text-align:center;margin-bottom:8px\"><img src=\"assets/doc_logo.jpg\" alt=\"ตราครุฑ\" style=\"height:60px\"></div>\nที่  ปป 0004/ป {doc_ref_no}</div>\n<div class=\"doc-memo-hdr\">สำนักงาน ป.ป.ท.  อาคารซอฟต์แวร์ปาร์ค ถนนแจ้งวัฒนะ  อำเภอปากเกร็ด จังหวัดนนทบุรี ๑๑๑๒๐</div>\n<div class=\"doc-memo-hdr\">วันที่ {doc_date}</div>\n<div class=\"doc-memo-hdr\">เรื่อง   ขอให้พิจารณาลงโทษทางวินัย</div>\n<div class=\"doc-memo-hdr\">เรียน   {recipient_title}</div>\n<div class=\"doc-indent\">สิ่งที่ส่งมาด้วย   ๑. สำเนารายงานการไต่สวนเพื่อวินิจฉัยชี้มูลของคณะกรรมการ ป.ป.ท. เรื่องที่ {case_no}</div>\n<div class=\"doc-indent\">๒. สำเนามติคณะกรรมการ ป.ป.ท. ครั้งที่ {meeting_no} เมื่อวันที่ {meeting_date}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">ด้วยคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ (คณะกรรมการ ป.ป.ท.) ได้ดำเนินการไต่สวน โดยแต่งตั้งคณะพนักงานไต่สวน กรณีกล่าวหา {accused_1_name} ขณะเกิดเหตุเป็น{accused_1_affiliation} สังกัด{agency_name} ผู้ถูกกล่าวหาที่ ๑ ว่ากระทำความผิดฐานทุจริตต่อหน้าที่ (ผู้ถูกกล่าวหารายอื่นในสำนวนเดียวกัน ถ้ามี ได้แก่ {accused_2_name} ผู้ถูกกล่าวหาที่ ๒ และ {accused_3_name} ผู้ถูกกล่าวหาที่ ๓)</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">คณะกรรมการ ป.ป.ท. ได้พิจารณาสำนวนการไต่สวน ในคราวประชุมครั้งที่ {meeting_no} เมื่อวันที่ {meeting_date} ระเบียบวาระที่ {agenda_item} แล้วมีมติเป็นเอกฉันท์วินิจฉัยชี้มูลความผิด ดังนี้</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\"><b>ความผิดทางอาญา</b></div>\n<div class=\"doc-indent\">{offense_summary}</div>\n<div class=\"doc-indent\">การกระทำของผู้ถูกกล่าวหาตามข้อกล่าวหาข้างต้น เป็นความผิดตามประมวลกฎหมายอาญา {criminal_code_section} และพระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๔๒ และที่แก้ไขเพิ่มเติม มาตรา ๑๒๓/๑ ซึ่งเป็นกฎหมายที่ใช้บังคับขณะกระทำความผิด (ปัจจุบันเป็นความผิดตามพระราชบัญญัติประกอบรัฐธรรมนูญว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑ มาตรา ๑๗๒) ประกอบประมวลกฎหมายอาญา มาตรา ๙๑</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\"><b>ความผิดทางวินัย</b></div>\n<div class=\"doc-indent\">การกระทำของ {accused_1_name} ผู้ถูกกล่าวหาที่ ๑ เป็นความผิดวินัยอย่างร้ายแรง ฐานปฏิบัติหรือละเว้นการปฏิบัติหน้าที่ราชการโดยมิชอบ เพื่อให้ตนเองหรือผู้อื่นได้รับประโยชน์ที่มิควรได้ อันเป็นการทุจริตต่อหน้าที่ราชการ ตาม{univ_regulation} ประกอบพระราชบัญญัติระเบียบข้าราชการพลเรือนในสถาบันอุดมศึกษา พ.ศ. ๒๕๔๗ และที่แก้ไขเพิ่มเติม มาตรา ๓๙ วรรคสาม ถือเป็นการกระทำการทุจริตในภาครัฐ ตามนัยมาตรา ๓ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">ดังนั้น เพื่อปฏิบัติตามมาตรา ๓๘ และมาตรา ๔๑ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม จึงขอส่งรายงานการไต่สวนเพื่อวินิจฉัยชี้มูลของคณะกรรมการ ป.ป.ท. และเอกสารที่เกี่ยวข้องมายังท่าน เพื่อพิจารณาโทษทางวินัยแก่ {accused_1_name} ผู้ถูกกล่าวหาที่ ๑ ในฐานความผิดดังกล่าวตามกฎหมาย ระเบียบ หรือข้อบังคับว่าด้วยการบริหารงานบุคคลที่ใช้บังคับกับผู้ถูกกล่าวหา ภายใน ๖๐ วัน นับแต่วันที่ได้รับแจ้งมติคณะกรรมการ ป.ป.ท. โดยมิต้องดำเนินการสอบสวนทางวินัยอีก และเมื่อได้ดำเนินการลงโทษทางวินัยแล้ว ขอได้ส่งสำเนาคำสั่งลงโทษดังกล่าวให้คณะกรรมการ ป.ป.ท. ทราบ ภายใน ๓๐ วัน นับแต่วันที่ได้ออกคำสั่งด้วย</div>\n<div class=\"doc-indent\">อนึ่ง สำหรับความผิดทางอาญาในเรื่องนี้ ได้ส่งเรื่องให้พนักงานอัยการเพื่อดำเนินคดีอาญาแก่บุคคลดังกล่าวแล้ว</div>\n<div class=\"doc-indent\">จึงเรียนมาเพื่อโปรดพิจารณาดำเนินการในส่วนที่เกี่ยวข้องต่อไป</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-sign\" style=\"margin-top:14px\">ขอแสดงความนับถือ</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-sign\" style=\"margin-top:14px\">({signatory_name})</div>\n<div class=\"doc-sign\">{signatory_position}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">สำนักงานป้องกันและปราบปรามการทุจริตในภาครัฐ เขต {pacc_region}</div>\n<div class=\"doc-indent\">โทร {contact_phone}</div>\n<div class=\"doc-indent\">ผู้ประสานงาน / พนักงาน ป.ป.ท. เจ้าของสำนวน {case_officer}</div>\n<div class=\"doc-gap\">&nbsp;</div>",
+  "bodyHtml": "<div class=\"doc-memo-hdr\"><div style=\"text-align:center;margin-bottom:8px\"><img src=\"assets/doc_logo.jpg\" alt=\"ตราครุฑ\" style=\"height:60px\"></div>\nที่  ปป 0004/ป {doc_ref_no}</div>\n<div class=\"doc-memo-hdr\">สำนักงาน ป.ป.ท.  อาคารซอฟต์แวร์ปาร์ค ถนนแจ้งวัฒนะ  อำเภอปากเกร็ด จังหวัดนนทบุรี ๑๑๑๒๐</div>\n<div class=\"doc-memo-hdr\">วันที่ {doc_date}</div>\n<div class=\"doc-memo-hdr\">เรื่อง   ขอให้พิจารณาลงโทษทางวินัย</div>\n<div class=\"doc-memo-hdr\">เรียน   {recipient_title}</div>\n<div class=\"doc-indent\">สิ่งที่ส่งมาด้วย   ๑. สำเนารายงานการไต่สวนเพื่อวินิจฉัยชี้มูลของคณะกรรมการ ป.ป.ท. เรื่องที่ {case_no} จำนวน {attach1_pages} แผ่น</div>\n<div class=\"doc-indent\">๒. สำเนามติคณะกรรมการ ป.ป.ท. ครั้งที่ {meeting_no} เมื่อวันที่ {meeting_date} จำนวน {attach2_pages} แผ่น</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">ด้วยคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ (คณะกรรมการ ป.ป.ท.) ได้ดำเนินการไต่สวน โดยแต่งตั้งคณะพนักงานไต่สวน กรณีกล่าวหา {accused_1_name} ขณะเกิดเหตุเป็น{accused_1_affiliation} สังกัด{agency_name} ผู้ถูกกล่าวหาที่ ๑ ว่ากระทำความผิดฐานทุจริตต่อหน้าที่ (ผู้ถูกกล่าวหารายอื่นในสำนวนเดียวกัน ถ้ามี ได้แก่ {accused_2_name} ผู้ถูกกล่าวหาที่ ๒ และ {accused_3_name} ผู้ถูกกล่าวหาที่ ๓)</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">คณะกรรมการ ป.ป.ท. ได้พิจารณาสำนวนการไต่สวน ในคราวประชุมครั้งที่ {meeting_no} เมื่อวันที่ {meeting_date} ระเบียบวาระที่ {agenda_item} แล้วมีมติเป็นเอกฉันท์วินิจฉัยชี้มูลความผิด ดังนี้</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\"><b>ความผิดทางอาญา</b></div>\n<div class=\"doc-indent\">{offense_summary}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\"><b>ความผิดทางวินัย</b></div>\n<div class=\"doc-indent\">การกระทำของ {accused_1_name} ผู้ถูกกล่าวหาที่ ๑ เป็นความผิดวินัยอย่างร้ายแรง ฐานปฏิบัติหรือละเว้นการปฏิบัติหน้าที่ราชการโดยมิชอบ เพื่อให้ตนเองหรือผู้อื่นได้รับประโยชน์ที่มิควรได้ อันเป็นการทุจริตต่อหน้าที่ราชการ ตาม{univ_regulation} ประกอบพระราชบัญญัติระเบียบข้าราชการพลเรือนในสถาบันอุดมศึกษา พ.ศ. ๒๕๔๗ และที่แก้ไขเพิ่มเติม มาตรา ๓๙ วรรคสาม ถือเป็นการกระทำการทุจริตในภาครัฐ ตามนัยมาตรา ๓ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">ดังนั้น เพื่อปฏิบัติตามมาตรา ๓๘ และมาตรา ๔๑ แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม จึงขอส่งรายงานการไต่สวนเพื่อวินิจฉัยชี้มูลของคณะกรรมการ ป.ป.ท. และเอกสารที่เกี่ยวข้องมายังท่าน เพื่อพิจารณาโทษทางวินัยแก่ {accused_1_name} ผู้ถูกกล่าวหาที่ ๑ ในฐานความผิดดังกล่าวตามกฎหมาย ระเบียบ หรือข้อบังคับว่าด้วยการบริหารงานบุคคลที่ใช้บังคับกับผู้ถูกกล่าวหา ภายใน ๖๐ วัน นับแต่วันที่ได้รับแจ้งมติคณะกรรมการ ป.ป.ท. โดยมิต้องดำเนินการสอบสวนทางวินัยอีก และเมื่อได้ดำเนินการลงโทษทางวินัยแล้ว ขอได้ส่งสำเนาคำสั่งลงโทษดังกล่าวให้คณะกรรมการ ป.ป.ท. ทราบ ภายใน ๓๐ วัน นับแต่วันที่ได้ออกคำสั่งด้วย</div>\n<div class=\"doc-indent\">อนึ่ง สำหรับความผิดทางอาญาในเรื่องนี้ ได้ส่งเรื่องให้พนักงานอัยการเพื่อดำเนินคดีอาญาแก่บุคคลดังกล่าวแล้ว</div>\n<div class=\"doc-indent\">จึงเรียนมาเพื่อโปรดพิจารณาดำเนินการในส่วนที่เกี่ยวข้องต่อไป</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-sign\" style=\"margin-top:14px\">ขอแสดงความนับถือ</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-sign\" style=\"margin-top:14px\">({signatory_name})</div>\n<div class=\"doc-sign\">{signatory_position}</div>\n<div class=\"doc-gap\">&nbsp;</div>\n<div class=\"doc-indent\">สำนักงานป้องกันและปราบปรามการทุจริตในภาครัฐ เขต {pacc_region}</div>\n<div class=\"doc-indent\">โทร {contact_phone} โทรสาร {contact_fax}</div>\n<div class=\"doc-indent\">ผู้ประสานงาน / พนักงาน ป.ป.ท. เจ้าของสำนวน {case_officer}</div>\n<div class=\"doc-gap\">&nbsp;</div>",
   "groups": [
     {
       "title": "๑. ข้อมูลและเลขที่หนังสือ",
@@ -694,7 +708,9 @@ window.ECMIS.OrderMemoDocs["notify_discipline"] = {
         "case_no",
         "pacc_region",
         "recipient_title",
-        "agency_name"
+        "agency_name",
+        "attach1_pages",
+        "attach2_pages"
       ]
     },
     {
@@ -721,7 +737,6 @@ window.ECMIS.OrderMemoDocs["notify_discipline"] = {
       "icon": "fa-file-lines",
       "fieldIds": [
         "offense_summary",
-        "criminal_code_section",
         "univ_regulation"
       ]
     },
@@ -732,7 +747,8 @@ window.ECMIS.OrderMemoDocs["notify_discipline"] = {
         "signatory_name",
         "signatory_position",
         "case_officer",
-        "contact_phone"
+        "contact_phone",
+        "contact_fax"
       ]
     }
   ]
