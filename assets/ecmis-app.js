@@ -2111,6 +2111,17 @@ const SUBCOMMITTEE_ROSTER = {
   ]
 };
 
+function __hubBridgeCases() {
+  if (typeof window === 'undefined' || !window.ECMISHub) return;
+  const hub = window.ECMISHub;
+  const activeId = (typeof hub.activeCaseId === 'function') ? hub.activeCaseId() : null;
+  const shared = activeId && (typeof hub.getCase === 'function') ? hub.getCase(activeId) : null;
+  if (!shared) return;
+  const index = CASES.findIndex(item => (typeof hub.normId === 'function' ? hub.normId(item.id) === hub.normId(shared.id) : item.id === shared.id));
+  if (index === -1) CASES.push({ ...shared });
+  else Object.assign(CASES[index], shared);
+}
+
 const CASES_VERSION = '2026-08-31-subcommittee-mock-v1';
 if (typeof sessionStorage !== 'undefined') {
   const savedVersion = sessionStorage.getItem('ecmis_cases_version');
@@ -2126,6 +2137,7 @@ if (typeof sessionStorage !== 'undefined') {
   } else if (savedCases) {
     sessionStorage.removeItem('ecmis_cases');
   }
+  __hubBridgeCases();
 }
 function saveCases() {
   if (typeof sessionStorage !== 'undefined') {
