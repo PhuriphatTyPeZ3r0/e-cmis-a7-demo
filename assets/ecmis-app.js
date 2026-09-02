@@ -3511,8 +3511,9 @@ function mergeField(value, placeholder){
        แบ่งระหว่างลูกอิลิเมนต์ระดับบนสุดก่อน (เช่น รายการข้อย่อยที่มีเลขกำกับ) — ยังไม่ตัดกลางประโยค
        ภายในอิลิเมนต์เดียวกัน (ถ้าอิลิเมนต์เดียวยาวเกิน 1 หน้าเอง จะยกทั้งก้อนไปหน้าถัดไปเหมือนเดิม)
      pageCatchword — (opt-in, ค่าเริ่มต้น false) เมื่อเปิด จะแสดง "คำเชื่อมหน้า" ที่มุมขวาล่างของทุกหน้า
-       ยกเว้นหน้าสุดท้าย เป็นคำ ~15 คำแรกของเนื้อหาที่จะขึ้นต้นหน้าถัดไปจริง (อ้างอิงจาก wording ของ
-       หน้าถัดไป ไม่ใช่การตัดข้อความของหน้าปัจจุบัน) ตามแบบฟอร์มราชการ — ปิดอยู่โดย default */
+       ยกเว้นหน้าสุดท้าย เป็นถ้อยคำ ~15 ตัวอักษรแรกของเนื้อหาที่จะขึ้นต้นหน้าถัดไปจริง — ตัดที่ขอบเขต
+       คำไทยจริงด้วย Intl.Segmenter, ข้ามเลขข้อ/bullet นำหน้า, ต่อท้าย "..." เสมอ (อ้างอิงจาก wording
+       ของหน้าถัดไป ไม่ใช่การตัดข้อความของหน้าปัจจุบัน) ตามแบบฟอร์มราชการ — ปิดอยู่โดย default */
 function paginateDoc(containerEl, opts){
   const { introBlock, flowBlocks, signBlock, runningHeaderHtml, docClass } = opts;
   const pageClass = `doc-paper${docClass ? ' ' + docClass : ''} a4-paper`;
@@ -3600,28 +3601,38 @@ function paginateDoc(containerEl, opts){
     pageBlocks.push(block);
   }
 
-  // คืนคำ ~15 คำแรกของเนื้อหา HTML ที่ส่งเข้ามา (ตัดที่จุดเว้นวรรค ไม่ใช่ tokenizer ภาษาไทยจริง)
-  // ใช้สำหรับ "คำเชื่อมหน้า" มุมขวาล่าง ซึ่งอ้างอิง wording ของหน้าถัดไป
-  function firstWordsOf(html, wordCount){
+  // สร้าง "คำเชื่อมหน้า" (มุมขวาล่าง) จากถ้อยคำที่จะขึ้นต้นหน้าถัดไปจริง — ตามแบบฟอร์มราชการ
+  //  1. ข้ามอักขระนำหน้าข้อ 1 ชุด: เลขข้อไทย/อารบิก (มีจุดย่อยได้ เช่น ๒.๒) หรือ bullet
+  //  2. ตัดที่ ~15 ตัวอักษร บนขอบเขตคำไทยจริงด้วย Intl.Segmenter (fallback: ตัดแข็งที่ 15)
+  //  3. ต่อท้าย "..." เสมอ
+  function catchwordFromNextPage(html){
     const tmp = document.createElement('div');
     tmp.innerHTML = html;
-    const text = (tmp.textContent || '').replace(/\s+/g, ' ').trim();
-    const tokens = text.split(' ').filter(w => w !== '');
-    // ภาษาไทยไม่เว้นวรรคระหว่างคำจริง มีแต่เว้นวรรคตามวรรคตอน/ประโยคย่อย ซึ่งอาจยาวมาก
-    // จึงต้องคุมความยาวตัวอักษรไว้ด้วย ไม่ใช่นับแค่จำนวน token ที่คั่นด้วยช่องว่าง
-    const CHAR_CAP = wordCount * 4;
-    let acc = '';
-    let count = 0;
-    for (const tok of tokens) {
-      if (count >= wordCount) break;
-      const next = acc ? `${acc} ${tok}` : tok;
-      if (acc && next.length > CHAR_CAP) break;
-      acc = next;
-      count++;
-      if (acc.length > CHAR_CAP) break;
+    let text = (tmp.textContent || '').replace(/\s+/g, ' ').trim();
+    // ข้ามเลขข้อ/สัญลักษณ์นำหน้า (ครั้งเดียว) เพื่อไปเอาคำแรกที่เป็นเนื้อหา
+    text = text
+      .replace(/^\(?[๐-๙0-9]+(?:\.[๐-๙0-9]+)*\)?[.)ฯ]?\s+/, '')
+      .replace(/^[-•*·]\s+/, '')
+      .trim();
+    if (!text) return '';
+
+    const CAP = 15;
+    let base = '';
+    if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {
+      try {
+        const seg = new Intl.Segmenter('th', { granularity: 'word' });
+        for (const { segment } of seg.segment(text)) {
+          if (!base && !segment.trim()) continue;          // ข้ามช่องว่างนำ
+          if (base && (base.length + segment.length) > CAP) break;
+          base += segment;
+          if (base.length >= CAP) break;
+        }
+      } catch (e) { base = ''; }
     }
-    if (acc.length > CHAR_CAP) acc = `${acc.slice(0, CHAR_CAP).trim()}...`;
-    return acc;
+    if (!base) base = text;
+    if (base.length > CAP) base = base.slice(0, CAP);
+    base = base.trim();
+    return base ? `${base}...` : '';
   }
 
   (flowBlocks || []).forEach(processBlock);
@@ -3646,7 +3657,7 @@ function paginateDoc(containerEl, opts){
     const header = p.isFirst ? '' : runningHeaderHtml(pageNo);
     const footSecret = (opts.secret !== false) ? '<div class="doc-secret-foot">ลับ</div>' : '';
     const hasNextPage = i < pages.length - 1;
-    const catchwordText = (opts.pageCatchword && hasNextPage) ? firstWordsOf(pages[i + 1].blocks.join(''), 15) : '';
+    const catchwordText = (opts.pageCatchword && hasNextPage) ? catchwordFromNextPage(pages[i + 1].blocks.join('')) : '';
     const catchword = catchwordText ? `<div class="doc-catchword">${escapeHtml(catchwordText)}</div>` : '';
     return `<div class="${pageClass}" data-page-no="${pageNo}" style="height:297mm; max-height:297mm; overflow:hidden; box-sizing:border-box;">${header}${p.blocks.join('')}${footSecret}${catchword}</div>`;
   }).join('');
