@@ -449,6 +449,8 @@
                 <div class="ws-doc-tabs" id="docTabs">
                   <button class="ws-doc-tab active" data-doc="ruling">รายงานวินิจฉัยชี้มูล</button>
                   <button class="ws-doc-tab" data-doc="discipline">หนังสือลงโทษทางวินัย</button>
+                  <button class="ws-doc-tab" data-doc="ruling_v2">รายงานวินิจฉัยชี้มูล (v.2)</button>
+                  <button class="ws-doc-tab" data-doc="discipline_v2">แจ้งโทษวินัย (v.2)</button>
                 </div>
                 <div class="d-none align-items-center gap-1 ms-1" id="splitReportPane" style="font-size:.78rem">
                   <span class="text-secondary small fw-medium"><i class="fa-solid fa-files me-1"></i>ฉบับ:</span>
@@ -564,6 +566,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="../assets/ecmis-app.js"></script>
   <script src="../assets/ecmis-model.js"></script>
+  <script src="../assets/order-memo-docs.js"></script>
   <script>
     ECMIS.renderShell('ruling-report.html');
 
@@ -1378,8 +1381,10 @@
     })();
 
     function toggleFormCards() {
-      document.querySelectorAll('.ruling-form-card').forEach(el => el.classList.toggle('d-none', docTab !== 'ruling'));
-      document.getElementById('disciplineCard').classList.toggle('d-none', docTab !== 'discipline');
+      const rulingLike = docTab === 'ruling' || docTab === 'ruling_v2';
+      const discLike = docTab === 'discipline' || docTab === 'discipline_v2';
+      document.querySelectorAll('.ruling-form-card').forEach(el => el.classList.toggle('d-none', !rulingLike));
+      document.getElementById('disciplineCard').classList.toggle('d-none', !discLike);
       const splitPane = document.getElementById('splitReportPane');
       if (splitPane) splitPane.classList.toggle('d-none', docTab !== 'ruling');
     }
@@ -1593,7 +1598,7 @@
           runningHeaderHtml: runningHeader('ปปท. ๗-๐๒', `รายงานการไต่สวนเพื่อวินิจฉัยชี้มูล เรื่องที่ ${M(kase.id)}${isSingleAccused ? ` (${targetAccused.name})` : ''}`)
         });
 
-      } else {
+      } else if (docTab === 'discipline') {
         const witMap = kase.witnessState72 || {};
         const isProtectedWitness = !!witMap[discAccused];
         const discCode = hasCriminal ? '8-06' : '8-05';
@@ -1710,6 +1715,84 @@
           signBlock,
           runningHeaderHtml: runningHeader(discCodeThai, docSubtypeTitle)
         });
+      } else if (docTab === 'ruling_v2' || docTab === 'discipline_v2') {
+        /* แท็บ v.2 — เรนเดอร์ template จาก assets/order-memo-docs.js (pipeline)
+           โดย map ค่ามาจากฟอร์มเดิมของ ruling-report + kase; token ที่ไม่มีแหล่ง = เส้นจุด */
+        const doc = (ECMIS.OrderMemoDocs || {})[docTab === 'ruling_v2' ? 'ruling_report' : 'notify_discipline'];
+        if (!doc || !doc.bodyHtml) {
+          docPaperEl.innerHTML = '<div class="doc-paper" style="padding:20mm">ไม่พบแม่แบบเอกสาร (assets/order-memo-docs.js)</div>';
+        } else {
+          const fieldById = {};
+          (doc.fields || []).forEach(f => { fieldById[f.id] = f; });
+          const regionMatch = String(kase.ownerOrg || '').match(/เขต\s*(\d+)/);
+          const acc = kase.accused || [];
+          const chair = presentMembers.find(b => /ประธาน/.test(b.r)) || presentMembers[0];
+          const th = (i) => ECMIS.toThaiDigits(i + 1);
+          const accusedSummary = acc.map((a, i) =>
+            `(${th(i)}) ${a.name || '-'}${a.idcard ? ` เลขบัตรประชาชน ${a.idcard}` : ''}${a.pos ? ` ตำแหน่ง ${a.pos}` : ''}${a.agency ? ` สังกัด ${a.agency}` : ''}`).join('\n');
+          const boardPresentTxt = presentMembers.map((b, i) => `(${th(i)}) ${b.n} — ${b.r}`).join('\n');
+          const boardAbsentTxt = [...leaveMembers, ...dutyMembers, ...recusedMembers].map(b => `${b.n} — ${b.r}`).join('\n');
+          const v2 = {
+            case_no: kase.id || '',
+            ruling_date: kase.resolutionDate72 || kase.meetingDate || '',
+            meeting_no: meetNo || kase.meetingNo || '',
+            meeting_date: kase.meetingDate || '',
+            agenda_item: agendaNo || kase.agendaNo || '',
+            pacc_region: regionMatch ? regionMatch[1] : '',
+            inquiry_orders: orderNo || '',
+            accused_summary: accusedSummary,
+            board_present: boardPresentTxt,
+            board_absent: boardAbsentTxt,
+            issue_procedure: '',
+            issue_status: accusedStatus || '',
+            issue_authority: accusedAuthority || '',
+            issue_conduct: factSummary || '',
+            issue_damage: damageDetail || '',
+            incident_datetime: incidentDetail || '',
+            limitation_period: prescriptionNote || '',
+            board_opinion: meetingOpinion || '',
+            resolution_criminal: criminalFinding || '',
+            resolution_discipline: disciplinaryFinding || '',
+            chair_name: chair ? chair.n : '',
+            recorder_note: '',
+            doc_ref_no: '', doc_date: '', recipient_title: '',
+            agency_name: discAgency || (acc[0] && acc[0].agency) || '',
+            accused_1_name: discAccused || (acc[0] && acc[0].name) || '',
+            accused_1_affiliation: (acc[0] && acc[0].pos) || discAgency || '',
+            accused_2_name: (acc[1] && acc[1].name) || '',
+            accused_3_name: (acc[2] && acc[2].name) || '',
+            offense_summary: [discMisconduct, discCharge].filter(Boolean).join(' — '),
+            attach1_pages: '', attach2_pages: '', univ_regulation: '',
+            signatory_name: '', signatory_position: '',
+            contact_phone: '', contact_fax: '',
+            case_officer: kase.owner || ''
+          };
+          let html = doc.bodyHtml.replace(/\{(\w+)\}/g, (m, id) => {
+            const f = fieldById[id];
+            if (!f) return m;
+            let raw = v2[id];
+            raw = (raw === undefined || raw === null) ? '' : String(raw).trim();
+            if (raw !== '') {
+              if (f.type === 'date') raw = ECMIS.thaiDate(raw);
+              else if (f.type === 'number') raw = ECMIS.toThaiDigits(raw);
+            }
+            return M(raw, f.placeholder || f.label || '……………');
+          });
+          const tmp = document.createElement('div');
+          tmp.innerHTML = html;
+          const blocks = Array.from(tmp.children).map(el => el.outerHTML);
+          const runHdr = pageNo => `<div class="doc-run-page" style="text-align:center;font-weight:700;margin-bottom:8px">- ${ECMIS.toThaiDigits(pageNo)} -</div>`;
+          ECMIS.paginateDoc(docPaperEl, {
+            introBlock: blocks[0] || '',
+            flowBlocks: blocks.length > 1 ? blocks.slice(1, -1) : [],
+            signBlock: blocks.length > 1 ? blocks[blocks.length - 1] : '',
+            secret: false,
+            docClass: 'doc-order',
+            allowMidSplit: true,
+            pageCatchword: true,
+            runningHeaderHtml: runHdr
+          });
+        }
       }
 
       updateDocStats();
@@ -1858,6 +1941,10 @@
         const caseSafeId = (kase.id || '2015-2569').replace(/[\/\\:]/g, '-');
         if (docTab === 'ruling') {
           filename = `ปปท_7-02_รายงานวินิจฉัยชี้มูล_เรื่องที่_${caseSafeId}${targetAccused ? `_${targetAccused.name}` : ''}.docx`;
+        } else if (docTab === 'ruling_v2') {
+          filename = `ปปท_7-02_รายงานวินิจฉัยชี้มูล_v2_เรื่องที่_${caseSafeId}.docx`;
+        } else if (docTab === 'discipline_v2') {
+          filename = `ปปท_8-05_แจ้งโทษวินัย_v2_เรื่องที่_${caseSafeId}.docx`;
         } else {
           const hasCriminal = document.getElementById('hasCriminalToggle').checked;
           filename = `ปปท_${hasCriminal ? '8-06' : '8-05'}_หนังสือลงโทษทางวินัย_เรื่องที่_${caseSafeId}.docx`;
