@@ -2,7 +2,11 @@
    Loaded by order.html + res/order.html. */
 window.ECMIS = window.ECMIS || {};
 window.ECMIS.OrderMemoDocs = window.ECMIS.OrderMemoDocs || {};
-window.ECMIS.OrderMemoDocOrder = ["notify_zone","transmit_kbc","timebar_report","notify_discipline","submit_inquiry","ruling_report","timebar_secgen"];
+/* notify_discipline (แจ้งโทษวินัย) และ ruling_report (รายงานวินิจฉัยชี้มูล) ถูกย้ายไปหน้า
+   ruling-report.html ซึ่งมีฉบับเต็มอยู่แล้ว (แท็บ ruling + discipline: ฟอร์มเต็ม, 8-05/8-06,
+   split ผู้ถูกกล่าวหา, DOCX) — จึงตัดออกจากแท็บ memo mode ของ order.html (คนละ phase: 7.1
+   ออกคำสั่งแต่งตั้ง). นิยาม OrderMemoDocs[...] ของทั้งสองยังคงไว้ด้านล่างแต่ไม่ถูกลิสต์ */
+window.ECMIS.OrderMemoDocOrder = ["notify_zone","transmit_kbc","timebar_report","submit_inquiry","timebar_secgen"];
 
 window.ECMIS.OrderMemoDocs["notify_zone"] = {
   "id": "notify_zone",
