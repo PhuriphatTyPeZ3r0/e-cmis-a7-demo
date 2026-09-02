@@ -3647,6 +3647,10 @@ function paginateDoc(containerEl, opts){
       pushPage();
       pageBlocks = [signBlock];
       pushPage();
+      // หน้าสุดท้ายนี้มีแต่ส่วนลงนาม (สั่ง ณ วันที่ / ลงชื่อ / ผู้ลงนาม) ล้วน ๆ —
+      // หน้าก่อนหน้าจึงไม่ต้องมี "คำเชื่อมหน้า" ชี้มาที่ถ้อยคำในบล็อกลงนาม
+      const signPage = pages[pages.length - 1];
+      if (signPage) signPage.signOnly = true;
     }
   } else if (pageBlocks.length > 0) {
     pushPage();
@@ -3657,7 +3661,9 @@ function paginateDoc(containerEl, opts){
     const header = p.isFirst ? '' : runningHeaderHtml(pageNo);
     const footSecret = (opts.secret !== false) ? '<div class="doc-secret-foot">ลับ</div>' : '';
     const hasNextPage = i < pages.length - 1;
-    const catchwordText = (opts.pageCatchword && hasNextPage) ? catchwordFromNextPage(pages[i + 1].blocks.join('')) : '';
+    const nextIsSignOnly = hasNextPage && pages[i + 1].signOnly === true;
+    const catchwordText = (opts.pageCatchword && hasNextPage && !nextIsSignOnly)
+      ? catchwordFromNextPage(pages[i + 1].blocks.join('')) : '';
     const catchword = catchwordText ? `<div class="doc-catchword">${escapeHtml(catchwordText)}</div>` : '';
     return `<div class="${pageClass}" data-page-no="${pageNo}" style="height:297mm; max-height:297mm; overflow:hidden; box-sizing:border-box;">${header}${p.blocks.join('')}${footSecret}${catchword}</div>`;
   }).join('');
