@@ -457,25 +457,29 @@
        introBlock/flowBlocks/signBlock ด้วยมือทีละโหมด ใช้ตัวตัดหน้าอัตโนมัติ: รับ HTML เดิมที่มีอยู่แล้ว
        มาตัดเป็น flowBlocks ตาม div ระดับบนสุด แล้วส่งเข้า ECMIS.paginateDoc เพื่อแบ่งหน้า A4 จริง
        (บล็อกแรก/บล็อกสุดท้ายมักเป็นครุฑ+หัวเรื่อง และลายเซ็น จึงตรึงไว้เป็น introBlock/signBlock เสมอ) */
-    function paginateFromHtml(containerEl, html, runningTitle) {
+    function paginateFromHtml(containerEl, html, runningTitle, opts) {
+      opts = opts || {};
+      const append = !!opts.append;
       const tmp = document.createElement('div');
       tmp.innerHTML = html;
       const blocks = Array.from(tmp.children).map(el => el.outerHTML);
       if (blocks.length === 0) {
-        containerEl.innerHTML = '';
+        if (!append) containerEl.innerHTML = '';
         updatePaginationUI();
         applyZoom();
         return;
       }
+      const runningHeaderHtml = pageNo => `
+      <div class="doc-run-page">- ${ECMIS.toThaiDigits(pageNo)} -</div>`;
       if (blocks.length === 1) {
         ECMIS.paginateDoc(containerEl, {
           introBlock: blocks[0], flowBlocks: [], signBlock: '',
           secret: false,
-        docClass: 'doc-order',
+          docClass: 'doc-order',
           allowMidSplit: true,
           pageCatchword: true,
-          runningHeaderHtml: pageNo => `
-        <div class="doc-run-page">- ${ECMIS.toThaiDigits(pageNo)} -</div>`
+          append,
+          runningHeaderHtml
         });
         updatePaginationUI();
         applyZoom();
@@ -490,8 +494,8 @@
         docClass: 'doc-order',
         allowMidSplit: true,
         pageCatchword: true,
-        runningHeaderHtml: pageNo => `
-      <div class="doc-run-page">- ${ECMIS.toThaiDigits(pageNo)} -</div>`
+        append,
+        runningHeaderHtml
       });
       updatePaginationUI();
       applyZoom();
@@ -1013,7 +1017,85 @@
         ${signedAppoint ? `<br><span style="font-size:0.75rem;color:#16A34A"><i class="fa-solid fa-circle-check"></i> ลงนามดิจิทัลเมื่อ ${new Date().toLocaleString('th-TH')}</span>` : ''}
       </div>
     </div>`;
-      paginateFromHtml(document.getElementById('docPaper'), appointHtml, `คำสั่งแต่งตั้ง${isSub ? 'คณะอนุกรรมการไต่สวน' : 'องค์คณะพนักงาน ป.ป.ท.'}`);
+      /* โหมด appoint = เอกสารชุดเดียว: บันทึกเสนอ (ปปท.5-01/5-04) นำหน้า + คำสั่ง (5-02/…) ต่อท้าย
+         แต่ละเอกสาร paginate แยกกัน → คำสั่งขึ้นแผ่นใหม่ เลขหน้าเริ่มนับ ๑ ใหม่ */
+      const docPaper = document.getElementById('docPaper');
+      docPaper.innerHTML = '';
+      paginateFromHtml(docPaper, buildAppointCoverMemoHtml(),
+        'บันทึกเสนอเพื่อลงนามในคำสั่งแต่งตั้ง', { append: true });
+      paginateFromHtml(docPaper, appointHtml,
+        `คำสั่งแต่งตั้ง${isSub ? 'คณะอนุกรรมการไต่สวน' : 'องค์คณะพนักงาน ป.ป.ท.'}`, { append: true });
+    }
+
+    /* บันทึกเสนอเพื่อลงนาม (ปปท.5-01 sub / 5-04 base) ที่แนบนำหน้าคำสั่งในโหมด appoint —
+       ดึงข้อมูลจาก kase (ครั้งที่/วันที่ประชุม/วาระ) + รายชื่อคณะจากฟอร์ม appoint;
+       ช่องที่ไม่มีข้อมูลใช้เส้นจุด; ลายเซ็นเป็นบล็อกเส้นจุด (ไม่ผูก digital sign) —
+       แยกจาก renderMemoBaseDoc() ที่โหมด memo ใช้ (อ่านจากฟอร์ม memo) เพื่อไม่กระทบกัน */
+    function buildAppointCoverMemoHtml() {
+      const s = MEMO_SIGNER[isSub ? 'sub' : 'base'];
+      const orderKind = isSub ? 'คณะอนุกรรมการไต่สวน' : 'คณะพนักงานไต่สวน';
+      const meetNo = (kase.meetingNo || '').toString().trim();
+      const meetDate = ECMIS.thaiDate((kase.meetingDate || '').toString().trim());
+      const agenda = (kase.agendaNo || '').toString().trim();
+      const namesList = members.map(m =>
+        `${M(m.name, 'ชื่อ - สกุล')} ${M(m.pos, 'ตำแหน่ง')} สังกัด ${M(m.agency, '……………')} (${M(m.role || (isSub ? 'อนุกรรมการไต่สวน' : 'องค์คณะ'))})`).join(' และ ');
+
+      return `
+    <div class="doc-title" style="font-size:29pt !important;line-height:1.2 !important;margin:0 0 6pt !important">บันทึกข้อความ</div>
+    <div class="doc-memo-hdr"><span class="doc-memo-lbl">ส่วนราชการ</span> กลุ่มงานกิจการคณะกรรมการ กองบริหารคดี โทร. ๔๓๑๓</div>
+    <div class="doc-memo-hdr"><span class="doc-memo-lbl">ที่</span> ${M('', 'ปป ๐๐๐๔/')}&nbsp;&nbsp;&nbsp;&nbsp;<span class="doc-memo-lbl" style="min-width:auto">วันที่</span> ${M('', '……………………')}</div>
+    <div class="doc-memo-hdr"><span class="doc-memo-lbl">เรื่อง</span> คำสั่ง${isSub ? 'คณะกรรมการ' : 'สำนักงาน'} ป.ป.ท. เรื่อง แต่งตั้ง${orderKind} กรณีเจ้าหน้าที่ของรัฐกระทำการทุจริตในภาครัฐ</div>
+    <div class="doc-indent" style="text-indent:6.2em">เรื่องที่ ${M(kase.id)}</div>
+    <div class="doc-memo-hdr" style="margin-top:6px"><span class="doc-memo-lbl">เรียน</span> ${isSub ? 'ประธานกรรมการ ป.ป.ท.' : 'เลขาธิการคณะกรรมการ ป.ป.ท.'} (ผ่านผู้อำนวยการกองบริหารคดี)</div>
+
+    <div class="doc-h" style="margin-top:10px">๑. เรื่องเดิม</div>
+    <div class="doc-indent">
+      ${M('', '(กอง/สำนัก)')} ได้มีหนังสือ ลับ ที่ ${M('', '……………………')} เรื่อง รายงานผลการไต่สวนเบื้องต้น
+      เรื่องที่ ${M(kase.id)} เพื่อเข้าสู่การพิจารณาของที่ประชุมคณะกรรมการ ป.ป.ท.
+    </div>
+
+    <div class="doc-h" style="margin-top:10px">๒. ข้อเท็จจริง</div>
+    <div class="doc-indent">
+      ๒.๑ คณะกรรมการ ป.ป.ท. มีมติในคราวการประชุม ครั้งที่ ${M(meetNo)} เมื่อวันที่ ${M(meetDate)} ระเบียบวาระที่ ${M(agenda)}
+      เรื่อง รายงานผลการไต่สวนเบื้องต้น โดยมีมติเป็นเอกฉันท์เห็นชอบให้รับไว้ไต่สวน โดยให้ดำเนินการไต่สวนเป็น${isSub ? 'คณะอนุกรรมการไต่สวน เนื่องจากเป็นเรื่องสำคัญหรือมีความซับซ้อน ตามมาตรา ๒๔ วรรคสาม' : 'องค์คณะ ตามมาตรา ๒๔ วรรคหนึ่ง'}
+      แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม
+    </div>
+    <div class="doc-indent" style="margin-top:4px">
+      ๒.๒ เมื่อวันที่ ${M('', '……………………')} ผู้รับผิดชอบงานคำสั่ง ได้รับมติการประชุมครั้งที่ ${M('', '………')} ฉบับลงนามครบถ้วนสมบูรณ์แล้ว
+    </div>
+
+    <div class="doc-h" style="margin-top:10px">๓. ข้อเสนอ</div>
+    <div class="doc-indent">
+      กลุ่มงานกิจการคณะกรรมการ กองบริหารคดี ได้ดำเนินการจัดทำคำสั่ง${isSub ? 'คณะกรรมการ' : 'สำนักงาน'} ป.ป.ท. เรื่อง แต่งตั้ง${orderKind}
+      โดยคำสั่งดังกล่าวเป็นไปตามมาตรา ๒๔ ${isSub ? 'วรรคสาม' : 'วรรคหนึ่ง'} แห่งพระราชบัญญัติมาตรการของฝ่ายบริหารในการป้องกันและปราบปรามการทุจริต
+      พ.ศ. ๒๕๕๑ และที่แก้ไขเพิ่มเติม ขอเสนอรายชื่อ${isSub ? 'คณะอนุกรรมการไต่สวน' : 'พนักงาน ป.ป.ท.'}
+      เพื่อแต่งตั้งเป็น${orderKind} จำนวน ${members.length ? ECMIS.toThaiDigits(members.length) : '…'} ราย ได้แก่ ${namesList}
+      โดยได้ตรวจสอบสถานะ อำนาจหน้าที่ พฤติการณ์การกระทำความผิด วันเวลาและสถานที่เกิดเหตุ
+      และเลขประจำตัวประชาชนของผู้ถูกกล่าวหาถูกต้องครบถ้วนแล้ว
+    </div>
+    <div class="doc-indent" style="margin-top:10px">จึงเรียนมาเพื่อโปรดพิจารณา</div>
+    <div class="doc-sign" style="margin-top:24px">
+      (${'…'.repeat(30)})<br>เจ้าหน้าที่ ป.ป.ท./พนักงาน ป.ป.ท.
+    </div>
+
+    <div style="margin-top:30px">
+      <div class="doc-h" style="margin-top:10px">๔. ความเห็นผู้ตรวจ</div>
+      <div class="doc-indent">ได้ตรวจสอบร่างคำสั่ง${isSub ? 'คณะกรรมการ' : 'สำนักงาน'} ป.ป.ท. เรื่อง แต่งตั้ง${orderKind}ดังกล่าวถูกต้องครบถ้วนแล้ว</div>
+      <div class="doc-indent" style="margin-top:6px">จึงเรียนมาเพื่อโปรดพิจารณา</div>
+      <div class="doc-sign" style="margin-top:24px">(${'…'.repeat(30)})<br>ผู้อำนวยการกลุ่มงานกิจการคณะกรรมการ</div>
+    </div>
+
+    <div>
+      <div class="doc-h" style="margin-top:22px">๕. ความเห็นผู้อำนวยการกองบริหารคดี</div>
+      <div class="doc-indent">ได้ตรวจสอบร่างคำสั่ง${isSub ? 'คณะกรรมการ' : 'สำนักงาน'} ป.ป.ท. เรื่อง แต่งตั้ง${orderKind}ดังกล่าวถูกต้องครบถ้วน จึงเห็นควรพิจารณาลงนาม</div>
+      <div class="doc-indent" style="margin-top:6px">จึงเรียนมาเพื่อโปรดพิจารณา</div>
+      <div class="doc-sign" style="margin-top:24px">(${'…'.repeat(30)})<br>ผู้อำนวยการกองบริหารคดี</div>
+    </div>
+
+    <div>
+      <div class="doc-indent" style="margin-top:22px;text-indent:0">- เห็นชอบ<br>- ลงนามแล้ว</div>
+      <div class="doc-sign" style="margin-top:20px">(${'…'.repeat(30)})<br>${s.title}</div>
+    </div>`;
     }
 
     /* ===================================================================

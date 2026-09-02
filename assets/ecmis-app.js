@@ -3656,7 +3656,7 @@ function paginateDoc(containerEl, opts){
     pushPage();
   }
 
-  containerEl.innerHTML = pages.map((p, i) => {
+  const pagesHtml = pages.map((p, i) => {
     const pageNo = i + 1;
     const header = p.isFirst ? '' : runningHeaderHtml(pageNo);
     const footSecret = (opts.secret !== false) ? '<div class="doc-secret-foot">ลับ</div>' : '';
@@ -3667,6 +3667,10 @@ function paginateDoc(containerEl, opts){
     const catchword = catchwordText ? `<div class="doc-catchword">${escapeHtml(catchwordText)}</div>` : '';
     return `<div class="${pageClass}" data-page-no="${pageNo}" style="height:297mm; max-height:297mm; overflow:hidden; box-sizing:border-box;">${header}${p.blocks.join('')}${footSecret}${catchword}</div>`;
   }).join('');
+  // opts.append — เรนเดอร์เอกสารหลายชุดต่อกันใน container เดียว (เช่น บันทึกเสนอ + คำสั่ง)
+  // แต่ละชุด paginate แยกกัน → ขึ้นแผ่นใหม่, เลขหน้า/คำเชื่อม/หัวกระดาษ เริ่มนับใหม่ในชุดของตัวเอง
+  if (opts.append) containerEl.insertAdjacentHTML('beforeend', pagesHtml);
+  else containerEl.innerHTML = pagesHtml;
 
   if (typeof updateDocPaginationUI === 'function') {
     updateDocPaginationUI(containerEl);
