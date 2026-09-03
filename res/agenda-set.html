@@ -476,6 +476,19 @@
                        เปิดประชุมจริงก่อนตามสถานะ AGENDA_SET→IN_MEETING/OPEN_AGENDA) การมีลิงก์จริงใน
                        tbl_res_calendar_item_case ก็เพียงพอให้คิวรอบรรจุวาระกรองเรื่องนี้ออกแล้ว */
                     if (urgent) await persistCase(kase, { urgent });
+                    ECMIS.NotificationStore.createEvent({
+                        eventKey: `agenda:${kase.id}:${trc_id}:${agendaNo}`,
+                        type: 'AGENDA_PLACED',
+                        caseId: kase.id,
+                        recipientIds: ECMIS.resolveCaseNotificationRecipients(kase),
+                        title: 'บรรจุวาระการประชุมแล้ว',
+                        body: `สำนวน ${kase.id} ถูกบรรจุในการประชุมครั้งที่ ${meetNo} วาระ ${agendaNo} วันที่ ${ECMIS.thaiDate(meetDate)}`,
+                        href: 'notifications.html',
+                        meetingDate: meetDate,
+                        meetingNo: meetNo,
+                        agendaNo
+                    });
+                    ECMIS.NotificationStore.ensureDueAgendaReminders();
                 } catch (err) {
                     console.error('บรรจุระเบียบวาระไม่สำเร็จ:', err);
                     ECMIS.toastWarn('บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง');
@@ -568,6 +581,16 @@
                         inviteSentDate72: new Date().toISOString().slice(0, 10),
                         status: 'IN_MEETING_72'
                     });
+                    ECMIS.NotificationStore.createEvent({
+                        eventKey:`agenda:${kase.id}:${kase.meetingNo || 'meeting'}:${kase.agendaNo || 'agenda'}`,
+                        type:'AGENDA_PLACED', caseId:kase.id,
+                        recipientIds:ECMIS.resolveCaseNotificationRecipients(kase),
+                        title:'บรรจุวาระการประชุมแล้ว',
+                        body:`สำนวน ${kase.id} ถูกบรรจุในการประชุมครั้งที่ ${kase.meetingNo || '-'} วาระ ${kase.agendaNo || '-'} วันที่ ${ECMIS.thaiDate(kase.meetingDate)}`,
+                        href:'notifications.html', meetingDate:kase.meetingDate,
+                        meetingNo:kase.meetingNo, agendaNo:kase.agendaNo
+                    });
+                    ECMIS.NotificationStore.ensureDueAgendaReminders();
                     ECMIS.toastOk('ส่งหนังสือเชิญประชุมและเปิดวาระเรียบร้อย');
                     setTimeout(() => location.href = ECMIS.pageForCase72(kase) + '?case=' + encodeURIComponent(kase.id), 1400);
                 });

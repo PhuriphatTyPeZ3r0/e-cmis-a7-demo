@@ -1028,6 +1028,12 @@
           { act: 'back_inbox', label: 'กลับไปกล่องงาน', icon: 'fa-arrow-left', cls: 'btn-outline-secondary' }
         ];
       }
+      if (kase.status === 'RESOLVED') {
+        return [
+          { act: 'back_inbox', label: 'กลับไปกล่องงาน', icon: 'fa-arrow-left', cls: 'btn-outline-secondary' },
+          { act: 'dispatch_resolution', label: kase.resolutionDispatchedAt ? 'ส่งมติและเอกสารแล้ว' : 'ส่งมติและเอกสารคืนผู้รับผิดชอบ', icon: kase.resolutionDispatchedAt ? 'fa-check-double' : 'fa-paper-plane', cls: kase.resolutionDispatchedAt ? 'btn-outline-success' : 'btn-success' }
+        ];
+      }
       return [
         { act: 'back_inbox', label: 'กลับไปกล่องงาน', icon: 'fa-arrow-left', cls: 'btn-outline-secondary' },
         { act: 'save', label: 'บันทึกร่างมติ', icon: 'fa-floppy-disk', cls: 'btn-outline-primary' },
@@ -1036,7 +1042,7 @@
     }
 
     function renderActionButtons() {
-      document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons());
+      document.getElementById('actionBarSlot').innerHTML = ECMIS.actionBar(kase, role.id, buildButtons(), { forceAllowed:mayEdit });
       document.querySelectorAll('.action-bar [data-act]').forEach(b =>
         b.addEventListener('click', () => handle(b.dataset.act)));
     }
@@ -1120,6 +1126,30 @@
     function handle(act) {
       if (act === 'back_inbox') {
         location.href = 'inbox.html';
+        return;
+      }
+
+      if (act === 'dispatch_resolution') {
+        if (kase.resolutionDispatchedAt) return;
+        ECMIS.confirmAction({
+          title:'ยืนยันส่งมติและเอกสาร',
+          html:`ส่งมติและเอกสารของสำนวน <strong>${kase.id}</strong> คืนเจ้าของสำนวน ผอ.หน่วยงาน และธุรการคดี`,
+          confirmText:'ยืนยันส่งมติ'
+        }).then(result => {
+          if (!result.isConfirmed) return;
+          const sentAt = new Date().toISOString();
+          kase.resolutionDispatchedAt = sentAt;
+          kase.resolutionStage = 5;
+          ECMIS.Model.CaseStore.update(kase.id, { resolutionDispatchedAt:sentAt, resolutionStage:5 });
+          ECMIS.NotificationStore.createEvent({
+            eventKey:`resolution-dispatched:${kase.id}:${kase.resolvedAtIso || kase.resolvedAt || 'current'}`,
+            type:'RESOLUTION_DISPATCHED', caseId:kase.id,
+            recipientIds:ECMIS.resolveCaseNotificationRecipients(kase), title:'ส่งมติที่ประชุมแล้ว',
+            body:`มติและเอกสารสำนวน ${kase.id} ถูกส่งคืนผู้รับผิดชอบแล้ว`, href:'notifications.html'
+          });
+          ECMIS.toastOk('ส่งมติและเอกสารพร้อมสร้างการแจ้งเตือนเรียบร้อย');
+          renderActionButtons();
+        });
         return;
       }
 

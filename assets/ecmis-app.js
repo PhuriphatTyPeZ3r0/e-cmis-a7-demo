@@ -31,6 +31,15 @@ const ROLES = [
   { id:'affairs', login:'Siriporn.K', row:6, group:'กลุ่มงานกิจการคณะกรรมการ', title:'เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ',
     name:'นางสาวศิริพร กิจการ', org:'กองบริหารคดี', lane:'L7', flow:'S7 / S11', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','EDIT.MASTER','doc.generate','order24.draft','secrecy.set'] }
+  ,
+  { id:'investigator_demo', login:'Somchai.I', group:'ผู้รับการแจ้งเตือน', title:'นักสืบสวน (เจ้าของสำนวน)',
+    name:'นายสมชาย ใจซื่อ', org:'กอง/สำนักงานเขตเจ้าของสำนวน', notificationOnly:true, perms:['view.notifications'] },
+  { id:'director_demo', login:'Narin.D', group:'ผู้รับการแจ้งเตือน', title:'ผอ.กอง / ผอ.สำนักงาน ป.ป.ท. เขต',
+    name:'นายณรินทร์ กำกับคดี', org:'กอง/สำนักงานเขตเจ้าของสำนวน', notificationOnly:true, perms:['view.notifications'] },
+  { id:'case_clerk_demo', login:'Kanda.C', group:'ผู้รับการแจ้งเตือน', title:'เจ้าหน้าที่ธุรการคดี',
+    name:'นางสาวกานดา ประสานคดี', org:'กอง/สำนักงานเขตเจ้าของสำนวน', notificationOnly:true, perms:['view.notifications'] },
+  { id:'discipline_tracker_demo', login:'Suda.T', group:'ผู้รับการแจ้งเตือน', title:'เจ้าหน้าที่กลุ่มงานบริหารติดตามคดี (กิจกรรมที่ 8)',
+    name:'นางสาวสุดา ติดตามคดี', org:'กองบริหารคดี', notificationOnly:true, perms:['view.notifications','track.discipline'] }
 ];
 
 const DOC_TYPES = {
@@ -131,6 +140,7 @@ function canEditMaster(roleId){ return can('EDIT.MASTER', roleId); }
 
 function canViewCase(kase, roleId){
   const r = getRole(roleId || currentRoleId());
+  if(r.notificationOnly) return typeof NotificationStore !== 'undefined' && NotificationStore.listFor(r.id, { caseId:kase.id }).length > 0;
   if(can('view.all', r.id)) return true;
   if(can('view.assigned', r.id)) return !!kase.subCommittee || kase.complex;
   if(can('view.own', r.id)) return kase.owner === r.name || kase.ownerOrg === r.org;
@@ -401,6 +411,7 @@ function isUpstreamRole(roleId){ const r = getRole(roleId); return r.scope === '
    its own sidebar item, "รายการรอจัดทำมติ" — it's just no longer the post-login landing page.) */
 function homeHref(roleId){
   const r = roleId || currentRoleId();
+  if (getRole(r).notificationOnly) return resolvePage('notifications.html');
   if (r === 'board_sec') return resolvePage('agenda-registry.html');
   if (r === 'support_sub' || r === 'sup_chair' || r === 'sup_sec' || r === 'sup_asst') return resolvePage('support-subcommittee-inbox.html');
   if (r === 'subcommittee') return resolvePage('subcommittee-inbox.html');
@@ -2635,7 +2646,7 @@ function getRole(id){
   return ROLES.find(r => r.id === 'affairs') || ROLES[0];
 }
 
-// ผู้ใช้งานที่ได้รับอนุญาตให้เข้าสู่ระบบ (Cleansed 6 Users)
+// ผู้ใช้งานที่ได้รับอนุญาตให้เข้าสู่ระบบ รวมบัญชีผู้รับการแจ้งเตือนสำหรับ prototype
 const LOGIN_ALLOWED_ROLE_IDS = [
   'secgen',
   'support_sub',
@@ -2643,7 +2654,11 @@ const LOGIN_ALLOWED_ROLE_IDS = [
   'chairman',
   'board_sec',
   'board',
-  'affairs'
+  'affairs',
+  'investigator_demo',
+  'director_demo',
+  'case_clerk_demo',
+  'discipline_tracker_demo'
 ];
 
 function roleIdForLogin(username){
@@ -2666,6 +2681,7 @@ const PAGE_PERMISSIONS = {
   'followup-dashboard.html': ['secgen', 'chairman', 'board_sec', 'board', 'board_ex', 'affairs'],
   'case-register.html': null, // public/all roles
   'register.html': null, // public/all roles
+  'notifications.html': null,
 
   // Registry Screens (Strictly removed for chairman & affairs per rules)
   'agenda-registry.html': ['board_sec', 'board', 'board_ex', 'support_sub'],
@@ -2697,6 +2713,8 @@ const PAGE_PERMISSIONS = {
 
 function canAccessPage(pageName, roleId){
   const cleanPage = (pageName || '').split('?')[0].split('#')[0];
+  const accessRole = getRole(roleId);
+  if (accessRole.notificationOnly) return ['notifications.html', 'login.html', 'index.html'].includes(cleanPage);
   const perms = PAGE_PERMISSIONS[cleanPage];
   if (perms === undefined || perms === null) return true;
   return Array.isArray(perms) && perms.includes(roleId);
@@ -2869,6 +2887,8 @@ async function updateCaseStatus(kase, newStatus, sb) {
 
 const NAV = [
   { section:'ภาพรวม' },
+  { href:'notifications.html', icon:'fa-bell', label:'ระบบการแจ้งเตือน',
+    visible: role => !!role && role.notificationOnly },
   { href: role => homeHref(role?.id),     icon:'fa-inbox',
 
     label: role => {
@@ -2915,6 +2935,12 @@ function navHref(navItem, role){
 }
 
 function visibleNavFor(role){
+  if (role && role.notificationOnly) {
+    return [
+      { section:'การแจ้งเตือน' },
+      { href:'notifications.html', icon:'fa-bell', label:'ระบบการแจ้งเตือน' }
+    ];
+  }
   const filtered = NAV.filter(n => !n.visible || n.visible(role));
   return filtered.filter((n, i) => {
     if(!n.section) return true;
@@ -2923,26 +2949,289 @@ function visibleNavFor(role){
   });
 }
 
-/* ข้อ 46 (ชีตติดตามงาน): Read Receipt สำหรับการแจ้งเตือน — เก็บ id + timestamp ที่อ่านแล้วใน
-   localStorage (mock, ไม่มี backend จริง) ต่อเบราว์เซอร์ ไม่ผูกกับ role เพราะ role สลับกันได้จาก
-   dropdown เดียวกันในเบราว์เซอร์เดียว การอ่านจึงถือเป็นการอ่านของ "ผู้ใช้เครื่องนี้" โดยรวม */
-const MOCK_NOTIFICATIONS = [
-  { id: 'demo-1', title: 'เสนอเรื่องใหม่', body: 'สำนวน 1547/2568 รอเลขาธิการฯ พิจารณา/ลงนาม', time: '10 นาทีที่แล้ว', icon: 'fa-user-check', cls: 'bg-primary text-white' },
-  { id: 'demo-2', title: 'มติบอร์ดเสร็จสิ้น', body: 'บันทึกมติที่ประชุมบอร์ด สำนวน 1119/2565 แล้ว', time: '1 ชม. ที่แล้ว', icon: 'fa-scale-balanced', cls: 'bg-success text-white' },
-  { id: 'demo-3', title: 'คำร้องขอใบด่วน', body: 'ผอ.กบค. ส่งใบด่วนขอวาระด่วน สำนวน 1396/2564', time: '2 ชม. ที่แล้ว', icon: 'fa-bolt', cls: 'bg-warning text-dark' }
-];
-const NOTIF_READ_KEY = 'ecmis.readNotifIds';
+/* Prototype NotificationStore: แยก event ออกจาก receipt และผูก readAt กับผู้รับรายบุคคล
+   ใน localStorage แบบ versioned เพื่อให้สลับ demo account ในเบราว์เซอร์เดียวกันได้โดยไม่ปะปนกัน */
+const NOTIFICATION_STORAGE_KEY = 'ecmis.notifications.v1';
+const NOTIFICATION_RECEIPT_KEY = 'ecmis.notificationReceipts.v1';
+const THAI_PUBLIC_HOLIDAYS_2569 = new Set([
+  '2026-01-01','2026-03-03','2026-04-06','2026-04-13','2026-04-14','2026-04-15',
+  '2026-05-01','2026-05-04','2026-06-01','2026-06-03','2026-07-28','2026-07-29',
+  '2026-08-12','2026-10-13','2026-10-23','2026-12-05','2026-12-07','2026-12-10','2026-12-31'
+]);
+
+function localDateIso(date){
+  const d = parseIsoToDate(date);
+  if (!d || isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function previousThaiBusinessDay(meetingDate){
+  const d = parseIsoToDate(meetingDate);
+  if (!d || isNaN(d.getTime())) return '';
+  do { d.setDate(d.getDate() - 1); }
+  while (isWeekend(d) || THAI_PUBLIC_HOLIDAYS_2569.has(localDateIso(d)));
+  return localDateIso(d);
+}
+function resolveCaseNotificationRecipients(){
+  return ['investigator_demo','director_demo','case_clerk_demo'];
+}
+
+function notificationIdForEventKey(eventKey){
+  const value = String(eventKey || '');
+  let h1 = 2166136261;
+  let h2 = 5381;
+  for (let i = 0; i < value.length; i++) {
+    h1 = Math.imul(h1 ^ value.charCodeAt(i), 16777619);
+    h2 = Math.imul(h2, 33) ^ value.charCodeAt(i);
+  }
+  return `notif-${(h1 >>> 0).toString(36)}-${(h2 >>> 0).toString(36)}`;
+}
+
+const NotificationStore = {
+  _hydrated:false,
+  _hydratePromise:null,
+  _realtimeChannel:null,
+  _dbWarningShown:false,
+  _read(key, fallback){
+    try { const value = JSON.parse(localStorage.getItem(key) || 'null'); return value || fallback; }
+    catch(e){ return fallback; }
+  },
+  _events(){ const value = this._read(NOTIFICATION_STORAGE_KEY, []); return Array.isArray(value) ? value : []; },
+  _receipts(){ const value = this._read(NOTIFICATION_RECEIPT_KEY, {}); return value && typeof value === 'object' ? value : {}; },
+  _saveEvents(events){ localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(events)); },
+  _saveReceipts(receipts){ localStorage.setItem(NOTIFICATION_RECEIPT_KEY, JSON.stringify(receipts)); },
+  _emit(){
+    try { window.dispatchEvent(new CustomEvent('ecmis:notifications-updated')); }
+    catch(e){ /* CustomEvent may be unavailable in non-browser checks */ }
+  },
+  _db(){ return getSupabaseClient(); },
+  _warnDb(error){
+    if (this._dbWarningShown) return;
+    this._dbWarningShown = true;
+    console.warn('Notification database unavailable; using the local cache:', error);
+  },
+  _toDb(item){
+    const known = ['id','eventKey','type','caseId','recipientIds','title','body','href','senderId','createdAt','scheduledAt','deliveredAt','meetingDate','meetingNo','agendaNo','readAt','receipts'];
+    const metadata = {};
+    Object.keys(item || {}).forEach(key => { if (!known.includes(key)) metadata[key] = item[key]; });
+    return {
+      id:item.id,
+      event_key:item.eventKey,
+      type:item.type,
+      case_id:item.caseId,
+      title:item.title || 'การแจ้งเตือน',
+      body:item.body || '',
+      href:item.href || 'notifications.html',
+      sender_id:item.senderId || null,
+      created_at:item.createdAt,
+      scheduled_at:item.scheduledAt || null,
+      delivered_at:item.deliveredAt,
+      meeting_date:item.meetingDate ? localDateIso(item.meetingDate) : null,
+      meeting_no:item.meetingNo || null,
+      agenda_no:item.agendaNo || null,
+      metadata
+    };
+  },
+  _fromDb(row){
+    const recipientRows = Array.isArray(row.ecmis_notification_recipient) ? row.ecmis_notification_recipient : [];
+    return Object.assign({}, row.metadata || {}, {
+      id:row.id,
+      eventKey:row.event_key,
+      type:row.type,
+      caseId:row.case_id,
+      recipientIds:recipientRows.map(r => r.recipient_id),
+      title:row.title,
+      body:row.body,
+      href:row.href,
+      senderId:row.sender_id,
+      createdAt:row.created_at,
+      scheduledAt:row.scheduled_at,
+      deliveredAt:row.delivered_at,
+      meetingDate:row.meeting_date,
+      meetingNo:row.meeting_no,
+      agendaNo:row.agenda_no,
+      _recipientRows:recipientRows
+    });
+  },
+  async _persistEvent(item){
+    const sb = this._db();
+    if (!sb || !item) return false;
+    try {
+      let { data:rows, error } = await sb.from('ecmis_notification_event')
+        .insert(this._toDb(item)).select('*');
+      if (error && error.code === '23505') {
+        const existing = await sb.from('ecmis_notification_event').select('*').eq('event_key', item.eventKey).limit(1);
+        rows = existing.data;
+        error = existing.error;
+      }
+      if (error) throw error;
+      const remote = rows && rows[0];
+      if (!remote) throw new Error('Notification insert returned no row');
+
+      if (remote.id !== item.id) {
+        const oldId = item.id;
+        item.id = remote.id;
+        const events = this._events().map(n => n.eventKey === item.eventKey ? Object.assign({}, n, { id:remote.id }) : n);
+        this._saveEvents(events);
+        const receipts = this._receipts();
+        item.recipientIds.forEach(recipientId => {
+          const oldKey = `${recipientId}:${oldId}`;
+          if (receipts[oldKey] && !receipts[`${recipientId}:${remote.id}`]) receipts[`${recipientId}:${remote.id}`] = receipts[oldKey];
+          delete receipts[oldKey];
+        });
+        this._saveReceipts(receipts);
+      }
+
+      const recipients = item.recipientIds.map(recipientId => ({
+        notification_id:remote.id,
+        recipient_id:recipientId,
+        delivered_at:item.deliveredAt
+      }));
+      if (recipients.length) {
+        const recipientResult = await sb.from('ecmis_notification_recipient')
+          .upsert(recipients, { onConflict:'notification_id,recipient_id', ignoreDuplicates:true });
+        if (recipientResult.error) throw recipientResult.error;
+      }
+
+      const receipts = this._receipts();
+      await Promise.all(item.recipientIds.map(async recipientId => {
+        const readAt = receipts[`${recipientId}:${remote.id}`];
+        if (!readAt) return;
+        const result = await sb.from('ecmis_notification_recipient').update({ read_at:readAt })
+          .eq('notification_id', remote.id).eq('recipient_id', recipientId).is('read_at', null);
+        if (result.error) throw result.error;
+      }));
+      return true;
+    } catch(error) {
+      this._warnDb(error);
+      return false;
+    }
+  },
+  async hydrate(options){
+    const opts = options || {};
+    if (this._hydratePromise && !opts.force) return this._hydratePromise;
+    if (this._hydrated && !opts.force) return true;
+    const sb = this._db();
+    if (!sb) return false;
+    this._hydratePromise = (async () => {
+      try {
+        if (!opts.skipFlush) await Promise.all(this._events().map(item => this._persistEvent(item)));
+        const { data, error } = await sb.from('ecmis_notification_event').select(`
+          id,event_key,type,case_id,title,body,href,sender_id,created_at,scheduled_at,delivered_at,
+          meeting_date,meeting_no,agenda_no,metadata,
+          ecmis_notification_recipient(recipient_id,delivered_at,read_at)
+        `).order('delivered_at', { ascending:false });
+        if (error) throw error;
+        const remoteEvents = (data || []).map(row => this._fromDb(row));
+        const remoteKeys = new Set(remoteEvents.map(item => item.eventKey));
+        const unsyncedLocal = this._events().filter(item => !remoteKeys.has(item.eventKey));
+        const receipts = this._receipts();
+        remoteEvents.forEach(item => {
+          (item._recipientRows || []).forEach(recipient => {
+            if (!recipient.read_at) return;
+            const key = `${recipient.recipient_id}:${item.id}`;
+            if (!receipts[key] || recipient.read_at < receipts[key]) receipts[key] = recipient.read_at;
+          });
+          delete item._recipientRows;
+        });
+        this._saveEvents(remoteEvents.concat(unsyncedLocal));
+        this._saveReceipts(receipts);
+        this._hydrated = true;
+        this._dbWarningShown = false;
+        this._subscribeRealtime();
+        this._emit();
+        return true;
+      } catch(error) {
+        this._warnDb(error);
+        return false;
+      } finally {
+        this._hydratePromise = null;
+      }
+    })();
+    return this._hydratePromise;
+  },
+  refresh(){ return this.hydrate({ force:true, skipFlush:true }); },
+  _subscribeRealtime(){
+    const sb = this._db();
+    if (!sb || !sb.channel || this._realtimeChannel) return;
+    this._realtimeChannel = sb.channel('ecmis-notification-store')
+      .on('postgres_changes', { event:'*', schema:'public', table:'ecmis_notification_event' }, () => this.refresh())
+      .on('postgres_changes', { event:'*', schema:'public', table:'ecmis_notification_recipient' }, () => this.refresh())
+      .subscribe();
+  },
+  createEvent(event){
+    if (!event || !event.eventKey || !event.type || !event.caseId || !Array.isArray(event.recipientIds)) return null;
+    const events = this._events();
+    const existing = events.find(n => n.eventKey === event.eventKey);
+    if (existing) {
+      this._persistEvent(existing);
+      return existing;
+    }
+    const now = new Date().toISOString();
+    const item = Object.assign({ id:notificationIdForEventKey(event.eventKey),
+      title:'การแจ้งเตือน', body:'', href:'notifications.html', createdAt:now, deliveredAt:now,
+      scheduledAt:null, senderId:currentRoleId() }, event);
+    item.recipientIds = [...new Set(item.recipientIds)].filter(id => LOGIN_ALLOWED_ROLE_IDS.includes(id));
+    events.push(item);
+    this._saveEvents(events);
+    this._persistEvent(item);
+    this._emit();
+    return item;
+  },
+  listFor(userId, filters){
+    const receipts = this._receipts();
+    const f = filters || {};
+    return this._events().filter(n => n.recipientIds.includes(userId))
+      .filter(n => !f.caseId || n.caseId === f.caseId)
+      .map(n => Object.assign({}, n, { readAt:receipts[`${userId}:${n.id}`] || null }))
+      .filter(n => f.read === undefined || (!!n.readAt === !!f.read))
+      .sort((a,b) => String(b.deliveredAt || b.createdAt).localeCompare(String(a.deliveredAt || a.createdAt)));
+  },
+  historyForCase(caseId){
+    const receipts = this._receipts();
+    return this._events().filter(n => n.caseId === caseId).map(n => {
+      const byRecipient = {};
+      n.recipientIds.forEach(id => { byRecipient[id] = receipts[`${id}:${n.id}`] || null; });
+      return Object.assign({}, n, { receipts:byRecipient });
+    }).sort((a,b) => String(b.deliveredAt || b.createdAt).localeCompare(String(a.deliveredAt || a.createdAt)));
+  },
+  markRead(notificationId, userId){
+    const user = userId || currentRoleId();
+    const item = this._events().find(n => n.id === notificationId && n.recipientIds.includes(user));
+    if (!item) return null;
+    const receipts = this._receipts();
+    const key = `${user}:${notificationId}`;
+    if (!receipts[key]) {
+      receipts[key] = new Date().toISOString();
+      this._saveReceipts(receipts);
+      this._persistEvent(item);
+      this._emit();
+    }
+    return receipts[key];
+  },
+  unreadCount(userId){ return this.listFor(userId || currentRoleId(), { read:false }).length; },
+  ensureDueAgendaReminders(today){
+    const nowIso = localDateIso(today || new Date());
+    this._events().filter(n => n.type === 'AGENDA_PLACED' && n.meetingDate).forEach(n => {
+      const meetingIso = localDateIso(n.meetingDate);
+      const dueIso = previousThaiBusinessDay(n.meetingDate);
+      if (!meetingIso || !dueIso || nowIso < dueIso || nowIso >= meetingIso) return;
+      this.createEvent({ eventKey:`agenda-reminder:${n.eventKey}`, type:'AGENDA_REMINDER', caseId:n.caseId,
+        recipientIds:n.recipientIds, title:'เตือนประชุมล่วงหน้า 1 วันทำการ',
+        body:`สำนวน ${n.caseId} มีกำหนดประชุม ${thaiDate(n.meetingDate)} วาระ ${n.agendaNo || '-'}`,
+        href:'notifications.html', scheduledAt:`${dueIso}T00:00:00+07:00`, meetingDate:n.meetingDate,
+        agendaNo:n.agendaNo, meetingNo:n.meetingNo, senderId:n.senderId });
+    });
+  }
+};
+
 function getReadNotifIds(){
-  try {
-    const saved = JSON.parse(localStorage.getItem(NOTIF_READ_KEY) || 'null');
-    return (saved && typeof saved === 'object') ? saved : {};
-  } catch (e) { return {}; }
+  const map = {};
+  NotificationStore.listFor(currentRoleId()).forEach(n => { if(n.readAt) map[n.id] = n.readAt; });
+  return map;
 }
 function markNotifRead(id){
-  const map = getReadNotifIds();
-  if (map[id]) return; // อ่านแล้ว ไม่ต้องบันทึกซ้ำ (คง timestamp เดิมไว้เป็นหลักฐาน)
-  map[id] = new Date().toISOString();
-  localStorage.setItem(NOTIF_READ_KEY, JSON.stringify(map));
+  const readAt = NotificationStore.markRead(id, currentRoleId());
+  if (!readAt) return;
 
   const li = document.querySelector(`.notif-item[data-notif-id="${CSS.escape(id)}"]`);
   if (li) {
@@ -2953,9 +3242,10 @@ function markNotifRead(id){
   }
   const badge = document.getElementById('notifBadge');
   if (badge) {
-    const remaining = Math.max(0, (parseInt(badge.textContent, 10) || 0) - 1);
+    const remaining = NotificationStore.unreadCount(currentRoleId());
     badge.textContent = remaining;
     badge.classList.toggle('d-none', remaining === 0);
+    badge.style.display = remaining === 0 ? 'none' : 'inline-flex';
   }
 }
 
@@ -2965,6 +3255,7 @@ function renderShell(activeHref){
     return;
   }
   const role = currentRole();
+  NotificationStore.ensureDueAgendaReminders();
 
   /* Page Guard Check: ป้องกันการพิมพ์ URL เข้าถึงหน้าที่ไม่มีสิทธิ์ */
   const currentPage = (location.pathname.split('/').pop() || '').split('?')[0];
@@ -2979,21 +3270,33 @@ function renderShell(activeHref){
 
   const inboxCount = inboxFor(role.id).length;
 
-  const notifications = MOCK_NOTIFICATIONS;
-  /* ข้อ 46 (ชีตติดตามงาน): Read Receipt + Badge ค้าง — mock ด้วย localStorage ต่อ browser/role
-     (ไม่มี backend จริง) บันทึก timestamp ตอนอ่าน ("อ่านแล้ว") และเลข badge นับเฉพาะที่ยังไม่อ่าน
-     ไม่เคลียร์เองอัตโนมัติ ต้องกดเปิดรายการนั้นๆ ถึงจะนับว่าอ่านแล้ว (ดู ECMIS.markNotifRead) */
+  if (!role.notificationOnly) {
+    upcomingDeadlines(CASES.filter(c => canViewCase(c, role.id))).forEach(a => {
+      NotificationStore.createEvent({
+        eventKey:`deadline:${role.id}:${a.kase.id}:${a.deadlineType}`, type:'CASE_DEADLINE',
+        caseId:a.kase.id, recipientIds:[role.id], title:a.deadlineType === 'deadline60' ? 'ครบกำหนด 60 วัน' : 'ครบกำหนด 2 ปี',
+        body:`สำนวน ${a.kase.id} — เหลือ ${a.daysLeft} วัน`, href:'notifications.html'
+      });
+    });
+  }
+  const notifications = NotificationStore.listFor(role.id).slice(0, 8);
   const readNotifIds = getReadNotifIds();
   const notifDotHtml = id => readNotifIds[id]
     ? `<span class="notif-unread-dot rounded-circle bg-primary d-none" style="width:7px;height:7px;flex:0 0 auto"></span>
        <small class="notif-read-tag text-muted" style="font-size:0.64rem"><i class="fa-solid fa-check"></i> อ่านแล้ว</small>`
     : `<span class="notif-unread-dot rounded-circle bg-primary" style="width:7px;height:7px;flex:0 0 auto"></span>
        <small class="notif-read-tag text-muted d-none" style="font-size:0.64rem"><i class="fa-solid fa-check"></i> อ่านแล้ว</small>`;
-  const notifItems = notifications.map(n => `
+  const notifVisual = type => ({
+    AGENDA_PLACED:['fa-calendar-check','bg-primary text-white'],
+    AGENDA_REMINDER:['fa-clock','bg-warning text-dark'],
+    RESOLUTION_DISPATCHED:['fa-scale-balanced','bg-success text-white'],
+    DISCIPLINE_SENT_ACTIVITY8:['fa-file-shield','bg-info text-dark']
+  }[type] || ['fa-bell','bg-secondary text-white']);
+  const notifItems = notifications.map(n => { const visual = notifVisual(n.type); return `
     <li class="p-2 border-bottom notif-item" data-notif-id="${n.id}" style="font-size:0.78rem;cursor:pointer" onclick="ECMIS.markNotifRead('${n.id}')">
       <div class="d-flex gap-2">
-        <span class="rounded-circle d-flex align-items-center justify-content-center ${n.cls}" style="width:28px;height:28px;flex:0 0 auto">
-          <i class="fa-solid ${n.icon}" style="font-size:0.75rem"></i>
+        <span class="rounded-circle d-flex align-items-center justify-content-center ${visual[1]}" style="width:28px;height:28px;flex:0 0 auto">
+          <i class="fa-solid ${visual[0]}" style="font-size:0.75rem"></i>
         </span>
         <div class="flex-grow-1">
           <div class="d-flex align-items-center justify-content-between">
@@ -3001,18 +3304,17 @@ function renderShell(activeHref){
             ${notifDotHtml(n.id)}
           </div>
           <span class="text-muted d-block" style="font-size:0.74rem">${n.body}</span>
-          <small class="text-muted" style="font-size:0.66rem">${n.time}</small>
+          <small class="text-muted" style="font-size:0.66rem">${new Date(n.deliveredAt).toLocaleString('th-TH')}</small>
         </div>
       </div>
-    </li>`).join('');
+    </li>`; }).join('');
 
   /* แจ้งเตือนล่วงหน้า 15 วันก่อนครบกำหนด 60 วัน/2 ปี — เฉพาะสำนวนที่ role นี้เข้าถึงได้
      (ใช้ buildDeadlineNotifItems ร่วมกับ refreshDeadlineNotificationsFromSupabase เพื่อไม่ให้
      markup ของข้อ 46 หลุดตกไปเวอร์ชันเก่าตอนรีเฟรชด้วยข้อมูลจริงทีหลัง) */
-  const deadlineAlerts = upcomingDeadlines(CASES.filter(c => canViewCase(c, role.id)));
-  const deadlineNotifItems = buildDeadlineNotifItems(deadlineAlerts, role);
-  const allNotifIds = [...notifications.map(n => n.id), ...deadlineAlerts.map(a => `deadline-${a.kase.id}-${a.deadlineType}`)];
-  const unreadNotifCount = allNotifIds.filter(id => !readNotifIds[id]).length;
+  const deadlineAlerts = [];
+  const deadlineNotifItems = '';
+  const unreadNotifCount = NotificationStore.unreadCount(role.id);
 
   const ROLE_SWITCHER_GROUPS = [
     {
@@ -3038,6 +3340,10 @@ function renderShell(activeHref){
     {
       group: 'กลุ่มงานกิจการคณะกรรมการ',
       roles: ['affairs']
+    },
+    {
+      group: 'ผู้รับการแจ้งเตือน (บัญชีสาธิต)',
+      roles: ['investigator_demo','director_demo','case_clerk_demo','discipline_tracker_demo']
     }
   ];
 
@@ -3111,13 +3417,13 @@ function renderShell(activeHref){
       <div class="dropdown">
         <button class="btn btn-sm btn-light border-0 rounded-circle position-relative p-2 ms-1" data-bs-toggle="dropdown" aria-expanded="false" title="การแจ้งเตือน" style="width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center">
           <i class="fa-solid fa-bell text-secondary"></i>
-          <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-circle bg-danger ${unreadNotifCount ? '' : 'd-none'}" style="font-size:.58rem; width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; padding:0">${unreadNotifCount}</span>
+          <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-circle bg-danger ${unreadNotifCount ? '' : 'd-none'}" style="font-size:.58rem; width:16px; height:16px; display:${unreadNotifCount ? 'inline-flex' : 'none'}; align-items:center; justify-content:center; padding:0">${unreadNotifCount}</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end p-0" style="width:290px; max-height:360px; overflow-y:auto">
           <li id="notifDeadlineSection">${deadlineAlerts.length ? `<h6 class="dropdown-header border-bottom p-2 text-danger" style="font-size: 0.82rem"><i class="fa-solid fa-clock me-1"></i>ใกล้ครบกำหนด (ภายใน 15 วัน)</h6><ul class="list-unstyled m-0">${deadlineNotifItems}</ul>` : ''}</li>
           <li><h6 class="dropdown-header border-bottom p-2 text-dark dark-text-light" style="font-size: 0.82rem">การแจ้งเตือนล่าสุด</h6></li>
-          ${notifItems}
-          <li class="text-center p-2"><a href="#" style="font-size:0.75rem; text-decoration:none; color:var(--ecmis-navy)">ดูการแจ้งเตือนทั้งหมด</a></li>
+          ${notifItems || '<li class="text-center text-muted p-3" style="font-size:.75rem">ไม่มีการแจ้งเตือน</li>'}
+          <li class="text-center p-2"><a href="notifications.html" style="font-size:0.75rem; text-decoration:none; color:var(--ecmis-navy)">ดูการแจ้งเตือนทั้งหมด</a></li>
         </ul>
       </div>
 
@@ -3289,6 +3595,16 @@ function renderShell(activeHref){
   }
 
   refreshDeadlineNotificationsFromSupabase(role);
+  NotificationStore.hydrate().then(connected => {
+    if (!connected) return;
+    NotificationStore.ensureDueAgendaReminders();
+    const badge = document.getElementById('notifBadge');
+    if (!badge) return;
+    const total = NotificationStore.unreadCount(role.id);
+    badge.textContent = total;
+    badge.classList.toggle('d-none', total === 0);
+    badge.style.display = total === 0 ? 'none' : 'inline-flex';
+  });
 }
 
 /* แจ้งเตือนใกล้ครบกำหนดใน renderShell() ด้านบนคำนวณจาก CASES (mock array) ตอน render ครั้งแรก
@@ -3325,7 +3641,12 @@ function buildDeadlineNotifItems(alerts, role) {
 }
 
 function applyDeadlineNotifRefresh(alerts, role) {
-  const itemsHtml = buildDeadlineNotifItems(alerts, role);
+  alerts.forEach(a => NotificationStore.createEvent({
+    eventKey:`deadline:${role.id}:${a.kase.id}:${a.deadlineType}`, type:'CASE_DEADLINE', caseId:a.kase.id,
+    recipientIds:[role.id], title:a.deadlineType === 'deadline60' ? 'ครบกำหนด 60 วัน' : 'ครบกำหนด 2 ปี',
+    body:`สำนวน ${a.kase.id} — เหลือ ${a.daysLeft} วัน`, href:'notifications.html'
+  }));
+  const itemsHtml = '';
   const section = document.getElementById('notifDeadlineSection');
   if (section) {
     section.innerHTML = alerts.length
@@ -3334,12 +3655,10 @@ function applyDeadlineNotifRefresh(alerts, role) {
   }
   const badge = document.getElementById('notifBadge');
   if (badge) {
-    const readNotifIds = getReadNotifIds();
-    const demoUnread = MOCK_NOTIFICATIONS.filter(n => !readNotifIds[n.id]).length;
-    const deadlineUnread = alerts.filter(a => !readNotifIds[`deadline-${a.kase.id}-${a.deadlineType}`]).length;
-    const total = demoUnread + deadlineUnread;
+    const total = NotificationStore.unreadCount(role.id);
     badge.textContent = total;
     badge.classList.toggle('d-none', total === 0);
+    badge.style.display = total === 0 ? 'none' : 'inline-flex';
   }
 }
 
@@ -6599,13 +6918,13 @@ if (typeof localStorage !== 'undefined') {
   PAGE_PERMISSIONS, canAccessPage, inResFolder, assetUrl, getSupabaseClient, logRequestEvent, updateCaseStatus,
   PERM_DEFS, can, canEditMaster, canViewCase,
   thaiDate, thaiDayName, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, requireCase, cacheLiveCases, getRole, roleIdForLogin, LOGIN_ALLOWED_ROLE_IDS,
-  addBusinessDays, businessDaysBetween, resolutionSlaInfo, SUBCOMMITTEE_ROSTER,
+  addBusinessDays, businessDaysBetween, previousThaiBusinessDay, resolutionSlaInfo, SUBCOMMITTEE_ROSTER,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   SUBCOMMITTEE_TEAMS, currentSubTeam, setSubTeam,
   SUPPORT_GROUPS, SUPPORT_GROUP_LABELS, currentSupportGroup, setSupportGroup,
   isAuthed, currentUsername, logout,
   renderShell, stepperHtml, statusBadge, typeBadge, slaBadge, actionBar,
-  markNotifRead, getReadNotifIds,
+  NotificationStore, resolveCaseNotificationRecipients, markNotifRead, getReadNotifIds,
   mergeField, escapeHtml, fakeTodayIso, daysUntilFakeIso, paginateDoc, paginateResolutionDoc, exportDocToDocx, exportDocToPdf, printDoc, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
 
   ACT7_SECTIONS, ACT7_STATUSES, getAct7Status, act7Badge,
