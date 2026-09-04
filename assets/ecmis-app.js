@@ -3217,40 +3217,131 @@ function visibleNavFor(role){
   });
 }
 
-/* ข้อ 46 (ชีตติดตามงาน): Read Receipt สำหรับการแจ้งเตือน — เก็บ id + timestamp ที่อ่านแล้วใน
-   localStorage (mock, ไม่มี backend จริง) ต่อเบราว์เซอร์ ไม่ผูกกับ role เพราะ role สลับกันได้จาก
-   dropdown เดียวกันในเบราว์เซอร์เดียว การอ่านจึงถือเป็นการอ่านของ "ผู้ใช้เครื่องนี้" โดยรวม */
+/* ข้อ 46 (ชีตติดตามงาน): Read Receipt สำหรับ dropdown แจ้งเตือนเดิม
+   เก็บเวลาเปิดอ่านครั้งแรกใน Supabase แยกตาม notification + ผู้ใช้ */
 const MOCK_NOTIFICATIONS = [
   { id: 'demo-1', title: 'เสนอเรื่องใหม่', body: 'สำนวน 1547/2568 รอเลขาธิการฯ พิจารณา/ลงนาม', time: '10 นาทีที่แล้ว', icon: 'fa-user-check', cls: 'bg-primary text-white' },
   { id: 'demo-2', title: 'มติบอร์ดเสร็จสิ้น', body: 'บันทึกมติที่ประชุมบอร์ด สำนวน 1119/2565 แล้ว', time: '1 ชม. ที่แล้ว', icon: 'fa-scale-balanced', cls: 'bg-success text-white' },
   { id: 'demo-3', title: 'คำร้องขอใบด่วน', body: 'ผอ.กบค. ส่งใบด่วนขอวาระด่วน สำนวน 1396/2564', time: '2 ชม. ที่แล้ว', icon: 'fa-bolt', cls: 'bg-warning text-dark' }
 ];
-const NOTIF_READ_KEY = 'ecmis.readNotifIds';
+const notificationReadState = { userId:null, byId:{}, loadPromise:null, pending:{} };
 function getReadNotifIds(){
-  try {
-    const saved = JSON.parse(localStorage.getItem(NOTIF_READ_KEY) || 'null');
-    return (saved && typeof saved === 'object') ? saved : {};
-  } catch (e) { return {}; }
+  return notificationReadState.userId === currentRoleId() ? notificationReadState.byId : {};
 }
-function markNotifRead(id){
-  const map = getReadNotifIds();
-  if (map[id]) return; // อ่านแล้ว ไม่ต้องบันทึกซ้ำ (คง timestamp เดิมไว้เป็นหลักฐาน)
-  map[id] = new Date().toISOString();
-  localStorage.setItem(NOTIF_READ_KEY, JSON.stringify(map));
-
+function formatNotifReadAt(value){
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('th-TH', {
+    timeZone:'Asia/Bangkok', day:'numeric', month:'numeric', year:'numeric',
+    hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+  }).replace(',', '');
+}
+function applyNotifReadToItem(id, readAt){
   const li = document.querySelector(`.notif-item[data-notif-id="${CSS.escape(id)}"]`);
   if (li) {
     const dot = li.querySelector('.notif-unread-dot');
     const tag = li.querySelector('.notif-read-tag');
-    if (dot) dot.classList.add('d-none');
-    if (tag) tag.classList.remove('d-none');
+    const time = li.querySelector('.notif-read-time');
+    if (dot) dot.classList.toggle('d-none', !!readAt);
+    if (tag) tag.classList.toggle('d-none', !readAt);
+    if (time) time.textContent = readAt ? formatNotifReadAt(readAt) : '';
   }
+}
+function refreshNotifReadUi(){
+  const map = getReadNotifIds();
+  const ids = new Set();
+  document.querySelectorAll('.notif-item[data-notif-id]').forEach(li => {
+    const id = li.dataset.notifId;
+    if (!id) return;
+    ids.add(id);
+    applyNotifReadToItem(id, map[id] || null);
+  });
   const badge = document.getElementById('notifBadge');
   if (badge) {
-    const remaining = Math.max(0, (parseInt(badge.textContent, 10) || 0) - 1);
+    const remaining = [...ids].filter(id => !map[id]).length;
     badge.textContent = remaining;
     badge.classList.toggle('d-none', remaining === 0);
   }
+}
+let notificationSupabaseLoader = null;
+function ensureNotificationSupabase(){
+  const existing = getSupabaseClient();
+  if (existing) return Promise.resolve(existing);
+  if (notificationSupabaseLoader) return notificationSupabaseLoader;
+  notificationSupabaseLoader = new Promise(resolve => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';
+    script.async = true;
+    script.onload = () => resolve(getSupabaseClient());
+    script.onerror = () => resolve(null);
+    document.head.appendChild(script);
+  });
+  return notificationSupabaseLoader;
+}
+async function loadNotifReadReceipts(userId){
+  const user = userId || currentRoleId();
+  if (notificationReadState.userId !== user) {
+    notificationReadState.userId = user;
+    notificationReadState.byId = {};
+    notificationReadState.loadPromise = null;
+  }
+  if (notificationReadState.loadPromise) return notificationReadState.loadPromise;
+  notificationReadState.loadPromise = (async () => {
+    try {
+      const sb = await ensureNotificationSupabase();
+      if (!sb) throw new Error('Supabase client unavailable');
+      const { data, error } = await sb.from('ecmis_notification_read_receipt')
+        .select('notification_id,read_at').eq('user_id', user);
+      if (error) throw error;
+      notificationReadState.byId = Object.fromEntries((data || []).map(row => [row.notification_id, row.read_at]));
+      refreshNotifReadUi();
+      return true;
+    } catch (error) {
+      console.warn('โหลดประวัติการอ่านแจ้งเตือนไม่สำเร็จ:', error);
+      return false;
+    }
+  })();
+  return notificationReadState.loadPromise;
+}
+async function markNotifRead(id){
+  const user = currentRoleId();
+  if (notificationReadState.userId !== user) await loadNotifReadReceipts(user);
+  if (notificationReadState.byId[id]) return notificationReadState.byId[id];
+  if (notificationReadState.pending[id]) return notificationReadState.pending[id];
+  notificationReadState.pending[id] = (async () => {
+    try {
+      const sb = await ensureNotificationSupabase();
+      if (!sb) throw new Error('Supabase client unavailable');
+      const { data, error } = await sb.rpc('ecmis_record_notification_read', {
+        p_notification_id:id,
+        p_user_id:user
+      });
+      if (error) throw error;
+      if (!data) throw new Error('Read timestamp was not returned');
+      notificationReadState.byId[id] = data;
+      applyNotifReadToItem(id, data);
+      refreshNotifReadUi();
+      return data;
+    } catch (error) {
+      console.error('บันทึกเวลาอ่านแจ้งเตือนไม่สำเร็จ:', error);
+      if (typeof toastWarn === 'function') toastWarn('ไม่สามารถบันทึกเวลาอ่านแจ้งเตือนได้ กรุณาลองใหม่');
+      return null;
+    } finally {
+      delete notificationReadState.pending[id];
+    }
+  })();
+  return notificationReadState.pending[id];
+}
+function handleNotifLinkClick(event, anchor){
+  event.preventDefault();
+  const item = anchor && anchor.closest('.notif-item[data-notif-id]');
+  const id = item && item.dataset.notifId;
+  const href = anchor && anchor.href;
+  Promise.resolve(id ? markNotifRead(id) : null).finally(() => {
+    if (href) location.href = href;
+  });
+  return false;
 }
 
 function renderShell(activeHref){
@@ -3274,15 +3365,15 @@ function renderShell(activeHref){
   const inboxCount = inboxFor(role.id).length;
 
   const notifications = MOCK_NOTIFICATIONS;
-  /* ข้อ 46 (ชีตติดตามงาน): Read Receipt + Badge ค้าง — mock ด้วย localStorage ต่อ browser/role
-     (ไม่มี backend จริง) บันทึก timestamp ตอนอ่าน ("อ่านแล้ว") และเลข badge นับเฉพาะที่ยังไม่อ่าน
+  /* ข้อ 46 (ชีตติดตามงาน): Read Receipt + Badge ค้าง — อ่านสถานะจากฐานข้อมูลแยกตามผู้ใช้
+     บันทึก timestamp ตอนอ่าน ("อ่านแล้ว") และเลข badge นับเฉพาะที่ยังไม่อ่าน
      ไม่เคลียร์เองอัตโนมัติ ต้องกดเปิดรายการนั้นๆ ถึงจะนับว่าอ่านแล้ว (ดู ECMIS.markNotifRead) */
   const readNotifIds = getReadNotifIds();
   const notifDotHtml = id => readNotifIds[id]
     ? `<span class="notif-unread-dot rounded-circle bg-primary d-none" style="width:7px;height:7px;flex:0 0 auto"></span>
-       <small class="notif-read-tag text-muted" style="font-size:0.64rem"><i class="fa-solid fa-check"></i> อ่านแล้ว</small>`
+       <small class="notif-read-tag text-muted" style="font-size:0.64rem"><i class="fa-solid fa-check"></i> อ่านแล้ว <span class="notif-read-time">${formatNotifReadAt(readNotifIds[id])}</span></small>`
     : `<span class="notif-unread-dot rounded-circle bg-primary" style="width:7px;height:7px;flex:0 0 auto"></span>
-       <small class="notif-read-tag text-muted d-none" style="font-size:0.64rem"><i class="fa-solid fa-check"></i> อ่านแล้ว</small>`;
+       <small class="notif-read-tag text-muted d-none" style="font-size:0.64rem"><i class="fa-solid fa-check"></i> อ่านแล้ว <span class="notif-read-time"></span></small>`;
   const notifItems = notifications.map(n => `
     <li class="p-2 border-bottom notif-item" data-notif-id="${n.id}" style="font-size:0.78rem;cursor:pointer" onclick="ECMIS.markNotifRead('${n.id}')">
       <div class="d-flex gap-2">
@@ -3587,6 +3678,7 @@ function renderShell(activeHref){
   }
 
   refreshDeadlineNotificationsFromSupabase(role);
+  loadNotifReadReceipts(role.id);
 }
 
 /* แจ้งเตือนใกล้ครบกำหนดใน renderShell() ด้านบนคำนวณจาก CASES (mock array) ตอน render ครั้งแรก
@@ -3605,7 +3697,7 @@ function buildDeadlineNotifItems(alerts, role) {
     const isRead = !!readNotifIds[notifId];
     return `
       <li class="p-2 border-bottom notif-item" data-notif-id="${notifId}" style="font-size:0.78rem">
-        <a href="${href}" class="d-flex gap-2 text-decoration-none" onclick="ECMIS.markNotifRead('${notifId}')">
+        <a href="${href}" class="d-flex gap-2 text-decoration-none" onclick="return ECMIS.handleNotifLinkClick(event, this)">
           <span class="rounded-circle d-flex align-items-center justify-content-center ${urgentCls}" style="width:28px;height:28px;flex:0 0 auto">
             <i class="fa-solid fa-clock" style="font-size:0.75rem"></i>
           </span>
@@ -3613,7 +3705,7 @@ function buildDeadlineNotifItems(alerts, role) {
             <div class="d-flex align-items-center justify-content-between">
               <strong class="d-block text-dark dark-text-light" style="font-size:0.8rem">${DEADLINE_LABEL[a.deadlineType]}</strong>
               <span class="notif-unread-dot rounded-circle bg-primary${isRead ? ' d-none' : ''}" style="width:7px;height:7px;flex:0 0 auto"></span>
-              <small class="notif-read-tag text-muted${isRead ? '' : ' d-none'}" style="font-size:0.64rem"><i class="fa-solid fa-check"></i> อ่านแล้ว</small>
+              <small class="notif-read-tag text-muted${isRead ? '' : ' d-none'}" style="font-size:0.64rem"><i class="fa-solid fa-check"></i> อ่านแล้ว <span class="notif-read-time">${isRead ? formatNotifReadAt(readNotifIds[notifId]) : ''}</span></small>
             </div>
             <span class="text-muted d-block" style="font-size:0.74rem">สำนวน ${escapeHtml(a.kase.id)} — เหลือ ${a.daysLeft} วัน</span>
           </div>
@@ -6959,7 +7051,7 @@ if (typeof localStorage !== 'undefined') {
   SUPPORT_GROUPS, SUPPORT_GROUP_LABELS, currentSupportGroup, setSupportGroup,
   isAuthed, currentUsername, logout,
   renderShell, stepperHtml, statusBadge, typeBadge, slaBadge, actionBar,
-  markNotifRead, getReadNotifIds,
+  markNotifRead, getReadNotifIds, formatNotifReadAt, loadNotifReadReceipts, handleNotifLinkClick,
   mergeField, escapeHtml, fakeTodayIso, daysUntilFakeIso, paginateDoc, paginateResolutionDoc, exportDocToDocx, exportDocToPdf, printDoc, confirmAction, toastOk, toastWarn, signDialog, sequentialSignDialog,
 
   ACT7_SECTIONS, ACT7_STATUSES, getAct7Status, act7Badge,
