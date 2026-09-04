@@ -243,6 +243,9 @@
         /* ---------- มติ/ความเห็นคณะอนุฯ (subOutcome) — โครงสร้าง + สิทธิ์ + audit ---------- */
         /* เขียนได้เฉพาะ role subcommittee ของคณะนั้น — role อื่นดูอย่างเดียว */
         const SUB_CAN_WRITE = role.id === 'subcommittee';
+        /* สำนวนที่คณะอนุฯ ดำเนินการเสร็จแล้ว (DONE / RETURNED) → ล็อกหน้าเป็น read-only ถาวร
+           ปลดล็อกเองเมื่อ case วนกลับเข้า IN_SCREENING ตาม transition ปกติ */
+        const SCREEN_LOCKED = ECMIS.isScreeningLocked(kase);
         /* radio subRes (มาร์กอัปร่วม) → subOutcome enum ตามสายสำนวน */
         const SUBRES_TO_OUTCOME = isRuling
             ? { AGREE:'INDICT', DIFFER:'NO_INDICT', MORE:'NEED_MORE', NOT_ACCEPT:'CHARGE_DROPPED' }
@@ -318,13 +321,34 @@
             }).join('');
         }
 
+        function lockBannerHtml(){
+            // สำนวนกลั่นกรองเสร็จแล้ว — แบนเนอร์แยกข้อความ DONE / RETURNED
+            if (SCREEN_LOCKED) {
+                const s = ECMIS.subScreeningStatus(kase);
+                const m = ECMIS.mapSubOutcome(kase.subOutcome);
+                const when = kase.subOutcomeAt ? new Date(kase.subOutcomeAt).toLocaleDateString('th-TH') : '';
+                const team = kase.subOutcomeTeam || kase.subCommittee || '';
+                const meta = [m && m.label, m && m.lawRef, team && ('โดย ' + team), when && ('เมื่อ ' + when)]
+                    .filter(Boolean).join(' · ');
+                const head = s === 'RETURNED'
+                    ? 'ส่งคืนเจ้าของสำนวนเพื่อไต่สวนเพิ่มเติม — เปิดดูได้อย่างเดียว จนกว่าจะเสนอกลับเข้าคณะ'
+                    : 'สำนวนนี้กลั่นกรองแล้วเสร็จ — เปิดดูได้อย่างเดียว';
+                return '<div class="alert ' + (s === 'RETURNED' ? 'alert-warning' : 'alert-success') +
+                    ' mb-0 py-2 px-3 small"><i class="fa-solid fa-lock me-1"></i><strong>' + head + '</strong>' +
+                    (meta ? '<div class="mt-1">' + meta + '</div>' : '') + '</div>';
+            }
+            return '<div class="alert alert-secondary mb-0 py-2 px-3 small">' +
+                '<i class="fa-solid fa-lock me-1"></i>ดูอย่างเดียว — เฉพาะคณะอนุกรรมการกลั่นกรองฯ ของคณะนี้เท่านั้นที่บันทึกมติได้</div>';
+        }
+
         function applyViewOnlyGuard(){
-            if (SUB_CAN_WRITE) return;
+            if (SUB_CAN_WRITE && !SCREEN_LOCKED) return;
             document.querySelectorAll('#docWorkspace input, #docWorkspace textarea, #docWorkspace select')
                 .forEach(el => { el.disabled = true; });
+            document.getElementById('btnDocEdit')?.setAttribute('disabled', '');       // rich-text edit ปิด — คง #btnDocx + ปุ่มพิมพ์
+            document.getElementById('sigCard')?.classList.add('d-none');               // ซ่อนการ์ดลายเซ็น
             const slot = document.getElementById('actionBarSlot');
-            if (slot) slot.innerHTML = '<div class="alert alert-secondary mb-0 py-2 px-3 small">' +
-                '<i class="fa-solid fa-lock me-1"></i>ดูอย่างเดียว — เฉพาะคณะอนุกรรมการกลั่นกรองฯ ของคณะนี้เท่านั้นที่บันทึกมติได้</div>';
+            if (slot) slot.innerHTML = lockBannerHtml();
         }
 
         /* ---------- Master Toolbar & Pagination Controls State ---------- */
@@ -537,6 +561,10 @@
         }
 
         function handle(act) {
+            if (SCREEN_LOCKED) {
+                ECMIS.toastWarn('สำนวนนี้คณะอนุกรรมการกลั่นกรองฯ ดำเนินการเสร็จแล้ว — แก้ไขไม่ได้ (เปิดดูได้อย่างเดียว)');
+                return;
+            }
             if (!SUB_CAN_WRITE) {
                 ECMIS.toastWarn('ดูอย่างเดียว — เฉพาะคณะอนุกรรมการกลั่นกรองฯ ของคณะนี้เท่านั้นที่บันทึกมติได้');
                 return;
@@ -813,6 +841,10 @@
             }
 
             function handle(act){
+                if (SCREEN_LOCKED) {
+                    ECMIS.toastWarn('สำนวนนี้คณะอนุกรรมการกลั่นกรองฯ ดำเนินการเสร็จแล้ว — แก้ไขไม่ได้ (เปิดดูได้อย่างเดียว)');
+                    return;
+                }
                 if (!SUB_CAN_WRITE) {
                     ECMIS.toastWarn('ดูอย่างเดียว — เฉพาะคณะอนุกรรมการกลั่นกรองฯ ของคณะนี้เท่านั้นที่บันทึกมติได้');
                     return;

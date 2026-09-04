@@ -438,6 +438,14 @@ function slaIsOnHold(kase){
   return s === 'MORE_INFO' || s === 'RETURNED';
 }
 
+/* หน้ากลั่นกรองต้องล็อก (read-only) เมื่อคณะอนุฯ ดำเนินการเสร็จแล้ว —
+   DONE (กลั่นกรองแล้วเสร็จ) หรือ RETURNED (ส่งคืนเจ้าของสำนวนให้ไต่สวนเพิ่มเติม)
+   ปลดล็อกเองเมื่อ case วนกลับเข้า IN_SCREENING/_72 ตาม transition ปกติ */
+function isScreeningLocked(kase){
+  const s = subScreeningStatus(kase);
+  return s === 'DONE' || s === 'RETURNED';
+}
+
 /* บันทึกประวัติการดำเนินการของคณะอนุฯ ลง kase.history[] (audit trail) */
 function pushCaseHistory(kase, entry){
   if(!kase) return;
@@ -7094,7 +7102,7 @@ if (typeof localStorage !== 'undefined') {
   OPINION_TYPES, chainDivergence, g1Triggers, M28, M28_ORDERS, m28Order, m28Pending,
   TRANSITIONS, canTransition, nextStates, transitionsBetween,
   SUB_OUTCOME_MAP, SUB_SCREENING_STATUS, subOutcomeOptions, mapSubOutcome,
-  subScreeningStatus, slaEffectiveDays, slaIsOnHold, pushCaseHistory,
+  subScreeningStatus, slaEffectiveDays, slaIsOnHold, isScreeningLocked, pushCaseHistory,
   BOARD_MIN_IN_OFFICE, boardQuorum,
   M24P1_MIN_PANEL, M24P1_STAFF_FREE, panelComposition,
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
