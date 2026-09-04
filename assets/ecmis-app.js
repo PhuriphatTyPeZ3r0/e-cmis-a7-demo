@@ -7133,7 +7133,9 @@ async function getAgendaContextForCase(kase) {
     const meeting = registry.meetingOf ? registry.meetingOf(item) : (registry.MEETINGS || []).find(row => row.trc_id === item.trc_id);
     return meeting ? {
       meetingId:meeting.trc_id, meetingNo:meeting.trc_name, meetingDate:meeting.trc_date,
-      agendaNo:item.trci_number, agendaItemId:item.trci_id
+      agendaNo:item.trci_number, agendaItemId:item.trci_id,
+      agendaTitle:item.trci_topic || '',
+      agendaDetails:item.trci_detail || item.trci_description || (item.remark && item.remark !== '-' ? item.remark : '') || ''
     } : null;
   }).filter(Boolean);
   contexts.sort((a, b) => String(b.meetingDate || '').localeCompare(String(a.meetingDate || '')) || Number(b.agendaItemId || 0) - Number(a.agendaItemId || 0));

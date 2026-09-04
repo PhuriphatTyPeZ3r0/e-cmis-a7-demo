@@ -182,6 +182,7 @@
     return {
       trci_id: row.trci_id, trc_id: row.trc_id, trci_number: row.trci_number || '',
       category: row.category || 'finding', trci_topic: row.trci_topic || '',
+      trci_detail: row.trci_detail || '', trci_description: row.trci_description || '',
       case_ref: caseRef,
       caseDetails: LINKED_CASE_DETAILS[row.trci_id] || [],
       qualifiers, presenters,

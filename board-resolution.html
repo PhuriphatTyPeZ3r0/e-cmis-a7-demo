@@ -141,8 +141,14 @@
             <div class="val-msg val-err" data-for="boardOpinion">กรุณาระบุความเห็นที่ประชุม</div>
 
             <div class="mt-3">
-              <label class="form-label field-req">เรื่องกล่าวหา (แก้ไขได้)</label>
+              <label class="form-label field-req">หัวเรื่องจากวาระ (แก้ไขได้)</label>
               <input class="form-control" id="caseSubject">
+            </div>
+
+            <div class="mt-3">
+              <label class="form-label">รายละเอียดจากวาระ</label>
+              <textarea class="form-control" id="agendaDetails" rows="3"
+                placeholder="ระบบจะดึงรายละเอียดจากวาระให้อัตโนมัติ"></textarea>
             </div>
 
             <div class="mt-3">
@@ -340,6 +346,8 @@
     /* เรื่องกล่าวหา (แก้ไขได้) */
     document.getElementById('caseSubject').value = kase.subject;
     document.getElementById('caseSubject').addEventListener('input', renderDoc);
+    document.getElementById('agendaDetails').value = kase.allegation || '';
+    document.getElementById('agendaDetails').addEventListener('input', renderDoc);
 
     /* ผู้รับผิดชอบสำนวนมีได้มากกว่า 1 ท่าน (คีย์เพิ่มชื่อได้) */
     document.getElementById('caseOwnersField').value = kase.owner;
@@ -778,6 +786,7 @@
       }
 
       const curSubject = document.getElementById('caseSubject')?.value?.trim() || kase.subject;
+      const agendaDetails = document.getElementById('agendaDetails')?.value?.trim() || kase.allegation || kase.subject;
       const curOwners = document.getElementById('caseOwnersField')?.value?.trim() || kase.owner;
 
       const introBlock = `
@@ -812,7 +821,7 @@
         bi(`<div class="doc-indent" style="margin-top:4px">
         ${M(presenter)} ${M(ownerOrg)} กล่าวต่อที่ประชุมว่า
       </div>`),
-        bi(`<div class="doc-indent" style="margin-top:6px">${M(kase.allegation, kase.subject)}</div>`),
+        bi(`<div class="doc-indent" style="margin-top:6px">${M(agendaDetails, curSubject)}</div>`),
         bi(`<div class="doc-h">มติที่ประชุม</div>
     <div>๑. คณะกรรมการ ป.ป.ท. มีมติ${M(unanimous ? 'เป็นเอกฉันท์' : `ด้วยคะแนนเสียงข้างมาก ${t.forV} ต่อ ${t.againstV} เสียง`)} ${M(resText)}</div>`),
         ...(t.againstV > 0 ? [bi(`<div style="padding-left:1.5em;color:#DB2626">
@@ -965,7 +974,7 @@
         accused3: ac[2] ? P(`${ac[2].name} ${ac[2].pos}`) : '',
         allegation: P(kase.allegation), explainNote: P(presenterNote),
         boardOpinion: P(opinion), resolutionText: computeResolutionText(),
-        caseContent: P(kase.allegation),
+        caseContent: P(document.getElementById('agendaDetails')?.value?.trim() || kase.allegation),
         subCommitteeNo: P(kase.subCommittee ? String(kase.subCommittee).replace('คณะที่', '').trim() : ''),
         agendaCount: P('', '1'),
         nacc65Clause,
@@ -1406,6 +1415,8 @@
       document.getElementById('meetNo').value = context.meetingNo || '';
       setDateInputValue('meetDate', context.meetingDate || '');
       document.getElementById('agendaNo').value = context.agendaNo || '';
+      document.getElementById('caseSubject').value = context.agendaTitle || kase.subject || '';
+      document.getElementById('agendaDetails').value = context.agendaDetails || kase.allegation || '';
       const attendance = ECMIS.getLockedBoardAttendance(kase, BOARD, { includeLegacy:false });
       if (attendance) document.querySelectorAll('#boardTb tr').forEach((tr, index) => {
         tr.querySelector('.attend').value = attendance[BOARD[index].n] || 'present';
