@@ -507,7 +507,7 @@ const STATUS_STEP = {
   PENDING_SECGEN:'secgen', IN_SUPPORT_SUB:'secgen',
   PENDING_URGENT:'urgent',
   PENDING_CHAIRMAN:'chairman',
-  IN_SCREENING:'screening',
+  IN_SCREENING:'screening', SCREENING_MORE_INFO:'screening',
   AGENDA_SET:'agenda',
   RESOLVED:'resolution', PENDING_SIGN_ORDER_CHAIRMAN:'order', PENDING_SIGN_ORDER_SECGEN:'order', UNDER_INVESTIGATION:'order', CLOSED:'order'
 };
@@ -564,6 +564,7 @@ const PAGE_FOR_72 = {
   IN_SUPPORT_SUB_72:'support-subcommittee.html',
   PENDING_URGENT_72:'urgent-agenda.html', PENDING_CHAIRMAN_URGENT_72:'urgent-agenda.html',
   IN_SCREENING_72:'subcommittee-screening.html',
+  SCREENING_MORE_INFO_72:'subcommittee-screening.html',
   PENDING_INVITE_72:'agenda-registry.html',
   IN_MEETING_72:'board-resolution.html',
   RESOLVED_PENDING_72:'ruling-report.html',
@@ -583,7 +584,7 @@ function pageForCaseByStatus(kase) {
     return resolvePage('approval-review.html');
   }
   if (st === 'IN_SUPPORT_SUB') return resolvePage('support-subcommittee.html');
-  if (st === 'IN_SCREENING') return resolvePage('subcommittee-screening.html');
+  if (st === 'IN_SCREENING' || st === 'SCREENING_MORE_INFO') return resolvePage('subcommittee-screening.html');
   if (['PENDING_CHAIRMAN', 'PENDING_URGENT'].includes(st)) {
     return resolvePage('chairman-agenda.html');
   }
@@ -1429,8 +1430,8 @@ const CASES = [
     slaDays:11, slaLimit:15, subCommittee:'คณะที่ 1',
     onHoldDays:3,
     history:[
-      { ts:'2569-07-20T03:00:00.000Z', actor:'subcommittee', team:'คณะที่ 1', from:'IN_SCREENING', to:'IN_SCREENING', event:'ASSIGN', note:'มอบอนุกรรมการผู้รับผิดชอบ' },
-      { ts:'2569-07-24T07:30:00.000Z', actor:'subcommittee', team:'คณะที่ 1', from:'IN_SCREENING', to:'SCREENING_MORE_INFO', event:'REQUEST_MORE_INFO', note:'ขอเอกสารการตรวจรับและภาพถ่ายหน้างานเพิ่มเติม' }
+      { ts:'2026-07-20T03:00:00.000Z', actor:'subcommittee', team:'คณะที่ 1', from:'IN_SCREENING', to:'IN_SCREENING', event:'ASSIGN', note:'มอบอนุกรรมการผู้รับผิดชอบ' },
+      { ts:'2026-07-24T07:30:00.000Z', actor:'subcommittee', team:'คณะที่ 1', from:'IN_SCREENING', to:'SCREENING_MORE_INFO', event:'REQUEST_MORE_INFO', note:'ขอเอกสารการตรวจรับและภาพถ่ายหน้างานเพิ่มเติม' }
     ],
     meetingNo:null, agendaNo:null,
     docType:'213', signPhase:'WAIT'
@@ -1451,10 +1452,10 @@ const CASES = [
     urgent:false, urgent72:false, complex:false, complex72:false, dupWarning:false,
     slaDays:8, slaLimit:15, subCommittee:'คณะที่ 1', onHoldDays:2,
     subOutcomeNote:'พยานหลักฐานยังไม่ครบถ้วนในประเด็นการกำหนดราคากลาง เห็นควรให้ไต่สวนเพิ่มเติมก่อนเสนอที่ประชุม',
-    subOutcomeAt:'2569-07-15T04:00:00.000Z', subOutcomeBy:'subcommittee', subOutcomeTeam:'คณะที่ 1',
+    subOutcomeAt:'2026-07-15T04:00:00.000Z', subOutcomeBy:'subcommittee', subOutcomeTeam:'คณะที่ 1',
     history:[
-      { ts:'2569-07-05T02:00:00.000Z', actor:'subcommittee', team:'คณะที่ 1', from:'IN_SCREENING_72', to:'IN_SCREENING_72', event:'ASSIGN', note:'มอบอนุกรรมการผู้รับผิดชอบ' },
-      { ts:'2569-07-15T04:00:00.000Z', actor:'subcommittee', team:'คณะที่ 1', from:'IN_SCREENING_72', to:'RETURNED_72', event:'SCREENING_RETURN_72', outcome:'NEED_MORE', lawRef:'ม.๖๗ พ.ร.ป. ป.ป.ช. ๒๕๖๑', note:'ส่งคืนเจ้าของสำนวนเพื่อไต่สวนเพิ่มเติม' }
+      { ts:'2026-07-05T02:00:00.000Z', actor:'subcommittee', team:'คณะที่ 1', from:'IN_SCREENING_72', to:'IN_SCREENING_72', event:'ASSIGN', note:'มอบอนุกรรมการผู้รับผิดชอบ' },
+      { ts:'2026-07-15T04:00:00.000Z', actor:'subcommittee', team:'คณะที่ 1', from:'IN_SCREENING_72', to:'RETURNED_72', event:'SCREENING_RETURN_72', outcome:'NEED_MORE', lawRef:'ม.๖๗ พ.ร.ป. ป.ป.ช. ๒๕๖๑', note:'ส่งคืนเจ้าของสำนวนเพื่อไต่สวนเพิ่มเติม' }
     ],
     meetingNo:null, agendaNo:null,
     docType:'RULING', signPhase:'WAIT'
@@ -1466,9 +1467,9 @@ const CASES = [
     status:'AGENDA_SET',
     subOutcome:'PROPOSE_AS_IS',
     subOutcomeNote:'สำนวนครบถ้วน เห็นควรเสนอ กก.ป.ป.ท. พิจารณาตามความเห็นของผู้รับผิดชอบสำนวน',
-    subOutcomeAt:'2569-07-18T06:00:00.000Z', subOutcomeBy:'subcommittee', subOutcomeTeam:'คณะที่ 2',
+    subOutcomeAt:'2026-07-18T06:00:00.000Z', subOutcomeBy:'subcommittee', subOutcomeTeam:'คณะที่ 2',
     history:[
-      { ts:'2569-07-18T06:00:00.000Z', actor:'subcommittee', team:'คณะที่ 2', from:'IN_SCREENING', to:'AGENDA_SET', event:'SCREENING_RESOLVED', outcome:'PROPOSE_AS_IS', lawRef:'ม.๓๘ พ.ร.บ. มาตรการฯ', note:'กลั่นกรองแล้วเสร็จ — เสนอบรรจุวาระ' }
+      { ts:'2026-07-18T06:00:00.000Z', actor:'subcommittee', team:'คณะที่ 2', from:'IN_SCREENING', to:'AGENDA_SET', event:'SCREENING_RESOLVED', outcome:'PROPOSE_AS_IS', lawRef:'ม.๓๘ พ.ร.บ. มาตรการฯ', note:'กลั่นกรองแล้วเสร็จ — เสนอบรรจุวาระ' }
     ],
     procType:'7.1',
     owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
@@ -1489,9 +1490,9 @@ const CASES = [
     status:'PENDING_INVITE_72',
     subOutcome:'INDICT',
     subOutcomeNote:'พยานหลักฐานเพียงพอสนับสนุนว่ามีมูลความผิด เห็นควรเสนอที่ประชุมชี้มูลความผิดตาม ม.๗๒',
-    subOutcomeAt:'2569-07-10T03:30:00.000Z', subOutcomeBy:'subcommittee', subOutcomeTeam:'คณะที่ 2',
+    subOutcomeAt:'2026-07-10T03:30:00.000Z', subOutcomeBy:'subcommittee', subOutcomeTeam:'คณะที่ 2',
     history:[
-      { ts:'2569-07-10T03:30:00.000Z', actor:'subcommittee', team:'คณะที่ 2', from:'IN_SCREENING_72', to:'PENDING_INVITE_72', event:'SCREEN_DONE_72', outcome:'INDICT', lawRef:'ม.๗๒ พ.ร.ป. ป.ป.ช. ๒๕๖๑', note:'กลั่นกรองแล้วเสร็จ — เสนอบรรจุวาระวินิจฉัยชี้มูล' }
+      { ts:'2026-07-10T03:30:00.000Z', actor:'subcommittee', team:'คณะที่ 2', from:'IN_SCREENING_72', to:'PENDING_INVITE_72', event:'SCREEN_DONE_72', outcome:'INDICT', lawRef:'ม.๗๒ พ.ร.ป. ป.ป.ช. ๒๕๖๑', note:'กลั่นกรองแล้วเสร็จ — เสนอบรรจุวาระวินิจฉัยชี้มูล' }
     ],
     procType:'7.2',
     owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
@@ -2312,7 +2313,7 @@ function __hubBridgeCases() {
   else Object.assign(CASES[index], shared);
 }
 
-const CASES_VERSION = '2026-09-04-subcommittee-screening-status-v1';
+const CASES_VERSION = '2026-09-04-subcommittee-screening-status-v2';
 if (typeof sessionStorage !== 'undefined') {
   const savedVersion = sessionStorage.getItem('ecmis_cases_version');
   const savedCases = sessionStorage.getItem('ecmis_cases');
@@ -2548,7 +2549,7 @@ const STATUS_STEP_73 = {
 const STATUS_STEP_72 = {
   PENDING_SECTION_72:'secgen72', PENDING_DIRECTOR_72:'secgen72', PENDING_DEPUTY_72:'secgen72', RETURNED_72:'secgen72',
   PENDING_SECGEN_72:'secgen72',
-  IN_SUPPORT_SUB_72:'agenda72', PENDING_URGENT_72:'agenda72', PENDING_CHAIRMAN_URGENT_72:'agenda72', IN_SCREENING_72:'agenda72',
+  IN_SUPPORT_SUB_72:'agenda72', PENDING_URGENT_72:'agenda72', PENDING_CHAIRMAN_URGENT_72:'agenda72', IN_SCREENING_72:'agenda72', SCREENING_MORE_INFO_72:'agenda72',
   PENDING_INVITE_72:'meeting72', IN_MEETING_72:'meeting72',
   RESOLVED_PENDING_72:'ruling72', PENDING_SIGN_RULING_72:'ruling72',
   PENDING_AREA_NOTICE_72:'dispatch72', DISPATCHING_NACC_72:'dispatch72', PENDING_DISPATCH_GUILTY_72:'dispatch72',
