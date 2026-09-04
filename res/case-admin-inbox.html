@@ -31,14 +31,14 @@
         <h1><i class="fa-solid fa-folder-tree me-2" style="color:#0F2A62"></i><span>รายการคดี</span></h1>
       </div>
       <div class="d-flex align-items-center gap-3 ms-auto">
-        <span class="flow-ref">กองบริหารคดี (กลุ่มงานบริหารคดีและบริหารทั่วไป) — บริหารจัดการสำนวนตลอดกระบวนงานกิจกรรมที่ 7</span>
+        <span class="flow-ref">กองบริหารคดี (กลุ่มงานบริหารคดีและบริหารทั่วไป) — ด่านรับ: ลงทะเบียนคุมคดี · เตรียมสำนวน · ส่งเข้าคณะอนุกลั่นกรองฯ</span>
       </div>
     </div>
 
     <!-- Tabs -->
     <ul class="nav nav-tabs mb-3" id="caTabs">
       <li class="nav-item"><a class="nav-link active ca-tab" data-tab="QUEUE" href="#">คิวงานของฉัน</a></li>
-      <li class="nav-item"><a class="nav-link ca-tab" data-tab="ALL" href="#">ทะเบียนคดีทั้งหมด</a></li>
+      <li class="nav-item"><a class="nav-link ca-tab" data-tab="ALL" href="#">ทะเบียนคุมคดีทั้งหมด</a></li>
     </ul>
 
     <!-- KPI Cards Row -->
@@ -48,7 +48,7 @@
     <div class="card card-ecmis mb-4">
       <div class="card-body p-3">
         <div class="row g-3 align-items-end">
-          <div class="col-md-4">
+          <div class="col-md-5">
             <label class="form-label fw-semibold text-dark small mb-1">ค้นหาเลขคดี เรื่อง หรือผู้ถูกกล่าวหา</label>
             <div class="input-group input-group-sm">
               <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
@@ -56,24 +56,16 @@
                 placeholder="เลขคดี, เรื่อง, ผู้ถูกกล่าวหา, ผู้รับผิดชอบ, หน่วยงาน">
             </div>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-4">
             <label class="form-label fw-semibold text-dark small mb-1"><i
                 class="fa-solid fa-pen-to-square me-1 text-muted"></i>ประเภทเรื่อง</label>
             <select id="typeFilter" class="form-select form-select-sm">
               <option value="ALL">ทั้งหมด</option>
               <option value="7.1">7.1 ไต่สวนเบื้องต้น</option>
               <option value="7.2">7.2 วินิจฉัยชี้มูล</option>
-              <option value="7.3">7.3 เรื่องทั่วไป / กกม.</option>
             </select>
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold text-dark small mb-1"><i
-                class="fa-solid fa-list-check me-1 text-muted"></i>เฟสงาน</label>
-            <select id="phaseFilter" class="form-select form-select-sm">
-              <option value="ALL">ทั้งหมด</option>
-            </select>
-          </div>
-          <div class="col-md-2 text-end">
+          <div class="col-md-3 text-end">
             <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 w-100" id="btnClearFilter">
               <i class="fa-solid fa-rotate-left me-1"></i>ล้างตัวกรอง
             </button>
@@ -86,7 +78,7 @@
     <div class="card card-ecmis mb-4">
       <div class="card-header d-flex align-items-center flex-wrap gap-2">
         <i class="fa-solid fa-list-check text-primary"></i>
-        <span class="fw-bold" id="tableTitle">คิวงานของกองบริหารคดี</span>
+        <span class="fw-bold" id="tableTitle">คิวสำนวนรอส่งเข้าคณะอนุกลั่นกรองฯ</span>
         <span class="ms-auto small text-muted" id="myRoleLabel">บทบาท: กองบริหารคดี</span>
       </div>
       <div class="card-body p-0">
@@ -98,8 +90,8 @@
                     class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
                 <th>ประเภทเรื่อง</th>
                 <th>เรื่องกล่าวหา / ผู้รับผิดชอบ</th>
-                <th class="ca-owner-col d-none">ค้างที่</th>
-                <th>เฟส / สถานะปัจจุบัน</th>
+                <th>คณะที่มอบหมาย</th>
+                <th>สถานะ</th>
                 <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i
                     class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                 <th class="text-end">ดำเนินการ</th>
@@ -120,63 +112,45 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="../assets/ecmis-app.js"></script>
+  <script src="../assets/ecmis-model.js"></script>
   <script>
     ECMIS.renderShell('case-admin-inbox.html');
 
     const role = ECMIS.currentRole();
     $('#myRoleLabel').text('บทบาท: ' + (role.group || 'กองบริหารคดี'));
 
-    const PHASES = ECMIS.CASE_ADMIN_PHASES;
-    const OWNER_LABEL = {
-      dir_case: 'ผอ.กบค.', board_sec: 'กลุ่มงานคำวินิจฉัยและมติฯ', affairs: 'กลุ่มงานกิจการคณะกรรมการ',
-      owner: 'เจ้าของสำนวน', chairman: 'ประธาน ป.ป.ท.', secgen: 'เลขาธิการ ป.ป.ท.',
-      subcommittee: 'คณะอนุกลั่นกรองฯ', support_sub: 'คณะอนุสนับสนุนฯ', section_head: 'หัวหน้ากลุ่มงาน',
-      director: 'ผอ.กอง/เขต', deputy: 'รองเลขาธิการฯ'
-    };
-
+    const SCREEN = ECMIS.CASE_ADMIN_SCREEN_STATUSES; // ['IN_SCREENING','IN_SCREENING_72']
     let activeTab = 'QUEUE';
-    let phaseFilter = 'ALL';
+    let kpiFilter = 'ALL';
     let sortField = 'id', sortOrder = 'asc';
 
-    // เติมตัวเลือก phaseFilter
-    $('#phaseFilter').append(PHASES.map(p => `<option value="${p.key}">${p.label}</option>`).join(''));
+    function overdue(c) { return (c.slaDays || 0) >= (c.slaLimit || 15); }
 
-    /* รวมคดีทั้งระบบ (case-centric) — แท็บคิว = เฉพาะที่อยู่ในความรับผิดชอบ กบค. */
+    /* คิวงาน = สำนวนถึงชั้นกลั่นกรองแล้ว ยังไม่มีคณะ · ทะเบียนคุมคดี = ทุกคดีที่มองเห็น */
     function baseCases() {
       const all = ECMIS.CASES.filter(c => ECMIS.canViewCase(c, role.id));
       return activeTab === 'QUEUE' ? all.filter(c => ECMIS.isCaseAdminQueue(c)) : all;
     }
 
-    function mapRow(c) {
-      const ph = ECMIS.caseAdminPhase(c);
-      const phDef = PHASES.find(p => p.key === ph);
-      const ownerId = (ECMIS.STATUS[c.status] || {}).owner;
-      return {
-        id: c.id,
-        subject: c.subject || '',
-        allegation: c.allegation || '',
-        procType: c.procType || (ECMIS.isCase72(c) ? '7.2' : '7.1'),
-        owner: c.owner || '', ownerOrg: c.ownerOrg || '',
-        ownerLabel: OWNER_LABEL[ownerId] || (ownerId || '—'),
-        status: c.status,
-        phaseKey: ph, phaseLabel: phDef ? phDef.label : 'ยังไม่ถึงกองบริหารคดี',
-        phaseColor: phDef ? phDef.color : '#64748B',
-        slaDays: c.slaDays || 0, slaLimit: c.slaLimit || 15,
-        accused: c.accused || [],
-        _case: c
-      };
-    }
-
     function renderKPI() {
-      const rows = baseCases().map(mapRow);
-      const cards = [{ key: 'ALL', n: rows.length, label: 'คดีทั้งหมด', icon: 'fa-folder-open', color: '#0F2A62' }]
-        .concat(PHASES.map(p => ({
-          key: p.key, n: rows.filter(r => r.phaseKey === p.key).length, label: p.label, icon: p.icon, color: p.color
-        })));
+      const rows = baseCases();
+      const cards = activeTab === 'QUEUE'
+        ? [
+          { key: 'ALL', n: rows.length, label: 'รอส่งเข้าคณะทั้งหมด', icon: 'fa-folder-open', color: '#0F2A62' },
+          { key: '7.1', n: rows.filter(c => !ECMIS.isCase72(c)).length, label: '7.1 ไต่สวนเบื้องต้น', icon: 'fa-file-lines', color: '#475569' },
+          { key: '7.2', n: rows.filter(c => ECMIS.isCase72(c)).length, label: '7.2 วินิจฉัยชี้มูล', icon: 'fa-gavel', color: '#7C3AED' },
+          { key: 'OVERDUE', n: rows.filter(overdue).length, label: 'เกินกำหนด', icon: 'fa-triangle-exclamation', color: '#B91C1C' }
+        ]
+        : [
+          { key: 'ALL', n: rows.length, label: 'คดีทั้งหมดในทะเบียน', icon: 'fa-folder-open', color: '#0F2A62' },
+          { key: 'WAIT', n: rows.filter(c => ECMIS.isCaseAdminQueue(c)).length, label: 'รอส่งเข้าคณะ', icon: 'fa-hourglass-half', color: '#D0A830' },
+          { key: 'ROUTED', n: rows.filter(c => ECMIS.caseAdminRouted(c)).length, label: 'ส่งเข้าคณะแล้ว', icon: 'fa-share-from-square', color: '#15803D' },
+          { key: 'OVERDUE', n: rows.filter(overdue).length, label: 'เกินกำหนด', icon: 'fa-triangle-exclamation', color: '#B91C1C' }
+        ];
 
       document.getElementById('kpiRow').innerHTML = cards.map(k => `
         <div class="col">
-          <div class="card card-ecmis kpi-card h-100 ${phaseFilter === k.key ? 'active' : ''}" data-kpi="${k.key}">
+          <div class="card card-ecmis kpi-card h-100 ${kpiFilter === k.key ? 'active' : ''}" data-kpi="${k.key}">
             <div class="card-body p-3 d-flex align-items-center justify-content-between">
               <div>
                 <div class="text-muted small mb-1">${k.label}</div>
@@ -191,84 +165,127 @@
         </div>`).join('');
 
       $('#kpiRow .kpi-card').on('click', function () {
-        phaseFilter = $(this).data('kpi') === 'ALL' ? 'ALL' : $(this).data('kpi');
-        $('#phaseFilter').val(phaseFilter);
+        kpiFilter = $(this).data('kpi') === 'ALL' ? 'ALL' : $(this).data('kpi');
         render();
       });
     }
 
     function render() {
-      const showOwnerCol = activeTab === 'ALL';
-      $('.ca-owner-col').toggleClass('d-none', !showOwnerCol);
-      $('#tableTitle').text(activeTab === 'QUEUE' ? 'คิวงานของกองบริหารคดี' : 'ทะเบียนคดีทั้งหมด');
-
+      $('#tableTitle').text(activeTab === 'QUEUE' ? 'คิวสำนวนรอส่งเข้าคณะอนุกลั่นกรองฯ' : 'ทะเบียนคุมคดี — ทุกสำนวน');
       const q = ($('#searchInput').val() || '').trim().toLowerCase();
       const type = $('#typeFilter').val() || 'ALL';
 
-      let rows = baseCases().map(mapRow).filter(r => {
-        if (type !== 'ALL' && r.procType !== type) return false;
-        if (phaseFilter !== 'ALL' && r.phaseKey !== phaseFilter) return false;
+      let rows = baseCases().filter(c => {
+        const pt = c.procType || (ECMIS.isCase72(c) ? '7.2' : '7.1');
+        if (type !== 'ALL' && !pt.startsWith(type)) return false;
+        if (kpiFilter === '7.1' && ECMIS.isCase72(c)) return false;
+        if (kpiFilter === '7.2' && !ECMIS.isCase72(c)) return false;
+        if (kpiFilter === 'OVERDUE' && !overdue(c)) return false;
+        if (kpiFilter === 'WAIT' && !ECMIS.isCaseAdminQueue(c)) return false;
+        if (kpiFilter === 'ROUTED' && !ECMIS.caseAdminRouted(c)) return false;
         if (!q) return true;
-        return [r.id, r.subject, r.owner, r.ownerOrg]
-          .some(v => v && v.toLowerCase().includes(q))
-          || r.accused.some(a => a.name && a.name.toLowerCase().includes(q));
+        return [c.id, c.subject, c.owner, c.ownerOrg].some(v => v && v.toLowerCase().includes(q))
+          || (c.accused || []).some(a => a.name && a.name.toLowerCase().includes(q));
       });
 
       rows.sort((a, b) => {
         let va = a[sortField], vb = b[sortField];
         if (typeof va === 'string') return sortOrder === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
-        return sortOrder === 'asc' ? (va - vb) : (vb - va);
+        return sortOrder === 'asc' ? ((va || 0) - (vb || 0)) : ((vb || 0) - (va || 0));
       });
 
       $('#tableSummaryText').text(`แสดง 1 ถึง ${rows.length} จาก ${rows.length} รายการ`);
-
-      const colspan = showOwnerCol ? 7 : 6;
       if (!rows.length) {
-        $('#caQueue').html(`<tr><td colspan="${colspan}" class="text-center py-4 text-muted">
-          <i class="fa-solid fa-folder-open fa-2x mb-2 d-block text-secondary"></i>ไม่พบคดีตามเงื่อนไขที่เลือก</td></tr>`);
+        $('#caQueue').html(`<tr><td colspan="7" class="text-center py-4 text-muted">
+          <i class="fa-solid fa-folder-open fa-2x mb-2 d-block text-secondary"></i>ไม่พบสำนวนตามเงื่อนไขที่เลือก</td></tr>`);
         return;
       }
 
-      $('#caQueue').html(rows.map(r => {
-        const phaseBadge = `<span class="meet-badge" style="background:${r.phaseColor}15;color:${r.phaseColor};border-color:${r.phaseColor}55">${r.phaseLabel}</span>`
-          + `<small class="text-muted d-block text-truncate" style="font-size:0.7rem">${(ECMIS.STATUS[r.status] || {}).label || r.status}</small>`;
-        const ownerCell = showOwnerCol ? `<td><span class="badge bg-light text-dark border">${r.ownerLabel}</span></td>` : '';
+      $('#caQueue').html(rows.map(c => {
+        const inScreen = SCREEN.includes(c.status);
+        const teamCell = c.subCommittee
+          ? `<span class="badge bg-success-subtle text-success border border-success-subtle">${c.subCommittee}</span>`
+          : (inScreen ? `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">— รอส่งเข้าคณะ</span>`
+            : `<span class="text-muted small">—</span>`);
+        const actionBtn = ECMIS.isCaseAdminQueue(c)
+          ? `<button class="btn btn-sm btn-navy px-3 btn-route" data-id="${encodeURIComponent(c.id)}"><i class="fa-solid fa-share-from-square me-1"></i>ส่งเข้าคณะ</button>`
+          : `<a href="case-admin-detail.html?case=${encodeURIComponent(c.id)}" class="btn btn-sm btn-outline-secondary px-3"><i class="fa-solid fa-eye me-1"></i>ดูรายละเอียด</a>`;
         return `<tr>
-          <td class="case-no">${r.id}</td>
-          <td>${ECMIS.typeBadge(r._case)}</td>
+          <td class="case-no">${c.id}</td>
+          <td>${ECMIS.typeBadge(c)}</td>
           <td style="max-width:360px">
-            <div class="text-truncate fw-medium" title="${r.subject}">${r.subject}</div>
-            <small class="text-muted d-block text-truncate" style="font-size:0.75rem">${r.owner ? r.owner + ' · ' : ''}${r.ownerOrg}</small>
+            <div class="text-truncate fw-medium" title="${c.subject || ''}">${c.subject || ''}</div>
+            <small class="text-muted d-block text-truncate" style="font-size:0.75rem">${c.owner ? c.owner + ' · ' : ''}${c.ownerOrg || ''}</small>
           </td>
-          ${ownerCell}
-          <td>${phaseBadge}</td>
-          <td>${ECMIS.slaBadge(r._case)}</td>
-          <td class="text-end">
-            <a href="case-admin-detail.html?case=${encodeURIComponent(r.id)}" class="btn btn-sm btn-navy px-3">
-              <i class="fa-solid fa-eye me-1"></i>ดูรายละเอียด
-            </a>
-          </td>
+          <td>${teamCell}</td>
+          <td>${ECMIS.statusBadge(c.status)}</td>
+          <td>${ECMIS.slaBadge(c)}</td>
+          <td class="text-end">${actionBtn}</td>
         </tr>`;
       }).join(''));
+
+      $('#caQueue .btn-route').on('click', function () {
+        openRouteModal(decodeURIComponent($(this).data('id')));
+      });
+    }
+
+    /* ── modal: ส่งเข้าคณะอนุกลั่นกรองฯ ─────────────────────────────── */
+    function openRouteModal(caseId) {
+      const kase = ECMIS.getCase(caseId);
+      if (!kase) return;
+      const suggested = ECMIS.nextSubcommitteeTeam();
+      const opts = ECMIS.SUBCOMMITTEE_QUOTA.map(qq =>
+        `<option value="คณะที่ ${qq.n}" ${qq.used >= 40 ? 'disabled' : ''} ${('คณะที่ ' + qq.n) === suggested ? 'selected' : ''}>คณะที่ ${qq.n} (ใช้ไป ${qq.used}/40)${qq.used >= 40 ? ' — เต็ม' : ''}</option>`
+      ).join('');
+      Swal.fire({
+        title: 'ส่งเข้าคณะอนุกลั่นกรองฯ',
+        html: `<div class="text-start small">
+            <div class="mb-2">สำนวน <strong>${kase.id}</strong> — ${ECMIS.isCase72(kase) ? '7.2 วินิจฉัยชี้มูล' : '7.1 ไต่สวนเบื้องต้น'}</div>
+            <label class="form-label fw-semibold">เลือกคณะอนุกลั่นกรองฯ</label>
+            <select id="swTeam" class="form-select form-select-sm mb-2">${opts}</select>
+            <div class="text-muted mb-2">ระบบเสนอ <strong>${suggested}</strong> (Round-Robin — คณะที่รับงานน้อยสุด)</div>
+            <label class="form-label fw-semibold">หมายเหตุ / เหตุผลกรณีเลือกคณะเอง</label>
+            <textarea id="swReason" class="form-control form-control-sm" rows="2" placeholder="ระบุเหตุผลหากไม่ใช้คณะที่ระบบเสนอ"></textarea>
+          </div>`,
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยันส่งเข้าคณะ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#0F2A62',
+        preConfirm: () => {
+          const team = document.getElementById('swTeam').value;
+          const reason = document.getElementById('swReason').value.trim();
+          if (team !== suggested && !reason) {
+            Swal.showValidationMessage('กรุณาระบุเหตุผลเมื่อเลือกคณะที่ไม่ใช่คณะที่ระบบเสนอ');
+            return false;
+          }
+          return { team, reason };
+        }
+      }).then(res => {
+        if (!res.isConfirmed) return;
+        const { team, reason } = res.value;
+        ECMIS.pushCaseHistory(kase, {
+          event: 'ROUTE_TO_SUBCOMMITTEE', from: kase.status, to: kase.status, team,
+          note: `กระจายสำนวนเข้า ${team}${team === suggested ? ' (Round-Robin)' : ' (เลือกโดย ผอ.กบค.)'}${reason ? ' — ' + reason : ''}`
+        });
+        ECMIS.Model.CaseStore.update(kase.id, { subCommittee: team, routedByCaseAdminAt: new Date().toISOString(), history: kase.history });
+        ECMIS.toastOk(`ส่งสำนวน ${kase.id} เข้า ${team} เรียบร้อย`);
+        renderKPI(); render();
+      });
     }
 
     $(document).ready(function () {
       renderKPI(); render();
-
       $('#caTabs .ca-tab').on('click', function (e) {
         e.preventDefault();
-        $('#caTabs .ca-tab').removeClass('active');
-        $(this).addClass('active');
-        activeTab = $(this).data('tab');
-        phaseFilter = 'ALL'; $('#phaseFilter').val('ALL');
+        $('#caTabs .ca-tab').removeClass('active'); $(this).addClass('active');
+        activeTab = $(this).data('tab'); kpiFilter = 'ALL';
         renderKPI(); render();
       });
       $('#searchInput').on('input', render);
       $('#typeFilter').on('change', render);
-      $('#phaseFilter').on('change', function () { phaseFilter = $(this).val(); renderKPI(); render(); });
       $('#btnClearFilter').on('click', function () {
-        $('#searchInput').val(''); $('#typeFilter').val('ALL'); $('#phaseFilter').val('ALL');
-        phaseFilter = 'ALL'; renderKPI(); render();
+        $('#searchInput').val(''); $('#typeFilter').val('ALL'); kpiFilter = 'ALL';
+        renderKPI(); render();
       });
       $('.sortable-header').on('click', function () {
         const f = $(this).data('sort');

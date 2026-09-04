@@ -186,3 +186,50 @@
 - **Completed Date:** 2026-09-04
 - **Commit Reference:** _(commit ถัดไป)_
 - **Notes / Retrospective:** npm test 5/5, integration 60/60. Browser walkthrough ผ่าน: inbox 2 แท็บ (คิว 53 / ทะเบียน 103 + คอลัมน์ "ค้างที่"), KPI 6 เฟส คลิกกรองได้, badge ประเภทเรื่องตรง inbox.html, detail 4 sections + law box แยกตาม procType + ปุ่ม "ดำเนินการต่อ" ผ่าน pageForCaseByStatus, RBAC: secgen เปิด case-admin-inbox → redirect /inbox.html, board_sec → agenda-registry.html ไม่ regression. ไม่แตะ dir_case / STATUS owner.
+
+---
+
+## 🔁 8. Amendment (2026-09-04, Phase 2) — ตัดขอบเขตให้เหลือแค่ "ด่านรับ"
+
+> **User feedback:** "ปกติ กองบริหารคดี (กลุ่มงานบริหารคดีและบริหารทั่วไป) ทำหน้าที่แค่ส่งเรื่อง
+> เข้าสู่คณะอนุกลั่นกรองฯ เพื่อพิจารณาเรื่องไต่สวนเบื้องต้น" → การออกแบบเดิม (แม่บ้านใหญ่ 6 เฟส
+> ครอบทั้ง lifecycle) กว้างเกินจริง
+
+### 8.1 สิ่งที่เปลี่ยน
+- **บทบาทใหม่ = "ด่านรับ" (intake desk) เท่านั้น:** รับเรื่อง → ลงทะเบียนคุมคดี → สแกน/เตรียมสำนวน
+  → กระจายสำนวนเข้าคณะอนุกลั่นกรองฯ (คณะที่ ๑–๘) สำหรับทั้ง 7.1 และ 7.2 · งานหลังจากนั้นเป็นของกลุ่มงานอื่น
+- **`ecmis-app.js`** — ลบบล็อก 6 เฟส (`CASE_ADMIN_PHASES`, `caseAdminPhase`, `isCaseAdminQueue`
+  แบบ owner-based, `CASE_ADMIN_LAW` แบบ object keyed by procType) แทนด้วย:
+  - `CASE_ADMIN_INTAKE` — 4 ขั้น (RECEIVED / REGISTERED / PREPARED / ROUTED)
+  - `CASE_ADMIN_SCREEN_STATUSES = ['IN_SCREENING','IN_SCREENING_72']`
+  - `isCaseAdminQueue(kase)` = `status ∈ SCREEN_STATUSES && !kase.subCommittee` (คิวรอส่งเข้าคณะ)
+  - `caseAdminRouted(kase)` = `status ∈ SCREEN_STATUSES && !!kase.subCommittee`
+  - `caseAdminIntakeStep(kase)` → `'DONE' | 'ROUTED'`
+  - `SUBCOMMITTEE_QUOTA` (used-counts เท่า screening.html) + `nextSubcommitteeTeam()` (least-loaded, `used < 40`)
+  - `CASE_ADMIN_LAW` — array เดียว 6 มาตรา (ม.๑๘/๑, ๑๘/๓, ๒๓, ๒๔ ว.๑/๓, ๒๘, ๕๙) + `caseAdminLaw()`
+- **routing = plain field write ไม่ใช่ workflow transition:** `case_admin` ไม่อยู่ใน TRANSITIONS ใด ๆ
+  และ `subCommittee` ไม่ใช่ concept ของ workflow engine → "ส่งเข้าคณะ" = modal (`#swTeam` +
+  `#swReason` บังคับเมื่อเลือกคณะ ≠ ที่ระบบเสนอ) → `pushCaseHistory({event:'ROUTE_TO_SUBCOMMITTEE',
+  team, ...})` + `CaseStore.update(id, {subCommittee, routedByCaseAdminAt, history})` · handoff
+  อัตโนมัติ (subcommittee-inbox filter `c.subCommittee === selectedTeam` อยู่แล้ว)
+- **`case-admin-inbox.html`** — REWRITE: 2 แท็บ (QUEUE "คิวงานของฉัน" / ALL "ทะเบียนคุมคดีทั้งหมด"),
+  KPI 4 การ์ดต่อแท็บ, ตาราง 7 คอลัมน์ (`เรื่องที่ | ประเภทเรื่อง | เรื่องกล่าวหา/ผู้รับผิดชอบ |
+  คณะที่มอบหมาย | สถานะ | กำหนดเวลา | ดำเนินการ`), ปุ่มแถว "ส่งเข้าคณะ" (คิว) / "ดูรายละเอียด" (ส่งแล้ว)
+- **`case-admin-detail.html`** — REWRITE: 4 การ์ด (หัวคดี + headActions / ขั้นตอนด่านรับ 4 steps +
+  history / กำหนดเวลาตามกฎหมาย 4 แถว / law box 6 มาตรา) · headActions = "ส่งเข้าคณะอนุกลั่นกรองฯ"
+  (คิว) หรือ "ดูความคืบหน้าที่คณะฯ" → subcommittee-screening.html (ส่งแล้ว)
+- **mock data** — เพิ่ม 5 เคส `1450/2569`, `1452/2569`, `1455/2569` (7.1, IN_SCREENING),
+  `1460/2566`, `1465/2566` (7.2, IN_SCREENING_72) ทั้งหมด `subCommittee:null` เพื่อให้มี backlog ในคิว ·
+  `CASES_VERSION` → `'2026-09-04-case-admin-intake-v1'`
+- **`CLAUDE.md §5`** — แทน bullet เดิมด้วยฉบับตัดขอบเขต
+
+### 8.2 Verification (Phase 2)
+- [x] `node -c` + headless smoke: INTAKE 4 steps, `nextSubcommitteeTeam` = คณะที่ 6, law 6 ข้อ,
+  queue 5 เคส, routed 9, `CASE_ADMIN_PHASES` gone
+- [x] `npm run sync` (2) + `npm test` 5/5 (37 routes, 260 links) + `npm run test:integration` 60/60
+- [x] Browser: inbox คิวแสดง 5–6 เคส → กด "ส่งเข้าคณะ" → modal เสนอ คณะที่ 6 → ยืนยัน → toast +
+  KPI 6→5 + แถวออกจากคิว · `getCase('1450/2569').subCommittee === 'คณะที่ 6'` (persist) ·
+  history entry `team` = คณะที่เลือก (fix: ส่ง `team` เข้า pushCaseHistory ทั้ง inbox + detail)
+- [x] detail: routed case → "ดูความคืบหน้าที่คณะฯ" + stepper 4/4 done · queue case → ปุ่มส่งเข้าคณะ +
+  stepper step 4 = current · law + deadline การ์ดเรนเดอร์ครบ · console ไม่มี error ของหน้า
+- [x] RBAC: secgen เปิด case-admin-inbox.html → redirect /inbox.html

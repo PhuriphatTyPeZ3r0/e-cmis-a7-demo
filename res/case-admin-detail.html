@@ -11,11 +11,12 @@
     rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link href="../assets/ecmis-app.css" rel="stylesheet">
   <style>
     .ca-stepper { display: flex; flex-wrap: wrap; gap: .4rem; }
-    .ca-step { flex: 1 1 130px; min-width: 120px; border: 1px solid var(--border-divider); border-radius: 10px;
-      padding: .55rem .6rem; background: var(--bg-surface); text-align: center; position: relative; }
+    .ca-step { flex: 1 1 150px; min-width: 140px; border: 1px solid var(--border-divider); border-radius: 10px;
+      padding: .55rem .6rem; background: var(--bg-surface); text-align: center; }
     .ca-step .n { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px;
       border-radius: 50%; font-size: .72rem; font-weight: 700; background: #E2E8F0; color: #475569; }
     .ca-step .l { display: block; margin-top: .3rem; font-size: .74rem; font-weight: 600; color: var(--ecmis-muted); }
@@ -57,29 +58,26 @@
         </div>
         <div class="card-body">
           <dl class="kv" id="headKv"></dl>
-          <div class="mt-3 d-flex align-items-center gap-2 flex-wrap">
-            <a href="#" id="btnContinue" class="btn btn-navy btn-sm px-3"><i class="fa-solid fa-arrow-right me-1"></i>ดำเนินการต่อ</a>
-            <span class="small text-muted" id="btnContinueHint"></span>
-          </div>
+          <div class="mt-3 d-flex align-items-center gap-2 flex-wrap" id="headActions"></div>
         </div>
       </div>
 
-      <!-- 2. ไทม์ไลน์สถานะ -->
+      <!-- 2. ขั้นตอนด่านรับ -->
       <div class="card card-ecmis mb-3">
-        <div class="card-header"><i class="fa-solid fa-timeline text-primary"></i> <span class="fw-bold">ไทม์ไลน์สถานะ (เฟสงานกองบริหารคดี)</span></div>
+        <div class="card-header"><i class="fa-solid fa-timeline text-primary"></i> <span class="fw-bold">ขั้นตอนด่านรับ (กลุ่มงานบริหารคดีและบริหารทั่วไป)</span></div>
         <div class="card-body">
           <div class="ca-stepper mb-3" id="caStepper"></div>
           <div id="caHistoryBox"></div>
         </div>
       </div>
 
-      <!-- 3. กำหนดเวลาตามกฎหมาย -->
+      <!-- 3. กำหนดเวลาตามกฎหมาย (ด่านรับ) -->
       <div class="card card-ecmis mb-3">
-        <div class="card-header"><i class="fa-solid fa-hourglass-half text-primary"></i> <span class="fw-bold">กำหนดเวลาตามกฎหมาย</span></div>
+        <div class="card-header"><i class="fa-solid fa-hourglass-half text-primary"></i> <span class="fw-bold">กำหนดเวลาตามกฎหมาย — ชั้นรับเรื่อง</span></div>
         <div class="card-body p-0">
           <div class="table-responsive">
             <table class="table tbl-ecmis mb-0 dl-table">
-              <thead><tr><th style="width:120px">ฐาน</th><th>รายการ</th><th style="width:190px">กำหนด / วันที่</th></tr></thead>
+              <thead><tr><th style="width:110px">ฐาน</th><th>รายการ</th><th style="width:190px">กำหนด / วันที่</th></tr></thead>
               <tbody id="deadlineTb"></tbody>
             </table>
           </div>
@@ -88,7 +86,7 @@
 
       <!-- 4. ฐานอำนาจ / กฎหมายที่เกี่ยวข้อง -->
       <div class="card card-ecmis mb-4">
-        <div class="card-header"><i class="fa-solid fa-scale-balanced text-primary"></i> <span class="fw-bold">ฐานอำนาจ / กฎหมายที่เกี่ยวข้อง</span>
+        <div class="card-header"><i class="fa-solid fa-scale-balanced text-primary"></i> <span class="fw-bold">ฐานอำนาจ / กฎหมายที่เกี่ยวข้อง (งานด่านรับ)</span>
           <span class="ms-2 small text-muted">(พ.ร.บ. มาตรการฝ่ายบริหารฯ แก้ไขถึงฉบับที่ ๔ พ.ศ. ๒๕๖๘)</span>
         </div>
         <div class="card-body" id="lawBox"></div>
@@ -101,91 +99,124 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="../assets/ecmis-app.js"></script>
+  <script src="../assets/ecmis-model.js"></script>
   <script>
     ECMIS.renderShell('case-admin-inbox.html');
 
     const params = new URLSearchParams(location.search);
-    const kase = ECMIS.getCase(params.get('case') || '');
+    let kase = ECMIS.getCase(params.get('case') || '');
 
     if (!kase) {
       document.getElementById('notFoundBox').classList.remove('d-none');
     } else {
       document.getElementById('detailWrap').classList.remove('d-none');
-      renderDetail(kase);
+      renderDetail();
     }
 
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
-    function renderDetail(k) {
+    function renderDetail() {
+      const k = kase;
       const procType = k.procType || (ECMIS.isCase72(k) ? '7.2' : '7.1');
       document.getElementById('pageTitle').textContent = 'รายละเอียดคดี ' + k.id;
-
-      // badges
       document.getElementById('headBadges').innerHTML = ECMIS.typeBadge(k) + ' ' + ECMIS.statusBadge(k.status) + ' ' + ECMIS.slaBadge(k);
 
-      // key-values
       const accused = (k.accused || []).map(a => `${esc(a.name || '')}${a.pos ? ' — ' + esc(a.pos) : ''}`).join('<br>') || '—';
+      const teamTxt = k.subCommittee
+        ? `${esc(k.subCommittee)}${k.routedByCaseAdminAt ? ' · ส่งเมื่อ ' + new Date(k.routedByCaseAdminAt).toLocaleDateString('th-TH') : ''}`
+        : '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">— รอส่งเข้าคณะ</span>';
       document.getElementById('headKv').innerHTML = `
         <dt>เลขคดี</dt><dd>${esc(k.id)}</dd>
-        <dt>ประเภทเรื่อง</dt><dd>${procType}</dd>
+        <dt>ประเภทเรื่อง</dt><dd>${procType} ${procType.startsWith('7.2') ? 'วินิจฉัยชี้มูล (รายงาน 644/RULING)' : 'ไต่สวนเบื้องต้น (รายงาน 213)'}</dd>
         <dt>ผู้ถูกกล่าวหา</dt><dd>${accused}</dd>
         <dt>เจ้าของสำนวน</dt><dd>${esc(k.owner || '—')}${k.ownerOrg ? ' · ' + esc(k.ownerOrg) : ''}</dd>
         <dt>เรื่องกล่าวหา</dt><dd>${esc(k.allegation || k.subject || '—')}</dd>
         <dt>เลขรับ / อ้างอิง</dt><dd>${esc(k.docRef || '—')}</dd>
         <dt>วันที่รับเรื่อง</dt><dd>${k.receivedDate ? ECMIS.thaiDate(k.receivedDate) : '—'}</dd>
-        <dt>ครั้งที่ประชุม / วาระ</dt><dd>${esc(k.meetingNo || '—')}${k.agendaNo ? ' · วาระ ' + esc(k.agendaNo) : ''}</dd>`;
+        <dt>คณะที่มอบหมาย</dt><dd>${teamTxt}</dd>`;
 
-      // ปุ่มดำเนินการต่อ — router กลางของระบบ
-      const target = ECMIS.pageForCaseByStatus(k);
-      const btn = document.getElementById('btnContinue');
-      btn.setAttribute('href', target + '?case=' + encodeURIComponent(k.id));
-      document.getElementById('btnContinueHint').textContent = '→ ' + target;
+      // actions
+      const acts = document.getElementById('headActions');
+      if (ECMIS.isCaseAdminQueue(k)) {
+        acts.innerHTML = `<button id="btnRoute" class="btn btn-navy btn-sm px-3"><i class="fa-solid fa-share-from-square me-1"></i>ส่งเข้าคณะอนุกลั่นกรองฯ</button>
+          <span class="small text-muted">— กระจายสำนวนเข้าคณะที่ ๑–๘ เพื่อพิจารณาให้ความเห็นก่อนบรรจุวาระ</span>`;
+        document.getElementById('btnRoute').addEventListener('click', openRouteModal);
+      } else if (ECMIS.caseAdminRouted(k)) {
+        acts.innerHTML = `<a href="subcommittee-screening.html?case=${encodeURIComponent(k.id)}" class="btn btn-outline-secondary btn-sm px-3"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>ดูความคืบหน้าที่คณะฯ</a>
+          <span class="small text-muted">— สำนวนอยู่ที่ ${esc(k.subCommittee)} · งานด่านรับของกองบริหารคดีเสร็จสิ้นแล้ว</span>`;
+      } else {
+        acts.innerHTML = `<span class="small text-muted"><i class="fa-solid fa-circle-info me-1"></i>สำนวนนี้พ้นชั้นด่านรับ/ชั้นกลั่นกรองแล้ว — อยู่ในความรับผิดชอบของกลุ่มงานอื่น</span>`;
+      }
 
-      // 2. stepper 6 เฟส
-      const phases = ECMIS.CASE_ADMIN_PHASES;
-      const curKey = ECMIS.caseAdminPhase(k);
-      const curIdx = phases.findIndex(p => p.key === curKey);
-      document.getElementById('caStepper').innerHTML = phases.map((p, i) => {
-        const cls = curIdx < 0 ? '' : (i < curIdx ? 'done' : (i === curIdx ? 'current' : ''));
-        return `<div class="ca-step ${cls}"><span class="n">${i + 1}</span><span class="l">${p.label}</span></div>`;
+      // stepper 4 ขั้น
+      const steps = ECMIS.CASE_ADMIN_INTAKE;
+      const routed = ECMIS.caseAdminRouted(k);
+      document.getElementById('caStepper').innerHTML = steps.map((s, i) => {
+        const isLast = i === steps.length - 1;
+        const cls = !isLast ? 'done' : (routed ? 'done' : 'current');
+        return `<div class="ca-step ${cls}"><span class="n"><i class="fa-solid ${s.icon}"></i></span><span class="l">${i + 1}. ${s.label}</span></div>`;
       }).join('');
 
-      // ประวัติ (ถ้ามี)
       const hist = Array.isArray(k.history) ? k.history.slice().reverse() : [];
       document.getElementById('caHistoryBox').innerHTML = hist.length
         ? '<div class="fw-semibold small mb-2 text-muted">ประวัติการดำเนินการ</div>' + hist.map(h => {
           const d = h.ts ? new Date(h.ts).toLocaleString('th-TH') : '';
           return `<div class="d-flex gap-2 mb-2"><i class="fa-solid fa-circle mt-1" style="font-size:.5rem;color:#0F2A62"></i>
-            <div><div class="small"><strong>${esc(h.event || '-')}</strong>${h.lawRef ? ' <span class="chip">' + esc(h.lawRef) + '</span>' : ''}</div>
+            <div><div class="small"><strong>${esc(h.event || '-')}</strong></div>
             <div class="text-muted" style="font-size:.75rem">${esc(h.actor || '')} · ${d}</div>
             ${h.note ? '<div class="small mt-1">' + esc(h.note) + '</div>' : ''}</div></div>`;
         }).join('')
         : '<div class="text-muted small">ยังไม่มีประวัติการดำเนินการของคดีนี้ในระบบ</div>';
 
-      // 3. กำหนดเวลาตามกฎหมาย
+      // 3. deadlines (ชั้นรับเรื่อง)
       const dl = [
-        { m: 'ม.๒๓', t: 'เริ่มดำเนินการไต่สวน', v: k.deadline60 ? 'ภายใน ' + ECMIS.thaiDate(k.deadline60) : 'ภายใน ๖๐ วันนับแต่รับเรื่อง' },
-        { m: 'ม.๒๓', t: 'ไต่สวนและวินิจฉัยให้แล้วเสร็จ (๒ ปี · ขยาย ≤ ๓/๕ ปี)', v: k.deadline2y ? 'ภายใน ' + ECMIS.thaiDate(k.deadline2y) : 'ภายใน ๒ ปีนับแต่รับเรื่อง' },
-        { m: 'ม.๓๑', t: 'อายุความกรณีผู้ถูกกล่าวหาพ้นตำแหน่ง (๓ ปี)', v: k.prescription ? ECMIS.thaiDate(k.prescription) : '—' },
-        { m: 'ม.๑๒/๑๓', t: 'องค์ประชุม ≥ กึ่งหนึ่ง · นัดประชุมเป็นหนังสือล่วงหน้า ≥ ๓ วัน', v: '—' }
+        { m: 'ม.๑๘/๑', t: 'เรื่องจาก/ถึง ป.ป.ช. — ส่งเรื่องพร้อมสำนวน + คัดสำเนาเก็บเป็นหลักฐาน', v: 'ภายใน ๑๕ วันนับแต่วันรับเรื่อง/รับแจ้งมติ' },
+        { m: 'ม.๑๘/๓', t: 'เรื่องไม่อยู่ในอำนาจ ป.ป.ท. — ส่งคืน ป.ป.ช.', v: 'ภายใน ๑๕ วันนับแต่วันที่ทราบ' },
+        { m: 'ม.๒๓', t: 'ต้องเริ่มดำเนินการไต่สวน', v: k.deadline60 ? 'ภายใน ' + ECMIS.thaiDate(k.deadline60) : 'ภายใน ๖๐ วันนับแต่รับเรื่อง' },
+        { m: 'ม.๒๘', t: 'เลขาธิการรายงานผลรับ/ไม่รับ/จำหน่ายต่อคณะกรรมการ ป.ป.ท.', v: 'ทุก ๑๕ วัน' }
       ];
-      if (procType.startsWith('7.2')) {
-        dl.push(
-          { m: 'ม.๓๒', t: 'แจ้งผู้ถูกกล่าวหากรณีข้อกล่าวหาไม่มีมูล', v: 'ภายใน ๑๕ วันนับแต่มีมติ' },
-          { m: 'ม.๓๓/๓๔', t: 'แจ้งข้อกล่าวหา (ไปรษณีย์ลงทะเบียนตอบรับ)', v: 'ให้สิทธิชี้แจง ≥ ๓๐ วัน' },
-          { m: 'ม.๓๘', t: 'ผู้บังคับบัญชาพิจารณาโทษทางวินัยตามมติ', v: 'ภายใน ๖๐ วันนับแต่ได้รับแจ้งมติ' },
-          { m: 'ม.๔๐', t: 'ขอทบทวนมติ / ส่งสำเนาคำสั่งลงโทษ', v: 'ทบทวน ๓๐ วัน · ส่งสำเนา ๑๕ วัน' }
-        );
-      }
-      if (procType.startsWith('7.3')) {
-        dl.push({ m: 'ม.๔๓', t: 'ก.พ.ค. วินิจฉัยว่าอุทธรณ์ฟังขึ้น → เสนอบอร์ดทบทวน', v: 'ผู้ถูกลงโทษฟ้องศาลปกครองสูงสุด ๙๐ วัน' });
-      }
       document.getElementById('deadlineTb').innerHTML = dl.map(r =>
         `<tr><td><span class="chip">${r.m}</span></td><td>${esc(r.t)}</td><td>${esc(r.v)}</td></tr>`).join('');
 
       // 4. law box
-      document.getElementById('lawBox').innerHTML = ECMIS.caseAdminLaw(k).map(e =>
+      document.getElementById('lawBox').innerHTML = ECMIS.caseAdminLaw().map(e =>
         `<div class="law-row"><span class="chip">${esc(e.m)}</span><span>${esc(e.t)}</span></div>`).join('');
+    }
+
+    function openRouteModal() {
+      const suggested = ECMIS.nextSubcommitteeTeam();
+      const opts = ECMIS.SUBCOMMITTEE_QUOTA.map(qq =>
+        `<option value="คณะที่ ${qq.n}" ${qq.used >= 40 ? 'disabled' : ''} ${('คณะที่ ' + qq.n) === suggested ? 'selected' : ''}>คณะที่ ${qq.n} (ใช้ไป ${qq.used}/40)${qq.used >= 40 ? ' — เต็ม' : ''}</option>`
+      ).join('');
+      Swal.fire({
+        title: 'ส่งเข้าคณะอนุกลั่นกรองฯ',
+        html: `<div class="text-start small">
+            <div class="mb-2">สำนวน <strong>${kase.id}</strong> — ${ECMIS.isCase72(kase) ? '7.2 วินิจฉัยชี้มูล' : '7.1 ไต่สวนเบื้องต้น'}</div>
+            <label class="form-label fw-semibold">เลือกคณะอนุกลั่นกรองฯ</label>
+            <select id="swTeam" class="form-select form-select-sm mb-2">${opts}</select>
+            <div class="text-muted mb-2">ระบบเสนอ <strong>${suggested}</strong> (Round-Robin — คณะที่รับงานน้อยสุด)</div>
+            <label class="form-label fw-semibold">หมายเหตุ / เหตุผลกรณีเลือกคณะเอง</label>
+            <textarea id="swReason" class="form-control form-control-sm" rows="2" placeholder="ระบุเหตุผลหากไม่ใช้คณะที่ระบบเสนอ"></textarea>
+          </div>`,
+        showCancelButton: true, confirmButtonText: 'ยืนยันส่งเข้าคณะ', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#0F2A62',
+        preConfirm: () => {
+          const team = document.getElementById('swTeam').value;
+          const reason = document.getElementById('swReason').value.trim();
+          if (team !== suggested && !reason) { Swal.showValidationMessage('กรุณาระบุเหตุผลเมื่อเลือกคณะที่ไม่ใช่คณะที่ระบบเสนอ'); return false; }
+          return { team, reason };
+        }
+      }).then(res => {
+        if (!res.isConfirmed) return;
+        const { team, reason } = res.value;
+        ECMIS.pushCaseHistory(kase, {
+          event: 'ROUTE_TO_SUBCOMMITTEE', from: kase.status, to: kase.status, team,
+          note: `กระจายสำนวนเข้า ${team}${team === suggested ? ' (Round-Robin)' : ' (เลือกโดย ผอ.กบค.)'}${reason ? ' — ' + reason : ''}`
+        });
+        ECMIS.Model.CaseStore.update(kase.id, { subCommittee: team, routedByCaseAdminAt: new Date().toISOString(), history: kase.history });
+        kase = ECMIS.getCase(kase.id);
+        ECMIS.toastOk(`ส่งสำนวน ${kase.id} เข้า ${team} เรียบร้อย`);
+        renderDetail();
+      });
     }
   </script>
 </body>

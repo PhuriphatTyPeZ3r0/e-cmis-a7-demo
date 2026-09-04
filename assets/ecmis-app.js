@@ -464,72 +464,55 @@ function pushCaseHistory(kase, entry){
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   กองบริหารคดี (role case_admin) — 6 เฟสงานตลอด pipeline หลังสำนวนถึงมือ กบค.
-   ใช้จัดกลุ่ม KPI + stepper ในหน้า case-admin-inbox.html / case-admin-detail.html
+   กองบริหารคดี — กลุ่มงานบริหารคดีและบริหารทั่วไป (role case_admin)
+   ทำหน้าที่ "ด่านรับ" เท่านั้น: รับเรื่อง → ลงทะเบียนคุมคดี → สแกน/เตรียมสำนวน
+   → ส่งเรื่องเข้าคณะอนุกลั่นกรองฯ (กระจายสำนวนเข้าคณะที่ ๑–๘) สำหรับทั้ง 7.1 และ 7.2
+   งานหลังจากนั้น (บรรจุวาระ/บันทึกมติ/จัดทำคำสั่ง/แจ้งมติ/ติดตาม) เป็นของกลุ่มงานอื่น
    ───────────────────────────────────────────────────────────────────────────── */
-const CASE_ADMIN_PHASES = [
-  { key:'URGENT',   label:'รับรองใบด่วน',        icon:'fa-bolt',            color:'#DC2626',
-    statuses:['PENDING_URGENT','PENDING_URGENT_72'] },
-  { key:'AGENDA',   label:'บรรจุวาระ',           icon:'fa-calendar-plus',   color:'#D0A830',
-    statuses:['AGENDA_SET','PENDING_INVITE_72','DEFERRED'] },
-  { key:'MEETING',  label:'ประชุม-บันทึกมติ',     icon:'fa-users-rectangle', color:'#0284C7',
-    statuses:['IN_MEETING','RESOLVED_PENDING','IN_MEETING_72','RESOLVED_PENDING_72'] },
-  { key:'DRAFTING', label:'จัดทำคำสั่ง-รายงาน',   icon:'fa-file-pen',        color:'#7C3AED',
-    statuses:['RESOLVED','PENDING_SIGN_RULING_72','PENDING_SIGN_ORDER_CHAIRMAN','PENDING_SIGN_ORDER_SECGEN'] },
-  { key:'NOTIFY',   label:'แจ้งมติ-ส่งดำเนินคดี',  icon:'fa-paper-plane',     color:'#0F766E',
-    statuses:['DISPATCHING','PENDING_AREA_NOTICE_72','DISPATCHING_NACC_72','PENDING_DISPATCH_GUILTY_72'] },
-  { key:'DONE',     label:'เสร็จสิ้น',            icon:'fa-circle-check',     color:'#15803D',
-    statuses:['CLOSED','CLOSED_72','UNDER_INVESTIGATION'] }
+const CASE_ADMIN_INTAKE = [
+  { key:'RECEIVED',   label:'รับเรื่อง',              icon:'fa-inbox' },
+  { key:'REGISTERED', label:'ลงทะเบียนคุมคดี',        icon:'fa-clipboard-list' },
+  { key:'PREPARED',   label:'สแกน / เตรียมสำนวน',      icon:'fa-file-import' },
+  { key:'ROUTED',     label:'ส่งเข้าคณะอนุกลั่นกรองฯ', icon:'fa-share-from-square' }
 ];
-/* คืน key เฟสของ case ตามสถานะ (null = ยังไม่ถึงมือ กบค.) */
-function caseAdminPhase(kase){
-  if(!kase) return null;
-  const p = CASE_ADMIN_PHASES.find(ph => ph.statuses.includes(kase.status));
-  return p ? p.key : null;
-}
-/* case อยู่ในความรับผิดชอบของกองบริหารคดีหรือไม่ (owner ∈ dir_case/board_sec/affairs หรือ DEFERRED) */
+/* สถานะที่สำนวนอยู่ในชั้นกลั่นกรอง (ทั้ง 7.1 และ 7.2) */
+const CASE_ADMIN_SCREEN_STATUSES = ['IN_SCREENING', 'IN_SCREENING_72'];
+/* คิวของ กบค. = สำนวนถึงชั้นกลั่นกรองแล้ว แต่ยังไม่ได้กระจายเข้าคณะ (subCommittee ว่าง) */
 function isCaseAdminQueue(kase){
-  if(!kase) return false;
-  if(kase.status === 'DEFERRED') return true;
-  const o = STATUS[kase.status] && STATUS[kase.status].owner;
-  return o === 'dir_case' || o === 'board_sec' || o === 'affairs';
+  return !!kase && CASE_ADMIN_SCREEN_STATUSES.includes(kase.status) && !kase.subCommittee;
+}
+/* สำนวนที่ กบค. ส่งเข้าคณะแล้ว (ยังอยู่ชั้นกลั่นกรอง มี subCommittee) */
+function caseAdminRouted(kase){
+  return !!kase && CASE_ADMIN_SCREEN_STATUSES.includes(kase.status) && !!kase.subCommittee;
+}
+/* ขั้นด่านรับปัจจุบัน: RECEIVED/REGISTERED/PREPARED ถือว่าเสร็จโดยปริยายเมื่อถึงชั้นกลั่นกรอง
+   → ROUTED = current ถ้ายังไม่มีคณะ, done ถ้ามีคณะแล้ว */
+function caseAdminIntakeStep(kase){
+  return caseAdminRouted(kase) ? 'DONE' : 'ROUTED';
 }
 
-/* ฐานอำนาจ / กฎหมายที่เกี่ยวข้อง (law box) — อ้าง law_pacc_68.pdf แยกตามประเภทเรื่อง 7.1/7.2/7.3 */
-const CASE_ADMIN_LAW = {
-  common: [
-    { m:'ม.๑๒ / ม.๑๓', t:'องค์ประชุมคณะกรรมการ ป.ป.ท. ต้องไม่น้อยกว่ากึ่งหนึ่ง · นัดประชุมเป็นหนังสือล่วงหน้าไม่น้อยกว่า ๓ วัน' },
-    { m:'ม.๑๘/๑ · ม.๑๘/๓', t:'ส่งเรื่อง/สำนวนคืนคณะกรรมการ ป.ป.ช. ภายใน ๑๕ วัน + คัดสำเนาสำนวนเก็บเป็นหลักฐาน · เริ่มนับระยะเวลาไต่สวน' },
-    { m:'ม.๓๙', t:'อนุญาตให้ผู้ถูกกล่าวหาคัดสำเนาสำนวนการไต่สวนเพื่อใช้สิทธิอุทธรณ์ ตามหลักเกณฑ์ที่คณะกรรมการ ป.ป.ท. กำหนด' },
-    { m:'ม.๕๙', t:'สำนักงานจัดทำบัญชีเรื่องกล่าวหาที่รับไว้พิจารณาและผลการดำเนินการ (ฐานทะเบียนคดีกลาง)' }
-  ],
-  '7.1': [
-    { m:'ม.๒๓', t:'เริ่มไต่สวนภายใน ๖๐ วัน · ไต่สวนและวินิจฉัยให้เสร็จภายใน ๒ ปี (ขยายรวมไม่เกิน ๓ ปี; ต่างประเทศไม่เกิน ๕ ปี)' },
-    { m:'ม.๒๔ วรรคห้า', t:'ผู้ไต่สวนเสนอสำนวนต่อคณะกรรมการ ป.ป.ท. เพื่อให้ความเห็นชอบและวินิจฉัยชี้มูล · สั่งไต่สวนเพิ่มเติมได้ (ต้องระบุเหตุผล)' },
-    { m:'ม.๒๗', t:'เรื่องตาม ม.๒๖(๓)(๔) คณะกรรมการ ป.ป.ท. สั่งยุติการไต่สวนได้ · เลขาธิการส่งเรื่องให้ผู้บังคับบัญชาดำเนินการทางวินัยต่อ' },
-    { m:'ม.๒๘', t:'เลขาธิการ pre-screen รับ/ไม่รับ/จำหน่าย และรายงานคณะกรรมการ ป.ป.ท. ทุก ๑๕ วัน' }
-  ],
-  '7.2': [
-    { m:'ม.๓๒', t:'มติว่าข้อกล่าวหาไม่มีมูล — แจ้งผู้ถูกกล่าวหาทราบภายใน ๑๕ วันนับแต่วันมีมติ' },
-    { m:'ม.๓๓ / ม.๓๔', t:'พยานหลักฐานพอ — ส่งหนังสือแจ้งข้อกล่าวหาทางไปรษณีย์ลงทะเบียนตอบรับ ให้สิทธิชี้แจงไม่น้อยกว่า ๓๐ วัน' },
-    { m:'ม.๓๘', t:'มติชี้มูลวินัย — ประธานฯ แจ้งผู้บังคับบัญชา + ส่งรายงานการไต่สวนที่เห็นชอบแล้ว · ผู้บังคับบัญชาพิจารณาโทษภายใน ๖๐ วัน' },
-    { m:'ม.๔๐', t:'ผู้บังคับบัญชาขอทบทวนมติได้ภายใน ๓๐ วัน (มีพยานหลักฐานใหม่) · ส่งสำเนาคำสั่งลงโทษให้ ป.ป.ท. ภายใน ๑๕ วัน' },
-    { m:'ม.๔๑', t:'ผู้บังคับบัญชาไม่ดำเนินการตาม ม.๓๘ โดยไม่มีเหตุอันสมควร = ผิดวินัยอย่างร้ายแรง → เสนอบอร์ดส่ง ป.ป.ช. (ม.๑๕๗)' },
-    { m:'ม.๔๓', t:'ก.พ.ค. วินิจฉัยว่าอุทธรณ์ฟังขึ้น — ส่งคำวินิจฉัยให้คณะกรรมการ ป.ป.ท. พิจารณาทบทวน' },
-    { m:'ม.๔๔', t:'กรณีเป็นความผิดอาญา — ส่งสำนวน รายงาน เอกสาร และความเห็นให้พนักงานอัยการดำเนินคดีต่อ' },
-    { m:'ม.๔๖', t:'ชี้มูลแล้วก่อความเสียหาย — แจ้งหน่วยงานของรัฐหาตัวผู้รับผิดชดใช้/เพิกถอนเอกสารสิทธิ แล้วรายงานบอร์ด' }
-  ],
-  '7.3': [
-    { m:'ม.๔๓', t:'เรื่องของ กกม. / อุทธรณ์ — ก.พ.ค. วินิจฉัยว่าอุทธรณ์ฟังขึ้น ส่งคืนคณะกรรมการ ป.ป.ท. ทบทวน' },
-    { m:'ม.๑๗', t:'หน้าที่และอำนาจคณะกรรมการ ป.ป.ท. — ให้ความเห็นชอบสำนวนการไต่สวนและวินิจฉัยชี้มูล' }
-  ]
-};
-/* คืนรายการ law entries ตามประเภทเรื่องของ case (procType 7.1/7.2/7.3) + common */
-function caseAdminLaw(kase){
-  const t = String((kase && kase.procType) || (isCase72(kase) ? '7.2' : '7.1'));
-  const line = CASE_ADMIN_LAW[t.startsWith('7.3') ? '7.3' : (t.startsWith('7.2') ? '7.2' : '7.1')] || [];
-  return line.concat(CASE_ADMIN_LAW.common);
+/* โควตาคณะอนุกลั่นกรองฯ ๑–๘ (ชุดเดียวกับการ์ด Auto-Routing ใน screening.html) */
+const SUBCOMMITTEE_QUOTA = [
+  { n:1, used:40 }, { n:2, used:38 }, { n:3, used:22 }, { n:4, used:31 },
+  { n:5, used:40 }, { n:6, used:19 }, { n:7, used:27 }, { n:8, used:35 }
+];
+/* คณะถัดไปแบบ round-robin — เลือกคณะที่ใช้ไปน้อยสุดที่ยังไม่เต็ม (used < 40) */
+function nextSubcommitteeTeam(){
+  const avail = SUBCOMMITTEE_QUOTA.filter(q => q.used < 40).sort((a, b) => a.used - b.used);
+  return 'คณะที่ ' + (avail.length ? avail[0].n : 1);
 }
+
+/* ฐานอำนาจ / กฎหมายที่เกี่ยวข้อง (law box) — เฉพาะงาน "ด่านรับ" ของ กบค. อ้าง law_pacc_68.pdf */
+const CASE_ADMIN_LAW = [
+  { m:'ม.๑๘/๑', t:'เรื่องจาก/ถึงคณะกรรมการ ป.ป.ช. — ส่งเรื่องพร้อมสำนวนภายใน ๑๕ วัน + คัดสำเนาสำนวนเก็บเป็นหลักฐาน · เริ่มนับระยะเวลาไต่สวนตั้งแต่วันรับเรื่อง' },
+  { m:'ม.๑๘/๓', t:'พบว่าเรื่องไม่อยู่ในหน้าที่และอำนาจของ ป.ป.ท. (ทั้งเรื่องหรือบางส่วน) — ส่งเรื่องคืนคณะกรรมการ ป.ป.ช. ภายใน ๑๕ วันนับแต่วันที่ทราบ' },
+  { m:'ม.๒๓', t:'ต้องเริ่มดำเนินการไต่สวนภายใน ๖๐ วันนับแต่วันที่ได้รับเรื่อง — กบค. บันทึกวันรับเรื่องและเดินนาฬิกา SLA' },
+  { m:'ม.๒๔ วรรคหนึ่ง/สาม', t:'ไต่สวนเป็นองค์คณะ ≥ ๒ คน · เรื่องสำคัญ/ซับซ้อนแต่งตั้งคณะอนุกรรมการไต่สวน — กบค. เตรียมสำนวนและส่งเข้าคณะอนุกลั่นกรองฯ พิจารณา' },
+  { m:'ม.๒๘', t:'เลขาธิการ pre-screen รับ/ไม่รับ/จำหน่ายเรื่อง และรายงานคณะกรรมการ ป.ป.ท. ทุก ๑๕ วัน — กบค. รวบรวมบัญชีเสนอ' },
+  { m:'ม.๕๙', t:'สำนักงานจัดทำบัญชีเรื่องกล่าวหาเจ้าหน้าที่ของรัฐที่รับไว้พิจารณาและผลการดำเนินการ (ฐานทะเบียนคุมคดีกลาง) เพื่อส่งให้สำนักงาน ป.ป.ช.' }
+];
+/* คืนรายการ law entries — งานด่านรับใช้ชุดเดียวทุกประเภทเรื่อง */
+function caseAdminLaw(){ return CASE_ADMIN_LAW.slice(); }
 
 function transitionsBetween(from, to){
   return TRANSITIONS.filter(t => t.from === from && t.to === to);
@@ -1682,6 +1665,93 @@ const CASES = [
     meetingNo:null, agendaNo:null,
     docType:'RULING', signPhase:'WAIT'
   },
+  /* ── สำนวนถึงชั้นกลั่นกรองแล้ว แต่ กบค. (กลุ่มงานบริหารคดีและบริหารทั่วไป) ยังไม่ได้กระจายเข้าคณะ
+     — subCommittee ว่าง = "รอส่งเข้าคณะอนุกลั่นกรองฯ" (คิวงานของ role case_admin) ── */
+  {
+    id:'1450/2569',
+    subject:'กล่าวหาเจ้าหน้าที่พัสดุองค์การบริหารส่วนจังหวัดแห่งหนึ่ง จัดซื้อครุภัณฑ์การแพทย์ราคาสูงเกินจริง',
+    legalBase:'ม.18/4',
+    status:'IN_SCREENING',
+    procType:'7.1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
+    complainant:'กลุ่มตรวจสอบภาคประชาชน (ผู้ร้องเรียน)',
+    accused:[ { no:1, name:'นายพิชิต พัสดุการ', pos:'หัวหน้าฝ่ายพัสดุ', idcard:'3-1201-0xxxx-xx-x', agency:'องค์การบริหารส่วนจังหวัดแห่งหนึ่ง' } ],
+    allegation:'กำหนดคุณลักษณะเฉพาะครุภัณฑ์การแพทย์เพื่อเอื้อผู้เสนอราคารายหนึ่ง จัดซื้อสูงกว่าราคากลางรวม 4.2 ล้านบาท',
+    receivedDate:'2569-07-22', deadline60:'2569-09-20', deadline2y:'2571-07-22', prescription:'2572-07-01',
+    docRef:'ปป 0020/0980 ลงวันที่ 22 กรกฎาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:3, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'213', signPhase:'WAIT'
+  },
+  {
+    id:'1452/2569',
+    subject:'กล่าวหาเจ้าหน้าที่สำนักงานที่ดินอำเภอแห่งหนึ่ง เรียกรับเงินเพื่อเร่งรัดการรังวัดและออกโฉนดที่ดิน',
+    legalBase:'ม.18/4',
+    status:'IN_SCREENING',
+    procType:'7.1',
+    owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
+    complainant:'ประชาชนผู้ขอรังวัดที่ดิน (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายอนันต์ ที่ดินงาม', pos:'ช่างรังวัดชำนาญงาน', idcard:'3-2201-0xxxx-xx-x', agency:'สำนักงานที่ดินอำเภอแห่งหนึ่ง' } ],
+    allegation:'เรียกรับผลประโยชน์จากผู้ขอรังวัดที่ดินเพื่อแลกกับการจัดคิวและเร่งออกเอกสารสิทธิ',
+    receivedDate:'2569-07-24', deadline60:'2569-09-22', deadline2y:'2571-07-24', prescription:'2572-08-10',
+    docRef:'ปป 0021/0988 ลงวันที่ 24 กรกฎาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:1, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'213', signPhase:'WAIT'
+  },
+  {
+    id:'1455/2569',
+    subject:'กล่าวหาผู้บริหารสถานศึกษาแห่งหนึ่ง เบิกจ่ายค่าจ้างเหมาบริการทำความสะอาดอันเป็นเท็จ',
+    legalBase:'ม.18/4',
+    status:'IN_SCREENING',
+    procType:'7.1',
+    owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
+    complainant:'บัตรสนเท่ห์ (ความปรากฏต่อสำนักงาน)',
+    accused:[ { no:1, name:'นางสาวมาลี บริหารดี', pos:'ผู้อำนวยการสถานศึกษา', idcard:'3-1205-0xxxx-xx-x', agency:'โรงเรียนแห่งหนึ่ง' } ],
+    allegation:'จัดทำเอกสารเบิกจ่ายค่าจ้างเหมาบริการทำความสะอาดโดยไม่มีการปฏิบัติงานจริง รวม 18 งวด เป็นเงิน 540,000 บาท',
+    receivedDate:'2569-07-11', deadline60:'2569-09-09', deadline2y:'2571-07-11', prescription:'2572-04-30',
+    docRef:'ปป 0020/0902 ลงวันที่ 11 กรกฎาคม 2569',
+    urgent:false, complex:false, dupWarning:false,
+    slaDays:12, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'213', signPhase:'WAIT'
+  },
+  {
+    id:'1460/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีนายกเทศมนตรีตำบลแห่งหนึ่ง ทุจริตโครงการก่อสร้างระบบประปาหมู่บ้าน',
+    legalBase:'ม.18/4',
+    status:'IN_SCREENING_72',
+    procType:'7.2',
+    owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 2',
+    complainant:'กลุ่มธรรมาภิบาลชุมชน (ผู้ร้อง)',
+    accused:[ { no:1, name:'นายบุญส่ง เทศบาลดี', pos:'นายกเทศมนตรีตำบล', idcard:'3-1207-0xxxx-xx-x', agency:'เทศบาลตำบลแห่งหนึ่ง' } ],
+    allegation:'ร่วมกันกำหนดราคากลางและตรวจรับงานก่อสร้างระบบประปาหมู่บ้านทั้งที่ไม่ได้ดำเนินการจริงตามแบบ',
+    receivedDate:'2569-06-18', deadline60:'2569-08-17', deadline2y:'2571-06-18', prescription:'2572-10-05',
+    docRef:'ปป 0021/0798 ลงวันที่ 18 มิถุนายน 2569',
+    urgent:false, urgent72:false, complex:false, complex72:false, dupWarning:false,
+    slaDays:2, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'RULING', signPhase:'WAIT'
+  },
+  {
+    id:'1465/2566',
+    subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่โรงพยาบาลชุมชนแห่งหนึ่ง ทุจริตจัดซื้อยาและเวชภัณฑ์',
+    legalBase:'ม.18/4',
+    status:'IN_SCREENING_72',
+    procType:'7.2',
+    owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
+    complainant:'เจ้าหน้าที่โรงพยาบาล (ผู้แจ้งเบาะแส)',
+    accused:[ { no:1, name:'นายวีระ เวชภัณฑ์ดี', pos:'หัวหน้างานเภสัชกรรม', idcard:'3-2209-0xxxx-xx-x', agency:'โรงพยาบาลชุมชนแห่งหนึ่ง' } ],
+    allegation:'จัดทำเอกสารจัดซื้อยาและเวชภัณฑ์มิใช่ยาเกินความจำเป็น และแบ่งซื้อเพื่อหลีกเลี่ยงวิธี e-bidding',
+    receivedDate:'2569-06-24', deadline60:'2569-08-23', deadline2y:'2571-06-24', prescription:'2572-07-28',
+    docRef:'ปป 0021/0818 ลงวันที่ 24 มิถุนายน 2569',
+    urgent:false, urgent72:false, complex:false, complex72:false, dupWarning:false,
+    slaDays:6, slaLimit:15, subCommittee:null,
+    meetingNo:null, agendaNo:null,
+    docType:'RULING', signPhase:'WAIT'
+  },
   {
     id:'1088/2566',
     subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่กรมชลประทานแห่งหนึ่ง ทุจริตโครงการขุดลอกคลอง',
@@ -2387,7 +2457,7 @@ function __hubBridgeCases() {
   else Object.assign(CASES[index], shared);
 }
 
-const CASES_VERSION = '2026-09-04-subcommittee-screening-status-v2';
+const CASES_VERSION = '2026-09-04-case-admin-intake-v1';
 if (typeof sessionStorage !== 'undefined') {
   const savedVersion = sessionStorage.getItem('ecmis_cases_version');
   const savedCases = sessionStorage.getItem('ecmis_cases');
@@ -7188,7 +7258,8 @@ if (typeof localStorage !== 'undefined') {
   TRANSITIONS, canTransition, nextStates, transitionsBetween,
   SUB_OUTCOME_MAP, SUB_SCREENING_STATUS, subOutcomeOptions, mapSubOutcome,
   subScreeningStatus, slaEffectiveDays, slaIsOnHold, isScreeningLocked, pushCaseHistory,
-  CASE_ADMIN_PHASES, caseAdminPhase, isCaseAdminQueue, CASE_ADMIN_LAW, caseAdminLaw,
+  CASE_ADMIN_INTAKE, CASE_ADMIN_SCREEN_STATUSES, isCaseAdminQueue, caseAdminRouted,
+  caseAdminIntakeStep, SUBCOMMITTEE_QUOTA, nextSubcommitteeTeam, CASE_ADMIN_LAW, caseAdminLaw,
   BOARD_MIN_IN_OFFICE, boardQuorum,
   M24P1_MIN_PANEL, M24P1_STAFF_FREE, panelComposition,
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
