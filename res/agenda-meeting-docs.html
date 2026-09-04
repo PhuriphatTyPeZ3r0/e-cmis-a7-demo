@@ -18,6 +18,10 @@
     .meet-confirmed{display:inline-flex;align-items:center;gap:.25rem;padding:.15rem .5rem;border-radius:999px;font-size:.68rem;font-weight:600;color:#1e6141;background:#dff0e7}
     .doc-memo-hdr{font-size:16pt;line-height:1.25;margin:3pt 0 0}
     .doc-memo-lbl{font-weight:700;display:inline-block;min-width:6.2em;vertical-align:top}
+    .roster-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.4rem .9rem}
+    .agenda-roster-row{border:1px solid #e2e8f0;border-radius:8px;padding:.7rem .8rem;background:#fff}
+    .agenda-roster-row.is-overridden{border-color:#f59e0b;background:#fffbeb}
+    .roster-summary{font-size:.75rem;color:#64748b}
   </style>
 </head>
 
@@ -78,11 +82,29 @@
           </div>
         </div>
 
+        <div class="ws-card mb-3" id="boardRosterCard">
+          <div class="card-header d-flex align-items-center gap-2">
+            <i class="fa-solid fa-user-lock"></i> ล็อกรายชื่อกรรมการชุดเข้าประชุม
+            <span class="badge bg-secondary ms-auto" id="boardRosterBadge">ยังไม่ล็อก</span>
+          </div>
+          <div class="card-body">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="lockBoardRoster">
+              <label class="form-check-label fw-semibold" for="lockBoardRoster">ใช้รายชื่อชุดนี้กับทุกวาระโดยอัตโนมัติ</label>
+            </div>
+            <div class="form-text mb-3">หากกรรมการมีส่วนได้เสีย ให้เปิด “แก้ไขเฉพาะวาระ” ด้านล่าง รายชื่อกลางของวาระอื่นจะไม่เปลี่ยนแปลง</div>
+            <div class="roster-grid mb-3" id="masterBoardRoster"></div>
+            <hr>
+            <div class="fw-semibold mb-2"><i class="fa-solid fa-scale-balanced me-1 text-warning"></i>ข้อยกเว้นรายวาระ (กรณีมีส่วนได้เสีย)</div>
+            <div class="d-grid gap-2" id="agendaRosterRows"></div>
+          </div>
+        </div>
+
         <div class="ws-card mb-3">
           <div class="card-header"><i class="fa-solid fa-list-ol"></i> วาระที่จะแสดงในระเบียบวาระ (รวม)</div>
           <div class="card-body p-0">
             <table class="table tbl-ecmis mb-0">
-              <thead><tr><th style="width:70px">วาระที่</th><th>ลักษณะเรื่อง</th></tr></thead>
+              <thead><tr><th style="width:70px">วาระที่</th><th>ลักษณะเรื่อง</th><th style="width:190px">ชุดกรรมการ</th></tr></thead>
               <tbody id="itemsPreviewTb"></tbody>
             </table>
           </div>
@@ -184,6 +206,30 @@
 
     const params = new URLSearchParams(location.search);
     const meetId = +params.get('meet');
+    const MEETING_ROSTERS_KEY = 'ecmis.meetingBoardRosters.v1';
+    const LEGACY_ROSTER_KEY = 'ecmis.lockedBoardRoster';
+    const BOARD_MEMBERS = [
+      { name:'นายวิชัย ยุติธรรม', role:'ประธานกรรมการ ป.ป.ท.' },
+      { name:'พลเอก จิระ โกมุทพงศ์', role:'กรรมการ ป.ป.ท.' },
+      { name:'พันตำรวจโท วันนพ สมจินตนากุล', role:'กรรมการ ป.ป.ท.' },
+      { name:'นายวิเชียร จันทรโณทัย', role:'กรรมการ ป.ป.ท.' },
+      { name:'นายพรเทพ อัมพรกลิ่นแก้ว', role:'กรรมการ ป.ป.ท.' },
+      { name:'นายกมล สกลเดชา', role:'กรรมการ ป.ป.ท.' },
+      { name:'นายสุรพงษ์ อินทรถาวร', role:'กรรมการ ป.ป.ท.' }
+    ];
+
+    function loadMeetingRosters() {
+      try { return JSON.parse(localStorage.getItem(MEETING_ROSTERS_KEY) || '{}') || {}; }
+      catch (e) { return {}; }
+    }
+
+    function legacyRosterDefault() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(LEGACY_ROSTER_KEY) || 'null');
+        if (saved && Array.isArray(saved.present)) return saved;
+      } catch (e) { /* ใช้ค่าเริ่มต้น */ }
+      return { locked:false, present:BOARD_MEMBERS.map(member => member.name) };
+    }
     
 
     /* AR.MEETINGS/AR.ITEMS ยังว่างอยู่จนกว่า AR.ready (โหลดจาก Supabase) จะ resolve ก่อน —
@@ -211,9 +257,111 @@
         document.querySelectorAll('#inviteNo,#inviteDate,#meetTime,#meetPlace,#contactTel,#deptRecipient,#secrecy').forEach(el => el.disabled = true);
       }
 
-      document.getElementById('itemsPreviewTb').innerHTML = items.map(it => `
-    <tr><td>${it.trci_number}</td><td>${it.trci_topic}</td></tr>`).join('')
-        || '<tr><td colspan="2" class="text-muted text-center py-3">— ไม่มีวาระในการประชุมครั้งนี้ —</td></tr>';
+      const allMeetingRosters = loadMeetingRosters();
+      const legacyRoster = legacyRosterDefault();
+      const knownNames = BOARD_MEMBERS.map(member => member.name);
+      const rosterState = allMeetingRosters[String(meeting.trc_id)] || {
+        locked:!!legacyRoster.locked,
+        present:legacyRoster.present.filter(name => knownNames.includes(name)),
+        overrides:{}
+      };
+      rosterState.present = Array.isArray(rosterState.present) ? rosterState.present.filter(name => knownNames.includes(name)) : knownNames.slice();
+      rosterState.overrides = rosterState.overrides && typeof rosterState.overrides === 'object' ? rosterState.overrides : {};
+      rosterState.meetingName = meeting.trc_name;
+      rosterState.caseRefs = [...new Set(items.flatMap(itemCaseRefs))];
+
+      function itemCaseRefs(item) {
+        return String(item.case_ref || '').split(',').map(ref => ref.trim()).filter(ref => ref && ref !== '-');
+      }
+
+      function effectiveNames(item) {
+        const override = rosterState.overrides[String(item.trci_id)];
+        return override && override.unlocked && Array.isArray(override.present) ? override.present : rosterState.present;
+      }
+
+      function persistRosterState() {
+        rosterState.updatedAt = new Date().toISOString();
+        allMeetingRosters[String(meeting.trc_id)] = rosterState;
+        localStorage.setItem(MEETING_ROSTERS_KEY, JSON.stringify(allMeetingRosters));
+        localStorage.setItem(LEGACY_ROSTER_KEY, JSON.stringify({ locked:rosterState.locked, present:rosterState.present }));
+      }
+
+      function renderItemsPreview() {
+        document.getElementById('itemsPreviewTb').innerHTML = items.map(it => {
+          const overridden = !!rosterState.overrides[String(it.trci_id)]?.unlocked;
+          const names = effectiveNames(it);
+          const rosterLabel = !rosterState.locked ? 'ยังไม่ล็อก' : `${names.length}/${BOARD_MEMBERS.length} คน${overridden ? ' · เฉพาะวาระ' : ' · ชุดกลาง'}`;
+          return `<tr><td>${ECMIS.escapeHtml(it.trci_number)}</td><td>${ECMIS.escapeHtml(it.trci_topic)}</td>
+            <td><span class="badge ${overridden ? 'bg-warning text-dark' : (rosterState.locked ? 'bg-success' : 'bg-secondary')}">${rosterLabel}</span></td></tr>`;
+        }).join('') || '<tr><td colspan="3" class="text-muted text-center py-3">— ไม่มีวาระในการประชุมครั้งนี้ —</td></tr>';
+      }
+
+      function renderMasterRoster() {
+        document.getElementById('lockBoardRoster').checked = !!rosterState.locked;
+        document.getElementById('lockBoardRoster').disabled = !mayEdit;
+        const badge = document.getElementById('boardRosterBadge');
+        badge.className = `badge ms-auto ${rosterState.locked ? 'bg-success' : 'bg-secondary'}`;
+        badge.innerHTML = rosterState.locked ? `<i class="fa-solid fa-lock me-1"></i>ล็อกแล้ว ${rosterState.present.length}/${BOARD_MEMBERS.length} คน` : 'ยังไม่ล็อก';
+        document.getElementById('masterBoardRoster').innerHTML = BOARD_MEMBERS.map((member, index) => `
+          <div class="form-check">
+            <input class="form-check-input master-roster-member" type="checkbox" id="masterRoster${index}" value="${ECMIS.escapeHtml(member.name)}"${rosterState.present.includes(member.name) ? ' checked' : ''}${mayEdit ? '' : ' disabled'}>
+            <label class="form-check-label" for="masterRoster${index}"><strong>${ECMIS.escapeHtml(member.name)}</strong><br><small class="text-muted">${ECMIS.escapeHtml(member.role)}</small></label>
+          </div>`).join('');
+        document.querySelectorAll('.master-roster-member').forEach(input => input.addEventListener('change', () => {
+          rosterState.present = Array.from(document.querySelectorAll('.master-roster-member:checked')).map(el => el.value);
+          persistRosterState(); renderMasterRoster(); renderAgendaRows(); renderItemsPreview();
+        }));
+      }
+
+      function renderAgendaRows() {
+        document.getElementById('agendaRosterRows').innerHTML = items.map(item => {
+          const key = String(item.trci_id);
+          const override = rosterState.overrides[key];
+          const isOverride = !!override?.unlocked;
+          const selected = effectiveNames(item);
+          return `<div class="agenda-roster-row${isOverride ? ' is-overridden' : ''}" data-agenda-roster="${key}">
+            <div class="d-flex align-items-start gap-2">
+              <div class="flex-grow-1"><strong>วาระ ${ECMIS.escapeHtml(item.trci_number)}</strong> — ${ECMIS.escapeHtml(item.trci_topic)}
+                <div class="roster-summary">${isOverride ? 'ใช้รายชื่อเฉพาะวาระ' : 'ใช้รายชื่อชุดกลาง'} · เข้าประชุม ${selected.length}/${BOARD_MEMBERS.length} คน</div></div>
+              <div class="form-check form-switch flex-shrink-0">
+                <input class="form-check-input agenda-roster-unlock" type="checkbox" id="agendaUnlock${key}" data-key="${key}"${isOverride ? ' checked' : ''}${mayEdit && rosterState.locked ? '' : ' disabled'}>
+                <label class="form-check-label small" for="agendaUnlock${key}">แก้ไขเฉพาะวาระ</label>
+              </div>
+            </div>
+            <div class="roster-grid mt-2${isOverride ? '' : ' d-none'}">
+              ${BOARD_MEMBERS.map((member, index) => `<div class="form-check">
+                <input class="form-check-input agenda-roster-member" type="checkbox" id="agendaRoster${key}-${index}" data-key="${key}" value="${ECMIS.escapeHtml(member.name)}"${selected.includes(member.name) ? ' checked' : ''}${mayEdit ? '' : ' disabled'}>
+                <label class="form-check-label small" for="agendaRoster${key}-${index}">${ECMIS.escapeHtml(member.name)}</label>
+              </div>`).join('')}
+            </div>
+          </div>`;
+        }).join('') || '<div class="text-muted small">ยังไม่มีวาระสำหรับกำหนดข้อยกเว้น</div>';
+
+        document.querySelectorAll('.agenda-roster-unlock').forEach(input => input.addEventListener('change', () => {
+          const item = items.find(candidate => String(candidate.trci_id) === input.dataset.key);
+          if (input.checked) {
+            rosterState.overrides[input.dataset.key] = { unlocked:true, present:rosterState.present.slice(), caseRefs:itemCaseRefs(item) };
+          } else {
+            delete rosterState.overrides[input.dataset.key];
+          }
+          persistRosterState(); renderAgendaRows(); renderItemsPreview();
+        }));
+        document.querySelectorAll('.agenda-roster-member').forEach(input => input.addEventListener('change', () => {
+          const key = input.dataset.key;
+          const override = rosterState.overrides[key];
+          if (!override) return;
+          override.present = Array.from(document.querySelectorAll(`.agenda-roster-member[data-key="${key}"]:checked`)).map(el => el.value);
+          persistRosterState(); renderAgendaRows(); renderItemsPreview();
+        }));
+      }
+
+      document.getElementById('lockBoardRoster').addEventListener('change', event => {
+        rosterState.locked = event.target.checked;
+        if (!rosterState.locked) rosterState.overrides = {};
+        persistRosterState(); renderMasterRoster(); renderAgendaRows(); renderItemsPreview();
+        if (rosterState.locked) ECMIS.toastOk('ล็อกรายชื่อกรรมการและใช้กับทุกวาระแล้ว');
+      });
+      renderMasterRoster(); renderAgendaRows(); renderItemsPreview();
 
       /* ---------- ฟอร์มข้อมูลหนังสือเชิญประชุม — ผูกกับ meeting object และบันทึกผ่าน AR.save() ---------- */
       document.getElementById('inviteNo').value = meeting.trc_invite_no || '';

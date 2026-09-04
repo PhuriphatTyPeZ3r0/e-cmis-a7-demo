@@ -6780,6 +6780,56 @@ function initDocPagination(opts = {}) {
   return inst;
 }
 
+/* ---------- Meeting-wide board roster with per-agenda conflict override ---------- */
+function getLockedBoardAttendance(kase, board, opts) {
+  if (typeof localStorage === 'undefined' || !kase || !Array.isArray(board)) return null;
+  try {
+    const meetings = JSON.parse(localStorage.getItem('ecmis.meetingBoardRosters.v1') || '{}') || {};
+    const meetingRosters = Object.values(meetings);
+    const rosterWithOverride = meetingRosters.find(roster => Object.values(roster.overrides || {}).some(override =>
+      override && override.unlocked && Array.isArray(override.caseRefs) && override.caseRefs.includes(kase.id)));
+    if (rosterWithOverride) {
+      const override = Object.values(rosterWithOverride.overrides || {}).find(item =>
+        item && item.unlocked && Array.isArray(item.caseRefs) && item.caseRefs.includes(kase.id));
+      const attendance = {};
+      board.forEach(member => {
+        attendance[member.n] = override.present.includes(member.n)
+          ? 'present'
+          : (Array.isArray(rosterWithOverride.present) && rosterWithOverride.present.includes(member.n) ? 'recused' : 'duty');
+      });
+      return attendance;
+    }
+    const meetingRoster = meetingRosters.find(roster => roster && roster.locked && Array.isArray(roster.caseRefs) && roster.caseRefs.includes(kase.id));
+    if (meetingRoster && Array.isArray(meetingRoster.present)) {
+      const attendance = {};
+      board.forEach(member => { attendance[member.n] = meetingRoster.present.includes(member.n) ? 'present' : 'duty'; });
+      return attendance;
+    }
+    if (opts && opts.includeLegacy === false) return null;
+    const legacy = JSON.parse(localStorage.getItem('ecmis.lockedBoardRoster') || 'null');
+    if (!legacy || !legacy.locked || !Array.isArray(legacy.present)) return null;
+    const attendance = {};
+    board.forEach(member => { attendance[member.n] = legacy.present.includes(member.n) ? 'present' : 'duty'; });
+    return attendance;
+  } catch (e) { return null; }
+}
+
+async function getAgendaContextForCase(kase) {
+  const registry = typeof window !== 'undefined' ? window.AgendaRegistry : null;
+  if (!registry || !kase) return null;
+  try { await registry.ready; } catch (e) { return null; }
+  const matches = (registry.ITEMS || []).filter(item => String(item.case_ref || '').split(',').map(ref => ref.trim()).includes(kase.id));
+  const contexts = matches.map(item => {
+    const meeting = registry.meetingOf ? registry.meetingOf(item) : (registry.MEETINGS || []).find(row => row.trc_id === item.trc_id);
+    return meeting ? {
+      meetingId:meeting.trc_id, meetingNo:meeting.trc_name, meetingDate:meeting.trc_date,
+      agendaNo:item.trci_number, agendaItemId:item.trci_id
+    } : null;
+  }).filter(Boolean);
+  contexts.sort((a, b) => String(b.meetingDate || '').localeCompare(String(a.meetingDate || '')) || Number(b.agendaItemId || 0) - Number(a.agendaItemId || 0));
+  return contexts[0] || null;
+}
+
 /* ---------- Master Component: Back Navigation Button ---------- */
 function renderBackButton(opts) {
   if (typeof document === 'undefined') return null;
@@ -6918,7 +6968,7 @@ if (typeof localStorage !== 'undefined') {
   PAGE_PERMISSIONS, canAccessPage, inResFolder, assetUrl, getSupabaseClient, logRequestEvent, updateCaseStatus,
   PERM_DEFS, can, canEditMaster, canViewCase,
   thaiDate, thaiDayName, toThaiDigits, slaClass, slaLabel, effectiveSlaLimit, getCase, requireCase, cacheLiveCases, getRole, roleIdForLogin, LOGIN_ALLOWED_ROLE_IDS,
-  addBusinessDays, businessDaysBetween, previousThaiBusinessDay, resolutionSlaInfo, SUBCOMMITTEE_ROSTER,
+  addBusinessDays, businessDaysBetween, previousThaiBusinessDay, resolutionSlaInfo, SUBCOMMITTEE_ROSTER, getLockedBoardAttendance, getAgendaContextForCase,
   currentRoleId, currentRole, setRole, inboxFor, canAct, canRecall,
   SUBCOMMITTEE_TEAMS, currentSubTeam, setSubTeam,
   SUPPORT_GROUPS, SUPPORT_GROUP_LABELS, currentSupportGroup, setSupportGroup,

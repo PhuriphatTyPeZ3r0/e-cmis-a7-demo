@@ -253,6 +253,7 @@
   <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3/build/docxtemplater.js"></script>
   <script src="../assets/ecmis-app.js"></script>
   <script src="../assets/ecmis-model.js"></script>
+  <script src="../assets/agenda-registry-data.js"></script>
   <script>
     ECMIS.renderShell('resolution.html');
 
@@ -424,7 +425,7 @@
       { n: 'นายสุรพงษ์ อินทรถาวร', r: 'กรรมการ ป.ป.ท.' }
     ];
     const TOTAL = BOARD.length;
-    const savedAtt = kase.boardAttendance || (kase.boardAttendance72) || {};
+    const savedAtt = kase.boardAttendance || kase.boardAttendance72 || ECMIS.getLockedBoardAttendance(kase, BOARD) || {};
     const savedVote = kase.boardVotes || {};
 
     document.getElementById('boardTb').innerHTML = BOARD.map((b, i) => {
@@ -497,6 +498,7 @@
     }
 
     document.getElementById('boardTb').addEventListener('change', () => { renderQuorum(); renderDoc(); });
+    refreshAgendaContext();
 
     function currentMode() { return 'AFTER'; }
 
@@ -1379,6 +1381,22 @@
     ECMIS.initDocEditor({ stageId: 'docPaper', mayEdit: mayEdit });
 
     applyMode(); toggleBoxes(); renderOutcome(); renderDoc();
+
+    async function refreshAgendaContext() {
+      const context = await ECMIS.getAgendaContextForCase(kase);
+      if (!context) return;
+      kase.meetingNo = context.meetingNo;
+      kase.meetingDate = context.meetingDate;
+      kase.agendaNo = context.agendaNo;
+      document.getElementById('meetNo').value = context.meetingNo || '';
+      setDateInputValue('meetDate', context.meetingDate || '');
+      document.getElementById('agendaNo').value = context.agendaNo || '';
+      const attendance = ECMIS.getLockedBoardAttendance(kase, BOARD, { includeLegacy:false });
+      if (attendance) document.querySelectorAll('#boardTb tr').forEach((tr, index) => {
+        tr.querySelector('.attend').value = attendance[BOARD[index].n] || 'present';
+      });
+      renderQuorum(); renderOutcome(); renderDoc();
+    }
 
     /* โหลดข้อมูลจริงจาก Supabase แบบ background หลังเรนเดอร์ด้วย mock data ไปก่อนแล้ว (เหมือน
        order.html/chairman.html) — ถ้าได้ข้อมูลจริงมา mutate kase object เดิม แล้ว re-render */
