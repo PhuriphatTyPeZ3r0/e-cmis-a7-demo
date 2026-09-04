@@ -99,8 +99,8 @@
               <table class="table table-hover tbl-ecmis mb-0 align-middle">
                 <colgroup>
                   <col style="width:140px">
+                  <col style="width:150px">
                   <col>
-                  <col style="width:110px">
                   <col style="width:150px">
                   <col style="width:150px">
                   <col style="width:140px">
@@ -109,8 +109,8 @@
                   <tr>
                     <th class="sortable-header" data-sort="id" style="cursor:pointer">เรื่องที่ <i
                         class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
+                    <th>ประเภทเรื่อง</th>
                     <th>เรื่องกล่าวหา</th>
-                    <th>ประเภท</th>
                     <th>สถานะกลั่นกรอง</th>
                     <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i
                         class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
@@ -250,9 +250,8 @@
       }
 
       const html = filtered.map(c => {
-        const typeBadge = c.procType === '7.2'
-          ? `<span class="meet-badge meet-review"><i class="fa-solid fa-scale-balanced me-1" style="font-size:0.65rem"></i>7.2 วินิจฉัยชี้มูล</span>`
-          : `<span class="meet-badge meet-pending"><i class="fa-solid fa-file-circle-question me-1" style="font-size:0.65rem"></i>7.1 ไต่สวนเบื้องต้น</span>`;
+        // badge "ประเภทเรื่อง" — ใช้ helper กลางให้ตรงกับ inbox.html / resolution-inbox.html
+        const typeBadge = ECMIS.typeBadge(c, c.procType === '7.2');
 
         const sm = SCREEN_META[c.screenStatus] || SCREEN_META.PENDING;
         const outcomeHint = c.outcomeLabel
@@ -272,16 +271,16 @@
         return `
           <tr>
             <td class="case-no">${c.id}</td>
+            <td>${typeBadge}</td>
             <td style="max-width:360px">
               <div class="text-truncate fw-medium" title="${c.subject}">${c.subject}</div>
               <small class="text-muted d-block text-truncate" style="font-size:0.75rem">${c.ownerOrg || ''}</small>
             </td>
-            <td>${typeBadge}</td>
             <td>${statusBadge}</td>
             <td>${slaBadge}</td>
             <td class="text-end">
               <a href="${page}?case=${encodeURIComponent(c.id)}" class="btn btn-sm ${done ? 'btn-outline-secondary' : 'btn-navy'} px-3">
-                <i class="fa-solid ${done ? 'fa-eye' : 'fa-pen-to-square'} me-1"></i>${done ? 'ดูผล' : 'ดำเนินการ'}
+                <i class="fa-solid ${done ? 'fa-eye' : 'fa-pen-to-square'} me-1"></i>${done ? 'ดูรายละเอียด' : 'ดำเนินการ'}
               </a>
             </td>
           </tr>
