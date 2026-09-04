@@ -73,6 +73,10 @@
           <div class="card-header"><i class="fa-solid fa-code-branch"></i> ผลมติของที่ประชุม</div>
           <div class="card-body">
             <div id="resListSection">
+              <div id="subOutcomeHint" class="alert alert-light border mb-3 d-none">
+                <div class="small text-muted mb-1"><i class="fa-solid fa-users-viewfinder me-1"></i>ความเห็นคณะอนุกรรมการกลั่นกรองฯ (เสนอเพื่อโปรดพิจารณา — ไม่ผูกพันที่ประชุม)</div>
+                <div class="fw-semibold" id="subOutcomeHintText"></div>
+              </div>
               <label class="form-label field-req">เลือกประเภทผลมติ</label>
               <div class="list-group mb-3" id="resList"></div>
               <div class="mb-3 d-none" id="otherResBox">
@@ -261,6 +265,17 @@
     const kase = ECMIS.requireCase(params.get('case') || '1547/2568');
     if (!kase) throw new Error('ECMIS_CASE_NOT_FOUND');
     const role = ECMIS.currentRole();
+
+    /* ความเห็นคณะอนุกรรมการกลั่นกรองฯ (subOutcome) — แสดงเป็น input ประกอบ ไม่ใช่มติสุดท้าย */
+    (function renderSubOutcomeHint() {
+      const m = ECMIS.mapSubOutcome && ECMIS.mapSubOutcome(kase.subOutcome);
+      const box = document.getElementById('subOutcomeHint');
+      if (!m || !box) return;
+      box.classList.remove('d-none');
+      document.getElementById('subOutcomeHintText').innerHTML =
+        `${m.label} <span class="chip ms-1">${m.lawRef}</span>` +
+        (kase.subOutcomeNote ? `<div class="small text-muted mt-1">${kase.subOutcomeNote}</div>` : '');
+    })();
 
     const SUPABASE_URL = 'https://ljhabbwjxnoucrcrsoii.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_2Bps-dWMZHz_7cs3BppF6A_ul1_A_xd';

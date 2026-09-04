@@ -3,7 +3,7 @@
 > **Plan ID:** `2026-09-04-subcommittee-screening-status`
 > **Date:** 2026-09-04
 > **Author / Agent:** Claude Code
-> **Status:** Draft
+> **Status:** Completed
 > **Branch / PR:** `main`
 
 ---
@@ -108,17 +108,17 @@ Field ใหม่บน case object (mock): `subOutcome` (string enum), `subOut
 
 ## 📂 3. Affected Routes & Modules
 
-- [ ] Root HTML (แก้ไข): `subcommittee-inbox.html` — คอลัมน์ "สถานะกลั่นกรอง", KPI/ฟิลเตอร์ 5 กลุ่ม
+- [x] Root HTML (แก้ไข): `subcommittee-inbox.html` — คอลัมน์ "สถานะกลั่นกรอง", KPI/ฟิลเตอร์ 5 กลุ่ม
   (`ALL` + `PENDING` / `MORE_INFO` / `RETURNED` / `DONE`), คง `typeFilter` 7.1/7.2, badge + SLA pause
-- [ ] Root HTML (แก้ไข): `subcommittee-screening.html` **และ** `screening.html`
+- [x] Root HTML (แก้ไข): `subcommittee-screening.html` **และ** `screening.html`
   (ไฟล์เนื้อหาเหมือนกันทุกตัวอักษร — ต้องแก้คู่กัน): dropdown เลือก `subOutcome` (ชุด 7.1 หรือ 7.2 ตาม
   ประเภทสำนวน), ปุ่ม submit → set local status `DONE`/`RETURNED` ตาม outcome, ปุ่ม "ขอข้อมูล/เอกสารเพิ่มเติม"
   → `MORE_INFO`, card timeline ประวัติ, gate ทุก control ให้ role `subcommittee` เท่านั้น (อื่น view-only)
-- [ ] Root HTML (แก้ไข): `board-resolution.html`, `resolution-72.html` — กล่องแสดง `subOutcome` /
+- [x] Root HTML (แก้ไข): `board-resolution.html`, `resolution-72.html` — กล่องแสดง `subOutcome` /
   `subOutcomeNote` เป็น input ประกอบ + 7.2 auto-select DOCX template จาก `subOutcome`
-- [ ] Mirror HTML (ผ่าน `npm run sync`): `res/subcommittee-inbox.html`, `res/subcommittee-screening.html`,
+- [x] Mirror HTML (ผ่าน `npm run sync`): `res/subcommittee-inbox.html`, `res/subcommittee-screening.html`,
   `res/screening.html`, `res/board-resolution.html`, `res/resolution-72.html`
-- [ ] Assets JS: `assets/ecmis-app.js`
+- [x] Assets JS: `assets/ecmis-app.js`
   - `STATUS` map: เพิ่ม `SCREENING_MORE_INFO`, `SCREENING_MORE_INFO_72` (label, cls `st-review`,
     owner `subcommittee`)
   - `STATUS_CODE` map: เพิ่มรหัสให้ 2 สถานะใหม่ (ตรวจเลขว่าง — เดิม `IN_SCREENING`=`010`,
@@ -135,42 +135,42 @@ Field ใหม่บน case object (mock): `subOutcome` (string enum), `subOut
   - helper: `subOutcomeOptions(caseType)` คืน enum ชุด 7.1 หรือ 7.2, `mapSubOutcome(subOutcome)` คืน
     `{ localStatus, lawRef, centralStatus, docxTemplate }`
   - helper: `pushCaseHistory(kase, entry)` (ถ้ายังไม่มี) + คำนวณ `onHoldDays` / SLA effective
-- [ ] Assets CSS: `assets/ecmis-app.css` — ตรวจว่า `.meet-scheduled` / `.meet-returned` / `.meet-done` /
+- [x] Assets CSS: `assets/ecmis-app.css` — ตรวจว่า `.meet-scheduled` / `.meet-returned` / `.meet-done` /
   `.st-review` มีสไตล์ครบ (มีอยู่แล้วจาก support-sub — คาดว่าไม่ต้องเพิ่ม)
-- [ ] Mock data: `assets/agenda-registry-data.js` หรือที่ประกาศ `ECMIS.CASES` — เพิ่ม mock สำนวนตัวอย่าง
+- [x] Mock data: `assets/agenda-registry-data.js` หรือที่ประกาศ `ECMIS.CASES` — เพิ่ม mock สำนวนตัวอย่าง
   ให้ครบทุกสถานะ/หลาย outcome อย่างน้อย 2 คณะ (bump `CASES_VERSION`)
 
 ---
 
 ## 🛡️ 4. The 6 Golden Anti-Regression Pre-Check
 
-- [ ] 1. **ไม่กระทบคอลัมน์ "ประเภทเรื่อง"** — ไม่แตะ `inbox.html` / `res/inbox.html` /
+- [x] 1. **ไม่กระทบคอลัมน์ "ประเภทเรื่อง"** — ไม่แตะ `inbox.html` / `res/inbox.html` /
   `resolution-inbox.html` (เพิ่มคอลัมน์เฉพาะใน `subcommittee-inbox.html` ซึ่งไม่อยู่ในกฎข้อ ๑)
-- [ ] 2. **ไม่เปิดสิทธิ์ `agenda-registry.html` ให้ Chairman / Affairs** — ไม่แตะ `PAGE_PERMISSIONS`
+- [x] 2. **ไม่เปิดสิทธิ์ `agenda-registry.html` ให้ Chairman / Affairs** — ไม่แตะ `PAGE_PERMISSIONS`
   ของ `agenda-registry.html`
-- [ ] 3. **เรียก Supabase ผ่าน `ECMIS.getSupabaseClient()` เท่านั้น** — แผนนี้ไม่แตะ Supabase เลย
+- [x] 3. **เรียก Supabase ผ่าน `ECMIS.getSupabaseClient()` เท่านั้น** — แผนนี้ไม่แตะ Supabase เลย
   (mock client-side)
-- [ ] 4. **วางแผนรัน `npm run sync`** หลังแก้ไขทุกไฟล์ Root (ระบุใน Task สุดท้าย)
-- [ ] 5. **ควบคุมระยะขอบ A4 สารบรรณ `15mm 15mm 18mm 20mm`** — การแก้ `board-resolution.html` /
+- [x] 4. **วางแผนรัน `npm run sync`** หลังแก้ไขทุกไฟล์ Root (ระบุใน Task สุดท้าย)
+- [x] 5. **ควบคุมระยะขอบ A4 สารบรรณ `15mm 15mm 18mm 20mm`** — การแก้ `board-resolution.html` /
   `resolution-72.html` แตะเฉพาะ logic แสดง outcome + เลือก template ไม่แตะ geometry / secret footer
-- [ ] 6. **ไม่ใช้ `--no-verify`** ในการ commit
+- [x] 6. **ไม่ใช้ `--no-verify`** ในการ commit
 
 ---
 
 ## 📝 5. Step-by-Step Implementation Tasks
 
-- [ ] **Task 1 — Central STATUS/TRANSITIONS (`assets/ecmis-app.js`):** เพิ่ม `SCREENING_MORE_INFO(_72)`
+- [x] **Task 1 — Central STATUS/TRANSITIONS (`assets/ecmis-app.js`):** เพิ่ม `SCREENING_MORE_INFO(_72)`
   ใน `STATUS` + `STATUS_CODE` (ยืนยันเลขว่าง), เพิ่ม 8 transitions (MORE_INFO ↔ PENDING, RETURNED ↔
   PENDING สำหรับ 7.1 และ 7.2), ใส่ guard `subOutcome ∈ DONE-group` บน `SCREENING_RESOLVED` /
   `SCREEN_DONE_72`
-- [ ] **Task 2 — Helpers (`assets/ecmis-app.js`):** `subOutcomeOptions(caseType)`,
+- [x] **Task 2 — Helpers (`assets/ecmis-app.js`):** `subOutcomeOptions(caseType)`,
   `mapSubOutcome(subOutcome)` (คืน localStatus / lawRef / centralStatus / docxTemplate),
   `pushCaseHistory()`, ตัวคำนวณ `onHoldDays` + SLA effective
-- [ ] **Task 3 — `subcommittee-inbox.html`:** เพิ่มคอลัมน์ "สถานะกลั่นกรอง" (ตาราง 5 → 6 คอลัมน์),
+- [x] **Task 3 — `subcommittee-inbox.html`:** เพิ่มคอลัมน์ "สถานะกลั่นกรอง" (ตาราง 5 → 6 คอลัมน์),
   KPI cards 5 กลุ่ม (`ALL` + 4), `statusFilter` select 5 ค่า, คง `typeFilter` 7.1/7.2 เดิม, render badge
   ตาม `mapSubOutcome`/สถานะปัจจุบัน, SLA badge pause เมื่อ `MORE_INFO`/`RETURNED` (`รอข้อมูล (n วัน)`),
   แถว `DONE`/`RETURNED` ยังแสดงใต้แท็บของตัวเอง
-- [ ] **Task 4 — `subcommittee-screening.html` + `screening.html` (แก้คู่กัน):**
+- [x] **Task 4 — `subcommittee-screening.html` + `screening.html` (แก้คู่กัน):**
   - dropdown `subOutcome` — โหลดชุด 7.1 หรือ 7.2 ตามประเภทสำนวน
   - textarea `subOutcomeNote` (ความเห็น / ข้อสังเกต)
   - ปุ่ม "บันทึกมติคณะอนุฯ" → `mapSubOutcome` → set `subOutcome*`, local status (`DONE`/`RETURNED`),
@@ -178,19 +178,19 @@ Field ใหม่บน case object (mock): `subOutcome` (string enum), `subOut
   - ปุ่ม "ขอข้อมูล / เอกสารเพิ่มเติม" → `MORE_INFO` + history entry + (mock) แจ้งเจ้าของสำนวน
   - card ใหม่ "ประวัติการดำเนินการของคณะอนุฯ" = timeline จาก `case.history[]`
   - gate: ถ้า `ECMIS.currentRole() !== 'subcommittee'` → ทุก control `disabled` + ป้าย "อ่านอย่างเดียว"
-- [ ] **Task 5 — `board-resolution.html` / `resolution-72.html`:** กล่องอ่านอย่างเดียว "ความเห็น
+- [x] **Task 5 — `board-resolution.html` / `resolution-72.html`:** กล่องอ่านอย่างเดียว "ความเห็น
   คณะอนุกลั่นกรองฯ (เสนอเพื่อโปรดพิจารณา)" แสดง `subOutcome` label + `subOutcomeLawRef` +
   `subOutcomeNote` ; `resolution-72.html` auto-select DOCX template จาก `subOutcome`
   (`INDICT`→3, อื่น→4)
-- [ ] **Task 6 — Mock data:** เพิ่มสำนวนตัวอย่างครอบทุกสถานะ/หลาย outcome ≥ 2 คณะ, bump `CASES_VERSION`
-- [ ] **Task 7 — `npm run sync`** (Root → `/res/` ทั้ง 5 ไฟล์)
-- [ ] **Task 8 — `npm test`** (+ `npm run test:integration` เพราะแตะ state/data model)
+- [x] **Task 6 — Mock data:** เพิ่มสำนวนตัวอย่างครอบทุกสถานะ/หลาย outcome ≥ 2 คณะ, bump `CASES_VERSION`
+- [x] **Task 7 — `npm run sync`** (Root → `/res/` ทั้ง 5 ไฟล์)
+- [x] **Task 8 — `npm test`** (+ `npm run test:integration` เพราะแตะ state/data model)
 
 ---
 
 ## 🧪 6. Verification & Quality Gate Matrix
 
-- [ ] **Manual UI Walkthrough (Claude in Chrome):**
+- [x] **Manual UI Walkthrough (Claude in Chrome):**
   - login `subcommittee` (Sumet.N) → `subcommittee-inbox.html` → เห็นคอลัมน์ "สถานะกลั่นกรอง" + KPI 5 กลุ่ม
   - กรอง `typeFilter` 7.1/7.2 ยังทำงานร่วมกับ `statusFilter` ได้
   - เปิดสำนวน 7.1 → เลือก outcome "เห็นควรให้ไต่สวนเพิ่มเติม" → สถานะเป็น `RETURNED`, history มี entry,
@@ -201,17 +201,38 @@ Field ใหม่บน case object (mock): `subOutcome` (string enum), `subOut
   - "ขอข้อมูลเพิ่มเติม" → `MORE_INFO` → badge "รอข้อมูล (n วัน)" → (mock) กลับมาเป็น `PENDING` คณะเดิม
   - login `board_sec` เปิดหน้าเดียวกัน → ทุก control disabled (view-only)
   - สลับ team switcher คณะที่ ๑ ↔ ๔ → คิว/สถานะแยกตามคณะถูกต้อง
-- [ ] **Dual-Route Sync:** `npm run sync` ผ่าน, diff Root ↔ `/res/` = 0
-- [ ] **Enterprise CI (5-Layer):** `npm test` ผ่าน 100% (0 errors, 0 warnings)
-- [ ] **Integration Test:** `npm run test:integration` ผ่าน (แตะ state/data model)
+- [x] **Dual-Route Sync:** `npm run sync` ผ่าน, diff Root ↔ `/res/` = 0
+- [x] **Enterprise CI (5-Layer):** `npm test` ผ่าน 100% (0 errors, 0 warnings)
+- [x] **Integration Test:** `npm run test:integration` ผ่าน (แตะ state/data model)
 
 ---
 
 ## 🏁 7. Completion & Sign-off
 
-- **Completed Date:** _(รอดำเนินการ)_
-- **Commit Reference:** _(รอดำเนินการ)_
+- **Completed Date:** 2026-09-04
+- **Commit Reference:** _(commit ถัดจาก f7d4351 — ดู git log)_
+- **ผลการทดสอบ:** `npm test` ผ่าน 5/5 ด่าน (0 errors, 0 warnings) · `npm run test:integration` ผ่าน 60/60 · `npm run sync` diff Root↔/res/ = 0
+- **สรุปสิ่งที่ทำจริง:**
+  - `assets/ecmis-app.js`: STATUS `SCREENING_MORE_INFO` (`021`) / `SCREENING_MORE_INFO_72` (`117`);
+    TRANSITIONS 8 เส้น (MORE_INFO↔PENDING, RETURNED↔PENDING สาย 7.1/7.2) + guard บน
+    `SCREENING_RESOLVED` / `SCREEN_DONE_72` ให้ผ่านเฉพาะ subOutcome กลุ่ม DONE;
+    `SUB_OUTCOME_MAP` (4+4 ค่า พร้อม lawRef + central event + docxTemplate), `SUB_SCREENING_STATUS`,
+    helpers `subOutcomeOptions` / `mapSubOutcome` / `subScreeningStatus` / `slaEffectiveDays` /
+    `slaIsOnHold` / `pushCaseHistory` (export ครบใน `window.ECMIS`); `CASES_VERSION` bump;
+    enrich mock 4 เรื่อง (1405/2569 MORE_INFO, 1288/2566 RETURNED_72, 1412/2569 + 1370/2566 DONE)
+  - `subcommittee-inbox.html`: คอลัมน์ "สถานะกลั่นกรอง" (5→6 คอลัมน์), `statusFilter` + KPI 5 กลุ่ม
+    (คลิกการ์ด = ตั้งฟิลเตอร์), คง `typeFilter` 7.1/7.2, SLA badge หยุดนับ + "รอข้อมูล (n/limit วัน)"
+    ตอน MORE_INFO/RETURNED, แถว DONE แสดงปุ่ม "ดูผล"
+  - `screening.html` (+ `subcommittee-screening.html` คัดลอกให้ตรงกันทุกตัวอักษร): `persistSubOutcome()` /
+    `persistMoreInfo()` / `renderScreeningTimeline()` / `applyViewOnlyGuard()`; ปุ่ม "ขอข้อมูลเพิ่มเติม"
+    ในสาย 7.1 ด้วย; wire `save_status` ทั้ง 71/72 → เขียน `subOutcome*` + history + สถานะกลางที่ map;
+    การ์ด "ประวัติการดำเนินการของคณะอนุฯ"; role อื่น = view-only (disable inputs + แถบแจ้งเตือน)
+  - `resolution-72.html`: กล่องอ่านอย่างเดียว "ความเห็นคณะอนุกรรมการกลั่นกรองฯ" + auto pre-select
+    `res72` ตาม subOutcome (INDICT→GUILTY_72 / NEED_MORE→MORE_INVESTIGATE_72 / อื่น→NO_MERIT_72)
+  - `board-resolution.html`: กล่องอ่านอย่างเดียว "ความเห็นคณะอนุกรรมการกลั่นกรองฯ" (input ประกอบ)
 - **Notes / Retrospective:**
+  - รหัสสถานะที่ใช้จริงคือ `021` / `117` (ไม่ใช่ `012` / `110` ตามที่ร่างไว้ — เลขนั้นถูก `IN_MEETING` /
+    `IN_MEETING_72` จองแล้ว)
   - **บั๊กแฝงที่พบระหว่างสำรวจ (นอกขอบเขตแผนนี้):** `board-resolution.html` / `resolution.html` เรียก
     `ECMIS.getRole('scr_sec')` / `getRole('scr_asst')` แต่ role id เหล่านี้ไม่ได้ประกาศใน `ROLES` array
     ปัจจุบัน (`getRole` fallback เป็น `ROLES[0]`) — ควรเปิด issue แยก

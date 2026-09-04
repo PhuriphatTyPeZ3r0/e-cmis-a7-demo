@@ -160,6 +160,7 @@ const STATUS = {
   PENDING_URGENT:   { label:'รอ ผอ.กบค. รับรองใบด่วน',     cls:'st-urgent',   owner:'dir_case' },
   PENDING_CHAIRMAN: { label:'รอประธานฯ สั่งการ',           cls:'st-pending',  owner:'chairman' },
   IN_SCREENING:     { label:'อยู่อนุกลั่นกรองฯ',           cls:'st-review',   owner:'subcommittee' },
+  SCREENING_MORE_INFO: { label:'อนุกลั่นกรองฯ ขอข้อมูลเพิ่มเติม', cls:'st-review', owner:'subcommittee' },
   AGENDA_SET:       { label:'รอบรรจุวาระ',                cls:'st-agenda',   owner:'board_sec' },
 
   IN_MEETING:       { label:'อยู่ระหว่างประชุมบอร์ด',      cls:'st-review',   owner:'board_sec' },
@@ -189,6 +190,7 @@ const STATUS = {
   PENDING_URGENT_72:   { label:'รอ ผอ.กบค. รับรองเหตุผลเร่งด่วน',                cls:'st-urgent',  owner:'dir_case' },
   PENDING_CHAIRMAN_URGENT_72: { label:'รอประธานฯ ลงนามมอบหมาย / บรรจุวาระด่วน',  cls:'st-pending', owner:'chairman' },
   IN_SCREENING_72:     { label:'อยู่คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง',      cls:'st-review',  owner:'subcommittee' },
+  SCREENING_MORE_INFO_72: { label:'อนุกลั่นกรองฯ ขอข้อมูลเพิ่มเติม (วินิจฉัยชี้มูล)', cls:'st-review', owner:'subcommittee' },
   PENDING_INVITE_72:   { label:'รอจัดทำหนังสือเชิญประชุม',                       cls:'st-pending', owner:'board_sec' },
   IN_MEETING_72:       { label:'อยู่ระหว่างประชุมบอร์ด (วินิจฉัยชี้มูล)',         cls:'st-review',  owner:'board_sec' },
   RESOLVED_PENDING_72: { label:'มีมติแล้ว รอจัดทำรายงานวินิจฉัยชี้มูล',          cls:'st-pending', owner:'affairs' },
@@ -207,12 +209,13 @@ const STATUS_CODE = {
   PENDING_CHAIRMAN:'009', IN_SCREENING:'010', AGENDA_SET:'011', IN_MEETING:'012', DEFERRED:'013',
   RESOLVED_PENDING:'014', RESOLVED:'015', DISPATCHING:'016', CLOSED:'017',
   PENDING_SIGN_ORDER_CHAIRMAN:'018', PENDING_SIGN_ORDER_SECGEN:'019', UNDER_INVESTIGATION:'020',
+  SCREENING_MORE_INFO:'021',
 
   PENDING_SECTION_72:'100', PENDING_DIRECTOR_72:'101', PENDING_DEPUTY_72:'102', RETURNED_72:'103',
   PENDING_SECGEN_72:'104', IN_SUPPORT_SUB_72:'105', PENDING_URGENT_72:'106', PENDING_CHAIRMAN_URGENT_72:'107',
   IN_SCREENING_72:'108', PENDING_INVITE_72:'109', IN_MEETING_72:'110', RESOLVED_PENDING_72:'111',
   PENDING_SIGN_RULING_72:'112', PENDING_AREA_NOTICE_72:'113', DISPATCHING_NACC_72:'114',
-  PENDING_DISPATCH_GUILTY_72:'115', CLOSED_72:'116'
+  PENDING_DISPATCH_GUILTY_72:'115', CLOSED_72:'116', SCREENING_MORE_INFO_72:'117'
 };
 const CODE_STATUS = Object.fromEntries(Object.entries(STATUS_CODE).map(([k, v]) => [v, k]));
 
@@ -250,7 +253,18 @@ const TRANSITIONS = [
     note:'สั่งบรรจุวาระด่วน — ต้องมีลายเซ็นรับรองของ ผอ.กบค. ก่อนเท่านั้น' },
 
   { from:'IN_SCREENING', to:'AGENDA_SET', event:'SCREENING_RESOLVED', actor:'subcommittee',
-    ref:'กลั่นกรองแล้วเสร็จ' },
+    ref:'กลั่นกรองแล้วเสร็จ',
+    guard:k => !k.subOutcome || (SUB_OUTCOME_MAP[k.subOutcome] || {}).localStatus === 'DONE',
+    note:'อนุญาตเมื่อ subOutcome เป็นกลุ่ม DONE (เสนอ กก. / ยุติ) เท่านั้น — "ให้ไต่สวนเพิ่มเติม" ต้องใช้ SCREENING_RETURN' },
+  { from:'IN_SCREENING', to:'SCREENING_MORE_INFO', event:'REQUEST_MORE_INFO', actor:'subcommittee',
+    ref:'ขอข้อมูล/เอกสารเพิ่มเติมจากเจ้าของสำนวน', note:'หยุดนับ SLA จนกว่าเจ้าของสำนวนส่งข้อมูลกลับ' },
+  { from:'SCREENING_MORE_INFO', to:'IN_SCREENING', event:'MORE_INFO_SUPPLIED', actor:'subcommittee',
+    ref:'เจ้าของสำนวนส่งข้อมูลกลับ — กลับเข้าคณะเดิม' },
+  { from:'IN_SCREENING', to:'RETURNED', event:'SCREENING_RETURN', actor:'subcommittee',
+    ref:'อนุกลั่นกรองฯ เห็นควรให้ไต่สวนเพิ่มเติม · ม.๒๔ ว.๕',
+    note:'ส่งคืนเจ้าของสำนวน (pre-board loop) — resubmit แล้วกลับเข้าคณะเดิมที่ IN_SCREENING' },
+  { from:'RETURNED', to:'IN_SCREENING', event:'SCREENING_RESUBMIT', actor:'owner',
+    ref:'เจ้าของสำนวนไต่สวนเพิ่มเติมแล้วเสนอกลับคณะอนุกลั่นกรองฯ' },
 
   { from:'AGENDA_SET', to:'IN_MEETING', event:'OPEN_AGENDA', actor:'board_sec',
     ref:'เปิดการประชุม' },
@@ -312,7 +326,18 @@ const TRANSITIONS = [
     ref:'ลงนามบรรจุวาระด่วน', note:'ประธานฯ ลงนามมอบหมาย/บรรจุวาระด่วน — ข้ามขั้นตอนการกลั่นกรอง' },
 
   { from:'IN_SCREENING_72', to:'PENDING_INVITE_72', event:'SCREEN_DONE_72', actor:'subcommittee',
-    ref:'กลั่นกรองและบรรจุวาระ' },
+    ref:'กลั่นกรองและบรรจุวาระ',
+    guard:k => !k.subOutcome || (SUB_OUTCOME_MAP[k.subOutcome] || {}).localStatus === 'DONE',
+    note:'อนุญาตเมื่อ subOutcome เป็นกลุ่ม DONE (ชี้มูล / ไม่ชี้มูล / ตกไป) — "ทำเพิ่มเติม" ต้องใช้ SCREENING_RETURN_72' },
+  { from:'IN_SCREENING_72', to:'SCREENING_MORE_INFO_72', event:'REQUEST_MORE_INFO_72', actor:'subcommittee',
+    ref:'ขอข้อมูล/เอกสารเพิ่มเติมจากเจ้าของสำนวน', note:'หยุดนับ SLA จนกว่าเจ้าของสำนวนส่งข้อมูลกลับ' },
+  { from:'SCREENING_MORE_INFO_72', to:'IN_SCREENING_72', event:'MORE_INFO_SUPPLIED_72', actor:'subcommittee',
+    ref:'เจ้าของสำนวนส่งข้อมูลกลับ — กลับเข้าคณะเดิม' },
+  { from:'IN_SCREENING_72', to:'RETURNED_72', event:'SCREENING_RETURN_72', actor:'subcommittee',
+    ref:'อนุกลั่นกรองฯ เห็นควรทำ (ไต่สวน) เพิ่มเติม · ม.๖๗ พ.ร.ป. ป.ป.ช. ๒๕๖๑',
+    note:'ส่งคืนเจ้าของสำนวน (pre-board loop) — resubmit แล้วกลับเข้าคณะเดิมที่ IN_SCREENING_72' },
+  { from:'RETURNED_72', to:'IN_SCREENING_72', event:'SCREENING_RESUBMIT_72', actor:'owner',
+    ref:'เจ้าของสำนวนไต่สวนเพิ่มเติมแล้วเสนอกลับคณะอนุกลั่นกรองฯ' },
 
   { from:'PENDING_INVITE_72', to:'IN_MEETING_72', event:'OPEN_MEETING_72', actor:'board_sec', ref:'เปิดการประชุม' },
   { from:'IN_MEETING_72', to:'RESOLVED_PENDING_72', event:'RECORD_RESOLUTION_72', actor:'board_sec',
@@ -341,6 +366,89 @@ const TRANSITIONS = [
     ref:'ส่งเรื่องดำเนินการทางอาญาและวินัย · ม.38·ม.44', guard:k => bothTracksDone72(k),
     note:'ปิดสำนวนได้เมื่อสายอาญา (ถ้ามี) ส่งอัยการแล้ว และสายวินัย (ถ้ามี) ส่งหน่วยงานต้นสังกัดแล้ว' }
 ];
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   มติ / ความเห็นของคณะอนุกรรมการกลั่นกรองฯ (subOutcome)
+   — เป็น "ความเห็น/ข้อเสนอ" ต่อคณะกรรมการ ป.ป.ท. เท่านั้น ไม่ผูกพัน อำนาจวินิจฉัย
+     ชี้มูล/ไม่มีมูล/ยุติ/สั่งไต่สวนเพิ่มเติม เป็นของ กก.ป.ป.ท. ในที่ประชุม
+   — lawRef อ้างอิง law_pacc_68.pdf (สาย 7.1 = พ.ร.บ. มาตรการฯ) และ
+     พ.ร.ป. ว่าด้วยการป้องกันและปราบปรามการทุจริต พ.ศ. ๒๕๖๑ (สาย 7.2)
+   localStatus: PENDING | MORE_INFO | RETURNED | DONE (สถานะภายในคิวของคณะอนุฯ)
+   ───────────────────────────────────────────────────────────────────────────── */
+const SUB_OUTCOME_MAP = {
+  /* สาย 7.1 ไต่สวนเบื้องต้น (ผ่านคณะอนุกลั่นกรอง คณะที่ ๑–๘) */
+  PROPOSE_AS_IS:     { line:'7.1', label:'เห็นควรเสนอ กก.ป.ป.ท. พิจารณา (ตามสำนวน)',        localStatus:'DONE',     lawRef:'ม.๓๘ พ.ร.บ. มาตรการฯ',       central:'SCREENING_RESOLVED' },
+  PROPOSE_WITH_NOTE: { line:'7.1', label:'เห็นควรเสนอ กก.ป.ป.ท. พิจารณา (มีข้อสังเกต/แก้ไข)', localStatus:'DONE',     lawRef:'ม.๓๘ พ.ร.บ. มาตรการฯ',       central:'SCREENING_RESOLVED' },
+  NEED_MORE_INQUIRY: { line:'7.1', label:'เห็นควรให้ไต่สวนเพิ่มเติม',                        localStatus:'RETURNED', lawRef:'ม.๒๔ ว.๕ พ.ร.บ. มาตรการฯ',   central:'SCREENING_RETURN' },
+  PROPOSE_DISMISS:   { line:'7.1', label:'เห็นควรยุติเรื่อง',                                localStatus:'DONE',     lawRef:'ม.๒๗ พ.ร.บ. มาตรการฯ',       central:'SCREENING_RESOLVED' },
+  /* สาย 7.2 วินิจฉัยชี้มูล (template 3 = ชี้มูล, template 4 = ไม่ชี้มูล/ทำเพิ่ม/ตกไป) */
+  INDICT:            { line:'7.2', label:'เห็นควรชี้มูลความผิด (ม.๗๒)',    localStatus:'DONE',     lawRef:'ม.๗๒ พ.ร.ป. ป.ป.ช. ๒๕๖๑', central:'SCREEN_DONE_72', docxTemplate:3 },
+  NO_INDICT:         { line:'7.2', label:'เห็นควรไม่ชี้มูล',              localStatus:'DONE',     lawRef:'ม.๗๑ พ.ร.ป. ป.ป.ช. ๒๕๖๑', central:'SCREEN_DONE_72', docxTemplate:4 },
+  NEED_MORE:         { line:'7.2', label:'เห็นควรทำ (ไต่สวน) เพิ่มเติม',   localStatus:'RETURNED', lawRef:'ม.๖๗ พ.ร.ป. ป.ป.ช. ๒๕๖๑', central:'SCREENING_RETURN_72', docxTemplate:4 },
+  CHARGE_DROPPED:    { line:'7.2', label:'ข้อกล่าวหาตกไป',               localStatus:'DONE',     lawRef:'ม.๗๑ พ.ร.ป. ป.ป.ช. ๒๕๖๑', central:'SCREEN_DONE_72', docxTemplate:4 }
+};
+
+/* สถานะภายในคิวของคณะอนุฯ → label + badge class (reuse .meet-badge จาก support-sub) */
+const SUB_SCREENING_STATUS = {
+  PENDING:   { label:'รอกลั่นกรอง',        badge:'meet-pending'   },
+  MORE_INFO: { label:'รอข้อมูลเพิ่มเติม',   badge:'meet-scheduled' },
+  RETURNED:  { label:'ส่งคืนเจ้าของสำนวน',  badge:'meet-returned'  },
+  DONE:      { label:'กลั่นกรองแล้วเสร็จ',   badge:'meet-done'      }
+};
+
+/* enum ชุด outcome ตามประเภทสำนวน */
+function subOutcomeOptions(caseType){
+  const line = String(caseType || '').startsWith('7.2') ? '7.2' : '7.1';
+  return Object.entries(SUB_OUTCOME_MAP)
+    .filter(([, v]) => v.line === line)
+    .map(([k, v]) => ({ value:k, label:v.label, localStatus:v.localStatus, lawRef:v.lawRef }));
+}
+
+/* map subOutcome → { localStatus, lawRef, centralEvent, docxTemplate } */
+function mapSubOutcome(subOutcome){
+  const m = SUB_OUTCOME_MAP[subOutcome];
+  if(!m) return null;
+  return { localStatus:m.localStatus, lawRef:m.lawRef, centralEvent:m.central, docxTemplate:m.docxTemplate || null, label:m.label };
+}
+
+/* สถานะกลั่นกรองภายในคิวของคณะอนุฯ จาก case object (ใช้ทั้ง inbox + screening) */
+function subScreeningStatus(kase){
+  if(!kase) return 'PENDING';
+  const st = kase.status;
+  if(st === 'SCREENING_MORE_INFO' || st === 'SCREENING_MORE_INFO_72') return 'MORE_INFO';
+  if(st === 'RETURNED' || st === 'RETURNED_72'){
+    // นับเป็น RETURNED ของอนุฯ เฉพาะเมื่อ subOutcome เป็นกลุ่ม RETURNED
+    const m = mapSubOutcome(kase.subOutcome);
+    return (m && m.localStatus === 'RETURNED') ? 'RETURNED' : 'PENDING';
+  }
+  if(st === 'IN_SCREENING' || st === 'IN_SCREENING_72') return 'PENDING';
+  // เลยคิวอนุฯ ไปแล้ว (AGENDA_SET / PENDING_INVITE_72 / ...) แต่มี subOutcome บันทึกไว้
+  if(kase.subOutcome && (mapSubOutcome(kase.subOutcome) || {}).localStatus === 'DONE') return 'DONE';
+  return 'PENDING';
+}
+
+/* SLA ที่ใช้จริง = วันที่ใช้ไป − วันที่ pause (onHoldDays) ระหว่าง MORE_INFO/RETURNED */
+function slaEffectiveDays(kase){
+  const used = Number(kase && kase.slaDays) || 0;
+  const hold = Number(kase && kase.onHoldDays) || 0;
+  return Math.max(0, used - hold);
+}
+function slaIsOnHold(kase){
+  const s = subScreeningStatus(kase);
+  return s === 'MORE_INFO' || s === 'RETURNED';
+}
+
+/* บันทึกประวัติการดำเนินการของคณะอนุฯ ลง kase.history[] (audit trail) */
+function pushCaseHistory(kase, entry){
+  if(!kase) return;
+  if(!Array.isArray(kase.history)) kase.history = [];
+  kase.history.push(Object.assign({
+    ts: new Date().toISOString(),
+    actor: (typeof currentRoleId === 'function') ? currentRoleId() : null,
+    team: (typeof currentSubTeam === 'function') ? currentSubTeam() : null
+  }, entry || {}));
+  return kase.history[kase.history.length - 1];
+}
 
 function transitionsBetween(from, to){
   return TRANSITIONS.filter(t => t.from === from && t.to === to);
@@ -1301,7 +1409,7 @@ const CASES = [
     id:'1405/2569',
     subject:'กล่าวหาผู้บริหารโรงพยาบาลส่งเสริมสุขภาพตำบลแห่งหนึ่ง เบิกจ่ายงบประมาณจัดซื้อเวชภัณฑ์อันเป็นเท็จ',
     legalBase:'ม.18/4',
-    status:'IN_SCREENING',
+    status:'SCREENING_MORE_INFO',
     procType:'7.1',
     owner:'นายสมชาย ใจซื่อ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 1',
     complainant:'เจ้าหน้าที่ รพ.สต. (ผู้แจ้งเบาะแส)',
@@ -1311,6 +1419,11 @@ const CASES = [
     docRef:'ปป 0020/0855 ลงวันที่ 3 กรกฎาคม 2569',
     urgent:false, complex:false, dupWarning:false,
     slaDays:11, slaLimit:15, subCommittee:'คณะที่ 1',
+    onHoldDays:3,
+    history:[
+      { ts:'2569-07-20T03:00:00.000Z', actor:'subcommittee', team:'คณะที่ 1', from:'IN_SCREENING', to:'IN_SCREENING', event:'ASSIGN', note:'มอบอนุกรรมการผู้รับผิดชอบ' },
+      { ts:'2569-07-24T07:30:00.000Z', actor:'subcommittee', team:'คณะที่ 1', from:'IN_SCREENING', to:'SCREENING_MORE_INFO', event:'REQUEST_MORE_INFO', note:'ขอเอกสารการตรวจรับและภาพถ่ายหน้างานเพิ่มเติม' }
+    ],
     meetingNo:null, agendaNo:null,
     docType:'213', signPhase:'WAIT'
   },
@@ -1318,7 +1431,8 @@ const CASES = [
     id:'1288/2566',
     subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีเจ้าหน้าที่ อบต. แห่งหนึ่ง จัดซื้อเสาไฟโซลาร์เซลล์ราคาสูงเกินจริง',
     legalBase:'ม.18/4',
-    status:'IN_SCREENING_72',
+    status:'RETURNED_72',
+    subOutcome:'NEED_MORE',
     procType:'7.2',
     owner:'นางสาวปรียา ตั้งมั่น', ownerOrg:'กองปราบปรามการทุจริตในภาครัฐ 2',
     complainant:'กลุ่มธรรมาภิบาลชุมชน (ผู้ร้อง)',
@@ -1327,7 +1441,13 @@ const CASES = [
     receivedDate:'2569-06-22', deadline60:'2569-08-21', deadline2y:'2571-06-22', prescription:'2572-09-10',
     docRef:'ปป 0021/0805 ลงวันที่ 22 มิถุนายน 2569',
     urgent:false, urgent72:false, complex:false, complex72:false, dupWarning:false,
-    slaDays:3, slaLimit:15, subCommittee:'คณะที่ 1',
+    slaDays:8, slaLimit:15, subCommittee:'คณะที่ 1', onHoldDays:2,
+    subOutcomeNote:'พยานหลักฐานยังไม่ครบถ้วนในประเด็นการกำหนดราคากลาง เห็นควรให้ไต่สวนเพิ่มเติมก่อนเสนอที่ประชุม',
+    subOutcomeAt:'2569-07-15T04:00:00.000Z', subOutcomeBy:'subcommittee', subOutcomeTeam:'คณะที่ 1',
+    history:[
+      { ts:'2569-07-05T02:00:00.000Z', actor:'subcommittee', team:'คณะที่ 1', from:'IN_SCREENING_72', to:'IN_SCREENING_72', event:'ASSIGN', note:'มอบอนุกรรมการผู้รับผิดชอบ' },
+      { ts:'2569-07-15T04:00:00.000Z', actor:'subcommittee', team:'คณะที่ 1', from:'IN_SCREENING_72', to:'RETURNED_72', event:'SCREENING_RETURN_72', outcome:'NEED_MORE', lawRef:'ม.๖๗ พ.ร.ป. ป.ป.ช. ๒๕๖๑', note:'ส่งคืนเจ้าของสำนวนเพื่อไต่สวนเพิ่มเติม' }
+    ],
     meetingNo:null, agendaNo:null,
     docType:'RULING', signPhase:'WAIT'
   },
@@ -1335,7 +1455,13 @@ const CASES = [
     id:'1412/2569',
     subject:'กล่าวหาเจ้าหน้าที่สำนักงานประปาเทศบาลเมืองแห่งหนึ่ง เรียกรับเงินค่าติดตั้งมิเตอร์น้ำประปา',
     legalBase:'ม.18/4',
-    status:'IN_SCREENING',
+    status:'AGENDA_SET',
+    subOutcome:'PROPOSE_AS_IS',
+    subOutcomeNote:'สำนวนครบถ้วน เห็นควรเสนอ กก.ป.ป.ท. พิจารณาตามความเห็นของผู้รับผิดชอบสำนวน',
+    subOutcomeAt:'2569-07-18T06:00:00.000Z', subOutcomeBy:'subcommittee', subOutcomeTeam:'คณะที่ 2',
+    history:[
+      { ts:'2569-07-18T06:00:00.000Z', actor:'subcommittee', team:'คณะที่ 2', from:'IN_SCREENING', to:'AGENDA_SET', event:'SCREENING_RESOLVED', outcome:'PROPOSE_AS_IS', lawRef:'ม.๓๘ พ.ร.บ. มาตรการฯ', note:'กลั่นกรองแล้วเสร็จ — เสนอบรรจุวาระ' }
+    ],
     procType:'7.1',
     owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
     complainant:'ผู้ใช้น้ำในเขตเทศบาล (ผู้ร้อง)',
@@ -1352,7 +1478,13 @@ const CASES = [
     id:'1370/2566',
     subject:'รายงานผลการไต่สวนเพื่อวินิจฉัยชี้มูล กรณีผู้อำนวยการโรงเรียนมัธยมแห่งหนึ่ง ทุจริตเงินอุดหนุนรายหัวนักเรียน',
     legalBase:'ม.18/4',
-    status:'IN_SCREENING_72',
+    status:'PENDING_INVITE_72',
+    subOutcome:'INDICT',
+    subOutcomeNote:'พยานหลักฐานเพียงพอสนับสนุนว่ามีมูลความผิด เห็นควรเสนอที่ประชุมชี้มูลความผิดตาม ม.๗๒',
+    subOutcomeAt:'2569-07-10T03:30:00.000Z', subOutcomeBy:'subcommittee', subOutcomeTeam:'คณะที่ 2',
+    history:[
+      { ts:'2569-07-10T03:30:00.000Z', actor:'subcommittee', team:'คณะที่ 2', from:'IN_SCREENING_72', to:'PENDING_INVITE_72', event:'SCREEN_DONE_72', outcome:'INDICT', lawRef:'ม.๗๒ พ.ร.ป. ป.ป.ช. ๒๕๖๑', note:'กลั่นกรองแล้วเสร็จ — เสนอบรรจุวาระวินิจฉัยชี้มูล' }
+    ],
     procType:'7.2',
     owner:'นายฉัตรชัย ตรวจการ', ownerOrg:'สำนักงานคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ เขต 2',
     complainant:'คณะกรรมการสถานศึกษาขั้นพื้นฐาน (ผู้ร้อง)',
@@ -2172,7 +2304,7 @@ function __hubBridgeCases() {
   else Object.assign(CASES[index], shared);
 }
 
-const CASES_VERSION = '2026-08-31-subcommittee-mock-v1';
+const CASES_VERSION = '2026-09-04-subcommittee-screening-status-v1';
 if (typeof sessionStorage !== 'undefined') {
   const savedVersion = sessionStorage.getItem('ecmis_cases_version');
   const savedCases = sessionStorage.getItem('ecmis_cases');
@@ -6961,6 +7093,8 @@ if (typeof localStorage !== 'undefined') {
   trackStatus72, bothTracksDone72,
   OPINION_TYPES, chainDivergence, g1Triggers, M28, M28_ORDERS, m28Order, m28Pending,
   TRANSITIONS, canTransition, nextStates, transitionsBetween,
+  SUB_OUTCOME_MAP, SUB_SCREENING_STATUS, subOutcomeOptions, mapSubOutcome,
+  subScreeningStatus, slaEffectiveDays, slaIsOnHold, pushCaseHistory,
   BOARD_MIN_IN_OFFICE, boardQuorum,
   M24P1_MIN_PANEL, M24P1_STAFF_FREE, panelComposition,
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,

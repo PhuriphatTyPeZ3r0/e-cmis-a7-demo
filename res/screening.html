@@ -118,6 +118,11 @@
                     </div>
                 </div>
 
+                <div class="ws-card mb-3">
+                    <div class="card-header"><i class="fa-solid fa-timeline"></i> ประวัติการดำเนินการของคณะอนุฯ</div>
+                    <div class="card-body" id="subHistoryBox"></div>
+                </div>
+
                 <!-- Card 4: Digital Signature -->
                 <div class="ws-card mb-3" id="sigCard">
                     <div class="card-header"><i class="fa-solid fa-signature"></i> ลายมือชื่อดิจิทัลรับรองมติคณะอนุกรรมการฯ</div>
@@ -235,6 +240,93 @@
             document.querySelector('.flow-ref').innerHTML = 'คณะอนุกลั่นกรองฯ พิจารณาและส่งต่อเพื่อเตรียมประชุม';
         }
 
+        /* ---------- มติ/ความเห็นคณะอนุฯ (subOutcome) — โครงสร้าง + สิทธิ์ + audit ---------- */
+        /* เขียนได้เฉพาะ role subcommittee ของคณะนั้น — role อื่นดูอย่างเดียว */
+        const SUB_CAN_WRITE = role.id === 'subcommittee';
+        /* radio subRes (มาร์กอัปร่วม) → subOutcome enum ตามสายสำนวน */
+        const SUBRES_TO_OUTCOME = isRuling
+            ? { AGREE:'INDICT', DIFFER:'NO_INDICT', MORE:'NEED_MORE', NOT_ACCEPT:'CHARGE_DROPPED' }
+            : { AGREE:'PROPOSE_AS_IS', DIFFER:'PROPOSE_WITH_NOTE', MORE:'NEED_MORE_INQUIRY', NOT_ACCEPT:'PROPOSE_DISMISS' };
+        const MORE_INFO_EVENT   = isRuling ? 'REQUEST_MORE_INFO_72' : 'REQUEST_MORE_INFO';
+        const MORE_INFO_STATUS  = isRuling ? 'SCREENING_MORE_INFO_72' : 'SCREENING_MORE_INFO';
+
+        function currentSubOutcome(){
+            const el = document.querySelector('input[name="subRes"]:checked');
+            return el ? (SUBRES_TO_OUTCOME[el.value] || null) : null;
+        }
+
+        /* บันทึกมติคณะอนุฯ ลง case + audit trail + สถานะกลางที่ map ไว้ */
+        function persistSubOutcome(extraPatch){
+            const outcome = currentSubOutcome();
+            const om = ECMIS.mapSubOutcome(outcome);
+            const opinion = (document.getElementById('subOpinion').value || '').trim();
+            const team = (document.getElementById('manualTeam') || {}).value || (kase.subCommittee || '');
+            const now = new Date().toISOString();
+            const targetStatus = om
+                ? (om.localStatus === 'RETURNED'
+                    ? (isRuling ? 'RETURNED_72' : 'RETURNED')
+                    : (isRuling ? 'PENDING_INVITE_72' : 'AGENDA_SET'))
+                : kase.status;
+            ECMIS.pushCaseHistory(kase, {
+                from: kase.status, to: targetStatus,
+                event: om ? om.centralEvent : 'SCREENING_NOTE',
+                outcome: outcome || null, lawRef: om ? om.lawRef : null, note: opinion
+            });
+            const patch = Object.assign({
+                subOutcome: outcome || null,
+                subOutcomeNote: opinion,
+                subOutcomeLawRef: om ? om.lawRef : null,
+                subOutcomeAt: now, subOutcomeBy: role.id, subOutcomeTeam: team,
+                subCommittee: team || kase.subCommittee,
+                history: kase.history,
+                status: targetStatus
+            }, extraPatch || {});
+            if (isRuling && om && om.docxTemplate) patch.rulingTemplate = om.docxTemplate; // 3 = ชี้มูล, 4 = ไม่ชี้มูล/ทำเพิ่ม/ตกไป
+            ECMIS.Model.CaseStore.update(kase.id, patch);
+            return { om, targetStatus };
+        }
+
+        function persistMoreInfo(note){
+            const team = (document.getElementById('manualTeam') || {}).value || (kase.subCommittee || '');
+            ECMIS.pushCaseHistory(kase, {
+                from: kase.status, to: MORE_INFO_STATUS, event: MORE_INFO_EVENT, note: note || ''
+            });
+            ECMIS.Model.CaseStore.update(kase.id, {
+                status: MORE_INFO_STATUS,
+                subCommittee: team || kase.subCommittee,
+                onHoldDays: Number(kase.onHoldDays) || 0,
+                moreInfoRequestedAt: new Date().toISOString(),
+                moreInfoNote: note || '',
+                history: kase.history
+            });
+        }
+
+        function renderScreeningTimeline(){
+            const box = document.getElementById('subHistoryBox');
+            if (!box) return;
+            const hist = Array.isArray(kase.history) ? kase.history.slice().reverse() : [];
+            if (!hist.length) { box.innerHTML = '<div class="text-muted small">ยังไม่มีประวัติการดำเนินการของคณะอนุฯ</div>'; return; }
+            box.innerHTML = hist.map(h => {
+                const d = h.ts ? new Date(h.ts).toLocaleString('th-TH') : '';
+                const oc = h.outcome ? ` · <strong>${(ECMIS.SUB_OUTCOME_MAP[h.outcome] || {}).label || h.outcome}</strong>` : '';
+                const law = h.lawRef ? ` <span class="chip">${h.lawRef}</span>` : '';
+                return `<div class="d-flex gap-2 mb-2">
+                    <i class="fa-solid fa-circle mt-1" style="font-size:0.5rem;color:#0F2A62"></i>
+                    <div><div class="small"><strong>${h.event || '-'}</strong>${oc}${law}</div>
+                    <div class="text-muted" style="font-size:0.75rem">${h.team || ''} · ${h.actor || ''} · ${d}</div>
+                    ${h.note ? `<div class="small mt-1">${h.note}</div>` : ''}</div></div>`;
+            }).join('');
+        }
+
+        function applyViewOnlyGuard(){
+            if (SUB_CAN_WRITE) return;
+            document.querySelectorAll('#docWorkspace input, #docWorkspace textarea, #docWorkspace select')
+                .forEach(el => { el.disabled = true; });
+            const slot = document.getElementById('actionBarSlot');
+            if (slot) slot.innerHTML = '<div class="alert alert-secondary mb-0 py-2 px-3 small">' +
+                '<i class="fa-solid fa-lock me-1"></i>ดูอย่างเดียว — เฉพาะคณะอนุกรรมการกลั่นกรองฯ ของคณะนี้เท่านั้นที่บันทึกมติได้</div>';
+        }
+
         /* ---------- Master Toolbar & Pagination Controls State ---------- */
         let docViewMode = 'SINGLE';
         let docCurrentPage = 1;
@@ -242,6 +334,8 @@
         let docZoomLevel = 0.75;
 
         if (isRuling) { initScreening72(); } else { initScreening71(); }
+        renderScreeningTimeline();
+        setTimeout(applyViewOnlyGuard, 0);
 
         function initScreening71(){
 
@@ -404,6 +498,7 @@
             }
             return [
                 { act: 'save', label: 'บันทึกร่างมติ', icon: 'fa-floppy-disk', cls: 'btn-outline-secondary' },
+                { act: 'more', label: 'ขอข้อมูลเพิ่มเติม', icon: 'fa-circle-question', cls: 'btn-outline-secondary' },
                 { act: 'sign', label: 'ลงนามดิจิทัลรับรองมติ', icon: 'fa-signature', cls: 'btn-gold' }
             ];
         }
@@ -442,8 +537,27 @@
         }
 
         function handle(act) {
+            if (!SUB_CAN_WRITE) {
+                ECMIS.toastWarn('ดูอย่างเดียว — เฉพาะคณะอนุกรรมการกลั่นกรองฯ ของคณะนี้เท่านั้นที่บันทึกมติได้');
+                return;
+            }
             if (act === 'save') {
                 ECMIS.toastOk('บันทึกร่างมติคณะอนุฯ เรียบร้อย');
+                return;
+            }
+            if (act === 'more') {
+                if (!validateScreening()) return;
+                const note = (document.getElementById('subOpinion').value || '').trim();
+                ECMIS.confirmAction({
+                    title: 'ขอข้อมูลเพิ่มเติม',
+                    html: `<p>สำนวน <strong>${kase.id}</strong> — คณะอนุกลั่นกรองฯ ขอข้อมูล/เอกสารเพิ่มเติมจากเจ้าของสำนวน (หยุดนับ SLA จนกว่าจะได้รับข้อมูลกลับ)</p>`,
+                    confirmText: 'ยืนยันขอข้อมูลเพิ่มเติม'
+                }).then(res => {
+                    if (!res.isConfirmed) return;
+                    persistMoreInfo(note);
+                    renderScreeningTimeline();
+                    ECMIS.toastOk('บันทึกคำขอข้อมูลเพิ่มเติม และแจ้งเตือนเจ้าของสำนวนแล้ว');
+                });
                 return;
             }
             if (act === 'edit_sign') {
@@ -492,14 +606,12 @@
                 const res = document.querySelector('input[name="subRes"]:checked').value;
                 const team = document.getElementById('manualTeam').value || assigned;
                 const signerTitle = `อนุกรรมการและเลขานุการ คณะอนุกรรมการกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${team}`;
-                const next = (res === 'MORE' || res === 'NOT_ACCEPT')
-                    ? { p: ECMIS.homeHref(role.id), t: 'ส่งกลับผู้รับผิดชอบสำนวน' }
+                const { om } = persistSubOutcome({ signedBySubSec: true, subSecSignedAt: new Date().toISOString() });
+                const isReturn = om && om.localStatus === 'RETURNED';
+                const next = isReturn
+                    ? { p: ECMIS.homeHref(role.id), t: 'ส่งคืนเจ้าของสำนวนเพื่อไต่สวนเพิ่มเติม (ม.๒๔ ว.๕)' }
                     : { p: 'agenda.html', t: 'ส่งฝ่ายเจ้าหน้าที่กิจการฯ เพื่อบรรจุระเบียบวาระ' };
-
-                ECMIS.Model.CaseStore.update(kase.id, Object.assign(
-                    { subCommittee: team, signedBySubSec: true, subSecSignedAt: new Date().toISOString() },
-                    (res === 'AGREE' || res === 'DIFFER') ? { status: 'AGENDA_SET' } : {}
-                ));
+                renderScreeningTimeline();
 
                 if (ECMIS.Model && ECMIS.Model.SignatureStore) {
                     ECMIS.Model.SignatureStore.create({
@@ -701,6 +813,10 @@
             }
 
             function handle(act){
+                if (!SUB_CAN_WRITE) {
+                    ECMIS.toastWarn('ดูอย่างเดียว — เฉพาะคณะอนุกรรมการกลั่นกรองฯ ของคณะนี้เท่านั้นที่บันทึกมติได้');
+                    return;
+                }
                 if (act === 'edit_sign') {
                     handle('sign');
                     return;
@@ -735,10 +851,11 @@
                         if (!res.isConfirmed) return;
                         ECMIS.Model.CaseStore.update(kase.id, {
                             screeningOpinion72: opinion,
-                            subCommittee: team,
                             moreInfoRequested72: { date: new Date().toISOString().slice(0, 10), note: opinion }
                         });
-                        ECMIS.toastOk('บันทึกคำขอข้อมูลเพิ่มเติม และแจ้งเตือนผู้รับผิดชอบสำนวนแล้ว');
+                        persistMoreInfo(opinion);
+                        renderScreeningTimeline();
+                        ECMIS.toastOk('บันทึกคำขอข้อมูลเพิ่มเติม และแจ้งเตือนเจ้าของสำนวนแล้ว');
                     });
                     return;
                 }
@@ -771,15 +888,15 @@
                     const team = document.getElementById('manualTeam').value || assigned;
                     const signerTitle = `อนุกรรมการและเลขานุการ คณะอนุกลั่นกรองเรื่องไต่สวนข้อเท็จจริง ${team}`;
 
-                    ECMIS.Model.CaseStore.update(kase.id, {
-                        screeningOpinion72: opinion,
+                    const { om: om72 } = persistSubOutcome({
                         screeningMeetNo72: meetNo,
                         screeningMeetDate72: meetDate,
-                        subCommittee: team,
+                        screeningOpinion72: opinion,
                         signedBySubSec72: true,
-                        subSecSignedAt72: new Date().toISOString(),
-                        status: 'PENDING_INVITE_72'
+                        subSecSignedAt72: new Date().toISOString()
                     });
+                    const isReturn72 = om72 && om72.localStatus === 'RETURNED';
+                    renderScreeningTimeline();
 
                     if (ECMIS.Model && ECMIS.Model.SignatureStore) {
                         ECMIS.Model.SignatureStore.create({
@@ -794,14 +911,14 @@
 
                     Swal.fire({
                         icon: 'success',
-                        title: 'บันทึกความเห็นและส่งบรรจุวาระเรียบร้อย',
+                        title: isReturn72 ? 'ส่งคืนเจ้าของสำนวนเพื่อทำเพิ่มเติมเรียบร้อย' : 'บันทึกความเห็นและส่งบรรจุวาระเรียบร้อย',
                         html: `<div class="text-start">
-                            สำนวน <strong>${kase.id}</strong> — ส่งฝ่ายจัดประชุมเพื่อจัดพิมพ์หนังสือเชิญประชุม (T11_72)<br>
+                            สำนวน <strong>${kase.id}</strong> — ${isReturn72 ? 'ส่งคืนเจ้าของสำนวนเพื่อไต่สวนเพิ่มเติม (ม.๖๗ พ.ร.ป. ป.ป.ช. ๒๕๖๑)' : 'ส่งฝ่ายจัดประชุมเพื่อจัดพิมพ์หนังสือเชิญประชุม (T11_72)'}<br>
                             <span class="st st-done mt-2 d-inline-block"><i class="fa-solid fa-signature me-1"></i>ลงนามรับรองความเห็นแล้ว</span>
                         </div>`,
                         confirmButtonColor: '#0F2A62',
                         confirmButtonText: 'ตกลง'
-                    }).then(() => location.href = ECMIS.pageForCase72(kase) + '?case=' + encodeURIComponent(kase.id));
+                    }).then(() => location.href = (isReturn72 ? ECMIS.homeHref(role.id) : ECMIS.pageForCase72(kase)) + '?case=' + encodeURIComponent(kase.id));
                 }
             }
 

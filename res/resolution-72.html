@@ -83,6 +83,10 @@
         <div class="ws-card mb-3">
           <div class="card-header"><i class="fa-solid fa-code-branch"></i> มติที่ประชุม (วินิจฉัยชี้มูล)</div>
           <div class="card-body">
+            <div id="subOutcomeHint" class="alert alert-light border mb-3 d-none">
+              <div class="small text-muted mb-1"><i class="fa-solid fa-users-viewfinder me-1"></i>ความเห็นคณะอนุกรรมการกลั่นกรองฯ (เสนอเพื่อโปรดพิจารณา — ไม่ผูกพันที่ประชุม)</div>
+              <div class="fw-semibold" id="subOutcomeHintText"></div>
+            </div>
             <label class="form-label field-req">เลือกประเภทผลมติ</label>
             <div class="list-group mb-3" id="resList"></div>
 
@@ -413,9 +417,22 @@
     document.getElementById('boardTb').addEventListener('change', () => { renderQuorum(); renderDoc(); });
     refreshAgendaContext();
 
+    /* ความเห็นคณะอนุกลั่นกรองฯ (subOutcome) เสนอเพื่อโปรดพิจารณา — ใช้เป็นค่าตั้งต้นของมติ
+       ที่ประชุม (ไม่ผูกพัน ที่ประชุมเลือกใหม่ได้) + เลือกแม่แบบ .docx ให้อัตโนมัติ:
+       ชี้มูล → GUILTY_72 (template 3) · ไม่ชี้มูล/ตกไป → NO_MERIT_72 · ทำเพิ่ม → MORE_INVESTIGATE_72 (template 4) */
+    const SUB_TO_RES72 = { INDICT: 'GUILTY_72', NO_INDICT: 'NO_MERIT_72', CHARGE_DROPPED: 'NO_MERIT_72', NEED_MORE: 'MORE_INVESTIGATE_72' };
+    const preferredRes72 = SUB_TO_RES72[kase.subOutcome] || null;
+    (function renderSubOutcomeHint() {
+      const m = ECMIS.mapSubOutcome(kase.subOutcome);
+      if (!m) return;
+      document.getElementById('subOutcomeHint').classList.remove('d-none');
+      document.getElementById('subOutcomeHintText').innerHTML =
+        `${m.label} <span class="chip ms-1">${m.lawRef}</span>` +
+        (kase.subOutcomeNote ? `<div class="small text-muted mt-1">${kase.subOutcomeNote}</div>` : '');
+    })();
     document.getElementById('resList').innerHTML = ECMIS.RESOLUTIONS_72.map((r, i) => `
   <label class="list-group-item d-flex gap-2 align-items-start">
-    <input class="form-check-input mt-1" type="radio" name="res72" value="${r.code}" ${i === 3 ? 'checked' : ''}>
+    <input class="form-check-input mt-1" type="radio" name="res72" value="${r.code}" ${(preferredRes72 ? r.code === preferredRes72 : i === 3) ? 'checked' : ''}>
     <span><strong>${r.label}</strong>
       <br><small class="text-muted">ฐาน: ${r.legalBasis} · เอกสาร: ${r.doc}${r.signer !== '—' ? ` · ผู้ลงนาม: ${r.signer}` : ''}</small></span>
   </label>`).join('');

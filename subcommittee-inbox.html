@@ -47,7 +47,7 @@
     <div class="card card-ecmis mb-4">
       <div class="card-body p-3">
         <div class="row g-3 align-items-end">
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="form-label fw-semibold text-dark small mb-1">ค้นหางาน แฟ้ม หรือผู้ถูกกล่าวหา</label>
             <div class="input-group input-group-sm">
               <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
@@ -55,13 +55,24 @@
                 placeholder="เลขสำนวน, เรื่อง, ผู้ถูกกล่าวหา, ผู้รับผิดชอบ">
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label fw-semibold text-dark small mb-1"><i
                 class="fa-solid fa-pen-to-square me-1 text-muted"></i>ประเภทสำนวน</label>
             <select id="typeFilter" class="form-select form-select-sm">
               <option value="ALL">ทั้งหมด</option>
               <option value="7.1">7.1 ไต่สวนเบื้องต้น</option>
               <option value="7.2">7.2 วินิจฉัยชี้มูล</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold text-dark small mb-1"><i
+                class="fa-solid fa-list-check me-1 text-muted"></i>สถานะกลั่นกรอง</label>
+            <select id="statusFilter" class="form-select form-select-sm">
+              <option value="ALL">ทั้งหมด</option>
+              <option value="PENDING">รอกลั่นกรอง</option>
+              <option value="MORE_INFO">รอข้อมูลเพิ่มเติม</option>
+              <option value="RETURNED">ส่งคืนเจ้าของสำนวน</option>
+              <option value="DONE">กลั่นกรองแล้วเสร็จ</option>
             </select>
           </div>
           <div class="col-md-2 text-end">
@@ -90,8 +101,9 @@
                   <col style="width:140px">
                   <col>
                   <col style="width:110px">
-                  <col style="width:160px">
-                  <col style="width:160px">
+                  <col style="width:150px">
+                  <col style="width:150px">
+                  <col style="width:140px">
                 </colgroup>
                 <thead>
                   <tr>
@@ -99,6 +111,7 @@
                         class="fa-solid fa-sort-down ms-1" style="font-size:0.75rem"></i></th>
                     <th>เรื่องกล่าวหา</th>
                     <th>ประเภท</th>
+                    <th>สถานะกลั่นกรอง</th>
                     <th class="sortable-header" data-sort="slaDays" style="cursor:pointer">กำหนดเวลา <i
                         class="fa-solid fa-sort ms-1" style="font-size:0.75rem"></i></th>
                     <th class="text-end">ดำเนินการ</th>
@@ -133,36 +146,50 @@
     let sortField = 'id';
     let sortOrder = 'asc';
 
-    /* คิวของคณะที่เลือก: สำนวนที่อยู่ระหว่างอนุกลั่นกรองพิจารณา (7.1 IN_SCREENING / 7.2 IN_SCREENING_72)
-       ที่ subCommittee ตรงกับคณะที่กำลังดูอยู่เท่านั้น — role นี้เห็นเฉพาะคิวของคณะตน */
+    /* คิวของคณะที่เลือก: สำนวนที่ subCommittee ตรงกับคณะที่กำลังดูอยู่ —
+       รวมสถานะ รอกลั่นกรอง (IN_SCREENING/_72), รอข้อมูลเพิ่มเติม (SCREENING_MORE_INFO/_72)
+       และ ส่งคืน/กลั่นกรองเสร็จ (RETURNED/_72, AGENDA_SET, PENDING_INVITE_72) เฉพาะที่มี subOutcome
+       บันทึกไว้แล้ว เพื่อให้แถวยังค้างอยู่ในแท็บของตัวเอง (audit trail) */
+    const ACTIVE_SCREEN = ['IN_SCREENING', 'IN_SCREENING_72', 'SCREENING_MORE_INFO', 'SCREENING_MORE_INFO_72'];
+    const CARRIED_SCREEN = ['RETURNED', 'RETURNED_72', 'AGENDA_SET', 'PENDING_INVITE_72'];
     const teamCases = ECMIS.CASES.filter(c =>
-      (c.status === 'IN_SCREENING' || c.status === 'IN_SCREENING_72') && c.subCommittee === selectedTeam
-    ).map(c => ({
-      id: c.id,
-      subject: c.subject,
-      allegation: c.allegation,
-      procType: ECMIS.isCase72(c) ? '7.2' : '7.1',
-      owner: c.owner,
-      ownerOrg: c.ownerOrg,
-      slaDays: c.slaDays,
-      slaLimit: c.slaLimit,
-      accused: c.accused || []
-    }));
+      c.subCommittee === selectedTeam &&
+      (ACTIVE_SCREEN.includes(c.status) || (CARRIED_SCREEN.includes(c.status) && c.subOutcome))
+    ).map(c => {
+      const om = ECMIS.mapSubOutcome(c.subOutcome);
+      return {
+        id: c.id,
+        subject: c.subject,
+        allegation: c.allegation,
+        procType: ECMIS.isCase72(c) ? '7.2' : '7.1',
+        owner: c.owner,
+        ownerOrg: c.ownerOrg,
+        slaLimit: c.slaLimit,
+        slaEff: ECMIS.slaEffectiveDays(c),
+        slaDays: ECMIS.slaEffectiveDays(c),
+        onHold: ECMIS.slaIsOnHold(c),
+        screenStatus: ECMIS.subScreeningStatus(c),
+        outcomeLabel: om ? om.label : null,
+        outcomeLawRef: om ? om.lawRef : null,
+        accused: c.accused || []
+      };
+    });
+
+    const SCREEN_META = ECMIS.SUB_SCREENING_STATUS;
 
     function renderKPI() {
-      const total = teamCases.length;
-      const p71 = teamCases.filter(c => c.procType === '7.1').length;
-      const p72 = teamCases.filter(c => c.procType === '7.2').length;
-
+      const cnt = k => teamCases.filter(c => c.screenStatus === k).length;
       const kpis = [
-        { n: total, l: 'สำนวนทั้งหมดในคิว', i: 'fa-folder-open', c: '#0F2A62' },
-        { n: p71, l: '7.1 ไต่สวนเบื้องต้น', i: 'fa-file-circle-question', c: '#D0A830' },
-        { n: p72, l: '7.2 วินิจฉัยชี้มูล', i: 'fa-scale-balanced', c: '#0284C7' }
+        { key: 'ALL', n: teamCases.length, l: 'สำนวนทั้งหมดในคิว', i: 'fa-folder-open', c: '#0F2A62' },
+        { key: 'PENDING', n: cnt('PENDING'), l: 'รอกลั่นกรอง', i: 'fa-hourglass-half', c: '#D0A830' },
+        { key: 'MORE_INFO', n: cnt('MORE_INFO'), l: 'รอข้อมูลเพิ่มเติม', i: 'fa-circle-question', c: '#0284C7' },
+        { key: 'RETURNED', n: cnt('RETURNED'), l: 'ส่งคืนเจ้าของสำนวน', i: 'fa-rotate-left', c: '#B91C1C' },
+        { key: 'DONE', n: cnt('DONE'), l: 'กลั่นกรองแล้วเสร็จ', i: 'fa-circle-check', c: '#15803D' }
       ];
 
       document.getElementById('kpiRow').innerHTML = kpis.map(k => `
         <div class="col">
-          <div class="card card-ecmis kpi-card h-100">
+          <div class="card card-ecmis kpi-card h-100" data-kpi="${k.key}">
             <div class="card-body p-3 d-flex align-items-center justify-content-between">
               <div>
                 <div class="text-muted small mb-1">${k.l}</div>
@@ -176,14 +203,22 @@
           </div>
         </div>
       `).join('');
+
+      $('#kpiRow .kpi-card').on('click', function () {
+        const key = $(this).data('kpi');
+        $('#statusFilter').val(key === 'ALL' ? 'ALL' : key);
+        renderQueue();
+      });
     }
 
     function renderQueue() {
       const q = ($('#searchInput').val() || '').trim().toLowerCase();
       const type = $('#typeFilter').val() || 'ALL';
+      const status = $('#statusFilter').val() || 'ALL';
 
       let filtered = teamCases.filter(c => {
         if (type !== 'ALL' && c.procType !== type) return false;
+        if (status !== 'ALL' && c.screenStatus !== status) return false;
         if (!q) return true;
         const matchSubject = c.subject && c.subject.toLowerCase().includes(q);
         const matchId = c.id && c.id.toLowerCase().includes(q);
@@ -205,7 +240,7 @@
       if (filtered.length === 0) {
         $('#myQueue').html(`
           <tr>
-            <td colspan="5" class="text-center py-4 text-muted">
+            <td colspan="6" class="text-center py-4 text-muted">
               <i class="fa-solid fa-folder-open fa-2x mb-2 d-block text-secondary"></i>
               ไม่พบสำนวนในคิวของ ${selectedTeam} ตามเงื่อนไขที่เลือก
             </td>
@@ -219,11 +254,20 @@
           ? `<span class="meet-badge meet-review"><i class="fa-solid fa-scale-balanced me-1" style="font-size:0.65rem"></i>7.2 วินิจฉัยชี้มูล</span>`
           : `<span class="meet-badge meet-pending"><i class="fa-solid fa-file-circle-question me-1" style="font-size:0.65rem"></i>7.1 ไต่สวนเบื้องต้น</span>`;
 
-        const slaBadge = c.slaDays >= 10
-          ? `<span class="sla sla-warn"><i class="fa-solid fa-clock me-1"></i>ใช้ไป ${c.slaDays}/${c.slaLimit} วัน</span>`
-          : `<span class="sla sla-ok"><i class="fa-solid fa-clock me-1"></i>ใช้ไป ${c.slaDays}/${c.slaLimit} วัน</span>`;
+        const sm = SCREEN_META[c.screenStatus] || SCREEN_META.PENDING;
+        const outcomeHint = c.outcomeLabel
+          ? `<small class="text-muted d-block text-truncate" style="font-size:0.7rem" title="${c.outcomeLabel} · ${c.outcomeLawRef || ''}">${c.outcomeLabel}</small>`
+          : '';
+        const statusBadge = `<span class="meet-badge ${sm.badge}">${sm.label}</span>${outcomeHint}`;
 
-        const page = c.procType === '7.2' ? 'subcommittee-screening.html' : 'subcommittee-screening.html';
+        const slaBadge = c.onHold
+          ? `<span class="sla sla-warn"><i class="fa-solid fa-pause me-1"></i>รอข้อมูล (${c.slaEff}/${c.slaLimit} วัน)</span>`
+          : (c.slaEff >= 10
+            ? `<span class="sla sla-warn"><i class="fa-solid fa-clock me-1"></i>ใช้ไป ${c.slaEff}/${c.slaLimit} วัน</span>`
+            : `<span class="sla sla-ok"><i class="fa-solid fa-clock me-1"></i>ใช้ไป ${c.slaEff}/${c.slaLimit} วัน</span>`);
+
+        const page = 'subcommittee-screening.html';
+        const done = c.screenStatus === 'DONE';
 
         return `
           <tr>
@@ -233,10 +277,11 @@
               <small class="text-muted d-block text-truncate" style="font-size:0.75rem">${c.ownerOrg || ''}</small>
             </td>
             <td>${typeBadge}</td>
+            <td>${statusBadge}</td>
             <td>${slaBadge}</td>
             <td class="text-end">
-              <a href="${page}?case=${encodeURIComponent(c.id)}" class="btn btn-sm btn-navy px-3">
-                <i class="fa-solid fa-pen-to-square me-1"></i>ดำเนินการ
+              <a href="${page}?case=${encodeURIComponent(c.id)}" class="btn btn-sm ${done ? 'btn-outline-secondary' : 'btn-navy'} px-3">
+                <i class="fa-solid ${done ? 'fa-eye' : 'fa-pen-to-square'} me-1"></i>${done ? 'ดูผล' : 'ดำเนินการ'}
               </a>
             </td>
           </tr>
@@ -252,9 +297,11 @@
 
       $('#searchInput').on('input', renderQueue);
       $('#typeFilter').on('change', renderQueue);
+      $('#statusFilter').on('change', renderQueue);
       $('#btnClearFilter').on('click', function () {
         $('#searchInput').val('');
         $('#typeFilter').val('ALL');
+        $('#statusFilter').val('ALL');
         renderQueue();
       });
 
