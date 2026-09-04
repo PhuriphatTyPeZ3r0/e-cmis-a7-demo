@@ -3130,6 +3130,7 @@ function notificationIdForEventKey(eventKey){
 const NotificationStore = {
   _hydrated:false,
   _hydratePromise:null,
+  _refreshTimer:null,
   _realtimeChannel:null,
   _dbWarningShown:false,
   _read(key, fallback){
@@ -3144,7 +3145,7 @@ const NotificationStore = {
     try { window.dispatchEvent(new CustomEvent('ecmis:notifications-updated')); }
     catch(e){ /* CustomEvent may be unavailable in non-browser checks */ }
   },
-  _db(){ return getSupabaseClient(); },
+  _db(){ return window.ECMIS_DISABLE_NOTIFICATION_DB ? null : getSupabaseClient(); },
   _warnDb(error){
     if (this._dbWarningShown) return;
     this._dbWarningShown = true;
@@ -3249,7 +3250,9 @@ const NotificationStore = {
   },
   async hydrate(options){
     const opts = options || {};
-    if (this._hydratePromise && !opts.force) return this._hydratePromise;
+    // Realtime emits one change per event and per recipient. Never allow those
+    // callbacks to start overlapping hydrations against the same cache.
+    if (this._hydratePromise) return this._hydratePromise;
     if (this._hydrated && !opts.force) return true;
     const sb = this._db();
     if (!sb) return false;
@@ -3290,7 +3293,14 @@ const NotificationStore = {
     })();
     return this._hydratePromise;
   },
-  refresh(){ return this.hydrate({ force:true, skipFlush:true }); },
+  refresh(){
+    // Collapse an event + multiple recipient changes into one database read.
+    if (this._refreshTimer) clearTimeout(this._refreshTimer);
+    this._refreshTimer = setTimeout(() => {
+      this._refreshTimer = null;
+      this.hydrate({ force:true, skipFlush:true });
+    }, 250);
+  },
   _subscribeRealtime(){
     const sb = this._db();
     if (!sb || !sb.channel || this._realtimeChannel) return;
@@ -3303,10 +3313,9 @@ const NotificationStore = {
     if (!event || !event.eventKey || !event.type || !event.caseId || !Array.isArray(event.recipientIds)) return null;
     const events = this._events();
     const existing = events.find(n => n.eventKey === event.eventKey);
-    if (existing) {
-      this._persistEvent(existing);
-      return existing;
-    }
+    // Idempotency must also mean no repeated network write. Persisting an
+    // existing event from every UI render creates a Realtime feedback loop.
+    if (existing) return existing;
     const now = new Date().toISOString();
     const item = Object.assign({ id:notificationIdForEventKey(event.eventKey),
       title:'การแจ้งเตือน', body:'', href:'notifications.html', createdAt:now, deliveredAt:now,

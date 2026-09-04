@@ -2,6 +2,7 @@ const { test, expect, setRole, trackConsoleErrors } = require('./fixtures');
 
 test.describe('Notification center and read receipts', () => {
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { window.ECMIS_DISABLE_NOTIFICATION_DB = true; });
     await setRole(page, 'investigator_demo');
     await page.goto('/notifications.html');
     await page.evaluate(() => {
@@ -18,7 +19,7 @@ test.describe('Notification center and read receipts', () => {
         eventKey:'test-agenda:1547/2568:37/2569:5.2', type:'AGENDA_PLACED', caseId:'1547/2568',
         recipientIds:['investigator_demo','director_demo','case_clerk_demo'],
         title:'บรรจุวาระการประชุมแล้ว', body:'สำนวน 1547/2568 วาระ 5.2', href:'notifications.html',
-        meetingDate:'2569-09-07', meetingNo:'37/2569', agendaNo:'5.2'
+        meetingNo:'37/2569', agendaNo:'5.2'
       };
       ECMIS.NotificationStore.createEvent(event);
       ECMIS.NotificationStore.createEvent(event);
@@ -70,6 +71,24 @@ test.describe('Notification center and read receipts', () => {
     expect(result.director).toBe(1);
     expect(result.investigatorReadAt).toBeTruthy();
     expect(result.directorReadAt).toBeNull();
+  });
+
+  test('does not persist an existing event again during repeated renders', async ({ page }) => {
+    await page.goto('/notifications.html');
+    const persistCalls = await page.evaluate(async () => {
+      let calls = 0;
+      ECMIS.NotificationStore._persistEvent = async () => { calls += 1; return true; };
+      const event = {
+        eventKey:'test-no-realtime-feedback-loop', type:'AGENDA_REMINDER', caseId:'1311/2566',
+        recipientIds:['investigator_demo'], title:'ทดสอบไม่เขียนซ้ำ', body:'ทดสอบ', href:'notifications.html'
+      };
+      ECMIS.NotificationStore.createEvent(event);
+      ECMIS.NotificationStore.createEvent(event);
+      ECMIS.NotificationStore.createEvent(event);
+      await Promise.resolve();
+      return calls;
+    });
+    expect(persistCalls).toBe(1);
   });
 
   test('quick login opens the notification center for all four recipient accounts', async ({ context }) => {
