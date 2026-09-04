@@ -1923,7 +1923,6 @@
         docTab = btn.dataset.doc;
         toggleFormCards();
         renderDoc();
-        renderActions();
       });
     });
 
@@ -1965,14 +1964,6 @@
 
     function renderActions() {
       const actions = [];
-      const disciplineTab = docTab === 'discipline' || docTab === 'discipline_v2';
-      const mayDispatchResolution = mayEdit && ['PENDING_AREA_NOTICE_72','DISPATCHING_NACC_72','PENDING_DISPATCH_GUILTY_72'].includes(kase.status);
-      if (mayDispatchResolution) {
-        actions.push(`<button class="btn btn-sm ${kase.resolutionDispatchedAt ? 'btn-outline-success' : 'btn-success'}" id="btnDispatchResolution" ${kase.resolutionDispatchedAt ? 'disabled' : ''}><i class="fa-solid ${kase.resolutionDispatchedAt ? 'fa-check-double' : 'fa-paper-plane'} me-1"></i>${kase.resolutionDispatchedAt ? 'ส่งมติและเอกสารแล้ว' : 'ส่งมติและเอกสารคืนผู้รับผิดชอบ'}</button>`);
-      }
-      if (disciplineTab && mayEdit) {
-        actions.push(`<button class="btn btn-sm ${kase.disciplineActivity8SentAt ? 'btn-outline-success' : 'btn-info'}" id="btnSendDiscipline8" ${kase.disciplineActivity8SentAt ? 'disabled' : ''}><i class="fa-solid ${kase.disciplineActivity8SentAt ? 'fa-check-double' : 'fa-paper-plane'} me-1"></i>${kase.disciplineActivity8SentAt ? 'ส่งไปกิจกรรมที่ 8 แล้ว' : 'ส่งหนังสือไปกิจกรรมที่ 8'}</button>`);
-      }
       if (mayEdit && kase.status === 'RESOLVED_PENDING_72') {
         actions.push('<button class="btn btn-sm btn-navy" id="btnDraftDone"><i class="fa-solid fa-file-circle-check me-1"></i>จัดทำรายงานวินิจฉัยชี้มูลเสร็จ</button>');
       }
@@ -1994,48 +1985,6 @@
       if (btnSaveDraft) btnSaveDraft.addEventListener('click', async () => {
         if (!await persistFormToSupabase()) return;
         ECMIS.toastOk('บันทึกฉบับร่างเรียบร้อยแล้ว');
-      });
-
-      const btnSendDiscipline8 = document.getElementById('btnSendDiscipline8');
-      if (btnSendDiscipline8) btnSendDiscipline8.addEventListener('click', async () => {
-        if (kase.disciplineActivity8SentAt) return;
-        persistForm();
-        const result = await ECMIS.confirmAction({
-          title:'ยืนยันส่งหนังสือไปกิจกรรมที่ 8',
-          html:`ส่งหนังสือลงโทษทางวินัยของสำนวน <strong>${kase.id}</strong> ไปยังกลุ่มงานบริหารติดตามคดี`,
-          confirmText:'ยืนยันส่งหนังสือ'
-        });
-        if (!result.isConfirmed) return;
-        const sentAt = new Date().toISOString();
-        kase.disciplineActivity8SentAt = sentAt;
-        ECMIS.Model.CaseStore.update(kase.id, { disciplineActivity8SentAt:sentAt });
-        ECMIS.NotificationStore.createEvent({
-          eventKey:`discipline-activity8:${kase.id}:${kase.signedRulingAt || kase.resolutionDate72 || 'current'}`,
-          type:'DISCIPLINE_SENT_ACTIVITY8', caseId:kase.id,
-          recipientIds:['discipline_tracker_demo'], title:'ได้รับหนังสือลงโทษทางวินัย',
-          body:`สำนวน ${kase.id} ถูกส่งจากกิจกรรมที่ 7 เพื่อบริหารติดตามคดีในกิจกรรมที่ 8`,
-          href:'notifications.html'
-        });
-        ECMIS.toastOk('ส่งหนังสือไปกิจกรรมที่ 8 และสร้างการแจ้งเตือนเรียบร้อย');
-        renderActions();
-      });
-
-      const btnDispatchResolution = document.getElementById('btnDispatchResolution');
-      if (btnDispatchResolution) btnDispatchResolution.addEventListener('click', async () => {
-        if (kase.resolutionDispatchedAt) return;
-        const result = await ECMIS.confirmAction({ title:'ยืนยันส่งมติและเอกสาร', html:`ส่งมติและเอกสารสำนวน <strong>${kase.id}</strong> คืนผู้รับผิดชอบ`, confirmText:'ยืนยันส่งมติ' });
-        if (!result.isConfirmed) return;
-        const sentAt = new Date().toISOString();
-        kase.resolutionDispatchedAt = sentAt;
-        ECMIS.Model.CaseStore.update(kase.id, { resolutionDispatchedAt:sentAt });
-        ECMIS.NotificationStore.createEvent({
-          eventKey:`resolution-dispatched:${kase.id}:${kase.resolutionDate72 || 'current'}`,
-          type:'RESOLUTION_DISPATCHED', caseId:kase.id,
-          recipientIds:ECMIS.resolveCaseNotificationRecipients(kase), title:'ส่งมติที่ประชุมแล้ว',
-          body:`มติ รายงาน และเอกสารสำนวน ${kase.id} ถูกส่งคืนผู้รับผิดชอบแล้ว`, href:'notifications.html'
-        });
-        ECMIS.toastOk('ส่งมติและสร้างการแจ้งเตือนเรียบร้อย');
-        renderActions();
       });
 
       const btnDraftDone = document.getElementById('btnDraftDone');

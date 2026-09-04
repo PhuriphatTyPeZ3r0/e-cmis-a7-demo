@@ -20,24 +20,10 @@ Login accepts any password — only the username below needs to match. Pick one 
 | `Jiraporn.N` | อนุกรรมการสนับสนุนเลขาธิการฯ (support_sub)          |
 | `Wichai.Y`   | ประธานกรรมการ ป.ป.ท. (chairman)                    |
 | `Thanakrit.B`| เจ้าหน้าที่กลุ่มงานคำวินิจฉัยและมติคณะกรรมการ (board_sec) |
-| `Somchai.I`  | นักสืบสวน/เจ้าของสำนวน (investigator_demo)            |
-| `Narin.D`    | ผอ.กองหรือผอ.สำนักงานเขต (director_demo)               |
-| `Kanda.C`    | เจ้าหน้าที่ธุรการคดี (case_clerk_demo)                 |
-| `Suda.T`     | กลุ่มงานบริหารติดตามคดี กิจกรรมที่ 8 (discipline_tracker_demo) |
 | `Somboon.T`  | กรรมการ ป.ป.ท. (board)                             |
 | `Siriporn.K` | เจ้าหน้าที่กลุ่มงานกิจการคณะกรรมการ (affairs)        |
 
 Switch roles anytime from the sidebar's user chip without logging out.
-
-## Database-backed notifications
-
-Notifications use Supabase when the notification schema is installed and fall back to a versioned browser cache when it is unavailable.
-
-1. Run `sql/create_notification_store.sql` once in the Supabase SQL Editor.
-2. Optionally run `sql/seed_notification_demo.sql` to create an unread agenda notification for `Somchai.I`, `Narin.D`, and `Kanda.C`.
-3. Open `notifications.html`; the data-source badge should read `ข้อมูลจากฐานข้อมูล`.
-
-The current login is a front-end demo using role ids in `sessionStorage`. The migration policies intentionally support that prototype. Before production, replace them with Supabase Auth UUID ownership policies.
 
 ## Structure
 
