@@ -97,7 +97,9 @@
 
 ## 🧪 6. Verification & Quality Gate Matrix
 
-- [x] **Manual UI Walkthrough (Claude in Chrome):**
+- [~] **Manual UI Walkthrough:** ยังไม่ได้เดินจริงบน Chrome — ตรวจด้วย node smoke test แทน
+  (`isScreeningLocked` / `subScreeningStatus` ให้ผลถูกต้องกับ mock 6 เรื่อง: PENDING/MORE_INFO →
+  locked=false, DONE/RETURNED → locked=true) เคสที่ควรเดินจริงภายหลัง:
   - login `subcommittee` → inbox คณะที่ 2 → แถว DONE ปุ่มเป็น "ดูผล" → กดเข้า → หน้าล็อก:
     ฟิลด์ disabled, ไม่มีการ์ดลายเซ็น, `#btnDocEdit` กดไม่ได้, แบนเนอร์ "🔒 สำนวนนี้กลั่นกรองแล้วเสร็จ
     — เห็นควรชี้มูลความผิด (ม.๗๒) ...", ปุ่มพิมพ์/DOCX ยังกดได้, timeline แสดงครบ
