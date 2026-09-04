@@ -32,6 +32,11 @@ const ROLES = [
     name:'นางสาวศิริพร กิจการ', org:'กองบริหารคดี', lane:'L7', flow:'S7 / S11', act:'7.1, 7.2, 7.3',
     perms:['view.all','download','EDIT.MASTER','doc.generate','order24.draft','secrecy.set'] }
   ,
+  { id:'case_admin', login:'Napat.S', row:4, group:'กองบริหารคดี (กลุ่มงานบริหารคดีและบริหารทั่วไป)',
+    title:'ผู้อำนวยการกองบริหารคดี ปฏิบัติหน้าที่เลขานุการคณะกรรมการ ป.ป.ท.',
+    name:'นางสาวณพัสตร์ ศรีสมเกียรติ', org:'กองบริหารคดี', lane:'L7', flow:'S7 / S11', act:'7.1, 7.2, 7.3',
+    perms:['view.all','download','create.agenda','create.invite','record.minutes','doc.generate','dispatch.resolution','urgent.endorse'] }
+  ,
   { id:'investigator_demo', login:'Somchai.I', group:'ผู้รับการแจ้งเตือน', title:'นักสืบสวน (เจ้าของสำนวน)',
     name:'นายสมชาย ใจซื่อ', org:'กอง/สำนักงานเขตเจ้าของสำนวน', notificationOnly:true, perms:['view.notifications'] },
   { id:'director_demo', login:'Narin.D', group:'ผู้รับการแจ้งเตือน', title:'ผอ.กอง / ผอ.สำนักงาน ป.ป.ท. เขต',
@@ -458,6 +463,74 @@ function pushCaseHistory(kase, entry){
   return kase.history[kase.history.length - 1];
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   กองบริหารคดี (role case_admin) — 6 เฟสงานตลอด pipeline หลังสำนวนถึงมือ กบค.
+   ใช้จัดกลุ่ม KPI + stepper ในหน้า case-admin-inbox.html / case-admin-detail.html
+   ───────────────────────────────────────────────────────────────────────────── */
+const CASE_ADMIN_PHASES = [
+  { key:'URGENT',   label:'รับรองใบด่วน',        icon:'fa-bolt',            color:'#DC2626',
+    statuses:['PENDING_URGENT','PENDING_URGENT_72'] },
+  { key:'AGENDA',   label:'บรรจุวาระ',           icon:'fa-calendar-plus',   color:'#D0A830',
+    statuses:['AGENDA_SET','PENDING_INVITE_72','DEFERRED'] },
+  { key:'MEETING',  label:'ประชุม-บันทึกมติ',     icon:'fa-users-rectangle', color:'#0284C7',
+    statuses:['IN_MEETING','RESOLVED_PENDING','IN_MEETING_72','RESOLVED_PENDING_72'] },
+  { key:'DRAFTING', label:'จัดทำคำสั่ง-รายงาน',   icon:'fa-file-pen',        color:'#7C3AED',
+    statuses:['RESOLVED','PENDING_SIGN_RULING_72','PENDING_SIGN_ORDER_CHAIRMAN','PENDING_SIGN_ORDER_SECGEN'] },
+  { key:'NOTIFY',   label:'แจ้งมติ-ส่งดำเนินคดี',  icon:'fa-paper-plane',     color:'#0F766E',
+    statuses:['DISPATCHING','PENDING_AREA_NOTICE_72','DISPATCHING_NACC_72','PENDING_DISPATCH_GUILTY_72'] },
+  { key:'DONE',     label:'เสร็จสิ้น',            icon:'fa-circle-check',     color:'#15803D',
+    statuses:['CLOSED','CLOSED_72','UNDER_INVESTIGATION'] }
+];
+/* คืน key เฟสของ case ตามสถานะ (null = ยังไม่ถึงมือ กบค.) */
+function caseAdminPhase(kase){
+  if(!kase) return null;
+  const p = CASE_ADMIN_PHASES.find(ph => ph.statuses.includes(kase.status));
+  return p ? p.key : null;
+}
+/* case อยู่ในความรับผิดชอบของกองบริหารคดีหรือไม่ (owner ∈ dir_case/board_sec/affairs หรือ DEFERRED) */
+function isCaseAdminQueue(kase){
+  if(!kase) return false;
+  if(kase.status === 'DEFERRED') return true;
+  const o = STATUS[kase.status] && STATUS[kase.status].owner;
+  return o === 'dir_case' || o === 'board_sec' || o === 'affairs';
+}
+
+/* ฐานอำนาจ / กฎหมายที่เกี่ยวข้อง (law box) — อ้าง law_pacc_68.pdf แยกตามประเภทเรื่อง 7.1/7.2/7.3 */
+const CASE_ADMIN_LAW = {
+  common: [
+    { m:'ม.๑๒ / ม.๑๓', t:'องค์ประชุมคณะกรรมการ ป.ป.ท. ต้องไม่น้อยกว่ากึ่งหนึ่ง · นัดประชุมเป็นหนังสือล่วงหน้าไม่น้อยกว่า ๓ วัน' },
+    { m:'ม.๑๘/๑ · ม.๑๘/๓', t:'ส่งเรื่อง/สำนวนคืนคณะกรรมการ ป.ป.ช. ภายใน ๑๕ วัน + คัดสำเนาสำนวนเก็บเป็นหลักฐาน · เริ่มนับระยะเวลาไต่สวน' },
+    { m:'ม.๓๙', t:'อนุญาตให้ผู้ถูกกล่าวหาคัดสำเนาสำนวนการไต่สวนเพื่อใช้สิทธิอุทธรณ์ ตามหลักเกณฑ์ที่คณะกรรมการ ป.ป.ท. กำหนด' },
+    { m:'ม.๕๙', t:'สำนักงานจัดทำบัญชีเรื่องกล่าวหาที่รับไว้พิจารณาและผลการดำเนินการ (ฐานทะเบียนคดีกลาง)' }
+  ],
+  '7.1': [
+    { m:'ม.๒๓', t:'เริ่มไต่สวนภายใน ๖๐ วัน · ไต่สวนและวินิจฉัยให้เสร็จภายใน ๒ ปี (ขยายรวมไม่เกิน ๓ ปี; ต่างประเทศไม่เกิน ๕ ปี)' },
+    { m:'ม.๒๔ วรรคห้า', t:'ผู้ไต่สวนเสนอสำนวนต่อคณะกรรมการ ป.ป.ท. เพื่อให้ความเห็นชอบและวินิจฉัยชี้มูล · สั่งไต่สวนเพิ่มเติมได้ (ต้องระบุเหตุผล)' },
+    { m:'ม.๒๗', t:'เรื่องตาม ม.๒๖(๓)(๔) คณะกรรมการ ป.ป.ท. สั่งยุติการไต่สวนได้ · เลขาธิการส่งเรื่องให้ผู้บังคับบัญชาดำเนินการทางวินัยต่อ' },
+    { m:'ม.๒๘', t:'เลขาธิการ pre-screen รับ/ไม่รับ/จำหน่าย และรายงานคณะกรรมการ ป.ป.ท. ทุก ๑๕ วัน' }
+  ],
+  '7.2': [
+    { m:'ม.๓๒', t:'มติว่าข้อกล่าวหาไม่มีมูล — แจ้งผู้ถูกกล่าวหาทราบภายใน ๑๕ วันนับแต่วันมีมติ' },
+    { m:'ม.๓๓ / ม.๓๔', t:'พยานหลักฐานพอ — ส่งหนังสือแจ้งข้อกล่าวหาทางไปรษณีย์ลงทะเบียนตอบรับ ให้สิทธิชี้แจงไม่น้อยกว่า ๓๐ วัน' },
+    { m:'ม.๓๘', t:'มติชี้มูลวินัย — ประธานฯ แจ้งผู้บังคับบัญชา + ส่งรายงานการไต่สวนที่เห็นชอบแล้ว · ผู้บังคับบัญชาพิจารณาโทษภายใน ๖๐ วัน' },
+    { m:'ม.๔๐', t:'ผู้บังคับบัญชาขอทบทวนมติได้ภายใน ๓๐ วัน (มีพยานหลักฐานใหม่) · ส่งสำเนาคำสั่งลงโทษให้ ป.ป.ท. ภายใน ๑๕ วัน' },
+    { m:'ม.๔๑', t:'ผู้บังคับบัญชาไม่ดำเนินการตาม ม.๓๘ โดยไม่มีเหตุอันสมควร = ผิดวินัยอย่างร้ายแรง → เสนอบอร์ดส่ง ป.ป.ช. (ม.๑๕๗)' },
+    { m:'ม.๔๓', t:'ก.พ.ค. วินิจฉัยว่าอุทธรณ์ฟังขึ้น — ส่งคำวินิจฉัยให้คณะกรรมการ ป.ป.ท. พิจารณาทบทวน' },
+    { m:'ม.๔๔', t:'กรณีเป็นความผิดอาญา — ส่งสำนวน รายงาน เอกสาร และความเห็นให้พนักงานอัยการดำเนินคดีต่อ' },
+    { m:'ม.๔๖', t:'ชี้มูลแล้วก่อความเสียหาย — แจ้งหน่วยงานของรัฐหาตัวผู้รับผิดชดใช้/เพิกถอนเอกสารสิทธิ แล้วรายงานบอร์ด' }
+  ],
+  '7.3': [
+    { m:'ม.๔๓', t:'เรื่องของ กกม. / อุทธรณ์ — ก.พ.ค. วินิจฉัยว่าอุทธรณ์ฟังขึ้น ส่งคืนคณะกรรมการ ป.ป.ท. ทบทวน' },
+    { m:'ม.๑๗', t:'หน้าที่และอำนาจคณะกรรมการ ป.ป.ท. — ให้ความเห็นชอบสำนวนการไต่สวนและวินิจฉัยชี้มูล' }
+  ]
+};
+/* คืนรายการ law entries ตามประเภทเรื่องของ case (procType 7.1/7.2/7.3) + common */
+function caseAdminLaw(kase){
+  const t = String((kase && kase.procType) || (isCase72(kase) ? '7.2' : '7.1'));
+  const line = CASE_ADMIN_LAW[t.startsWith('7.3') ? '7.3' : (t.startsWith('7.2') ? '7.2' : '7.1')] || [];
+  return line.concat(CASE_ADMIN_LAW.common);
+}
+
 function transitionsBetween(from, to){
   return TRANSITIONS.filter(t => t.from === from && t.to === to);
 }
@@ -529,6 +602,7 @@ function homeHref(roleId){
   const r = roleId || currentRoleId();
   if (getRole(r).notificationOnly) return resolvePage('notifications.html');
   if (r === 'board_sec') return resolvePage('agenda-registry.html');
+  if (r === 'case_admin') return resolvePage('case-admin-inbox.html');
   if (r === 'support_sub' || r === 'sup_chair' || r === 'sup_sec' || r === 'sup_asst') return resolvePage('support-subcommittee-inbox.html');
   if (r === 'subcommittee') return resolvePage('subcommittee-inbox.html');
   if (r === 'board' || r === 'board_ex') return resolvePage('board-inbox.html');
@@ -2796,6 +2870,7 @@ const LOGIN_ALLOWED_ROLE_IDS = [
   'board_sec',
   'board',
   'affairs',
+  'case_admin',
   'investigator_demo',
   'director_demo',
   'case_clerk_demo',
@@ -2814,40 +2889,44 @@ const PAGE_PERMISSIONS = {
   // Main Inbox Screens
   'inbox.html': ['secgen', 'chairman', 'affairs', 'owner', 'director', 'deputy', 'section_head', 'legal', 'admin'],
   'support-subcommittee-inbox.html': ['support_sub', 'sup_chair', 'sup_sec', 'sup_asst'],
-  'subcommittee-inbox.html': ['subcommittee', 'affairs', 'chairman', 'secgen', 'board_sec', 'board', 'board_ex'],
+  'subcommittee-inbox.html': ['subcommittee', 'affairs', 'chairman', 'secgen', 'board_sec', 'board', 'board_ex', 'case_admin'],
   'board-inbox.html': ['board', 'board_ex'],
   'resolution-inbox.html': ['board_sec'], // หน้านี้เฉพาะ board_sec เท่านั้น — บังคับซ้ำในตัวหน้าเองด้วย (ดูคอมเมนต์ resolution-inbox.html)
-  'meeting-report.html': ['board_sec', 'affairs'],
-  'dashboard.html': ['secgen', 'chairman', 'board_sec', 'board', 'board_ex', 'affairs'],
-  'followup-dashboard.html': ['secgen', 'chairman', 'board_sec', 'board', 'board_ex', 'affairs'],
+  'meeting-report.html': ['board_sec', 'affairs', 'case_admin'],
+  'dashboard.html': ['secgen', 'chairman', 'board_sec', 'board', 'board_ex', 'affairs', 'case_admin'],
+  'followup-dashboard.html': ['secgen', 'chairman', 'board_sec', 'board', 'board_ex', 'affairs', 'case_admin'],
   'case-register.html': null, // public/all roles
   'register.html': null, // public/all roles
   'notifications.html': null,
 
-  // Registry Screens (Strictly removed for chairman & affairs per rules)
+  // หน้ารายการ/รายละเอียดของ role กองบริหารคดี (case_admin)
+  'case-admin-inbox.html': ['case_admin'],
+  'case-admin-detail.html': ['case_admin'],
+
+  // Registry Screens (Strictly removed for chairman & affairs per rules — case_admin ก็ไม่ให้ เพื่อความปลอดภัย มี home ของตัวเองแล้ว)
   'agenda-registry.html': ['board_sec', 'board', 'board_ex', 'support_sub'],
   'agenda-registry-detail.html': ['board_sec', 'board', 'board_ex', 'support_sub'],
   'agenda-detail.html': ['board_sec', 'board', 'board_ex', 'support_sub'],
 
   // Detail / Document Screens (Comprehensive coverage with Edit Gate inside page)
-  'approval-review.html': ['secgen', 'affairs', 'owner', 'director', 'deputy', 'section_head', 'board_sec', 'chairman', 'board', 'board_ex'],
-  'review.html': ['secgen', 'affairs', 'owner', 'director', 'deputy', 'section_head', 'board_sec', 'chairman', 'board', 'board_ex'],
-  'support-subcommittee.html': ['support_sub', 'sup_chair', 'sup_sec', 'sup_asst', 'affairs', 'secgen', 'board_sec', 'chairman', 'board', 'board_ex'],
-  'chairman-agenda.html': ['chairman', 'affairs', 'board_sec', 'secgen', 'board', 'board_ex'],
-  'chairman.html': ['chairman', 'affairs', 'board_sec', 'secgen', 'board', 'board_ex'],
-  'subcommittee-screening.html': ['subcommittee', 'affairs', 'chairman', 'secgen', 'board_sec', 'board', 'board_ex'],
-  'screening.html': ['subcommittee', 'affairs', 'chairman', 'secgen', 'board_sec', 'board', 'board_ex'],
-  'order-m24.html': ['secgen', 'chairman', 'affairs', 'board_sec', 'board', 'board_ex', 'owner', 'director', 'deputy', 'section_head'],
-  'order.html': ['secgen', 'chairman', 'affairs', 'board_sec', 'board', 'board_ex', 'owner', 'director', 'deputy', 'section_head'],
-  'board-resolution.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen'],
-  'resolution.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen'],
-  'resolution-72.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen'],
-  'ruling-report.html': ['board_sec', 'affairs', 'chairman', 'secgen', 'board', 'board_ex'],
-  'urgent-agenda.html': ['dir_case', 'chairman', 'affairs', 'secgen', 'board_sec', 'board', 'board_ex'],
-  'agenda-set.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen'],
-  'agenda.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen'],
-  'agenda-meeting-docs.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen'],
-  'meeting-docs.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen'],
+  'approval-review.html': ['secgen', 'affairs', 'owner', 'director', 'deputy', 'section_head', 'board_sec', 'chairman', 'board', 'board_ex', 'case_admin'],
+  'review.html': ['secgen', 'affairs', 'owner', 'director', 'deputy', 'section_head', 'board_sec', 'chairman', 'board', 'board_ex', 'case_admin'],
+  'support-subcommittee.html': ['support_sub', 'sup_chair', 'sup_sec', 'sup_asst', 'affairs', 'secgen', 'board_sec', 'chairman', 'board', 'board_ex', 'case_admin'],
+  'chairman-agenda.html': ['chairman', 'affairs', 'board_sec', 'secgen', 'board', 'board_ex', 'case_admin'],
+  'chairman.html': ['chairman', 'affairs', 'board_sec', 'secgen', 'board', 'board_ex', 'case_admin'],
+  'subcommittee-screening.html': ['subcommittee', 'affairs', 'chairman', 'secgen', 'board_sec', 'board', 'board_ex', 'case_admin'],
+  'screening.html': ['subcommittee', 'affairs', 'chairman', 'secgen', 'board_sec', 'board', 'board_ex', 'case_admin'],
+  'order-m24.html': ['secgen', 'chairman', 'affairs', 'board_sec', 'board', 'board_ex', 'owner', 'director', 'deputy', 'section_head', 'case_admin'],
+  'order.html': ['secgen', 'chairman', 'affairs', 'board_sec', 'board', 'board_ex', 'owner', 'director', 'deputy', 'section_head', 'case_admin'],
+  'board-resolution.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen', 'case_admin'],
+  'resolution.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen', 'case_admin'],
+  'resolution-72.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen', 'case_admin'],
+  'ruling-report.html': ['board_sec', 'affairs', 'chairman', 'secgen', 'board', 'board_ex', 'case_admin'],
+  'urgent-agenda.html': ['dir_case', 'chairman', 'affairs', 'secgen', 'board_sec', 'board', 'board_ex', 'case_admin'],
+  'agenda-set.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen', 'case_admin'],
+  'agenda.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen', 'case_admin'],
+  'agenda-meeting-docs.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen', 'case_admin'],
+  'meeting-docs.html': ['board_sec', 'affairs', 'chairman', 'board', 'board_ex', 'secgen', 'case_admin'],
   'login.html': null,
   'index.html': null
 };
@@ -3037,6 +3116,7 @@ const NAV = [
       if (role.id === 'board_sec') return 'ทะเบียนวาระการประชุม';
       if (role.id === 'board' || role.id === 'board_ex') return 'รอบการประชุมและอ่านวาระล่วงหน้า';
       if (role.id === 'affairs') return 'รายการเรื่องที่ต้องจัดทำ';
+      if (role.id === 'case_admin') return 'รายการคดี (กองบริหารคดี)';
       if (role.id === 'support_sub' || role.id === 'sup_chair') return 'รายการสำนวนรอกลั่นกรอง';
       if (role.id === 'subcommittee') return 'รายการสำนวนรอกลั่นกรอง (คณะของฉัน)';
       if (isUpstreamRole(role.id)) return 'รายการติดตามสถานะสำนวน';
@@ -3057,14 +3137,14 @@ const NAV = [
     visible: role => !!role && can('compile.minutes', role.id) },
   { href:'agenda-registry.html',       icon:'fa-table-list',       label:'ทะเบียนวาระการประชุม',
     /* board_sec/secgen/chairman/affairs ซ่อนลิงก์นี้ไว้ — ประธานฯ, เลขาธิการฯ และกลุ่มงานกิจการฯ ไม่มีกระบวนงานในหน้านี้ */
-    visible: role => !!role && role.id !== 'secgen' && role.id !== 'board_sec' && role.id !== 'chairman' && role.id !== 'affairs' },
+    visible: role => !!role && role.id !== 'secgen' && role.id !== 'board_sec' && role.id !== 'chairman' && role.id !== 'affairs' && role.id !== 'case_admin' },
   { href:'followup-dashboard.html',       icon:'fa-diagram-project',  label:'ติดตามผลมติ',
     /* บอร์ด/ประธานฯ ต้องเห็นหน้านี้ด้วย — ตาม design doc (สรุปการเชื่อมโยงกิจกรรมกับกิจกรรมที่7)
        กจ.8 ป้อน feedback loop กลับเข้า Dashboard เสนอบอร์ด กจ.7 พร้อมแจ้งเตือนคดีล่าช้าให้บอร์ดเร่งรัด
        ไม่ใช่แค่ฝ่ายปฏิบัติการ (affairs/board_sec) เท่านั้นที่ควรเห็น */
-    visible: role => !!role && ['affairs','board_sec','chairman','board'].includes(role.id) },
+    visible: role => !!role && ['affairs','board_sec','chairman','board','case_admin'].includes(role.id) },
   { href:'dashboard.html',                icon:'fa-chart-pie',        label:'Dashboard สถิติมติ',
-    visible: role => !!role && ['affairs','board_sec','chairman','board','secgen'].includes(role.id) }
+    visible: role => !!role && ['affairs','board_sec','chairman','board','secgen','case_admin'].includes(role.id) }
 ];
 
 function navLabel(navItem, role){
@@ -3481,6 +3561,10 @@ function renderShell(activeHref){
     {
       group: 'กลุ่มงานกิจการคณะกรรมการ',
       roles: ['affairs']
+    },
+    {
+      group: 'กองบริหารคดี (กลุ่มงานบริหารคดีและบริหารทั่วไป)',
+      roles: ['case_admin']
     },
     {
       group: 'ผู้รับการแจ้งเตือน (บัญชีสาธิต)',
@@ -7104,6 +7188,7 @@ if (typeof localStorage !== 'undefined') {
   TRANSITIONS, canTransition, nextStates, transitionsBetween,
   SUB_OUTCOME_MAP, SUB_SCREENING_STATUS, subOutcomeOptions, mapSubOutcome,
   subScreeningStatus, slaEffectiveDays, slaIsOnHold, isScreeningLocked, pushCaseHistory,
+  CASE_ADMIN_PHASES, caseAdminPhase, isCaseAdminQueue, CASE_ADMIN_LAW, caseAdminLaw,
   BOARD_MIN_IN_OFFICE, boardQuorum,
   M24P1_MIN_PANEL, M24P1_STAFF_FREE, panelComposition,
   CONFIG, RETURN_SCOPES, MATERIAL_FIELDS, daysUntil,
