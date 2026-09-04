@@ -2853,7 +2853,13 @@ const PAGE_PERMISSIONS = {
 };
 
 function canAccessPage(pageName, roleId){
-  const cleanPage = (pageName || '').split('?')[0].split('#')[0];
+  let cleanPage = (pageName || '').split('?')[0].split('#')[0];
+  // Vercel cleanUrls serves `notifications.html` as `/notifications`. Normalize
+  // the last path segment before applying the notification-only page guard;
+  // otherwise the guard redirects to `.html` and Vercel redirects straight
+  // back to the extensionless URL forever.
+  if (!cleanPage) cleanPage = 'index.html';
+  else if (!cleanPage.includes('.')) cleanPage += '.html';
   const accessRole = getRole(roleId);
   if (accessRole.notificationOnly) return ['notifications.html', 'login.html', 'index.html'].includes(cleanPage);
   const perms = PAGE_PERMISSIONS[cleanPage];

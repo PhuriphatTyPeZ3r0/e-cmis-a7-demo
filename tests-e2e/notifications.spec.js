@@ -52,6 +52,19 @@ test.describe('Notification center and read receipts', () => {
     expect(dates.afterQueenBirthday).toBe('2026-08-11');
   });
 
+  test('allows notification-only accounts on Vercel clean URLs', async ({ page }) => {
+    const access = await page.evaluate(() => ({
+      htmlRoute: ECMIS.canAccessPage('notifications.html', 'investigator_demo'),
+      cleanRoute: ECMIS.canAccessPage('notifications', 'investigator_demo'),
+      forbiddenCleanRoute: ECMIS.canAccessPage('inbox', 'investigator_demo')
+    }));
+    expect(access).toEqual({
+      htmlRoute: true,
+      cleanRoute: true,
+      forbiddenCleanRoute: false
+    });
+  });
+
   test('isolates receipts by recipient account', async ({ page }) => {
     await page.goto('/notifications.html');
     const result = await page.evaluate(() => {
