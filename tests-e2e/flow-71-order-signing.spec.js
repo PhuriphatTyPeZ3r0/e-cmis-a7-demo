@@ -21,23 +21,29 @@ test.describe('Flow 7.1 — บอร์ดลงมติ → ส่งออ�
       await setRole(page, 'board_sec');
       await page.goto(`/board-resolution.html?case=${encodeURIComponent(fx.tccNo)}`);
 
+      await page.fill('#agendaDetails', 'พฤติการณ์จากมติบอร์ดสำหรับคำสั่งแต่งตั้ง ม.24');
       await page.fill('#boardOpinion', 'ทดสอบระบบอัตโนมัติ — E2E flow 7.1');
-      await page.locator('.action-bar [data-act="sign"]').click();
-      await page.locator('.swal2-confirm').click();
-      await expect(page.locator('.action-bar [data-act="lock"]')).toBeVisible();
-      await page.locator('.action-bar [data-act="lock"]').click();
+      await page.locator('.action-bar [data-act="save_resolution"]').click();
+      await expect(page.locator('.swal2-popup')).toBeVisible({ timeout: 5000 });
       await page.locator('.swal2-confirm').click();
 
-      // send_order/lock's own redirect includes a setTimeout — wait for navigation, not a fixed delay
-      await page.waitForURL(/order\.html\?case=/, { timeout: 5000 });
-      expect(page.url()).toContain('order.html');
+      // Recording the resolution returns board_sec to the inbox. Open the generated
+      // M.24 form explicitly as the next actor, matching the real cross-role hand-off.
+      await page.waitForURL(/inbox\.html/, { timeout: 5000 });
 
       let row = await db.getRequest(fx.trrId);
       expect(row.trr_status, 'board-resolution lock should persist trr_status=015 (RESOLVED)').toBe('015');
+      expect(row.trr_resolution_data.agendaDetails).toBe('พฤติการณ์จากมติบอร์ดสำหรับคำสั่งแต่งตั้ง ม.24');
+      expect(row.trr_resolution_data.accusedSnapshot[0].name).toBe('นายวีระ ขับขี่ดี');
 
       // ---------- Step 2: affairs (drafter) sends the order for signature ----------
       await setRole(page, 'affairs');
       await page.goto(`/order.html?case=${encodeURIComponent(fx.tccNo)}`);
+      await page.waitForLoadState('networkidle');
+
+      await expect(page.locator('#allegationBox')).toContainText('พฤติการณ์จากมติบอร์ดสำหรับคำสั่งแต่งตั้ง ม.24');
+      await expect(page.locator('#boardAccusedNames')).toHaveValue(/นายวีระ ขับขี่ดี/);
+      await page.fill('#boardOffenseBasis', 'ฐานความผิดที่เจ้าหน้าที่ปรับแต่งในร่างคำสั่ง');
 
       const signCardHidden = await page.locator('#signCard').evaluate(el => el.classList.contains('d-none'));
       expect(signCardHidden, 'drafter (affairs) must not see the signature card — session #5 fix').toBe(true);
@@ -48,29 +54,23 @@ test.describe('Flow 7.1 — บอร์ดลงมติ → ส่งออ�
 
       row = await db.getRequest(fx.trrId);
       expect(['018', '019']).toContain(row.trr_status);
+      expect(row.trr_resolution_data.order24OffenseBasis).toBe('ฐานความผิดที่เจ้าหน้าที่ปรับแต่งในร่างคำสั่ง');
       const isSub = row.trr_status === '018';
       const signerRole = isSub ? 'chairman' : 'secgen';
 
       // ---------- Step 3: the real signer opens the case and signs ----------
       await setRole(page, signerRole);
       await page.goto(`/order.html?case=${encodeURIComponent(fx.tccNo)}`);
+      await page.waitForLoadState('networkidle');
 
       const signCardVisibleNow = await page.locator('#signCard').evaluate(el => !el.classList.contains('d-none'));
       expect(signCardVisibleNow, 'signer must see the signature card').toBe(true);
 
-      // Known finding to confirm, not assume: orderNo is a local form field with no
-      // persistence anywhere (not even in trr_resolution_data) — a signer opening a
-      // fresh page sees it empty. handle('sign') requires it non-empty before allowing
-      // the signature dialog to open at all.
+      // The drafter's order number is part of trr_resolution_data and must be loaded
+      // before the signer sees the read-only form.
       const orderNoBeforeSigning = await page.inputValue('#orderNo');
-      expect(orderNoBeforeSigning, 'orderNo does not carry over to the signer — confirms it is not persisted anywhere').toBe('');
+      expect(orderNoBeforeSigning, 'orderNo should carry over from the drafter to the signer').toBe('999/2569-E2E');
 
-      await page.locator('.action-bar [data-act="sign"]').click();
-      // sign handler should block and show a warning toast rather than opening the dialog
-      const dialogAppearedWithoutOrderNo = await page.locator('.swal2-popup').isVisible().catch(() => false);
-      expect(dialogAppearedWithoutOrderNo, 'signature dialog must not open while orderNo is empty').toBe(false);
-
-      await page.fill('#orderNo', '999/2569-E2E');
       await page.locator('.action-bar [data-act="sign"]').click();
       await expect(page.locator('.swal2-popup')).toBeVisible({ timeout: 5000 });
       await page.locator('.swal2-confirm').click();

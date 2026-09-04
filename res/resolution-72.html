@@ -724,6 +724,25 @@
 
           const fromStatus = kase.status;
           const recordedDocHtml = document.getElementById('docPaper')?.innerHTML || null;
+          const factSummary = document.getElementById('agendaDetails').value.trim() || kase.allegation || '';
+          const criminalFinding = document.getElementById('criminalFinding').value.trim();
+          const disciplinaryFinding = document.getElementById('disciplinaryFinding').value.trim();
+          const priorDecisions = Array.isArray(kase.accusedDecisions72) ? kase.accusedDecisions72 : [];
+          const accusedSnapshot = (kase.accused || []).map(acc => ({
+            no: acc.no, name: acc.name || '', pos: acc.pos || '', agency: acc.agency || '', idcard: acc.idcard || ''
+          }));
+          const accusedDecisions72 = accusedSnapshot.map(acc => {
+            const prior = priorDecisions.find(item => item.name === acc.name) || {};
+            return {
+              ...acc,
+              status: kase.witnessState72?.[acc.name] ? 'WITNESS' : r.code,
+              factSummary,
+              criminalFinding: crim ? criminalFinding : '',
+              disciplinaryFinding: disc ? disciplinaryFinding : '',
+              offenseBasis: [crim ? criminalFinding : '', disc ? disciplinaryFinding : ''].filter(Boolean).join('\n'),
+              additionalText: prior.additionalText || ''
+            };
+          });
 
           const patch = {
             status: 'RESOLVED_PENDING_72',
@@ -732,7 +751,13 @@
             resolutionDate72: document.getElementById('meetDate').value.trim(),
             investigatorRef72: document.getElementById('investigatorRef').value.trim(),
             investigatorOpinion72: document.getElementById('investigatorOpinion').value.trim(),
-            presenterNote72: document.getElementById('presenterNote').value.trim()
+            presenterNote72: document.getElementById('presenterNote').value.trim(),
+            agendaTitle: document.getElementById('caseSubject').value.trim() || kase.subject || '',
+            agendaDetails: factSummary,
+            factSummary72: factSummary,
+            accusedSnapshot,
+            accusedDecisions72,
+            witnessState72: Object.assign({}, kase.witnessState72 || {})
           };
           if (r.code === 'MORE_INVESTIGATE_72') {
             const reasonText = document.getElementById('moreReason').value.trim();

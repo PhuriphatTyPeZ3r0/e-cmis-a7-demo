@@ -43,7 +43,13 @@ async function setRole(page, roleId) {
    manual testing this session. Filter it out so real app errors aren't buried. */
 function isRealConsoleError(msg) {
   if (msg.type() !== 'error') return false;
-  return !msg.text().includes('message channel closed before a response was received');
+  if (msg.text().includes('message channel closed before a response was received')) return false;
+  // Notification persistence intentionally resolves duplicate event_key inserts by
+  // catching PostgreSQL 23505 and selecting the existing row. Chromium still emits a
+  // generic resource error for that handled 409, so do not treat it as an app failure.
+  const sourceUrl = msg.location()?.url || '';
+  if (msg.text().includes('status of 409') && sourceUrl.includes('/ecmis_notification_event')) return false;
+  return true;
 }
 
 /* Attach a console-error collector to a page; call .errors() any time to read

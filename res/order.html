@@ -93,7 +93,18 @@
                 <button type="button" data-format="removeFormat" title="ล้างรูปแบบ"><i class="fa-solid fa-eraser"></i></button>
               </div>
               <div class="rtf-box" id="allegationBox" data-placeholder="พิมพ์หรือวางข้อความพฤติการณ์คดี — รองรับข้อความยาว หลายกรรม และจัดรูปแบบตัวหนา/ย่อหน้าได้"></div>
-              <small class="text-muted d-block mt-1">ดึงจากพฤติการณ์คดีในสำนวนโดยอัตโนมัติ — แก้ไข/วางข้อความเพิ่มเติมได้ก่อนออกคำสั่ง</small>
+              <small class="text-muted d-block mt-1">ดึงจากมติบอร์ดโดยอัตโนมัติ — แก้ไข/วางข้อความเพิ่มเติมได้ก่อนออกคำสั่ง</small>
+              <div class="row g-2 mt-2">
+                <div class="col-md-7">
+                  <label class="form-label field-req">รายชื่อผู้ถูกกล่าวหาจากมติบอร์ด</label>
+                  <textarea class="form-control" id="boardAccusedNames" rows="3"></textarea>
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label">ฐานความผิดจากมติบอร์ด</label>
+                  <textarea class="form-control" id="boardOffenseBasis" rows="3"></textarea>
+                </div>
+              </div>
+              <small class="text-muted d-block mt-1">เจ้าหน้าที่สามารถปรับถ้อยคำได้ โดยระบบจะเก็บค่าที่แก้ไขไว้กับร่างคำสั่ง</small>
             </div>
           </div>
 
@@ -504,6 +515,25 @@
     document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status);
     document.getElementById('stepper').innerHTML = ECMIS.stepperHtml('RESOLVED');
 
+    function accusedTextFromBoard(source) {
+      const list = (source.accusedSnapshot && source.accusedSnapshot.length) ? source.accusedSnapshot : (source.accused || []);
+      return list.map((acc, index) => `${index + 1}. ${acc.name || ''}${acc.pos ? ` ตำแหน่ง ${acc.pos}` : ''}${acc.agency ? ` สังกัด ${acc.agency}` : ''}`).join('\n');
+    }
+
+    function populateBoardResolutionFields(source, force) {
+      const allegationBox = document.getElementById('allegationBox');
+      const factText = source.order24FactSummary || source.agendaDetails || source.factSummary72 || source.allegation || '';
+      if (allegationBox && (force || allegationBox.dataset.userTouched !== 'true')) {
+        allegationBox.innerHTML = factText ? `<p>${ECMIS.escapeHtml(factText)}</p>` : '';
+      }
+      const accusedEl = document.getElementById('boardAccusedNames');
+      if (accusedEl && (force || accusedEl.dataset.userTouched !== 'true')) accusedEl.value = source.order24AccusedText || accusedTextFromBoard(source);
+      const offenseEl = document.getElementById('boardOffenseBasis');
+      if (offenseEl && (force || offenseEl.dataset.userTouched !== 'true')) offenseEl.value = source.order24OffenseBasis || source.offenseBasis || source.legalBase || '';
+    }
+
+    populateBoardResolutionFields(kase, true);
+
     /* ===================================================================
        ไฟล์ต้นฉบับจริงของทุกแบบฟอร์มในตระกูล ม.24 (ปปท. 5-01 ถึง 5-17 และแบบไม่มี
        เลข) — คัดจากตัวอย่างในเล่มคู่มือและตรวจทานถ้อยคำตามตัวบทกฎหมายแล้ว
@@ -909,7 +939,8 @@
       const no = document.getElementById('orderNo').value.trim();
       const dt = ECMIS.thaiDate(document.getElementById('orderDate').value.trim());
       const accused = (kase.accused && kase.accused[0]) || {};
-      const etAl = kase.accused && kase.accused.length > 1 ? ' กับพวก' : '';
+      const accusedNamesText = document.getElementById('boardAccusedNames').value.trim();
+      const offenseBasisText = document.getElementById('boardOffenseBasis').value.trim();
       const isNaccM62 = caseOriginCode() === 'NACC_M62';
       const code = FORM_CODES[isSub ? 'sub' : 'base'][caseOriginCode()];
       // กรณีเรื่องประพฤติมิชอบ (legalBase ขึ้นต้นด้วย "ม.18") ให้มีหัวกระดาษกำกับ — มาตรา 62 หรือมาตราอื่นไม่ต้องมี
@@ -934,12 +965,13 @@
       ด้วยคณะกรรมการป้องกันและปราบปรามการทุจริตในภาครัฐ ในการประชุมครั้งที่
       ${M(kase.meetingNo || '38/2569')} เมื่อวันที่ ${M(ECMIS.thaiDate(kase.meetingDate || '2569-06-02'))}
       วาระที่ ${M(kase.agendaNo || '5.12')} ได้มีมติ<strong>รับไว้ไต่สวน</strong>
-      สำนวนเรื่องที่ ${M(kase.id)} กรณีกล่าวหา ${M(accused.name)} เลขประจำตัวประชาชน ${M(accused.idcard)}
-      ขณะเกิดเหตุดำรงตำแหน่ง ${M(accused.pos)} สังกัด ${M(accused.agency)} ผู้ถูกกล่าวหา${etAl}
+      สำนวนเรื่องที่ ${M(kase.id)} กรณีกล่าวหา ${M(accusedNamesText, accused.name || 'รายชื่อผู้ถูกกล่าวหา')}
       ว่ากระทำการทุจริตในภาครัฐ โดยมีพฤติการณ์กล่าวโดยสรุปว่า
     </div>
 
     <div class="doc-indent doc-body-indent" style="margin-top:4px">${document.getElementById('allegationBox').innerHTML || M('', 'พฤติการณ์คดี')}</div>
+
+    ${offenseBasisText ? `<div class="doc-indent" style="margin-top:6px"><strong>ฐานความผิดตามมติบอร์ด</strong> ${M(offenseBasisText)}</div>` : ''}
 
     <div class="doc-indent" style="margin-top:8px">
       ${isSub
@@ -1789,6 +1821,9 @@
                 orderDate: orderDateVal,
                 caseOrigin: caseOriginVal,
                 order24Members: members,
+                order24FactSummary: document.getElementById('allegationBox').innerText.trim(),
+                order24AccusedText: document.getElementById('boardAccusedNames').value.trim(),
+                order24OffenseBasis: document.getElementById('boardOffenseBasis').value.trim(),
                 orderMode: currentMode
               });
               const { error } = await sb.from('tbl_res_request')
@@ -1805,12 +1840,19 @@
           kase.status = targetStatus;
           kase.orderNo = orderNoVal;
           kase.orderDate = orderDateVal;
+          kase.order24FactSummary = document.getElementById('allegationBox').innerText.trim();
+          kase.order24AccusedText = document.getElementById('boardAccusedNames').value.trim();
+          kase.order24OffenseBasis = document.getElementById('boardOffenseBasis').value.trim();
           const memCase = ECMIS.CASES.find(x => x.id === kase.id);
           if (memCase) {
             memCase.status = targetStatus;
             memCase.orderNo = orderNoVal;
             memCase.orderDate = orderDateVal;
+            memCase.order24FactSummary = kase.order24FactSummary;
+            memCase.order24AccusedText = kase.order24AccusedText;
+            memCase.order24OffenseBasis = kase.order24OffenseBasis;
           }
+          ECMIS.saveCases();
           ECMIS.toastOk(`ส่ง${docWord}ให้ ${targetSignerTitle} ลงนามเรียบร้อย`);
           setTimeout(() => location.href = ECMIS.homeHref(role.id), 1200);
         })();
@@ -2063,8 +2105,18 @@
 
     ECMIS.initRichTextBox(document.getElementById('allegationBox'), {
       toolbar: 'allegationToolbar',
-      initialHtml: kase.allegation ? `<p>${kase.allegation}</p>` : '',
-      onChange: renderDoc
+      initialHtml: '',
+      onChange: () => {
+        document.getElementById('allegationBox').dataset.userTouched = 'true';
+        renderDoc();
+      }
+    });
+    populateBoardResolutionFields(kase, true);
+    ['boardAccusedNames', 'boardOffenseBasis'].forEach(id => {
+      document.getElementById(id).addEventListener('input', event => {
+        event.target.dataset.userTouched = 'true';
+        renderDoc();
+      });
     });
 
     /* ---------- Master Toolbar & Pagination Controls ---------- */
@@ -2230,8 +2282,7 @@
       refreshSignerConfig();
 
       document.getElementById('stBadge').innerHTML = `<span class="chip me-1">เลขสำนวน ${kase.id}</span>` + ECMIS.statusBadge(kase.status);
-      const allegationBoxEl = document.getElementById('allegationBox');
-      if (allegationBoxEl) allegationBoxEl.innerHTML = kase.allegation ? `<p>${kase.allegation}</p>` : '';
+      populateBoardResolutionFields(kase, false);
 
       // ดึงเลขที่คำสั่งและวันที่จากฐานข้อมูล / ค่าที่บันทึกไว้
       const savedOrderNo = kase.orderNo || (kase.resolutionData && kase.resolutionData.orderNo) || '';

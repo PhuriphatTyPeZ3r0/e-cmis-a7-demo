@@ -2311,7 +2311,10 @@ function supabaseRowToCase(row) {
   /* trr_resolution_data เก็บ payload มติแบบเต็มเป็น JSON เดียว (รหัสมติ + ฟิลด์ความเห็น/ข้อหา
      ของสาย 7.2) — spread เข้า kase ตรงๆ ก่อน memCase fallback ด้านล่าง เพื่อให้ค่าจริงจาก DB
      ชนะ mock array เสมอเมื่อมีข้อมูลจริงแล้ว */
-  if (row.trr_resolution_data) Object.assign(kase, row.trr_resolution_data);
+  if (row.trr_resolution_data) {
+    kase.resolutionData = Object.assign({}, row.trr_resolution_data);
+    Object.assign(kase, row.trr_resolution_data);
+  }
   /* trr_resolution_data มักมีฟิลด์ .status ติดมาด้วย (เช่น patch object ที่ resolution-72.html/
      board-resolution.html เขียนตอน lock มติ — ถูกบันทึกไว้ ณ ตอนนั้นเท่านั้น ไม่เคยอัปเดตซ้ำอีกหลังจากนั้น
      แม้ trr_status คอลัมน์จริงจะเปลี่ยนต่อไปกี่ครั้งก็ตาม เช่นตอน btnDraftDone/btnSignRuling ใน

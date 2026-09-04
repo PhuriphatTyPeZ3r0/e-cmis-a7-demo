@@ -682,6 +682,33 @@
     let customOffenses = [];
     let accusedRealList = [];
 
+    const ACCUSED_DECISION_LABELS = {
+      GUILTY_72: 'ชี้มูลความผิด',
+      NO_MERIT_72: 'ข้อกล่าวหาไม่มีมูล',
+      MORE_INVESTIGATE_72: 'ให้ไต่สวนเพิ่มเติม',
+      FORWARD_NACC: 'ส่งเรื่องให้ ป.ป.ช.',
+      WITNESS: 'กันไว้เป็นพยาน'
+    };
+
+    function boardDecisionForAccused(name) {
+      const rows = Array.isArray(kase.accusedDecisions72) ? kase.accusedDecisions72 : [];
+      return rows.find(row => row && row.name === name) || {};
+    }
+
+    function accusedDecisionDefaults(acc, idx) {
+      const board = boardDecisionForAccused(acc.name);
+      const witness = !!(kase.witnessState72 && kase.witnessState72[acc.name]);
+      const status = board.status || (witness ? 'WITNESS' : (kase.resolution72 || 'GUILTY_72'));
+      const fallbackOffense = [kase.criminalFinding72, kase.disciplinaryFinding72].filter(Boolean).join('\n');
+      return {
+        decisionStatus: status,
+        boardFactSummary: board.factSummary || kase.factSummary72 || kase.agendaDetails || kase.allegation || '',
+        boardOffenseBasis: board.offenseBasis || [board.criminalFinding, board.disciplinaryFinding].filter(Boolean).join('\n') || fallbackOffense,
+        additionalText: board.additionalText || '',
+        roleType: board.roleType || (kase.accusedRoles72 && kase.accusedRoles72[acc.name]) || (idx === 0 ? 'PRINCIPAL' : 'ACCESSORY')
+      };
+    }
+
     async function loadOffenseBasisData() {
       try {
         const [{ data: caseRow }, { data: basisRows }] = await Promise.all([
@@ -694,6 +721,18 @@
 
         let accusedRows = ((caseRow && caseRow.tbl_cmp_case_accused) || [])
           .filter(a => !a.is_deleted).sort((a, b) => (a.tcca_no || 0) - (b.tcca_no || 0));
+
+        if (Array.isArray(kase.accusedSnapshot) && kase.accusedSnapshot.length) {
+          accusedRows = kase.accusedSnapshot.map((snap, idx) => {
+            const liveRow = accusedRows.find(row => row.tcca_name === snap.name) || accusedRows[idx] || {};
+            return {
+              tcca_id: liveRow.tcca_id || 9000 + idx,
+              tcca_name: snap.name || liveRow.tcca_name || '',
+              tcca_position: snap.pos || liveRow.tcca_position || '',
+              tcca_agency: snap.agency || liveRow.tcca_agency || ''
+            };
+          });
+        }
 
         if (!accusedRows.length && kase.accused && kase.accused.length) {
           accusedRows = kase.accused.map((a, idx) => ({
@@ -712,16 +751,14 @@
         const { data: selRows } = await sb.from('tbl_res_accused_offense')
           .select('tcca_id, trob_id').eq('is_deleted', false).in('tcca_id', tccaIds);
 
-        accusedRealList = accusedRows.map((a, idx) => ({
-          tcca_id: a.tcca_id,
-          name: a.tcca_name,
-          pos: a.tcca_position,
-          agency: a.tcca_agency,
-          roleType: (kase.accusedRoles72 && kase.accusedRoles72[a.tcca_name]) || (idx === 0 ? 'PRINCIPAL' : 'ACCESSORY'),
-          selected: new Set((selRows || []).filter(s => s.tcca_id === a.tcca_id).map(s => s.trob_id))
-        }));
+        accusedRealList = accusedRows.map((a, idx) => {
+          const base = { tcca_id: a.tcca_id, name: a.tcca_name, pos: a.tcca_position, agency: a.tcca_agency };
+          return Object.assign(base, accusedDecisionDefaults(base, idx), {
+            selected: new Set((selRows || []).filter(s => s.tcca_id === a.tcca_id).map(s => s.trob_id))
+          });
+        });
 
-        if (accusedRealList[0] && accusedRealList[0].selected.size === 0) {
+        if (accusedRealList[0] && accusedRealList[0].decisionStatus === 'GUILTY_72' && accusedRealList[0].selected.size === 0) {
           accusedRealList[0].selected.add(101); // 147
           if (accusedRealList[1]) accusedRealList[1].selected.add(111); // 157
         }
@@ -733,14 +770,13 @@
           { name: kase.accusedName || 'นายสมศักดิ์ ข้าราชการ', pos: 'ผู้อำนวยการกอง', agency: kase.agency || 'กรมชลประทาน' },
           { name: 'นายวิรัช ช่างเทคนิค', pos: 'นายช่างโยธาชำนาญงาน', agency: 'กรมชลประทาน' }
         ];
-        accusedRealList = mockAcc.map((a, idx) => ({
-          tcca_id: 9000 + idx,
-          name: a.name,
-          pos: a.pos,
-          agency: a.agency,
-          roleType: idx === 0 ? 'PRINCIPAL' : 'ACCESSORY',
-          selected: new Set(idx === 0 ? [101, 105] : [111])
-        }));
+        accusedRealList = mockAcc.map((a, idx) => {
+          const base = { tcca_id: 9000 + idx, name: a.name, pos: a.pos, agency: a.agency };
+          const defaults = accusedDecisionDefaults(base, idx);
+          return Object.assign(base, defaults, {
+            selected: new Set(defaults.decisionStatus === 'GUILTY_72' ? (idx === 0 ? [101, 105] : [111]) : [])
+          });
+        });
         return true;
       }
     }
@@ -922,6 +958,7 @@
             <div>
               <strong style="font-size:1.02rem;color:var(--ecmis-navy)">${acc.name}</strong>
               <span class="text-muted ms-1">${acc.pos || ''} ${acc.agency ? '(' + acc.agency + ')' : ''}</span>
+              <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle ms-2">${ACCUSED_DECISION_LABELS[acc.decisionStatus] || acc.decisionStatus}</span>
             </div>
             <div class="d-flex align-items-center gap-3 bg-white px-2 py-1 border rounded">
               <span class="text-muted small fw-semibold">สถานะทางคดี:</span>
@@ -933,6 +970,21 @@
                 <input class="form-check-input role-radio" type="radio" name="role_${acc.tcca_id}" id="r_a_${acc.tcca_id}" value="ACCESSORY" ${acc.roleType === 'ACCESSORY' ? 'checked' : ''} data-tcca="${acc.tcca_id}">
                 <label class="form-check-label small fw-bold text-primary" for="r_a_${acc.tcca_id}">ผู้สนับสนุน</label>
               </div>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3 accused-board-text" data-tcca="${acc.tcca_id}">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">พฤติการณ์จากมติบอร์ด</label>
+              <textarea class="form-control form-control-sm accused-fact-text" rows="3" data-tcca="${acc.tcca_id}">${ECMIS.escapeHtml(acc.boardFactSummary || '')}</textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">ฐานความผิดจากมติบอร์ด</label>
+              <textarea class="form-control form-control-sm accused-offense-text" rows="3" data-tcca="${acc.tcca_id}" ${acc.decisionStatus === 'WITNESS' ? 'placeholder="บุคคลนี้ถูกกันไว้เป็นพยาน — ระบุฐานที่เกี่ยวข้องเฉพาะเมื่อจำเป็น"' : ''}>${ECMIS.escapeHtml(acc.boardOffenseBasis || '')}</textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-bold">${acc.decisionStatus === 'WITNESS' ? 'ข้อความประกอบการกันไว้เป็นพยาน' : acc.decisionStatus === 'NO_MERIT_72' ? 'เหตุผลเพิ่มเติมที่ข้อกล่าวหาไม่มีมูล' : acc.decisionStatus === 'MORE_INVESTIGATE_72' ? 'ประเด็นที่ให้ไต่สวนเพิ่มเติม' : 'ข้อความปรับแต่งเพิ่มเติมตามสถานะรายบุคคล'}</label>
+              <textarea class="form-control form-control-sm accused-additional-text" rows="2" data-tcca="${acc.tcca_id}" placeholder="เจ้าหน้าที่สามารถปรับถ้อยคำเพิ่มเติมสำหรับผู้ถูกกล่าวหารายนี้">${ECMIS.escapeHtml(acc.additionalText || '')}</textarea>
             </div>
           </div>
 
@@ -1057,6 +1109,18 @@
             autoGeneratePrescriptionNote({ silent: true });
             renderDoc();
           }
+        });
+      });
+
+      body.querySelectorAll('.accused-fact-text, .accused-offense-text, .accused-additional-text').forEach(field => {
+        field.addEventListener('input', event => {
+          const acc = accusedRealList.find(item => item.tcca_id === +event.target.dataset.tcca);
+          if (!acc) return;
+          if (event.target.classList.contains('accused-fact-text')) acc.boardFactSummary = event.target.value;
+          if (event.target.classList.contains('accused-offense-text')) acc.boardOffenseBasis = event.target.value;
+          if (event.target.classList.contains('accused-additional-text')) acc.additionalText = event.target.value;
+          persistForm();
+          renderDoc();
         });
       });
     }
@@ -1367,12 +1431,12 @@
 
     syncFromBoardResolution(kase, false);
 
-    (async function initData() {
+    const caseDataReady = (async function initData() {
       try {
         const dbCase = await loadCaseFromSupabase(caseParam);
         if (dbCase) {
           Object.assign(kase, dbCase);
-          syncFromBoardResolution(kase, false);
+          syncFromBoardResolution(kase, true);
           renderDoc();
         }
       } catch (e) {
@@ -1390,8 +1454,20 @@
     }
     toggleFormCards();
 
-    function persistForm() {
-      ECMIS.Model.CaseStore.update(kase.id, {
+    function serializedAccusedDecisions72() {
+      return accusedRealList.map(acc => ({
+        name: acc.name || '', pos: acc.pos || '', agency: acc.agency || '',
+        status: acc.decisionStatus || kase.resolution72 || 'GUILTY_72',
+        roleType: acc.roleType || 'PRINCIPAL',
+        factSummary: acc.boardFactSummary || '',
+        offenseBasis: acc.boardOffenseBasis || '',
+        additionalText: acc.additionalText || '',
+        offenseIds: Array.from(acc.selected || [])
+      }));
+    }
+
+    function currentRulingFormPatch() {
+      return {
         meetingNo: document.getElementById('meetNo').value.trim(),
         agendaNo: document.getElementById('agendaNo').value.trim(),
         orderNo: document.getElementById('orderNo').value.trim(),
@@ -1412,9 +1488,33 @@
         discCharge72: document.getElementById('discCharge').value,
         discPenalty72: document.getElementById('discPenalty').value,
         discMisconduct72: document.getElementById('discMisconduct').value.trim(),
-        guiltyCriminal72: document.getElementById('hasCriminalToggle').checked
-      });
+        guiltyCriminal72: document.getElementById('hasCriminalToggle').checked,
+        accusedDecisions72: serializedAccusedDecisions72()
+      };
+    }
+
+    function persistForm() {
+      const patch = currentRulingFormPatch();
+      ECMIS.Model.CaseStore.update(kase.id, patch);
       ECMIS.saveCases();
+      return patch;
+    }
+
+    async function persistFormToSupabase() {
+      const patch = persistForm();
+      if (!sb || !kase.trr_id) return true;
+      const resolutionData = Object.assign({}, kase.resolutionData || {}, patch);
+      const { error } = await sb.from('tbl_res_request')
+        .update({ trr_resolution_data: resolutionData })
+        .eq('trr_id', kase.trr_id);
+      if (error) {
+        console.error('บันทึกร่างรายงานชี้มูลลงฐานข้อมูลไม่สำเร็จ:', error);
+        ECMIS.toastWarn('บันทึกร่างลงฐานข้อมูลไม่สำเร็จ กรุณาลองใหม่');
+        return false;
+      }
+      kase.resolutionData = resolutionData;
+      Object.assign(kase, patch);
+      return true;
     }
 
     function renderDoc() {
@@ -1461,6 +1561,19 @@
         const isSingleAccused = activeSplitAccusedIndex !== null && accusedRealList[activeSplitAccusedIndex];
         const targetAccused = isSingleAccused ? accusedRealList[activeSplitAccusedIndex] : null;
         const targetName = targetAccused ? targetAccused.name : ((kase.accused && kase.accused[0] ? kase.accused[0].name : 'ผู้ถูกกล่าวหา') + (accusedRealList.length > 1 ? ' กับพวก' : ''));
+        const decisionRows = targetAccused ? [targetAccused] : accusedRealList;
+        const effectiveFactSummary = decisionRows.length
+          ? decisionRows.map(acc => `${acc.name} (${ACCUSED_DECISION_LABELS[acc.decisionStatus] || acc.decisionStatus})\n${acc.boardFactSummary || factSummary}`).join('\n\n')
+          : factSummary;
+        const effectiveOffenseBasis = decisionRows.length
+          ? decisionRows.map(acc => `${acc.name}: ${acc.boardOffenseBasis || criminalFinding || disciplinaryFinding || 'ไม่ระบุฐานความผิด'}`).join('\n\n')
+          : criminalFinding;
+        const effectiveAdditionalText = decisionRows
+          .filter(acc => (acc.additionalText || '').trim())
+          .map(acc => `${acc.name}: ${acc.additionalText.trim()}`).join('\n\n');
+        const decisionSummary = decisionRows.length
+          ? decisionRows.map(acc => `${acc.name} — ${ACCUSED_DECISION_LABELS[acc.decisionStatus] || acc.decisionStatus}`).join('; ')
+          : 'ตามรายละเอียดมติที่ประชุม';
 
         const introBlock = `
           <div class="doc-secret" style="color:#d9534f;font-weight:bold;font-size:16px;text-align:right;margin-bottom:-10px">ลับ</div>
@@ -1536,7 +1649,7 @@
           ),
           ...createFlowSection(
             'ประเด็นเกี่ยวกับการกระทำความผิดของผู้ถูกกล่าวหา',
-            factSummary
+            effectiveFactSummary
           ),
           ...createFlowSection(
             'ประเด็นเกี่ยวกับความเสียหาย',
@@ -1555,15 +1668,19 @@
             meetingOpinion
           ) : []),
           `<div class="doc-indent" style="margin-top:6px">
-            คณะกรรมการ ป.ป.ท. มีมติเป็นเอกฉันท์วินิจฉัยชี้มูลความผิดทางอาญา และความผิดทางวินัย
-            ผู้ถูกกล่าวหา${isSingleAccused ? ` (${targetAccused.name})` : ''} ดังนี้
+            คณะกรรมการ ป.ป.ท. มีมติรายผู้ถูกกล่าวหา${isSingleAccused ? ` (${targetAccused.name})` : ''} ดังนี้
+            ${M(decisionSummary)}
           </div>`,
+          ...(effectiveAdditionalText ? createFlowSection(
+            'ข้อความเพิ่มเติมตามสถานะของผู้ถูกกล่าวหาแต่ละราย',
+            effectiveAdditionalText
+          ) : []),
           ...createFlowSection(
             'เหตุผลในการวินิจฉัย (การปรับข้อเท็จจริงประกอบเข้ากับข้อกฎหมาย)',
             legalAnalysis
           ),
           `<div class="doc-h" style="margin-top:6px">ความผิดทางอาญา</div>
-          <div class="doc-indent">${M(criminalFinding, 'ไม่มีมูลความผิดทางอาญา')}${chargesText ? `<br><small class="text-muted">ฐานความผิดและมาตรา: ${chargesText}</small>` : ''}</div>`,
+          <div class="doc-indent">${M(effectiveOffenseBasis, criminalFinding || 'ไม่มีมูลความผิดทางอาญา')}${chargesText ? `<br><small class="text-muted">ฐานความผิดและมาตรา: ${chargesText}</small>` : ''}</div>`,
           `<div class="doc-h" style="margin-top:6px">ความผิดทางวินัย</div>
           <div class="doc-indent">${M(disciplinaryFinding, 'ไม่มีมูลความผิดทางวินัย')}</div>`
         ];
@@ -1874,8 +1991,8 @@
       document.getElementById('actionBarSlot').innerHTML = bar;
 
       const btnSaveDraft = document.getElementById('btnSaveDraft');
-      if (btnSaveDraft) btnSaveDraft.addEventListener('click', () => {
-        persistForm();
+      if (btnSaveDraft) btnSaveDraft.addEventListener('click', async () => {
+        if (!await persistFormToSupabase()) return;
         ECMIS.toastOk('บันทึกฉบับร่างเรียบร้อยแล้ว');
       });
 
@@ -1923,7 +2040,7 @@
 
       const btnDraftDone = document.getElementById('btnDraftDone');
       if (btnDraftDone) btnDraftDone.addEventListener('click', async () => {
-        persistForm();
+        if (!await persistFormToSupabase()) return;
         /* ECMIS.updateCaseStatus() (assets/ecmis-app.js) เขียน kase.status + saveCases() เองอยู่แล้ว
            ไม่ว่า sb/kase.trr_id จะมีหรือไม่ — เดิมโค้ดตรงนี้เรียก ECMIS.Model.CaseStore.update() ตรงๆ
            (mock ล้วน ไม่เคยแตะ Supabase) แทนที่ด้วย helper กลางตัวเดียวกันที่ session ต่อ Supabase
@@ -1935,7 +2052,7 @@
 
       const btnSignRuling = document.getElementById('btnSignRuling');
       if (btnSignRuling) btnSignRuling.addEventListener('click', async () => {
-        persistForm();
+        if (!await persistFormToSupabase()) return;
         const signed = await ECMIS.signDialog('รายงานวินิจฉัยชี้มูล', ECMIS.getRole('chairman').name);
         if (!signed.isConfirmed) return;
 
@@ -2186,6 +2303,7 @@
     applyZoom();
 
     (async function initOffenseBasis() {
+      await caseDataReady;
       const ok = await loadOffenseBasisData();
       if (ok) {
         renderOffenseBasisBody();

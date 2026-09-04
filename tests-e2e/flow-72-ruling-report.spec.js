@@ -40,6 +40,8 @@ test.describe('Flow 7.2 — บันทึกมติวินิจฉัย�
       // GUILTY_72 is the default-selected resolution on this page (confirmed manually
       // this session) — only need to satisfy the other required fields.
       await page.check('#guiltyDiscipline');
+      await page.fill('#agendaDetails', 'พฤติการณ์จากมติบอร์ดสำหรับทดสอบการส่งต่อรายงาน ม.72');
+      await page.fill('#disciplinaryFinding', 'ฐานความผิดทางวินัยจากมติบอร์ดสำหรับผู้ถูกกล่าวหา');
       await page.fill('#boardOpinion', 'ทดสอบระบบอัตโนมัติ — E2E flow 7.2 segment A');
 
       await page.locator('.action-bar [data-act="lock"]').click();
@@ -56,20 +58,27 @@ test.describe('Flow 7.2 — บันทึกมติวินิจฉัย�
 
       let row = await db.getRequest(fx.trrId);
       expect(row.trr_status, 'resolution-72 lock should persist trr_status=111 (RESOLVED_PENDING_72)').toBe('111');
+      expect(row.trr_resolution_data.factSummary72).toBe('พฤติการณ์จากมติบอร์ดสำหรับทดสอบการส่งต่อรายงาน ม.72');
+      expect(row.trr_resolution_data.accusedDecisions72).toHaveLength(1);
+      expect(row.trr_resolution_data.accusedDecisions72[0].name).toBe('นายภัทร ศุลกากร');
+      expect(row.trr_resolution_data.accusedDecisions72[0].status).toBe('GUILTY_72');
+
+      const perAccusedFact = page.locator('.accused-fact-text').first();
+      const perAccusedOffense = page.locator('.accused-offense-text').first();
+      const perAccusedAdditional = page.locator('.accused-additional-text').first();
+      await expect(perAccusedFact).toHaveValue('พฤติการณ์จากมติบอร์ดสำหรับทดสอบการส่งต่อรายงาน ม.72');
+      await expect(perAccusedOffense).toHaveValue('ฐานความผิดทางวินัยจากมติบอร์ดสำหรับผู้ถูกกล่าวหา');
+      await perAccusedAdditional.fill('ข้อความที่เจ้าหน้าที่ปรับแต่งเพิ่มเติมตามสถานะชี้มูล');
 
       // ---------- Segment A2, same fixture/page: #btnDraftDone (gap now closed) ----------
       // still on ruling-report.html after the redirect above
       const draftDoneBtn = page.locator('#btnDraftDone');
       await expect(draftDoneBtn, 'ruling-report.html should offer "จัดทำรายงานวินิจฉัยชี้มูลเสร็จ" for board_sec when status is RESOLVED_PENDING_72').toBeVisible({ timeout: 5000 });
-      // btnDraftDone's own location.reload() fires asynchronously (after its awaited Supabase
-      // write) — page.waitForLoadState('load') right after click() is a known Playwright trap
-      // here: the current document is already in the 'load' state from the earlier navigation,
-      // so it resolves immediately WITHOUT waiting for this future reload, letting the test race
-      // ahead into Segment C's own page.reload() and clobber this reload mid-flight before its
-      // initData() ever re-reads the fresh status. Wait for the actual PATCH response instead —
-      // that's the one thing that must have committed before we move on.
+      // Start waiting for the reload before clicking. The handler first persists the edited
+      // form payload, then writes the new status in a second PATCH, and finally reloads. Waiting
+      // for only the first PATCH races the status update and can observe the old status (111).
       await Promise.all([
-        page.waitForResponse(r => r.url().includes('/tbl_res_request') && r.request().method() === 'PATCH'),
+        page.waitForNavigation({ waitUntil: 'load' }),
         draftDoneBtn.click()
       ]);
       // let this reload's own load + initData() Supabase re-fetch fully settle before Segment C
@@ -79,6 +88,7 @@ test.describe('Flow 7.2 — บันทึกมติวินิจฉัย�
 
       row = await db.getRequest(fx.trrId);
       expect(row.trr_status, 'FIX CONFIRMED: #btnDraftDone now persists trr_status=112 (PENDING_SIGN_RULING_72) via ECMIS.updateCaseStatus() — previously this assertion documented the opposite (gap) on purpose').toBe('112');
+      expect(row.trr_resolution_data.accusedDecisions72[0].additionalText).toBe('ข้อความที่เจ้าหน้าที่ปรับแต่งเพิ่มเติมตามสถานะชี้มูล');
 
       const realErrors = consoleTrack.errors();
       expect(realErrors, `no real console errors expected in segment A/A2: ${JSON.stringify(realErrors)}`).toEqual([]);
@@ -125,7 +135,7 @@ test.describe('Flow 7.2 — บันทึกมติวินิจฉัย�
       await expect(page.locator('.swal2-confirm')).toBeVisible({ timeout: 5000 });
       await page.locator('.swal2-confirm').click();
 
-      await page.waitForURL(/agenda-registry\.html/, { timeout: 5000 });
+      await page.waitForURL(/inbox\.html/, { timeout: 5000 });
 
       const row = await db.getRequest(fx.trrId);
       expect(row.trr_status, 'chairman.html save_status should persist trr_status=109 (PENDING_INVITE_72) via ECMIS.updateCaseStatus()').toBe('109');

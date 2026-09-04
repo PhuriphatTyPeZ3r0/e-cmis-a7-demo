@@ -1221,6 +1221,11 @@
           const recordedDocHtml = document.getElementById('docPaper').innerHTML;
           const t = tally();
           const otherText = (document.getElementById('otherResText')?.value || '').trim();
+          const agendaTitle = document.getElementById('caseSubject')?.value?.trim() || kase.subject || '';
+          const agendaDetails = document.getElementById('agendaDetails')?.value?.trim() || kase.allegation || '';
+          const accusedSnapshot = (kase.accused || []).map(acc => ({
+            no: acc.no, name: acc.name || '', pos: acc.pos || '', agency: acc.agency || '', idcard: acc.idcard || ''
+          }));
 
           ECMIS.Model.CaseStore.update(kase.id, {
             status: 'RESOLVED',
@@ -1231,7 +1236,9 @@
             resolutionStage: 1,
             boardAttendance: t.attendanceMap,
             boardVotes: t.votesMap,
-            otherResolutionText: otherText
+            otherResolutionText: otherText,
+            agendaTitle, agendaDetails, accusedSnapshot,
+            offenseBasis: kase.offenseBasis || kase.legalBase || ''
           });
 
           /* เขียนมติจริงลง Supabase ก่อน redirect เสมอ (ต้อง await ให้เสร็จก่อน) — ไม่งั้น
@@ -1249,6 +1256,11 @@
                 meetingNo: document.getElementById('meetNo')?.value || '',
                 agendaNo: document.getElementById('agendaNo')?.value || '',
                 meetingDate: document.getElementById('meetDate')?.value || '',
+                agendaTitle,
+                agendaDetails,
+                factSummary72: agendaDetails,
+                accusedSnapshot,
+                offenseBasis: kase.offenseBasis || kase.legalBase || '',
                 boardOpinion: document.getElementById('boardOpinion')?.value || '',
                 boardAttendance: t.attendanceMap,
                 boardVotes: t.votesMap,
